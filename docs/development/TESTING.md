@@ -548,6 +548,41 @@ toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a
 supported package target in this boundary.
 
+### `--standalone` does not rendezvous on macOS
+
+Every test that spawns ranks with `torch.distributed.run --standalone` fails on
+macOS with a subprocess timeout, and the cause is outside this repository. Two
+lines reproduce it:
+
+```python
+# /tmp/gloo_probe.py
+import torch.distributed as dist
+
+dist.init_process_group("gloo")
+print(dist.get_rank(), dist.get_world_size(), flush=True)
+dist.destroy_process_group()
+```
+
+```console
+$ python -m torch.distributed.run --standalone --nproc-per-node=2 /tmp/gloo_probe.py
+# hangs; killed after 60 s
+[W socket.cpp:764] [c10d] The IPv6 network addresses of
+(1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa, 55738)
+cannot be retrieved (gai error: 8 - nodename nor servname provided, or not known).
+```
+
+`--standalone` picks the wildcard address, the reverse lookup of its IPv6 form
+fails, and c10d retries with exponential backoff rather than falling back. On
+this Mac the consequence is that `python tools/ci_tier.py release`, whose first
+command is `pytest -m "not scalability"`, cannot pass: it reports 14 failures,
+all of them `subprocess.TimeoutExpired` in
+`tests/distributed/test_mps_stability_faults.py`. Those tests, their runtime
+helper, and the MPS executor they exercise are untouched by the campaign that
+observed this, and the probe above imports nothing from FlagQuantum, so the
+failures carry no information about the repository. Run the `release` tier on
+Linux, or select the suite's markers directly and read the macOS result as
+partial.
+
 The Braket circuit adapter owns only static object conversion. Its isolated SDK
 matrix proves both declared versions and local unitary conformance. Existing
 fake-based provider tests separately prove local submission orchestration and
