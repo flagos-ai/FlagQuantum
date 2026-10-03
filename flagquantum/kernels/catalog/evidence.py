@@ -258,6 +258,7 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MEAS-002-A",
         "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cuda_matches_reference",
+        "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_public_path_uses_catalog",
         gradient_tests=(
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cuda_gradient_matches_reference",
         ),
@@ -267,9 +268,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_launches_flat_grids",
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_input",
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_factor_types",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_rollout_defaults_on_and_has_kill_switch",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json",
+            "benchmarks/results/local/statevector_pauli_expectation_dispatch_a800.json",
         ),
     ),
     _evidence(

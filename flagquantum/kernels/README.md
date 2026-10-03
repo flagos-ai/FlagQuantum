@@ -266,10 +266,13 @@ scalability claim. Reproduce or validate it with
 from a batched flat statevector. It fuses basis-index permutation, X/Y/Z phase,
 and complex inner-product work, and its explicit backward computes the complex
 gradient of the real expectation. Wire zero addresses the most-significant
-statevector bit, matching the simulation contract. The implementation accepts
-contiguous CUDA `complex64` statevectors with at most 30 wires and retains an
-exact differentiable PyTorch fallback for other supported inputs. It remains
-experimental and is not selected by default runtime dispatch. The checked-in
+statevector bit, matching the simulation contract. Runtime dispatch is enabled
+by default only for contiguous CUDA `complex64` statevectors. The dispatched
+shape is exactly `(1, 2**24)`, the state must have no conjugate or negative view
+bits, and the Pauli product must be exactly `X0 * Y12 * Z23`. Set
+`FQ_TRITON_STATEVECTOR_PAULI_EXPECTATION=0` to use the PyTorch reference path
+explicitly. All other shapes, layouts, devices, dtypes, and Pauli products
+return to the existing reference path before importing Triton. The checked-in
 [`statevector_pauli_expectation_kernel_a800.json`](../../benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json)
 artifact records 30 synchronized groups of 10 invocations for five fixed
 three-factor Pauli products over complex64 shapes from 1,024 through 16,777,216
@@ -279,9 +282,27 @@ explicit gradient matches exactly for this matrix. Against FlagQuantum's
 current sequential PyTorch Pauli-product reference, Triton reaches `5.239x` to
 `36.581x` the forward speed and `4.627x` to `37.859x` the forward/backward
 speed. The evidence covers one operator pattern and two development hosts, so
-the canonical decision remains `retain_experimental`; it does not authorize
-default dispatch or a release claim. Reproduce or validate it with
+the canonical decision remains `retain_experimental`; this direct evidence
+alone does not authorize broader dispatch. Reproduce or validate the direct
+kernel evidence with
 [`benchmarks/statevector_pauli_expectation_kernel.py`](../../benchmarks/statevector_pauli_expectation_kernel.py).
+
+The checked-in
+[`statevector_pauli_expectation_dispatch_a800.json`](../../benchmarks/results/local/statevector_pauli_expectation_dispatch_a800.json)
+artifact measures the complete public `Circuit.expectation_ps` path for the
+exact default window on `jp-a800-171` and `jp-a800-172`, under stock Triton
+3.7.1 and FlagTree 0.7.0. Across all four host/compiler runs, public forward
+dispatch is `39.313x` to `40.997x` faster than the identical public path with
+the kernel disabled, and forward plus backward is `41.350x` to `54.467x`
+faster. Maximum expectation absolute and relative L2 errors are `5.83e-11` and
+`1.58e-7`; the explicit gradient matches exactly. The runner rejects any host,
+compiler, or direction below its `1.0x` floor. The canonical aggregate records
+`eligible_for_default`, so MEAS-002 is now a `provisional` implementation with
+default dispatch inside this exact measured window and the explicit kill switch
+above. This is bounded single-device development evidence against the identical
+public PyTorch path, not a release gate, framework-wide comparison, or
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_pauli_expectation_dispatch.py`](../../benchmarks/statevector_pauli_expectation_dispatch.py).
 
 `FQKI-TRITON-MEAS-003-A` computes a joint marginal distribution directly from
 a batched flat statevector without materializing the full probability tensor.
@@ -670,8 +691,9 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. MPS-003
-through MPS-007, MEAS-001, and MEAS-003 are provisional after their evidenced
-default-dispatch promotions; the other 26 implementations remain experimental.
+through MPS-007 and MEAS-001 through MEAS-003 are provisional after their
+evidenced default-dispatch promotions; the other 25 implementations remain
+experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

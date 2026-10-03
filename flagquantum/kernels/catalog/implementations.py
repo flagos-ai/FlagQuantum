@@ -271,6 +271,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector_pauli_expectation",
         layouts=("flat_statevector",),
         directions=("forward", "backward"),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(

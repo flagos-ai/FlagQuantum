@@ -33,7 +33,7 @@ def test_statevector_pauli_expectation_dispatch_binds_exact_catalog_entry() -> N
     assert implementation.implementation_id == "FQKI-TRITON-MEAS-002-A"
     assert implementation.symbol == "statevector_pauli_expectation"
     assert implementation.directions == ("forward", "backward")
-    assert implementation.maturity == "experimental"
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
