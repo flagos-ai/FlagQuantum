@@ -153,7 +153,13 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert evidence["scope"] == {
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
-        "execution": "forward_backward_optimizer_and_checkpoint_resume",
+        "execution": (
+            "forward_backward_optimizer_checkpoint_resume_and_full_state_export"
+        ),
+        # The export's product is named in the scope rather than left to the
+        # observation, so a reader comparing this run with the statevector one
+        # sees which object was materialized without reading the leg.
+        "exported_product": "full_mps_state",
         "local_world_size": 1,
         "max_bond": 64,
         "n_wires": 6,
@@ -303,13 +309,15 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert training["optimizer_state_ownership_semantics"] == "sharded_across_ranks"
 
     # The boundary is exactly these blockers. The fabric, the measured workload,
-    # the audited staging path and the cut width are each retired by the
-    # observation that justifies them; the pair and the circuit are declared.
+    # the audited staging path, the cut width and the production full-state
+    # materialization are each retired by the observation that justifies them;
+    # the pair and the circuit are declared. The staging blocker stays because
+    # the audit found transfers rather than because nobody looked, and it is
+    # kept apart from the blocker that says so.
     assert sorted(evidence["claim_blockers"]) == [
         "host_staging_in_measured_region",
         "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_mps_gather",
     ]
 
     # The cut width is retired by a sweep rather than by a declaration, so the

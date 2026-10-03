@@ -511,7 +511,14 @@ ordinary gate exercises the exchange:
   an uninterrupted run of the same length;
 - the optimizer's initial loss checked against the reference expectation, so
   the training objective is tied to the exact statevector rather than to
-  itself.
+  itself;
+- a full-state export, which rebuilds the whole MPS through the runtime's own
+  `gather_distributed_mps` and times that gather. It is a leg rather than a
+  check: the exported state is the product, the runtime gather is what produces
+  it, and the leg records the canonical site order and a per-iteration
+  comparison against the single-device reference so the vector and its duration
+  cannot come from different calls. Its durations are never read as a speedup;
+  an all-gather has none to report.
 
 Its numerical metrics are at round-off, the two ranks report distinct host and
 device identities, and the reverse attributes 32 bytes of layer halo to the
@@ -522,14 +529,15 @@ are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
 exchanging anything for it. The artifact is checked against that arithmetic. Its
 route was read from the NCCL debug log as RoCE, and it carries five
-synchronized forward samples taken after two warmups. It carries four blockers
--- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_mps_gather` and
+synchronized forward samples taken after two warmups. It carries three blockers
+-- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology` and
 `host_staging_in_measured_region` -- and reports both claim flags false. The
 staging blocker is the audit's finding that host transfers sit inside the
-measured region. Unlike the statevector artifact it belongs to a capability
-that also claims single-host and multi-GPU support, so it is the multi-node leg
-of a broader entry rather than an entry of its own.
+measured region. The full-state gather blocker is gone, because the probe now
+exports the whole MPS as the product of a leg of its own rather than gathering
+it to check an answer. Unlike the statevector artifact it belongs to a
+capability that also claims single-host and multi-GPU support, so it is the
+multi-node leg of a broader entry rather than an entry of its own.
 
 That finding was then taken apart rather than left as a label. Most of the
 transfers were the distributed accounting: the per-rank site footprint, the

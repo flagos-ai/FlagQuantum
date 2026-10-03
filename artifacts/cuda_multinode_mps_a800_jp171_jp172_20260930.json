@@ -1,17 +1,16 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T23:05:01.757316+00:00",
+    "captured_at": "2026-10-03T06:49:27.667510+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
-      "two_node_pair_only_no_wider_topology",
-      "validation_only_tiny_full_mps_gather"
+      "two_node_pair_only_no_wider_topology"
     ],
     "environment": {
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "591401fac230213aa73a3b253a89aa2ef919e510",
+      "source_revision": "e339c225bd1b246c63994bb17d015b36f0106908",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -139,20 +138,90 @@
           4
         ]
       },
+      "export": {
+        "gather": {
+          "maximum_seconds": 0.0009494796395301819,
+          "measured": true,
+          "measured_iterations": 5,
+          "measurement": "distributed_mps_full_state_export",
+          "median_seconds": 0.0009400490671396255,
+          "minimum_seconds": 0.0009286832064390182,
+          "seconds": [
+            0.0009494796395301819,
+            0.0009476467967033386,
+            0.0009306278079748154,
+            0.0009286832064390182,
+            0.0009400490671396255
+          ],
+          "synchronized": true,
+          "warmup_iterations": 2
+        },
+        "gather_cost_semantics": "every_rank_receives_every_other_ranks_sites_and_keeps_the_whole_state",
+        "max_abs_error": 1.1188630228279524e-16,
+        "measurement": "distributed_mps_full_state_export",
+        "operation": "all_gather",
+        "operation_semantics": "explicit_full_mps_gather",
+        "product": "full_mps_state",
+        "product_bytes": 640,
+        "product_is_the_full_state": true,
+        "result": {
+          "blockers": [
+            "full_mps_gather_is_not_a_scaling_result"
+          ],
+          "bsz": 1,
+          "claim_evidence_type": "production_runtime",
+          "distribution_semantics": "replicated_per_rank",
+          "executor": "distributed_mps_full_state_export_v1",
+          "full_state_bytes": 640,
+          "full_state_materialization": true,
+          "gather_bytes_per_rank": 320,
+          "gather_cost_semantics": "every_rank_receives_every_other_ranks_sites_and_keeps_the_whole_state",
+          "local_site_bytes": 320,
+          "local_site_count": 3,
+          "local_world_size": 1,
+          "max_bond": 2,
+          "n_wires": 6,
+          "node_count": 2,
+          "operation": "all_gather",
+          "operation_semantics": "explicit_full_mps_gather",
+          "padded_block_bytes": 320,
+          "peak_resident_bytes_per_rank": 960,
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "site_order": "canonical_logical",
+          "site_ownership": [
+            [
+              0,
+              1,
+              2
+            ],
+            [
+              3,
+              4,
+              5
+            ]
+          ],
+          "site_parameter_count": 40,
+          "state_partition": "contiguous_site_block_per_rank",
+          "total_gather_bytes": 640,
+          "world_size": 2
+        },
+        "site_tensors_sha256": "5f01a5deb3a0abafe64e9dace454b667a82418396375e733a19df8ffc307c919"
+      },
       "host_staging": {
         "host_transfer_events": [
           {
-            "count": 12,
+            "count": 14,
             "direction": "device_to_host",
             "name": "Memcpy DtoH (Device -> Pageable)"
           },
           {
-            "count": 10,
+            "count": 2,
             "direction": "device_to_host",
             "name": "Memcpy DtoH (Device -> Pinned)"
           },
           {
-            "count": 22,
+            "count": 5,
             "direction": "host_to_device",
             "name": "Memcpy HtoD (Pageable -> Device)"
           }
@@ -163,8 +232,9 @@
           "ProfilerActivity.CPU",
           "ProfilerActivity.CUDA"
         ],
+        "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_mps_forward",
-        "profiler_event_count": 141
+        "profiler_event_count": 149
       },
       "network": {
         "backend": "nccl",
@@ -172,7 +242,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "71d6d8669b8041d1b2ae2e8d1808aa623d122d34da07e7bd99961f903d218100",
+        "debug_log_sha256": "872af12f7a698057a5eeabb8dd109ad82df9b846d1f609c8d6a5527ceca90010",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -196,24 +266,24 @@
       },
       "performance": {
         "max_bond": 64,
-        "maximum_seconds": 0.022444969043135643,
+        "maximum_seconds": 0.02427363023161888,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_mps_forward",
-        "median_seconds": 0.021534040570259094,
-        "minimum_seconds": 0.020412376150488853,
+        "median_seconds": 0.023028312250971794,
+        "minimum_seconds": 0.02070849947631359,
         "n_wires": 6,
         "seconds": [
-          0.022444969043135643,
-          0.020412376150488853,
-          0.021921128034591675,
-          0.021534040570259094,
-          0.02116485871374607
+          0.02070849947631359,
+          0.023028312250971794,
+          0.023444483056664467,
+          0.022837363183498383,
+          0.02427363023161888
         ],
         "synchronized": true,
         "warmup_iterations": 2
       },
-      "production_full_mps_materialization": false,
+      "production_full_mps_materialization": true,
       "rank_records": [
         {
           "backend": "nccl",
@@ -254,7 +324,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.00037728622555732727,
+            "layer_halo_wait_seconds": 0.0005622003227472305,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -480,7 +550,7 @@
             1.0000000000000004
           ],
           "training_step": {
-            "allocated_memory_bytes": 17061888,
+            "allocated_memory_bytes": 17063936,
             "bond_updates": [
               {
                 "bond": 2,
@@ -533,12 +603,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.0004760194569826126,
+            "diagnostics_seconds": 0.0005999542772769928,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03679715842008591,
-            "forward_peak_memory_bytes": 17077760,
-            "forward_seconds": 0.021425969898700714,
+            "end_to_end_seconds": 0.04947838373482227,
+            "forward_peak_memory_bytes": 17079808,
+            "forward_seconds": 0.027136115357279778,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -562,20 +632,20 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.00045933760702610016,
+            "optimizer_seconds": 0.001222236081957817,
             "optimizer_stage": "sgd",
             "owned_bond_work": 1,
             "owned_site_work": 2,
             "parameter_gradients": [],
             "parameter_values": [],
-            "peak_memory_bytes": 17077760,
+            "peak_memory_bytes": 17079808,
             "qr_activity": 0,
             "qr_factorization_count": 3,
             "reserved_memory_bytes": 37748736,
             "reverse_autograd_grad_invocations": 3,
-            "reverse_peak_memory_bytes": 17072640,
+            "reverse_peak_memory_bytes": 17074688,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.01442573219537735,
+            "reverse_seconds": 0.020503483712673187,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -583,7 +653,7 @@
             "svd_activity": 1,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 384,
-            "training_compute_seconds": 0.03631992265582085,
+            "training_compute_seconds": 0.04887687787413597,
             "truncated_splits": 0,
             "two_site_splits": 1,
             "useful_work_completed": true
@@ -678,7 +748,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.00024271942675113678,
+            "layer_halo_wait_seconds": 0.0002412833273410797,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -904,7 +974,7 @@
             1.0000000000000004
           ],
           "training_step": {
-            "allocated_memory_bytes": 17061376,
+            "allocated_memory_bytes": 17063424,
             "bond_updates": [
               {
                 "bond": 2,
@@ -957,12 +1027,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.00032327137887477875,
+            "diagnostics_seconds": 0.0007309839129447937,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03681614622473717,
-            "forward_peak_memory_bytes": 17077248,
-            "forward_seconds": 0.018207328394055367,
+            "end_to_end_seconds": 0.049800705164670944,
+            "forward_peak_memory_bytes": 17079296,
+            "forward_seconds": 0.02427118830382824,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -986,20 +1056,20 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.0002747233957052231,
+            "optimizer_seconds": 0.0006124470382928848,
             "optimizer_stage": "sgd",
             "owned_bond_work": 2,
             "owned_site_work": 1,
             "parameter_gradients": [],
             "parameter_values": [],
-            "peak_memory_bytes": 17077248,
+            "peak_memory_bytes": 17079296,
             "qr_activity": 2,
             "qr_factorization_count": 3,
             "reserved_memory_bytes": 37748736,
             "reverse_autograd_grad_invocations": 3,
-            "reverse_peak_memory_bytes": 17067520,
+            "reverse_peak_memory_bytes": 17069568,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.018004396930336952,
+            "reverse_seconds": 0.02417699620127678,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -1007,7 +1077,7 @@
             "svd_activity": 0,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 192,
-            "training_compute_seconds": 0.036492133513092995,
+            "training_compute_seconds": 0.049068041145801544,
             "truncated_splits": 0,
             "two_site_splits": 0,
             "useful_work_completed": true
@@ -1066,8 +1136,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-3.pt",
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-4.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-3.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-4.pt"
         ],
         "checkpoint_integrity": "sha256_atomic_file_and_metadata",
         "checkpoint_steps": 2,
@@ -1077,8 +1147,8 @@
           0.8991430340529726
         ],
         "interrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-1.pt",
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-2.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-1.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-2.pt"
         ],
         "learning_rate": 0.05,
         "optimizer": "sgd",
@@ -1090,8 +1160,8 @@
         "resumed_start_step": 2,
         "resumed_steps": 4,
         "uninterrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-3.pt",
-          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-4.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/uninterrupted/rank-0-step-3.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/uninterrupted/rank-0-step-4.pt"
         ],
         "uninterrupted_leg_losses": [
           0.9077758055611574,
@@ -1109,7 +1179,8 @@
     "scope": {
       "distribution_semantics": "sharded_across_ranks",
       "dtype": "complex128",
-      "execution": "forward_backward_optimizer_and_checkpoint_resume",
+      "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+      "exported_product": "full_mps_state",
       "local_world_size": 1,
       "max_bond": 64,
       "n_wires": 6,
@@ -1134,6 +1205,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "3b97ea6e765fd7f3c2c635f9e1125fecfa774883d4178e53f4f563015a270dbb",
+  "evidence_sha256": "1dfb3fed57dc565485b959eb070a0605145be144fb563ddbf78007028dd6ee0b",
   "schema": "flagquantum.cuda_multinode_mps_artifact.v1"
 }
