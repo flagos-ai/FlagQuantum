@@ -305,3 +305,113 @@ def test_small_inference_contraction_prefers_native_einsum(monkeypatch) -> None:
 
     assert calls == 0
     torch.testing.assert_close(actual, torch.bmm(left, right))
+
+
+def _tall_rank_pair(contracted_axes: int, *, seed: int = 440044):
+    """Return a canonical pair whose operands exceed the native einsum ceiling.
+
+    The labels make the layout canonical -- one free axis on each side and every
+    remaining axis contracted -- and keep the grouped contraction small: three
+    contracted axes carry extent two and the rest are singletons, so the matmul
+    working set is ``2 x 8`` against ``8 x 2``.
+    """
+
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    output = ("a", "b")
+    contracted = tuple(alphabet[2 : 2 + contracted_axes])
+    left_labels = (output[0], *contracted)
+    right_labels = (*contracted, output[1])
+    equation = f"{''.join(left_labels)},{''.join(right_labels)}->{''.join(output)}"
+    extents = {label: (2 if index < 3 else 1) for index, label in enumerate(contracted)}
+    generator = torch.Generator().manual_seed(seed)
+    left = torch.randn(
+        [extents.get(label, 2) for label in left_labels],
+        dtype=torch.complex64,
+        generator=generator,
+    )
+    right = torch.randn(
+        [extents.get(label, 2) for label in right_labels],
+        dtype=torch.complex64,
+        generator=generator,
+    )
+    return equation, left, right
+
+
+def _enforce_native_einsum_rank_ceiling(monkeypatch, ceiling: int = 25) -> None:
+    """Reproduce the CUDA einsum ceiling that CPU torch does not enforce."""
+
+    native = torch.einsum
+
+    def guarded(equation, *operands, **kwargs):
+        if any(operand.ndim > ceiling for operand in operands):
+            raise RuntimeError("tensor has too many (>25) dims")
+        return native(equation, *operands, **kwargs)
+
+    monkeypatch.setattr(kernels_runtime.torch, "einsum", guarded)
+
+
+def test_a_tall_rank_contraction_is_reachable_through_the_grouped_layout(
+    monkeypatch,
+) -> None:
+    """A wide sliced network contracts above the rank native einsum accepts.
+
+    The fused layout kernel refuses more than eight axes per group and the
+    documented fallback was a native einsum, which refuses more than twenty-five
+    dimensions. The grouped layout is exact arithmetic on the axes the two
+    operands already share, so it replaces that dead end instead of raising.
+    """
+
+    equation, left, right = _tall_rank_pair(28)
+    assert left.ndim > 25 and right.ndim > 25
+
+    _enforce_native_einsum_rank_ceiling(monkeypatch)
+    with pytest.raises(RuntimeError, match="too many"):
+        torch.einsum(equation, left, right)
+
+    grouped_left = left.detach().clone().requires_grad_(True)
+    grouped_right = right.detach().clone().requires_grad_(True)
+    actual = complex_einsum_pair(
+        equation, grouped_left, grouped_right, compile_cuda=False
+    )
+
+    reference_left = left.detach().clone().requires_grad_(True)
+    reference_right = right.detach().clone().requires_grad_(True)
+    reference = torch.einsum(
+        "ak,kb->ab",
+        reference_left.reshape(2, 8),
+        reference_right.reshape(8, 2),
+    )
+    torch.testing.assert_close(actual, reference, atol=2e-5, rtol=2e-5)
+
+    cotangent = torch.randn_like(reference)
+    actual_gradients = torch.autograd.grad(
+        actual, (grouped_left, grouped_right), cotangent
+    )
+    reference_gradients = torch.autograd.grad(
+        reference, (reference_left, reference_right), cotangent
+    )
+    torch.testing.assert_close(
+        actual_gradients[0], reference_gradients[0], atol=3e-5, rtol=3e-5
+    )
+    torch.testing.assert_close(
+        actual_gradients[1], reference_gradients[1], atol=3e-5, rtol=3e-5
+    )
+
+
+def test_a_contraction_the_native_route_can_express_still_uses_it(
+    monkeypatch,
+) -> None:
+    """The rank guard must not divert a contraction native einsum handles."""
+
+    _enforce_native_einsum_rank_ceiling(monkeypatch)
+
+    def unexpected(*args, **kwargs):
+        raise AssertionError("a rank-safe contraction must stay on native einsum")
+
+    monkeypatch.setattr(kernels_runtime, "_canonical_layout_pair", unexpected)
+    left = torch.randn(2, 3, 4, dtype=torch.complex64)
+    right = torch.randn(2, 4, 5, dtype=torch.complex64)
+
+    actual = complex_einsum_pair("zab,zbc->zac", left, right, compile_cuda=False)
+
+    torch.testing.assert_close(actual, torch.bmm(left, right), atol=2e-5, rtol=2e-5)

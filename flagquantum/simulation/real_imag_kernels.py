@@ -12,6 +12,7 @@ _COMPILED_PAIR_CACHE: dict[tuple[Any, ...], Callable[..., torch.Tensor]] = {}
 _COMPILE_FAILURES: set[tuple[Any, ...]] = set()
 _FUSED_WORKING_SET_BYTES = 256 * 1024 * 1024
 _FUSED_INFERENCE_MIN_VOLUME = 2**25
+_NATIVE_EINSUM_RANK_CEILING = 25
 _CanonicalBMMLayout: TypeAlias = tuple[
     tuple[int, ...],
     tuple[int, ...],
@@ -143,6 +144,69 @@ def _canonical_layout_requires_materialization(
     return False
 
 
+def _canonical_layout_pair(
+    left: torch.Tensor, right: torch.Tensor, layout: _CanonicalBMMLayout
+) -> torch.Tensor:
+    """Contract a pair through its grouped axes, at any rank.
+
+    ``torch.einsum`` refuses an operand with more than twenty-five dimensions,
+    and a wide tensor network reaches that rank long before its final
+    contraction: an unsliced twenty-four-wire grid contracts a twenty-nine
+    dimensional tensor against a thirty dimensional one. The canonical layout
+    already separates the batch, free and contracted axes, so the same
+    arithmetic is available as a batched matmul on rank-three operands without
+    ever writing an equation over the network's full rank.
+    """
+
+    (
+        left_permutation,
+        right_permutation,
+        (b, m, n),
+        output_shape,
+        output_permutation,
+        _,
+    ) = layout
+    k = left.numel() // (b * m)
+    left_matrix = left.permute(left_permutation).reshape(b, m, k)
+    right_matrix = right.permute(right_permutation).reshape(b, k, n)
+    left_parts = torch.view_as_real(left_matrix.resolve_conj().resolve_neg())
+    right_parts = torch.view_as_real(right_matrix.resolve_conj().resolve_neg())
+    pair = _bmm_real_imag_eager(
+        left_parts[..., 0],
+        left_parts[..., 1],
+        right_parts[..., 0],
+        right_parts[..., 1],
+    )
+    result = torch.view_as_complex(pair.contiguous()).reshape(output_shape)
+    if output_permutation != tuple(range(len(output_permutation))):
+        result = result.permute(output_permutation)
+    return result
+
+
+def _pair_contraction(
+    equation: str, left: torch.Tensor, right: torch.Tensor
+) -> torch.Tensor:
+    """Contract complex operands, falling back to the canonical layout.
+
+    Native einsum is the cheapest route whenever it can express the contraction,
+    so it stays first and every measured fast path is unchanged. Native einsum
+    refuses an operand above twenty-five dimensions, which a wide sliced network
+    reaches on its interior tensors; only that failure is re-expressed as grouped
+    axes. Any other failure, or a failure the canonical layout cannot describe,
+    is re-raised rather than retried.
+    """
+
+    try:
+        return torch.einsum(equation, left, right)
+    except RuntimeError:
+        if max(left.ndim, right.ndim) <= _NATIVE_EINSUM_RANK_CEILING:
+            raise
+        layout = _canonical_bmm_layout(equation, left, right)
+        if layout is None:
+            raise
+        return _canonical_layout_pair(left, right, layout)
+
+
 def _real_imag_eager(
     equation: str,
     left_real: torch.Tensor,
@@ -160,7 +224,6 @@ def _real_imag_eager(
 
 
 def _fused_layout_bmm(
-    equation: str,
     left: torch.Tensor,
     right: torch.Tensor,
     layout: _CanonicalBMMLayout,
@@ -178,11 +241,12 @@ def _fused_layout_bmm(
     try:
         result = _apply_cataloged_layout_complex_bmm(
             left, right, left_permutation, right_permutation, shapes
-        ).reshape(output_shape)
+        )
     except ValueError as error:
         if "supports at most 8 axes per group" not in str(error):
             raise
-        return torch.einsum(equation, left, right)
+        return _canonical_layout_pair(left, right, layout)
+    result = result.reshape(output_shape)
     if output_permutation != tuple(range(len(output_permutation))):
         result = result.permute(output_permutation)
     return result
@@ -260,18 +324,18 @@ def complex_einsum_pair(
         return torch.einsum(equation, left, right)
     if not left.is_cuda:
         # Native CPU complex einsum is faster than four real contractions.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if left.is_conj() or right.is_conj():
         # Preserve lazy conjugation for reverse-mode capacity: resolving a
         # multi-GiB operand would create a full-size temporary before the
         # contraction output is allocated.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if left.dtype != torch.complex64 or right.dtype != torch.complex64:
         # The layout BMM kernel is fused only for complex64. Its generic
         # complex128 fallback reshapes permuted high-rank operands and may
         # materialize multi-GiB contiguous copies. Native einsum avoids that
         # hidden workspace and is the production high-precision path.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:
         _, _, (b, m, n), _, _, _ = layout
@@ -285,12 +349,12 @@ def complex_einsum_pair(
             and _canonical_layout_requires_materialization(left, right, layout)
         )
         if working_set_bytes >= _FUSED_WORKING_SET_BYTES or inference_layout_crossover:
-            return _fused_layout_bmm(equation, left, right, layout)
-        return torch.einsum(equation, left, right)
+            return _fused_layout_bmm(left, right, layout)
+        return _pair_contraction(equation, left, right)
     if not compile_cuda:
         # Callers can suppress shape-specialized torch.compile kernels without
         # disabling the bounded-specialization fused canonical BMM path above.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     return _compiled_real_imag_einsum(equation, left, right)
 
 
