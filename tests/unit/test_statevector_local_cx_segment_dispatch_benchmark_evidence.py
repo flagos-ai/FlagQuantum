@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -23,6 +25,10 @@ from benchmarks.statevector_local_cx_segment_dispatch import (
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/statevector_local_cx_segment_dispatch_a800.json"
+)
 
 
 def _run(host: str, lane: str, *, speedup: float = 1.2) -> dict[str, Any]:
@@ -128,3 +134,12 @@ def test_aggregate_selects_the_bounded_default_window() -> None:
     assert payload["minimum_default_window_speedup"] == pytest.approx(1.3)
     assert payload["default_window_passed"]
     assert payload["dispatch_decision"] == "eligible_for_default"
+
+
+def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+    validate_evidence(payload)
+    assert payload["source_revision"] == ("eba4394b53fc9ddf2c0b087127932ae05b43216f")
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
+    assert payload["minimum_default_window_speedup"] > 1.48

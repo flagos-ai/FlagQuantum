@@ -91,6 +91,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector_gates",
         "apply_complex64_local_cx_segment",
         layouts=("flat_statevector",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-003-B",
