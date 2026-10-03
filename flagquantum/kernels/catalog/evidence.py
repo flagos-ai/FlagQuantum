@@ -270,6 +270,7 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MEAS-003-A",
         "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cuda_matches_reference",
+        "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_runtime_uses_catalog",
         gradient_tests=(
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cuda_gradient_matches_reference",
         ),
@@ -280,9 +281,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_small_workload_uses_fallback",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_launches_flat_grids",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_validates_input",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_marginal_probability_kernel_a800.json",
+            "benchmarks/results/local/statevector_marginal_probability_dispatch_a800.json",
         ),
     ),
     _evidence(
