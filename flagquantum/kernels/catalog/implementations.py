@@ -284,16 +284,16 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector.transport.control_subspace_pack",
         "flagquantum.kernels.flagtree",
         "pack_complex64_control_one_tle",
-        layouts=("flat_statevector",),
-        addressing=("transport", "control_subspace"),
+        layouts=("flat_statevector", "packed_subspace"),
+        addressing=("distributed", "control_subspace"),
     ),
     _flagtree(
         "FQKI-FLAGTREE-SV-008-A",
         "statevector.transport.control_subspace_unpack",
         "flagquantum.kernels.flagtree",
         "unpack_complex64_control_one_tle",
-        layouts=("flat_statevector",),
-        addressing=("transport", "control_subspace"),
+        layouts=("packed_subspace", "flat_statevector"),
+        addressing=("distributed", "control_subspace"),
     ),
 )
 

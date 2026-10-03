@@ -148,6 +148,28 @@ evidence, not a release gate or scalability claim. Reproduce or validate it
 with
 [`benchmarks/flagtree_tle_local_1q.py`](../../benchmarks/flagtree_tle_local_1q.py).
 
+`FQKI-FLAGTREE-SV-007-A` and `FQKI-FLAGTREE-SV-008-A` extend the same explicit
+provider boundary to distributed-CX control-subspace pack and unpack. Their TLE
+source uses async loads for the non-contiguous state gather and packed-buffer
+read while preserving the established `flat_statevector` ↔ `packed_subspace`
+semantic contract. The wrappers require contiguous CUDA `complex64` tensors,
+validate the address range before probing FlagTree, and remain outside default
+dispatch.
+
+The checked-in
+[`flagtree_tle_control_transport_a800.json`](../../benchmarks/results/local/flagtree_tle_control_transport_a800.json)
+artifact records the same 30 synchronized groups of 10 invocations for pack and
+unpack across four fixed state sizes from `2**10` through `2**24` amplitudes on
+`jp-a800-171` and `jp-a800-172` with FlagTree 0.7.0. Against the existing shared
+Triton source, TLE reaches `0.867x` to `0.921x` for pack and `0.828x` to
+`0.972x` for unpack; all measured values are exact against the indexed
+reference. The canonical decision is therefore `retain_explicit`: this
+establishes a direct FlagTree transport provider and a reproducible optimization
+surface, but does not authorize default dispatch. This is single-device
+development evidence only, not a distributed scalability or release claim.
+Reproduce or validate it with
+[`benchmarks/flagtree_tle_control_transport.py`](../../benchmarks/flagtree_tle_control_transport.py).
+
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
 `torch.bmm`: A800 measurements show that the experimental NUM-001 Triton
