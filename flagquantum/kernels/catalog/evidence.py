@@ -268,6 +268,20 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
         ),
     ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-007-A",
+        "tests/gpu/test_flagtree_tle_transport.py::test_flagtree_tle_control_pack_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_control_pack_rejects_cpu_before_capability_probe",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-008-A",
+        "tests/gpu/test_flagtree_tle_transport.py::test_flagtree_tle_control_unpack_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_control_unpack_rejects_cpu_before_capability_probe",
+        ),
+    ),
 )
 
 

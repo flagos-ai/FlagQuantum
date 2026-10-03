@@ -94,3 +94,38 @@ def test_tle_local_1q_rejects_cpu_before_import(monkeypatch) -> None:
             matrix,
             bit_position=0,
         )
+
+
+def test_tle_control_pack_rejects_cpu_before_capability_probe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        provider,
+        "require_flagtree_tle_primitive",
+        lambda *args, **kwargs: pytest.fail("capability probe must not run"),
+    )
+    state = torch.zeros(1, 8, dtype=torch.complex64)
+
+    with pytest.raises(ValueError, match="contiguous CUDA complex64"):
+        provider.pack_complex64_control_one_tle(
+            state,
+            bit_position=0,
+            compressed_start=0,
+            compressed_end=4,
+        )
+
+
+def test_tle_control_unpack_rejects_cpu_before_capability_probe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        provider,
+        "require_flagtree_tle_primitive",
+        lambda *args, **kwargs: pytest.fail("capability probe must not run"),
+    )
+    packed = torch.zeros(1, 4, dtype=torch.complex64)
+    output = torch.zeros(1, 8, dtype=torch.complex64)
+
+    with pytest.raises(ValueError, match="matching contiguous CUDA complex64"):
+        provider.unpack_complex64_control_one_tle(
+            packed,
+            output,
+            bit_position=0,
+            compressed_start=0,
+        )
