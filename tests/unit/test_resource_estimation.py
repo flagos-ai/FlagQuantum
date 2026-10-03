@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import random
 import time
 from dataclasses import FrozenInstanceError
@@ -9,6 +10,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import ESTIMATE_BASIS, ResourceEstimate, estimate_resources
+from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.pipeline import schedule_layers
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError
@@ -375,3 +377,174 @@ def test_the_estimate_is_a_compiler_surface_and_not_a_stable_core_export() -> No
 
     assert fq.compiler.estimate_resources is estimate_resources
     assert not hasattr(fq, "estimate_resources")
+
+
+_CLIFFORD_T = ("h", "t", "cx")
+# A named basis the built-in decomposition table can reach, used by the tests
+# below that count a program in a basis other than the one it was written in.
+
+
+def test_a_named_basis_counts_a_program_the_caller_did_not_write() -> None:
+    """The reason the parameter exists: the count follows the basis, not the text.
+
+    A quarter-turn rotation is one ``rz`` as written and carries no T-count. Under
+    a named basis it is one ``t``. Both counts are static counts of an operation
+    sequence; what changed is which sequence.
+    """
+
+    program = fq.Circuit(1).rz(0, math.pi / 4)
+
+    as_written = estimate_resources(program)
+    in_basis = estimate_resources(program, gates=("h", "t", "cx"))
+
+    assert as_written.operation_counts == {"rz": 1}
+    assert as_written.t_count == 0
+    assert in_basis.operation_counts == {"t": 1}
+    assert in_basis.t_count == 1
+
+
+def test_the_record_says_which_basis_it_counted() -> None:
+    """A count is only readable alongside the sequence it is a count of."""
+
+    program = fq.Circuit(1).rz(0, math.pi / 4)
+
+    as_written = estimate_resources(program)
+    in_basis = estimate_resources(program, gates=("t", "cx", "h"))
+
+    assert as_written.basis == ESTIMATE_BASIS
+    assert in_basis.basis == "named_basis:cx,h,t"
+    assert as_written.basis != in_basis.basis
+
+
+def test_the_named_basis_label_carries_the_canonical_names_of_the_basis() -> None:
+    """The label is the target basis itself, so it names aliases by their canonical opcode."""
+
+    in_basis = estimate_resources(fq.Circuit(2).h(0).cx(0, 1), gates=("CNOT", "H", "T"))
+
+    assert in_basis.basis == "named_basis:cx,h,t"
+
+
+def test_the_conversion_identity_is_the_conversions_own() -> None:
+    """A count over a rewritten sequence is traceable to the rewrite that produced it."""
+
+    program = fq.Circuit(2).swap(0, 1)
+    conversion = convert_basis(program, gates=_CLIFFORD_T)
+
+    assert estimate_resources(program).conversion_identity is None
+    assert (
+        estimate_resources(program, gates=_CLIFFORD_T).conversion_identity
+        == conversion.conversion_identity
+    )
+
+
+def test_counting_in_a_named_basis_is_counting_the_converted_program() -> None:
+    """There is no second counting rule for the converted case.
+
+    The named-basis count is the same count the caller would get by converting the
+    program themselves and counting the result, which is what keeps the two paths
+    from drifting.
+    """
+
+    program = fq.Circuit(3).h(0).cx(0, 1).swap(1, 2).rz(2, math.pi / 4)
+    converted = convert_basis(program, gates=_CLIFFORD_T).program
+
+    in_basis = estimate_resources(program, gates=_CLIFFORD_T)
+    counted_directly = estimate_resources(converted)
+
+    assert in_basis.operation_counts == counted_directly.operation_counts
+    assert in_basis.depth == counted_directly.depth
+    assert in_basis.per_wire_depth == counted_directly.per_wire_depth
+    assert in_basis.t_count == counted_directly.t_count
+    assert in_basis.t_depth == counted_directly.t_depth
+    assert in_basis.n_wires == counted_directly.n_wires
+
+
+def test_a_basis_that_cannot_express_the_program_is_refused_rather_than_approximated() -> (
+    None
+):
+    """Naming a basis is a request for an exact count, not for an approximate one."""
+
+    with pytest.raises(BasisConversionError) as error:
+        estimate_resources(fq.Circuit(1).y(0), gates=_CLIFFORD_T)
+
+    assert "no verified decomposition" in str(error.value)
+
+
+def test_a_program_carrying_a_channel_is_refused_in_a_named_basis() -> None:
+    """A count under a named basis is a count of gates, and a channel is not one."""
+
+    program = CircuitIR(
+        n_wires=1,
+        instructions=(Instruction("bit_flip", (0,), params={"probability": 0.1}),),
+    )
+
+    with pytest.raises(BasisConversionError) as error:
+        estimate_resources(program, gates=_CLIFFORD_T)
+
+    assert "'bit_flip'" in str(error.value)
+
+
+def test_a_bare_string_is_refused_as_a_basis() -> None:
+    """A string is iterable, so accepting one would count against a basis of characters."""
+
+    with pytest.raises(BasisConversionError) as error:
+        estimate_resources(fq.Circuit(1).h(0), gates="htcx")
+
+    assert "not a string" in str(error.value)
+
+
+def test_data_dependence_is_refused_before_the_basis_is_consulted() -> None:
+    """The refusal is about the source program, so it names the source instruction."""
+
+    program = CircuitIR(
+        n_wires=1,
+        instructions=(
+            Instruction("h", (0,)),
+            Instruction("reset", (0,), metadata={"is_dynamic": True}),
+        ),
+    )
+
+    with pytest.raises(CapabilityError) as error:
+        estimate_resources(program, gates=_CLIFFORD_T)
+
+    assert "instruction 1" in str(error.value)
+
+
+def test_a_named_basis_count_is_a_static_count_too() -> None:
+    """Converting a program runs it no more than counting one does."""
+
+    payload = estimate_resources(fq.Circuit(2).swap(0, 1), gates=_CLIFFORD_T).to_dict()
+
+    measured = sorted(
+        key
+        for key in payload
+        if any(marker in key for marker in _MEASURED_QUANTITY_MARKERS)
+    )
+    assert measured == []
+    assert payload["estimate_basis"] == "named_basis:cx,h,t"
+    assert payload["conversion_identity"] is not None
+    assert json.loads(json.dumps(payload, sort_keys=True)) == payload
+
+
+def test_naming_a_basis_leaves_the_source_program_alone() -> None:
+    """The conversion is a rewrite of a sequence, not an edit of the caller's program."""
+
+    program = CircuitIR(
+        n_wires=2,
+        instructions=(Instruction("swap", (0, 1)),),
+    )
+    before = tuple(program)
+
+    estimate_resources(program, gates=_CLIFFORD_T)
+
+    assert tuple(program) == before
+    assert [instruction.name for instruction in program] == ["swap"]
+
+
+def test_the_two_basis_labels_are_distinguishable_without_parsing_one() -> None:
+    """A consumer that only wants "as written or not" compares against the constant."""
+
+    program = fq.Circuit(1).h(0)
+
+    assert estimate_resources(program).basis == ESTIMATE_BASIS
+    assert estimate_resources(program, gates=("h",)).basis != ESTIMATE_BASIS

@@ -179,21 +179,48 @@ pytest tests/unit/test_compilation_basis_translation.py
 ## Cost a static program
 
 `estimate_resources(program)` reports what a program contains and how its
-dependencies pack, without running or lowering it: the operation count per
-opcode, the schedule depth, the per-wire depth, the widest operation, the T
-family (`t` and `tdg`) and its depth, and the channel count. The basis is named
-in the record -- `ESTIMATE_BASIS` is `static_instruction_sequence` -- because
-every figure is a property of the instruction sequence the caller wrote rather
-than of a lowered basis.
+dependencies pack, without running it: the operation count per opcode, the
+schedule depth, the per-wire depth, the widest operation, the T family (`t` and
+`tdg`) and its depth, and the channel count. The depth is the compiler's own list
+schedule over the declared dependencies, so it is a lower bound for a real device
+rather than a duration: no gate timing, connectivity, or routing overhead enters
+it. A program whose instruction sequence has data dependence is refused with a
+`CapabilityError` naming the instruction index and the reason, because a
+straight-line list has no loop bound to estimate. Fault-tolerant costing is
+layered above this unit rather than folded into it;
+`flagquantum.algorithms.logical_resources` charges the tally and the depth on a
+rotated surface code.
 
-The depth is the compiler's own list schedule over the declared dependencies, so
-it is a lower bound for a real device rather than a duration: no gate timing,
-connectivity, or routing overhead enters it. A program whose instruction
-sequence has data dependence is refused with a `CapabilityError` naming the
-instruction index and the reason, because a straight-line list has no loop bound
-to estimate. Fault-tolerant costing is layered above this unit rather than
-folded into it; `flagquantum.algorithms.logical_resources` charges the tally and
-the depth on a rotated surface code.
+The record says which instruction sequence its figures are figures *of*. As
+written, the basis is `ESTIMATE_BASIS`, `static_instruction_sequence`. Pass
+`gates=` and the program is converted into that named basis first, and the basis
+is reported as `named_basis:` followed by the basis's own canonical names -- so
+a quarter-turn rotation counts as one `rz` in the first case and as one `t` in
+the second, and neither count is a claim about a run. The conversion's own
+identity travels on the record as `conversion_identity`, so a count over a
+rewritten sequence is traceable to the rewrite that produced it.
+
+Converting runs no more than counting does, and a basis that cannot express the
+program exactly is refused rather than approximated: `estimate_resources(c, gates=("h", "t", "cx"))`
+on a program carrying a `y`, or a channel, raises the same
+`BasisConversionError` [`convert_basis`](#convert-a-program-into-a-named-basis)
+raises. Naming a basis never turns a refusal into a number.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.compiler import estimate_resources
+
+as_written = estimate_resources(fq.Circuit(1).rz(0, math.pi / 4))
+print(as_written.basis, as_written.operation_counts)
+# static_instruction_sequence {'rz': 1}
+
+in_basis = estimate_resources(
+    fq.Circuit(1).rz(0, math.pi / 4), gates=("h", "t", "cx")
+)
+print(in_basis.basis, in_basis.operation_counts, in_basis.t_count)
+# named_basis:cx,h,t {'t': 1} 1
+```
 
 ```bash
 pytest tests/unit/test_resource_estimation.py
