@@ -55,12 +55,12 @@ from the matrix's `priority`, the row states why.
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Route named after cudaq-qec's own. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both the circuit and the matrix route; no context object, no X/Y fault family. |
-| `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches; no error ids, no rates vector. |
+| `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches and the error-id column landed; no rates vector, no context object. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder and its PyMatching cross-check landed; no registry, no BP+OSD, no sliding window. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, and a name-keyed registry all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
@@ -114,8 +114,43 @@ instead of approximating them — a detector pair carrying two mechanisms, which
 PyMatching's `independent` strategy would collapse and thereby lose the
 logical-label difference, and a detector that no mechanism flips, which
 PyMatching cannot represent because it infers its detector count from its edges.
-The registry stays absent on purpose: `get_decoder(name, ...)` has no second
-caller yet, and a name-keyed factory is a separate decision from a decoder.
+The row named a fourth item after those three — a registry, so that
+`get_decoder(name, ...)` reaches a decoder and a call site holding a model does
+not have to know which class implements it — and that has since landed as
+`flagquantum/qec/registry.py`. It is the factory half of the baseline's decoder
+surface and deliberately not more.
+
+The registry's source argument is a *carrier* and not a decoder setting, which is
+why it takes the three forms a caller can hold a model in: the detector error
+model, stim's text for one, and the decoding graph the model defines. A
+parity-check matrix is not among them, although upstream's
+`H_or_dem_text_or_sparse_matrix` is, because lifting a matrix would also mean
+choosing the noise model and the round count that
+`DetectorErrorModel.from_code_matrices` reads rather than defaults — so a factory
+that lifted a matrix would be choosing the noise the caller decodes against, and
+the caller who holds the matrix and the noise together does the lifting. The
+registered family is detector error model decoders alone: the repetition-code
+decoders take an ordered syndrome history rather than detection events, and one
+name space over two input protocols would make a name mean one of two things, so
+they stay directly constructed.
+
+Three refusals, all at the point where the mistake is, keep the registry from
+being a look-up table with a fallback. An unregistered name raises and lists the
+names that are registered rather than reaching any implementation. A class
+missing `decode` or `from_detector_error_model` is refused while the registering
+module is being imported, which is the same place upstream refuses it and a
+better place than the first caller, where the name is all the caller has to go
+on. And a second registration of one name is refused unless the caller says
+`replace`, because two classes answering to one name is a choice the registry
+cannot make on the caller's behalf.
+
+The optional implementation is registered whether or not it is installed, so the
+name `pymatching` is part of this package's surface rather than the extra's, and
+asking for it without the extra raises the error that names the extra instead of
+a name that silently is not there. No name is preferred over another: the
+registry returns the class a name is registered against, so the authority is
+returned for its own name wherever the extra happens to be present, and the
+cross-check is never reached by accident.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -207,13 +242,13 @@ one signature twice is refused with a message naming both mechanisms and the
 merge that resolves them. Upstream's `assert_dem_columns_unique` is never called
 in the upstream production code; here the assert is the load-bearing one.
 
-What the row did not close, and what it therefore does not claim: this model
-still has no error identifiers, so there is nothing to carry across a merge and
-nothing for a merged group to be an alternative *to*. Upstream's merge operates
-on columns of a carrier that records them. That absence belongs to
-`dem_error_ids`, which stays `absent`, and it is the reason the matrix row this
-row's floor is folded under stays `partial`: one operation inside a row can be
-aligned while the row it sits in is not.
+What the row did not close, and what it therefore does not claim: when this row
+was written the model had no error identifiers, so there was nothing to carry
+across a merge and nothing for a merged group to be an alternative *to*.
+Upstream's merge operates on columns of a carrier that records them. That absence
+belongs to `dem_error_ids`, and the row it belongs to has since landed; see
+section 3.6, which also records that the identifiers made the merge's premise
+explicit rather than leaving it unstated.
 
 The construction row then closed its second input end. A detector error model can
 now be read off matrices as well as forced through a circuit:
@@ -274,7 +309,7 @@ admits one, which is the absence `symbol:flagquantum.qec.color_code` states.
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
 The short version, because the full table is in the TOML. Across 23 field rows:
-2 `equivalent`, 2 `renamed`, 1 `extra`, 11 `reshaped`, 7 `absent`.
+2 `equivalent`, 2 `renamed`, 1 `extra`, 13 `reshaped`, 5 `absent`.
 
 **Equivalent (2).** `detector_error_matrix` and `observables_flips_matrix` are
 the same matrices in the same orientation — rows are detectors or observables,
@@ -346,11 +381,21 @@ output and pins the format, the direction of the loss and the bound against it, 
 that a stim release changing its precision fails there rather than invalidating
 this record.
 
-**Reshaped (11).** The model carrier, the per-error rates, the counts, the
-sampling function, the memory-circuit entry point, the matrix-level entry point,
-the noise record, the measurement-to-detector map, the kernel annotation
-surface, the decoder result record and the decoder base protocol. The two widest
-of these:
+**Reshaped (13).** The model carrier, the per-error rates, the error ids, the
+counts, the sampling function, the memory-circuit entry point, the matrix-level
+entry point, the noise record, the measurement-to-detector map, the kernel
+annotation surface, the decoder registry, the decoder result record and the
+decoder base protocol. The widest of these:
+
+- **Error ids.** Upstream states the correlation in a vector parallel to the
+  rates, and documents nothing about the distribution a group of alternatives
+  implies. Here the id is a field of the mechanism's own record, the vector is
+  projected back out by `DetectorErrorModel.error_ids`, the group members are
+  read as disjoint pieces of one shot so a detector's rate over a group is the
+  sum of the members touching it, and a group whose probabilities sum above one
+  is refused rather than renormalized. The statement is also the one thing the
+  parity matrices cannot carry, so the three operations that would silently drop
+  it — stim text, the merge and the decoding graph — name the ids and refuse.
 
 - **Noise record.** Upstream `CssNoise` carries independent X, Y and Z data
   rates plus a measurement rate, each also expressible per qubit or per check.
@@ -381,15 +426,15 @@ of these:
   tensors, which is a full-precision-vs-`uint8` boundary worth knowing before an
   adapter is written.
 
-**Absent (7).** `error_ids` (mutually exclusive / correlated errors),
-`canonicalize_for_rounds`, the chunk/seam/stitch/close family,
-`dem_from_kernel` itself, the decoder registry (`get_decoder` + `@decoder`), the
-sampling backend selector, and the decoder configuration schema.
+**Absent (5).** `canonicalize_for_rounds`, the chunk/seam/stitch/close family,
+`dem_from_kernel` itself, the sampling backend selector, and the plugin boundary
+upstream keeps for open decoders.
 
-Of the absent set, `error_ids` and `canonicalize_for_rounds` are the two that
-sit closest to work already planned: a matcher wants round structure and a
-correlated channel is what a decomposed mechanism is, and both currently have no
-way to be said.
+Of the absent set, `canonicalize_for_rounds` is the one that sits closest to work
+already planned: a matcher wants round structure. The correlated-channel half of
+that pair is closed -- `error_ids` landed on the model's own record -- and what
+the identifiers left behind is the operation that folds a group under its
+exclusivity, which is what `dem_canonicalize` records.
 
 ## 4. Findings from the reading, and where the matrix now records them
 
@@ -570,7 +615,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_detector_matrix` | equivalent | Same orientation, same entries; `numpy uint8` against `torch int8`. |
 | `dem_observable_matrix` | equivalent | Same, and upstream also documents the consumer idiom (`O @ errors % 2`). |
 | `dem_error_rates` | reshaped | Per-column vector upstream, per-error record here; no vector accessor. |
-| `dem_error_ids` | absent | No way to say two mechanisms are alternatives rather than independent. |
+| `dem_error_ids` | reshaped | The correlation is stated, in the mechanism's own record: `DemError.error_id` groups mechanisms that are alternatives, `DetectorErrorModel.error_ids` projects upstream's parallel vector back out, `None` where upstream has `nullopt`, and the marginal rates and the sampler read a group as one fault. Upstream fixes neither the distribution a group implies nor what happens when a group's probabilities overflow a shot; here the members are disjoint pieces of one shot and an overflow is refused rather than renormalized. Stim text cannot carry the statement, so `to_stim_text` refuses an id-carrying model and names the ids. |
 | `dem_counts` | reshaped | Methods upstream against properties here; `num_error_mechanisms` against `num_errors`. |
 | `dem_sampling_function` | reshaped | Free function over matrix + rates returning syndromes *and* mechanisms, against a model method returning detectors + observables. |
 | `dem_sampling_backend` | absent | No execution-target selector; upstream has `auto`/`cpu`/`gpu`. |
@@ -585,7 +630,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_measurement_to_detector_map` | reshaped | Ordered `MeasurementRef` records on the layout against a stored sparse D matrix on the model. |
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |
 | `kernel_dem_from_kernel` | absent | CUDA-Q core derives the DEM from the kernel's own annotations; here it is assembled by hand. |
-| `decoder_registry` | absent | Decoders are constructed directly; no name lookup, no DEM-text entry point. |
+| `decoder_registry` | reshaped | Upstream reaches a decoder by name — `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` with a decorator putting a class behind a name; here `flagquantum.qec.get_decoder` takes a carrier and `register_decoder` puts one there, checked while the registering module is imported. Narrower on two deliberate points: the source argument is one of the three carriers a caller can hold a model in rather than a parity-check matrix, and only the detector-error-model family is registered, because the repetition-code decoders take an ordered syndrome history rather than detection events. |
 | `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult`, which carries observables, the selected mechanisms and their weight, and deliberately is not this record. |
 | `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction. |
 | `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. The integrating half of that split is now realized for one library, as the PyMatching cross-check behind an extra; what is still absent is the boundary itself, since the adapter is a concrete class rather than a registered plugin. |

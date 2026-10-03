@@ -400,7 +400,9 @@ at::Tensor fused_rotation_block_forward_cpu(
     const c10::optional<at::Tensor>& rzz_angles,
     const c10::optional<at::Tensor>& rzz_first_wires,
     const c10::optional<at::Tensor>& rzz_second_wires,
-    bool specialized_rotations) {
+    bool specialized_rotations,
+    const c10::optional<at::Tensor>& cx_controls,
+    const c10::optional<at::Tensor>& cx_targets) {
   TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
   TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
   TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
@@ -472,6 +474,11 @@ at::Tensor fused_rotation_block_forward_cpu(
     }
   }
 
+  const bool fuse_cx = cx_controls.has_value();
+  TORCH_CHECK(
+      fuse_cx == cx_targets.has_value(),
+      "both fused CX wire tensors must be provided together");
+
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
   std::array<int64_t, 11> masks{};
   std::array<int64_t, 11> bit_positions{};
@@ -489,8 +496,56 @@ at::Tensor fused_rotation_block_forward_cpu(
   }
   std::sort(bit_positions.begin(), bit_positions.begin() + gate_count);
 
+  std::array<int64_t, 5> cx_control_local_masks{};
+  std::array<int64_t, 5> cx_target_local_masks{};
+  int64_t cx_count = 0;
+  if (fuse_cx) {
+    const at::Tensor& control_tensor = cx_controls.value();
+    const at::Tensor& target_tensor = cx_targets.value();
+    TORCH_CHECK(
+        control_tensor.device().is_cpu() && target_tensor.device().is_cpu(),
+        "fused CX wires must be on CPU");
+    TORCH_CHECK(
+        control_tensor.is_contiguous() && target_tensor.is_contiguous(),
+        "fused CX wires must be contiguous");
+    TORCH_CHECK(
+        control_tensor.scalar_type() == at::kLong &&
+            target_tensor.scalar_type() == at::kLong,
+        "fused CX wires must be int64");
+    TORCH_CHECK(
+        control_tensor.dim() == 1 && target_tensor.sizes() == control_tensor.sizes(),
+        "fused CX controls and targets must have matching one-dimensional shapes");
+    cx_count = control_tensor.numel();
+    TORCH_CHECK(
+        cx_count > 0 && cx_count <= 5,
+        "a fused rotation tile supports between one and five CX gates");
+    const int64_t* control_data = control_tensor.const_data_ptr<int64_t>();
+    const int64_t* target_data = target_tensor.const_data_ptr<int64_t>();
+    int64_t occupied_local_wires = 0;
+    for (int64_t edge = 0; edge < cx_count; ++edge) {
+      int64_t control_gate = -1;
+      int64_t target_gate = -1;
+      for (int64_t gate = 0; gate < gate_count; ++gate) {
+        control_gate = wire_data[gate] == control_data[edge] ? gate : control_gate;
+        target_gate = wire_data[gate] == target_data[edge] ? gate : target_gate;
+      }
+      TORCH_CHECK(
+          control_gate >= 0 && target_gate >= 0 && control_gate != target_gate,
+          "every fused CX wire must belong to its rotation tile");
+      const int64_t control_mask = int64_t{1} << control_gate;
+      const int64_t target_mask = int64_t{1} << target_gate;
+      TORCH_CHECK(
+          (occupied_local_wires & (control_mask | target_mask)) == 0,
+          "fused CX gates must be wire-disjoint");
+      occupied_local_wires |= control_mask | target_mask;
+      cx_control_local_masks[edge] = control_mask;
+      cx_target_local_masks[edge] = target_mask;
+    }
+  }
+
   const int64_t local_size = int64_t{1} << gate_count;
   std::array<int64_t, 2048> offsets{};
+  std::array<int64_t, 2048> cx_sources{};
   for (int64_t local = 0; local < local_size; ++local) {
     int64_t offset = 0;
     for (int64_t gate = 0; gate < gate_count; ++gate) {
@@ -499,6 +554,13 @@ at::Tensor fused_rotation_block_forward_cpu(
       }
     }
     offsets[local] = offset;
+    int64_t source = local;
+    for (int64_t edge = 0; edge < cx_count; ++edge) {
+      if ((local & cx_control_local_masks[edge]) != 0) {
+        source ^= cx_target_local_masks[edge];
+      }
+    }
+    cx_sources[local] = source;
   }
 
   const int64_t blocks_per_row = amplitudes >> gate_count;
@@ -703,11 +765,160 @@ at::Tensor fused_rotation_block_forward_cpu(
           }
         }
         for (int64_t local = 0; local < local_size; ++local) {
-          state_data[base + offsets[local]] = values[local];
+          state_data[base + offsets[local]] = values[cx_sources[local]];
         }
       }
     });
   });
+  return state;
+}
+
+at::Tensor fused_product_state_initialization_cpu(
+    at::Tensor state,
+    const at::Tensor& matrices,
+    const at::Tensor& wires,
+    int64_t n_wires,
+    const at::Tensor& cx_controls,
+    const at::Tensor& cx_targets) {
+  TORCH_CHECK(
+      state.device().is_cpu() && matrices.device().is_cpu() &&
+          wires.device().is_cpu() && cx_controls.device().is_cpu() &&
+          cx_targets.device().is_cpu(),
+      "product-state initialization inputs must be on CPU");
+  TORCH_CHECK(
+      state.is_contiguous() && matrices.is_contiguous() &&
+          wires.is_contiguous() && cx_controls.is_contiguous() &&
+          cx_targets.is_contiguous(),
+      "product-state initialization inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(
+      matrices.dim() == 3 || matrices.dim() == 4,
+      "matrices must be shared or batched");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(
+      matrices.scalar_type() == state.scalar_type(),
+      "matrix dtype must match state");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  const bool batched_matrices = matrices.dim() == 4;
+  TORCH_CHECK(
+      matrices.size(-3) == n_wires && matrices.size(-2) == 2 &&
+          matrices.size(-1) == 2,
+      "one 2 by 2 matrix is required for every wire");
+  TORCH_CHECK(
+      !batched_matrices || matrices.size(0) == state.size(0),
+      "batched matrix rows must match the state batch");
+  TORCH_CHECK(
+      wires.dim() == 1 && wires.numel() == n_wires &&
+          wires.scalar_type() == at::kLong,
+      "wires must be an int64 permutation of every wire");
+  TORCH_CHECK(
+      cx_controls.dim() == 1 && cx_targets.sizes() == cx_controls.sizes() &&
+          cx_controls.scalar_type() == at::kLong &&
+          cx_targets.scalar_type() == at::kLong,
+      "CX controls and targets must be matching int64 vectors");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  std::array<int64_t, 62> gate_by_wire{};
+  gate_by_wire.fill(-1);
+  for (int64_t gate = 0; gate < n_wires; ++gate) {
+    TORCH_CHECK(
+        wire_data[gate] >= 0 && wire_data[gate] < n_wires,
+        "rotation wire is out of range");
+    TORCH_CHECK(gate_by_wire[wire_data[gate]] < 0, "rotation wires must be unique");
+    gate_by_wire[wire_data[gate]] = gate;
+  }
+
+  std::array<int64_t, 62> first_gates{};
+  std::array<int64_t, 62> second_gates{};
+  std::array<int64_t, 62> first_masks{};
+  std::array<int64_t, 62> second_masks{};
+  std::array<bool, 62> paired{};
+  std::array<bool, 62> consumed{};
+  int64_t component_count = 0;
+  const int64_t* control_data = cx_controls.const_data_ptr<int64_t>();
+  const int64_t* target_data = cx_targets.const_data_ptr<int64_t>();
+  for (int64_t edge = 0; edge < cx_controls.numel(); ++edge) {
+    const int64_t control = control_data[edge];
+    const int64_t target = target_data[edge];
+    TORCH_CHECK(
+        control >= 0 && control < n_wires && target >= 0 &&
+            target < n_wires && control != target,
+        "CX wire is out of range");
+    TORCH_CHECK(!consumed[control] && !consumed[target], "CX gates must be disjoint");
+    consumed[control] = true;
+    consumed[target] = true;
+    first_gates[component_count] = gate_by_wire[control];
+    second_gates[component_count] = gate_by_wire[target];
+    first_masks[component_count] = int64_t{1} << (n_wires - control - 1);
+    second_masks[component_count] = int64_t{1} << (n_wires - target - 1);
+    paired[component_count] = true;
+    ++component_count;
+  }
+  for (int64_t wire = 0; wire < n_wires; ++wire) {
+    if (consumed[wire]) {
+      continue;
+    }
+    first_gates[component_count] = gate_by_wire[wire];
+    first_masks[component_count] = int64_t{1} << (n_wires - wire - 1);
+    paired[component_count] = false;
+    ++component_count;
+  }
+
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_product_state_initialization_cpu", [&] {
+        scalar_t* state_data = state.data_ptr<scalar_t>();
+        const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
+        const int64_t matrix_rows = batched_matrices ? state.size(0) : 1;
+        std::vector<scalar_t> factors(
+            matrix_rows * component_count * int64_t{4}, scalar_t{});
+        for (int64_t row = 0; row < matrix_rows; ++row) {
+          for (int64_t component = 0; component < component_count; ++component) {
+            const scalar_t* first = matrix_data +
+                (row * n_wires + first_gates[component]) * 4;
+            scalar_t* factor = factors.data() +
+                (row * component_count + component) * 4;
+            if (!paired[component]) {
+              factor[0] = first[0];
+              factor[1] = first[2];
+              continue;
+            }
+            const scalar_t* second = matrix_data +
+                (row * n_wires + second_gates[component]) * 4;
+            factor[0] = first[0] * second[0];
+            factor[1] = first[0] * second[2];
+            factor[2] = first[2] * second[2];
+            factor[3] = first[2] * second[0];
+          }
+        }
+        const int64_t item_count = state.numel();
+        at::parallel_for(
+            int64_t{0}, item_count, int64_t{4096},
+            [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / amplitudes;
+                const int64_t basis = item - row * amplitudes;
+                const int64_t matrix_row = batched_matrices ? row : 0;
+                const scalar_t* row_factors = factors.data() +
+                    matrix_row * component_count * 4;
+                scalar_t value{1, 0};
+                for (int64_t component = 0; component < component_count; ++component) {
+                  int64_t local = (basis & first_masks[component]) != 0 ? 2 : 0;
+                  if (paired[component]) {
+                    local += (basis & second_masks[component]) != 0 ? 1 : 0;
+                  } else {
+                    local >>= 1;
+                  }
+                  value *= row_factors[component * 4 + local];
+                }
+                state_data[item] = value;
+              }
+            });
+      });
   return state;
 }
 
@@ -1890,7 +2101,12 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_block_forward_(Tensor(a!) state, Tensor matrices, "
       "Tensor wires, int n_wires, Tensor? rzz_angles=None, "
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
-      "bool specialized_rotations=True) -> Tensor(a!)");
+      "bool specialized_rotations=True, Tensor? cx_controls=None, "
+      "Tensor? cx_targets=None) -> Tensor(a!)");
+  library.def(
+      "fused_product_state_initialization_(Tensor(a!) state, Tensor matrices, "
+      "Tensor wires, int n_wires, Tensor cx_controls, Tensor cx_targets) "
+      "-> Tensor(a!)");
   library.def(
       "fused_static_clifford_layer_(Tensor(a!) state, Tensor gate_codes, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
@@ -1928,6 +2144,9 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl(
       "fused_observable_adjoint_seed", &fused_observable_adjoint_seed_cpu);
   library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
+  library.impl(
+      "fused_product_state_initialization_",
+      &fused_product_state_initialization_cpu);
   library.impl("fused_static_clifford_layer_", &fused_static_clifford_layer_cpu);
   library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);

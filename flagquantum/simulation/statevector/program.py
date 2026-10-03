@@ -76,6 +76,8 @@ class _StatevectorDisjointDenseStep:
     native_preferred: bool = False
     native_parameterized: bool = False
     native_clifford: bool = False
+    fused_cx_controls: tuple[int, ...] = ()
+    fused_cx_targets: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -125,3 +127,49 @@ def _preallocated_batch_assembly_beneficial(
         isinstance(step, _StatevectorCliffordMatchingStep) for step in program
     )
     return not (has_rotation_sequence and has_clifford_matching)
+
+
+def _native_zero_state_prefix_length(
+    program: Sequence[_StatevectorProgramStep], width: int
+) -> int:
+    """Return the native prefix that prepares every wire from ``|0>`` once."""
+
+    occupied: set[int] = set()
+    expected = set(range(width))
+    for index, step in enumerate(program):
+        if not (
+            isinstance(step, _StatevectorDisjointDenseStep)
+            and step.native_parameterized
+        ):
+            return 0
+        step_wires = tuple(
+            int(wire)
+            for region in step.regions
+            for wire in (
+                region.instruction.wires
+                if isinstance(region, _StatevectorGateStep)
+                else region.wires
+            )
+        )
+        if (
+            len(step_wires) != len(step.regions)
+            or len(set(step_wires)) != len(step_wires)
+            or occupied.intersection(step_wires)
+        ):
+            return 0
+        occupied.update(step_wires)
+        if occupied == expected:
+            return index + 1
+    return 0
+
+
+def _direct_batch_assembly_beneficial(
+    program: Sequence[_StatevectorProgramStep], width: int
+) -> bool:
+    """Whether every window can begin in its owned final-result slice."""
+
+    return bool(_native_zero_state_prefix_length(program, width)) and all(
+        isinstance(step, _StatevectorDisjointDenseStep)
+        and (step.native_parameterized or step.native_clifford)
+        for step in program
+    )

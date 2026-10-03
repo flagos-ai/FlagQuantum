@@ -214,21 +214,27 @@ symbols_present = [
     "flagquantum.qec.DetectorErrorModel.detector_rates",
     "flagquantum.qec.DetectorErrorModel.observable_rates",
     "flagquantum.qec.DetectorErrorModel.num_errors",
+    "flagquantum.qec.DetectorErrorModel.error_ids",
+    "flagquantum.qec.DetectorErrorModel.stated_error_ids",
+    "flagquantum.qec.DetectorErrorModel.exclusive_groups",
     "flagquantum.qec.DemError",
+    "flagquantum.qec.DemError.error_id",
     "flagquantum.qec.DetectorErrorModel.from_code_matrices",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
 ]
-symbols_absent = ["error_ids", "canonicalize_for_rounds", "measurement_to_detectors"]
+symbols_absent = ["canonicalize_for_rounds", "measurement_to_detectors"]
 evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
+    "flagquantum/qec/decoding_graph.py",
     "tests/qec/test_dem_rates.py",
     "tests/qec/test_dem_sampling.py",
+    "tests/qec/test_dem_error_ids.py",
     "tests/qec/test_dem_code_matrices.py",
 ]
-next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side carries every block a code declares now: css_code_matrices reads hz, hx, lz and lx into one CssCodeMatrices record and DetectorErrorModel.from_code_matrices turns it into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit reaches a model without building a circuit, on either readout basis. Three additions would still close the row. An error-id column, because mutually exclusive errors are how a correlated or decomposed mechanism is expressed and there is no way to say it here. A rates vector, because a matcher wants the column vector and this model stores a record per error. And a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand."
-fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. Three named absences cover the three additions, so the row moves when one lands rather than staying quietly stale."
+next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side carries every block a code declares now: css_code_matrices reads hz, hx, lz and lx into one CssCodeMatrices record and DetectorErrorModel.from_code_matrices turns it into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit reaches a model without building a circuit, on either readout basis. The error-id column is the first of the three additions the previous revision of this row listed and it has landed: DemError.error_id states that a group of mechanisms are alternatives, DetectorErrorModel.error_ids projects upstream's parallel vector, and the marginal rates and the sampling path read a group as one fault, so a detector's rate over a group is the sum of the members touching it. The two remaining additions are a rates vector, because a matcher wants the column vector and this model stores a record per error, and a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand. The id also made dem_canonicalize more load-bearing rather than less: folding a group under exclusivity is an operation this row does not own, and three call sites refuse an id-carrying model by naming the ids rather than discarding them."
+fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. The id column is fail-closed on both sides of its own change: a group whose probabilities sum above one is refused rather than renormalized, so no member's stated rate is quietly changed, and the three operations that assume independence refuse an id-carrying model instead of dropping the structure, which is what to_stim_text (the format cannot state it), merge_duplicate_mechanisms (either rule would invent a shot in which two alternatives both fired) and the decoding graph (one weight per mechanism is the weight of a fault that fires alone) each do by naming the ids. tests/qec/test_dem_error_ids.py pins the refusal messages, the exact rates, the sampled rates against the exact ones at a stated standard-error bound, and the absence of any shot in which two members of one group fire. The two remaining additions are still named absences, so the row moves when one lands rather than staying quietly stale."
 
 [[rows]]
 id = "qec_dem_merge"
@@ -344,7 +350,7 @@ domain_items = ["GPU decoders", "circuit-to-DEM round trip"]
 dependency_class = "B_open_neutral"
 maturity_ref = "detector_error_matching_decoder"
 baseline = "A decoder registry: get_decoder(name, H_or_dem_text_or_sparse_matrix, **options) plus a registration decorator, over base-class methods decode / decode_batch / decode_async / get_block_size / get_syndrome_size / get_version and result records DecoderResult(converged, result, opt_results) and BatchDecoderResult, with an empty batch yielding a (0, 0) result and a (0,) converged vector. Ship names include single_error_lut, example_byod, chromobius, tensor_network_decoder, sliding_window and nv-qldpc-decoder. In-tree Apache-2.0 plugin sources exist for chromobius, pymatching and the example lookup decoder; the qLDPC decoder ships as a closed-source binary under the NVIDIA Software License."
-target = "A decoder contract over detection events with a minimum-weight perfect matching implementation that is the authority, and Apache-2.0 matching and belief-propagation libraries integrated behind an optional extra as cross-checks."
+target = "A decoder contract over detection events reached through a name-keyed registry, with a minimum-weight perfect matching implementation that is the authority, and Apache-2.0 matching and belief-propagation libraries integrated behind an optional extra as cross-checks."
 symbols_present = [
     "flagquantum.qec.Decoder",
     "flagquantum.qec.StreamingDecoder",
@@ -358,29 +364,36 @@ symbols_present = [
     "flagquantum.qec.MatchingDecodeResult",
     "flagquantum.qec.PyMatchingDecoder",
     "flagquantum.qec.MatchingDependencyError",
+    "flagquantum.qec.get_decoder",
+    "flagquantum.qec.register_decoder",
+    "flagquantum.qec.decoder_names",
+    "flagquantum.qec.DetectorErrorModelDecoder",
+    "flagquantum.qec.AUTHORITY_NAME",
+    "flagquantum.qec.CROSS_CHECK_NAME",
 ]
 symbols_absent = [
-    "get_decoder",
     "BeliefPropagationDecoder",
     "SlidingWindowDecoder",
     "DecoderResult",
 ]
 negative_search = [
-    "flagquantum/qec/registry.py",
+    "flagquantum/qec/plugins",
 ]
 evidence = [
     "flagquantum/qec/adapters.py",
     "flagquantum/qec/decoders.py",
     "flagquantum/qec/decoding_graph.py",
     "flagquantum/qec/matching.py",
+    "flagquantum/qec/registry.py",
     "flagquantum/qec/types.py",
     "tests/qec/test_adapters_pymatching.py",
+    "tests/qec/test_decoder_registry.py",
     "tests/qec/test_decoding_graph.py",
     "tests/qec/test_matching_decoder.py",
     "tests/qec/test_repetition_memory.py",
 ]
-next_action = "The three halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly, and the PyMatching cross-check behind the `pymatching` extra. The cross-check landed as a comparison of two selections rather than as an equality of two instruments, because the two instruments are not equal: PyMatching reports 3.9020747171643912 for a mechanism this package states as 3.9020746947749574, so the graph PyMatching minimizes over is not exactly this one and two explanations closer than that difference can be ordered differently on the two sides. What is asserted is therefore the cheapest weight on every syndrome, the observables wherever the cheapest explanation is unique, and the two refusals as the same set -- with a pinned tie on the distance-three repetition code so that the tie clause is a demonstrated fact rather than a place a disagreement could hide. What is left is scope and plumbing, in this order. A registry, which is what makes the DEM-text entry point and an upstream-shaped get_decoder(name, ...) possible; the row keeps get_decoder absent deliberately, because a registry is a separate decision from a decoder and a name-keyed factory has no second caller yet. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. And a hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. Do not chase the closed-source NVIDIA decoder: interface shape only, and note that upstream's open chromobius and pymatching plugins are themselves the precedent for integrating rather than reimplementing."
-fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The four named absences are the registry, the two decoder families the matcher does not cover, and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution. The cross-check fails closed in two places of its own rather than approximating a translation: a detector pair carrying two mechanisms is refused instead of being merged with PyMatching's `independent` strategy, which would collapse the pair and lose the logical-label difference, and a detector that no mechanism flips is refused because PyMatching infers its detector count from the edges it is given, so the syndrome vector would otherwise be renumbered. A graph outside the translation's domain is therefore refused by name while the matcher still answers it, so the cross-check's narrower domain is never reported as the authority's."
+next_action = "The four halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly, the PyMatching cross-check behind the `pymatching` extra, and a name-keyed registry over both. The cross-check landed as a comparison of two selections rather than as an equality of two instruments, because the two instruments are not equal: PyMatching reports 3.9020747171643912 for a mechanism this package states as 3.9020746947749574, so the graph PyMatching minimizes over is not exactly this one and two explanations closer than that difference can be ordered differently on the two sides. What is asserted is therefore the cheapest weight on every syndrome, the observables wherever the cheapest explanation is unique, and the two refusals as the same set -- with a pinned tie on the distance-three repetition code so that the tie clause is a demonstrated fact rather than a place a disagreement could hide. The registry landed as the factory half only, and it is deliberately narrower than the baseline's: `get_decoder(name, source, **options)` takes the three carriers a caller can hold a model in -- the model, stim's text for one, and the graph the model defines -- and not `H_or_dem_text_or_sparse_matrix`, because lifting a parity-check matrix would also mean choosing the noise model and round count that `from_code_matrices` reads rather than defaults. The registered family is detector error model decoders alone; the repetition-code decoders stay directly constructed, since a registry holding two input protocols would make one name mean one of two things. What is left is scope, in this order. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. A hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. And the plugin boundary itself, which is the field this row still records as absent: the adapter is a concrete class registered under a name rather than a plugin loaded across a version boundary, and it is the open chromobius and pymatching plugins upstream ships that are the precedent for integrating rather than reimplementing. Do not chase the closed-source NVIDIA decoder: interface shape only."
+fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The three named absences are the two decoder families the matcher does not cover and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution. The cross-check fails closed in two places of its own rather than approximating a translation: a detector pair carrying two mechanisms is refused instead of being merged with PyMatching's `independent` strategy, which would collapse the pair and lose the logical-label difference, and a detector that no mechanism flips is refused because PyMatching infers its detector count from the edges it is given, so the syndrome vector would otherwise be renumbered. A graph outside the translation's domain is therefore refused by name while the matcher still answers it, so the cross-check's narrower domain is never reported as the authority's. The registry fails closed in three places: an unregistered name raises and lists the names that are registered rather than falling back to any implementation, a class missing either of the two members the family shares is refused at registration time -- while the registering module is being imported -- rather than at the first caller, and a source that is not one of the three carriers is refused by type. The optional implementation is registered whether or not it is installed, so its name is part of this package's surface and asking for it without PyMatching raises the error that names the extra instead of a name that silently is not there; and no name is preferred over another, so the authority is returned for its own name wherever the extra happens to be present."
 
 [[rows]]
 id = "qec_decoder_configuration"
@@ -510,13 +523,9 @@ note = "The rates are the same quantity, stored per column upstream and per erro
 [[fields]]
 id = "dem_error_ids"
 cudaq_symbol = "DetectorErrorModel.error_ids -- optional; errors sharing an id are mutually exclusive (correlated), a documented loss of the stim-text path where it is always empty"
-flagquantum_symbol = ""
-verdict = "absent"
-negative_search = [
-    "symbol:flagquantum.qec.DemError.error_id",
-    "symbol:flagquantum.qec.DetectorErrorModel.error_ids",
-]
-note = "This is the one field with no local counterpart at all: a model here cannot say that two mechanisms are alternatives rather than independent, which is what a decomposed or correlated error needs. Merging the parity rule performs is the opposite operation."
+flagquantum_symbol = "flagquantum.qec.DemError.error_id"
+verdict = "reshaped"
+note = "The correlation is now stated, in the record rather than in a parallel vector. Upstream keeps an optional vector parallel to error_rates whose entry i is the id of mechanism i; here the id is a field of the mechanism's own record and flagquantum.qec.DetectorErrorModel.error_ids projects the same vector back out, None when no mechanism states one, which is upstream's nullopt and the state stim's text always describes. Three things the upstream declaration does not fix are fixed here and are the reason this is `reshaped` rather than `renamed`. Exclusivity needs a distribution to be a statement at all, so the members of a group are read as disjoint pieces of one shot: each keeps the probability it states, the left-over mass is the group firing none of them, and a group whose probabilities sum above one is refused rather than renormalized because renormalizing would change every rate the caller read. The marginal rates and the sampling path honour the groups, so a detector's rate over a group is the sum of the members touching it instead of their parity. And the two operations that assume independence refuse an id-carrying model instead of silently discarding the structure: stim text cannot state the correlation, so to_stim_text names the ids it would lose, merge_duplicate_mechanisms names them because combining by either rule invents a shot in which two alternatives both fired, and the decoding graph refuses because one weight per mechanism is the weight of a fault that fires alone. What is still absent is an operation that folds a group under exclusivity, which is what dem_canonicalize records."
 
 [[fields]]
 id = "dem_counts"
@@ -638,13 +647,9 @@ note = "The record this row exists for: dem_from_kernel and DEMResult are CUDA-Q
 [[fields]]
 id = "decoder_registry"
 cudaq_symbol = "qec.get_decoder(name, H_or_dem_text_or_sparse_matrix, **options) and the @qec.decoder('name') registration decorator, which requires a decode method and refuses to register a class without one"
-flagquantum_symbol = ""
-verdict = "absent"
-negative_search = [
-    "symbol:flagquantum.qec.get_decoder",
-    "flagquantum/qec/registry.py",
-]
-note = "No registry and no text entry point: a decoder is constructed directly and configured by constructor argument. This is the structural difference behind the whole decoder row, because a registry is what lets one call site accept either a matrix or DEM text and choose an implementation by name, which is the shape the DEM-centered design converged on."
+flagquantum_symbol = "flagquantum.qec.get_decoder"
+verdict = "reshaped"
+note = "The local counterpart is flagquantum.qec.get_decoder(name, source, **options) over flagquantum.qec.register_decoder(name, *, replace=False), with flagquantum.qec.decoder_names() naming what is registered; those three plus flagquantum.qec.DetectorErrorModelDecoder are the registry's whole surface. Both sides are a name-keyed factory plus a registration decorator that refuses a class without a decode method, and the local one is deliberately narrower in two places. Its source argument takes the three carriers a caller can hold a model in -- the detector error model, stim's text for one, and the decoding graph the model defines -- where upstream takes H_or_dem_text_or_sparse_matrix; a parity-check matrix is not a carrier here because lifting one would also mean choosing the noise model and round count that DetectorErrorModel.from_code_matrices reads rather than defaults, so the caller who holds the matrix and the noise together does the lifting. Its registry holds the detector-error-model family alone, where upstream's holds lookup, matching, belief-propagation and qLDPC decoders side by side; the repetition-code decoders here take an ordered syndrome history rather than detection events, and one name space over two input protocols would make a name mean one of two things. Registration is checked at registration time rather than at the first call, which is the upstream behaviour too: a class missing decode or from_detector_error_model is refused while the registering module is being imported, and a second registration of one name is refused unless the caller says replace. The optional implementation is registered unconditionally and imported lazily, so the name is part of this package's surface rather than the extra's, and asking for it without PyMatching raises the error naming the extra instead of a name that silently is not there."
 
 [[fields]]
 id = "decoder_result_record"

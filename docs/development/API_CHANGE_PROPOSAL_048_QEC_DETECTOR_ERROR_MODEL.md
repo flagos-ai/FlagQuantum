@@ -128,9 +128,48 @@ equality is an acceptance test, not a comment.
 ### Stage 2 — Detector error model
 
 - `dem.py`: `DetectorErrorModel`, `DemError` (a probability, a detector
-  signature, and an observable-flip signature), `DetectorErrorModel.from_memory_circuit(...)`,
+  signature, an observable-flip signature, and an optional error id),
+  `DetectorErrorModel.from_memory_circuit(...)`,
   `detector_error_matrix()`, `observables_flips_matrix()`, `dem_sampling()`,
   `to_stim_text()`, and `from_stim_text()`.
+- `dem_alternatives.py`: `stated_ids(errors)`, `projected_ids(errors)`,
+  `fault_groups(errors)`, `require_groups_fit(errors)`,
+  `fold_marginals(errors, count, select)`, and
+  `sample_groups(errors, *, generator, detector_bits, observable_bits)` — the
+  reading of `DemError.error_id`, split out because the model module would
+  otherwise pass its line ceiling -- `dem.py` ends at 1168 lines and this module
+  at 247, which is past the 1250 the architecture gate allows, so the arithmetic
+  could not have stayed beside the carrier -- and because the arithmetic is about
+  the ids rather than about the carrier. `DetectorErrorModel.error_ids`, `.stated_error_ids()`, and
+  `.exclusive_groups()` are the carrier's own statement of the same structure.
+  Mechanisms sharing an id are alternatives rather than independent faults: at most
+  one of them fires in a shot, which is how a correlated or decomposed mechanism
+  is stated and is the one statement the parity matrices cannot carry, because two
+  columns of a parity matrix are independent by construction. Upstream has the
+  column — `error_ids` is a parallel `std::optional<vector<size_t>>` on its DEM
+  result — and documents nothing about the distribution a group implies, so the
+  reading here is stated rather than assumed: the members are disjoint pieces of
+  one shot, each keeping the probability it states, the left-over mass being the
+  group firing none of them, a target's marginal rate over the group being the sum
+  of the members that touch it rather than their parity, and sampling drawing once
+  per group into one member's interval or the left-over mass. A group of one
+  excludes nothing and a group summing to exactly one is admitted; a group summing
+  *above* one is refused rather than renormalized, because renormalizing would
+  change every member's stated rate and leave nothing to read back. Every
+  construction route here produces no ids and stim's text states none, so the
+  id-free arithmetic is this arithmetic's empty case and its draws are unchanged.
+  The statement is a fact about the distribution, so the three operations that
+  assume independence refuse an id-carrying model and name the ids instead of
+  silently dropping the structure: `to_stim_text()` (the format reads every error
+  instruction as an independent mechanism),
+  `merge_duplicate_mechanisms()` (both rules combine a group by assuming
+  independence), and the decoding graph the matcher weighs (one weight per
+  mechanism is the weight of a fault firing alone, while a group is one fault whose
+  weight is the negative log-likelihood of the group). What no route here does is
+  the operation that resolves the refusal rather than avoiding it — folding a group
+  under its exclusivity into the single mechanism a matcher can weigh — which is
+  upstream's `canonicalize_for_rounds` family and is recorded as absent against
+  `dem_canonicalize` in the alignment contract.
 
 Construction is exact and does not sample, which is possible because the
 reference gate set is Clifford and every configured channel is a Pauli channel.
@@ -166,6 +205,26 @@ the DEM and is required, not optional.
 - `adapters.py`: a `pymatching` adapter behind a new `pymatching` optional extra,
   used as a cross-check rather than as the authority, plus a stim-text round-trip
   path.
+- `registry.py`: `get_decoder(name, source, **options)`, `register_decoder(name,
+  *, replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder`
+  protocol, with `AUTHORITY_NAME` and `CROSS_CHECK_NAME` naming the two
+  registrations this package ships. This is the factory half of the CUDA-Q QEC
+  decoder surface — upstream reaches a decoder through
+  `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` and registers one
+  with a decorator — and it is deliberately narrower. The source argument takes
+  the three carriers a caller can hold a model in (the detector error model,
+  stim's text for one, and the decoding graph the model defines) rather than a
+  parity-check matrix, because lifting a matrix would also mean choosing the
+  noise model and round count that `DetectorErrorModel.from_code_matrices` reads
+  rather than defaults. The registry holds the detector-error-model family alone:
+  the repetition-code decoders take an ordered syndrome history rather than
+  detection events, and one name space over two input protocols would make a name
+  mean one of two things. Registration is checked while the registering module is
+  imported, so a class missing `decode` or `from_detector_error_model` is refused
+  there rather than at the first caller, and an unregistered name raises and lists
+  what is registered rather than falling back to any implementation. The optional
+  implementation is registered whether or not it is installed, so its name is
+  part of this package's surface rather than the extra's.
 
 Self-implementation is the authority for three reasons: it adds no runtime
 dependency, it runs in the `cpu-core` lane that installs only `.[dev]`, and it is
@@ -253,8 +312,8 @@ threshold is claimed from it.
 from flagquantum.qec.codes import RepetitionCode
 from flagquantum.qec.circuit import build_memory_circuit
 from flagquantum.qec.dem import DetectorErrorModel
-from flagquantum.qec.matching import MatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
+from flagquantum.qec.registry import AUTHORITY_NAME, get_decoder
 from flagquantum.qec.statistics import estimate_crossing
 
 code = RepetitionCode(distance=5)
@@ -266,12 +325,17 @@ print(dem.detector_error_matrix().shape)
 print(dem.observables_flips_matrix().shape)
 print(dem.to_stim_text()[:80])
 
+# A name reaches a decoder, and the carrier is the model, its stim text, or the
+# graph the model defines -- never a decoder setting.
+decoder = get_decoder(AUTHORITY_NAME, dem)
+print(decoder.decode(dem.dem_sampling(shots=1, seed=0).detectors[0].nonzero()[0]))
+
 crossing = estimate_crossing(
     probabilities=(0.02, 0.04, 0.06, 0.08, 0.10, 0.12),
     distances=(3, 5, 7),
     rounds=5,
     noise=noise,
-    decoder_factory=MatchingDecoder,
+    decoder_factory=lambda **options: get_decoder(AUTHORITY_NAME, dem, **options),
     shots=200_000,
     seed=0,
 )

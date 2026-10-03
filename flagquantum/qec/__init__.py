@@ -34,6 +34,14 @@ from .noise import (
     run_repetition_memory_noise_sweep,
 )
 from .pauli import Pauli
+from .registry import (
+    AUTHORITY_NAME,
+    CROSS_CHECK_NAME,
+    DetectorErrorModelDecoder,
+    decoder_names,
+    get_decoder,
+    register_decoder,
+)
 from .repetition import run_repetition_memory_experiment
 from .sampling import sample_memory_circuit
 from .types import (
@@ -50,6 +58,8 @@ from .types import (
 )
 
 __all__ = (
+    "AUTHORITY_NAME",
+    "CROSS_CHECK_NAME",
     "CodeCheck",
     "CssCodeMatrices",
     "Correction",
@@ -63,6 +73,7 @@ __all__ = (
     "DetectionEvent",
     "Detector",
     "DetectorErrorModel",
+    "DetectorErrorModelDecoder",
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
@@ -92,6 +103,9 @@ __all__ = (
     "StreamingDecoder",
     "build_memory_circuit",
     "css_code_matrices",
+    "decoder_names",
+    "get_decoder",
+    "register_decoder",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",

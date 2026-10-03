@@ -390,6 +390,53 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
             "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms",
         ),
     ),
+    (
+        # The registry is the newest diff row to gain a symbol, so the wrong-owner
+        # mistake has to be caught here too: `get_decoder` is a real name in the
+        # tree, and only following the dotted path separates the registry's
+        # factory from a method of the model.
+        "point the registry diff row at a real name under the wrong owner",
+        "'get_decoder' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "decoder_registry",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.get_decoder"',
+        ),
+    ),
+    (
+        "keep the registry diff row absent now that the tree has it",
+        "verdict `absent` but",
+        lambda t: set_key(t, "decoder_registry", "verdict", 'verdict = "absent"'),
+    ),
+    (
+        # `error_id` is a field of the mechanism record, not of the model that
+        # holds the records, and the two names sit in one module. Only following
+        # the dotted path separates the mechanism's own id from a model-level
+        # one.
+        "point the error-id diff row at a real name under the wrong owner",
+        "'error_id' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "dem_error_ids",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.error_id"',
+        ),
+    ),
+    (
+        # The row's additions are recorded as named absences and one of them has
+        # landed. Leaving it in symbols_absent is how a closed gap keeps being
+        # reported as open, which is what the staleness check reads the tree to
+        # catch.
+        "keep the error-id column listed as absent now that the model states it",
+        "symbols_absent 'error_ids' exists as a definition somewhere",
+        lambda t: append_to_list(
+            t,
+            "qec_dem_matrices_and_rates",
+            "symbols_absent",
+            '"error_ids"',
+        ),
+    ),
 ]
 
 

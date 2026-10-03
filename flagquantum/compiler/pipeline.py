@@ -16,6 +16,7 @@ from .routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from .zero_state_reset import remove_zero_state_resets
 
 _SELF_INVERSE = {"x", "y", "z", "h", "cx", "cy", "cz", "swap", "ccx", "cswap"}
 _ROTATION_PARAM = {
@@ -223,20 +224,28 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 
 
 def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
-    # Imported here rather than at module scope: `commutation_cancellation` reads
-    # `_SELF_INVERSE` from this layer, so a module-level import in this direction
-    # would be circular.
+    # Imported here rather than at module scope: both passes read this layer, so a
+    # module-level import in this direction would be circular.
+    # `commutation_cancellation` reads `_SELF_INVERSE`; `one_qubit_optimization`
+    # reads the Euler tables and `_is_zero`.
     from .commutation_cancellation import cancel_commuting_self_inverse
+    from .one_qubit_optimization import collapse_one_qubit_runs
 
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
     for _ in range(max_rounds):
         previous_count = len(ir)
+        # First, because a reset this pass can remove is removable whatever the passes
+        # below do, and removing it hands them a shorter program. The loop, not this
+        # ordering, is what earns the reach on a wire the passes below only empty out
+        # later: `x(0) x(0) reset(0)` needs a second round.
+        ir = remove_zero_state_resets(ir)
         ir = remove_identity_gates(ir)
         ir = merge_self_inverse(ir)
         ir = merge_adjacent_rotations(ir)
         ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")

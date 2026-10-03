@@ -311,16 +311,16 @@ MPS-007 fuses the complex magnitude, left/right bond reduction, and
 normalization needed to obtain the two physical-index probabilities at one MPS
 site. Its implementation supports contiguous CUDA `complex64` tensors without
 gradients and at most `2**12` left-by-right bond elements; the wrapper retains
-the exact PyTorch reduction for other inputs. Runtime dispatch is opt-in through
-`FQ_TRITON_MPS_WIRE_PROBABILITIES=1`; eligible calls from the public MPS
-sampling path authorize the exact MPS-007 catalog entry before importing
-Triton. Route and fallback counts are exposed through `site_kernel_stats()`,
-and the first catalog-route event in each statistics window includes the active
-stock Triton or FlagTree compiler provenance. The Triton result is already
-normalized, so the public path returns it directly and enqueues finite-value
-validation with `torch._assert_async` instead of synchronizing the host for
-every wire. The switch remains opt-in until the default-selection change is
-reviewed independently.
+the exact PyTorch reduction for other inputs. Runtime dispatch is enabled by
+default inside that measured window. Set
+`FQ_TRITON_MPS_WIRE_PROBABILITIES=0` to use the reference path explicitly.
+Eligible calls from the public MPS sampling path authorize the exact MPS-007
+catalog entry before importing Triton. Route and fallback counts are exposed
+through `site_kernel_stats()`, and the first catalog-route event in each
+statistics window includes the active stock Triton or FlagTree compiler
+provenance. The Triton result is already normalized, so the public path returns
+it directly and enqueues finite-value validation with `torch._assert_async`
+instead of synchronizing the host for every wire.
 
 The checked-in
 [`mps_wire_probability_dispatch_a800.json`](../../benchmarks/results/local/mps_wire_probability_dispatch_a800.json)
@@ -331,11 +331,36 @@ Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
 absolute error `8.94e-8`. After removing redundant normalization and replacing
 per-wire host synchronization with device-side asynchronous validation, the
 complete public dispatch path is `1.27x` to `1.40x` faster across all 16
-host/compiler/shape cases. The canonical aggregate therefore records
-`eligible_for_default`; this is bounded development-hardware evidence, not a
-release gate or scalability claim.
+host/compiler/shape cases. The canonical aggregate records
+`eligible_for_default`, and MPS-007 is now a `provisional` implementation with
+default dispatch inside the measured window and the explicit kill switch
+above. This is bounded development-hardware evidence, not a release gate or
+scalability claim.
 Reproduce or validate it with
 [`benchmarks/mps_wire_probability_dispatch.py`](../../benchmarks/mps_wire_probability_dispatch.py).
+
+NUM-002 contracts the explicit non-view layout `azcb,czdb->zad` as a strided
+complex batched matrix multiplication, avoiding canonical input
+materialization. The checked-in
+[`tn_layout_contraction_a800.json`](../../benchmarks/results/local/tn_layout_contraction_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each of four
+fixed contraction shapes on `jp-a800-171` and `jp-a800-172`, under stock
+Triton 3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape
+combinations, the direct forward wrapper ranges from `0.24x` to `1.46x`
+versus native `torch.einsum`, while the public catalog dispatch ranges from
+`0.30x` to `1.84x`. Direct forward plus backward ranges from `0.36x` to
+`0.95x`, so it does not establish a training win. Maximum forward absolute
+and relative L2 error are `2.22e-4` and `8.31e-7`; maximum gradient absolute
+and relative L2 error are `6.10e-5` and `4.27e-7`.
+
+The canonical aggregate records `revisit_current_policy`: NUM-002 remains
+`experimental`, and these measurements do not authorize default dispatch,
+maturity promotion, or a performance claim for the current support window.
+The next NUM-002 change should narrow or retune policy from the observed losing
+cases and then regenerate the complete host/compiler matrix. This is bounded
+single-device development hardware evidence, not a release gate or scalability
+claim. Reproduce or validate it with
+[`benchmarks/tn_layout_contraction.py`](../../benchmarks/tn_layout_contraction.py).
 
 ## Capability matching
 
@@ -445,8 +470,8 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 23 semantics and 25 implementations are implemented. MPS-003
-through MPS-006 are provisional after their evidenced default-dispatch
-promotions; the other 21 implementations remain experimental. The rest of the
+through MPS-007 are provisional after their evidenced default-dispatch
+promotions; the other 20 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract

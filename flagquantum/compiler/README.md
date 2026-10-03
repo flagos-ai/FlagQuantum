@@ -27,6 +27,7 @@ Use `optimize(program)` for target-independent optimization and
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
+| Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
@@ -35,6 +36,7 @@ Use `optimize(program)` for target-independent optimization and
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
+| One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
@@ -98,6 +100,70 @@ unnoticed.
 [benchmarks/compiler_commutation_cancellation.py](../../benchmarks/compiler_commutation_cancellation.py)
 holds the rule-source sweep, the per-population delta, and a per-opcode comparison
 with Qiskit's `CommutationAnalysis` plus `CommutativeCancellation`.
+
+Canonical optimization removes identities, cancels self-inverse pairs, adds up
+adjacent rotations that share one opcode, and folds a same-wire run that *mixes*
+opcodes -- `x rz(0.4) x`, four `t` gates spelling one `z`, the `h` that routing
+walked between two rotations -- into the shortest sequence that reproduces it.
+[one_qubit_optimization.py](one_qubit_optimization.py) is that last pass, and it
+is the Compiler-layer counterpart of Qiskit's `Optimize1qGates`. It is exact
+rather than exact-up-to-phase: a bare `u3` cannot carry a determinant, so the
+leftover is emitted on the same wire as `phase` or `rz` instead of being dropped,
+which is what Qiskit does with the `global_phase` field its DAG has and
+FlagQuantum IR does not. A run already spelled in one z-rotation/pulse alphabet
+is left alone, because the target's own lowering would re-spell the fold into
+more gates than the run had; that decline is measured, not assumed. No run
+carrying a trainable angle is folded at all -- composition reads numbers, and
+`merge_adjacent_rotations` keeps those angles in the autograd graph.
+[benchmarks/compiler_one_qubit_optimization.py](../../benchmarks/compiler_one_qubit_optimization.py)
+holds the per-length reduction, the statevector exactness, the decline, and the
+count difference from Qiskit's pass.
+
+One identity is a property of the IR rather than of any opcode table. A `reset`
+is not in the operator schema at all, yet a reset on a wire that is still in
+`|0>` computes its own outcome -- which can only be zero -- and leaves the wire
+where it already was, so it is the identity.
+[zero_state_reset.py](zero_state_reset.py) is the rule that sees that, and it is
+one sentence long: a `reset` is removed when no instruction that survives before
+it touches its wire. It reads no matrix and no parameter, so the module holds
+exactly one gate name and imports neither the operator schema nor a matrix
+source, and a test asserts both -- a second gate name or a matrix import would
+mean the rule had become something else. What it rests on instead is that a
+`CircuitIR` register starts in `|0...0>`, and that is checked as a property of
+the type rather than assumed: the IR has eight fields, none of which can carry
+another initial state, and that test fails the day one can.
+
+The pass is called first in the fixed-point loop, because a reset it can remove
+is removable whatever the other passes do and removing it hands them a shorter
+program. The loop, not that ordering, is what earns the reach on a wire the other
+passes only empty out later: `x(0) x(0) reset(0)` needs a second round, and the
+benchmark counts those rows apart from this rule's own reach instead of
+attributing them to it.
+
+A refusal here is either correctness or deferred reach, never one total.
+`tests/unit/test_compilation_zero_state_reset.py` and
+[benchmarks/compiler_zero_state_reset.py](../../benchmarks/compiler_zero_state_reset.py)
+split them. A reset behind anything on its own wire is left alone; where that
+"anything" provably leaves the wire in `|0>` -- a `z`, an `s`, a zero-angle
+rotation -- the refusal is deferred reach, and the benchmark measures it with a
+64-trajectory average reduced state of the reset's own wire rather than inferring
+it from the shape's name. That average is also what keeps a `measure` honest: a
+reset behind a measure is not removable even though the trajectory that drew a
+zero did leave the wire in `|0>`, because the other trajectories did not. Over 24
+shapes and 30 resets the pass removes 12, the measurement agrees all 12 were
+removable in fact, and 13 more were removable and were not removed. A removal
+that was *not* removable in fact would be a correctness defect, and that count is
+measured to be zero rather than argued to be zero.
+
+The benchmark's second instrument follows from the rule rather than being a
+detail. A reset reads a random draw, so removing one shifts the generator stream
+and a fixed seed no longer reproduces the same per-shot trajectory even though no
+distribution moved. A measure-free program is therefore compared on the exact
+final state and a measuring program on outcome shares, and the payload records
+which instrument spoke for which population. The share comparison carries a
+control that deletes a reset whose wire has left `|0>` and moves a share by 0.51
+against a 0.03 tolerance, so the tolerance is a bound something exceeded rather
+than a number that happened to hold.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.
