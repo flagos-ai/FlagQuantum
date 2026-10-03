@@ -333,6 +333,55 @@ Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
 two to each other rather than letting either stand for the other.
 
+## Hand a decoder both halves
+
+A model says which mechanisms a decoder can see. It does not say where in a shot
+each detector's parity is read, and a matcher is handed a syndrome over raw
+measurements, so it needs both. `decoder_context_from_memory_circuit` builds the
+model once and returns a context whose components pair it with the maps:
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+    decoder_context_from_memory_circuit,
+)
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+context = decoder_context_from_memory_circuit(
+    memory, noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+)
+inputs = context.z_component()
+print(context.num_measurements(), inputs.measurement_to_detectors.rows[0])
+print(inputs.measurement_to_detectors.dense().shape)
+```
+
+`full_component`, `x_component` and `z_component` each return a `DecoderInputs`:
+the model read over the detectors of one basis, plus the measurement-to-detector
+and measurement-to-observable maps for it. A `MeasurementMap` is one row per
+detector or observable holding the measurements whose parity it is, and it
+projects to both forms a caller may want — `dense()` for the
+`(rows, measurements)` orientation upstream stores, and `flattened()` for the
+`-1`-terminated sparse vector a realtime decoder configuration takes, where the
+terminator is what keeps a row that reads nothing visible.
+
+Two things are refused rather than approximated. A row may not name one
+measurement twice, because two reads of one measurement cancel rather than add. A
+component of a model that states error ids is refused, because projecting a group
+of alternatives onto one basis would either drop the correlation or merge two of
+its members. A basis the experiment declares no detector for is refused rather
+than returned empty.
+
+The split is a reading of the model, not a second construction: every detector is
+carried by the check whose ancilla it reads, so the Z component carries the
+terminal detectors and the union of the two components is the model as built.
+That is also why the numbering the maps use is pinned to the sampler's by a test
+rather than by a shared constant — the sampler derives its record columns from the
+lowered program, this module derives them from the circuit's own declaration, and
+a decoder fed a sampled syndrome has to be matching detectors against the
+measurements that actually compose them.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
