@@ -369,7 +369,7 @@ def _apply_fused_gate_step(
     if (
         state.is_cuda
         and state.dtype == torch.complex64
-        and _triton_ry_rz_pair_enabled()
+        and _triton_ry_rz_pair_enabled((state.shape[0], state.shape[1]))
         and tuple(item.name for item in step.instructions) == ("ry", "rz")
     ):
         ry_angles = _gate_parameters(

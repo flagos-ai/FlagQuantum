@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from flagquantum.simulation.statevector.operations import _triton_ry_rz_pair_enabled
 from flagquantum.simulation.statevector.ry_rz_dispatch import (
     _require_ry_rz_pair_kernel,
     _ry_rz_pair_kernel_match,
@@ -48,3 +49,16 @@ def test_ry_rz_pair_dispatch_fails_closed_on_unsupported_input() -> None:
             device_type="cuda",
             dtype="complex128",
         )
+
+
+def test_ry_rz_pair_default_window_and_override(monkeypatch) -> None:
+    monkeypatch.delenv("FQ_TRITON_RY_RZ_PAIR", raising=False)
+    assert _triton_ry_rz_pair_enabled((1, 1 << 20))
+    assert _triton_ry_rz_pair_enabled((1, 1 << 24))
+    assert not _triton_ry_rz_pair_enabled((1, 1 << 16))
+    assert not _triton_ry_rz_pair_enabled((2, 1 << 20))
+
+    monkeypatch.setenv("FQ_TRITON_RY_RZ_PAIR", "1")
+    assert _triton_ry_rz_pair_enabled((1, 1 << 16))
+    monkeypatch.setenv("FQ_TRITON_RY_RZ_PAIR", "0")
+    assert not _triton_ry_rz_pair_enabled((1, 1 << 20))

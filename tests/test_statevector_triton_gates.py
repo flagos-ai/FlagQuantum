@@ -110,6 +110,7 @@ def test_local_cx_segment_matches_reverse_source_permutation() -> None:
 
 def test_constant_ry_rz_triton_path_with_cx_matches_cpu(monkeypatch) -> None:
     _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_RY_RZ_PAIR", "1")
     catalog_routes = []
     require_cataloged_kernel = ry_rz_dispatch._require_ry_rz_pair_kernel
 

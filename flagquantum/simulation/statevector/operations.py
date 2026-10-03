@@ -167,8 +167,19 @@ def _triton_single_qubit_loop_enabled() -> bool:
     return _environment_flag("FQ_TRITON_SINGLE_QUBIT_LOOP", default=True)
 
 
-def _triton_ry_rz_pair_enabled() -> bool:
-    return _environment_flag("FQ_TRITON_RY_RZ_PAIR", default=True)
+_TRITON_RY_RZ_PAIR_DEFAULT_SHAPES = (
+    (1, 1 << 20),
+    (1, 1 << 24),
+)
+
+
+def _triton_ry_rz_pair_enabled(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, with an explicit user override."""
+
+    configured = os.getenv("FQ_TRITON_RY_RZ_PAIR")
+    if configured is None or not configured.strip():
+        return shape in _TRITON_RY_RZ_PAIR_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
 
 
 def _triton_single_qubit_matrix_enabled() -> bool:
