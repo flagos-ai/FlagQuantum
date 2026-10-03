@@ -488,7 +488,8 @@ def _launch_marginal_forward(
     batch, amplitude_count = (int(value) for value in state.shape)
     outcome_count = 1 << selected_count
     complement_count = amplitude_count // outcome_count
-    block_size = 1024
+    block_size = min(1024, 1 << (complement_count - 1).bit_length())
+    num_warps = min(4, max(1, block_size // 256))
     chunk_count = triton.cdiv(complement_count, block_size)
     partials = torch.empty(
         (batch, outcome_count, chunk_count),
@@ -507,7 +508,7 @@ def _launch_marginal_forward(
         sorted_positions_packed,
         selected_count=selected_count,
         block_size=block_size,
-        num_warps=8,
+        num_warps=num_warps,
         num_stages=2,
     )
     if chunk_count == 1:
