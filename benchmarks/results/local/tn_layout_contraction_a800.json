@@ -4149,5 +4149,6 @@
   "scalability_claim_allowed": false,
   "schema": "flagquantum.kernel_benchmark.tn_layout_contraction.v1",
   "semantic_id": "numerics.matmul.complex_batched_layout",
-  "source_revision": "a28d9e1d0540a92743c9fcf6163578c57400c6d5"
+  "source_revision": "a28d9e1d0540a92743c9fcf6163578c57400c6d5",
+  "source_revision_origin": "producing_host_history"
 }
