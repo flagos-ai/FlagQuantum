@@ -2,6 +2,7 @@
 
 from . import amplitude_estimation as amplitude_estimation
 from . import core as core
+from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
 from . import feature_selection as feature_selection
 from . import grover as grover
@@ -38,6 +39,11 @@ from .core import (
     transverse_field_ising,
     vqe_loss,
     zz_chain_hamiltonian,
+)
+from .data_encoding import (
+    amplitude_encode,
+    angular_encode,
+    append_angular_encode,
 )
 from .error_mitigation import (
     ExtrapolationFit,
@@ -97,7 +103,11 @@ __all__ = [
     "VQEResult",
     "ZneMeasurement",
     "ZneResult",
+    "amplitude_encode",
     "amplitude_estimation",
+    "angular_encode",
+    "append_angular_encode",
+    "data_encoding",
     "error_mitigation",
     "extrapolate_polynomial",
     "estimate_logical_resources",

@@ -184,6 +184,9 @@ This catalog is generated from the machine-validated
 | Convert a QUBO problem into a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Recover the QUBO form from a Hamiltonian | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Evaluate a QUBO objective on a candidate assignment | QUBO to Ising mapping | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Encode a feature vector as state amplitudes | Classical data encoding | Development evidence | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Encode a feature vector as one rotation per wire | Classical data encoding | Development evidence | [Run example](../../docs/guides/ALGORITHMS.md) |
+| Build a data-reuploading feature map by interleaving an encoding with a variational block | Classical data encoding | Development evidence | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Prepare a uniform superposition | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Prepare a state matching a given amplitude vector | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
 | Cross-check a prepared state against the target amplitudes | Quantum state preparation | Experimental | [Run example](../../docs/guides/ALGORITHMS.md) |
@@ -662,6 +665,20 @@ Express a quadratic unconstrained binary optimization problem as an Ising Hamilt
 - **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
 - **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
 - **Known boundary:** A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior.
+
+### Classical data encoding
+
+Encode a classical feature vector into a quantum state, either as the amplitudes of a prepared state or as one rotation per wire.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.algorithms.data_encoding`, `flagquantum.algorithms.data_encoding.amplitude_encode`, `flagquantum.algorithms.data_encoding.angular_encode`, `flagquantum.algorithms.data_encoding.append_angular_encode`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `exact`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/guides/ALGORITHMS.md)
+- **Documentation:** [guide](../../docs/guides/ALGORITHMS.md)
+- **Known boundary:** Both halves return or extend a circuit and neither executes it, selects a runtime, or carries a simulator object. The amplitude half spends the whole state vector on the data, so its classical input is already 2**n amplitudes and the preparation is delegated to the state-preparation primitive rather than made cheaper; it is exact only to the working precision of that primitive's solve, up to one free global phase, and it is not a State object with a pad-and-renormalise contract on an existing state. The angular half carries only one angle per wire, so it packs far less data per wire than amplitude encoding does; it is a feature map, not a compression, and no advantage, performance, or hardware claim follows from either half. Neither encoding is selected by the default runtime, and neither is reachable from kernel-language code.
 
 ### Quantum state preparation
 

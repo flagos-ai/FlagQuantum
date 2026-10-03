@@ -16,6 +16,10 @@ from flagquantum.algorithms.chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
+from flagquantum.algorithms.data_encoding import (
+    amplitude_encode,
+    angular_encode,
+)
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
@@ -73,7 +77,12 @@ pytestmark = pytest.mark.unit
 # terms. The logical resource module contributes two: the reporting entry point,
 # whose example is the whole footprint of one program at one distance, and the patch
 # size helper, whose example is that figure at three distances without a program.
+# The data-encoding module contributes two: the amplitude encoder, whose example is
+# the prepared two-amplitude state, and the angle encoder, whose example is the
+# product state of two zero rotations.
 ENTRIES = (
+    amplitude_encode,
+    angular_encode,
     BosonOperator,
     CssCodeMatrices,
     FermionOperator,

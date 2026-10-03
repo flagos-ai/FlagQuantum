@@ -7,7 +7,9 @@ synthesis, and block encoding, and all five of them ship today.
 A primitive is admitted here when more than one algorithm module needs it or is
 expected to need it and the expectation is confirmed, or when it is a public
 unit callers use directly: state preparation shipped on the public-unit ground,
-with no consumer inside `flagquantum/` at all, the Fourier transform on the
+with no consumer inside `flagquantum/` at all at the time — a ground it no longer
+stands on alone, because `algorithms/data_encoding.py` now calls it for its
+amplitude half — the Fourier transform on the
 expectation ground, admitted with one consumer, phase estimation, and confirmed
 when amplitude estimation landed, and block encoding on the public-unit ground
 after the singular-value unit held it privately and the comment recording that
@@ -24,7 +26,10 @@ arriving or by a grounded expectation of one.
 - `phase_estimation.py`: phase estimation over a controlled unitary, with the
   resolution and the success bound the counting register buys.
 - `state_preparation.py`: a uniform superposition, and an arbitrary state built
-  from a classical amplitude vector by uniformly controlled rotations.
+  from a classical amplitude vector by uniformly controlled rotations. The
+  amplitude half of `algorithms/data_encoding.py` is its first consumer inside
+  `flagquantum/`; that module owns the classical front end (padding and
+  normalisation), and this one owns the preparation ladder.
 - `oracle.py`: the reversible classical building blocks the oracle units are
   composed from -- a multi-controlled X and a bit-string comparator -- and the
   truth-table synthesis of a phase or bit oracle on top of them.

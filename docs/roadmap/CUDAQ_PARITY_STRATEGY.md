@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 51 |
-| `unsupported` | 34 |
+| `partial` | 52 |
+| `unsupported` | 33 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -143,6 +143,30 @@ adaptive profile, pulse-level generation, and runtime library extension calls ar
 absent too, and this is text rather than an object file: no LLVM compilation was
 run and no external QIR validator saw the output, so conformance is the repository's
 own semantic check plus a host C parser accepting the text as LLVM IR syntax.
+
+`classical_data_encoding` moved from `unsupported` to `partial` in the same wave,
+and it is the first move in this document whose old reason was false rather than
+incomplete. That reason said amplitude encoding "needs a normalized
+state-preparation path" and that the only related surface was one data-reuploading
+helper in the simulation domain reachable only as a module attribute; the first
+half was already wrong when it was written, because
+[state_preparation.py](../../flagquantum/algorithms/primitives/state_preparation.py)
+has shipped `arbitrary_state` -- an exact preparation of a classical amplitude
+vector, verified to `1e-8` after one free global phase -- and the second half
+described a private helper rather than the public primitive beside it. What was
+genuinely absent was the classical front end and the angular half, and
+[data_encoding.py](../../flagquantum/algorithms/data_encoding.py) now supplies
+both: `amplitude_encode` pads a feature vector to the next power of two with a
+caller-chosen value, normalises it, and delegates the ladder to `arbitrary_state`
+rather than growing a second preparation implementation, and `angular_encode` with
+its `append_angular_encode` form emit one `rx`/`ry`/`rz` per wire on CUDA-Q's own
+axis names, which is what a data-reuploading map composes from. The row stays
+`partial` because the CUDA-Q contract is broader than the mathematics: CUDA-Q
+returns a data-carrying `State` and re-normalises *after* padding, and its
+`angular_encode` is a kernel-language call the compiler intercepts, while this
+encoder returns a `Circuit`, pads before normalising, and has no kernel front end
+to be called from. Recording that as the gap, instead of reading "an encoder
+exists" as the row, is the whole content of this move.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -379,7 +403,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 34 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 33 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

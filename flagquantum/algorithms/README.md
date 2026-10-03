@@ -21,6 +21,7 @@ executed by `tests/test_algorithm_examples.py`.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `data_encoding.py`: encoding a classical feature vector onto a quantum state. `amplitude_encode` pads the vector to the next power of two with a caller-chosen value, normalises it by its euclidean norm, and hands it to the state-preparation primitive, so amplitude encoding spends the whole state vector on the data and costs a classical input that is already `2**n` amplitudes. `angular_encode` and `append_angular_encode` spend one rotation per feature instead — `'X'`, `'Y'`, or `'Z'`, mapped onto `rx`, `ry`, and `rz` the way CUDA-Q's `angular_encode` maps them, default `'Y'` — so the state is a product of independent rotations, the data on it is linear in the wire count rather than exponential, and the append form is what builds a data-reuploading map by interleaving the encoding with a variational block. Both halves hand the angle or the amplitude to the circuit as the tensor the caller supplied, so the encoder stays differentiable with respect to the features. Both refuse a repeated, negative, or non-integer wire and an input whose length disagrees with the wire count. Neither executes the circuit, selects a runtime, or carries a simulator object.
 - `chemistry.py`: the ansatz half of a chemistry workload — `uccsd_excitations`
   enumerates the single and double excitations of an electron count in a
   spin-orbital count, `excitation_operator` builds the fermionic generator of one

@@ -749,11 +749,12 @@ evidence = ["flagquantum/runtime/training.py", "flagquantum/algorithms/optimizat
 [[domains.capabilities]]
 id = "classical_data_encoding"
 cudaq = "amplitude_encode and angular_encode mapping classical features onto a state"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "none"
-reason = "Absent as a public entry point. Amplitude encoding needs a normalized state-preparation path and angular encoding needs a feature-map constructor; the only related surface is a single data-reuploading helper in the simulation domain, reachable only as a module attribute."
-evidence = ["flagquantum/simulation/statevector/small.py", "search:no amplitude or angular encoding entry point"]
+maturity_ref = "algorithms_data_encoding"
+reason = "Both entry points exist in the Algorithms layer and cover the classical front end, but the CUDA-Q contract is not reached. amplitude_encode here returns a Circuit whose preparation is delegated to the existing arbitrary_state primitive after padding to the next power of two with a caller-chosen value and normalising by the euclidean norm; CUDA-Q's amplitude_encode instead returns a data-carrying State and is re-normalised after padding rather than before, and there is no route that takes an existing State. angular_encode and append_angular_encode match CUDA-Q's axis semantics exactly, one rx/ry/rz per wire with 'X'/'Y'/'Z' case-insensitive and 'Y' the default, and the append form is what a data-reuploading map composes from. What is absent is the kernel-language form, which CUDA-Q intercepts in the compiler and which has no analogue here because no kernel front end exists, and the block-encoding-style padding contract over an amplitude input."
+evidence = ["flagquantum/algorithms/data_encoding.py", "flagquantum/algorithms/primitives/state_preparation.py", "tests/unit/test_algorithms_data_encoding.py", "search:no State-returning amplitude_encode, no re-normalisation of an existing state after padding, and no kernel-language angular_encode"]
 
 [[domains.capabilities]]
 id = "circuit_rendering_and_inspection"

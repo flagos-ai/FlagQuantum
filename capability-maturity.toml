@@ -1171,6 +1171,23 @@ owner = "Algorithms maintainers"
 limitations = "A polynomial classical transformation with no advantage of its own: any advantage a caller observes belongs to the solver that consumes the Hamiltonian. Only Z-basis objectives are representable, so a Hamiltonian outside the Z basis is rejected. The mapping carries the constant as an identity term and recovers it on the way back, so a caller comparing the two forms sees identical values; a caller who strips the identity term loses that constant. It certifies no solver, convergence, performance, or hardware behavior."
 focused_tests = "tests/unit/test_algorithms_qubo.py"
 
+[capabilities.algorithms_data_encoding]
+title = "Classical data encoding"
+summary = "Encode a classical feature vector into a quantum state, either as the amplitudes of a prepared state or as one rotation per wire."
+category = "simulation_and_training"
+user_goals = ["Encode a feature vector as state amplitudes", "Encode a feature vector as one rotation per wire", "Build a data-reuploading feature map by interleaving an encoding with a variational block"]
+public_apis = ["flagquantum.algorithms.data_encoding", "flagquantum.algorithms.data_encoding.amplitude_encode", "flagquantum.algorithms.data_encoding.angular_encode", "flagquantum.algorithms.data_encoding.append_angular_encode"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/guides/ALGORITHMS.md"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "development_evidence"
+owner = "Algorithms maintainers"
+limitations = "Both halves return or extend a circuit and neither executes it, selects a runtime, or carries a simulator object. The amplitude half spends the whole state vector on the data, so its classical input is already 2**n amplitudes and the preparation is delegated to the state-preparation primitive rather than made cheaper; it is exact only to the working precision of that primitive's solve, up to one free global phase, and it is not a State object with a pad-and-renormalise contract on an existing state. The angular half carries only one angle per wire, so it packs far less data per wire than amplitude encoding does; it is a feature map, not a compression, and no advantage, performance, or hardware claim follows from either half. Neither encoding is selected by the default runtime, and neither is reachable from kernel-language code."
+development_artifact = "flagquantum/algorithms/README.md"
+focused_tests = "tests/unit/test_algorithms_data_encoding.py"
 [capabilities.algorithms_state_preparation]
 title = "Quantum state preparation"
 summary = "Prepare a uniform or arbitrary quantum state from a classical amplitude vector using uniformly controlled rotations."
