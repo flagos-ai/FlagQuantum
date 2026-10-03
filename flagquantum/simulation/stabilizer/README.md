@@ -13,22 +13,31 @@ the ones no amplitude store can hold.
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
   `(shots, len(wires))`.
 - Call `sample_noisy_measurements(program, shots=..., terminal_wires=..., seed=...)`
-  when the caller has placed noise itself. It executes a bit-flip channel at the
-  position it finds it, which means the *caller* owns the Pauli-frame attribution
-  and this entry point owns only the execution; the recorded measurement columns
-  come back in program order and the terminal wires are appended in the order the
-  caller names them. It is deliberately not reachable from the planner or the
-  executor, so `mode='stabilizer'` keeps refusing a noisy program.
+  when the caller has placed noise itself. It executes a channel at the position
+  it finds it, which means the *caller* owns the Pauli-frame attribution and this
+  entry point owns only the execution; the recorded measurement columns come back
+  in program order and the terminal wires are appended in the order the caller
+  names them. It is deliberately not reachable from the planner or the executor,
+  so `mode='stabilizer'` keeps refusing a noisy program.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
   replacement Clifford kernel replaces, and keeping it in one place is what
   makes that replacement a local change.
 - The accepted gates are `CLIFFORD_GATE_NAMES`. Everything else - a
   parameterized rotation, `t`, `ccx`, `cswap` - is refused with `CapabilityError`
   naming the accepted set. Nothing is approximated and nothing falls back. Noise
-  is the one exception and it is a narrow one: `sample_stabilizer` still refuses
-  every channel, while `sample_noisy_measurements` accepts exactly the two-element
-  bit-flip pair and refuses any other channel, any lowered measurement node, and
-  any non-Clifford opcode by name.
+  is the one exception and it is a class rather than a list: `sample_stabilizer`
+  still refuses every channel, while `sample_noisy_measurements` accepts a
+  one- or two-wire channel whose Kraus operators are a mixture of Pauli operators
+  up to a global phase, and refuses every other channel, every lowered
+  measurement node, and every non-Clifford opcode by name.
+- That class is decided by the operators, not by the instruction's name, and
+  `flagquantum.noise.KrausChannel.unitary_mixture` is what decides it. A channel
+  the engine cannot express is refused rather than approximated: a depolarizing
+  channel is four frames and samples as four frames, a two-qubit depolarizing
+  channel is sixteen, an amplitude damping or thermal relaxation channel is not a
+  mixture of unitaries at all, and a coherent over-rotation is a mixture of
+  unitaries whose one branch is not a Pauli. The last two cases are separate
+  refusals because they are separate facts.
 - Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
 

@@ -30,6 +30,21 @@ restored = NoiseModel.from_dict(model.to_dict())
 assert restored.identity == model.identity
 ```
 
+A channel whose Kraus operators are non-negative real scales times unitaries is
+also a probability distribution over unitary operators, and
+`KrausChannel.unitary_mixture` returns that reading (`None` when there is none).
+It is a property, decided from the operators rather than the channel's name, so
+a channel a consumer needs a pure error for is answered by the operators it
+holds:
+
+```python
+from flagquantum.noise import depolarizing_channel, phase_damping_channel
+
+mixture = depolarizing_channel(0.3).unitary_mixture
+assert mixture is not None and len(mixture.unitaries) == 4
+assert phase_damping_channel(0.3).is_unitary_mixture is False
+```
+
 For a channel change, edit `channels.py` and verify an analytic state or expectation
 in `tests/test_noise.py`. For serialization changes, exercise both a valid round
 trip and malformed inputs in `tests/unit/test_noise_deserialization.py`. Restoring

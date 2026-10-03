@@ -15,7 +15,7 @@ One conversion and two numeric entry points:
   every instruction this engine cannot represent,
 - sampling measurement outcomes for a requested wire list, and
 - sampling every measurement a Clifford program records when that program
-  carries positioned bit-flip channels.
+  carries positioned noise channels.
 
 The second entry point exists because a detector error model is defined between
 syndrome rounds rather than at a named gate: quantum error correction places its
@@ -57,12 +57,18 @@ replacement interface, and an exit plan. For this module those are:
 Fail-closed contract
 --------------------
 An instruction outside the Clifford gate set is refused with a named error
-naming the accepted set. The positioned-noise entry accepts one channel and one
-measurement shape: a single-wire `bit_flip` whose Kraus operators are the
-bit-flip pair, and one wire per measurement. Amplitude damping and phase
-damping are refused because this engine cannot represent them as one Pauli error
-at one position, and a multi-wire measurement is refused because the caller
-reads the record back one recorded bit at a time. Nothing is approximated,
+naming the accepted set. The positioned-noise entry accepts one class of channel
+and one measurement shape: a one- or two-wire channel whose Kraus operators are a
+mixture of Pauli operators up to a global phase, and one wire per measurement.
+That class is not a list of names - it is decided by the operators the channel
+carries, through `KrausChannel.unitary_mixture` - and it is exactly the class a
+tableau absorbs, because sampling one branch of it moves the Pauli frame and
+leaves the tableau alone. An amplitude damping, phase damping, reset, or thermal
+relaxation channel is refused because no Pauli frame represents it; so is a
+unitary that is not a Pauli up to a global phase, such as a coherent
+over-rotation by an angle that is not a multiple of pi, even though it is a
+one-branch unitary mixture. A multi-wire measurement is refused because the
+caller reads the record back one recorded bit at a time. Nothing is approximated,
 decomposed, or silently dropped, because a stabilizer result that quietly
 answers a different circuit is worse than a refusal: the caller cannot tell the
 two apart from the samples.
@@ -73,6 +79,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from importlib import import_module
+from itertools import product
 from types import ModuleType
 from typing import Any
 
@@ -117,16 +124,32 @@ _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 # `stim` documents a seed as an integer in `range(2**64)`.
 _SEED_LIMIT = 2**64
 
-# The opcodes the positioned-noise entry translates, and the engine's names for
-# them. `bit_flip` is the only channel it executes: the flip is a Pauli error at
-# one position, which the engine represents exactly, while amplitude and phase
-# damping are not Pauli errors at all.
-_NOISE_OPCODE = "bit_flip"
+# The channel rule the positioned-noise entry translates by, and the engine's
+# names for the frames it tracks. A channel is executed exactly when its Kraus
+# operators are a mixture of Pauli unitaries, because a Pauli error is the one
+# error a stabilizer tableau absorbs: the frame moves and the tableau stays. A
+# general channel has no frame, and this engine refuses it rather than sampling
+# the nearest Pauli approximation.
 _MEASURE_OPCODE = "measure"
 _RESET_OPCODE = "reset"
-_NOISE_ENGINE_NAME = "X_ERROR"
 _MEASURE_ENGINE_NAME = "M"
 _RESET_ENGINE_NAME = "R"
+
+# The engine's Pauli-frame vocabulary, one instruction per wire count. The label
+# order is the engine's own argument order, and `_pauli_weight_table` is what
+# keeps the two in step: a wrong order here would mislabel every two-wire frame.
+_PAULI_ENGINE_NAMES: dict[int, str] = {1: "PAULI_CHANNEL_1", 2: "PAULI_CHANNEL_2"}
+_PAULI_LABELS = "IXYZ"
+_PAULI_MATRICES: dict[str, torch.Tensor] = {
+    "I": torch.tensor(((1, 0), (0, 1)), dtype=torch.complex128),
+    "X": torch.tensor(((0, 1), (1, 0)), dtype=torch.complex128),
+    "Y": torch.tensor(((0, -1j), (1j, 0)), dtype=torch.complex128),
+    "Z": torch.tensor(((1, 0), (0, -1)), dtype=torch.complex128),
+}
+
+# A branch matrix comes from a channel the caller built, so it is compared against
+# a Pauli at the tolerance the channel class itself uses.
+_PAULI_TOLERANCE = 1e-6
 
 _EXTRA_NAME = "stim"
 
@@ -316,71 +339,162 @@ def _validate_shots(shots: Any) -> int:
     return shots
 
 
-def _bit_flip_probability(instruction: Any, index: int) -> float:
-    """Return the flip probability a positioned bit-flip channel carries.
+def _pauli_matrix(label: str) -> torch.Tensor:
+    """Return the tensor-product Pauli operator named by ``label``."""
 
-    The channel's Kraus operators are the only thing an instruction carries, so
-    the probability is read back off them rather than trusted from a parameter
-    map. The operators are also compared against the bit-flip pair: an
-    instruction named ``bit_flip`` whose operators are a different channel would
-    otherwise be sampled as a bit flip, and the caller could not tell the two
-    apart from the samples.
+    matrix = _PAULI_MATRICES[label[0]]
+    for character in label[1:]:
+        matrix = torch.kron(matrix, _PAULI_MATRICES[character])
+    return matrix
+
+
+def _pauli_frames(n_wires: int) -> tuple[tuple[str, torch.Tensor], ...]:
+    """Return every Pauli frame on ``n_wires`` wires, identity first.
+
+    The engine names a frame by its Pauli on each wire, and both the label and
+    the argument order come from the lexicographic order over the labels. That
+    order is built here rather than listed, so a frame's sampled arguments cannot
+    drift away from the frame its label names.
+
+    The identity is the first entry, which is what makes the engine's argument
+    order the entries after it: the engine's channel instructions carry one
+    argument per non-identity frame and take the identity's probability as the
+    remainder, so the identity is the one frame that has no argument of its own.
+
+    A Pauli frame is phase-free: `X` and `-X` are the same frame, because a global
+    phase is unobservable and does not change which measurement outcomes a frame
+    predicts. Nothing here returns a phase.
     """
 
+    return tuple(
+        ("".join(labels), _pauli_matrix("".join(labels)))
+        for labels in product(_PAULI_LABELS, repeat=n_wires)
+    )
+
+
+def _frame_index(
+    unitary: torch.Tensor, table: tuple[tuple[str, torch.Tensor], ...]
+) -> int | None:
+    """Return the position in ``table`` of the frame ``unitary`` is, or ``None``.
+
+    A branch is a frame when it equals a Pauli times a single phase. The phase
+    comes out of the Hilbert-Schmidt inner product rather than a comparison of
+    matrix entries, so a branch written as `-i X` is recognised as `X` and a
+    branch written as `exp(-i pi X / 4)` is not recognised at all - which is the
+    distinction the caller needs, because only the first is an error a tableau
+    absorbs.
+    """
+
+    for position, (_, target) in enumerate(table):
+        phase = torch.trace(target.mH @ unitary) / target.shape[0]
+        if bool(torch.allclose(unitary, phase * target, atol=_PAULI_TOLERANCE)):
+            return position
+    return None
+
+
+def _pauli_channel_operation(
+    instruction: Any, index: int, wires: tuple[int, ...]
+) -> tuple[str, tuple[float, ...]]:
+    """Return the engine instruction for a positioned channel, or refuse it.
+
+    The channel's operators decide, not its name: an instruction named for one
+    channel while carrying another executes as the channel it carries. Branches
+    that land on the same frame are added together, because a frame is one
+    argument however many branches reach it.
+
+    A branch that is the identity contributes to no argument at all. The engine's
+    channel instructions take one argument per non-identity frame and sample the
+    identity with whatever probability is left over, so the identity's own weight
+    is what those arguments are checked against rather than an argument of its own.
+    """
+
+    engine_name = _PAULI_ENGINE_NAMES.get(len(wires))
+    if engine_name is None:
+        raise CapabilityError(
+            f"instruction {index} {instruction.name!r} names {len(wires)} wire(s); "
+            "a Pauli frame is tracked on one or two wires"
+        )
     matrix = instruction.matrix
     operators = (
         matrix.kraus if isinstance(matrix, KrausChannel) else tuple(matrix or ())
     )
-    if len(operators) != 2:
+    if not operators:
         raise CapabilityError(
-            f"instruction {index} {instruction.name!r} carries "
-            f"{len(operators)} Kraus operator(s); stabilizer sampling executes a "
-            "bit-flip channel as exactly two"
+            f"instruction {index} {instruction.name!r} carries no Kraus operators, "
+            "so there is no channel to translate"
         )
-    flipped = torch.as_tensor(operators[1])
-    probability = float(torch.real(torch.trace(flipped.mH @ flipped) / 2).item())
-    if not 0.0 <= probability <= 1.0:
-        raise ValidationError(
-            f"instruction {index} {instruction.name!r} flips with probability "
-            f"{probability}, which is not a probability"
-        )
-    pauli_x = torch.tensor([[0, 1], [1, 0]], dtype=flipped.dtype)
-    if not torch.allclose(flipped, math.sqrt(probability) * pauli_x, atol=1e-6):
+    if isinstance(matrix, KrausChannel):
+        channel = matrix
+    else:
+        # The operators are the caller's channel, so a set that is not a channel
+        # at all is malformed input rather than a missing capability: the two are
+        # refused differently because only one of them is the caller's to fix by
+        # choosing another channel.
+        try:
+            channel = KrausChannel(instruction.name, operators)
+        except ValueError as error:
+            raise ValidationError(
+                f"instruction {index} {instruction.name!r} is not a well-formed "
+                f"channel: {error}"
+            ) from error
+    mixture = channel.unitary_mixture
+    if mixture is None:
         raise CapabilityError(
-            f"instruction {index} {instruction.name!r} does not carry the "
-            "bit-flip pair; stabilizer sampling executes a bit-flip channel as "
-            "the identity and the Pauli X"
+            f"instruction {index} {instruction.name!r} is not a mixture of unitary "
+            "operators; a Pauli frame is what this engine tracks, and a general "
+            "channel leaves the tableau unchanged only if it is one"
         )
-    return probability
+    frames = _pauli_frames(len(wires))
+    weights = [0.0] * (len(frames) - 1)
+    for branch, unitary in enumerate(mixture.unitaries):
+        position = _frame_index(
+            unitary.detach().to(device="cpu", dtype=torch.complex128), frames
+        )
+        if position is None:
+            raise CapabilityError(
+                f"instruction {index} {instruction.name!r} is a mixture of "
+                f"unitaries, but branch {branch} is not a Pauli operator up to a "
+                "global phase, so it is not a frame this engine can track"
+            )
+        if position:
+            weights[position - 1] += float(mixture.probabilities[branch])
+    if math.fsum(weights) > 1.0:
+        raise CapabilityError(
+            f"instruction {index} {instruction.name!r} is a mixture of unitaries "
+            "whose non-identity frames carry "
+            f"{math.fsum(weights):.12g} of probability; the engine's channels take "
+            "the identity as the remainder, so they cannot express it"
+        )
+    return engine_name, tuple(weights)
 
 
 def _noisy_operations(
     ir: CircuitIR,
-) -> tuple[tuple[str, tuple[int, ...], float | None], ...]:
+) -> tuple[tuple[str, tuple[int, ...], float | tuple[float, ...] | None], ...]:
     """Return engine operations for a Clifford program with positioned noise.
 
-    Gates, resets, measurements, and single-wire bit-flip channels all translate;
-    anything else is refused. A channel stays where the caller put it, which is
-    the whole point of this conversion: the position of a bit flip relative to
-    the gates around it is what makes it a data error at a round boundary or a
-    measurement error at one readout.
+    Gates, resets, measurements, and every channel whose Kraus operators are a
+    mixture of Pauli unitaries all translate; anything else is refused. A channel
+    stays where the caller put it, which is the whole point of this conversion:
+    the position of an error relative to the gates around it is what makes it a
+    data error at a round boundary or a measurement error at one readout.
     """
 
-    operations: list[tuple[str, tuple[int, ...], float | None]] = []
+    operations: list[tuple[str, tuple[int, ...], float | tuple[float, ...] | None]] = []
     for index, instruction in enumerate(ir.instructions):
         opcode = canonical_opcode(instruction.name)
         schema = get_operator_schema(opcode)
         wires = tuple(int(wire) for wire in instruction.wires)
-        if schema is not None and schema.channel:
-            if opcode != _NOISE_OPCODE:
-                raise CapabilityError(
-                    f"instruction {index} {opcode!r} is not supported by "
-                    "stabilizer sampling with positioned noise; the only channel "
-                    f"it executes exactly is {_NOISE_OPCODE!r}"
-                )
-            operations.append(
-                (_NOISE_ENGINE_NAME, wires, _bit_flip_probability(instruction, index))
-            )
+        # A channel reaches the IR two ways: as a declared channel opcode, or as
+        # an instruction a noise model lowered. Only four opcodes declare the
+        # channel kind, so the lowered flag is what keeps the rest - a
+        # two-qubit depolarizing, a thermal relaxation - from being read as a
+        # gate and refused for the wrong reason.
+        if bool(instruction.metadata.get("is_channel")) or (
+            schema is not None and schema.channel
+        ):
+            engine_name, weights = _pauli_channel_operation(instruction, index, wires)
+            operations.append((engine_name, wires, weights))
             continue
         gate = _GATE_NAMES.get(opcode)
         if gate is not None:
@@ -407,27 +521,29 @@ def _noisy_operations(
             continue
         raise CapabilityError(
             f"instruction {index} {opcode!r} is not a Clifford gate, a reset, a "
-            f"measurement, or a {_NOISE_OPCODE!r} channel; stabilizer sampling "
-            f"accepts {_CLIFFORD_SET_TEXT}, {_MEASURE_OPCODE!r}, "
-            f"{_RESET_OPCODE!r}, and {_NOISE_OPCODE!r} and fails closed rather "
-            "than approximating"
+            "measurement, or a noise channel whose Kraus operators are a mixture "
+            f"of Pauli unitaries; stabilizer sampling accepts {_CLIFFORD_SET_TEXT}, "
+            f"{_MEASURE_OPCODE!r}, {_RESET_OPCODE!r}, and such a channel, and fails "
+            "closed rather than approximating"
         )
     return tuple(operations)
 
 
 def _noisy_engine_circuit(
-    operations: tuple[tuple[str, tuple[int, ...], float | None], ...],
+    operations: tuple[
+        tuple[str, tuple[int, ...], float | tuple[float, ...] | None], ...
+    ],
     terminal_wires: tuple[int, ...],
 ) -> Any:
     """Build the engine circuit for positioned noise and interleaved readouts."""
 
     stim = _stim()
     circuit = stim.Circuit()
-    for name, wires, probability in operations:
-        if probability is None:
+    for name, wires, arguments in operations:
+        if arguments is None:
             circuit.append(name, list(wires))
         else:
-            circuit.append(name, list(wires), probability)
+            circuit.append(name, list(wires), arguments)
     if terminal_wires:
         circuit.append(_MEASURE_ENGINE_NAME, list(terminal_wires))
     return circuit
@@ -444,15 +560,16 @@ def sample_noisy_measurements(
 
     Unlike :func:`sample_stabilizer`, which measures a requested wire list once
     at the end of a noiseless circuit, this entry point executes the program's
-    own measurements in order and accepts single-wire bit-flip channels placed
+    own measurements in order and accepts positioned Pauli noise channels
     between them. That is the shape a detector error model needs: a syndrome
-    round is read where the program reads it, and a bit flip lands exactly where
+    round is read where the program reads it, and an error lands exactly where
     the caller put it.
 
     Args:
         program: A `~flagquantum.Circuit` or a validated `~flagquantum.CircuitIR`
             whose instructions are Clifford gates, single-wire resets,
-            single-wire measurements, and single-wire bit-flip channels.
+            single-wire measurements, and noise channels whose Kraus operators
+            are a mixture of Pauli operators up to a global phase.
         shots: Positive number of sampling repetitions.
         terminal_wires: Wires to measure once after the program has run, in
             record order. Defaults to no terminal measurement.
@@ -469,8 +586,9 @@ def sample_noisy_measurements(
 
     Raises:
         StabilizerDependencyError: The optional engine is not installed.
-        CapabilityError: The program carries a channel other than a bit flip, a
-            non-Clifford gate, or a measurement naming more than one wire.
+        CapabilityError: The program carries a channel whose operators are not a
+            mixture of Pauli frames, a non-Clifford gate, or a measurement naming
+            more than one wire.
         ValidationError: The shot count, seed, terminal wire, or record shape is
             not a valid one.
     """

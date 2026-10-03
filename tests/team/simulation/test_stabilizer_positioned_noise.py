@@ -2,10 +2,11 @@
 
 `sample_stabilizer` measures a requested wire list once at the end of a noiseless
 circuit. This module checks the second entry point, which executes a program's
-own measurements in order and accepts single-wire bit-flip channels between
-them. Everything it asserts is about position: which instruction a flip was
-placed before, which column a record lands in, and which placements the entry
-point refuses rather than approximating.
+own measurements in order and accepts positioned channels whose Kraus operators
+are a mixture of Pauli frames. Everything it asserts is about position or about
+classification: which instruction an error was placed before, which column a
+record lands in, which frames a channel's operators name, and which placements
+and which channels the entry point refuses rather than approximating.
 
 The engine's own noiseless contract is in `test_stabilizer_engine.py`, and the
 distributional comparison of `sample_stabilizer` against the dense amplitude path
@@ -28,8 +29,13 @@ from flagquantum.noise import (
     KrausChannel,
     amplitude_damping_channel,
     bit_flip_channel,
+    coherent_overrotation_channel,
     depolarizing_channel,
+    phase_damping_channel,
     phase_flip_channel,
+    reset_error_channel,
+    thermal_relaxation_channel,
+    two_qubit_depolarizing_channel,
 )
 from flagquantum.simulation.stabilizer import (
     StabilizerDependencyError,
@@ -45,6 +51,9 @@ pytestmark = pytest.mark.unit
 
 IDENTITY = torch.eye(2, dtype=torch.complex128)
 PAULI_X = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
+PAULI_Y = torch.tensor([[0, -1j], [1j, 0]], dtype=torch.complex128)
+PAULI_Z = torch.tensor([[1, 0], [0, -1]], dtype=torch.complex128)
+_PAULI = {"I": IDENTITY, "X": PAULI_X, "Y": PAULI_Y, "Z": PAULI_Z}
 
 
 def _ir(n_wires: int, *instructions: Instruction) -> CircuitIR:
@@ -72,6 +81,24 @@ def _flip(wire: int, probability: float = 1.0) -> Instruction:
         name="bit_flip",
         wires=(wire,),
         matrix=bit_flip_channel(probability).kraus,
+        metadata={"is_channel": True},
+    )
+
+
+def _channel(
+    name: str, operators: tuple[torch.Tensor, ...], wire: int = 0
+) -> Instruction:
+    """A channel instruction holding the operators the caller built.
+
+    The operators are passed through as they are rather than wrapped in a
+    `KrausChannel`, because two of the cases below are about what the engine does
+    with an operator list that is not a channel at all.
+    """
+
+    return Instruction(
+        name=name,
+        wires=(wire,),
+        matrix=operators,
         metadata={"is_channel": True},
     )
 
@@ -211,19 +238,20 @@ def test_the_planned_entry_point_still_refuses_a_channel() -> None:
 @pytest.mark.parametrize(
     "channel",
     [
-        depolarizing_channel(0.1),
-        phase_flip_channel(0.1),
         amplitude_damping_channel(0.1),
+        phase_damping_channel(0.1),
+        reset_error_channel(0.1),
+        thermal_relaxation_channel(0.4, 0.8, 0.05),
     ],
 )
-def test_a_channel_that_is_not_a_single_pauli_error_is_refused(
-    channel: KrausChannel,
-) -> None:
-    """Only the bit flip is a Pauli error at one position.
+def test_a_channel_with_no_pauli_frame_is_refused(channel: KrausChannel) -> None:
+    """The accepted channels are a class, and these four are outside it.
 
-    An amplitude-damping or depolarizing channel is not one Pauli error however
-    it is placed, so the engine refuses it by name instead of sampling the
-    nearest Pauli approximation.
+    None of them is a mixture of unitaries at all - an amplitude damping channel
+    maps a state off the unitary group, and a thermal relaxation channel is built
+    from its square roots - so no Pauli frame represents one however it is
+    placed, and the engine refuses it by name instead of sampling the nearest
+    Pauli approximation.
     """
 
     program = _ir(
@@ -238,6 +266,56 @@ def test_a_channel_that_is_not_a_single_pauli_error_is_refused(
     )
 
     with pytest.raises(CapabilityError, match=channel.name):
+        sample_noisy_measurements(program, shots=2, seed=1)
+
+
+def test_a_unitary_that_is_not_a_pauli_is_refused() -> None:
+    """A mixture of unitaries is necessary for a frame and not sufficient.
+
+    A coherent over-rotation is one unitary branch with probability one, so it is
+    a unitary mixture by construction, and it is still not a frame: a rotation by
+    an angle that is not a multiple of pi moves a stabilizer state off the
+    stabilizer states. Accepting it as though it were a Pauli would put a
+    non-Clifford error into a Clifford sample and nothing downstream could tell.
+    """
+
+    channel = coherent_overrotation_channel(0.3)
+    program = _ir(
+        1,
+        Instruction(
+            name=channel.name,
+            wires=(0,),
+            matrix=channel.kraus,
+            metadata={"is_channel": True},
+        ),
+        _measure(0),
+    )
+
+    with pytest.raises(CapabilityError, match="not a Pauli operator"):
+        sample_noisy_measurements(program, shots=2, seed=1)
+
+
+def test_a_channel_on_more_than_two_wires_is_refused() -> None:
+    """The engine's frames are one- and two-wire frames, and it says so."""
+
+    identity = torch.eye(8, dtype=torch.complex128)
+    flip_first_wire = torch.kron(PAULI_X, torch.eye(4, dtype=torch.complex128))
+    channel = KrausChannel(
+        "three_wire_flip",
+        (0.5**0.5 * identity, 0.5**0.5 * flip_first_wire),
+    )
+    program = _ir(
+        3,
+        Instruction(
+            name=channel.name,
+            wires=(0, 1, 2),
+            matrix=channel.kraus,
+            metadata={"is_channel": True},
+        ),
+        _measure(0),
+    )
+
+    with pytest.raises(CapabilityError, match="one or two wires"):
         sample_noisy_measurements(program, shots=2, seed=1)
 
 
@@ -264,16 +342,23 @@ def test_the_refusal_names_what_the_entry_point_accepts() -> None:
     message = str(info.value)
     assert "measure" in message
     assert "reset" in message
-    assert "bit_flip" in message
+    assert "Pauli" in message
     assert "fails closed rather than approximating" in message
 
 
-def test_a_channel_with_the_wrong_operator_count_is_refused() -> None:
-    """Three operators is not a bit flip however the instruction is named.
+@pytest.mark.parametrize(
+    ("channel", "expected"),
+    [(bit_flip_channel(1.0), 1), (phase_flip_channel(1.0), 0)],
+)
+def test_the_operators_decide_which_frame_executes(
+    channel: KrausChannel, expected: int
+) -> None:
+    """The name is not evidence, so the operators are what the engine reads.
 
-    The name alone is not evidence: an instruction called `bit_flip` carrying a
-    different channel would otherwise be sampled as the flip its name claims, and
-    the caller could not tell the two apart from the samples.
+    Both programs below name their instruction `bit_flip` and only one of them
+    flips the readout, because a phase flip leaves `|0>` where it was. An engine
+    that dispatched on the name would answer the same way twice, and nothing in
+    the samples would say which channel it executed.
     """
 
     program = _ir(
@@ -281,40 +366,45 @@ def test_a_channel_with_the_wrong_operator_count_is_refused() -> None:
         Instruction(
             name="bit_flip",
             wires=(0,),
-            matrix=(
-                IDENTITY,
-                PAULI_X,
-                torch.tensor([[1, 0], [0, -1]], dtype=torch.complex128),
-            ),
+            matrix=channel.kraus,
             metadata={"is_channel": True},
         ),
         _measure(0),
     )
 
-    with pytest.raises(CapabilityError, match="exactly two"):
-        sample_noisy_measurements(program, shots=2, seed=1)
-
-
-def test_a_channel_whose_operators_are_not_the_bit_flip_pair_is_refused() -> None:
-    """The operators are what executes, so they are what is checked."""
-
-    program = _ir(
-        1,
-        Instruction(
-            name="bit_flip",
-            wires=(0,),
-            matrix=phase_flip_channel(0.5).kraus,
-            metadata={"is_channel": True},
-        ),
-        _measure(0),
+    assert (
+        sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[expected]] * 8
     )
 
-    with pytest.raises(CapabilityError, match="bit-flip pair"):
-        sample_noisy_measurements(program, shots=2, seed=1)
+
+@pytest.mark.parametrize("probability", [0.0, 1.0])
+def test_a_pauli_channel_at_the_edge_of_its_range_is_still_a_frame(
+    probability: float,
+) -> None:
+    """A branch with weight zero is a branch, not a hole in the channel.
+
+    Every bit flip at probability zero and every depolarizing channel at one
+    carries a Kraus operator that is the zero matrix. Reading one as a general
+    channel would refuse a channel that is a Pauli error with certainty, so the
+    boundary is asserted here rather than left to the interior cases.
+    """
+
+    program = _ir(1, _gate("x", 0), _flip(0, probability), _measure(0))
+
+    assert (
+        sample_noisy_measurements(program, shots=8, seed=1).tolist()
+        == [[1 - int(probability)]] * 8
+    )
 
 
-def test_a_flip_probability_above_one_is_refused() -> None:
-    """A weight no probability can carry is refused, never clamped."""
+def test_a_kraus_list_that_is_not_a_channel_is_refused_as_input() -> None:
+    """A malformed channel is the caller's to fix, and the error says so.
+
+    Operators whose weights sum above one are not a channel at all, so there is
+    nothing to classify and nothing to route around. Reporting that as a missing
+    capability would send the caller looking for another engine instead of
+    another channel.
+    """
 
     program = _ir(
         1,
@@ -327,7 +417,7 @@ def test_a_flip_probability_above_one_is_refused() -> None:
         _measure(0),
     )
 
-    with pytest.raises(ValidationError, match="not a probability"):
+    with pytest.raises(ValidationError, match="not a well-formed channel"):
         sample_noisy_measurements(program, shots=2, seed=1)
 
 
@@ -354,6 +444,227 @@ def test_a_reset_naming_more_than_one_wire_is_refused() -> None:
     )
 
     with pytest.raises(CapabilityError, match="one wire"):
+        sample_noisy_measurements(program, shots=2, seed=1)
+
+
+def _frame(label: str, *, probability: float = 1.0) -> Instruction:
+    """A channel carrying exactly one non-identity frame.
+
+    A channel whose whole weight sits on one frame is deterministic, so the
+    record it produces is the frame's own action with no shot noise to argue
+    with. That is what makes it a witness for the *position* the frame was
+    translated to, which is the one thing a transposed argument list would move.
+    """
+
+    matrix = _PAULI[label[0]]
+    for character in label[1:]:
+        matrix = torch.kron(matrix, _PAULI[character])
+    size = int(matrix.shape[0])
+    return Instruction(
+        name=f"frame_{label}",
+        wires=tuple(range(len(label))),
+        matrix=(
+            (1.0 - probability) ** 0.5 * torch.eye(size, dtype=torch.complex128),
+            probability**0.5 * matrix,
+        ),
+        metadata={"is_channel": True},
+    )
+
+
+def test_a_depolarizing_channel_is_executed_as_its_four_frames() -> None:
+    """The widest one-wire mixture is a channel this engine used to refuse.
+
+    A depolarizing channel is the identity with weight ``1 - p`` and each Pauli
+    with weight ``p / 3``. Only the two bit-flipping frames reach a readout of
+    ``|0>``, so the flip rate is ``2p / 3``, and a translation that kept the
+    channel's four operators with three arguments - or that dropped the identity
+    - would answer a different rate rather than fail to answer at all.
+    """
+
+    channel = depolarizing_channel(0.3)
+    program = _ir(
+        1,
+        Instruction(
+            name=channel.name,
+            wires=(0,),
+            matrix=channel.kraus,
+            metadata={"is_channel": True},
+        ),
+        _measure(0),
+    )
+
+    rate = float(sample_noisy_measurements(program, shots=4000, seed=5).float().mean())
+
+    assert abs(rate - 0.3 * 2 / 3) < 0.02
+
+
+def test_a_two_wire_pauli_channel_is_executed_as_a_frame() -> None:
+    """Two wires is the other frame width the engine tracks.
+
+    Two-qubit depolarizing noise is fifteen non-identity frames rather than
+    three, so this is where a dropped branch shows up: of the fifteen, exactly
+    eight anticommute with the parity that one CNOT and one readout measure,
+    which puts the flip rate at eight fifteenths of the channel's weight.
+    """
+
+    channel = two_qubit_depolarizing_channel(0.5)
+    program = _ir(
+        2,
+        Instruction(
+            name=channel.name,
+            wires=(0, 1),
+            matrix=channel.kraus,
+            metadata={"is_channel": True},
+        ),
+        _gate("cx", 0, 1),
+        _measure(1),
+    )
+
+    rate = float(sample_noisy_measurements(program, shots=4000, seed=5).float().mean())
+
+    assert abs(rate - 0.5 * 8 / 15) < 0.02
+
+
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        ("XI", [1, 0]),
+        ("IX", [0, 1]),
+        ("YI", [1, 0]),
+        ("IY", [0, 1]),
+        ("XX", [1, 1]),
+        ("ZZ", [0, 0]),
+    ],
+)
+def test_a_two_wire_frame_lands_on_the_argument_its_label_names(
+    label: str, expected: list[int]
+) -> None:
+    """The frame label, the operator, and the engine argument are one claim.
+
+    Every one of these channels carries a single frame at full weight, so the
+    record is the frame's action on `|00>` and nothing else. A transposed
+    argument list - the one thing that separates `XI` from `IX`, or `ZI` from
+    `IZ` - would read out the other wire's pair here, and the two-wire
+    depolarizing rate above could not see it because that channel weighs every
+    frame the same.
+    """
+
+    program = _ir(2, _frame(label), _measure(0), _measure(1))
+
+    assert (
+        sample_noisy_measurements(program, shots=8, seed=1).tolist() == [expected] * 8
+    )
+
+
+def test_the_pauli_vocabulary_separates_the_two_flipping_frames() -> None:
+    """A frame table that swapped two one-wire entries would answer a different frame.
+
+    `X` and `Y` both flip a measurement of `|0>`, so no readout of that state can
+    tell them apart. Reading the frame in place between two Hadamards can: `X`
+    closes the interferometer and `Y` opens it, so one of the two records is
+    deterministic and the other is not. Without this, a table whose entries were
+    ordered `I, Y, X, Z` would put the `X` branch into the engine's `Y` argument
+    and every one-wire readout would look correct anyway.
+    """
+
+    program = _ir(
+        1,
+        _gate("h", 0),
+        _frame("X"),
+        _gate("h", 0),
+        _measure(0),
+    )
+
+    assert sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[0]] * 8
+
+
+def test_a_branch_that_is_a_frame_times_a_global_phase_is_executed() -> None:
+    """A phase on a branch is unobservable, so the frame is read through it.
+
+    `-i X` and `X` predict the same measurement outcomes, and a channel holding
+    either is the same Pauli error. An engine that compared matrix entries rather
+    than projecting the branch onto the Pauli basis would refuse this channel for
+    a difference no sample can see.
+    """
+
+    phased = -1j * PAULI_X
+
+    program = _ir(1, _channel("phased_flip", (phased,)), _measure(0))
+
+    assert sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[1]] * 8
+
+
+def test_a_branch_that_is_a_frame_only_up_to_the_tolerance_is_executed() -> None:
+    """The frame match carries the channel type's own tolerance, not an exact test.
+
+    The operator below is `X` with one entry off by ``1e-9``: it is not the
+    identity under an exact comparison and it is a bit flip to every digit a
+    sampler can resolve. An exact test would refuse a channel that the channel
+    type has already accepted as trace preserving, and the caller would have no
+    operator left to fix.
+    """
+
+    nearly_flip = torch.tensor([[0, 1 + 1e-9], [1, 0]], dtype=torch.complex128)
+
+    program = _ir(1, _channel("nearly_flip", (nearly_flip,)), _measure(0))
+
+    assert sample_noisy_measurements(program, shots=8, seed=1).tolist() == [[1]] * 8
+
+
+def test_two_branches_on_one_frame_are_added_rather_than_overwritten() -> None:
+    """A frame is one argument however many branches reach it.
+
+    This channel holds two distinguishable Kraus operators that are both `X`, so
+    the frame's weight is their sum and not the last one read. Overwriting would
+    report half the flip rate of a channel that flips with probability one half,
+    which is a sampled answer rather than a refusal and would be believed.
+    """
+
+    channel = KrausChannel(
+        "halved_flip",
+        (0.5 * PAULI_X, 0.5 * PAULI_X, 0.5**0.5 * IDENTITY),
+    )
+    program = _ir(1, _channel(channel.name, channel.kraus), _measure(0))
+
+    rate = float(sample_noisy_measurements(program, shots=4000, seed=5).float().mean())
+
+    assert abs(rate - 0.5) < 0.02
+
+
+def test_a_channel_whose_non_identity_weight_exceeds_one_is_refused() -> None:
+    """The engine's channels take the identity as a remainder, so one is the ceiling.
+
+    The operator below scales by ``1 + 5e-7``, which is inside the tolerance the
+    channel type uses for trace preservation and inside the tolerance the
+    mixture classifier uses, so it reaches the engine as a well-formed bit flip
+    whose weight is above one. Passing it on would let the engine's own gate
+    refuse it, or worse, silently renormalise a channel the caller built with a
+    weight it did not intend.
+    """
+
+    overshoot = 1.0 + 5e-7
+
+    program = _ir(
+        1,
+        _channel("overweight_flip", (overshoot**0.5 * PAULI_X,)),
+        _measure(0),
+    )
+
+    with pytest.raises(CapabilityError, match="identity as the remainder"):
+        sample_noisy_measurements(program, shots=2, seed=1)
+
+
+def test_a_channel_with_no_operators_is_refused_as_a_capability() -> None:
+    """An instruction that carries no channel at all is not a channel of weight zero.
+
+    There is nothing to classify, so the refusal names the missing capability
+    rather than reporting a malformed channel: the caller has no operator to fix
+    and needs to know that this engine translates operators, not names.
+    """
+
+    program = _ir(1, _channel("no_operators", ()), _measure(0))
+
+    with pytest.raises(CapabilityError, match="carries no Kraus operators"):
         sample_noisy_measurements(program, shots=2, seed=1)
 
 

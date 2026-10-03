@@ -7,7 +7,7 @@ import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import product
-from math import exp
+from math import exp, fsum, sqrt
 from types import MappingProxyType
 from typing import Any
 
@@ -56,6 +56,74 @@ def _pauli_basis(
         torch.tensor(((0, -1j), (1j, 0)), dtype=dtype, device=device),
         torch.tensor(((1, 0), (0, -1)), dtype=dtype, device=device),
     )
+
+
+_UNITARY_TOLERANCE = 1e-6
+
+
+def _scaled_unitary(
+    matrix: torch.Tensor, tolerance: float = _UNITARY_TOLERANCE
+) -> float | None:
+    """Return the non-negative scale ``k`` with ``matrix == k * U``, or ``None``.
+
+    ``U`` is unitary exactly when ``matrix.mH @ matrix`` is one non-negative real
+    scalar times the identity, and that scalar is then ``k ** 2``. Requiring the
+    *whole* Gram matrix to be that scalar is stricter than reading its first
+    entry, and the strictness is the point: a matrix whose Gram matrix is
+    ``diag(1, 4)`` passes a first-entry test and is not a scaled unitary, so
+    accepting it would put a non-unitary branch into a mixture whose name and
+    whose sampling both promise unitaries.
+
+    The zero matrix is the scale ``0`` rather than a refusal. It is what a
+    probability of exactly zero reads as once a factory has taken its square
+    root, so a channel at the edge of its parameter range — every depolarizing
+    channel at ``p = 1``, every bit flip at ``p = 0`` — would otherwise be called
+    a general channel for a reason that says nothing about the channel.
+    """
+
+    if not bool(torch.any(matrix)):
+        return 0.0
+    gram = matrix.mH @ matrix
+    if not bool(torch.all(torch.isfinite(gram))):
+        return None
+    diagonal = torch.diagonal(gram)
+    if bool(torch.any(torch.abs(gram - torch.diag(diagonal)) > tolerance)):
+        return None
+    reference = float(torch.real(diagonal[0]))
+    if reference <= 0.0:
+        return None
+    if bool(torch.any(torch.abs(diagonal - reference) > tolerance)):
+        return None
+    return sqrt(reference)
+
+
+@dataclass(frozen=True)
+class UnitaryMixture:
+    """A channel written as a probability distribution over unitary operators.
+
+    The distinction this type carries is executable rather than descriptive: each
+    branch of the mixture is a pure unitary, so a branch can be sampled and
+    applied as an error without holding a dense state for the channel. A general
+    trace-preserving channel has no such reading, and the sampler that needs one
+    has to fall back to a trajectory ensemble or a density matrix.
+
+    ``probabilities`` is a real tensor and ``unitaries[i]`` fires with
+    ``probabilities[i]``. A Kraus operator that is the zero matrix carries
+    probability zero, so it is not a branch and is not returned here: the pair
+    stays one probability per unitary, and no returned entry is a zero matrix
+    that the name would misdescribe.
+    """
+
+    probabilities: torch.Tensor
+    unitaries: tuple[torch.Tensor, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.unitaries) != int(self.probabilities.numel()):
+            raise ValueError(
+                "a unitary mixture needs one probability per unitary, got "
+                f"{int(self.probabilities.numel())} probabilities and "
+                f"{len(self.unitaries)} unitaries"
+            )
 
 
 @dataclass(frozen=True)
@@ -163,6 +231,52 @@ class KrausChannel:
             self.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False
         ).encode()
         return hashlib.sha256(encoded).hexdigest()
+
+    @property
+    def unitary_mixture(self) -> UnitaryMixture | None:
+        """Return this channel as a mixture of unitaries, or ``None``.
+
+        ``None`` is the answer for a channel that is not a mixture of unitaries;
+        it is not a verdict on the channel, which is trace preserving either way.
+        The two conditions are that every Kraus operator is a non-negative real
+        scale times a unitary and that the squared scales sum to one, and on a
+        trace-preserving channel the second follows from the first: the
+        completeness relation is what fixes the sum. Both are checked rather than
+        inferred, because a channel can be built from raw matrices that never
+        passed a factory.
+
+        The classification is a property of the operators, not of the name, so a
+        channel constructed by hand is classified by what it holds.
+        """
+
+        scales: list[float] = []
+        for operator in self.kraus:
+            scale = _scaled_unitary(operator)
+            if scale is None:
+                return None
+            scales.append(scale)
+        if abs(fsum(scale * scale for scale in scales) - 1.0) > _UNITARY_TOLERANCE:
+            return None
+        retained = [
+            (operator, scale)
+            for operator, scale in zip(self.kraus, scales, strict=True)
+            if scale > 0.0
+        ]
+        probabilities = torch.tensor(
+            [scale * scale for _, scale in retained],
+            dtype=_real_dtype(self.kraus[0].dtype),
+            device=self.kraus[0].device,
+        )
+        return UnitaryMixture(
+            probabilities,
+            tuple(operator / scale for operator, scale in retained),
+        )
+
+    @property
+    def is_unitary_mixture(self) -> bool:
+        """Whether :attr:`unitary_mixture` has a mixture to return."""
+
+        return self.unitary_mixture is not None
 
 
 def bit_flip_channel(
@@ -495,6 +609,7 @@ def channel_from_parameters(name: str, parameters: Mapping[str, Any]) -> KrausCh
 __all__ = (
     "CHANNEL_FACTORIES",
     "KrausChannel",
+    "UnitaryMixture",
     "amplitude_damping_channel",
     "bit_flip_channel",
     "channel_from_parameters",

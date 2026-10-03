@@ -577,11 +577,12 @@ evidence = ["flagquantum/qec/dem.py", "tests/qec/test_dem_stim_text.py", "tests/
 [[domains.capabilities]]
 id = "unitary_mixture_degradation"
 cudaq = "Unitary-mixture noise models distinguished from general channels"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
-reason = "Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not."
+reason = "The distinction is made in the noise layer and is decided by the operators rather than by the channel's name: `KrausChannel.unitary_mixture` reports the branches and their weights, and the criterion is that every operator is a non-negative real scale times a unitary, with the whole Gram matrix checked rather than its leading entry, so an amplitude damping channel is refused for its unequal singular values. A zero-weight operator is a branch of probability zero and is dropped rather than read as a general channel, so every built-in factory stays classified at the edges of its range. One consumer reads the answer: the stabilizer positioned-noise entry point executes a one- or two-wire channel whose branches are Pauli frames and refuses every other channel by name, so a depolarizing channel samples as its four frames where it previously refused. Two limits keep the row partial. The framework comparison gives no Python accessor for the property at all, so there is no external surface to conform against and the contract here is FlagQuantum's own. And only one consumer reads it: the density-matrix and trajectory routes execute a general channel without asking whether it is a mixture, so the sampling advantage a mixture allows is unrealised there."
+evidence = ["flagquantum/noise/channels.py", "flagquantum/simulation/stabilizer/engine.py", "tests/unit/test_noise_unitary_mixture.py", "tests/team/simulation/test_stabilizer_positioned_noise.py", "flagquantum/noise/README.md", "search:the density-matrix and trajectory routes do not read the classification"]
 
 [[domains.capabilities]]
 id = "noise_trajectory_shot_allocation"
