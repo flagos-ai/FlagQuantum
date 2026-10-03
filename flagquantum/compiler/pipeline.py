@@ -16,6 +16,7 @@ from .routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from .zero_state_reset import remove_zero_state_resets
 
 _SELF_INVERSE = {"x", "y", "z", "h", "cx", "cy", "cz", "swap", "ccx", "cswap"}
 _ROTATION_PARAM = {
@@ -232,6 +233,11 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     max_rounds = len(ir) + 1
     for _ in range(max_rounds):
         previous_count = len(ir)
+        # First, because a reset this pass can remove is removable whatever the passes
+        # below do, and removing it hands them a shorter program. The loop, not this
+        # ordering, is what earns the reach on a wire the passes below only empty out
+        # later: `x(0) x(0) reset(0)` needs a second round.
+        ir = remove_zero_state_resets(ir)
         ir = remove_identity_gates(ir)
         ir = merge_self_inverse(ir)
         ir = merge_adjacent_rotations(ir)
