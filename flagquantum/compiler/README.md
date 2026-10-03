@@ -27,6 +27,7 @@ Use `optimize(program)` for target-independent optimization and
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
+| Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
@@ -75,6 +76,39 @@ A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
+
+A gate that is its own inverse is one thing; a gate whose inverse is a *different*
+opcode is another, and `merge_self_inverse` only saw the first kind, so it left
+`s(0) sdg(0)` standing as two instructions although the pair is the identity.
+[inverse_cancellation.py](inverse_cancellation.py) closes that with
+`merge_inverse_pairs`, and it holds no opcode table of its own: it reads the
+`OperatorSchema.adjoint` declaration through `operator_schema.inverse_operator`,
+the same declaration `Circuit.adjoint` already consumes. That keeps the inverse
+relation to one source of truth, and
+`tests/unit/test_compilation_inverse_cancellation.py` enforces it structurally --
+the module contains no opcode spelled as a code string and no module-level table.
+
+The declared rule is a rule of proof rather than of record: every declared unitary
+was multiplied by its declared inverse on the runtime's own matrices over seeded
+draws, and the worst residual is 2.22e-16 against a smallest wrong-partner
+residual of 1.22 -- a control, because a residual of zero would mean nothing if
+the same comparison could not produce a nonzero one.
+
+The pass removes a pair only when the gap between the two members is empty on
+their own wire, and that boundary is measured rather than asserted:
+[benchmarks/compiler_inverse_cancellation.py](../../benchmarks/compiler_inverse_cancellation.py)
+drives every pair through ten gaps and reports, per row, whether the gap's
+operator commutes with the pair and whether the pair was in fact removable --
+measured against whole-register operators, since several of these gates act
+trivially on `|0...0>` and a state comparison would call a row redundant for a
+reason unrelated to the shape. Of the 60 rows, 6 gaps are empty and 12
+instructions are removed there, 32 gaps commute and 24 instructions are removed
+across the sub-case where the gap misses the pair's wire entirely, 22 gaps do not
+commute and are never crossed, and 20 rows are declined although the pair was
+removable: reach left on the table, reported as a number rather than as a promise.
+A refusal is therefore either correctness or deferred reach, never a single total.
+The module also drives Qiskit's `InverseCancellation` over the identical circuits
+and finds the two agreeing on every row.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.
