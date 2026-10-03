@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -15,12 +17,17 @@ from benchmarks.statevector_pauli_expectation_kernel import (
     SEMANTIC_ID,
     SHAPE_MATRIX,
     merge_runs,
+    validate_evidence,
     validate_run,
 )
 
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json"
+)
 
 
 def _operators(amplitudes: int) -> list[list[int | str]]:
@@ -164,3 +171,11 @@ def test_aggregate_is_canonical_and_records_ranges() -> None:
     assert payload["forward_speedup_range"] == [1.3, 1.3]
     assert payload["forward_backward_speedup_range"] == [1.3, 1.3]
     assert payload["implementation_decision"] == "retain_experimental"
+
+
+def test_checked_in_a800_artifact_is_canonical() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["source_revision"] == ("f8e4df19a474b370d5825fbc49442e2a29d150a6")

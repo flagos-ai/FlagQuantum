@@ -259,8 +259,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cpu_fallback_preserves_gradient",
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_unsupported_cuda_input_uses_fallback",
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_launches_flat_grids",
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_input",
             "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_factor_types",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json",
         ),
     ),
     _evidence(
