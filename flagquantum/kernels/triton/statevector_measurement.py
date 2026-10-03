@@ -210,7 +210,7 @@ def _supported(state: torch.Tensor) -> bool:
 def _normalize_pauli_product(
     operators: Sequence[tuple[int, str]],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[int, int, int]:
     seen: set[int] = set()
     x_mask = 0
@@ -222,7 +222,7 @@ def _normalize_pauli_product(
         wire, axis = factor
         if isinstance(wire, bool) or not isinstance(wire, int):
             raise TypeError(f"Pauli factor {index} wire must be an integer")
-        if wire < 0 or wire >= n_wires:
+        if wire < 0 or wire >= n_qubits:
             raise ValueError(f"Pauli factor {index} wire is outside the statevector")
         if wire in seen:
             raise ValueError("Pauli-product wires must be unique")
@@ -232,7 +232,7 @@ def _normalize_pauli_product(
         if normalized_axis not in {"x", "y", "z"}:
             raise ValueError("Pauli axes must be X, Y, or Z")
         seen.add(wire)
-        bit = 1 << (n_wires - wire - 1)
+        bit = 1 << (n_qubits - wire - 1)
         if normalized_axis in {"x", "y"}:
             x_mask |= bit
         if normalized_axis in {"y", "z"}:
@@ -454,10 +454,10 @@ def statevector_pauli_expectation(
     exact differentiable PyTorch implementation.
     """
 
-    n_wires = _validate_pauli_state(state)
+    n_qubits = _validate_pauli_state(state)
     x_mask, z_mask, y_count = _normalize_pauli_product(
         operators,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
     )
     if not _pauli_supported(state):
         return _pauli_expectation_reference(state, x_mask, z_mask, y_count)
