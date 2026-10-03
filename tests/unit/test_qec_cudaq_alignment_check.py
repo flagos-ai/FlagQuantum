@@ -409,6 +409,34 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         "verdict `absent` but",
         lambda t: set_key(t, "decoder_registry", "verdict", 'verdict = "absent"'),
     ),
+    (
+        # `error_id` is a field of the mechanism record, not of the model that
+        # holds the records, and the two names sit in one module. Only following
+        # the dotted path separates the mechanism's own id from a model-level
+        # one.
+        "point the error-id diff row at a real name under the wrong owner",
+        "'error_id' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "dem_error_ids",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.error_id"',
+        ),
+    ),
+    (
+        # The row's additions are recorded as named absences and one of them has
+        # landed. Leaving it in symbols_absent is how a closed gap keeps being
+        # reported as open, which is what the staleness check reads the tree to
+        # catch.
+        "keep the error-id column listed as absent now that the model states it",
+        "symbols_absent 'error_ids' exists as a definition somewhere",
+        lambda t: append_to_list(
+            t,
+            "qec_dem_matrices_and_rates",
+            "symbols_absent",
+            '"error_ids"',
+        ),
+    ),
 ]
 
 
