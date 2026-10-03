@@ -151,6 +151,19 @@ evidence, not a release gate or scalability claim. Reproduce or validate it
 with
 [`benchmarks/flagtree_tle_local_1q.py`](../../benchmarks/flagtree_tle_local_1q.py).
 
+The same two-host artifact also establishes the dispatch window for
+`FQKI-TRITON-SV-001-A`, the shared Triton forward implementation used by the
+distributed statevector executor. Without an override, contiguous CUDA
+`complex64` shards select it only for batch-one shapes with `2**10`, `2**16`,
+`2**20`, or `2**24` amplitudes. Set `FQ_STATEVECTOR_TRITON_LOCAL_1Q=0` to use
+the PyTorch route, or set it to `1` to opt into the catalog implementation for
+other supported contiguous shapes. Across both A800 hosts, shared Triton is
+`1.160x` to `12.247x` faster than the same-semantic PyTorch reference and wins
+every measured case. The catalog route and its kill switch are covered by
+runtime integration tests, so SV-001-A is `provisional` within this exact
+default window. This is bounded single-device development evidence, not a
+multi-rank scalability or release claim.
+
 `FQKI-FLAGTREE-SV-006-A` applies the same explicit provider boundary to the
 fused distributed transpose and one-qubit gate. TLE async annotations cover
 both the retained local half-shard and the received remote half-shard; matrix
@@ -690,10 +703,10 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. MPS-003
-through MPS-007 and MEAS-001 through MEAS-003 are provisional after their
-evidenced default-dispatch promotions; the other 25 implementations remain
-experimental.
+The current 26 semantics and 33 implementations are implemented. SV-001-A,
+MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
+their evidenced default-dispatch promotions; the other 24 implementations
+remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

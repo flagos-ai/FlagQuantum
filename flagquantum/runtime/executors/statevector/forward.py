@@ -46,6 +46,9 @@ from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
+_TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset(
+    (1, 1 << exponent) for exponent in (10, 16, 20, 24)
+)
 
 
 def _is_diagonal_instruction(name: str) -> bool:
@@ -76,13 +79,9 @@ def _triton_local_1q_decision(
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    shape: tuple[int, int],
 ) -> KernelDecision:
-    requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
-        "1",
-        "true",
-        "on",
-        "yes",
-    }
+    requested = _triton_local_1q_requested(shape)
     return select_cataloged_triton_kernel(
         "local_1q",
         request=KernelRequest(
@@ -101,6 +100,15 @@ def _triton_local_1q_decision(
         compiler_backend="cuda",
         capture_compiler_identity=True,
     )
+
+
+def _triton_local_1q_requested(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, while retaining an explicit override."""
+
+    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q")
+    if configured is None:
+        return shape in _TRITON_LOCAL_1Q_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
 
 
 def _triton_local_cx_decision(
@@ -624,6 +632,7 @@ def _vectorized_local_gate(
         runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+        shape=tuple(shard_state.amplitudes.shape),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
