@@ -7,6 +7,7 @@ from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
 from . import pca as pca
+from . import pec as pec
 from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
@@ -51,6 +52,13 @@ from .optimization import (
     OptimizationStage,
     optimize_hybrid,
 )
+from .pec import (
+    PauliTwirlDecomposition,
+    PecLocation,
+    PecResult,
+    pauli_twirl_decomposition,
+    run_pec,
+)
 from .spsa import SPSAOptimizer
 
 __all__ = [
@@ -64,6 +72,9 @@ __all__ = [
     "OptimizerFactory",
     "OptimizationRecord",
     "OptimizationStage",
+    "PauliTwirlDecomposition",
+    "PecLocation",
+    "PecResult",
     "SPSAOptimizer",
     "VQEResult",
     "ZneMeasurement",
@@ -82,7 +93,9 @@ __all__ = [
     "kmedians",
     "optimize_hybrid",
     "pauli_term",
+    "pauli_twirl_decomposition",
     "pca",
+    "pec",
     "qaoa_circuit",
     "qaoa_loss",
     "qarm",
@@ -92,6 +105,7 @@ __all__ = [
     "run_layerwise_vqe",
     "run_vqe",
     "run_adapt_vqe",
+    "run_pec",
     "run_zne",
     "scale_noise_model",
     "spsa",

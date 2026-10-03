@@ -16,6 +16,7 @@ python -m examples.algorithms.feature_selection
 python -m examples.algorithms.qarm
 python -m examples.algorithms.svd
 python -m examples.algorithms.error_mitigation
+python -m examples.algorithms.pec
 python -m examples.algorithms.spsa_optimizer
 ```
 
@@ -43,6 +44,11 @@ What they show:
   noise by polynomial least squares and by Richardson extrapolation over four
   scaled models, with the residual of an underfit, of a square fit, and of a
   non-polynomial family printed beside the estimate.
+- [`pec.py`](pec.py): a declared Pauli channel inverted from its Pauli transfer
+  matrix and inserted after the channel it inverts, with the cost that composes
+  over locations printed beside the estimate, and the four channel families whose
+  transfer matrix is not diagonal refused by name together with a channel whose
+  transfer eigenvalue reaches zero.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
@@ -66,6 +72,8 @@ from a classical vector, feature selection runs no solver, the frequent-item
 fractions iterate the transactions in Python, the singular values come from a
 state built out of the classical `torch.linalg.svd` the readout estimates,
 zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
-that is not checkable from the measurements it fits, and the SPSA update is built
-from a finite-difference estimate that is an estimate rather than a gradient. The
-guide holds the full boundary for each.
+that is not checkable from the measurements it fits, probabilistic error
+cancellation rests on the noise being exactly the channel the model declares at
+the location it declares it and pays for the inversion in programs rather than
+shots, and the SPSA update is built from a finite-difference estimate that is an
+estimate rather than a gradient. The guide holds the full boundary for each.

@@ -538,12 +538,16 @@ These counts are portfolio envelopes. A candidate enters the machine catalog
 only when it has an executable symbol, a reference contract, and validation
 evidence. Until then it remains a planning item in this README.
 
-The error-mitigation row is the one family carrying a workload that already runs
+The error-mitigation row is the one family carrying workloads that already run
 without a fused kernel of its own: zero-noise extrapolation is a sequence of
-exact expectation reads at scaled noise strengths, so the foundation measurement
-and expectation kernels serve it and the unit lives in `flagquantum.algorithms`
-rather than here. Readout-error mitigation, probabilistic error cancellation and
-Clifford data regression remain planning items with no implementation.
+exact expectation reads at scaled noise strengths, and probabilistic error
+cancellation is a sequence of exact programs with one Pauli conjugation inserted
+per inverted channel, so the foundation measurement and expectation kernels serve
+both and the units live in `flagquantum.algorithms` rather than here. Neither
+adds a numerical kernel this package owns: the Pauli transfer matrix is a dense
+matrix product over the channel's own operators, and its inverse is applied
+through the existing Kraus path. Readout-error mitigation and Clifford data
+regression remain planning items with no implementation.
 
 ## Status and maturity
 

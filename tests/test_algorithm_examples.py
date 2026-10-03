@@ -45,6 +45,7 @@ SCRIPTS = (
     "qarm",
     "svd",
     "error_mitigation",
+    "pec",
     "spsa_optimizer",
 )
 
@@ -100,6 +101,16 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "error_mitigation": (
         "not checkable from the measurements",
         "no measured uncertainty",
+    ),
+    # Two halves. "the noise the program experiences is exactly the channel the
+    # model declares, at the location the model declares it" is the assumption the
+    # inversion rests on, and "this path consumes no shots" is what it gives up to
+    # be exact. Pinning only the first would leave the cost's origin deletable,
+    # which is the half that keeps a gamma read as a measurement of this path
+    # rather than as the price a sampled implementation would pay.
+    "pec": (
+        "exactly the channel the model declares",
+        "consumes no shots",
     ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
@@ -314,6 +325,69 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
         "the noise model declares a readout rule"
     )
     _assert_premise("error_mitigation", output)
+    assert "take away" in output
+
+
+def test_pec_example_inverts_a_channel_and_shows_every_refusal() -> None:
+    output = _run("pec")
+
+    assert "probabilistic error cancellation -- flagquantum.algorithms.pec" in output
+    # The channels are built at the estimate's own dtype, so the mitigated error
+    # below is the density simulation's floor rather than a complex64 gap reported
+    # as a complex128 result.
+    assert _labelled(output, "noiseless value") == "0.99999999999999978"
+    assert _labelled(output, "locations") == "['bit_flip(0,)', 'bit_flip(1,)']"
+    assert _labelled(output, "estimate dtype") == "torch.complex128"
+    # Two locations, each inverted, composed: the unmitigated read is 0.36 short
+    # and the mitigated one is on the noiseless value to the arithmetic's floor.
+    assert _labelled(output, "unmitigated") == "0.639999995231628"
+    assert _labelled(output, "mitigated") == "1.000000000000000"
+    assert _labelled(output, "unmitigated error") == "3.600e-01"
+    assert _labelled(output, "mitigated error") == "1.110e-16"
+    assert _labelled(output, "gamma") == "1.562500011642"
+    assert _labelled(output, "sampling overhead").startswith("2.441406286380")
+    assert _labelled(output, "exact programs") == "17 = 16 terms + 1"
+    assert _labelled(output, "shots consumed") == "0"
+    # The cost composes: one location's gamma squared is the two-location gamma.
+    assert _labelled(output, "one location") == "gamma 1.250000004657, 4 terms"
+    assert _labelled(output, "two locations") == "gamma 1.562500011642, 16 terms"
+    assert _labelled(output, "product of the parts") == "1.562500011642"
+    # Every admitted family is diagonal at this dtype, and the five are the ones
+    # the unit's own tolerance admits.
+    assert _labelled(output, "bit_flip").startswith("gamma 1.250000005")
+    assert _labelled(output, "phase_flip").startswith("gamma 1.250000005")
+    assert _labelled(output, "depolarizing").startswith("gamma 1.230769235")
+    assert _labelled(output, "phase_damping").startswith("gamma 1.054092554")
+    assert _labelled(output, "two_qubit_depolarizing").startswith(
+        "gamma 1.223880601, words 16"
+    )
+    # The four channel families whose transfer matrix is not diagonal, each with
+    # the magnitude the refusal measured.
+    assert _labelled(output, "amplitude_damping").startswith(
+        "refused -- channel 'amplitude_damping' is not a Pauli channel"
+    )
+    assert "1.000e-01" in output
+    assert _labelled(output, "coherent_overrotation").startswith(
+        "refused -- channel 'coherent_overrotation' is not a Pauli channel"
+    )
+    assert "1.987e-01" in output
+    assert _labelled(output, "reset_error").startswith(
+        "refused -- channel 'reset_error' is not a Pauli channel"
+    )
+    assert "5.000e-02" in output
+    assert _labelled(output, "thermal_relaxation").startswith(
+        "refused -- channel 'thermal_relaxation' is not a Pauli channel"
+    )
+    assert "1.000e+00" in output
+    # A channel whose inverse does not exist at all, as distinct from one that is
+    # merely outside the family.
+    assert _labelled(output, "bit_flip at 0.5").startswith(
+        "refused -- channel 'bit_flip' has a vanishing Pauli transfer eigenvalue at Y"
+    )
+    assert _labelled(output, "readout rule refused").startswith(
+        "the noise model declares a readout rule"
+    )
+    _assert_premise("pec", output)
     assert "take away" in output
 
 

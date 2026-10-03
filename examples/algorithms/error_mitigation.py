@@ -302,8 +302,11 @@ def main() -> None:
     print("  it is reported as absent rather than as an arithmetic zero, and why the")
     print("  honest reading order is residual first, estimate second. The estimate")
     print("  itself is a point value: no shot, no confidence interval, no measured")
-    print("  uncertainty, no readout correction, and no probabilistic error")
-    print("  cancellation, Clifford data regression or circuit folding beside it.")
+    print("  uncertainty, and no readout correction. Probabilistic error cancellation")
+    print("  is a unit beside this one rather than a mode of it: it inverts the")
+    print("  channel the model declares instead of scaling it, so it pays in exact")
+    print("  programs rather than in scale factors. Clifford data regression and")
+    print("  circuit folding remain absent.")
 
 
 if __name__ == "__main__":

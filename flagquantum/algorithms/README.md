@@ -29,8 +29,16 @@ executed by `tests/test_algorithm_examples.py`.
   parameters are not error probabilities is refused by name, and a model that
   declares a readout rule is refused rather than measured without it, because the
   estimate is `Tr(O rho)` and classical readout confusion is applied after
-  measurement. Probabilistic error cancellation, Clifford data regression and
-  readout-error mitigation are absent.
+  measurement. Clifford data regression and readout-error mitigation are absent,
+  and probabilistic error cancellation is a separate unit beside it.
+- `pec.py`: probabilistic error cancellation — each declared Pauli channel is
+  inverted from its Pauli transfer matrix into an exact signed combination of
+  Pauli words, which is inserted after the channel it inverts and summed
+  exactly. A channel whose transfer matrix is not diagonal, and one whose
+  transfer spectrum reaches zero, are refused by name; `gamma` and the `gamma**2`
+  shot cost a sampled implementation would pay are reported beside the estimate,
+  together with the term count the run actually spends. Clifford data regression
+  and readout-error mitigation are absent.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has

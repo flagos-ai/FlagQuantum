@@ -324,13 +324,15 @@ def test_the_declared_limitations_name_what_the_unit_does_not_do() -> None:
 
     # Phrase pins, in the spirit of the algorithm example suite: what must not
     # quietly disappear is the statement that the estimate carries no measured
-    # uncertainty, that the other two mitigation techniques are absent, and that
-    # readout confusion is outside the observable this unit reads.
+    # uncertainty, that the other mitigation techniques are absent and where the
+    # one that is not absent lives, and that readout confusion is outside the
+    # observable this unit reads.
     assert "no confidence interval" in text
     assert (
-        "Probabilistic error cancellation and Clifford data regression are absent"
-        in text
+        "Probabilistic error cancellation is provided beside it by "
+        "flagquantum.algorithms.run_pec" in text
     )
+    assert "Clifford data regression is absent" in text
     assert "no gate-folding scale factor is offered" in text
     assert "max_residual is the diagnostic that exposes it" in text
     assert (

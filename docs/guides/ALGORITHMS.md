@@ -165,6 +165,28 @@ units carries a root-level `fq.` name.
   available should use autograd or parameter shift instead. The claim this unit
   supports is a cost claim on a stochastic objective, not an accuracy claim and
   not an end-to-end advantage. See the section below.
+- **The error-mitigation units carry no advantage premise, because they are not
+  advantage algorithms: what they rest on is an assumption about the noise.**
+  `error_mitigation.py` measures one observable at several error strengths and
+  continues the curve to zero, so it is unbiased exactly when that curve is a
+  polynomial of degree at most the fitted order in the scale factor — an
+  assumption nothing checks and nothing can check from the measurements alone.
+  `pec.py` inverts the channel the noise model declares, at the location the
+  model declares it, so it removes exactly the noise the model carries and
+  leaves untouched every error the model does not: a miscalibrated gate, a
+  leakage process, or a drift between the declaration and the run survives the
+  combination. Both units return a point value with no confidence interval, and
+  neither claims a variance reduction: `variance_amplification` and
+  `sampling_overhead` are factors a **sampled** implementation of the same
+  quantity would pay, computed from the weights rather than measured, and the
+  paths here consume no shot at all. A mitigated value closer to the ideal is
+  therefore evidence about the model before it is evidence about a device, and
+  both units say so where the number is. **Neither unit is given a row in the
+  index above or a source under Sources**: this programme has verified no
+  citation record for either method, and a `—` in that column already means
+  "standard construction with no single paper to cite" rather than "sought and
+  not yet found", so the absence is stated here instead of being spelled as
+  something it is not. See the two sections below.
 
 ## A runnable example
 
@@ -1118,8 +1140,10 @@ bounded by the channel it scales. A caller who needs one of the refused families
 in noise strength; the result records which of the two claims it rests on, and the refusal
 is all-or-nothing over the model rather than leaving it partly scaled.
 
-**Not here:** probabilistic error cancellation, Clifford data regression, circuit folding,
-gate-folding scale factors, shot-based execution, and readout-error mitigation.
+**Not here:** Clifford data regression, circuit folding, gate-folding scale factors,
+shot-based execution, and readout-error mitigation. Probabilistic error cancellation is a
+unit beside this one rather than a mode of it — see the section below — because it inverts
+a channel that is declared rather than scaling one.
 
 **Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose value is
 analytically `1.0` and whose exactly simulated noiseless read is `0.9999999999999998` in
@@ -1195,6 +1219,116 @@ higher degree does not converge to the right answer and the residual says so rat
 estimate merely looking close. No demonstration here is a performance, scaling, hardware or
 fault-tolerance claim: the whole path is single-process CPU density-matrix work on a
 two-wire circuit.
+
+## Probabilistic error cancellation
+
+`pec.py` is the second error-mitigation unit, and it inverts a declared channel rather than
+scaling one. `run_pec(circuit, hamiltonian, noise_model=..., dtype=...)` returns a
+`PecResult`: the mitigated estimate, the unmitigated read, one `PecLocation` per noise site,
+the product of the locations' word counts, and the assumptions and limitations the estimate
+rests on. `pauli_twirl_decomposition(channel)` is the single channel-level operation the unit
+is built on, and it is public because the decomposition is the whole of the method: given a
+`KrausChannel` it returns the Pauli words, their signed coefficients and the channel's Pauli
+transfer spectrum.
+
+**The decomposition is exact and the arithmetic is standard.** For an `n`-wire channel with
+`N = 4**n` Pauli words, the Pauli transfer matrix is `R[i, j] = Tr(P_i E(P_j)) / 2**n` and a
+Pauli channel is one whose `R` is diagonal, with the diagonal entries as its transfer
+eigenvalues. Writing the inverse as a signed combination `sum_i c_i P_i` and applying it to
+`P_j` forces `sum_i c_i (-1)**<P_i, P_j> = 1 / lambda_j`, and the sign matrix is its own
+inverse up to `1 / N` — it is a Walsh transform over the Pauli group — so
+`c_i = (1 / N) sum_j (-1)**<P_i, P_j> / lambda_j`. The reciprocal is inside the sum. Every
+decomposition reports `gamma = sum_i |c_i|`, which is at least one and equals one only for a
+channel that is itself a Pauli conjugation.
+
+**Two boundaries are refused by name rather than approximated.** A channel whose transfer
+matrix has an entry away from the diagonal is not a Pauli channel, and its inverse is not a
+finite signed combination of Pauli words at all, so it is refused and the refusal quotes the
+off-diagonal magnitude it measured. A channel whose transfer matrix is diagonal but whose
+spectrum reaches zero has no inverse, so its weights diverge; the refusal names the vanishing
+eigenvalue and the word it sits at. Both boundaries are checked at `1e-6`, which sits two
+orders above the `complex64` floor the measurement is subject to and five below the smallest
+refusal measured here.
+
+**Measured.** The admitted families are the five this repository's noise module provides that
+are Pauli channels: `bit_flip` and `phase_flip` at `p = 0.1` give `gamma = 1.250000004657` on
+four words, `depolarizing` at `0.1` gives `1.230769234737`, `phase_damping` at `0.1` gives
+`1.054092554262`, and `two_qubit_depolarizing` at `0.05` gives `1.105633804480` on sixteen.
+Each reproduces its closed form — `bit_flip`'s weights are `(1 - p) / (1 - 2p)` on the
+identity and `-p / (1 - 2p)` on the flip, `depolarizing`'s are `(1 + 3 / lambda) / 4` on the
+identity with `lambda = 1 - 4p / 3` — to the precision the channel's operators were stored at.
+The largest off-diagonal entry of all five is exactly zero at `complex128`. The refused
+families and the magnitudes their refusals report:
+
+| channel | parameter | reported off-diagonal | verdict |
+| --- | --- | --- | --- |
+| `amplitude_damping` | `0.1` | `1.000e-01` | sends `I` partly to `Z` |
+| `coherent_overrotation` | `0.2` | `1.987e-01` | sends `Z` partly to `Y` |
+| `reset_error` | `0.05` | `5.000e-02` | sends `I` partly to `Z` |
+| `thermal_relaxation` | `0.05, 0.05, 1.0` | `1.000e+00` | sends `I` partly to `Z` |
+| `bit_flip` | `0.5` | vanishing eigenvalue at `Y` | no inverse exists |
+
+**The correction is applied after the channel, not in place of it.** Each location inserts
+its word immediately after the channel instruction it inverts, so `E^-1` composed with `E` is
+the identity and the program that is read is the declared noise removed. On `h(0); cx(0, 1)`
+with `zz(0, 1)` and `bit_flip` at `p = 0.1` on the `cx`, the two-location composite reads
+`0.639999995231628` unmitigated and `1.000000000000000` mitigated in `complex128`:
+
+```python
+import torch
+
+import flagquantum as fq
+
+from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_pec
+from flagquantum.noise import NoiseModel, bit_flip_channel
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+observable = Hamiltonian([HamiltonianTerm(1.0, "zz", (0, 1))])
+model = NoiseModel().add("cx", bit_flip_channel(0.1, dtype=torch.complex128))
+
+result = run_pec(circuit, observable, noise_model=model, dtype=torch.complex128)
+print(f"{result.estimate:.15f}", f"{result.unmitigated:.15f}")
+# 1.000000000000000 0.639999995231628
+
+print(f"{result.gamma:.12f}", result.term_count, result.executions)
+# 1.562500011642 16 17
+```
+
+The same channel at the runtime's default single precision gives `0.999999866503456` against
+an unmitigated `0.639999806880951`, so the floor the mitigation leaves is the precision the
+channel was declared in rather than the method's. The one-location read of the same program
+is `0.799999997019768` unmitigated, `1.000000000000000` mitigated, at `gamma` `1.250000004657`
+on four terms: the cost and the correction both compose per location, and the two-location
+`gamma` is the square of the one-location one.
+
+**The price is `gamma**2`, and this path does not pay it.** A sampled implementation of the
+same combination spends `gamma**2` in shots, because every signed weight carries its sign into
+the variance; this unit evaluates each term exactly instead, so it consumes no shots, reports
+no confidence interval and claims no variance reduction. `sampling_overhead` is therefore
+arithmetic about a sampled implementation rather than a measurement of this one, and `gamma`
+is the number that belongs beside a mitigated estimate either way.
+
+**What the estimate is, and what it is not.** A quasi-probability average is not a physical
+density matrix and can be non-positive, which is why `run_pec` returns the value rather than a
+state. The premise is the declared model and only the declared model: an error the noise model
+does not carry — a miscalibrated gate, leakage, drift between the declaration and the run —
+survives the inversion untouched, and a mitigated value close to the ideal is a statement
+about the model before it is a statement about a device. A model that declares a readout rule
+is refused, for the same reason ZNE refuses one: the estimate is `Tr(O rho)`, read before
+measurement, so classical readout confusion is not in `rho` and measuring while leaving the
+rule unused would report a state-preparation estimate under the name of a measured one. A
+circuit that declares its own input state is refused too, because the unit re-executes the
+program from its IR once per term and every program built from an IR begins at the all-zero
+state. And a program whose combination would need more than `1024` exact programs is refused
+with the count it needed, because four terms per single-qubit noise location and sixteen per
+two-qubit one is a real ceiling rather than a large number.
+
+**Not here:** Clifford data regression and readout-error mitigation. Noise is inverted at the
+locations the noise model declares and nowhere else; no gate-folding scale factor is offered,
+because folding is a way to *measure* an error strength rather than a way to invert one. No
+demonstration here is a performance, scaling, hardware or fault-tolerance claim: the whole
+path is single-process CPU density-matrix work on a two-wire circuit, and the noise it inverts
+is the one the caller declared.
 
 ## SPSA optimization
 

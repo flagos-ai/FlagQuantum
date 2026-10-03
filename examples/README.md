@@ -13,9 +13,9 @@ Examples driven by the root-level `fq` alias use:
 These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
-  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
-  `error_mitigation.py`, which import the unit they demonstrate from the
-  subpackage surface because `flagquantum.algorithms.<unit>` carries no
+  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py`,
+  `error_mitigation.py` and `pec.py`, which import the unit they demonstrate from
+  the subpackage surface because `flagquantum.algorithms.<unit>` carries no
   root-level `fq.` name.
   [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside
   that directory: it imports its optimizer from the subpackage surface and also
