@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 25 semantics,
-27 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 26 semantics,
+28 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -90,6 +90,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
+| FQK-MEAS-003 | `measurement.probabilities.marginal.statevector` | `statevector_marginal_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -259,6 +260,28 @@ speed. The evidence covers one operator pattern and two development hosts, so
 the canonical decision remains `retain_experimental`; it does not authorize
 default dispatch or a release claim. Reproduce or validate it with
 [`benchmarks/statevector_pauli_expectation_kernel.py`](../../benchmarks/statevector_pauli_expectation_kernel.py).
+
+`FQKI-TRITON-MEAS-003-A` computes a joint marginal distribution directly from
+a batched flat statevector without materializing the full probability tensor.
+Wire zero addresses the most-significant statevector bit, and output bits retain
+the exact order requested by the caller. The direct Triton path accepts
+contiguous CUDA `complex64` statevectors with at most 30 wires and selections of
+at most eight wires. The measured Triton window requires at least `2**16`
+amplitudes per statevector and `2**20` amplitudes across the batch; other valid
+inputs retain an exact differentiable PyTorch fallback. It is experimental and
+is not selected by default runtime dispatch. The checked-in
+[`statevector_marginal_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_marginal_probability_kernel_a800.json)
+artifact records 30 synchronized groups of 10 invocations for five fixed
+complex64 workloads from 1,048,576 through 16,777,216 total amplitudes on
+`jp-a800-171` and `jp-a800-172` with stock Triton 3.7.1. Maximum probability
+and gradient absolute errors are `1.49e-8` and `5.27e-9`. Against the exact
+same-semantic eager PyTorch reference, Triton reaches `1.080x` to `2.724x` the
+forward speed and `1.014x` to `3.625x` the forward/backward speed; every fixed
+host/workload result must remain at or above the runner's `1.0x` performance
+floor. The evidence covers one dtype and two development hosts, so the
+canonical decision remains `retain_experimental`; it does not authorize
+default dispatch or a release claim. Reproduce or validate it with
+[`benchmarks/statevector_marginal_probability_kernel.py`](../../benchmarks/statevector_marginal_probability_kernel.py).
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -603,9 +626,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 25 semantics and 32 implementations are implemented. MPS-003
+The current 26 semantics and 33 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 27 implementations remain experimental. The rest of the
+promotions; the other 28 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract

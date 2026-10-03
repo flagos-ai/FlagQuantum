@@ -211,6 +211,16 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "observable_estimation",
     ),
     _semantic(
+        "FQK-MEAS-003",
+        "measurement.probabilities.marginal.statevector",
+        "measurement",
+        "Compute a joint marginal distribution over selected statevector wires.",
+        "circuit_sampling",
+        "postselection",
+        "quantum_information",
+        "phase_estimation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",
