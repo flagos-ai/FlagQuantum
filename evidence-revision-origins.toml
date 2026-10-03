@@ -29,21 +29,21 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Sixty-nine distinct revisions are recorded under the three walked roots, and two of
-# them are obtainable because the `main` history contains them. The other sixty-seven
+# Seventy distinct revisions are recorded under the three walked roots, and two of
+# them are obtainable because the `main` history contains them. The other sixty-eight
 # appear below in one of three states.
 #
-# `unreferenced_object` (forty-five revisions) means no branch and no tag reaches
+# `unreferenced_object` (forty-six revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all forty-five by name, each confirmed by the counted measurement the method
+# serves all forty-six by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the forty-five is the head a pull request was
+# policy rather than a promise, and one of the forty-six is the head a pull request was
 # opened from: `4d976abe5c415414846c857616ffce6cbadeeefc` headed #201, which merged as
 # `4e52d18d`, and the head commit survives only as an object the remote retains. No ref
-# of this repository reaches any of the forty-five, so a complete clone obtains none of
+# of this repository reaches any of the forty-six, so a complete clone obtains none of
 # them. How many of them a particular working copy happens to resolve is a reading of
 # that working copy rather than a property of the repository -- a fetch of a since-deleted
 # branch brings objects in and a `gc` takes them out again -- so the number is not written
@@ -52,7 +52,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # exactly the quantity that moves, and would call a revision obtainable in the one
 # working copy most likely to still hold it.
 #
-# Fourteen of the forty-five entered this table from a direction the first pass could
+# Fourteen of the forty-six entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -73,7 +73,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# Two more of the forty-five entered from the citation direction. The first is
+# Two more of the forty-six entered from the citation direction. The first is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
@@ -148,6 +148,15 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # and `repos/flagos-ai/FlagQuantum/git/commits/<rev>`, answered with the object by its
 # full name, which places it in `unreferenced_object` rather than in a history this
 # repository does not contain.
+#
+# `3ca8d23ef910520ac533d470042a0ea5c9afa41f` is recorded three times by
+# `benchmarks/results/local/statevector_probability_kernel_a800.json`, added by
+# `#448` with the statevector probability semantic. The pull request was
+# squash-merged as `831088a1`, so the benchmark revision is absent from the merged
+# history and no branch reaches it. Both repository-scoped commit API paths serve the
+# object by its full name, while `branches-where-head` returns an empty list. It is
+# therefore an `unreferenced_object` under the same rule as the preceding benchmark
+# revisions.
 
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -176,7 +185,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # scoped to
 # the repository the revision is declared against --
 # `gh api repos/flagos-ai/FlagQuantum/git/commits/<revision>`, and the same path under
-# `/commits/<revision>` -- which answered with the object for all forty-five
+# `/commits/<revision>` -- which answered with the object for all forty-six
 # `unreferenced_object` revisions and with `404` for all eighteen
 # `producing_host_history` revisions, two attempts each, and with `404` for the four
 # `external_dependency` revisions, which are commits of other repositories and are
@@ -624,6 +633,10 @@ origin = "unreferenced_object"
 
 [[artifact.revision]]
 value = "26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "3ca8d23ef910520ac533d470042a0ea5c9afa41f"
 origin = "unreferenced_object"
 
 [[artifact.revision]]

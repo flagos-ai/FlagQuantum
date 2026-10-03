@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Protocol
 
 import torch
@@ -16,6 +16,17 @@ else:
 
 
 class _ProbabilityContext(Protocol):
+    @property
+    def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
+
+    def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
+
+
+class _PauliExpectationContext(Protocol):
+    x_mask: int
+    z_mask: int
+    y_count: int
+
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
 
@@ -57,6 +68,122 @@ def _statevector_probabilities_backward_kernel(
     tl.store(state_gradient_parts + 2 * offsets + 1, gradient * imag, mask=mask)
 
 
+@jit
+def _statevector_pauli_expectation_partial_kernel(
+    state_parts: tl.tensor,
+    partials: tl.tensor,
+    amplitude_count: tl.tensor,
+    chunk_count: tl.tensor,
+    x_mask: tl.tensor,
+    z_mask: tl.tensor,
+    y_mod_four: tl.constexpr,
+    block_size: tl.constexpr,
+) -> None:
+    program = tl.program_id(0)
+    batch = program // chunk_count
+    chunk = program % chunk_count
+    indices = chunk * block_size + tl.arange(0, block_size)
+    valid = indices < amplitude_count
+    partners = indices ^ x_mask
+    batch_offset = batch.to(tl.int64) * amplitude_count
+    state_offsets = batch_offset + indices
+    partner_offsets = batch_offset + partners
+    real = tl.load(state_parts + 2 * state_offsets, mask=valid, other=0.0)
+    imag = tl.load(state_parts + 2 * state_offsets + 1, mask=valid, other=0.0)
+    partner_real = tl.load(
+        state_parts + 2 * partner_offsets,
+        mask=valid,
+        other=0.0,
+    )
+    partner_imag = tl.load(
+        state_parts + 2 * partner_offsets + 1,
+        mask=valid,
+        other=0.0,
+    )
+    product_real = partner_real * real + partner_imag * imag
+    product_imag = partner_real * imag - partner_imag * real
+    if y_mod_four == 0:
+        phased_real = product_real
+    elif y_mod_four == 1:
+        phased_real = -product_imag
+    elif y_mod_four == 2:
+        phased_real = -product_real
+    else:
+        phased_real = product_imag
+    parity_bits = indices & z_mask
+    parity_bits = parity_bits ^ (parity_bits >> 16)
+    parity_bits = parity_bits ^ (parity_bits >> 8)
+    parity_bits = parity_bits ^ (parity_bits >> 4)
+    parity_bits = parity_bits ^ (parity_bits >> 2)
+    parity_bits = parity_bits ^ (parity_bits >> 1)
+    sign = 1.0 - 2.0 * (parity_bits & 1)
+    partial = tl.sum(phased_real * sign, axis=0)
+    tl.store(partials + batch * chunk_count + chunk, partial)
+
+
+@jit
+def _statevector_pauli_expectation_backward_kernel(
+    state_parts: tl.tensor,
+    expectation_gradient: tl.tensor,
+    state_gradient_parts: tl.tensor,
+    amplitude_count: tl.tensor,
+    chunk_count: tl.tensor,
+    x_mask: tl.tensor,
+    z_mask: tl.tensor,
+    y_mod_four: tl.constexpr,
+    block_size: tl.constexpr,
+) -> None:
+    program = tl.program_id(0)
+    batch = program // chunk_count
+    chunk = program % chunk_count
+    offsets = chunk * block_size + tl.arange(0, block_size)
+    valid = offsets < amplitude_count
+    partners = offsets ^ x_mask
+    batch_offset = batch.to(tl.int64) * amplitude_count
+    partner_offsets = batch_offset + partners
+    partner_real = tl.load(
+        state_parts + 2 * partner_offsets,
+        mask=valid,
+        other=0.0,
+    )
+    partner_imag = tl.load(
+        state_parts + 2 * partner_offsets + 1,
+        mask=valid,
+        other=0.0,
+    )
+    parity_bits = partners & z_mask
+    parity_bits = parity_bits ^ (parity_bits >> 16)
+    parity_bits = parity_bits ^ (parity_bits >> 8)
+    parity_bits = parity_bits ^ (parity_bits >> 4)
+    parity_bits = parity_bits ^ (parity_bits >> 2)
+    parity_bits = parity_bits ^ (parity_bits >> 1)
+    sign = 1.0 - 2.0 * (parity_bits & 1)
+    if y_mod_four == 0:
+        transformed_real = sign * partner_real
+        transformed_imag = sign * partner_imag
+    elif y_mod_four == 1:
+        transformed_real = -sign * partner_imag
+        transformed_imag = sign * partner_real
+    elif y_mod_four == 2:
+        transformed_real = -sign * partner_real
+        transformed_imag = -sign * partner_imag
+    else:
+        transformed_real = sign * partner_imag
+        transformed_imag = -sign * partner_real
+    scale = 2.0 * tl.load(expectation_gradient + batch)
+    output_offsets = batch_offset + offsets
+    tl.store(
+        state_gradient_parts + 2 * output_offsets,
+        scale * transformed_real,
+        mask=valid,
+    )
+    tl.store(
+        state_gradient_parts + 2 * output_offsets + 1,
+        scale * transformed_imag,
+        mask=valid,
+    )
+
+
 def _reference(state: torch.Tensor) -> torch.Tensor:
     return torch.abs(state) ** 2
 
@@ -78,6 +205,75 @@ def _supported(state: torch.Tensor) -> bool:
         and not state.is_conj()
         and not state.is_neg()
     )
+
+
+def _normalize_pauli_product(
+    operators: Sequence[tuple[int, str]],
+    *,
+    n_qubits: int,
+) -> tuple[int, int, int]:
+    seen: set[int] = set()
+    x_mask = 0
+    z_mask = 0
+    y_count = 0
+    for index, factor in enumerate(operators):
+        if not isinstance(factor, tuple) or len(factor) != 2:
+            raise TypeError(f"Pauli factor {index} must be a (wire, axis) tuple")
+        wire, axis = factor
+        if isinstance(wire, bool) or not isinstance(wire, int):
+            raise TypeError(f"Pauli factor {index} wire must be an integer")
+        if wire < 0 or wire >= n_qubits:
+            raise ValueError(f"Pauli factor {index} wire is outside the statevector")
+        if wire in seen:
+            raise ValueError("Pauli-product wires must be unique")
+        if not isinstance(axis, str):
+            raise TypeError(f"Pauli factor {index} axis must be a string")
+        normalized_axis = axis.lower()
+        if normalized_axis not in {"x", "y", "z"}:
+            raise ValueError("Pauli axes must be X, Y, or Z")
+        seen.add(wire)
+        bit = 1 << (n_qubits - wire - 1)
+        if normalized_axis in {"x", "y"}:
+            x_mask |= bit
+        if normalized_axis in {"y", "z"}:
+            z_mask |= bit
+        if normalized_axis == "y":
+            y_count += 1
+    return x_mask, z_mask, y_count
+
+
+def _validate_pauli_state(state: torch.Tensor) -> int:
+    _validate(state)
+    amplitudes = int(state.shape[1])
+    n_wires = amplitudes.bit_length() - 1
+    if 2**n_wires != amplitudes:
+        raise ValueError("Pauli expectation requires a power-of-two amplitude count")
+    return n_wires
+
+
+def _pauli_expectation_reference(
+    state: torch.Tensor,
+    x_mask: int,
+    z_mask: int,
+    y_count: int,
+) -> torch.Tensor:
+    amplitude_count = int(state.shape[1])
+    indices = torch.arange(amplitude_count, device=state.device)
+    partners = indices ^ x_mask
+    parity_bits = torch.bitwise_and(indices, z_mask)
+    parity = torch.zeros_like(parity_bits)
+    while z_mask:
+        parity = torch.bitwise_xor(parity, parity_bits)
+        parity_bits = torch.bitwise_right_shift(parity_bits, 1)
+        z_mask >>= 1
+    sign = 1 - 2 * torch.bitwise_and(parity, 1)
+    product = torch.conj(state.index_select(1, partners)) * state
+    phase = (1j) ** (y_count % 4)
+    return torch.real(product * sign * phase).sum(dim=1)
+
+
+def _pauli_supported(state: torch.Tensor) -> bool:
+    return _supported(state) and int(state.shape[1]) <= 1 << 30
 
 
 def _launch_forward(state: torch.Tensor) -> torch.Tensor:
@@ -136,6 +332,98 @@ class _StatevectorProbabilities(torch.autograd.Function):
         return (_launch_backward(state, probability_gradient),)
 
 
+def _launch_pauli_forward(
+    state: torch.Tensor,
+    x_mask: int,
+    z_mask: int,
+    y_count: int,
+) -> torch.Tensor:
+    batch, amplitude_count = (int(value) for value in state.shape)
+    block_size = 1024
+    chunk_count = triton.cdiv(amplitude_count, block_size)
+    partials = torch.empty(
+        (batch, chunk_count),
+        device=state.device,
+        dtype=torch.float32,
+    )
+    _statevector_pauli_expectation_partial_kernel[(batch * chunk_count,)](
+        torch.view_as_real(state),
+        partials,
+        amplitude_count,
+        chunk_count,
+        x_mask,
+        z_mask,
+        y_mod_four=y_count % 4,
+        block_size=block_size,
+        num_warps=8,
+        num_stages=2,
+    )
+    return partials.sum(dim=1)
+
+
+def _launch_pauli_backward(
+    state: torch.Tensor,
+    expectation_gradient: torch.Tensor,
+    x_mask: int,
+    z_mask: int,
+    y_count: int,
+) -> torch.Tensor:
+    expectation_gradient = expectation_gradient.contiguous()
+    state_gradient = torch.empty_like(state)
+    batch, amplitude_count = (int(value) for value in state.shape)
+    block_size = 256
+    chunk_count = triton.cdiv(amplitude_count, block_size)
+    _statevector_pauli_expectation_backward_kernel[(batch * chunk_count,)](
+        torch.view_as_real(state),
+        expectation_gradient,
+        torch.view_as_real(state_gradient),
+        amplitude_count,
+        chunk_count,
+        x_mask,
+        z_mask,
+        y_mod_four=y_count % 4,
+        block_size=block_size,
+        num_warps=4,
+        num_stages=2,
+    )
+    return state_gradient
+
+
+class _StatevectorPauliExpectation(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx: _PauliExpectationContext,
+        state: torch.Tensor,
+        x_mask: int,
+        z_mask: int,
+        y_count: int,
+    ) -> torch.Tensor:
+        ctx.x_mask = x_mask
+        ctx.z_mask = z_mask
+        ctx.y_count = y_count
+        ctx.save_for_backward(state)
+        return _launch_pauli_forward(state, x_mask, z_mask, y_count)
+
+    @staticmethod
+    def backward(
+        ctx: _PauliExpectationContext,
+        expectation_gradient: torch.Tensor,
+    ) -> tuple[torch.Tensor, None, None, None]:
+        (state,) = ctx.saved_tensors
+        return (
+            _launch_pauli_backward(
+                state,
+                expectation_gradient,
+                ctx.x_mask,
+                ctx.z_mask,
+                ctx.y_count,
+            ),
+            None,
+            None,
+            None,
+        )
+
+
 def statevector_probabilities(state: torch.Tensor) -> torch.Tensor:
     """Return one probability per amplitude of a batched flat statevector.
 
@@ -154,4 +442,32 @@ def statevector_probabilities(state: torch.Tensor) -> torch.Tensor:
     return result
 
 
-__all__ = ["statevector_probabilities"]
+def statevector_pauli_expectation(
+    state: torch.Tensor,
+    operators: Sequence[tuple[int, str]],
+) -> torch.Tensor:
+    """Return one exact Pauli-product expectation per flat statevector batch.
+
+    Wire zero addresses the most-significant statevector bit, matching the
+    simulation package. The CUDA complex64 path fuses Pauli permutation, phase,
+    and inner-product work. Unsupported devices, dtypes, or layouts retain an
+    exact differentiable PyTorch implementation.
+    """
+
+    n_qubits = _validate_pauli_state(state)
+    x_mask, z_mask, y_count = _normalize_pauli_product(
+        operators,
+        n_qubits=n_qubits,
+    )
+    if not _pauli_supported(state):
+        return _pauli_expectation_reference(state, x_mask, z_mask, y_count)
+    apply: Callable[[torch.Tensor, int, int, int], object] = (
+        _StatevectorPauliExpectation.apply
+    )
+    result = apply(state, x_mask, z_mask, y_count)
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Statevector Pauli expectation autograd must return a tensor")
+    return result
+
+
+__all__ = ["statevector_pauli_expectation", "statevector_probabilities"]
