@@ -399,9 +399,23 @@ decoder base protocol. The widest of these:
 
 - **Noise record.** Upstream `CssNoise` carries independent X, Y and Z data
   rates plus a measurement rate, each also expressible per qubit or per check.
-  `PhenomenologicalNoise` here is one data-flip scalar and one measurement-flip
-  scalar. Per-location rates are not expressible, and neither is an asymmetric
-  X/Z channel.
+  `PhenomenologicalNoise` carries the same four scalars and the same four
+  vectors — `data_flip_per_qubit`, `phase_flip_per_qubit`, `both_flip_per_qubit`
+  and `measurement_flip_per_check` against upstream's `px_per_qubit`,
+  `pz_per_qubit`, `py_per_qubit` and `pm_per_check` — with the same override
+  rule, and a location whose effective rate is zero enumerates no mechanism on
+  either construction route and costs no channel in a sampler program. The
+  override is wholesale rather than element by element, so a vector that does not
+  name every data qubit or every check is refused naming both counts instead of
+  being partially applied. The two per-check orders are related by one named
+  translation: the vector is indexed the way the matrices are, Z-type checks
+  first, while a code may declare its checks in any order — the rotated surface
+  code interleaves the two types — and all three readers share the translation
+  rather than each re-stating the convention. What remains a difference is the
+  carrier rather than the rates: the record is a standalone frozen dataclass read
+  beside a code, where upstream folds it into the argument the matrix entry point
+  takes, and the per-check vector is validated against a code's check count
+  rather than against a noise object that knows it.
 - **Matrix-level entry point.** Upstream
   `dem_from_css_matrices(code: CssCodes | cudaq_qec.Code, noise: CssNoise,
   num_rounds=1)` takes one record carrying all four parity matrices and returns
@@ -414,9 +428,12 @@ decoder base protocol. The widest of these:
   `lz` and `lx` observable rows, and a logical observable that is neither pure X
   nor pure Z is refused here with its index named rather than half-read as one of
   the two. What differs is the accompanying record: upstream pairs the matrices
-  with a `CssNoise`, here the rate record is uniform scalars. There is no
-  extended-record sibling, which is the absence the field row's negative search
-  names.
+  with a `CssNoise`, here the matrices and the rates arrive as two arguments
+  rather than one. The rates themselves line up: the four families and their
+  per-qubit and per-check overrides are read against these matrices, so a
+  code-capacity model can carry a per-location profile and not only a uniform
+  one. There is no extended-record sibling, which is the absence the field row's
+  negative search names.
 - **Sampling function.** Upstream
   `dem_sampling(check_matrix, num_shots, error_probabilities, seed=None, backend="auto")`
   is a free function over a matrix plus a rate vector returning sampled check
@@ -621,9 +638,9 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_sampling_backend` | absent | No execution-target selector; upstream has `auto`/`cpu`/`gpu`. |
 | `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), same `use_decomp_suggestions` flag with the same default, free function against classmethod; the default reading is the one stim's own sampler means, and the expanded one is the approximation upstream documents it as. |
 | `dem_to_stim_text` | extra | No writer found upstream at this layer; the produced text comes from CUDA-Q core. |
-| `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. |
-| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis. No context object. |
-| `dem_code_capacity_noise` | reshaped | Two uniform scalars against X/Y/Z data rates plus a measurement rate, each also per qubit or per check. |
+| `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. The rates arrive as a separate `PhenomenologicalNoise` rather than folded into one `CssNoise`, and the vectors are read against these matrices. |
+| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. No context object. |
+| `dem_code_capacity_noise` | reshaped | The four families line up one for one against X/Y/Z data rates plus a measurement rate, scalars and per-qubit/per-check vectors alike, with the same wholesale override. The difference is the carrier: a standalone record read beside a code rather than a field of the matrix entry point's argument, so the vector lengths are validated against a count the reader supplies. |
 | `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |
 | `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |
 | `dem_seam_and_chunk_api` | absent | Monolithic model; no chunk, no seam, nothing to slide a window over. |

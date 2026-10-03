@@ -46,6 +46,7 @@ from flagquantum.qec import (
 )
 from flagquantum.qec.circuit import MeasurementRef
 from flagquantum.qec.codes import CodeCheck
+from flagquantum.qec.dem_construction import _check_rate_order
 from flagquantum.qec.pauli import Pauli
 from flagquantum.qec.sampling import _measurement_plan, _noise_locations, _noisy_program
 from flagquantum.simulation.stabilizer import StabilizerDependencyError
@@ -335,7 +336,7 @@ def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
     memory = _memory(RepetitionCode(distance=3), 3)
     plan = _measurement_plan(memory)
     noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.0)
-    program = _noisy_program(plan, _noise_locations(memory, plan, noise), noise)
+    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
 
     leading = program.instructions[:3]
     assert [instruction.name for instruction in leading] == ["bit_flip"] * 3
@@ -365,7 +366,168 @@ def test_a_zero_probability_family_costs_no_engine_instruction() -> None:
     quiet = PhenomenologicalNoise()
 
     assert _noise_locations(memory, plan, quiet) == ()
-    assert _noisy_program(plan, (), quiet) == plan.program
+    assert _noisy_program(plan, ()) == plan.program
+
+
+@pytest.mark.parametrize(("code", "rounds"), _CODES)
+def test_a_per_element_rate_reaches_the_locations_the_record_names(
+    code, rounds: int
+) -> None:
+    """Every location carries the rate of the element that named it.
+
+    The elements are given distinct rates so that a location read at the wrong
+    index is a different number rather than the same one, and one element is left
+    silent so that the drop and the rate are pinned in the same record: the
+    silenced element contributes no location in any round while its neighbours
+    contribute one per round each, at their own rates.
+    """
+
+    memory = _memory(code, rounds)
+    plan = _measurement_plan(memory)
+    wires = tuple(memory.code.data_wires)
+    data_rates = tuple(0.001 * (position + 1) for position in range(len(wires)))
+    check_rates = tuple(0.001 * (position + 1) for position in range(len(code.checks)))
+    noise = PhenomenologicalNoise(
+        data_flip_per_qubit=(0.0,) + data_rates[1:],
+        measurement_flip_per_check=check_rates,
+    )
+    locations = _noise_locations(memory, plan, noise)
+
+    silent = int(wires[0])
+    data_locations = [item for item in locations if item.kind == "data"]
+    assert {item.wire for item in data_locations} == set(wires) - {silent}
+    assert len(data_locations) == (len(wires) - 1) * rounds
+    for item in data_locations:
+        assert item.probability == pytest.approx(data_rates[wires.index(item.wire)])
+        assert item.round_index in range(rounds)
+
+    # The measurement family is indexed by matrix row rather than by declaration
+    # position, so the rate each check carries is the row order's, not the plan's.
+    order = _check_rate_order(tuple(code.checks))
+    by_wire = {
+        int(check.ancilla_wire): position for position, check in enumerate(code.checks)
+    }
+    for item in locations:
+        if item.kind != "measurement":
+            continue
+        position = by_wire[item.wire]
+        assert item.probability == pytest.approx(check_rates[order[position]])
+
+
+@pytest.mark.parametrize(("code", "rounds"), _CODES)
+def test_the_channel_is_placed_at_the_locations_own_rate(code, rounds: int) -> None:
+    """The dropped location is not executed, and the others get their own rates.
+
+    A program built from a per-element record has one channel per live element
+    per round and none for the silent one, and each channel's parameter is the
+    rate the location carried rather than the family's scalar -- which here is a
+    value no channel may carry, so a scalar read at placement would show up.
+    """
+
+    memory = _memory(code, rounds)
+    plan = _measurement_plan(memory)
+    wires = tuple(memory.code.data_wires)
+    rates = tuple(0.02 * (position + 1) for position in range(len(wires)))
+    noise = PhenomenologicalNoise(data_flip=0.5, data_flip_per_qubit=(0.0,) + rates[1:])
+    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
+
+    channels = [
+        instruction
+        for instruction in program.instructions
+        if instruction.name == "bit_flip"
+    ]
+    assert len(channels) == (len(wires) - 1) * rounds
+    assert {instruction.params["probability"] for instruction in channels} == set(
+        rates[1:]
+    )
+    assert 0.5 not in {instruction.params["probability"] for instruction in channels}
+    assert {instruction.wires[0] for instruction in channels} == set(wires) - {
+        int(wires[0])
+    }
+
+
+@pytest.mark.parametrize(("code", "rounds"), _CODES)
+def test_a_silent_element_lowers_only_its_own_detectors(code, rounds: int) -> None:
+    """Silencing one element lowers the detectors it reaches and no others.
+
+    A zero element states that a location cannot fire, so every detector the
+    element's mechanisms touched can only become quieter, no detector can become
+    louder, and the geometry -- the detector count, the observable count and the
+    mechanism count -- is untouched, because a location that cannot fire is still
+    a location the code has. The comparison is between two records that differ in
+    one element, so nothing else can account for the difference.
+    """
+
+    memory = _memory(code, rounds)
+    rate = 4 * _PROBABILITY
+    loud = PhenomenologicalNoise(data_flip=rate, measurement_flip=rate)
+    quiet = PhenomenologicalNoise(
+        data_flip=rate,
+        data_flip_per_qubit=(0.0,) + (rate,) * (len(memory.code.data_wires) - 1),
+        measurement_flip=rate,
+    )
+    loud_model = DetectorErrorModel.from_memory_circuit(memory, noise=loud)
+    quiet_model = DetectorErrorModel.from_memory_circuit(memory, noise=quiet)
+
+    assert quiet_model.num_detectors == loud_model.num_detectors
+    assert quiet_model.num_observables == loud_model.num_observables
+    assert quiet_model.num_errors <= loud_model.num_errors
+
+    loud_rates = loud_model.detector_rates().numpy()
+    quiet_rates = quiet_model.detector_rates().numpy()
+    assert np.all(quiet_rates <= loud_rates)
+    lowered = np.flatnonzero(quiet_rates < loud_rates)
+    assert lowered.size > 0
+
+    # Every detector that changed is one the silenced wire's fault reaches, which
+    # is read off a record that states that wire's rate and no other element's:
+    # its nonzero detector rates are exactly the band its fault spans.
+    isolated = DetectorErrorModel.from_memory_circuit(
+        memory,
+        noise=PhenomenologicalNoise(
+            data_flip_per_qubit=tuple(
+                rate if position == 0 else 0.0
+                for position in range(len(memory.code.data_wires))
+            )
+        ),
+    )
+    reached = np.flatnonzero(isolated.detector_rates().numpy() > 0.0)
+    assert set(lowered.tolist()) <= set(reached.tolist())
+
+
+@pytest.mark.parametrize(("code", "rounds"), _CODES)
+def test_a_sampled_per_element_profile_matches_the_model(code, rounds: int) -> None:
+    """A vector's rates are the rates the engine samples, element by element.
+
+    The profile alternates a strong element with a silent one, so a sampler that
+    read the vector at one index for every element would produce rates that agree
+    with the model at one detector and disagree at its neighbours. The comparison
+    is the same four-standard-error bound the uniform case uses.
+    """
+
+    memory = _memory(code, rounds)
+    wires = tuple(memory.code.data_wires)
+    strong = 2 * _PROBABILITY
+    data_rates = tuple(
+        strong if position % 2 else 0.0 for position in range(len(wires))
+    )
+    check_rates = tuple(
+        _PROBABILITY if position % 2 else 0.0 for position in range(len(code.checks))
+    )
+    noise = PhenomenologicalNoise(
+        data_flip_per_qubit=data_rates, measurement_flip_per_check=check_rates
+    )
+    model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+    sample = sample_memory_circuit(memory, noise=noise, shots=_SHOTS, seed=_SEED)
+
+    observed = np.asarray(sample.detectors.numpy(), dtype=np.float64).mean(axis=0)
+    expected = model.detector_rates().numpy()
+    deviation = np.abs(observed - expected) / _tolerance(expected)
+
+    assert float(deviation.max()) <= _SIGMA, (
+        f"widest detector deviation is {float(deviation.max()):.2f} standard "
+        f"errors at detector {int(deviation.argmax())}"
+    )
 
 
 def test_the_placement_does_not_depend_on_the_strength_it_is_built_for() -> None:
@@ -415,7 +577,7 @@ def test_planning_the_placement_does_not_need_the_optional_engine(
     memory = _memory(RepetitionCode(distance=3), 2)
     noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
     plan = _measurement_plan(memory)
-    program = _noisy_program(plan, _noise_locations(memory, plan, noise), noise)
+    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
 
     monkeypatch.delitem(sys.modules, "stim", raising=False)
     monkeypatch.setattr(builtins, "__import__", refuse)
