@@ -17,6 +17,7 @@ from ..native_cpu.rotation import (
     native_cpu_one_qubit_layer_available,
 )
 from .program import (
+    _StatevectorCliffordMatchingStep,
     _StatevectorDisjointDenseStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
@@ -130,6 +131,141 @@ def native_fused_rotation_layer_compile_enabled() -> bool:
         "off",
         "no",
     }
+
+
+def native_rotation_clifford_fusion_enabled() -> bool:
+    """Whether disjoint CX matchings may join native rotation tiles."""
+
+    return os.getenv(
+        "FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION", "1"
+    ).strip().lower() not in {
+        "0",
+        "false",
+        "off",
+        "no",
+    }
+
+
+def fuse_native_rotation_clifford_layers(
+    program: Sequence[_StatevectorPreCXStep],
+) -> list[_StatevectorPreCXStep]:
+    """Tile adjacent disjoint rotations and CX matching into native passes."""
+
+    optimized: list[_StatevectorPreCXStep] = []
+    index = 0
+
+    def rotation_layer(candidate: _StatevectorPreCXStep) -> bool:
+        if not isinstance(candidate, _StatevectorDisjointDenseStep):
+            return False
+        return bool(
+            candidate.native_parameterized
+            or all(
+                isinstance(region, _StatevectorFusedGateStep)
+                and region.instructions
+                and all(
+                    instruction.matrix is None
+                    and instruction.params
+                    and len(instruction.wires) == 1
+                    and canonical_opcode(instruction.name)
+                    in _NATIVE_PARAMETERIZED_GATES
+                    for instruction in region.instructions
+                )
+                for region in candidate.regions
+            )
+        )
+
+    while index < len(program):
+        cursor = index
+        layers: list[_StatevectorDisjointDenseStep] = []
+        while cursor < len(program):
+            candidate = program[cursor]
+            if not (
+                rotation_layer(candidate)
+                and isinstance(candidate, _StatevectorDisjointDenseStep)
+                and not candidate.fused_cx_controls
+            ):
+                break
+            layers.append(candidate)
+            cursor += 1
+        matching = program[cursor] if cursor < len(program) else None
+        if not (
+            layers
+            and isinstance(matching, _StatevectorCliffordMatchingStep)
+            and matching.controls
+            and not matching.cz_edges
+        ):
+            optimized.append(program[index])
+            index += 1
+            continue
+
+        regions = tuple(region for layer in layers for region in layer.regions)
+        region_by_wire: dict[int, _StatevectorGateStep | _StatevectorFusedGateStep] = {}
+        for region in regions:
+            wires = (
+                region.instruction.wires
+                if isinstance(region, _StatevectorGateStep)
+                else region.wires
+            )
+            if len(wires) != 1 or int(wires[0]) in region_by_wire:
+                break
+            region_by_wire[int(wires[0])] = region
+        else:
+            edge_by_wire = {
+                wire: (int(control), int(target))
+                for control, target in zip(
+                    matching.controls, matching.targets, strict=True
+                )
+                for wire in (int(control), int(target))
+            }
+            if set(edge_by_wire).issubset(region_by_wire):
+                components: list[tuple[int, ...]] = []
+                consumed: set[int] = set()
+                for wire in region_by_wire:
+                    if wire in consumed:
+                        continue
+                    edge = edge_by_wire.get(wire)
+                    component: tuple[int, ...] = (wire,) if edge is None else edge
+                    components.append(component)
+                    consumed.update(component)
+
+                tiles: list[list[int]] = []
+                for component in components:
+                    if (
+                        not tiles
+                        or len(tiles[-1]) + len(component)
+                        > _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES
+                    ):
+                        tiles.append([])
+                    tiles[-1].extend(component)
+                for tile in tiles:
+                    tile_wires = set(tile)
+                    controls = tuple(
+                        int(control)
+                        for control, target in zip(
+                            matching.controls, matching.targets, strict=True
+                        )
+                        if int(control) in tile_wires and int(target) in tile_wires
+                    )
+                    targets = tuple(
+                        int(target)
+                        for control, target in zip(
+                            matching.controls, matching.targets, strict=True
+                        )
+                        if int(control) in tile_wires and int(target) in tile_wires
+                    )
+                    optimized.append(
+                        _StatevectorDisjointDenseStep(
+                            tuple(region_by_wire[wire] for wire in tile),
+                            native_parameterized=True,
+                            fused_cx_controls=controls,
+                            fused_cx_targets=targets,
+                        )
+                    )
+                index = cursor + 1
+                continue
+        optimized.extend(layers)
+        index = cursor
+    return optimized
 
 
 def fuse_native_fixed_one_qubit_layers(
@@ -374,6 +510,24 @@ def apply_native_fixed_one_qubit_layer(
             matrix_tensor.narrow(-3, start, width),
             torch.tensor(wires[start:stop], dtype=torch.int64, device=state.device),
             n_wires=n_wires,
+            cx_controls=(
+                torch.tensor(
+                    step.fused_cx_controls,
+                    dtype=torch.int64,
+                    device=state.device,
+                )
+                if step.fused_cx_controls
+                else None
+            ),
+            cx_targets=(
+                torch.tensor(
+                    step.fused_cx_targets,
+                    dtype=torch.int64,
+                    device=state.device,
+                )
+                if step.fused_cx_targets
+                else None
+            ),
         ):
             return None
         start = stop

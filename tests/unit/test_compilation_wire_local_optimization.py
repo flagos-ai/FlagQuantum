@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
+from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
 from flagquantum.compiler.pipeline import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
@@ -161,17 +162,21 @@ def _reference_merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
 
 
 def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
-    """The whole optimization pipeline as it stood before the wire index existed.
+    """The whole optimization pipeline with the wire-local traversal re-derived.
 
-    Only the traversal is re-derived here. The opcode tables and the parameter
-    arithmetic are imported from the implementation so that this oracle differs
-    from the code under test in exactly one respect: the reverse list scan that
-    the wire index replaced. If the two ever disagree, the index is wrong.
+    Only the traversal of the three wire-local passes is re-derived here. The
+    opcode tables and the parameter arithmetic are imported from the
+    implementation so that this oracle differs from the code under test in
+    exactly one respect: the reverse list scan that the wire index replaced. If
+    the two ever disagree, the index is wrong.
 
-    `remove_zero_state_resets` is called from both sides in the same position so that
-    property survives. It is a pass of its own with its own tests, and re-deriving its
-    rule here -- which reads the register's initial state rather than an opcode table --
-    would change what this oracle is measuring, not strengthen it.
+    The two passes outside that traversal are called from both sides in the same
+    position rather than re-derived, because each is a different pass with its
+    own rule and not the subject of this oracle. ``remove_zero_state_resets``
+    reads the register's initial state instead of an opcode table;
+    ``collapse_one_qubit_runs`` has a traversal of its own. Both are in the loop
+    because the loop has to be the one the implementation runs for the
+    round-by-round comparison to mean anything.
     """
 
     from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
@@ -184,6 +189,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = _reference_merge_self_inverse(ir)
         ir = _reference_merge_adjacent_rotations(ir)
         ir = _reference_remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:
             return ir
     raise AssertionError("the reference optimizer did not reach a fixed point")

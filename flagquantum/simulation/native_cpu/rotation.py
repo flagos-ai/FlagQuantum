@@ -130,6 +130,8 @@ def fused_rotation_block_forward_(
     rzz_angles: torch.Tensor | None = None,
     rzz_first_wires: torch.Tensor | None = None,
     rzz_second_wires: torch.Tensor | None = None,
+    cx_controls: torch.Tensor | None = None,
+    cx_targets: torch.Tensor | None = None,
 ) -> bool:
     """Apply two to eleven shared or batch-specific one-qubit matrices in place.
 
@@ -138,6 +140,7 @@ def fused_rotation_block_forward_(
     """
 
     rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
+    cx_tensors = (cx_controls, cx_targets)
     real_dtype = torch.float32 if state.dtype == torch.complex64 else torch.float64
     if (
         not native_cpu_rotation_available()
@@ -158,6 +161,10 @@ def fused_rotation_block_forward_(
         or (
             any(item is None for item in rzz_tensors)
             and any(item is not None for item in rzz_tensors)
+        )
+        or (
+            any(item is None for item in cx_tensors)
+            and any(item is not None for item in cx_tensors)
         )
         or (
             rzz_angles is not None
@@ -188,6 +195,21 @@ def fused_rotation_block_forward_(
                 or not rzz_second_wires.is_contiguous()
             )
         )
+        or (
+            cx_controls is not None
+            and (
+                cx_targets is None
+                or cx_controls.device.type != "cpu"
+                or cx_targets.device.type != "cpu"
+                or cx_controls.dtype != torch.int64
+                or cx_targets.dtype != torch.int64
+                or cx_controls.ndim != 1
+                or cx_targets.shape != cx_controls.shape
+                or not 1 <= cx_controls.numel() <= 5
+                or not cx_controls.is_contiguous()
+                or not cx_targets.is_contiguous()
+            )
+        )
     ):
         return False
     with torch.no_grad():
@@ -202,6 +224,8 @@ def fused_rotation_block_forward_(
                 rzz_first_wires,
                 rzz_second_wires,
                 native_cpu_specialized_forward_rotations_available(),
+                cx_controls,
+                cx_targets,
             ),
         )
     return True

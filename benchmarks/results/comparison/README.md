@@ -41,6 +41,12 @@ through the native CPU layer kernel. It includes the rejected broad-routing
 experiment, same-run PennyLane Lightning native-batch comparison, exact times,
 memory, correctness, example code, limitations, and reproduction steps.
 
+[`BATCHED_STATEVECTOR_ROTATION_CLIFFORD_FUSION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_ROTATION_CLIFFORD_FUSION_CPU_ARM64_20261003_SCORECARD.md)
+records the exact rollback A/B for fusing local rotation tiles with their next
+disjoint CX matching. It includes absolute time, the execution-RSS reduction,
+same-run PennyLane Lightning comparison, public example, boundaries, raw JSON,
+and an exact reproduction command.
+
 The differentiable simulator corpus adds matched exact expectation-value and
 full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
 default.qubit backprop. Its generated Markdown report contains the workload meaning,

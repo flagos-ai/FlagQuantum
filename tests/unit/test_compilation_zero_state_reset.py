@@ -459,12 +459,21 @@ def test_optimization_never_leaves_a_removable_reset_behind() -> None:
     assert resets > 20
 
 
-def test_optimization_only_deletes_and_never_invents_an_instruction() -> None:
+def test_the_pass_only_deletes_and_never_invents_an_instruction() -> None:
+    """The rule removes; it never synthesizes a program of its own.
+
+    The property is stated of this pass rather than of ``optimize``, because the
+    pipeline as a whole does not hold it and says so: ``collapse_one_qubit_runs``
+    re-spells a same-wire run as one gate, so the pipeline can emit an instruction
+    the caller never wrote. A synthesized instruction here would mean this pass had
+    a rule other than "remove a reset on a clean wire", so it is still checked.
+    """
+
     rng = random.Random(20261112)
     programs = [_random_dynamic_circuit(rng, 3) for _ in range(24)]
 
     for ir in programs:
-        optimized = optimize(ir)
+        optimized = remove_zero_state_resets(ir)
         remaining = list(
             (instruction.name, instruction.wires) for instruction in optimized
         )

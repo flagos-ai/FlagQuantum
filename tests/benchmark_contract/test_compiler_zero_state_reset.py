@@ -12,7 +12,7 @@ The recorded answers are that the rule is a property of the IR rather than a tab
 -- the pass module holds exactly **1** string literal and imports neither the
 operator schema nor any matrix source, and ``CircuitIR`` has **8** fields none of
 which can carry another initial state; that on seven seeded populations the pass
-removes **182** instructions the pipeline had left in place and **213** once its own
+removes **182** instructions the pipeline had left in place and **227** once its own
 count is taken after the other passes, every one of them checked against an
 execution; that on 24 shape rows and 30 resets it
 removes **12**, declines **13** that a 64-trajectory average reduced state shows
@@ -56,14 +56,20 @@ _RULE = {
 #: delta over the pipeline without the pass. ``executed_circuit_count`` is asserted
 #: equal to ``circuit_count`` on every population: a removal that no execution saw is
 #: an arithmetic result, not evidence.
+#:
+#: ``removed_by_the_pass_alone`` is a property of this rule and moves only if the rule
+#: moves. The two pipeline columns are not: they are read under whatever the rest of
+#: the pipeline does, so ``collapse_one_qubit_runs`` landed on main and made the two
+#: interact -- a removed reset stops interrupting a wire, which hands the folding pass
+#: a longer run to fold -- and these counts were re-measured rather than kept.
 _DELTA = {
     "leading_resets": {
         "circuit_count": 30,
         "source_instruction_count": 129,
         "legacy_instruction_count": 123,
-        "optimized_instruction_count": 60,
+        "optimized_instruction_count": 55,
         "removed_by_the_pass_alone": 63,
-        "removed_by_the_pass_in_the_pipeline": 63,
+        "removed_by_the_pass_in_the_pipeline": 68,
         "changed_circuit_count": 30,
         "executed_circuit_count": 30,
         "comparison": "final_state",
@@ -127,10 +133,10 @@ _DELTA = {
         "circuit_count": 30,
         "source_instruction_count": 295,
         "legacy_instruction_count": 285,
-        "optimized_instruction_count": 255,
+        "optimized_instruction_count": 246,
         "removed_by_the_pass_alone": 29,
-        "removed_by_the_pass_in_the_pipeline": 30,
-        "changed_circuit_count": 19,
+        "removed_by_the_pass_in_the_pipeline": 39,
+        "changed_circuit_count": 21,
         "executed_circuit_count": 30,
         "comparison": "outcome_shares",
     },
