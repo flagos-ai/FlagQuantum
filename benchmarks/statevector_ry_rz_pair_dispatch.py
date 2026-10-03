@@ -25,7 +25,7 @@ IMPLEMENTATION_ID = "FQKI-TRITON-SV-004-A"
 RUNNER = "benchmarks/statevector_ry_rz_pair_dispatch.py"
 COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
-    (1, 1 << 16, 15, False),
+    (1, 1 << 8, 0, False),
     (1, 1 << 20, 0, True),
     (1, 1 << 20, 10, True),
     (1, 1 << 20, 19, True),
