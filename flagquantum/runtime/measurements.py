@@ -218,6 +218,10 @@ def _normalize_joint_marginal(marginal: torch.Tensor) -> torch.Tensor:
     """Preserve the dense-result normalization contract for either route."""
 
     total = marginal.sum(dim=-1, keepdim=True)
+    if marginal.is_cuda:
+        normalize = ((total - 1).abs() > _TRACE_TOLERANCE).any() & (total > 0).all()
+        denominator = torch.where(normalize, total, torch.ones_like(total))
+        return marginal / denominator
     if bool(((total - 1).abs() > _TRACE_TOLERANCE).any()) and bool((total > 0).all()):
         marginal = marginal / total
     return marginal
