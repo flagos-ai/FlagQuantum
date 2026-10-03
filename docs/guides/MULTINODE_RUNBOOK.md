@@ -757,6 +757,53 @@ not made here. What is changed here is only the record: the default's behaviour
 is named, its consequence is measured, and the frozen manifest is left alone
 rather than edited after the measurement.
 
+#### Reading the tensor-network gate's default output
+
+`benchmarks/internal/evidence/tensor_network_release_gate.py` takes repeatable
+`--candidate` directories and falls back to `(RESULTS, baseline)` when none is
+given, where `RESULTS` is `benchmarks/results/scalability`. That directory is the
+**statevector** capability's declared `release_artifact` and holds the five
+promoted statevector envelopes. The tensor-network lane has never promoted
+anything: `benchmarks/results/smoke/release_candidates/tensor_network_matched_speed`
+and `.../tensor_network_single_gpu_capacity` both exist and are both empty, and
+the sealed payloads the lane produced live outside the tree.
+
+Running the tensor-network gate with no `--candidate`, therefore, evaluates the
+statevector payloads as tensor-network production evidence and reports:
+
+```console
+$ python benchmarks/internal/evidence/tensor_network_release_gate.py
+{"capability": "distributed_tensor_network", "artifact_count": 5, ...,
+ "passed": false, "blockers": ["capacity_premise_not_established"]}
+```
+
+That output reads as "the tensor-network release is one blocker away". It is not
+tensor-network evidence. The runtime-evidence envelope has no capability field,
+so the gate cannot tell the two apart from the payload alone, and the
+statevector envelopes happen to satisfy every tensor-network check that is not
+capability-specific. The only reason it is one blocker rather than five is that
+a `measured_production_run` is a `measured_production_run` regardless of which
+capability sealed it.
+
+The correct invocation names the candidate set, and then the same gate reports
+what is actually missing:
+
+```console
+$ python benchmarks/internal/evidence/tensor_network_release_gate.py \
+    --candidate benchmarks/results/smoke/release_candidates/tensor_network_matched_speed
+{"capability": "distributed_tensor_network", "artifact_count": 0, ...,
+ "blockers": ["missing_release_world_sizes", "missing_multinode_correctness_artifact",
+              "missing_sharded_training_ownership",
+              "missing_statistically_significant_speedup_artifact",
+              "capacity_premise_not_established"]}
+```
+
+A future tensor-network promotion must therefore also pass
+`--release-directory`, because `benchmarks/results/scalability` belongs to the
+statevector capability and `tools/promote_release_candidates.py` promotes into
+the gate's own `RESULTS` unless told otherwise. Two capabilities do not share a
+release directory.
+
 ### Repeatability of the measured leg
 
 The artifacts as first recorded were produced by two independent invocations of
