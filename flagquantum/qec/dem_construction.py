@@ -84,6 +84,7 @@ def _memory_circuit_entries(
                 circuit,
                 round_index=mechanism.round_index,
                 wire=mechanism.wire,
+                fault=mechanism.fault,
             )
         elif mechanism.kind == "measurement":
             source = _inject_measurement_flip(
@@ -468,6 +469,15 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
 
 _ROUND_LOOP_ANCHOR = "    for round_index in range(rounds):\n"
 _FLIP_INDENT = "        "
+# The single-qubit gates whose product is each Pauli fault, in the hybrid
+# language's own gate set. ``H`` is its own inverse and conjugating ``X`` by it is
+# ``Z``, which is how a Z fault is written without a ``Z`` gate.
+_FAULT_GATES: dict[str, tuple[str, ...]] = {
+    "x": ("X",),
+    "z": ("H", "X", "H"),
+    "y": ("X", "H", "X", "H"),
+}
+_MEASUREMENT_FLIP_GATES = _FAULT_GATES["x"]
 
 
 @dataclass(frozen=True)
@@ -483,12 +493,20 @@ class _Mechanism:
     syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
     literal rather than a free string, so a caller that builds a record by hand
     is told at the type checker which two flips exist.
+
+    ``fault`` names which of the three single-qubit Pauli faults a data
+    mechanism is: ``"x"``, ``"z"`` or ``"y"``, in the letters the
+    :class:`~flagquantum.qec.PhenomenologicalNoise` fields are documented with. It
+    is ``"x"`` for a measurement mechanism, which is not a Pauli fault at all,
+    because the field is part of every record and inventing a fourth value for
+    the one kind that has no choice would make the two kinds harder to compare.
     """
 
     kind: Literal["data", "measurement"]
     round_index: int
     wire: int
     probability: float
+    fault: Literal["x", "z", "y"] = "x"
 
 
 def _check_rate_order(checks: tuple[CodeCheck, ...]) -> tuple[int, ...]:
@@ -523,13 +541,20 @@ def _mechanisms(
 ) -> tuple[_Mechanism, ...]:
     """Return every noise location a probability makes possible, in order.
 
-    Data flips come first — one per round per data wire — and measurement flips
-    second, one per round per check. Both loops walk the code's own tuples in
-    order, which is the order the emitted program measures in. A location whose
-    **own** probability is zero cannot flip anything, so it is not enumerated at
-    all: a caller that counts mechanisms then counts exactly what can happen, and
-    a per-element vector is how a caller states that one location is quiet while
-    its neighbours are not.
+    Data faults come first — one per round per data wire per fault family — and
+    measurement flips second, one per round per check. Every loop walks the code's
+    own tuples in order, which is the order the emitted program measures in. A
+    location whose **own** probability is zero cannot flip anything, so it is not
+    enumerated at all: a caller that counts mechanisms then counts exactly what can
+    happen, and a per-element vector is how a caller states that one location is
+    quiet while its neighbours are not.
+
+    The three fault families are enumerated separately rather than as one
+    depolarizing location, because a code-capacity model detects them differently
+    and a caller states them as three separate rates. This matches the matrix
+    route, which has always enumerated all three; a data location is the same
+    location whether the model is built from the program or from the matrices, and
+    the two routes must not disagree about which faults exist.
 
     The probability a location is enumerated with is the element of the vector
     that names it, or the scalar when no vector is stated, and the element is
@@ -574,21 +599,30 @@ def _mechanisms(
             "same bit for both"
         )
     data_flip_rates = noise.data_flip_rates(num_qubits=len(data_wires))
+    phase_flip_rates = noise.phase_flip_rates(num_qubits=len(data_wires))
+    both_flip_rates = noise.both_flip_rates(num_qubits=len(data_wires))
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
     rate_order = _check_rate_order(checks)
     mechanisms: list[_Mechanism] = []
+    families: tuple[tuple[Literal["x", "z", "y"], tuple[float, ...]], ...] = (
+        ("x", data_flip_rates),
+        ("z", phase_flip_rates),
+        ("y", both_flip_rates),
+    )
     for round_index in range(circuit.rounds):
         for position, wire in enumerate(data_wires):
-            rate = data_flip_rates[position]
-            if rate:
-                mechanisms.append(
-                    _Mechanism(
-                        kind="data",
-                        round_index=round_index,
-                        wire=wire,
-                        probability=rate,
+            for fault, rates in families:
+                rate = rates[position]
+                if rate:
+                    mechanisms.append(
+                        _Mechanism(
+                            kind="data",
+                            round_index=round_index,
+                            wire=wire,
+                            probability=rate,
+                            fault=fault,
+                        )
                     )
-                )
     for round_index in range(circuit.rounds):
         for position, check in enumerate(checks):
             rate = measurement_flip_rates[rate_order[position]]
@@ -642,17 +676,39 @@ def _single_anchor(source: str, anchor: str, *, label: str) -> int:
     return source.index(anchor)
 
 
-def _forced_flip(round_index: int, wire: int) -> str:
-    """Return the guarded single-qubit ``X`` that forces one error."""
+def _forced_flip(round_index: int, wire: int, *, gates: tuple[str, ...]) -> str:
+    """Return the guarded single-qubit sequence that forces one error.
 
-    return (
-        f"{_FLIP_INDENT}if round_index == {round_index}:\n"
-        f"{_FLIP_INDENT}    qp.X(wires={wire})\n"
-    )
+    ``gates`` is the sequence of the hybrid language's single-qubit gates whose
+    product is the fault. The language carries ``H`` and ``X`` and no ``Z``, and
+    conjugating ``X`` by ``H`` is exactly ``Z``, so a Z fault is written as those
+    three gates rather than as a gate the capture layer would refuse. A Y fault is
+    ``X`` followed by that same conjugation of ``X``, which is ``XZ``: the two
+    differ by the global phase ``i``, and a Pauli frame does not see a global
+    phase.
+    """
+
+    lines = [f"{_FLIP_INDENT}if round_index == {round_index}:"]
+    lines.extend(f"{_FLIP_INDENT}    qp.{gate}(wires={wire})" for gate in gates)
+    return "\n".join(lines) + "\n"
 
 
-def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) -> str:
-    """Return ``circuit``'s source with one ``X`` forced on a data wire.
+def _inject_data_flip(
+    circuit: MemoryCircuit,
+    *,
+    round_index: int,
+    wire: int,
+    fault: Literal["x", "z", "y"] = "x",
+) -> str:
+    """Return ``circuit``'s source with one Pauli fault forced on a data wire.
+
+    The fault is the one ``fault`` names and not the one that the experiment's
+    readout basis makes visible. Those are the same question only in the Z basis:
+    the model states an X fault, a Z fault and a Y fault as three independent
+    locations, and each is injected as itself whichever basis the wire is read
+    out in. Substituting one for another here would make ``data_flip`` open an
+    X-basis experiment's observable, which is a claim the noise record does not
+    make and the caller cannot see.
 
     The flip is guarded by ``if round_index == <round_index>:`` and inserted at
     the start of that round, before any of the round's CNOTs, so the error opens
@@ -661,13 +717,19 @@ def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) ->
 
     checked_round = _checked_round(circuit, round_index, label="data-flip round")
     checked_wire = _checked_wire(circuit.code.data_wires, wire, label="data-flip wire")
+    if fault not in _FAULT_GATES:
+        raise ValueError(
+            f"unknown data fault {fault!r}: the model states an X, a Z and a Y "
+            "fault, spelled 'x', 'z' and 'y'"
+        )
     offset = _single_anchor(
         circuit.source, _ROUND_LOOP_ANCHOR, label="the round loop anchor"
     )
     end = offset + len(_ROUND_LOOP_ANCHOR)
+    gates = _FAULT_GATES[fault]
     return (
         f"{circuit.source[:end]}"
-        f"{_forced_flip(checked_round, checked_wire)}"
+        f"{_forced_flip(checked_round, checked_wire, gates=gates)}"
         f"{circuit.source[end:]}"
     )
 
@@ -695,7 +757,7 @@ def _inject_measurement_flip(
     )
     return (
         f"{circuit.source[:offset]}"
-        f"{_forced_flip(checked_round, checked_wire)}"
+        f"{_forced_flip(checked_round, checked_wire, gates=_MEASUREMENT_FLIP_GATES)}"
         f"{circuit.source[offset:]}"
     )
 

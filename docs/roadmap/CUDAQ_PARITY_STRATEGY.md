@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 9 |
-| `partial` | 40 |
-| `unsupported` | 46 |
+| `partial` | 41 |
+| `unsupported` | 45 |
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -104,7 +104,7 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 12 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 11 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by
 integration rather than by research: a detector error model, chemistry and
 algorithm domain libraries, a decoder family, Clifford+T and
@@ -279,7 +279,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 46 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 45 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

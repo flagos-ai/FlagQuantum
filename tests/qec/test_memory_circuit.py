@@ -266,13 +266,24 @@ def test_logical_observable_rejects_an_identity_operator() -> None:
         LogicalObservable(index=0, pauli=Pauli(), measurement_parity=())
 
 
-def test_logical_observable_rejects_an_x_type_operator() -> None:
-    with pytest.raises(ValueError, match="Z-type"):
+def test_logical_observable_rejects_a_mixed_type_operator() -> None:
+    with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(x_wires=(0,)),
+            pauli=Pauli(x_wires=(0,), z_wires=(0,)),
             measurement_parity=(MeasurementRef(None, 0),),
         )
+
+
+def test_logical_observable_admits_an_x_type_operator() -> None:
+    """The readout basis belongs to the experiment, not to the operator."""
+
+    observable = LogicalObservable(
+        index=0,
+        pauli=Pauli(x_wires=(0, 1)),
+        measurement_parity=(MeasurementRef(None, 0), MeasurementRef(None, 1)),
+    )
+    assert observable.pauli == Pauli(x_wires=(0, 1))
 
 
 def test_observable_layout_requires_a_dense_ordering() -> None:

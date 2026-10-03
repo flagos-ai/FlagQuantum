@@ -37,6 +37,7 @@ from .decoders import (
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
 from .dem_construction import CssCodeMatrices, css_code_matrices
+from .logical import certify_logical_product, derive_anticommuting_logical_product
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
@@ -117,6 +118,8 @@ __all__ = (
     "SyndromeRound",
     "StreamingDecoder",
     "build_memory_circuit",
+    "certify_logical_product",
+    "derive_anticommuting_logical_product",
     "decoder_context_from_memory_circuit",
     "css_code_matrices",
     "decoder_names",

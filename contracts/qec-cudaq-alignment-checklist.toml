@@ -460,18 +460,31 @@ fail_closed = "Named absence plus an absent dialect path, so the row cannot outl
 
 [[rows]]
 id = "qec_logical_operations"
-status = "absent"
+status = "partial"
 floor = "later"
 domain_row = "qec_logical_operations"
 domain_items = ["lattice surgery and magic state distillation", "the logical.* preview namespace"]
 dependency_class = "B_open_neutral"
+maturity_ref = "stabilizer_code_memory_circuit"
 baseline = "Lattice surgery, product rotation and magic state distillation, exposed as a large preview namespace of patch, gadget, protocol and program records: code classes, prepare_zero and css_memory_round and logical_measure gadgets, idle, estimate with tiers, a compiler Build with replay and serialize, extract_syndrome, and a CLI that translates a module to stim fabric."
-target = "Logical operations over the code layer, with the semantic core (lattice surgery, product rotation, distillation) aligned through the Qualtran adaptation rather than transcribed from the preview namespace."
-symbols_absent = ["LatticeSurgery", "MagicStateDistillation", "ProductRotation", "Tier"]
-negative_search = ["flagquantum/qec/logical.py"]
-evidence = ["contracts/cudaq-parity-matrix.toml"]
-next_action = "Depends on the decoder family and on logical resource estimation. Two alignment facts worth writing down before anyone starts: the layer states of itself that it does not simulate, sample or decode, so it cannot be the route to a decoder; and it emits stim fabric text through a CLI while emitting no DEM, so aligning to it does not deliver the detector-error-model interchange. The semantic core is the target, the surrounding preview records are not."
-fail_closed = "Named absence plus an absent module path, plus the recorded statement that the layer neither decodes nor emits a DEM, so a future claim that this layer supplies either has to contradict the baseline's own documentation."
+target = "Logical operations over the code layer, with the semantic core (lattice surgery, product rotation, distillation) aligned through the Qualtran adaptation rather than transcribed from the preview namespace. Of the three, product rotation is the one this repository can carry on its own records today, because it is a statement about a declared code and the Pauli operators that code declares rather than about a gadget that compiles a patch."
+symbols_present = [
+    "flagquantum.qec.logical.certify_logical_product",
+    "flagquantum.qec.logical.derive_anticommuting_logical_product",
+    "flagquantum.qec.MemoryCircuit.x_readout_wires",
+]
+symbols_absent = ["LatticeSurgery", "MagicStateDistillation", "Tier"]
+negative_search = ["flagquantum/qec/lattice_surgery.py", "flagquantum/qec/distillation.py"]
+evidence = [
+    "contracts/cudaq-parity-matrix.toml",
+    "flagquantum/qec/logical.py",
+    "flagquantum/qec/circuit.py",
+    "flagquantum/qec/dem_construction.py",
+    "tests/qec/test_logical_product_rotation.py",
+    "tests/qec/test_dem_from_memory_circuit.py",
+]
+next_action = "The two remaining thirds of the semantic core, and they are the two the baseline composes from patch, gadget, protocol and program records rather than from a code declaration: lattice surgery and magic state distillation. Both need a patch identity that outlives one experiment -- surgery merges and splits patches across rounds, and distillation consumes several noisy magic states to produce one -- and this repository has no such identity yet, so the next step is that record rather than an operation. Two alignment facts worth keeping in front of whoever starts: the layer states of itself that it does not simulate, sample or decode, so it cannot be the route to a decoder; and it emits stim fabric text through a CLI while emitting no DEM, so aligning to it does not deliver the detector-error-model interchange. Logical resource estimation is a separate row and is not delivered here either. The semantic core is the target, the surrounding preview records are not."
+fail_closed = "The row turns red the day lattice surgery or distillation appears under a name it does not carry, because both module paths it names are searched for and neither exists, and because LatticeSurgery, MagicStateDistillation and Tier must still resolve nowhere. It also keeps the recorded statement that the preview layer neither decodes nor emits a DEM, so a future claim that this layer supplies either has to contradict the baseline's own documentation. What it now claims is narrow on purpose and is held there by measurement rather than by prose: certification refuses a product that does not commute with a check, a product inside its own type's stabilizer span, a mixed X-and-Z product, an undeclared wire and a non-Pauli, and the derivation refuses an observable index that is not an integer, an observable that is not Z-type and a code with no X-type partner, including a repetition patch of even distance, which is the case where the answer is genuinely no."
 
 [[rows]]
 id = "qec_transport_and_objectives"

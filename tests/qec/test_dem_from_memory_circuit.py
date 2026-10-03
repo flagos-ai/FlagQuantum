@@ -13,7 +13,7 @@ from flagquantum.qec.circuit import (
     MeasurementRef,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode, SteaneCode
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
     _forced_signature,
@@ -22,6 +22,7 @@ from flagquantum.qec.dem_construction import (
     _Mechanism,
     _mechanisms,
 )
+from flagquantum.qec.logical import derive_anticommuting_logical_product
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
 
@@ -184,6 +185,199 @@ def test_signatures_key_on_check_position_not_on_declared_index() -> None:
     assert observed[(0, 4)] == ((1, 3), ())
     assert observed[(1, 3)] == ((2, 4), ())
     assert observed[(1, 4)] == ((3, 5), ())
+
+
+@pytest.mark.parametrize(
+    ("fault", "gates"),
+    [
+        ("x", ("X",)),
+        ("z", ("H", "X", "H")),
+        ("y", ("X", "H", "X", "H")),
+    ],
+)
+def test_data_faults_are_injected_as_themselves(
+    fault: str, gates: tuple[str, ...]
+) -> None:
+    """``data_flip`` is an X fault, ``phase_flip`` a Z fault, ``both_flip`` a Y one.
+
+    The injected sequence is compared against the whole source, because the
+    language has no ``Z`` gate: a Z fault is written as the three gates whose
+    product is ``Z``, and a Y fault as ``X`` followed by that same product. A
+    count-based assertion would pass on a source injected at the wrong anchor.
+    """
+
+    built = build_memory_circuit(RepetitionCode(distance=3), rounds=2)
+    anchor = "    for round_index in range(rounds):\n"
+    head, _, tail = built.source.partition(anchor)
+    assert head and tail
+    block = "".join(
+        [
+            "        if round_index == 0:\n",
+            *(f"            qp.{gate}(wires=1)\n" for gate in gates),
+        ]
+    )
+
+    assert (
+        _inject_data_flip(built, round_index=0, wire=1, fault=fault)  # type: ignore[arg-type]
+        == f"{head}{anchor}{block}{tail}"
+    )
+    assert built.source.count(anchor) == 1
+    assert "qp.Z(" not in built.source
+
+
+def test_an_unknown_data_fault_is_refused() -> None:
+    built = build_memory_circuit(RepetitionCode(distance=3), rounds=2)
+    with pytest.raises(ValueError, match="unknown data fault 'w'"):
+        _inject_data_flip(built, round_index=0, wire=1, fault="w")  # type: ignore[arg-type]
+
+
+def test_the_three_fault_families_are_enumerated_separately() -> None:
+    """Each family is a location of its own, in the code's own wire order."""
+
+    built = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
+    noise = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, both_flip=0.03)
+    assert [
+        (mechanism.fault, mechanism.wire) for mechanism in _mechanisms(built, noise)
+    ] == [
+        ("x", 0),
+        ("z", 0),
+        ("y", 0),
+        ("x", 1),
+        ("z", 1),
+        ("y", 1),
+        ("x", 2),
+        ("z", 2),
+        ("y", 2),
+    ]
+
+
+def test_a_family_whose_rate_is_zero_is_not_a_location() -> None:
+    built = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
+    noise = PhenomenologicalNoise(phase_flip=0.02)
+    mechanisms = _mechanisms(built, noise)
+    assert {mechanism.fault for mechanism in mechanisms} == {"z"}
+    assert len(mechanisms) == 3
+
+
+def test_measurement_mechanisms_carry_the_x_fault_label() -> None:
+    """A measurement flip is not a Pauli fault, and the field says so uniformly."""
+
+    built = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
+    noise = PhenomenologicalNoise(measurement_flip=0.2)
+    mechanisms = _mechanisms(built, noise)
+    assert [(mechanism.kind, mechanism.fault) for mechanism in mechanisms] == [
+        ("measurement", "x"),
+        ("measurement", "x"),
+    ]
+
+
+def test_a_z_fault_in_the_z_basis_flips_only_the_x_type_checks() -> None:
+    """The family a code-capacity model needs is the one its other checks see.
+
+    The Steane code's Z-type checks read the data in the Z basis, so the ``|0>``
+    preparation already fixes them and a Z fault in round zero is invisible to
+    them: an X fault is what their round-zero detectors catch. A Z fault is caught
+    by the X-type checks instead, and only by their round-to-round detectors,
+    because an X-type check's round-zero outcome is random in this frame. Under
+    this code the X-type checks hold detectors 6, 7 and 8.
+    """
+
+    built = build_memory_circuit(SteaneCode(), rounds=2)
+    noise = PhenomenologicalNoise(phase_flip=0.05)
+    model = DetectorErrorModel.from_memory_circuit(built, noise=noise)
+    measured = {
+        (record.round_index, record.wire): _forced_signature(
+            built,
+            _inject_data_flip(
+                built,
+                round_index=record.round_index,
+                wire=record.wire,
+                fault=record.fault,
+            ),
+        )
+        for record in _mechanisms(built, noise)
+    }
+
+    assert measured[(0, 0)] == ((), ())
+    assert measured[(1, 0)] == ((8,), ())
+    assert measured[(1, 3)] == ((6,), ())
+    assert measured[(1, 6)] == ((6, 7, 8), ())
+    assert set(measured) == {
+        (round_index, wire) for round_index in (0, 1) for wire in range(7)
+    }
+    flipped = {detector for detectors, _ in measured.values() for detector in detectors}
+    assert flipped == {6, 7, 8}
+    assert model.num_observables == 1
+    assert all(not error.observables for error in model.errors)
+    assert all(error.detectors or error.observables for error in model.errors)
+
+
+def test_a_z_fault_in_the_x_basis_flips_the_rotated_observable() -> None:
+    """Reading a code out in the X basis is what makes its Z faults matter.
+
+    The Z-type checks are the ones whose round-zero outcome the ``|+>``
+    preparation randomizes, so in this frame none of them keeps a boundary
+    detector, and a Z fault in round zero is therefore caught by nothing at all.
+    From round one on it is caught by the X-type checks' round-to-round detectors
+    and it also flips the X-basis observable.
+    """
+
+    code = SteaneCode()
+    product = derive_anticommuting_logical_product(code, 0)
+    built = build_memory_circuit(code, rounds=2, product=product)
+    noise = PhenomenologicalNoise(phase_flip=0.05)
+    model = DetectorErrorModel.from_memory_circuit(built, noise=noise)
+    measured = {
+        (record.round_index, record.wire): _forced_signature(
+            built,
+            _inject_data_flip(
+                built,
+                round_index=record.round_index,
+                wire=record.wire,
+                fault=record.fault,
+            ),
+        )
+        for record in _mechanisms(built, noise)
+    }
+
+    assert built.x_readout_wires == (2, 4, 5)
+    assert product == Pauli(x_wires=(2, 4, 5))
+    assert measured[(0, 0)] == ((), ())
+    assert measured[(0, 2)] == ((), (0,))
+    assert measured[(1, 2)] == ((4, 5), (0,))
+    assert measured[(1, 6)] == ((3, 4, 5), ())
+    live = [error for error in model.errors if error.observables]
+    assert live
+    assert all(tuple(error.observables) == (0,) for error in live)
+    assert all(error.detectors or error.observables for error in model.errors)
+
+
+def test_an_x_fault_in_the_x_basis_is_detected_but_never_flips_the_observable() -> None:
+    """The rotated readout measures an X-type product, which an X fault commutes with."""
+
+    code = SteaneCode()
+    built = build_memory_circuit(
+        code, rounds=2, product=derive_anticommuting_logical_product(code, 0)
+    )
+    noise = PhenomenologicalNoise(data_flip=0.05)
+    model = DetectorErrorModel.from_memory_circuit(built, noise=noise)
+    measured = {
+        (record.round_index, record.wire): _forced_signature(
+            built,
+            _inject_data_flip(
+                built,
+                round_index=record.round_index,
+                wire=record.wire,
+                fault=record.fault,
+            ),
+        )
+        for record in _mechanisms(built, noise)
+    }
+
+    assert model.num_errors == 7
+    assert all(not error.observables for error in model.errors)
+    assert measured[(1, 0)] == ((2,), ())
+    assert measured[(1, 6)] == ((0, 1, 2), ())
 
 
 def test_mechanisms_enumerate_in_round_then_tuple_order() -> None:

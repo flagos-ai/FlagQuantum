@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Two families declared and both now feed the matrix route, but no named matrix record, no X-type logical readout, no Steane/colour/qLDPC. |
+| `qec_code_record` | partial | now | `qec_code_library` | Three records declared — repetition, rotated surface and Steane — and each feeds both the circuit and the matrix route in either readout basis; the record set is still one code per family, so a colour code has no record and a mixed-type observable is refused. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -63,7 +63,7 @@ from the matrix's `priority`, the row states why.
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, and a name-keyed registry all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
-| `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
+| `qec_logical_operations` | partial | later | `qec_logical_operations` | Product rotation landed as a code-declaration operation: a candidate logical product is certified against the code's own checks and one observable's partner is derived over GF(2); lattice surgery and distillation are still absent. |
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
@@ -305,6 +305,99 @@ not expressible. That limit is carried by `dem_code_capacity_noise`, which stays
 `reshaped`. The record set is the other thing the code-row target implies and
 does not yet have: a colour code has no record even though the CSS shape now
 admits one, which is the absence `symbol:flagquantum.qec.color_code` states.
+
+**What `qec_logical_operations` closed, and what it did not.** The row was
+`absent` on all three of its named operations and on an absent module path. Of
+the three, exactly one can be carried by a code declaration rather than by a
+gadget that compiles a patch: product rotation is a statement about a declared
+code and the Pauli operators that code declares, and it needs no patch identity
+that outlives one experiment. Lattice surgery merges and splits patches across
+rounds and distillation consumes several noisy magic states to produce one, so
+both need that identity, and neither is here. The row is therefore `partial`
+rather than `aligned`, and the third of the semantic core that landed is
+`flagquantum/qec/logical.py`, which builds no circuit, executes nothing and
+holds no state.
+
+Certification is the half that makes a product a logical operator rather than a
+plausible one. `certify_logical_product(code, product)` refuses a non-Pauli, the
+identity, a product that mixes X-type and Z-type factors on the same record, a
+product naming a wire the code does not declare as data, a product that
+anticommutes with any check — naming the check's index, because that check is
+the one whose outcome the product would randomize — and a product that lies in
+the stabilizer span of the observables of its own type, because such a product's
+outcome is fixed and the terminal readout would report a constant. The last
+refusal is not a technicality: the declared all-Z operator of an even-distance
+repetition patch is the product of its own checks, `Z0*Z1` times `Z2*Z3` for
+distance four, so a distance-two or distance-four repetition patch genuinely has
+no X-basis readout and the derivation says so instead of returning the declared
+operator back.
+
+The partner of a declared observable is derived rather than chosen, and the
+derivation is a Gaussian elimination over GF(2) rather than a table of known
+codes. `derive_anticommuting_logical_product(code, index)` collects the code's
+Z-type checks and its declared Z-type observables as rows, solves `A t = b` with
+`b` the target observable's own row, and certifies the resulting product. It
+refuses an index that is not a non-boolean integer, an index the code has no
+Z-type observable at, and a code for which the system has no solution. The
+measured weight-`d` partners are `X0*X1*X2` for the distance-three repetition
+patch, `X0*X1*X2*X3*X4` for distance five, `X1*X3` and `X2*X5*X8` for the
+distance-two and distance-three rotated patches, and `X2*X4*X5` for the Steane
+code, whose own record already declares an X-type observable that the derived
+partner recovers up to an X-type check.
+
+Readout rotation is where the row becomes measurable rather than declarative.
+`build_memory_circuit(code, rounds, product=P)` inserts `qp.H(wires=w)` for every
+wire in the product's X factor directly after the round-loop header and again
+before the terminal readout, so one code record covers both bases and no second
+circuit shape is added. The retention rule follows from what each check's
+boundary outcome is worth in the rotated frame: an X-type check keeps its
+round-zero and terminal detectors only when its support lies inside the rotated
+wires, a Z-type check keeps them only when its support is disjoint from them, and
+every check keeps every round-to-round detector either way. Measured at two
+rounds, the Steane code keeps six detectors of twelve, the distance-three rotated
+patch keeps twelve of sixteen, and the distance-three repetition patch keeps two
+of six; the rotated surface patch's four boundary survivors are the two ancillas
+each basis keeps. An experiment that is configured with too few rounds to leave
+any deterministic detector at all — a one-round rotated readout is the case —
+is refused with the round count named as the remedy rather than emitted empty,
+and the default frame's source is byte-identical to what it was before the
+rotation path existed for all five patches that carry a certified product.
+
+One defect on the construction side was exposed by making the rotation
+measurable, and it is worth recording because it was a disagreement between two
+routes about which faults exist rather than a wrong answer on either. The matrix
+route had always enumerated three data fault families — `data_flip` as an X
+fault, `phase_flip` as a Z fault and `both_flip` as a Y fault — while the program
+route enumerated only the X family, on the reasoning that `data_flip` is the only
+one a Z-basis readout makes visible. That reasoning holds in the default frame
+and fails in a rotated one, where the observable is an X-type product and the
+family that opens it is the Z family; a rotated-frame model built from a circuit
+carried zero observable-live mechanisms, which is a property of the enumeration
+rather than of the frame. The program route now enumerates the same three
+families the matrix route always has, under the rule that a data location is the
+same location whether the model is built from the program or from the matrices.
+The injected fault is the one the record names and not the one the readout basis
+makes visible, so a Z fault is written as the three gates whose product is `Z`,
+because the capture layer admits no `Z` call, and the difference between the
+three-gate product and `Z` is the global phase `i`, which a Pauli frame does not
+see. Measured after the correction, a two-round rotated model carries an
+observable-live mechanism for each patch: one of four mechanisms for the
+distance-three repetition patch, three of twenty-four for the distance-three
+rotated patch, and four of fifteen for the Steane code, with no mechanism that
+flips nothing in any of the three.
+
+What the row still does not claim is the rest of its target and the reason the
+target is worth having. Lattice surgery, magic state distillation, and the
+patch, gadget, protocol and program records the baseline composes them from are
+all absent, so there is no logical resource estimate, no distance-preserving
+operation and no distillation yield here; the two module paths the checklist
+searches for, `flagquantum/qec/lattice_surgery.py` and
+`flagquantum/qec/distillation.py`, do not exist. Certification is a statement
+about the operator and not about a probability: a certified product is not
+thereby a corrected logical qubit, and no protocol that measures or protects one
+is built here. The remaining work is a patch identity that survives a round
+boundary, which is the same prerequisite the chunk and seam row names for its own
+sliding window, and it is not delivered by either row today.
 
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 

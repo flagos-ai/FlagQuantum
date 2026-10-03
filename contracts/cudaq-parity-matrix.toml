@@ -804,10 +804,11 @@ reason = "Absent, and deliberately sequenced after the internal levels stabilize
 [[domains.capabilities]]
 id = "qec_logical_operations"
 cudaq = "Lattice surgery, product rotation, and magic state distillation"
-status = "unsupported"
+status = "partial"
 priority = "later"
 dependency_class = "B_open_neutral"
-reason = "Absent. It belongs to the logical layer below and shares the Qualtran adaptation plan. The baseline exposes this as the ~70-name `logical.*` preview namespace measured from a live CUDA-Q 0.16.0 install, which also carries the patch, gadget, protocol, and program records the operations compose; the semantic core (lattice surgery, product rotation, distillation) is what this row tracks, and the surrounding records are why the row is a layer rather than a function."
+maturity_ref = "stabilizer_code_memory_circuit"
+reason = "Readout-basis half only. The baseline exposes this as the ~70-name `logical.*` preview namespace measured from a live CUDA-Q 0.16.0 install, which also carries the patch, gadget, protocol, and program records the operations compose; the semantic core (lattice surgery, product rotation, distillation) is what this row tracks, and the surrounding records are why the row is a layer rather than a function. Of those three, product rotation is present: `certify_logical_product` checks a candidate single-patch Pauli product against the code's own checks and its same-type stabilizer span, and `derive_anticommuting_logical_product` solves the code's opposite-type checks over GF(2) for the partner of a declared observable, so one code record is read out in either Pauli basis and the detector error model of a rotated frame carries observable-live mechanisms that the default frame does not. Lattice surgery is absent, magic state distillation is absent, and so are the patch, gadget, protocol, and program records; no logical resource estimate, no distance-preserving operation, and no distillation yield is claimed."
 
 [[domains.capabilities]]
 id = "qec_transport_and_objectives"
