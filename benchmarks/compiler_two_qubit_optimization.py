@@ -238,7 +238,7 @@ def _fold_patch(policy: str) -> Any:
         return unittest.mock.patch.object(
             two_qubit_optimization,
             "_replacement",
-            lambda instructions, *, wire_pair, metadata: (
+            lambda instructions, *, pair, metadata: (
                 () if _same(_run_product(instructions), _IDENTITY) else None
             ),
         )
@@ -376,7 +376,7 @@ def run_table() -> list[dict[str, Any]]:
                 _instruction(rng.choice(TWO_QUBIT_OPCODES), pair, rng)
                 for _ in range(length)
             )
-            replacement = _replacement(run, wire_pair=pair, metadata={})
+            replacement = _replacement(run, pair=pair, metadata={})
             source_total += length
             if replacement is None:
                 declined_runs += 1
@@ -550,7 +550,7 @@ def boundary() -> dict[str, Any]:
             product, run = _boundary_run(atoms, matrices, combination)
             if float(torch.max(torch.abs(product - identity)).item()) <= 1e-12:
                 reach += 1
-            replacement = _replacement(run, wire_pair=(0, 1), metadata={})
+            replacement = _replacement(run, pair=(0, 1), metadata={})
             if replacement is None:
                 continue
             checked += 1

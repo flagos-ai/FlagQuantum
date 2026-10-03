@@ -133,17 +133,17 @@ def test_a_two_qubit_run_that_is_exactly_a_declared_gate_is_folded() -> None:
     # `swap cz swap` moves the control to the other wire: swapping both wires of a
     # controlled-Z is the same gate, so the router's swap cost is what this removes.
     run = [_instruction("swap"), _instruction("cz"), _instruction("swap")]
-    replacement = _replacement(run, wire_pair=(0, 1), metadata={})
+    replacement = _replacement(run, pair=(0, 1), metadata={})
     assert replacement is not None and len(replacement) == 1
     assert replacement[0].name == "cz"
     # `cz swap cz` is the other way round.
     run = [_instruction("cz"), _instruction("swap"), _instruction("cz")]
-    replacement = _replacement(run, wire_pair=(0, 1), metadata={})
+    replacement = _replacement(run, pair=(0, 1), metadata={})
     assert replacement is not None and len(replacement) == 1
     assert replacement[0].name == "swap"
     # An accumulation inside one family, which no other pass composes.
     run = [_instruction("rzz", angle=0.3), _instruction("rzz", angle=0.4)]
-    replacement = _replacement(run, wire_pair=(0, 1), metadata={})
+    replacement = _replacement(run, pair=(0, 1), metadata={})
     assert replacement is not None and len(replacement) == 1
     assert replacement[0].name == "rzz"
     assert replacement[0].params["theta"] == pytest.approx(0.7, abs=1e-12)
@@ -167,7 +167,7 @@ def test_a_run_whose_product_is_the_identity_is_deleted() -> None:
         product = _run_product(run)
         assert product is not None
         assert _same(product, _IDENTITY), [item.name for item in run]
-        assert _replacement(run, wire_pair=(0, 1), metadata={}) == ()
+        assert _replacement(run, pair=(0, 1), metadata={}) == ()
 
 
 def test_a_minus_identity_run_keeps_a_gate() -> None:
@@ -186,7 +186,7 @@ def test_a_minus_identity_run_keeps_a_gate() -> None:
     # It is a diagonal matrix whose entries are all `-1`, which is exactly `-I`.
     for index in range(4):
         assert abs(product[index][index] + 1.0) < 1e-12
-    assert _replacement(run, wire_pair=(0, 1), metadata={}) is None
+    assert _replacement(run, pair=(0, 1), metadata={}) is None
 
 
 def test_a_single_declared_gate_is_never_respelled_as_itself() -> None:
@@ -201,7 +201,7 @@ def test_a_single_declared_gate_is_never_respelled_as_itself() -> None:
         product = _run_product(run)
         assert product is not None
         assert not _same(product, _IDENTITY), opcode
-        assert _replacement(run, wire_pair=(0, 1), metadata={}) is None, opcode
+        assert _replacement(run, pair=(0, 1), metadata={}) is None, opcode
 
 
 def test_a_parameterized_respelling_is_declined_unless_the_run_is_in_that_family() -> (
@@ -224,7 +224,7 @@ def test_a_parameterized_respelling_is_declined_unless_the_run_is_in_that_family
         [_instruction("swap"), _instruction("cy"), _instruction("swap")],
         [_instruction("swap"), _instruction("cx"), _instruction("swap")],
     ):
-        replacement = _replacement(run, wire_pair=(0, 1), metadata={})
+        replacement = _replacement(run, pair=(0, 1), metadata={})
         assert replacement is None, [item.name for item in run]
         # Non-vacuity: the run is only evidence about the decline if some *other*
         # family's closed form would have matched it. `cz`/`swap` are declined

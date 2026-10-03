@@ -398,7 +398,7 @@ def _declines_vocabulary(instructions: Sequence[Instruction], opcode: str) -> bo
 def _replacement(
     instructions: Sequence[Instruction],
     *,
-    wire_pair: tuple[int, ...],
+    pair: tuple[int, ...],
     metadata: Mapping[str, Any],
 ) -> tuple[Instruction, ...] | None:
     """The exact replacement of one run, or None to leave it.
@@ -427,7 +427,7 @@ def _replacement(
             continue
         if not schema.parameters:
             if _same(product, _fixed_matrix(opcode)):
-                return (Instruction(opcode, wire_pair, metadata=metadata),)
+                return (Instruction(opcode, pair, metadata=metadata),)
             continue
         for theta in (
             _principal_angle(opcode, product) + step * 2.0 * math.pi
@@ -437,7 +437,7 @@ def _replacement(
                 return (
                     Instruction(
                         opcode,
-                        wire_pair,
+                        pair,
                         params={schema.parameters[0]: theta},
                         metadata=metadata,
                     ),
@@ -459,22 +459,22 @@ def collapse_two_qubit_runs(ir: CircuitIR) -> CircuitIR:
     not be strictly shorter.
     """
 
-    output: list[Instruction | None] = []
+    output: list[Instruction] = []
     open_runs: dict[tuple[int, ...], list[int]] = {}
     closed_runs: list[list[int]] = []
 
     def close_interfering(
-        wires: Sequence[int], keep: tuple[int, ...] | None = None
+        touched: Sequence[int], keep: tuple[int, ...] | None = None
     ) -> None:
-        """End every open run that shares a wire with `wires`, except `keep`.
+        """End every open run this instruction reaches, except `keep`.
 
-        A run on a pair that shares no wire commutes with this instruction and stays
+        A run on a pair this instruction does not touch commutes with it and stays
         open. `keep` is the pair this instruction is joining, which must survive its
         own arrival.
         """
 
-        touched = set(wires)
-        for pair in [p for p in open_runs if p != keep and touched & set(p)]:
+        arriving = set(touched)
+        for pair in [p for p in open_runs if p != keep and arriving & set(p)]:
             closed_runs.append(open_runs.pop(pair))
 
     for instruction in ir:
@@ -492,7 +492,7 @@ def collapse_two_qubit_runs(ir: CircuitIR) -> CircuitIR:
         members = [output[position] for position in run]
         replacement = _replacement(
             members,
-            wire_pair=members[0].wires,
+            pair=members[0].wires,
             metadata=members[0].metadata,
         )
         if replacement is None:

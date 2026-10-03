@@ -12,15 +12,29 @@ this is the round that found it cannot decide the question on its own. See
 ``test_the_target_legal_count_is_not_monotone_in_program_length``.
 """
 
+import random
+
 import pytest
 
+from benchmarks.compiler_identity_elimination import (
+    _CIRCUITS_PER_POPULATION as IDENTITY_CIRCUIT_COUNT,
+)
+from benchmarks.compiler_identity_elimination import (
+    _POPULATIONS as IDENTITY_POPULATIONS,
+)
+from benchmarks.compiler_identity_elimination import (
+    _substituted_rule,
+    _superseded_rule,
+)
 from benchmarks.compiler_two_qubit_optimization import (
     BOUNDARY_SAMPLE_COUNT,
     FOLD_POLICIES,
     POPULATION_SEEDS,
     RUN_LENGTHS,
+    _fold_patch,
     run_benchmark,
 )
+from flagquantum.compiler.pipeline import optimize
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -265,6 +279,60 @@ def test_no_run_is_deleted_unless_its_product_is_the_identity(payload: dict) -> 
     # the same sweep counted -- deletion is a subset of the identity reach, never a
     # separate mechanism.
     assert deleted <= identity_products
+
+
+def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
+    """The one measurement this round changed outside its own files, attributed.
+
+    ``compiler_identity_elimination`` publishes seven populations measured through the
+    *whole* pipeline, so a pass added later can move a row it does not own. This one
+    did: the fold composes adjacent two-qubit rotations, which is what the two-wire
+    and mixed populations are built out of.
+
+    The instrument is the fold patched out of the loop, which isolates its
+    contribution by construction -- every other pass is the same object both times.
+    Two things are asserted. The pre-fold totals reproduce the values that module
+    pinned before this round, so the move is attributable to this pass by measurement
+    rather than by argument. And no other population moves at all, so the attribution
+    stays a statement about three rows rather than about the pipeline in general. If a
+    later pass starts composing two-qubit runs the second assertion fails, which is
+    where those pins would otherwise have to be re-derived by hand.
+    """
+
+    #: ``population -> ((superseded rule, shipped rule) with the fold out, ... with it
+    #: in)``. Each pair is the row's two post-pipeline counts, which are exactly what
+    #: `compiler_identity_elimination` pins.
+    expected = {
+        "two_wire_rotations": ((245, 245), (201, 201)),
+        "mixed": ((406, 391), (398, 383)),
+        "mixed_with_mid_circuit_measures": ((511, 498), (505, 493)),
+    }
+    #: Populations the fold has no reach in, whose rows must therefore not move.
+    untouched = {label for label, _ in IDENTITY_POPULATIONS if label not in expected}
+    assert untouched  # non-vacuity: there has to be a control group
+
+    measured: dict[str, dict[str, tuple[int, int]]] = {}
+    for label, factory in IDENTITY_POPULATIONS:
+        circuits = [
+            factory(random.Random(seed)) for seed in range(IDENTITY_CIRCUIT_COUNT)
+        ]
+        for policy in ("off", "shipped"):
+            with _fold_patch(policy):
+                with _substituted_rule(_superseded_rule):
+                    superseded = sum(len(optimize(circuit)) for circuit in circuits)
+                shipped = sum(len(optimize(circuit)) for circuit in circuits)
+            measured.setdefault(label, {})[policy] = (superseded, shipped)
+
+    for label, (before, after) in expected.items():
+        assert measured[label]["off"] == before, label
+        assert measured[label]["shipped"] == after, label
+        assert before != after, label
+    for label in untouched:
+        assert measured[label]["off"] == measured[label]["shipped"], label
+    # And where it did move at all, it moved in the pass's own claimed direction.
+    for label in expected:
+        assert measured[label]["shipped"][0] <= measured[label]["off"][0], label
+        assert measured[label]["shipped"][1] <= measured[label]["off"][1], label
 
 
 def test_the_qiskit_anchor_reports_a_no_op_rather_than_claiming_one(

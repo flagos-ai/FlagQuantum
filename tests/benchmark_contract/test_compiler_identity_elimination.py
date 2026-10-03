@@ -314,12 +314,22 @@ _DELTA = {
         "net_instruction_delta_against_the_superseded_rule": 0,
         "changed_circuit_count": 5,
     },
+    # The next three rows are the only ones a later pass co-owns, and this is the
+    # population group where that pass has reach. `collapse_two_qubit_runs` landed
+    # after this rule and composes adjacent two-qubit rotations -- `rzz(a) rzz(b)`
+    # into `rzz(a + b)` -- inside *both* pipelines, so the two post-pipeline counts
+    # move together while the source count and `removed_by_the_rule_alone`, which are
+    # properties of this rule alone, stay where they were. The pre-fold values are
+    # kept as literals in
+    # `test_compiler_two_qubit_optimization.py::test_the_fold_is_what_moved_the_round_18_pipeline_rows`,
+    # which re-measures the drop with the fold patched out and fails if any other
+    # pass starts moving these rows, so the move cannot go silent.
     "two_wire_rotations": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 322,
-        "superseded_rule_instruction_count": 245,
-        "optimized_instruction_count": 245,
+        "superseded_rule_instruction_count": 201,
+        "optimized_instruction_count": 201,
         "removed_by_the_rule_alone": 47,
         "removed_by_the_rule_in_the_pipeline": 0,
         "net_instruction_delta_against_the_superseded_rule": 0,
@@ -329,8 +339,8 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 678,
-        "superseded_rule_instruction_count": 406,
-        "optimized_instruction_count": 391,
+        "superseded_rule_instruction_count": 398,
+        "optimized_instruction_count": 383,
         "removed_by_the_rule_alone": 164,
         "removed_by_the_rule_in_the_pipeline": 15,
         "net_instruction_delta_against_the_superseded_rule": 15,
@@ -340,11 +350,16 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 761,
-        "superseded_rule_instruction_count": 511,
-        "optimized_instruction_count": 498,
+        "superseded_rule_instruction_count": 505,
+        "optimized_instruction_count": 493,
         "removed_by_the_rule_alone": 159,
-        "removed_by_the_rule_in_the_pipeline": 14,
-        "net_instruction_delta_against_the_superseded_rule": 13,
+        # One lower than before the fold, and the clamped column is why: it is a sum
+        # of per-circuit `max(0, legacy - shipped)`, so a fold that shrinks one
+        # circuit's two pipelines by different amounts moves it by a circuit, not by
+        # the gate count. The signed column below follows it by one, which is the
+        # identity this test asserts.
+        "removed_by_the_rule_in_the_pipeline": 13,
+        "net_instruction_delta_against_the_superseded_rule": 12,
         "changed_circuit_count": 16,
     },
 }
