@@ -42,16 +42,15 @@ import torch
 from . import _qubit, _qubits
 
 _DEFAULT_TRUNCATION_DIMENSION = 2
-"""The Fock truncation a degree gets when a caller declares no space for it."""
+# The Fock truncation a degree gets when a caller declares no space for it.
 
 DEFAULT_DENSE_MATRIX_BYTES = 16 * 1024 * 1024
-"""Byte ceiling above which :meth:`BosonOperator.to_matrix` refuses to allocate.
-
-The space is the product of the truncation dimensions and the matrix is its square, so
-the entry count grows with the square of that product.  Two levels per degree admits ten
-degrees and refuses the eleventh, which keeps the dense form a reference and a test
-oracle rather than a production path.
-"""
+# Byte ceiling above which :meth:`BosonOperator.to_matrix` refuses to allocate.
+#
+# The space is the product of the truncation dimensions and the matrix is its square,
+# so the entry count grows with the square of that product. Two levels per degree
+# admits ten degrees and refuses the eleventh, which keeps the dense form a reference
+# and a test oracle rather than a production path.
 
 # One factor of a monomial reads as (degree, is_creation), which is the pair the fermionic
 # rewrite is built on as well; the two rewrites differ in their rule, not in their input.

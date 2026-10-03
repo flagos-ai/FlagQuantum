@@ -37,12 +37,11 @@ import torch
 __all__ = ("DEFAULT_DENSE_MATRIX_BYTES", "SuperOperator")
 
 DEFAULT_DENSE_MATRIX_BYTES = 16 * 1024 * 1024
-"""Byte ceiling above which :meth:`SuperOperator.dense` refuses to allocate.
-
-The dense form is ``(2**n)**4`` entries, so it is a reference for small systems
-and the exact generator of a dense matrix exponential, never a production path.
-The default ceiling admits a four-wire map and refuses the next size up.
-"""
+# Byte ceiling above which :meth:`SuperOperator.dense` refuses to allocate.
+#
+# The dense form is ``(2**n)**4`` entries, so it is a reference for small systems and
+# the exact generator of a dense matrix exponential, never a production path. The
+# default ceiling admits a four-wire map and refuses the next size up.
 
 
 class OperatorFactor(Protocol):
@@ -66,7 +65,7 @@ class OperatorFactor(Protocol):
 
 
 Factor = Any
-"""A superoperator factor: a ``torch.Tensor`` or an :class:`OperatorFactor`."""
+# A superoperator factor: a ``torch.Tensor`` or an :class:`OperatorFactor`.
 
 _Term = tuple[complex, Factor | None, Factor | None]
 

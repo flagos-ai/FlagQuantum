@@ -24,7 +24,7 @@ from dataclasses import dataclass
 import torch
 
 DEFAULT_COMMUTATOR_BLOCK_BYTES = 64 * 1024 * 1024
-"""Soft byte budget for the temporaries one blocked Hamiltonian action allocates."""
+# Soft byte budget for the temporaries one blocked Hamiltonian action allocates.
 
 
 @dataclass(frozen=True, slots=True)

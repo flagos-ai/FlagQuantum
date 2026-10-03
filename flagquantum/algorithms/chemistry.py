@@ -56,10 +56,10 @@ __all__ = (
 )
 
 Angle = Union[float, torch.Tensor]
-"""A rotation angle: a Python number or a scalar tensor that keeps its graph."""
+# A rotation angle: a Python number or a scalar tensor that keeps its graph.
 
 _HALF_PI = math.pi / 2.0
-"""The basis-change angle both excitation sequences use."""
+# The basis-change angle both excitation sequences use.
 
 
 def _count(subject: Any, noun: str, *, minimum: int = 0) -> int:

@@ -33,22 +33,20 @@ from ..errors import CapabilityError
 from .pipeline import schedule_layers
 
 ESTIMATE_BASIS = "static_instruction_sequence"
-"""Names what a :class:`ResourceEstimate` was computed from.
-
-Every field of an estimate is a property of the program text.  A record carrying
-this value states that no execution, allocation, device query, or timing
-produced its numbers, so it must not be read as measured evidence: it says what
-a program would apply, never what a run did cost.
-"""
+# Names what a :class:`ResourceEstimate` was computed from.
+#
+# Every field of an estimate is a property of the program text. A record carrying this
+# value states that no execution, allocation, device query, or timing produced its
+# numbers, so it must not be read as measured evidence: it says what a program would
+# apply, never what a run did cost.
 
 _T_FAMILY_OPCODES = frozenset({"t", "tdg"})
-"""The opcodes a T-depth is defined over.
-
-Held here rather than on :class:`~flagquantum.core.operator_schema.OperatorSchema`
-because the family is a dependency-depth notion this module is the only reader
-of: a schema marker would change the operator manifest and the generated
-capability documents for a single caller.
-"""
+# The opcodes a T-depth is defined over.
+#
+# Held here rather than on :class:`~flagquantum.core.operator_schema.OperatorSchema`
+# because the family is a dependency-depth notion this module is the only reader of: a
+# schema marker would change the operator manifest and the generated capability
+# documents for a single caller.
 
 
 @dataclass(frozen=True)

@@ -14,7 +14,7 @@ from typing import Any
 from .target_emission import EMISSION_PROFILES
 
 TRANSLATION_FORMATS: tuple[str, ...] = tuple(sorted(EMISSION_PROFILES))
-"""Closed set of accepted ``format`` values, the emission profile names."""
+# Closed set of accepted ``format`` values, the emission profile names.
 
 
 def translate(program: Any, *, format: str = "openqasm-3.0") -> str:

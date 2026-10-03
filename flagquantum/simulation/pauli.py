@@ -15,7 +15,7 @@ from .statevector.operations import _apply_matrix
 PauliProduct = Sequence[tuple[int, str]]
 
 _PAULI_WORD_CHARACTERS = frozenset({"I", "X", "Y", "Z"})
-"""The four characters a Pauli word is written with, in CUDA-Q's own spelling."""
+# The four characters a Pauli word is written with, in CUDA-Q's own spelling.
 
 
 def infer_n_wires_from_dense_state(state: torch.Tensor) -> int:

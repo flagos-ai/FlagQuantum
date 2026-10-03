@@ -44,7 +44,7 @@ from .matrix_free_hamiltonian import PauliSum
 __all__ = ("DEFAULT_DENSE_GENERATOR_BYTES", "Liouvillian")
 
 DEFAULT_DENSE_GENERATOR_BYTES = 16 * 1024 * 1024
-"""Byte ceiling above which ``L`` is refused instead of materialized."""
+# Byte ceiling above which ``L`` is refused instead of materialized.
 
 
 class Liouvillian:

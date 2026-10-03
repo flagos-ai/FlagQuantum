@@ -13,7 +13,7 @@ from flagquantum.simulation.unitary import MAX_UNITARY_WIRES, get_unitary
 pytestmark = pytest.mark.unit
 
 _ATOL = 1e-6
-"""complex64 round-off for a kernel that composes at most a few gates."""
+# complex64 round-off for a kernel that composes at most a few gates.
 
 
 def _cnot(dtype: torch.dtype = torch.complex64) -> torch.Tensor:

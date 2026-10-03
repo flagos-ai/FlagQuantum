@@ -59,7 +59,7 @@ _SUBSTEPS: Mapping[str, int] = {
 INTEGRATOR_NAMES: tuple[str, ...] = tuple(_INTEGRATOR_ORDERS)
 
 KRYLOV_SCHEMES: tuple[str, ...] = (CRANK_NICOLSON, KRYLOV_EXPONENTIAL)
-"""Schemes whose accuracy is a Krylov precision target, not a step order."""
+# Schemes whose accuracy is a Krylov precision target, not a step order.
 
 
 def integrator_order(method: str) -> int | None:

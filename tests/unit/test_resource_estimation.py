@@ -27,13 +27,12 @@ _MEASURED_QUANTITY_MARKERS = (
     "time",
     "wall",
 )
-"""Substrings a field name would carry if it held a measured quantity.
-
-A static estimate reports what a program would apply.  A field named for elapsed
-time, resident memory, transferred bytes, or achieved fidelity would report what a
-run did cost instead, and a caller reading it as an estimate would be reading
-something the estimator never measured.
-"""
+# Substrings a field name would carry if it held a measured quantity.
+#
+# A static estimate reports what a program would apply. A field named for elapsed
+# time, resident memory, transferred bytes, or achieved fidelity would report what a
+# run did cost instead, and a caller reading it as an estimate would be reading
+# something the estimator never measured.
 
 
 def _estimate(program: object) -> ResourceEstimate:

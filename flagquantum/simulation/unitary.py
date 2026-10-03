@@ -19,13 +19,12 @@ if TYPE_CHECKING:
     from ..circuit import Circuit
 
 MAX_UNITARY_WIRES = 12
-"""Largest wire count a dense unitary is materialized for.
-
-The input basis and the matrix it produces are each ``4**n_wires`` complex
-entries, so 12 wires is already 268 MB of complex64 held at once. The ceiling
-matches the one the dense Hamiltonian diagnostic uses, and it exists so that an
-oversized request fails before anything is allocated instead of during it.
-"""
+# Largest wire count a dense unitary is materialized for.
+#
+# The input basis and the matrix it produces are each ``4**n_wires`` complex entries,
+# so 12 wires is already 268 MB of complex64 held at once. The ceiling matches the one
+# the dense Hamiltonian diagnostic uses, and it exists so that an oversized request
+# fails before anything is allocated instead of during it.
 
 _NON_UNITARY_OPCODES = frozenset({"measure", "reset"})
 
