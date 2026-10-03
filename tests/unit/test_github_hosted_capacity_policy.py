@@ -15,9 +15,9 @@ the organisation's 20-runner pool remains the aggregate ceiling.
 
 Five invariants:
 
-1. Every `ubuntu-latest` job joins one of the buckets, and every bucket is
-   used: an unused bucket is a ceiling lower than the comment claims, and an
-   undeclared one is a ceiling higher than it.
+1. Every GitHub-hosted Ubuntu job joins one of the buckets, and every bucket
+   is used: an unused bucket is a ceiling lower than the comment claims, and
+   an undeclared one is a ceiling higher than it.
 2. The buckets carry `queue: max`. The default keeps only the newest waiting
    job in a group and cancels the ones behind it, so without it a bucket drops
    work rather than delaying it.
@@ -67,6 +67,7 @@ BUCKETS = frozenset(
 
 CEILING = 8
 BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=loadscope --durations=50"
+GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
 
@@ -85,7 +86,7 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        if job.get("runs-on") == "ubuntu-latest":
+        if job.get("runs-on") in GITHUB_HOSTED_UBUNTU_RUNNERS:
             found[name] = job
     return found
 
