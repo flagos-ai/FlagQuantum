@@ -164,7 +164,7 @@ def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
-    assert payload["source_revision"] == ("842cde7cf91d32f29ab7ab3237d1cee7bdf2df8c")
+    assert payload["source_revision"] == ("e3a636d1915c93877bb9866cfe48c446d832d826")
     assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
     assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
     assert payload["public_dispatch_win_on_all_runs"]
