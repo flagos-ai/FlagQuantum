@@ -68,9 +68,15 @@ This module measures four things and refuses to measure a fifth.
   this pass's marginal delta zero on every population. The compiler-instruction
   totals are then equal -- the orders differ by 60 on two populations and in opposite
   directions -- and the native totals are not: **1320** native gates in the shipped
-  order against **2026** fold first, over the five populations the declared basis can
-  express. That is the whole of the argument for the shipped order, and it is the
-  kind of argument that has to be re-measured rather than assumed.
+  order against more fold first (2026 where this was first measured), over the five
+  populations the declared basis can express. That is the whole of the argument for
+  the shipped order, and it is the kind of argument that has to be re-measured rather
+  than assumed -- including the gold number, because it is not portable: the fold-only
+  program still carries a `u3`, and `native_gate_legalization` elides a `u3`'s
+  rotations by testing a synthesized angle against ``pi/2`` with ``==``, so one ulp
+  moves the count. The shipped 1320 does not depend on that test, because this pass
+  leaves a program already spelled in the declared basis; the fold-first side does.
+  This module records both totals and the contract test asserts only the direction.
 
 * **What it does not measure:** a gate-count parity claim against Qiskit. The shape
   table feeds both implementations the identical circuit and reports both counts.
@@ -663,10 +669,13 @@ def pipeline_delta() -> list[dict[str, Any]]:
     is the pipeline this pass is being measured against, so whoever runs first takes
     the program. The compiler-instruction totals are then equal (the two orders
     differ by 60 on two populations in opposite directions), and it is the native
-    column that separates them: 1320 native gates shipped against 2026 fold first,
-    over the five populations a declared basis can express. That is why the shipped
-    order is the one in `pipeline._optimize_to_fixed_point`, and it is recorded here
-    so the choice is a measurement and not a preference.
+    column that separates them: 1320 native gates shipped against more fold first
+    (2026 where this was first measured), over the five populations a declared basis
+    can express. The fold-first figure is not portable -- the fold-only program still
+    carries a `u3` and the lowerer's elision test is an exact comparison against
+    ``pi/2`` -- so it is recorded and asserted only as a direction. That is why the
+    shipped order is the one in `pipeline._optimize_to_fixed_point`, and it is recorded
+    here so the choice is a measurement and not a preference.
     """
 
     seed = random.Random(_CIRCUIT_SEED)
