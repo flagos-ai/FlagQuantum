@@ -268,8 +268,12 @@ the exact order requested by the caller. The direct Triton path accepts
 contiguous CUDA `complex64` statevectors with at most 30 wires and selections of
 at most eight wires. The measured Triton window requires at least `2**16`
 amplitudes per statevector and `2**20` amplitudes across the batch; other valid
-inputs retain an exact differentiable PyTorch fallback. It is experimental and
-is not selected by default runtime dispatch. The checked-in
+inputs retain an exact differentiable PyTorch fallback. Runtime dispatch is
+enabled by default only for a contiguous CUDA `complex64` statevector with
+shape `(1, 2**24)` and exactly four selected wires. Set
+`FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES=0` to use the PyTorch reference
+path explicitly. All other shapes, devices, dtypes, and selections return to
+the existing reference path before importing Triton. The checked-in
 [`statevector_marginal_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_marginal_probability_kernel_a800.json)
 artifact records 30 synchronized groups of 10 invocations for five fixed
 complex64 workloads from 1,048,576 through 16,777,216 total amplitudes on
@@ -280,8 +284,25 @@ forward speed and `1.014x` to `3.625x` the forward/backward speed; every fixed
 host/workload result must remain at or above the runner's `1.0x` performance
 floor. The evidence covers one dtype and two development hosts, so the
 canonical decision remains `retain_experimental`; it does not authorize
-default dispatch or a release claim. Reproduce or validate it with
+broader default dispatch or a release claim. Reproduce or validate the direct
+kernel evidence with
 [`benchmarks/statevector_marginal_probability_kernel.py`](../../benchmarks/statevector_marginal_probability_kernel.py).
+
+The checked-in
+[`statevector_marginal_probability_dispatch_a800.json`](../../benchmarks/results/local/statevector_marginal_probability_dispatch_a800.json)
+artifact measures the complete public marginal-probability path for the exact
+default window on `jp-a800-171` and `jp-a800-172`, under stock Triton 3.7.1 and
+FlagTree 0.7.0. Across all four host/compiler runs, public forward dispatch is
+`1.93x` to `2.17x` faster than the identical public path with the kernel
+disabled, and forward plus backward is `1.67x` to `2.05x` faster. Maximum
+probability and gradient absolute errors are `7.45e-9` and `2.61e-10`. The
+runner rejects any host, compiler, or direction below its `1.0x` floor. The
+canonical aggregate records `eligible_for_default`, so MEAS-003 is now a
+`provisional` implementation with default dispatch inside this exact measured
+window and the explicit kill switch above. This is bounded single-device
+development evidence, not a release gate, framework-wide comparison, or
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_marginal_probability_dispatch.py`](../../benchmarks/statevector_marginal_probability_dispatch.py).
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -627,9 +648,10 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. MPS-003
-through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 28 implementations remain experimental. The rest of the
-100/800 portfolio is planned or candidate work, not shipped capability.
+through MPS-007 and MEAS-003 are provisional after their evidenced
+default-dispatch promotions; the other 27 implementations remain experimental.
+The rest of the 100/800 portfolio is planned or candidate work, not shipped
+capability.
 
 ## Validation contract
 

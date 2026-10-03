@@ -30,6 +30,7 @@ def test_statevector_marginal_dispatch_binds_exact_catalog_implementation() -> N
     assert implementation.implementation_id == "FQKI-TRITON-MEAS-003-A"
     assert implementation.symbol == "statevector_marginal_probabilities"
     assert implementation.directions == ("forward", "backward")
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
