@@ -146,6 +146,13 @@ remaining Truncated QFT batch-memory target. It reports absolute time, RSS,
 fixed-64 rollback and PennyLane Lightning comparisons, user code, limits, and
 the exact reproduction command.
 
+[`CPU_ROADMAP_CLOSEOUT_CPU_ARM64_20261003.md`](CPU_ROADMAP_CLOSEOUT_CPU_ARM64_20261003.md)
+closes the defined local CPU simulator roadmap across single-state forward,
+adjoint gradients, threading, memory tiers, parameter batching, and regression
+governance. It links every authoritative raw artifact, summarizes absolute
+times and cross-framework ratios, provides public example code and reproduction
+commands, and states the conditions required to restart CPU optimization.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
