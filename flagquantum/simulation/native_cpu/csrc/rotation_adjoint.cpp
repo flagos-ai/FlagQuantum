@@ -400,7 +400,9 @@ at::Tensor fused_rotation_block_forward_cpu(
     const c10::optional<at::Tensor>& rzz_angles,
     const c10::optional<at::Tensor>& rzz_first_wires,
     const c10::optional<at::Tensor>& rzz_second_wires,
-    bool specialized_rotations) {
+    bool specialized_rotations,
+    const c10::optional<at::Tensor>& cx_controls,
+    const c10::optional<at::Tensor>& cx_targets) {
   TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
   TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
   TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
@@ -472,6 +474,11 @@ at::Tensor fused_rotation_block_forward_cpu(
     }
   }
 
+  const bool fuse_cx = cx_controls.has_value();
+  TORCH_CHECK(
+      fuse_cx == cx_targets.has_value(),
+      "both fused CX wire tensors must be provided together");
+
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
   std::array<int64_t, 11> masks{};
   std::array<int64_t, 11> bit_positions{};
@@ -489,8 +496,56 @@ at::Tensor fused_rotation_block_forward_cpu(
   }
   std::sort(bit_positions.begin(), bit_positions.begin() + gate_count);
 
+  std::array<int64_t, 5> cx_control_local_masks{};
+  std::array<int64_t, 5> cx_target_local_masks{};
+  int64_t cx_count = 0;
+  if (fuse_cx) {
+    const at::Tensor& control_tensor = cx_controls.value();
+    const at::Tensor& target_tensor = cx_targets.value();
+    TORCH_CHECK(
+        control_tensor.device().is_cpu() && target_tensor.device().is_cpu(),
+        "fused CX wires must be on CPU");
+    TORCH_CHECK(
+        control_tensor.is_contiguous() && target_tensor.is_contiguous(),
+        "fused CX wires must be contiguous");
+    TORCH_CHECK(
+        control_tensor.scalar_type() == at::kLong &&
+            target_tensor.scalar_type() == at::kLong,
+        "fused CX wires must be int64");
+    TORCH_CHECK(
+        control_tensor.dim() == 1 && target_tensor.sizes() == control_tensor.sizes(),
+        "fused CX controls and targets must have matching one-dimensional shapes");
+    cx_count = control_tensor.numel();
+    TORCH_CHECK(
+        cx_count > 0 && cx_count <= 5,
+        "a fused rotation tile supports between one and five CX gates");
+    const int64_t* control_data = control_tensor.const_data_ptr<int64_t>();
+    const int64_t* target_data = target_tensor.const_data_ptr<int64_t>();
+    int64_t occupied_local_wires = 0;
+    for (int64_t edge = 0; edge < cx_count; ++edge) {
+      int64_t control_gate = -1;
+      int64_t target_gate = -1;
+      for (int64_t gate = 0; gate < gate_count; ++gate) {
+        control_gate = wire_data[gate] == control_data[edge] ? gate : control_gate;
+        target_gate = wire_data[gate] == target_data[edge] ? gate : target_gate;
+      }
+      TORCH_CHECK(
+          control_gate >= 0 && target_gate >= 0 && control_gate != target_gate,
+          "every fused CX wire must belong to its rotation tile");
+      const int64_t control_mask = int64_t{1} << control_gate;
+      const int64_t target_mask = int64_t{1} << target_gate;
+      TORCH_CHECK(
+          (occupied_local_wires & (control_mask | target_mask)) == 0,
+          "fused CX gates must be wire-disjoint");
+      occupied_local_wires |= control_mask | target_mask;
+      cx_control_local_masks[edge] = control_mask;
+      cx_target_local_masks[edge] = target_mask;
+    }
+  }
+
   const int64_t local_size = int64_t{1} << gate_count;
   std::array<int64_t, 2048> offsets{};
+  std::array<int64_t, 2048> cx_sources{};
   for (int64_t local = 0; local < local_size; ++local) {
     int64_t offset = 0;
     for (int64_t gate = 0; gate < gate_count; ++gate) {
@@ -499,6 +554,13 @@ at::Tensor fused_rotation_block_forward_cpu(
       }
     }
     offsets[local] = offset;
+    int64_t source = local;
+    for (int64_t edge = 0; edge < cx_count; ++edge) {
+      if ((local & cx_control_local_masks[edge]) != 0) {
+        source ^= cx_target_local_masks[edge];
+      }
+    }
+    cx_sources[local] = source;
   }
 
   const int64_t blocks_per_row = amplitudes >> gate_count;
@@ -703,7 +765,7 @@ at::Tensor fused_rotation_block_forward_cpu(
           }
         }
         for (int64_t local = 0; local < local_size; ++local) {
-          state_data[base + offsets[local]] = values[local];
+          state_data[base + offsets[local]] = values[cx_sources[local]];
         }
       }
     });
@@ -1890,7 +1952,8 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_rotation_block_forward_(Tensor(a!) state, Tensor matrices, "
       "Tensor wires, int n_wires, Tensor? rzz_angles=None, "
       "Tensor? rzz_first_wires=None, Tensor? rzz_second_wires=None, "
-      "bool specialized_rotations=True) -> Tensor(a!)");
+      "bool specialized_rotations=True, Tensor? cx_controls=None, "
+      "Tensor? cx_targets=None) -> Tensor(a!)");
   library.def(
       "fused_static_clifford_layer_(Tensor(a!) state, Tensor gate_codes, "
       "Tensor wires, int n_wires) -> Tensor(a!)");

@@ -76,6 +76,8 @@ class _StatevectorDisjointDenseStep:
     native_preferred: bool = False
     native_parameterized: bool = False
     native_clifford: bool = False
+    fused_cx_controls: tuple[int, ...] = ()
+    fused_cx_targets: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)

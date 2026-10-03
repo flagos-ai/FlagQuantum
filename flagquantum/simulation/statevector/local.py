@@ -42,6 +42,7 @@ from .fixed_layer_cpu import (
     native_fixed_layer_compile_enabled,
     native_fused_rotation_layer_compile_enabled,
     native_parameterized_layer_compile_enabled,
+    native_rotation_clifford_fusion_enabled,
 )
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
@@ -1039,6 +1040,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             native_fused_rotation_layer,
             "cpu_native_clifford_matching",
             enable_cpu_native_clifford_matching,
+            "cpu_native_rotation_clifford_fusion",
+            native_rotation_clifford_fusion_enabled(),
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
             "cpu_controlled_phase_graph",
@@ -1067,6 +1070,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_native_clifford_matching=(
                     enable_cpu_native_clifford_matching
                 ),
+                enable_cpu_native_rotation_clifford_fusion=native_rotation_clifford_fusion_enabled(),
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition
                 ),
@@ -1084,19 +1088,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             else _cpu_statevector_batch_chunk_size(output)
         )
         batch_chunk_count = (batch_size + batch_chunk_size - 1) // batch_chunk_size
-        circuit._last_statevector_runtime["statevector_batch_chunk_size"] = (
-            batch_chunk_size
-        )
-        circuit._last_statevector_runtime["statevector_batch_chunk_count"] = (
-            batch_chunk_count
-        )
-        circuit._last_statevector_runtime["statevector_batch_chunk_budget_bytes"] = (
+        runtime = circuit._last_statevector_runtime
+        runtime["statevector_batch_chunk_size"] = batch_chunk_size
+        runtime["statevector_batch_chunk_count"] = batch_chunk_count
+        runtime["statevector_batch_chunk_budget_bytes"] = (
             _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
         )
         if batch_chunk_count == 1:
-            circuit._last_statevector_runtime["statevector_batch_assembly"] = (
-                "single_window"
-            )
+            runtime["statevector_batch_assembly"] = "single_window"
             output = _execute_statevector_program(
                 circuit,
                 program,
@@ -1114,7 +1113,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     circuit, program, window, parameter_bindings
                 ),
             )
-            circuit._last_statevector_runtime["statevector_batch_assembly"] = assembly
+            runtime["statevector_batch_assembly"] = assembly
     circuit._state_cache = output
     return output
 
