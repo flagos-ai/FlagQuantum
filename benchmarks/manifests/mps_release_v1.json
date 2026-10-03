@@ -181,6 +181,10 @@
     "world_size"
   ],
   "runtime": {
+    "accepted_backward_execution_statuses": [
+      "executed_sharded_reverse_pass"
+    ],
+    "accepted_backward_execution_statuses_note": "The reverse-pass statuses the producer emits for a measured backward pass. The gate matches this list exactly rather than searching the label for 'executed' or 'production', because a projected or simulated reverse pass can name itself in the vocabulary of a measurement.",
     "backend": "pytorch_native",
     "collective_backend": "nccl",
     "distributed_entry_point": "flagquantum.experimental.distributed.train_distributed_mps",

@@ -13,10 +13,10 @@ the contract assumes.
 
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import json
-import re
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -92,6 +92,12 @@ def _sealable_topology_manifest(**patches: Any) -> dict[str, Any]:
 
     manifest = _manifest(SEALABLE_TOPOLOGY, **patches)
     manifest["capacity_workload"]["premise_established"] = True
+    # The premise is what a release set re-measures, so an imagined established
+    # premise is one whose declared provenance files are all present and match
+    # the digests the manifest records for them. The checked-in manifest instead
+    # discloses two absent sources and a drifted artifact, which is why its own
+    # premise is unestablished and why the gate reports the drift as well.
+    manifest["capacity_workload"]["premise_provenance"]["absent_sources"] = []
     manifest["speed_workload"]["configuration_ladder"] = [
         {
             "name": "matched_speed_2x32512_chi768",
@@ -122,6 +128,7 @@ def _baseline_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
         "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
         "capacity_failure_reason": "CUDA out of memory",
         "measured_peak_memory_bytes": 75148300800,
+        "device_total_memory_bytes": capacity["single_device_total_memory_bytes"],
         "n_sites": capacity["n_sites"],
         "initial_max_bond": capacity["trained_max_bond"],
         "max_bond_dimension": capacity["trained_max_bond"],
@@ -414,7 +421,7 @@ def _last_report(capsys: pytest.CaptureFixture[str]) -> dict[str, Any]:
 # precision of its refusals, so a requirement with no reachable blocker name would
 # be a requirement nobody could act on.
 PAYLOAD_BLOCKERS: tuple[tuple[str, str], ...] = (
-    ("missing_mps_state_mode_evidence", "state_mode", "statevector"),
+    ("missing_mps_state_mode_evidence", "state_mode", "jax_sharded_mps"),
     (
         "missing_sharded_mps_forward_evidence",
         "mps_forward_distribution_semantics",
@@ -469,6 +476,23 @@ PAYLOAD_BLOCKERS: tuple[tuple[str, str], ...] = (
     ("missing_capacity_workload_shape_evidence", "n_sites", None),
     ("capacity_workload_shape_mismatch", "n_sites", 4096),
     ("production_artifact_missing_required_fields", "collective_backend", ""),
+    # A payload of another capability carries an artifact class and a release
+    # flag of its own, so the state mode is what keeps it out of this contract.
+    (
+        "production_artifact_is_not_mps_evidence",
+        "state_mode",
+        "distributed_statevector",
+    ),
+    ("collective_backend_mismatch", "collective_backend", "gloo"),
+    ("local_world_size_mismatch", "local_world_size", 4),
+    ("rank_placement_inconsistent", "node_count", 3),
+    ("production_per_rank_measurements_not_well_formed", "rank_gradients", [0.0]),
+    (
+        "production_communication_fraction_not_well_formed",
+        "communication_fraction",
+        "unknown",
+    ),
+    ("production_gpu_activity_not_well_formed", "gpu_activity", "unknown"),
 )
 
 
@@ -493,6 +517,29 @@ def test_the_manifest_freezes_the_workload_the_topology_and_the_thresholds() -> 
     assert manifest["speed_workload"]["minimum_speedup"] > 1
     assert manifest["speed_workload"]["confidence_interval_must_exclude_speedup"] == 1.0
     assert manifest["required_artifact_fields"]
+
+
+def test_the_manifest_must_freeze_the_backward_statuses_it_matches(
+    tmp_path: Path,
+) -> None:
+    """A status list the gate matches against cannot be left implicit.
+
+    The gate compares the payload's reverse-pass status against names the manifest
+    freezes, so a manifest that froze none would refuse every payload for a reason
+    a reader could not find in the document. Reading the manifest has to fail
+    instead of the comparison quietly refusing everything.
+    """
+
+    manifest = load_manifest()
+    assert manifest["runtime"]["accepted_backward_execution_statuses"] == [
+        "executed_sharded_reverse_pass"
+    ]
+    stripped = copy.deepcopy(manifest)
+    del stripped["runtime"]["accepted_backward_execution_statuses"]
+    path = tmp_path / "mps_release_v1.json"
+    path.write_text(json.dumps(stripped, indent=2, sort_keys=True), encoding="utf-8")
+    with pytest.raises(ValueError, match="backward-execution statuses"):
+        load_manifest(path)
 
 
 def test_the_frozen_workload_definition_is_digest_bound() -> None:
@@ -577,18 +624,30 @@ MANIFEST_STATE_BLOCKERS: tuple[str, ...] = (
     "missing_multi_gpu_capacity_completion_artifact",
     "invalid_or_unsigned_production_artifact",
     "single_device_world_cannot_be_a_release_payload",
+    "capacity_premise_evidence_not_verifiable",
+    "single_gpu_baseline_disagrees_with_frozen_premise",
+)
+# These three are refusals of the *envelope's* attestation rather than of a
+# payload field, so they are reached by staging the envelope the sealer would have
+# produced for a wider or different run and asserting that the gate reads the
+# attestation instead of the payload's own claim about itself.
+ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
+    "production_payload_world_size_not_carried_by_envelope",
+    "production_payload_provenance_workload_mismatch",
+    "production_payload_provenance_revision_mismatch",
 )
 
 
 def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly three named reasons.
+    """The checked-in state fails the gate for exactly four named reasons.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains are the three things the frozen document itself
-    discloses: the capacity premise is unestablished, no MPS speed configuration
-    has been chosen or timed, and the sixteen-rank release world is wider than any
-    evidence scope can carry. Asserting the exact tuple means a fourth blocker
-    appearing here would have to be explained rather than absorbed.
+    satisfied. What remains are the four things the frozen document itself
+    discloses: the capacity premise is unestablished, the provenance it cites for
+    that premise is not re-verifiable, no MPS speed configuration has been chosen
+    or timed, and the sixteen-rank release world is wider than any evidence scope
+    can carry. Asserting the exact tuple means a fifth blocker appearing here
+    would have to be explained rather than absorbed.
     """
 
     manifest = load_manifest()
@@ -599,6 +658,7 @@ def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
         "release_world_size_not_carriable_by_evidence_envelope",
         "speed_configuration_ladder_not_frozen",
         "capacity_premise_not_established",
+        "capacity_premise_evidence_not_verifiable",
     )
     assert manifest["capacity_workload"]["premise_established"] is False
     assert manifest["speed_workload"]["configuration_ladder"] is None
@@ -795,6 +855,113 @@ def test_every_manifest_state_blocker_is_reachable() -> None:
             if payload["acceptance_case"] != "multi_gpu_capacity_completion"
         ],
     )
+    # A baseline that was measured on a different workload is not this
+    # contract's baseline at all: the digest is part of what makes it one, so it
+    # is reported as an absent baseline rather than as a shape disagreement.
+    other_workload = _sealable_topology_manifest()
+    drifted_baseline = copy.deepcopy(_payloads(other_workload))
+    drifted_baseline[0]["workload_sha256"] = "e" * 64
+    assert "missing_single_gpu_measured_oom_artifact" in blockers_for(
+        other_workload, drifted_baseline
+    )
+
+    # A premise may not be declared established while the files it cites for it
+    # are absent or no longer match the digests the manifest records.
+    drifted = _sealable_topology_manifest()
+    drifted["capacity_workload"]["premise_provenance"]["absent_sources"] = [
+        "benchmarks/results/local/does_not_exist.log"
+    ]
+    assert "capacity_premise_evidence_not_verifiable" in blockers_for(
+        drifted, _payloads(drifted)
+    )
+    # The baseline is the premise's other half, so it has to describe the shape
+    # the frozen workload actually is rather than one of its own.
+    disagreeing = _sealable_topology_manifest()
+    smaller = copy.deepcopy(_payloads(disagreeing))
+    smaller[0]["logical_mps_bytes"] = 1
+    assert "single_gpu_baseline_disagrees_with_frozen_premise" in blockers_for(
+        disagreeing, smaller
+    )
+
+
+def test_the_envelope_binding_blockers_are_reachable() -> None:
+    """The sealed provenance is what the gate believes about the run.
+
+    A payload can declare any world size, digest and revision it likes; only the
+    envelope's provenance was attested by the sealer. Staging the envelope that a
+    narrower or different run would have produced, and signing it so that its
+    signature verifies, must still be refused, because otherwise a payload could
+    certify a release world from a run that never had one.
+    """
+
+    manifest = _sealable_topology_manifest()
+    payloads = copy.deepcopy(_payloads(manifest))
+
+    forged = payloads[1]
+    forged["world_size"] = 4
+    forged["local_world_size"] = 1
+    forged["node_count"] = 4
+    narrow = RuntimeProvenance(
+        commit="a" * 40,
+        workload_sha256=str(forged["workload_sha256"]),
+        command=("torchrun", "--nproc-per-node", "2"),
+        devices=("GPU-0", "GPU-1"),
+        topology="one host, one rank per device",
+        rank_mapping=("rank=0", "rank=1"),
+        collective_backend="nccl",
+        warmup=2,
+        iterations=10,
+        seeds=(440044,),
+        raw_log_sha256="b" * 64,
+        fallback_events=(),
+    )
+    artifact = (
+        create_evidence_artifact(
+            artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+            evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+            provenance=narrow,
+            evidence=forged,
+            signing_key=KEYS,
+        ).summary(),
+    )
+    _, blockers = evaluate_mps_release(
+        [*artifact, *_artifacts(payloads[1:])], manifest, signing_key=KEYS
+    )
+    assert "production_payload_world_size_not_carried_by_envelope" in blockers
+
+    # A different workload digest and a different revision in the envelope than
+    # the payload reports: the envelope is signed either way, so only reading the
+    # two against each other catches it.
+    other = copy.deepcopy(payloads[1])
+    other["commit"] = "a" * 40
+    mismatched = RuntimeProvenance(
+        commit="c" * 40,
+        workload_sha256="d" * 64,
+        command=("torchrun", "--nproc-per-node", "2"),
+        devices=("GPU-0", "GPU-1"),
+        topology="one host, one rank per device",
+        rank_mapping=("rank=0", "rank=1"),
+        collective_backend="nccl",
+        warmup=2,
+        iterations=10,
+        seeds=(440044,),
+        raw_log_sha256="b" * 64,
+        fallback_events=(),
+    )
+    artifact = (
+        create_evidence_artifact(
+            artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+            evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+            provenance=mismatched,
+            evidence=other,
+            signing_key=KEYS,
+        ).summary(),
+    )
+    _, blockers = evaluate_mps_release(
+        [*artifact, *_artifacts(payloads[1:])], manifest, signing_key=KEYS
+    )
+    assert "production_payload_provenance_workload_mismatch" in blockers
+    assert "production_payload_provenance_revision_mismatch" in blockers
 
 
 def test_the_blocker_vocabulary_is_fully_accounted_for() -> None:
@@ -806,16 +973,11 @@ def test_the_blocker_vocabulary_is_fully_accounted_for() -> None:
     and a name a test asserts but the gate cannot emit, are both failures.
     """
 
-    source = Path("benchmarks/internal/evidence/mps_release_gate.py").read_text(
-        encoding="utf-8"
-    )
-    emitted = set(re.findall(r'blockers\.append\(\s*"([a-z_]+)"', source))
-    emitted |= {
-        pair[1] for pair in re.findall(r'\("([a-z_]+)", "(missing_[a-z_]+)"\)', source)
-    }
+    emitted = _emitted_blocker_names()
     accounted = (
         {item[0] for item in PAYLOAD_BLOCKERS}
         | set(MANIFEST_STATE_BLOCKERS)
+        | set(ENVELOPE_BINDING_BLOCKERS)
         | {
             "missing_sharded_training_ownership",
             "production_artifact_missing_required_fields",
@@ -831,7 +993,14 @@ def test_the_blocker_vocabulary_is_fully_accounted_for() -> None:
 # bullet here, in the order the README states them, naming the blockers that
 # enforce the bullet.
 README_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("state_mode", ("missing_mps_state_mode_evidence",)),
+    (
+        # The bullet is about the state mode, and the gate enforces it twice: a
+        # payload that declares a mode no MPS path has is not MPS evidence, and a
+        # payload that declares an MPS mode this contract does not accept is
+        # refused by the contract check.
+        "state_mode",
+        ("missing_mps_state_mode_evidence", "production_artifact_is_not_mps_evidence"),
+    ),
     ("distribution_semantics", ("missing_sharded_mps_forward_evidence",)),
     (
         "sharded_forward_and_executed_backward_evidence",
@@ -877,6 +1046,37 @@ README_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 GENERAL_RELEASE_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("multinode_transport_scope", ("missing_multinode_transport_scope",)),
     (
+        "rank_placement_and_collective_backend",
+        (
+            "local_world_size_mismatch",
+            "rank_placement_inconsistent",
+            "collective_backend_mismatch",
+        ),
+    ),
+    (
+        "world_size_the_envelope_carries",
+        ("production_payload_world_size_not_carried_by_envelope",),
+    ),
+    (
+        "sealed_provenance_matches_the_payload",
+        (
+            "production_payload_provenance_workload_mismatch",
+            "production_payload_provenance_revision_mismatch",
+        ),
+    ),
+    (
+        "per_rank_measurements_are_well_formed",
+        (
+            "production_per_rank_measurements_not_well_formed",
+            "production_communication_fraction_not_well_formed",
+            "production_gpu_activity_not_well_formed",
+        ),
+    ),
+    (
+        "required_artifact_fields",
+        ("production_artifact_missing_required_fields",),
+    ),
+    (
         "capacity_workload_shape",
         (
             "missing_capacity_workload_shape_evidence",
@@ -896,33 +1096,63 @@ def _mapped_requirement_blockers() -> set[str]:
     }
 
 
-def _payload_requirement_blockers() -> set[str]:
-    """Return every blocker ``_mps_contract_blockers`` can emit."""
+def _emitted_blocker_names() -> set[str]:
+    """Return every blocker name the gate can print, read from its syntax tree.
+
+    A textual scan of the source cannot see a name that is built from a table,
+    and cannot tell two names apart when one is a prefix of the other, so the
+    module is parsed instead. This is the discipline the producer's contract test
+    already uses, and it is what makes a new blocker a test failure rather than a
+    silently unasserted refusal.
+    """
 
     source = Path("benchmarks/internal/evidence/mps_release_gate.py").read_text(
         encoding="utf-8"
     )
-    start = source.index("def _mps_contract_blockers")
-    end = source.index("def evaluate_mps_release")
-    emitted = set(re.findall(r'blockers\.append\(\s*"([a-z_]+)"', source[start:end]))
-    emitted |= {
-        pair[1]
-        for pair in re.findall(
-            r'\("([a-z_]+)", "(missing_[a-z_]+)"\)', source[start:end]
-        )
-    }
+    emitted: set[str] = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Call):
+            function = node.func
+            if (
+                isinstance(function, ast.Attribute)
+                and function.attr == "append"
+                and isinstance(function.value, ast.Name)
+                and function.value.id == "blockers"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                emitted.add(node.args[0].value)
+        if isinstance(node, ast.Tuple) and len(node.elts) == 2:
+            first, second = node.elts
+            if (
+                isinstance(first, ast.Constant)
+                and isinstance(first.value, str)
+                and isinstance(second, ast.Constant)
+                and isinstance(second.value, str)
+                and second.value.startswith("missing_")
+            ):
+                emitted.add(second.value)
     return emitted
 
 
+def _payload_requirement_blockers() -> set[str]:
+    """Return the blockers that refuse one release payload's own contents."""
+
+    return _emitted_blocker_names() - set(MANIFEST_STATE_BLOCKERS)
+
+
 def test_the_published_release_contract_is_what_the_gate_enforces() -> None:
-    """The README's Phase 5 list and the requirement blockers are one contract.
+    """The README's Phase 5 contract and the requirement blockers are one contract.
 
     The README is what a reader is told a release payload must carry, so the gate
-    has to enforce exactly that list: a requirement the README states but no
-    blocker enforces would be a promise the gate cannot keep, and a payload
+    has to enforce exactly what it publishes: a requirement the README states but
+    no blocker enforces would be a promise the gate cannot keep, and a payload
     blocker the README never states would refuse a payload for an unpublished
-    reason. Each bullet is mapped to its blockers, and the mapping is checked
-    against the gate rather than against a copy of it.
+    reason. The README states two groups -- the Phase 5 bullet list and the
+    general release fields the same sentence requires -- so both are mapped, the
+    two mappings are asserted disjoint, and the union is checked against the gate
+    rather than against a copy of it.
     """
 
     readme = Path("benchmarks/results/scalability/README.md").read_text(
@@ -949,9 +1179,27 @@ def test_the_published_release_contract_is_what_the_gate_enforces() -> None:
     ):
         assert phrase in section
 
+    # The README wraps this sentence, so it is matched on the words rather than
+    # on a line break that a future edit could move.
+    assert "must include all general release" in section
+    assert "fields plus:" in section
+    # The premise is published as a re-readable claim, which is the sentence that
+    # makes the manifest-state blockers a published reason rather than a hidden
+    # one.
+    assert "`capacity_premise_evidence_not_verifiable`" in section
+
     mapped = _mapped_requirement_blockers()
     emitted = _payload_requirement_blockers()
+    readme_mapped = {
+        blocker for _, blockers in README_REQUIREMENTS for blocker in blockers
+    }
+    general_mapped = {
+        blocker for _, blockers in GENERAL_RELEASE_REQUIREMENTS for blocker in blockers
+    }
 
+    # A blocker mapped to both groups would be counted twice, and the two counts
+    # are what tie the published groups to the gate's own blocker list.
+    assert readme_mapped & general_mapped == set()
     assert emitted - mapped == set()
     assert mapped - emitted == set()
 

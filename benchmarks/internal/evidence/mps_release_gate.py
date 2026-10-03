@@ -37,6 +37,10 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from flagquantum.runtime.audit.mps_readiness import (
+    _FORBIDDEN_FALLBACKS as _AUDITED_FORBIDDEN_FALLBACKS,
+)
+from flagquantum.runtime.audit.vocabulary import MPS_STATE_MODES
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
     EvidenceScope,
@@ -57,25 +61,16 @@ _EXECUTED_BACKWARD_MEMORY_STATUS = frozenset(
 _EXECUTED_BACKWARD_COMMUNICATION_STATUS = frozenset(
     {"executed", "production_executed", "multi_node_production_transport"}
 )
-_NON_EXECUTED_BACKWARD_LABELS = (
-    "unknown",
-    "pending",
-    "planned",
-    "not_executed",
-    "local_simulated",
-    "estimated",
-)
 # Most required fields are absent when they are empty: an empty ownership map
 # describes nothing. A declared blocker list is the exception, because an empty
 # one is exactly the result a clean payload reports, so it counts as present when
 # the key is there.
 _EMPTY_IS_A_DECLARATION = frozenset({"blockers"})
-_FORBIDDEN_FALLBACKS = (
-    "replicated_mps_autograd",
-    "full_local_mps_state_view",
-    "full_local_mps_replay",
-    "statevector_fallback",
-)
+# The forbidden-route rule is owned by the MPS readiness audit, which already
+# maps each route to the code that refuses it. Reading its keys here rather than
+# repeating the four names keeps one source of truth for which fallbacks a claim
+# may not rest on.
+_FORBIDDEN_FALLBACKS = tuple(_AUDITED_FORBIDDEN_FALLBACKS)
 
 
 def load_manifest(path: Path = MANIFEST) -> dict[str, Any]:
@@ -97,6 +92,14 @@ def load_manifest(path: Path = MANIFEST) -> dict[str, Any]:
         raise ValueError("invalid MPS release manifest schema")
     if not payload.get("frozen_before_release_run"):
         raise ValueError("MPS thresholds must be frozen before measurement")
+    # The statuses the gate matches against are part of the frozen contract, and a
+    # manifest that named none of them would refuse every payload for a reason no
+    # reader could find in the document, so the declaration is checked here.
+    accepted_backward = payload["runtime"].get("accepted_backward_execution_statuses")
+    if not isinstance(accepted_backward, list) or not accepted_backward:
+        raise ValueError(
+            "the manifest must freeze the backward-execution statuses it accepts"
+        )
     capacity = payload["capacity_workload"]
     declared_sources = {
         str(capacity["workload_definition_path"]): str(
@@ -113,6 +116,46 @@ def load_manifest(path: Path = MANIFEST) -> dict[str, Any]:
                 f"manifest declares for {source_path}"
             )
     return payload
+
+
+def premise_evidence_errors(
+    capacity: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return the frozen premise files that are missing or have drifted.
+
+    ``capacity_workload`` names every file the premise rests on and digests it, so
+    a premise can be re-read rather than believed. Two of the entries are known to
+    be unresolvable -- ``premise_provenance`` records an absent raw log and an
+    absent telemetry file, and a completion artifact whose workload body digest
+    differs from the body on disk -- and those are returned as their own names
+    rather than raised, because a manifest that disclosed them must not be able to
+    hide behind a passing gate. The caller turns a non-empty result into a blocker,
+    so the disclosure is reported and the premise stays unestablished until the
+    files agree.
+    """
+
+    errors: list[str] = []
+    for entry in capacity.get("frozen_evidence", ()):
+        path = Path(str(entry["path"]))
+        if not path.is_file():
+            errors.append(f"capacity_workload.frozen_evidence[{path}]: absent")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != str(entry["sha256"]):
+            errors.append(f"capacity_workload.frozen_evidence[{path}]: drifted")
+    provenance = capacity.get("premise_provenance", {})
+    for path_text in provenance.get("absent_sources", ()):
+        path = Path(str(path_text))
+        if not path.is_file():
+            errors.append(f"capacity_workload.premise_provenance[{path}]: absent")
+    artifact_text = provenance.get("artifact")
+    if artifact_text is not None:
+        path = Path(str(artifact_text))
+        if not path.is_file():
+            errors.append(f"capacity_workload.premise_provenance[{path}]: absent")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != str(
+            provenance["artifact_sha256"]
+        ):
+            errors.append(f"capacity_workload.premise_provenance[{path}]: drifted")
+    return tuple(errors)
 
 
 def _as_int(value: Any) -> int:
@@ -170,6 +213,130 @@ def envelope_carries_world(world_size: int) -> bool:
 
 def _is_absent(value: Any) -> bool:
     return value is None or value == "" or value == () or value == []
+
+
+def _is_mps_evidence(evidence: Mapping[str, Any]) -> bool:
+    """Return whether a payload is evidence for this capability at all.
+
+    The runtime-evidence envelope carries no capability key, and the statevector
+    release payloads are ``measured_production_run`` artifacts with
+    ``release_gate_allowed`` set, so without a capability test another
+    capability's payload would satisfy this contract's world requirement. A
+    statevector payload declares no state mode at all, so the test is whether the
+    payload declares one of the modes the audit vocabulary recognizes as MPS.
+    Which of those the frozen contract accepts is a separate question, asked by
+    the contract check and answered from the manifest.
+    """
+
+    return str(evidence.get("state_mode", "")).lower() in MPS_STATE_MODES
+
+
+def _world_is_carried_by_envelope(
+    evidence: Mapping[str, Any], provenance: Mapping[str, Any]
+) -> bool:
+    """Return whether the envelope attests the world the payload declares.
+
+    The envelope's device inventory and rank mapping are what the sealer recorded
+    about the machine that ran the rank, so they are the only reason to believe a
+    payload's ``world_size``. A payload that asserts a wider world than its own
+    signed provenance describes has described a run that was never sealed, and a
+    world of zero devices is not a world at all.
+    """
+
+    world = _as_int(evidence.get("world_size"))
+    if world <= 0:
+        return False
+    for name in ("devices", "rank_mapping"):
+        value = provenance.get(name)
+        if not isinstance(value, (list, tuple)) or len(value) != world:
+            return False
+    return True
+
+
+def _check_provenance_binding(
+    evidence: Mapping[str, Any],
+    provenance: Mapping[str, Any],
+    capacity: Mapping[str, Any],
+    blockers: list[str],
+) -> None:
+    """Report where the sealed provenance disagrees with the frozen contract.
+
+    The envelope is signed over its own provenance, so the digest and revision it
+    records are the ones the sealer attested. A payload whose envelope names a
+    different workload, or a different revision than the payload does, is not
+    evidence about the frozen workload however well the payload reads.
+    """
+
+    if str(provenance.get("workload_sha256", "")) != str(capacity["workload_sha256"]):
+        blockers.append("production_payload_provenance_workload_mismatch")
+    declared_commit = evidence.get("commit")
+    if not _is_absent(declared_commit) and str(provenance.get("commit", "")) != str(
+        declared_commit
+    ):
+        blockers.append("production_payload_provenance_revision_mismatch")
+
+
+def _is_fraction(value: Any) -> bool:
+    """Return whether a value is a number in the unit interval a fraction lives in."""
+
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and 0.0 <= float(value) <= 1.0
+    )
+
+
+def _ill_shaped_evidence(evidence: Mapping[str, Any], world: int) -> tuple[str, ...]:
+    """Return the measurements that are present but do not shape as claims.
+
+    Presence is not measurement. ``rank_gradients: [0.0, 0.0]``, a collective
+    backend of ``"unknown"`` and a communication fraction of ``"unknown"`` all
+    satisfy a key test while reporting nothing, and the per-rank memory and
+    communication records are the claims this contract exists to check. Each
+    blocker names the requirement rather than the field, and a field that is
+    absent is reported by the required-field check instead, so this function only
+    judges what is there.
+    """
+
+    per_rank = ("rank_outputs", "rank_gradients", "rank_timings")
+    memory = ("rank_peak_memory_bytes", "measured_peak_memory_bytes_by_rank")
+    not_well_formed = False
+    for name in per_rank:
+        value = evidence.get(name)
+        if _is_absent(value):
+            continue
+        if (
+            not isinstance(value, (list, tuple))
+            or len(value) != world
+            or any(
+                isinstance(item, bool) or not isinstance(item, (int, float))
+                for item in value
+            )
+        ):
+            not_well_formed = True
+    for name in memory:
+        value = evidence.get(name)
+        if _is_absent(value):
+            continue
+        if (
+            not isinstance(value, (list, tuple))
+            or len(value) != world
+            or any(
+                isinstance(item, bool) or not isinstance(item, (int, float)) or item < 0
+                for item in value
+            )
+        ):
+            not_well_formed = True
+    blockers: list[str] = []
+    if not_well_formed:
+        blockers.append("production_per_rank_measurements_not_well_formed")
+    fraction = evidence.get("communication_fraction")
+    if not _is_absent(fraction) and not _is_fraction(fraction):
+        blockers.append("production_communication_fraction_not_well_formed")
+    activity = evidence.get("gpu_activity")
+    if not _is_absent(activity) and not _is_fraction(activity):
+        blockers.append("production_gpu_activity_not_well_formed")
+    return tuple(blockers)
 
 
 def _is_single_device_baseline(
@@ -322,15 +489,18 @@ def _mps_contract_blockers(
     if backward_semantics != "sharded_across_ranks":
         blockers.append("missing_sharded_mps_backward_evidence")
 
-    backward_execution = str(evidence.get("backward_execution", "unknown")).lower()
+    # The status has to be one the manifest froze as an executed reverse pass.
+    # Matching on substrings of the label would accept "production_projected" and
+    # "executed_never_actually", which report an intention in the vocabulary of a
+    # measurement, so the manifest names the status the producer emits instead.
+    backward_execution = str(evidence.get("backward_execution", "")).lower()
+    accepted_backward = {
+        str(status).lower()
+        for status in manifest["runtime"]["accepted_backward_execution_statuses"]
+    }
     if (
-        not backward_execution
-        or any(token in backward_execution for token in _NON_EXECUTED_BACKWARD_LABELS)
-        or not (
-            evidence.get("backward_execution_measured") is True
-            or "executed" in backward_execution
-            or "production" in backward_execution
-        )
+        backward_execution not in accepted_backward
+        or evidence.get("backward_execution_measured") is not True
     ):
         blockers.append("missing_executed_production_backward_evidence")
 
@@ -427,6 +597,31 @@ def _mps_contract_blockers(
     ) < _as_int(manifest["topologies"]["minimum_multi_node_count"]):
         blockers.append("missing_multinode_transport_scope")
 
+    # The collective backend is what actually carried the sharded state, and the
+    # vocabulary of recognized backends is not the question: the manifest freezes
+    # the one the release run must use, so a payload that names another one --
+    # "unknown" included -- was measured on a different transport than this
+    # contract is about.
+    expected_backend = str(manifest["runtime"]["collective_backend"]).lower()
+    declared_backend = evidence.get("collective_backend")
+    if (
+        _is_absent(declared_backend)
+        or str(declared_backend).lower() != expected_backend
+    ):
+        blockers.append("collective_backend_mismatch")
+
+    # A rank count and a host count that do not divide is not a placement, and a
+    # payload whose per-host rank count differs from the frozen one was measured
+    # on a different deployment from the one this contract is about.
+    topology = manifest["topologies"]
+    world = _as_int(evidence.get("world_size"))
+    local = _as_int(evidence.get("local_world_size"))
+    nodes = _as_int(evidence.get("node_count"))
+    if local != _as_int(topology["local_world_size"]):
+        blockers.append("local_world_size_mismatch")
+    if local <= 0 or world <= 0 or world % local or world // local != nodes:
+        blockers.append("rank_placement_inconsistent")
+
     # The shape is what makes a completion artifact evidence for *this* frozen
     # workload, so a missing shape field and a wrong one are reported apart: the
     # first is an incomplete record and the second is a different workload.
@@ -474,6 +669,7 @@ def evaluate_mps_release(
     baselines: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
     rejected = False
     single_device_claimants = False
+    foreign_evidence = 0
     for artifact in artifacts:
         if artifact.get("artifact_class") != "measured_production_run":
             continue
@@ -487,6 +683,14 @@ def evaluate_mps_release(
             if not valid:
                 rejected = True
                 continue
+        # The envelope carries no capability key, so a payload of another
+        # capability can otherwise satisfy this contract's requirements. It is
+        # counted and reported rather than dropped, because a directory holding
+        # five files of which none is admissible must not read as an empty set
+        # one blocker away from passing.
+        if not _is_mps_evidence(evidence):
+            foreign_evidence += 1
+            continue
         if _is_single_device_baseline(evidence, baseline_contract):
             baselines.append((evidence, provenance))
         if evidence.get("release_gate_allowed") is not True:
@@ -500,8 +704,21 @@ def evaluate_mps_release(
         blockers.append("invalid_or_unsigned_production_artifact")
     if single_device_claimants:
         blockers.append("single_device_world_cannot_be_a_release_payload")
+    if foreign_evidence:
+        blockers.append("production_artifact_is_not_mps_evidence")
 
-    worlds = {_as_int(evidence.get("world_size")) for evidence, _ in production}
+    # A payload counts towards a release world only when its signed envelope
+    # carries that many devices, so the frozen world is bound to an attestation
+    # rather than to a number the payload declares about itself.
+    bound_production = [
+        (evidence, provenance)
+        for evidence, provenance in production
+        if _world_is_carried_by_envelope(evidence, provenance)
+    ]
+    if len(bound_production) != len(production):
+        blockers.append("production_payload_world_size_not_carried_by_envelope")
+
+    worlds = {_as_int(evidence.get("world_size")) for evidence, _ in bound_production}
     required_worlds = set(manifest["topologies"]["release_world_sizes"])
     if not required_worlds <= worlds:
         blockers.append("missing_release_world_sizes")
@@ -553,6 +770,30 @@ def evaluate_mps_release(
     ):
         blockers.append("single_gpu_baseline_missing_required_fields")
 
+    # The premise is a claim about files, so it is re-read rather than believed.
+    # ``premise_provenance`` already discloses that two sources are absent and
+    # that the completion artifact's body digest has drifted; reporting that here
+    # is what keeps the disclosure from being decorative.
+    if premise_evidence_errors(capacity):
+        blockers.append("capacity_premise_evidence_not_verifiable")
+
+    for evidence, _ in baselines:
+        if any(
+            _as_int(evidence.get(name)) != _as_int(capacity[name])
+            for name in ("n_sites", "logical_mps_bytes")
+        ) or _as_int(evidence.get("max_bond_dimension")) != _as_int(
+            capacity["trained_max_bond"]
+        ):
+            blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
+        if _as_int(evidence.get("measured_peak_memory_bytes")) != _as_int(
+            capacity["measured_single_device_peak_memory_bytes"]
+        ):
+            blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
+        if _as_int(evidence.get("device_total_memory_bytes")) != _as_int(
+            capacity["single_device_total_memory_bytes"]
+        ):
+            blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
+
     completion = any(
         evidence.get("acceptance_case") == "multi_gpu_capacity_completion"
         and str(evidence.get("workload_sha256")) == str(capacity["workload_sha256"])
@@ -563,8 +804,17 @@ def evaluate_mps_release(
 
     for evidence, provenance in production:
         blockers.extend(_mps_contract_blockers(evidence, manifest))
+        _check_provenance_binding(evidence, provenance, capacity, blockers)
         if _has_required_fields(evidence, provenance, required):
             blockers.append("production_artifact_missing_required_fields")
+        blockers.extend(
+            _ill_shaped_evidence(evidence, _as_int(evidence.get("world_size")))
+        )
+        # The sealer records observed fallbacks in the envelope's provenance and
+        # exempts that field from its completeness check, so a payload whose
+        # evidence reports none is not the same as a run that took none.
+        if provenance.get("fallback_events") not in ((), [], None):
+            blockers.append("production_payload_declares_fallback_events")
 
     ordered = tuple(dict.fromkeys(blockers))
     return (not ordered, ordered)
