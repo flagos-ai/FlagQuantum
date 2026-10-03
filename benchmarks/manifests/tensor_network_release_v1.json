@@ -1,0 +1,165 @@
+{
+  "schema_version": "flagquantum.tensor_network.release_manifest.v1",
+  "capability": "distributed_tensor_network",
+  "frozen_before_release_run": true,
+  "freeze_note": "This manifest freezes the tensor-network release protocol and records that its capacity premise is not yet established. Two earlier capacity candidates were falsified by measurement rather than by argument. First, flagquantum_18q_13l_expectation was frozen as the premise of an earlier campaign and then completed on a single A800 in 14.296 s at a 0.70 GiB peak, so it cannot be the workload one device fails to train. Second, the 24-qubit and 28-qubit grid ladder that replaced it does not separate the two cases either: the reverse-mode peak is not slice-owned above four sliced labels, so every measured shape that exhausts one device also exhausts both devices at the same peak. The ladder is recorded under capacity_workload.measured_ladder and capacity_workload.premise_established is false, because a premise declared rather than measured is not evidence. The gate therefore reports capacity_premise_not_established rather than passing on an assumed premise, and the capability stays at production_supported until a measured shape separates a single-device failure from a sharded completion. The speed protocol is frozen here so that the part of the release that does not depend on the premise can still be measured at one revision.",
+  "runtime": {
+    "backend": "pytorch_native",
+    "collective_backend": "nccl",
+    "launcher": "torchrun",
+    "gradient_scheme": "owner_reduce",
+    "optimizer": "rank_owned_sharded_sgd",
+    "dtype": "complex128"
+  },
+  "topologies": {
+    "release_world_sizes": [2],
+    "devices_per_node": 1,
+    "multi_node_required": true,
+    "minimum_multi_node_count": 2,
+    "note": "The measured cluster is one pair of hosts, so the release topology is a pair: two ranks, one device each, one on each host. No third host exists here, which is why the frozen topology is a pair rather than a ladder, and why the pair-only boundary is disclosed as a permanent limitation of the capability rather than as a stage of its measurement."
+  },
+  "speed_workload": {
+    "name": "tensor_network_matched_speed_v1",
+    "qubits": [14, 16, 18],
+    "layers": [6, 8, 10],
+    "slice_label_counts": [4, 4, 6],
+    "acceptance_configuration": "matched_speed_18q_l10_s6",
+    "warmup_steps": 2,
+    "measured_steps": 10,
+    "minimum_speedup": 1.05,
+    "confidence_level": 0.95,
+    "confidence_interval_must_exclude_speedup": 1.0,
+    "minimum_scaling_efficiency": 0.5,
+    "timing_unit": "one full forward-and-reverse training step over the sliced network",
+    "freeze_note": "The timing protocol is two warmup and ten measured iterations rather than the statevector lane's five and thirty, because one tensor-network step is a complete forward and reverse contraction over the sliced network and takes orders of magnitude longer than one statevector training step at a comparable width. The protocol is frozen before the run and the acceptance configuration is the widest point of each frozen multiset."
+  },
+  "capacity_workload": {
+    "name": "tensor_network_single_device_capacity_v1",
+    "premise_established": false,
+    "workload_manifest_path": "benchmarks/workloads/tn_cotengra_gap/flagquantum_4x6x2_expectation.json",
+    "workload_sha256": "d7ac4105ee27527b5d5e9a857ad116299d4fa9125f99e75cdf02a6eb10f685e0",
+    "grid": [4, 6, 2],
+    "dtype": "complex64",
+    "slice_count": 4,
+    "steps": 2,
+    "learning_rate": 0.05,
+    "slice_batch_size": 1,
+    "premise_established_note": "A capacity premise requires one measured shape that exhausts a single device and that a sharded run completes. No such shape was measured on this pair. The reverse-mode peak fell from 80.93 GiB at two sliced labels to 51.19 GiB at four and then stopped responding to slicing, so the four-sliced-label 4x6x2 run completes on one device at 51.19 GiB and the same run completes across the pair at the same peak: the pair demonstrates a sharded training update, not capacity expansion.",
+    "measured_ladder": [
+      {
+        "shape": [4, 6, 2],
+        "qubits": 24,
+        "world_size": 1,
+        "sliced_labels": 4,
+        "status": "completed",
+        "peak_memory_bytes": 51191433216,
+        "seconds": 116.0
+      },
+      {
+        "shape": [4, 6, 2],
+        "qubits": 24,
+        "world_size": 1,
+        "sliced_labels": 2,
+        "status": "oom",
+        "peak_memory_bytes": 80930380288,
+        "seconds": 0.0
+      },
+      {
+        "shape": [4, 6, 2],
+        "qubits": 24,
+        "world_size": 2,
+        "sliced_labels": 4,
+        "status": "completed",
+        "peak_memory_bytes": 51191434752,
+        "seconds": 113.519
+      },
+      {
+        "shape": [4, 6, 3],
+        "qubits": 24,
+        "world_size": 1,
+        "sliced_labels": 4,
+        "status": "oom",
+        "peak_memory_bytes": 82023653888,
+        "seconds": 17.668
+      },
+      {
+        "shape": [4, 6, 3],
+        "qubits": 24,
+        "world_size": 2,
+        "sliced_labels": 4,
+        "status": "oom",
+        "peak_memory_bytes": 82023653888,
+        "seconds": 17.55
+      },
+      {
+        "shape": [4, 6, 3],
+        "qubits": 24,
+        "world_size": 2,
+        "sliced_labels": 8,
+        "status": "oom",
+        "peak_memory_bytes": 82478769152,
+        "seconds": 8.42
+      },
+      {
+        "shape": [4, 6, 3],
+        "qubits": 24,
+        "world_size": 2,
+        "sliced_labels": 16,
+        "status": "oom",
+        "peak_memory_bytes": 76876243968,
+        "seconds": 13.87
+      },
+      {
+        "shape": [4, 7, 2],
+        "qubits": 28,
+        "world_size": 1,
+        "sliced_labels": 4,
+        "status": "oom",
+        "peak_memory_bytes": 65148394496,
+        "seconds": 11.901
+      },
+      {
+        "shape": [4, 7, 2],
+        "qubits": 28,
+        "world_size": 2,
+        "sliced_labels": 4,
+        "status": "oom",
+        "peak_memory_bytes": 65148394496,
+        "seconds": 11.943
+      }
+    ],
+    "single_gpu_baseline": {
+      "evidence_role": "provenance_evidence",
+      "release_gate_payload": false,
+      "evidence_scope": "one_gpu_local",
+      "results_path": "benchmarks/results/smoke/release_candidates/tensor_network_single_gpu_capacity",
+      "rationale": "The single-device capacity failure is read as provenance evidence rather than as a release-gate payload, for the same reason the statevector lane reads it that way: a single device cannot shard one logical workload across ranks, so no world_size 1 artifact can satisfy the release gate. It is read from results_path rather than from benchmarks/results/scalability because the strict promotion audit requires every file in that directory to be release-grade sharded scalability evidence.",
+      "required_artifact_fields": [
+        "raw_log_sha256",
+        "hardware_inventory",
+        "commit",
+        "workload_sha256",
+        "rank_mapping",
+        "distribution_semantics",
+        "acceptance_case",
+        "capacity_baseline_device",
+        "capacity_failure_reason",
+        "single_device_oom_observed",
+        "measured_peak_memory_bytes"
+      ]
+    }
+  },
+  "required_artifact_fields": [
+    "raw_log_sha256",
+    "hardware_inventory",
+    "commit",
+    "workload_sha256",
+    "rank_outputs",
+    "rank_gradients",
+    "rank_timings",
+    "rank_peak_memory_bytes",
+    "communication_fraction",
+    "gpu_activity",
+    "distribution_semantics"
+  ]
+}
