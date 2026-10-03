@@ -201,6 +201,16 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "error_mitigation",
     ),
     _semantic(
+        "FQK-MEAS-002",
+        "measurement.expectation.pauli_product.statevector",
+        "measurement",
+        "Evaluate one exact Pauli-product expectation per statevector batch.",
+        "vqe",
+        "qaoa",
+        "hamiltonian_simulation",
+        "observable_estimation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",

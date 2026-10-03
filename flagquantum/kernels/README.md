@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 24 semantics,
-26 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 25 semantics,
+27 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -89,6 +89,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
+| FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -237,6 +238,15 @@ smaller cases remain at parity or slower, so the canonical decision is
 `retain_experimental` and no default runtime dispatch is authorized. Reproduce
 or validate the evidence with
 [`benchmarks/statevector_probability_kernel.py`](../../benchmarks/statevector_probability_kernel.py).
+
+`FQKI-TRITON-MEAS-002-A` evaluates exact Pauli-product expectations directly
+from a batched flat statevector. It fuses basis-index permutation, X/Y/Z phase,
+and complex inner-product work, and its explicit backward computes the complex
+gradient of the real expectation. Wire zero addresses the most-significant
+statevector bit, matching the simulation contract. The implementation accepts
+contiguous CUDA `complex64` statevectors with at most 30 wires and retains an
+exact differentiable PyTorch fallback for other supported inputs. It remains
+experimental and is not selected by default runtime dispatch.
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -581,9 +591,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 24 semantics and 31 implementations are implemented. MPS-003
+The current 25 semantics and 32 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 26 implementations remain experimental. The rest of the
+promotions; the other 27 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
