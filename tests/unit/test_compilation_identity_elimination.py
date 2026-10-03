@@ -278,6 +278,25 @@ def _statevector(ir: CircuitIR) -> torch.Tensor:
     )[0]
 
 
+def _assert_statevectors_match(left: torch.Tensor, right: torch.Tensor) -> None:
+    """Two amplitude vectors agree to `_ATOL`, elementwise and in shape.
+
+    `torch.allclose` rather than `pytest.approx`, because `pytest.approx` decides
+    how to read a tensor by asking whether `numpy` is *already imported*: with it,
+    `approx` goes through its array branch and compares elementwise, and without
+    it -- which is the case in this repository's CI, where `numpy` is not
+    installed at all -- it treats the tensor as a sequence of tensors and raises
+    `TypeError: pytest.approx() does not support nested data structures`. A
+    comparison whose meaning depends on an unrelated package being importable is
+    not a comparison; `rtol=0` keeps it the absolute claim `_ATOL` states.
+    """
+
+    assert left.shape == right.shape, (left.shape, right.shape)
+    assert torch.allclose(left, right, atol=_ATOL, rtol=0), float(
+        (left - right).abs().max()
+    )
+
+
 def _measured_rows(point: str) -> dict[str, bool]:
     values = _POINTS[point]
     return {
@@ -443,11 +462,11 @@ def test_a_half_turn_survives_the_loop_and_leaves_the_statevector_alone() -> Non
     program = CircuitIR(2, (_gate("h", (0,)), _gate("rz", (0,), theta=_TWO_PI)))
     optimized = optimize(program)
     assert _names(optimized) == ["h", "rz"]
-    assert _statevector(optimized) == pytest.approx(_statevector(program), abs=_ATOL)
+    _assert_statevectors_match(_statevector(optimized), _statevector(program))
     # A full turn is removed by the same loop, and the statevector is still equal.
     full = CircuitIR(2, (_gate("h", (0,)), _gate("rz", (0,), theta=_FOUR_PI)))
     assert _names(optimize(full)) == ["h"]
-    assert _statevector(optimize(full)) == pytest.approx(_statevector(full), abs=_ATOL)
+    _assert_statevectors_match(_statevector(optimize(full)), _statevector(full))
 
 
 def test_every_removal_leaves_the_statevector_identical() -> None:
@@ -489,9 +508,7 @@ def test_every_removal_leaves_the_statevector_identical() -> None:
             )
             optimized = optimize(program)
             assert name not in _names(optimized), (point, name)
-            assert _statevector(optimized) == pytest.approx(
-                _statevector(program), abs=_ATOL
-            ), (point, name)
+            _assert_statevectors_match(_statevector(optimized), _statevector(program))
             checked += 1
     assert checked == sum(
         1
@@ -514,9 +531,7 @@ def test_every_removal_leaves_the_statevector_identical() -> None:
         )
         optimized = optimize(program)
         assert name not in _names(optimized), name
-        assert _statevector(optimized) == pytest.approx(
-            _statevector(program), abs=_ATOL
-        ), name
+        _assert_statevectors_match(_statevector(optimized), _statevector(program))
 
 
 def test_the_rule_reaches_rows_the_opcode_set_could_not() -> None:
@@ -578,9 +593,7 @@ def test_declared_removals(name: str, params: dict[str, float]) -> None:
     program = CircuitIR(
         1, (_gate("h", (0,)), Instruction(name, (0,), params=params), _gate("h", (0,)))
     )
-    assert _statevector(optimize(program)) == pytest.approx(
-        _statevector(program), abs=_ATOL
-    )
+    _assert_statevectors_match(_statevector(optimize(program)), _statevector(program))
 
 
 @pytest.mark.parametrize(
