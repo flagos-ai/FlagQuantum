@@ -493,7 +493,9 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 
   package:
-    runs-on: ubuntu-latest
+    # Ubuntu 22.04 keeps the distributable native extension honest on GCC 11,
+    # which is still the default compiler on a maintained Linux LTS release.
+    runs-on: ubuntu-22.04
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
