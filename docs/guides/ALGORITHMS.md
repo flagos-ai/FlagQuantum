@@ -1755,9 +1755,14 @@ print(sorted(report.to_dict()["capability_evidence"]))
 **Two refusal families, and the second is the one worth reading.** A logical
 resource estimate is defined over Clifford+T programs, and a program outside that
 set is refused by name rather than counted as something else. A *parametric
-rotation* is refused because angle synthesis is absent: a T-count taken over an
-un-synthesised angle would be the count of a circuit nobody will run, and it would
-be reported with the authority of a circuit that had been compiled. A *compound
+rotation* is refused because this unit reads opcodes and runs no legalization: a
+T-count taken over a rotation the program still contains would be the count of a
+circuit nobody will run, and it would be reported with the authority of a circuit
+that had been compiled. An exact quarter turn does have a Clifford+T form now, in
+the compiler's own angle synthesis, and this unit deliberately does not reach for
+it — asking whether a float angle is a Clifford+T angle is a decision about the
+caller's synthesis pipeline. Approximation to an arbitrary angle remains absent,
+and the row says so. A *compound
 operation whose T-count is its decomposition's* — a Toffoli, a controlled swap — is
 refused for a reason that is easy to miss: **a Toffoli is not a Clifford gate.** The
 schema has a Clifford set, and treating `ccx` as one Clifford operation would

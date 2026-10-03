@@ -43,10 +43,23 @@ each rule's leaves through the table again, so a target that publishes `cx` and 
 z-rotation still reaches `cry` through three levels, and the table stores the
 shortest statement of each identity rather than its closure.
 
-The search branches only on opcode names, never on a parameter value, so a
-trainable angle cannot change the chosen path, and every rule forwards the
-source instruction's own parameter objects and metadata instead of rebuilding
-them from constants, so a trainable rotation stays in the autograd graph.
+The one parameterized opcode family the table cannot reach is the z-rotation
+itself. `rz`, `phase`, and `u1` are the same gate up to a global phase, and no
+identity rewrites one of them into a Clifford+T basis, so a target publishing
+`h`, `s`, `t`, and `cx` could not express a rotation at all. `angle_synthesis`
+closes exactly that hole for the angles that have an exact answer: `rz(k * pi/4)`
+is a single-qubit Clifford+T operator, and its words are consulted here as one
+more candidate rewrite. Nothing is approximated, no angle is invented, and an
+angle that is not an exact multiple of `pi/4` is still refused -- which is why
+the cosine-sine and phase-gradient syntheses Qiskit's library carries stay out of
+this table, as `benchmarks/compiler_basis_translation.py` measures.
+
+The search branches only on opcode names for every opcode the table holds, never
+on a parameter value, so a trainable angle cannot change the chosen path; the
+quarter-turn table is the one place a value selects a candidate, and it does so
+only for an angle whose residue is exact. Every rule forwards the source
+instruction's own parameter objects and metadata instead of rebuilding them from
+constants, so a trainable rotation stays in the autograd graph.
 """
 
 from __future__ import annotations
@@ -58,6 +71,7 @@ from typing import Any
 
 from ..core.ir import Instruction
 from ..core.operator_schema import get_operator_schema
+from .angle_synthesis import quarter_turn_words
 from .one_qubit_synthesis import synthesize_one_qubit
 
 _HALF = 0.5
@@ -442,9 +456,12 @@ def _expand(
                 )
             )
     nested_active = active | {opcode}
-    for rule in EQUIVALENCE_RULES.get(opcode, ()):
-        expanded: list[_Translation] = []
-        for item in rule.build(instruction):
+
+    def rewrite_of(items: tuple[Instruction, ...]) -> _Translation | None:
+        """Expand a candidate sequence, or None when one item has no rewrite."""
+
+        parts: list[_Translation] = []
+        for item in items:
             child = _expand(
                 item,
                 can_run=can_run,
@@ -453,20 +470,22 @@ def _expand(
                 active=nested_active,
             )
             if child is None:
-                expanded = []
-                break
-            expanded.append(child)
-        if not expanded:
-            continue
-        options.append(
-            _Translation(
-                instructions=tuple(
-                    leaf for item in expanded for leaf in item.instructions
-                ),
-                unresolved=tuple(name for item in expanded for name in item.unresolved),
-                rewritten=True,
-            )
+                return None
+            parts.append(child)
+        return _Translation(
+            instructions=tuple(leaf for part in parts for leaf in part.instructions),
+            unresolved=tuple(name for part in parts for name in part.unresolved),
+            rewritten=True,
         )
+
+    for word in quarter_turn_words(instruction):
+        option = rewrite_of(word)
+        if option is not None:
+            options.append(option)
+    for rule in EQUIVALENCE_RULES.get(opcode, ()):
+        option = rewrite_of(rule.build(instruction))
+        if option is not None:
+            options.append(option)
     if not options:
         return _Translation((instruction,), (opcode,), False)
     return min(options, key=lambda item: item.rank)
@@ -484,7 +503,9 @@ def translate(
     `can_run` decides whether one instruction is expressible by the target, so a
     caller that checks a native descriptor's declared parameters keeps that
     precision here. `z_rotation` and `pulse_opcode` are the basis the Euler
-    synthesis needs; when either is None only the equivalence table is used.
+    synthesis needs; when either is None the equivalence table is used without
+    it. The exact quarter-turn words are always available: they need no basis of
+    their own, because every leaf they name is a plain named gate.
 
     Returns None when the table and the synthesis both have nothing to say about
     the opcode, so the caller can report the opcode itself rather than a

@@ -27,9 +27,11 @@ is refused by name rather than counted as "other".  Two kinds of operation are
 exactly that, and neither is a rounding question.
 
 A *parametric rotation* -- ``rx``, ``rz``, ``u3``, and their controlled forms --
-is a gate whose Clifford+T form is angle synthesis's answer.  Turning one into
-Clifford+T within an error is angle synthesis, which this repository does not
-implement, so a T-count taken over an un-synthesised angle would be the count of
+is a gate whose Clifford+T form is angle synthesis's answer.  This unit reads
+opcodes and runs no legalization, so it never asks that question: a quarter
+turn does have an exact Clifford+T form now, in the compiler's own angle
+synthesis, and this unit refuses the rotation carrying it anyway, because a
+T-count taken over a rotation the program still contains would be the count of
 a circuit nobody will run.  A *compound operation* -- a Toffoli, a controlled
 swap -- is a gate whose Clifford+T form is its decomposition's answer, and the
 decompositions a synthesis pipeline may pick do not agree on it.  A Toffoli is
@@ -57,8 +59,8 @@ device's numbers, and a report that invented them would be quoting a hardware
 claim this module has no evidence for.
 
 **What is deliberately absent, and is owned rather than silent.**  There is no
-Clifford+T synthesis and no angle synthesis, so the input has to already be
-Clifford+T; there is no distillation factory, magic-state budget, or routing
+angle synthesis for an arbitrary angle, and this unit consumes no synthesis at
+all, so the input has to already be Clifford+T; there is no distillation factory, magic-state budget, or routing
 overhead, so the physical figure is a floor for a circuit of these layers rather
 than a compiled estimate; there is no placement, scheduling, or layout pass, and
 no device model, so the physical qubit count is a patch count rather than a
@@ -188,9 +190,11 @@ _LIMITATIONS = (
     "says how much hardware a logical program would occupy and for how long, and "
     "never how often it would fail. The input has to already be Clifford+T, and "
     "two families are refused by name rather than counted: a parametric rotation "
-    "is refused rather than synthesised, because angle synthesis is absent and a "
-    "T-count taken over an un-synthesised angle would be the count of a circuit "
-    "nobody will run, and a compound operation whose T-count is its "
+    "is refused rather than synthesised, because this unit reads opcodes and runs "
+    "no legalization, so a T-count taken over a rotation the program still "
+    "contains would be the count of a circuit nobody will run; angle synthesis "
+    "for an arbitrary angle is still absent here, and a compound operation whose "
+    "T-count is its "
     "decomposition's -- a Toffoli, a controlled swap -- is refused because a "
     "Toffoli is not a Clifford gate and the decompositions do not agree on what "
     "it costs. No distillation factory, "
@@ -368,7 +372,8 @@ _DECOMPOSITION_REASON = (
 
 _PARAMETRIC_REASON = (
     "turning a parametric rotation into Clifford+T within an error is angle "
-    "synthesis, which is not implemented, so the T-count of this program is not a "
+    "synthesis, which is not implemented for an arbitrary angle, so the T-count "
+    "of this program is not a "
     "number this unit can report. Decompose the rotation into the Clifford+T gates "
     "you mean -- this unit classifies opcodes and does not classify angles, "
     "because deciding whether a float angle is a Clifford+T angle is a decision "

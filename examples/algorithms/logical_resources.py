@@ -311,9 +311,7 @@ def main() -> None:
     print()
 
     print("a caller may charge fewer or more logical qubits than the register")
-    fewer = estimate_logical_resources(
-        circuit, distance=args.distance, n_qubits=1
-    )
+    fewer = estimate_logical_resources(circuit, distance=args.distance, n_qubits=1)
     more = estimate_logical_resources(circuit, distance=args.distance, n_qubits=8)
     report("register", circuit.num_qubits)
     report("charged for one", fewer.physical_qubits)
@@ -332,9 +330,11 @@ def main() -> None:
     print("  point: the tally here is the compiler's own record rather than a")
     print("  second implementation of it, and the code model is one named model")
     print("  whose conventions travel with its numbers. What is beside it: the")
-    print("  Clifford+T synthesis and the angle synthesis that would let a")
-    print("  rotated circuit reach this unit at all, and the distillation factory,")
-    print("  magic-state budget, placement, and device model that would turn a")
+    print("  angle synthesis that would let an arbitrary rotation reach this unit")
+    print("  at all -- an exact quarter turn already has a Clifford+T form in the")
+    print("  compiler, and this unit reads opcodes rather than reaching for it --")
+    print("  and the distillation factory, magic-state budget, placement, and")
+    print("  device model that would turn a")
     print("  patch count into a compiled estimate. What is not here, and never")
     print("  was: a logical error rate. That number needs a device's threshold")
     print("  fit, so this report says how much hardware a logical program would")

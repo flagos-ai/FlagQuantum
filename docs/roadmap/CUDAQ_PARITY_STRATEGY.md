@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 55 |
-| `unsupported` | 30 |
+| `partial` | 57 |
+| `unsupported` | 28 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -240,6 +240,33 @@ regime and a dense one without the optional distribution installed. That is a
 census and not a promise: an empty blocker list says every instruction
 translated, not that the samples are correct.
 
+`clifford_t_synthesis` and `angle_synthesis` moved from `unsupported` to `partial`
+together, and they are the first two rows of the `B_open_neutral` class this
+document had listed as a research expense rather than an integration one. The
+Clifford+T half is exact and is now carried:
+[angle_synthesis.py](../../flagquantum/compiler/angle_synthesis.py) classifies a
+z-rotation by its residue modulo eight when its angle is an exact multiple of
+`pi/4`, and `basis_translation` consults one short word per residue as an
+additional candidate rewrite, so a target publishing only `h`, `s`, `t`, and `cx`
+reaches a rotation it previously refused outright -- the measured failure the row
+was written against. Both rows stay `partial` because the halves named in their
+titles are still absent, and saying which half exists is the whole content of the
+move. Nothing is approximated: the classification is an exact equality, and
+`pi/8`, `pi/3`, and `0.3` all fail closed rather than being answered with a
+rotation nobody asked for. That refusal is deliberate, because the Ross-Selinger
+route an accuracy-directed synthesizer needs runs on exact arithmetic in
+`Z[omega, 1/sqrt(2)]`, a Diophantine norm equation, and integer factorization,
+and the GMP and MPFR dependency this document already records against the row is
+still unadopted. Two properties of the table are worth naming because they are
+what a fault-tolerant consumer reads. Each residue's first word carries the
+minimum `t` count, and the test suite re-derives that claim by enumerating the
+whole vocabulary rather than trusting the table. Each residue also carries a
+fallback word, so a target that publishes `t` but not `tdg` still reaches
+`rz(-pi/4)`; without it `{t, s}` is not a group and misses a residue, which is the
+same class of silent hole the row was written to record. Trainable angles are
+refused by the same check that refuses non-quarter turns, so a rotation never
+leaves the autograd graph by being answered with a constant word.
+
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
 `docs/roadmap/CAPABILITY_MATURITY.md` explains them; a parity row cites a registry
@@ -282,11 +309,10 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 6 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 4 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by integration rather than by
-research: a C++ front end and an MLIR dialect stack, Clifford+T and angle
-synthesis, a chemistry domain library, a QEC dialect, and the arithmetic
-constructions a logical layer needs. That is the cheapest
+research: a C++ front end and an MLIR dialect stack, a chemistry domain library,
+a QEC dialect, and the arithmetic constructions a logical layer needs. That is the cheapest
 capability per unit of effort available to the
 programme, and § 5 governs it. The first of the family moved off `unsupported`
 without new research, which is the shape the remaining rows are expected to
@@ -305,8 +331,9 @@ module as evidence. It moved to `partial` rather than to `supported` because the
 half that landed is the costing half and not the synthesis half: a rotated
 surface-code cost over the compiler's own static estimate, with the gate-level
 tally passed through rather than re-derived so the repository keeps one source of
-truth for what a T-depth means. What is still absent beside it is the Clifford+T
-and angle synthesis that would let an arbitrary program reach it, and the
+truth for what a T-depth means. What is still absent beside it is the
+approximation half of angle synthesis that would let an arbitrary program reach
+it, and the
 distillation, placement, and device model that would turn a patch count into a
 compiled estimate. **The reuse is the part worth carrying forward**: the row moved
 because a vertical path already existed through the compiler's resource estimate,
@@ -475,7 +502,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 30 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 28 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

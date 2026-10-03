@@ -308,19 +308,24 @@ reason = "Partial coverage follows from the legalization table; there is no gene
 [[domains.capabilities]]
 id = "clifford_t_synthesis"
 cudaq = "Clifford+T synthesis from a rotation angle"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
-reason = "Absent. The algorithms are published and vendor-neutral, and any implementation needs exact arithmetic that FlagQuantum does not currently carry."
+maturity_ref = "ir"
+reason = "The exact quarter-turn slice exists. Every rz, phase, or u1 rotation whose angle is an exact multiple of pi/4 is classified by residue modulo eight and rewritten into a table word over t, tdg, s, sdg, and z, so a target publishing only h, s, t, and cx now reaches a rotation it previously refused; each residue carries a shortest word and a fallback that keeps it reachable when the target omits one of an inverse pair, and a test enumerates the vocabulary to re-derive the shortest-word claim rather than trusting the table. Approximating an arbitrary angle is absent and is a different problem: the Ross-Selinger route needs exact arithmetic in Z[omega, 1/sqrt(2)], a Diophantine norm equation, and integer factorization, none of which FlagQuantum carries."
+baseline_gap = "Exact multiples of pi/4 only, and an angle outside them is refused rather than approximated away: pi/8, pi/3, and 0.3 all fail closed. Nothing selects a length, depth, or T-count objective, and no ancilla is ever introduced."
+evidence = ["flagquantum/compiler/angle_synthesis.py", "flagquantum/compiler/basis_translation.py", "flagquantum/compiler/native_gate_legalization.py", "tests/unit/test_compilation_angle_synthesis.py"]
 
 [[domains.capabilities]]
 id = "angle_synthesis"
 cudaq = "Angle synthesis for a target rotation accuracy"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
-reason = "Absent, and it shares the exact-arithmetic requirement with Clifford+T synthesis."
-
+maturity_ref = "ir"
+reason = "The exact half exists and is shared with the row above: a rotation is recognized as a quarter turn by an exact comparison against n * (pi/4) and answered with a word naming only plain named gates, and the recognition refuses a trainable angle so a rotation never leaves the autograd graph. Accuracy-directed approximation is absent: no target accuracy is accepted, no epsilon is spent, and the GMP and MPFR route the strategy document records for it is not adopted."
+baseline_gap = "No accuracy parameter and no approximation. A caller asking for a rotation to within 1e-10 is refused, because only the exactly representable angles have an answer here."
+evidence = ["flagquantum/compiler/angle_synthesis.py", "tests/unit/test_compilation_angle_synthesis.py", "search:no epsilon, tolerance, or accuracy parameter anywhere in flagquantum/compiler; the only comparison is an exact equality against a quarter turn"]
 [[domains.capabilities]]
 id = "topology_aware_routing"
 cudaq = "CableRoughIn and topology-aware qubit routing"
@@ -861,7 +866,7 @@ status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
 maturity_ref = "algorithms_logical_resource_estimation"
-reason = "A rotated-surface-code cost over the compiler's own static estimate rather than a second tally: flagquantum.algorithms.logical_resources reads the operation counts, the T family, and the schedule depth from flagquantum.compiler.resource_estimation.estimate_resources and adds the code layer, at a distance the caller names, as 2 d^2 - 1 physical qubits per patch and d surface-code cycles per logical layer. The row is partial for three named reasons. The input has to already be Clifford+T: a parametric rotation is refused rather than synthesised, because angle synthesis is absent and a T-count taken over an un-synthesised angle would be the count of a circuit nobody will run, and a compound operation whose T-count is its decomposition's -- a Toffoli, a controlled swap -- is refused, because a Toffoli is not a Clifford gate and the decompositions do not agree on what it costs. There is no distillation factory, magic-state budget, routing overhead, placement, scheduling, or device model, so the physical figure is a floor for a circuit of these layers rather than a compiled estimate. And no logical error rate is reported, because a threshold fit's prefactor and threshold are a device's numbers rather than this unit's. Clifford+T synthesis, angle synthesis, and the arithmetic constructions are the moves that would take this row to supported."
+reason = "A rotated-surface-code cost over the compiler's own static estimate rather than a second tally: flagquantum.algorithms.logical_resources reads the operation counts, the T family, and the schedule depth from flagquantum.compiler.resource_estimation.estimate_resources and adds the code layer, at a distance the caller names, as 2 d^2 - 1 physical qubits per patch and d surface-code cycles per logical layer. The row is partial for three named reasons. The input has to already be Clifford+T: a parametric rotation is refused rather than synthesised, because this unit reads opcodes and runs no legalization, so a T-count taken over a rotation the program still contains would be the count of a circuit nobody will run -- an exact quarter turn has a Clifford+T form in the compiler now, and this unit does not reach it -- and a compound operation whose T-count is its decomposition's -- a Toffoli, a controlled swap -- is refused, because a Toffoli is not a Clifford gate and the decompositions do not agree on what it costs. There is no distillation factory, magic-state budget, routing overhead, placement, scheduling, or device model, so the physical figure is a floor for a circuit of these layers rather than a compiled estimate. And no logical error rate is reported, because a threshold fit's prefactor and threshold are a device's numbers rather than this unit's. Reaching the compiler's own quarter-turn table from this unit, angle synthesis for an arbitrary angle, and the arithmetic constructions are the moves that would take this row to supported."
 evidence = ["flagquantum/algorithms/logical_resources.py", "tests/unit/test_logical_resources.py"]
 
 [[domains.capabilities]]

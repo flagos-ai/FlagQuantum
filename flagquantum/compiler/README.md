@@ -37,6 +37,7 @@ Use `optimize(program)` for target-independent optimization and
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
+| Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
@@ -46,6 +47,51 @@ Use `optimize(program)` for target-independent optimization and
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
 | Static resource estimation | [resource_estimation.py](resource_estimation.py) |
 | QIR base-profile emission | [qir.py](qir.py) |
+
+## Reach a Clifford+T basis
+
+A target publishes a gate set and no more, and the named-gate identities in
+`basis_translation.py` reach every opcode they name. A rotation is the one
+family they cannot reach: `rz`, `phase`, and `u1` are the same gate up to a
+global phase, no identity rewrites one of them, and the Euler synthesis needs a
+z-rotation opcode to rewrite into -- so a target publishing only `h`, `s`, `t`,
+and `cx` used to refuse a rotation outright.
+
+`angle_synthesis.py` closes the half that has an exact answer. `rz(n * pi/4)` is
+a single-qubit Clifford+T operator for every integer `n`, so it collapses onto
+eight residues, and each residue carries a short word over `t`, `tdg`, `s`,
+`sdg`, and `z`. `basis_translation.translate` consults those words as one more
+candidate rewrite, ranked by the same rule it applies to every rule: a fully
+native rewrite beats a shorter one that names a gate the target lacks.
+
+```python
+import math
+
+from flagquantum.compiler import angle_synthesis
+
+angle_synthesis.quarter_turns(3 * math.pi / 4)  # 3
+angle_synthesis.QUARTER_TURN_WORDS[3]  # (('s', 't'), ('tdg', 'z'))
+```
+
+Two properties are worth knowing before you read the table. Each residue's first
+word carries the minimum number of `t` gates, and the tests re-derive that by
+enumerating the vocabulary rather than trusting the table. Each residue also
+carries a fallback word, so a target publishing `t` but not `tdg` still reaches
+`rz(-pi/4)`; without it `{t, s}` is not a group and would miss a residue.
+
+What the module refuses is as load-bearing as what it answers. The classification
+is an exact equality against a multiple of `pi/4`, so `pi/8`, `pi/3`, and `0.3`
+fail closed rather than being answered with a rotation nobody asked for, and a
+trainable angle is refused by the same check so a rotation never leaves the
+autograd graph by being replaced with a constant word. Approximating an
+arbitrary angle to a target accuracy is the Ross-Selinger problem, needs exact
+arithmetic in `Z[omega, 1/sqrt(2)]` and integer factorization, and is not
+implemented here; the parity contract records that gap rather than papering over
+it.
+
+```bash
+pytest tests/unit/test_compilation_angle_synthesis.py
+```
 
 ## Cost a static program
 

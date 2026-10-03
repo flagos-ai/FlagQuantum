@@ -135,6 +135,16 @@ def _source(opcode: str) -> Instruction:
     return Instruction(opcode, tuple(range(schema.arity)), params=angles)
 
 
+def _rotation(theta: float) -> Instruction:
+    """One source rotation, at an angle the caller chooses.
+
+    `_source` reads a fixed angle out of `_ANGLES`, which is deliberately not a
+    multiple of `pi/4`, so the quarter-turn cases below build their own.
+    """
+
+    return Instruction("rz", (0,), params={"theta": theta})
+
+
 def _unitary(instruction: Instruction) -> torch.Tensor:
     width = 2 ** len(instruction.wires)
     matrix = gate_matrix(instruction, bsz=1, device="cpu", dtype=torch.complex128)
@@ -326,6 +336,48 @@ def test_an_opcode_with_no_rule_and_no_basis_is_refused() -> None:
     """`y` has no identity into `h` and `t`, so nothing can be said about it."""
 
     assert translate(Instruction("y", (0,)), can_run=_can_run("h", "t")) is None
+
+
+def test_a_clifford_t_target_reaches_a_quarter_turn_rotation() -> None:
+    """The measured hole this file's table could not close: a rotation.
+
+    No identity in `EQUIVALENCE_RULES` names `rz`, `phase`, or `u1`, so a target
+    publishing only `h`, `s`, `t`, and `cx` used to refuse every rotation in the
+    program. The exact quarter-turn words are the additional candidate the search
+    now consults. The consumer is what is asserted here rather than the table:
+    the composition is committed by `test_compilation_angle_synthesis.py`, and
+    this test pins that the production path reaches it.
+    """
+
+    program = CircuitIR(
+        2, (Instruction("h", (0,)), _rotation(math.pi / 4)), dtype="complex128"
+    )
+    result = _legalize(program, "h", "s", "t", "cx")
+    assert result.changed is True
+    assert [item.name for item in result.program.instructions] == ["h", "t"]
+    assert result.decompositions[0].source_opcode == "rz"
+    assert result.decompositions[0].replacement_opcodes == ("t",)
+    # Non-vacuity: the same rotation on a target that publishes `rz` is native,
+    # so the answer above is the search working rather than a refusal.
+    native = _legalize(
+        CircuitIR(1, (_rotation(math.pi / 4),), dtype="complex128"), "rz", "sx", "cx"
+    )
+    assert native.changed is False
+    assert native.decompositions == ()
+
+
+def test_a_rotation_that_is_not_a_quarter_turn_still_fails_closed() -> None:
+    """The word table answers eight residues, and the ninth has no answer.
+
+    `0.7137` is this file's own angle and is not a multiple of `pi/4`, so the
+    refusal that existed before the words existed has to survive them. A
+    tolerance here would answer with a rotation nobody asked for, which is why
+    the classification is an exact equality.
+    """
+
+    program = CircuitIR(1, (_rotation(0.7137),), dtype="complex128")
+    with pytest.raises(NativeGateLegalizationError, match="'rz'"):
+        _legalize(program, "h", "s", "t", "cx", "sdg", "tdg")
 
 
 def test_an_unreachable_rewrite_is_returned_so_the_caller_names_the_gate() -> None:
