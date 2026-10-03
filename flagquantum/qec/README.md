@@ -269,6 +269,8 @@ model = DetectorErrorModel(
 print(model.detector_rates()[0])  # 0.30000000000000004, not the 0.26 of two
                                   # independent mechanisms
 print(model.error_ids)            # (0, 0): upstream's parallel id vector
+print(model.error_rates)          # (0.1, 0.2): one entry per column, each
+                                  # mechanism's own rate, not the 0.3 marginal
 ```
 
 The members of a group are disjoint pieces of one shot. Each keeps the
@@ -279,7 +281,12 @@ fire. A group summing to exactly one is admitted — it fires every shot — and
 lone id excludes nothing, so a model with no ids is this arithmetic's empty case
 and behaves exactly as it did before the field existed. A group whose
 probabilities sum *above* one is refused rather than renormalized, because
-renormalizing would change every rate the caller read.
+renormalizing would change every rate the caller read. `error_rates` is the
+column view beside the matrices rather than the folded one: entry `i` and column
+`i` of `detector_error_matrix` are one mechanism because both are read from the
+model's own normalized mechanism order, and each entry is the rate its own
+mechanism states, so the folding stays in `detector_rates()` and
+`observable_rates()`.
 
 The statement is about the distribution and not about the signature, so the three
 operations that assume independence refuse such a model and name the ids instead

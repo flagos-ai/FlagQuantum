@@ -783,6 +783,32 @@ class DetectorErrorModel:
                 matrix[index, column] = 1
         return matrix
 
+    @property
+    def error_rates(self) -> tuple[float, ...]:
+        """Return one rate per mechanism, in the order of the matrices' columns.
+
+        This is the model's parallel rate column in the sense upstream gives
+        ``error_rates``: entry ``i`` is the rate mechanism ``i`` states, and the
+        vector's length is :attr:`num_errors`, which is the column count of both
+        :meth:`detector_error_matrix` and :meth:`observables_flips_matrix`, so a
+        reader takes a column's support and that column's weight from one index
+        rather than pairing a matrix with a list built separately.
+
+        The rate reported is the mechanism's own and not the marginal rate of the
+        detectors it touches: :meth:`detector_rates` and :meth:`observable_rates`
+        are those, and the two quantities differ as soon as one target is touched
+        by two mechanisms. A grouped model reports each member's own rate here for
+        the same reason -- a group states which mechanisms are alternatives
+        rather than rewriting what any one of them is worth -- so the vector is a
+        column view and never a probability distribution over the model.
+
+        With :attr:`error_ids` this is the whole column view: the rates say what
+        each column is worth and the ids say which columns are alternatives
+        rather than independent faults.
+        """
+
+        return tuple(error.probability for error in self.errors)
+
     def _marginal_rates(
         self, count: int, select: Callable[[DemError], tuple[int, ...]]
     ) -> torch.Tensor:
