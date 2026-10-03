@@ -510,6 +510,8 @@ def _launch_marginal_forward(
         num_warps=8,
         num_stages=2,
     )
+    if chunk_count == 1:
+        return partials.squeeze(2)
     return partials.sum(dim=2)
 
 
