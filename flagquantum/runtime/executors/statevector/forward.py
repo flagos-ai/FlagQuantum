@@ -632,7 +632,10 @@ def _vectorized_local_gate(
         runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
-        shape=tuple(shard_state.amplitudes.shape),
+        shape=(
+            int(shard_state.amplitudes.shape[0]),
+            int(shard_state.amplitudes.shape[1]),
+        ),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
