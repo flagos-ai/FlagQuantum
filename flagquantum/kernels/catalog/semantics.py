@@ -192,6 +192,15 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "measurement",
     ),
     _semantic(
+        "FQK-MEAS-001",
+        "measurement.probabilities.statevector",
+        "measurement",
+        "Compute one real probability for every amplitude of a flat statevector.",
+        "circuit_sampling",
+        "observable_estimation",
+        "error_mitigation",
+    ),
+    _semantic(
         "FQK-NUM-001",
         "numerics.matmul.complex_batched",
         "numerics",

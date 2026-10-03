@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 23 semantics,
-25 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 24 semantics,
+26 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -88,6 +88,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
+| FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -222,6 +223,20 @@ implementation is not yet competitive for these shapes. NUM-001 must establish
 a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
+
+`FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
+and its first-order complex gradient. The checked-in
+[`statevector_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_probability_kernel_a800.json)
+artifact records 30 synchronized groups of 10 invocations for five fixed
+complex64 shapes from 1,024 through 16,777,216 amplitudes on `jp-a800-171` and
+`jp-a800-172` with stock Triton 3.7.1. Maximum probability and gradient absolute
+errors are `9.32e-10` and `3.34e-8`. Triton reaches `0.564x` to `2.999x` the
+PyTorch forward speed and `0.886x` to `3.078x` the PyTorch forward/backward
+speed. The approximately `3x` win is confined to the 16,777,216-amplitude case;
+smaller cases remain at parity or slower, so the canonical decision is
+`retain_experimental` and no default runtime dispatch is authorized. Reproduce
+or validate the evidence with
+[`benchmarks/statevector_probability_kernel.py`](../../benchmarks/statevector_probability_kernel.py).
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -566,9 +581,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 30 implementations are implemented. MPS-003
+The current 24 semantics and 31 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 25 implementations remain experimental. The rest of the
+promotions; the other 26 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract

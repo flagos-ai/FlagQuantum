@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-KernelDomain = Literal["statevector", "gradient", "mps", "numerics"]
+KernelDomain = Literal["statevector", "gradient", "mps", "measurement", "numerics"]
 KernelProvider = Literal["pytorch", "triton", "flagtree"]
 KernelDirection = Literal["forward", "backward", "jvp", "vjp", "jacobian"]
 KernelMaturity = Literal["experimental", "provisional", "stable"]
