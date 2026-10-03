@@ -833,15 +833,17 @@ evidence = ["search:no for-Stim-users page in cudaq-qec, and no Stim-text writer
 id = "logical_and_ftqc_layer"
 title = "Logical and fault-tolerant layer"
 cudaq_surface = ["preview/logical", "logical resource estimation", "Gidney-Ekera adder", "carbon code", "Fermi-Hubbard", "distillation factories", "gadget verification", "physical placement, schedule, and routing", "Stim output", "device and constraint modeling"]
-evidence = ["search:no logical resource estimator, no Clifford+T area or time model, no physical placement, and no distillation factory"]
+evidence = ["search:one Clifford+T tally times surface-code distance estimator at flagquantum/algorithms/logical_resources.py, and no Clifford+T or angle synthesis, no arithmetic construction, no physical placement, no device model, and no distillation factory around it"]
 
 [[domains.capabilities]]
 id = "logical_resource_estimation"
 cudaq = "Clifford+T and surface-code area and time estimation for a logical algorithm"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
-reason = "Absent as a domain. Qualtran carries the same mathematics under an Apache-2.0 licence, so the planned route is adaptation into a FlagQuantum-owned report format aligned with capability-maturity.toml evidence."
+maturity_ref = "algorithms_logical_resource_estimation"
+reason = "A rotated-surface-code cost over the compiler's own static estimate rather than a second tally: flagquantum.algorithms.logical_resources reads the operation counts, the T family, and the schedule depth from flagquantum.compiler.resource_estimation.estimate_resources and adds the code layer, at a distance the caller names, as 2 d^2 - 1 physical qubits per patch and d surface-code cycles per logical layer. The row is partial for three named reasons. The input has to already be Clifford+T: a parametric rotation is refused rather than synthesised, because angle synthesis is absent and a T-count taken over an un-synthesised angle would be the count of a circuit nobody will run, and a compound operation whose T-count is its decomposition's -- a Toffoli, a controlled swap -- is refused, because a Toffoli is not a Clifford gate and the decompositions do not agree on what it costs. There is no distillation factory, magic-state budget, routing overhead, placement, scheduling, or device model, so the physical figure is a floor for a circuit of these layers rather than a compiled estimate. And no logical error rate is reported, because a threshold fit's prefactor and threshold are a device's numbers rather than this unit's. Clifford+T synthesis, angle synthesis, and the arithmetic constructions are the moves that would take this row to supported."
+evidence = ["flagquantum/algorithms/logical_resources.py", "tests/unit/test_logical_resources.py"]
 
 [[domains.capabilities]]
 id = "arithmetic_bloqs"
@@ -849,7 +851,7 @@ cudaq = "Gidney-Ekera adder and related arithmetic constructions"
 status = "unsupported"
 priority = "later"
 dependency_class = "B_open_neutral"
-reason = "Absent, and it is reachable through the same Qualtran adaptation as logical resource estimation."
+reason = "Absent. The Gidney-Ekera construction is a Clifford+T circuit, so once it is written it can be costed by the logical_resource_estimation unit that now exists, but writing the adder is an implementation of its own and no arithmetic construction exists here. The Qualtran adaptation that was the planned route to both rows is not the route that was taken: the logical estimator reuses the in-repository compiler estimate instead, and it carries no Qualtran dependency for an adder to reuse."
 
 [[domains.capabilities]]
 id = "physical_placement_and_scheduling"

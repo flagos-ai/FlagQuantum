@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 44 |
-| `unsupported` | 41 |
+| `partial` | 45 |
+| `unsupported` | 40 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -128,12 +128,12 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 9 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 8 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by integration rather than by
 research: a C++ front end and an MLIR dialect stack, Clifford+T and angle
-synthesis, QIR code generation, a chemistry domain library, a QEC dialect,
-logical resource estimation, and the arithmetic constructions a logical layer
-needs. That is the cheapest capability per unit of effort available to the
+synthesis, QIR code generation, a chemistry domain library, a QEC dialect, and
+the arithmetic constructions a logical layer needs. That is the cheapest
+capability per unit of effort available to the
 programme, and § 5 governs it. The first of the family moved off `unsupported`
 without new research, which is the shape the remaining rows are expected to
 follow: the stabilizer backend landed by adopting the same permissively licensed
@@ -143,6 +143,20 @@ slice of `algorithm_block_encoding_family` followed the same shape from the othe
 direction: it was written here rather than borrowed, because the plan's route -- adapt
 Qualtran -- was ruled out when the repository owner weighed a 27-dependency
 Apache-2.0 package against implementing the mathematics natively.
+
+`logical_resource_estimation` moved the same way and one step further. It was
+written here rather than adapted, so the Qualtran route this section's table lists
+against it is no longer the route that was taken, and the row now names its own
+module as evidence. It moved to `partial` rather than to `supported` because the
+half that landed is the costing half and not the synthesis half: a rotated
+surface-code cost over the compiler's own static estimate, with the gate-level
+tally passed through rather than re-derived so the repository keeps one source of
+truth for what a T-depth means. What is still absent beside it is the Clifford+T
+and angle synthesis that would let an arbitrary program reach it, and the
+distillation, placement, and device model that would turn a patch count into a
+compiled estimate. **The reuse is the part worth carrying forward**: the row moved
+because a vertical path already existed through the compiler's resource estimate,
+and the new unit extended it instead of starting a second one.
 
 ## 4. What must be owned
 
@@ -203,7 +217,7 @@ because several of these projects ship bundled components under different terms.
 | QIR specification | Community Specification License 1.0 | `qir_code_generation` | A specification licence. Implementing to it is the route; it grants no code. |
 | Stim | Apache-2.0 | `backend_stim_stabilizer`, `qec_stim_integration`, `detector_error_model` | Also recorded as Apache-2.0 in the parity contract. |
 | PyMatching | Apache-2.0 | `qec_decoder_family` | Minimum-weight perfect matching. |
-| Qualtran | Apache-2.0 | `algorithm_block_encoding_family`, `logical_resource_estimation` | Faithful and fault-tolerant algorithm mathematics. |
+| Qualtran | Apache-2.0 | `algorithm_block_encoding_family` | Faithful and fault-tolerant algorithm mathematics. `logical_resource_estimation` was withdrawn from this row: it landed natively over the compiler's own resource estimate rather than by adaptation, so the licence check below no longer applies to it. |
 | cotengra | Apache-2.0 | contraction-path search for the tensor-network core | Contraction ordering is search, not physics; owning it adds no moat. |
 | quimb | Apache-2.0 | tensor-network reference implementations |  |
 | opt_einsum | MIT | `einsum` path optimisation |  |
@@ -307,7 +321,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 41 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 40 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

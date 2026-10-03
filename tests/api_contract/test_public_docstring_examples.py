@@ -16,6 +16,10 @@ from flagquantum.algorithms.chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
+from flagquantum.algorithms.logical_resources import (
+    estimate_logical_resources,
+    surface_code_qubits_per_logical,
+)
 from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.algorithms.trotter import (
     pauli_exponential_circuit,
@@ -66,7 +70,9 @@ pytestmark = pytest.mark.unit
 # circuit builders, and the UCCSD and hardware-efficient products, each of which
 # documents a different workflow step. The Trotter module contributes two more: the
 # exponential of one Pauli word, and the product formula built from a Hamiltonian's
-# terms.
+# terms. The logical resource module contributes two: the reporting entry point,
+# whose example is the whole footprint of one program at one distance, and the patch
+# size helper, whose example is that figure at three distances without a program.
 ENTRIES = (
     BosonOperator,
     CssCodeMatrices,
@@ -78,6 +84,7 @@ ENTRIES = (
     coupler_hardware_efficient_ansatz,
     exponential_pauli_operator,
     double_excitation,
+    estimate_logical_resources,
     estimate_resources,
     evolve_density_matrix,
     excitation_operator,
@@ -104,6 +111,7 @@ ENTRIES = (
     run_pennylane,
     run_qiskit,
     single_excitation,
+    surface_code_qubits_per_logical,
     target_capability_snapshot,
     translate,
     trotter_circuit,

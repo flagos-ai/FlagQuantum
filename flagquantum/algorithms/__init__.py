@@ -6,6 +6,7 @@ from . import error_mitigation as error_mitigation
 from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
+from . import logical_resources as logical_resources
 from . import pca as pca
 from . import pec as pec
 from . import qarm as qarm
@@ -47,6 +48,13 @@ from .error_mitigation import (
     run_zne,
     scale_noise_model,
 )
+from .logical_resources import (
+    LOGICAL_RESOURCE_BASIS,
+    SURFACE_CODE_MODEL,
+    LogicalResourceReport,
+    estimate_logical_resources,
+    surface_code_qubits_per_logical,
+)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationRecord,
@@ -75,6 +83,8 @@ __all__ = [
     "HamiltonianTerm",
     "HybridOptimizationResult",
     "LayerwiseVQEResult",
+    "LOGICAL_RESOURCE_BASIS",
+    "LogicalResourceReport",
     "OptimizerFactory",
     "OptimizationRecord",
     "OptimizationStage",
@@ -82,6 +92,7 @@ __all__ = [
     "PecLocation",
     "PecResult",
     "SPSAOptimizer",
+    "SURFACE_CODE_MODEL",
     "TROTTER_ORDERS",
     "VQEResult",
     "ZneMeasurement",
@@ -89,6 +100,7 @@ __all__ = [
     "amplitude_estimation",
     "error_mitigation",
     "extrapolate_polynomial",
+    "estimate_logical_resources",
     "extrapolate_richardson",
     "feature_selection",
     "grover",
@@ -98,6 +110,7 @@ __all__ = [
     "heisenberg_hva",
     "heisenberg_hva_parameter_count",
     "kmedians",
+    "logical_resources",
     "optimize_hybrid",
     "pauli_exponential_circuit",
     "pauli_term",
@@ -117,6 +130,7 @@ __all__ = [
     "run_zne",
     "scale_noise_model",
     "spsa",
+    "surface_code_qubits_per_logical",
     "svd",
     "trotter",
     "trotter_circuit",

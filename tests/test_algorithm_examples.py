@@ -49,6 +49,7 @@ SCRIPTS = (
     "spsa_optimizer",
     "trotter",
     "block_encoding",
+    "logical_resources",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -142,6 +143,17 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "block_encoding": (
         "nothing here bounds",
         "belongs to the caller",
+    ),
+    # Two halves. "the report counts rather than measures: nothing runs, no
+    # wall-clock time, memory, or allocation is read" is the input model the
+    # unit is honest about -- a report over a program text rather than an
+    # execution -- and "that number belongs to the device rather than to this
+    # unit" is who owns the failure rate it therefore cannot state. Pinning only
+    # the first would leave the ownership deletable, and a footprint read as a
+    # reliability claim is exactly the misreading the second half prevents.
+    "logical_resources": (
+        "counts rather than measures",
+        "belongs to the device",
     ),
 }
 
@@ -630,6 +642,96 @@ def test_block_encoding_example_reads_its_block_back_out_of_the_circuit() -> Non
         assert _labelled(output, f"gates after {label}") == "0"
     assert "NOT REFUSED" not in output
     _assert_premise("block_encoding", output)
+    assert "take away" in output
+
+
+def test_logical_resources_example_costs_one_program_and_refuses_the_rest() -> None:
+    output = _run("logical_resources")
+
+    assert "Logical resources -- flagquantum.algorithms.logical_resources" in output
+    # The reuse, which is the property the whole slice rests on: the report's copy
+    # of the compiler's record is printed beside the compiler's own, so a second
+    # tally would print two different numbers rather than agreeing twice.
+    for compiler_label, report_label in (
+        ("compiler n_operations", "report estimate n_operations"),
+        ("compiler depth", "report estimate depth"),
+        ("compiler t_count", "report t_count"),
+        ("compiler t_depth", "report t_depth"),
+        ("compiler per_wire_depth", "report per_wire_depth"),
+    ):
+        assert _labelled(output, compiler_label) == _labelled(
+            output, report_label
+        ), compiler_label
+    assert _labelled(output, "compiler n_operations") == "7"
+    assert _labelled(output, "compiler depth") == "5"
+    assert _labelled(output, "compiler per_wire_depth") == "(5, 3, 5)"
+    assert _labelled(output, "the two records are equal") == "True"
+    # The partition: four Cliffords and three Ts over seven operations, and the T
+    # depth is not the T count.
+    assert _labelled(output, "clifford_count") == "4"
+    assert _labelled(output, "report t_count") == "3"
+    assert _labelled(output, "n_clifford_t") == "7"
+    assert _labelled(output, "report t_depth") == "2"
+    assert _labelled(output, "clifford + t == operations") == "7"
+    # The footprint at the default distance, against the model's own arithmetic.
+    assert _labelled(output, "code_distance") == "5"
+    assert _labelled(output, "physical qubits per logical") == "49"
+    assert _labelled(output, "report n_qubits") == "3"
+    assert _labelled(output, "logical_depth") == "5"
+    assert _labelled(output, "surface_code_cycles") == "25"
+    assert _labelled(output, "physical_qubits") == "147"
+    assert _labelled(output, "spacetime_volume") == "3675"
+    # The distance sweep, and the model's closed form beside it, so a row that
+    # stopped agreeing with `2 d^2 - 1` would show rather than being recomputed.
+    assert _labelled(output, "qubits/logical") == "17      49      97     161     241"
+    assert _labelled(output, "2 d^2 - 1") == _labelled(output, "qubits/logical")
+    assert _labelled(output, "cycles") == "15      25      35      45      55"
+    assert _labelled(output, "physical qubits") == "51     147     291     483     723"
+    assert (
+        _labelled(output, "spacetime volume") == "765    3675   10185   21735   39765"
+    )
+    # A measurement is outside the schedule and is charged one further layer; the
+    # tally and the qubit count are not touched by it.
+    assert _labelled(output, "n_measurements") == "0"
+    assert _labelled(output, "n_measurements, measured") == "2"
+    assert _labelled(output, "logical_depth, none") == "5"
+    assert _labelled(output, "logical_depth, measured") == "6"
+    assert _labelled(output, "cycles, measured") == "30"
+    assert _labelled(output, "physical qubits, measured") == "147"
+    assert _labelled(output, "tally, measured") == "(4, 3)"
+    # The serialized record, under the maturity schema's own field name.
+    assert _labelled(output, "kind") == "flagquantum.logical_resource_report"
+    assert _labelled(output, "basis") == "clifford_t_tally_times_surface_code_distance"
+    assert _labelled(output, "surface_code_model") == "rotated_surface_code_2d"
+    assert _labelled(output, "estimate kind") == "flagquantum.resource_estimate"
+    assert _labelled(output, "capability_evidence keys") == "['limitations']"
+    # Each refusal, and the two kinds of argument refusal distinguished by type:
+    # a distance or a logical count that is out of range is a ValueError, and one
+    # that is not an integer at all is a TypeError.
+    assert "NOT REFUSED" not in output
+    for label in (
+        "one parametric rotation",
+        "several parametric rotations",
+        "a Toffoli",
+        "a controlled swap",
+        "a Toffoli beside a rotation",
+        "a Trotter step",
+        "a lowered noise channel",
+    ):
+        assert "CapabilityError" in _labelled(output, label), label
+    for label in ("distance below three", "an even distance"):
+        assert "ValueError" in _labelled(output, label), label
+    assert "TypeError" in _labelled(output, "a distance that is not an integer")
+    assert "ValueError" in _labelled(
+        output, "a distance below three, at the entry point"
+    )
+    assert "ValueError" in _labelled(output, "zero logical qubits")
+    assert "TypeError" in _labelled(output, "a logical count that is not an integer")
+    # The logical ledger is the caller's, not inferred from the register.
+    assert _labelled(output, "charged for one") == "49"
+    assert _labelled(output, "charged for the register") == "147"
+    assert _labelled(output, "charged for eight") == "392"
+    _assert_premise("logical_resources", output)
     assert "take away" in output
 
 

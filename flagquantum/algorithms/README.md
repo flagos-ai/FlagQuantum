@@ -87,6 +87,22 @@ executed by `tests/test_algorithm_examples.py`.
   emitting the decomposition is what lets the compiler's own passes count, route,
   and differentiate it. Demonstration scale: the exact side of every comparison is
   a dense matrix exponential, which exists at the sizes this repository simulates.
+- `logical_resources.py`: logical-layer resource estimation — a Clifford+T
+  program's operation counts, T family, and schedule depth, read out of
+  `compiler/resource_estimation.py` and costed on a rotated surface code at a
+  distance the caller names: `2 d^2 - 1` physical qubits per patch and `d`
+  surface-code cycles per logical layer. **A count and a footprint, and not a
+  measurement or a failure rate**: nothing runs, no wall-clock time or memory is
+  read, and no logical error rate is reported, because a threshold fit's
+  prefactor and threshold belong to the device rather than to this unit. The
+  input has to already be Clifford+T, so a parametric rotation is refused
+  rather than synthesised, and a compound operation whose T-count is its
+  decomposition's — a Toffoli, a controlled swap — is refused because a Toffoli
+  is not a Clifford gate and counting one as a single Clifford operation would
+  understate the T-count. No distillation factory, magic-state budget, routing
+  overhead, placement, scheduling, or device model is included, so the physical
+  figure is a floor for a circuit of these layers rather than a compiled
+  estimate.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

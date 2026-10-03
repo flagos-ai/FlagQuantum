@@ -20,6 +20,7 @@ python -m examples.algorithms.pec
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
+python -m examples.algorithms.logical_resources
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -66,6 +67,12 @@ What they show:
   spectrum from a different routine, a second implementation that holds no matrix
   read by the same consumer, and the ten construction and three register refusals
   printed by name.
+- [`logical_resources.py`](logical_resources.py): a Clifford+T program costed on a
+  rotated surface code, with the compiler's own resource record printed beside the
+  report's copy of it so a second T rule would show, the distance sweep tabulated
+  against the model's closed form, the one-layer charge for a measurement record
+  shown against the same program without one, and the two refused opcode families,
+  a lowered channel, and six refused arguments each printed by name.
 
 ## These scripts use the subpackage surface
 
@@ -78,7 +85,9 @@ and `fq.run` calls its objective makes. `trotter.py` needs no root alias either:
 the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
 is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
 either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
-the package's own `get_unitary`. `examples/README.md` records that boundary.
+the package's own `get_unitary`. `logical_resources.py` imports both: the estimator
+and the patch-size helper from the subpackage, and `flagquantum` itself for the
+`fq.Circuit` programs it costs. `examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the
@@ -97,5 +106,8 @@ estimate rather than a gradient, and the product formula approximates the
 evolution with a defect that is measured rather than bounded, because a bound
 needs a commutator norm the caller has to supply, and the block encoding is
 built from a dense exact eigendecomposition whose cost is diagonalising the
-matrix with nothing here bounding the error of an approximate one. The guide
-holds the full boundary for each.
+matrix with nothing here bounding the error of an approximate one, and the logical
+resource report counts rather than measures -- no circuit runs, no wall-clock time
+or memory is read, and the failure rate is absent because a logical error rate
+needs a device's threshold fit, so that number belongs to the device rather than to
+the unit. The guide holds the full boundary for each.

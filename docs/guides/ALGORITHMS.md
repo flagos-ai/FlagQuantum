@@ -24,6 +24,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
 | `trotter.py` — time evolution by a product formula | Available. Turns a weighted Pauli sum into the circuit a product formula applies, as a basis change and a CX ladder per term, so a time-evolution workload is an ordinary circuit; the primitive underneath it is the exact circuit for ``exp(-i * theta * P)`` of one Pauli word. | Trotter 1959; Suzuki 1990; Suzuki 1991; Lloyd 1996 | **The premise is commutativity, and it fails by exactly the amount nothing here bounds.** A product formula is exact only when the terms commute; otherwise the defect falls off with the step length at the composition's own rate and no bound is reported, because a bound needs a commutator norm that belongs to the caller. The term count is the caller's Hamiltonian's, so no end-to-end advantage follows. |
+| `logical_resources.py` — logical-layer resource estimation | Available. Reads a Clifford+T program's operation counts, T family, and schedule depth out of the compiler's own static estimate and costs them on a rotated surface code at a distance the caller names: logical layers, physical qubits, surface-code cycles, and their product. | Fowler et al. 2012 | **None, and it is a count rather than a measurement.** Nothing runs, and no wall-clock time, memory, or allocation is read; the input has to already be Clifford+T, so a parametric rotation is refused rather than synthesised; no distillation factory, magic-state budget, routing overhead, placement, or device model is included; and no logical error rate is reported, because that number needs a device's threshold fit. |
 
 Two rows carry `—` in the Citation column rather than a source, and that is a
 statement rather than a placeholder: the Fourier transform and oracle synthesis
@@ -1702,6 +1703,140 @@ absent. Qubitization is exposed as two protocol methods rather than as a public
 walk object holding a moment count, and QSVT and double factorization, the two
 algorithms the walk step exists to serve, are absent.
 
+## Logical-layer resource estimation
+
+`logical_resources.py` answers the question a fault-tolerant plan is costed with,
+over a program that has already been compiled: how many Clifford operations and how
+many T operations does it apply, how many logical layers is that once the compiler
+has scheduled it, and what does a distance-`d` rotated surface code spend to run
+those layers.
+
+**The gate-level tally is not re-derived, and that is the unit's first property
+rather than an implementation note.** The operation counts, the T family, and the
+schedule depth are `flagquantum.compiler.resource_estimation.estimate_resources`,
+the compiler's own static record, nested inside the report rather than copied field
+by field. A second implementation of what a T-depth means would be a second source
+of truth for the number this whole unit exists to produce, so there is not one: the
+report carries the compiler's `ResourceEstimate` object itself, which is why a
+reader who wants per-wire depths reads them from the record that owns them.
+
+```python
+from flagquantum.algorithms import (
+    estimate_logical_resources,
+    surface_code_qubits_per_logical,
+)
+from flagquantum.circuit import Circuit
+from flagquantum.compiler.resource_estimation import estimate_resources
+
+program = Circuit(3).h(0).cz(0, 1).t(0).cx(0, 2).t(1).x(2).tdg(0)
+direct = estimate_resources(program)
+report = estimate_logical_resources(program, distance=5)
+print(direct.n_operations, direct.t_count, direct.t_depth, direct.depth)
+# 7 3 2 5  -- the compiler's static record: operations, T count, T depth, schedule depth
+print(report.estimate == direct)
+# True  -- and the report nests that record rather than recomputing it
+print(report.clifford_count, report.t_count, report.n_clifford_t)
+# 4 3 7  -- four Clifford operations and three T operations, partitioned by opcode
+print(report.code_distance, report.physical_qubits_per_logical, report.n_qubits)
+# 5 49 3  -- distance 5, 2 d^2 - 1 = 49 physical qubits per patch, three logical qubits
+print(report.logical_depth, report.surface_code_cycles)
+# 5 25  -- five logical layers, each costing d = 5 surface-code cycles
+print(report.physical_qubits, report.spacetime_volume)
+# 147 3675  -- 49 x 3 patches, and their product with the 25 cycles
+print([surface_code_qubits_per_logical(d) for d in (3, 5, 7, 9)])
+# [17, 49, 97, 161]  -- the patch the code model spends, tabulated without a program
+print([estimate_logical_resources(program, distance=d).spacetime_volume for d in (3, 5, 7, 9)])
+# [765, 3675, 10185, 21735]  -- d squared times d, so the volume grows as d cubed
+print(sorted(report.to_dict()["capability_evidence"]))
+# ['limitations']  -- the report's statements travel under the maturity matrix's own field name
+```
+
+**Two refusal families, and the second is the one worth reading.** A logical
+resource estimate is defined over Clifford+T programs, and a program outside that
+set is refused by name rather than counted as something else. A *parametric
+rotation* is refused because angle synthesis is absent: a T-count taken over an
+un-synthesised angle would be the count of a circuit nobody will run, and it would
+be reported with the authority of a circuit that had been compiled. A *compound
+operation whose T-count is its decomposition's* — a Toffoli, a controlled swap — is
+refused for a reason that is easy to miss: **a Toffoli is not a Clifford gate.** The
+schema has a Clifford set, and treating `ccx` as one Clifford operation would
+understate the T-count of every program containing one, silently, in the direction
+that flatters the result. The decompositions do not agree on what a Toffoli costs
+either, so the unit declines to pick one. The decomposition family is checked before
+the rotation family deliberately: a caller who wrote a Toffoli most likely believed
+its T-count was well defined, and that reading is worth answering directly. Both
+messages name every offending opcode, sorted.
+
+The classification is total over the operator schema rather than best-effort: every
+declared opcode is a Clifford, a T, a channel, or one of the two refused families,
+and the tests assert that partition against the schema itself, so an opcode added
+later cannot quietly fall outside it.
+
+```python
+from flagquantum.algorithms import estimate_logical_resources, surface_code_qubits_per_logical
+from flagquantum.algorithms.core import transverse_field_ising
+from flagquantum.algorithms.trotter import trotter_circuit
+from flagquantum.circuit import Circuit
+
+program = Circuit(3).h(0).cz(0, 1).t(0).cx(0, 2).t(1).x(2).tdg(0)
+for label, candidate in (
+    ("a rotation", Circuit(2).h(0).rz(0, 0.3).t(1)),
+    ("a Toffoli", Circuit(3).h(0).ccx(0, 1, 2)),
+    ("a Trotter step", trotter_circuit(transverse_field_ising(3), 0.4, steps=1, order=2)),
+):
+    try:
+        estimate_logical_resources(candidate, distance=5)
+        outcome = "NOT REFUSED"
+    except Exception as exc:
+        outcome = type(exc).__name__
+    print(label, outcome)
+# a rotation CapabilityError  -- an un-synthesised angle has no T-count to report
+# a Toffoli CapabilityError  -- a Toffoli is not a Clifford gate, and its decomposition is a choice
+# a Trotter step CapabilityError  -- the gate-level estimator reports zero Ts here, which is the report this unit refuses to produce
+for label, call in (
+    ("distance 1", lambda: surface_code_qubits_per_logical(1)),
+    ("distance 4", lambda: surface_code_qubits_per_logical(4)),
+    ("n_qubits=0", lambda: estimate_logical_resources(program, distance=5, n_qubits=0)),
+):
+    try:
+        call()
+        outcome = "NOT REFUSED"
+    except Exception as exc:
+        outcome = type(exc).__name__
+    print(label, outcome)
+# distance 1 ValueError  -- a distance-1 patch carries no redundancy and corrects nothing
+# distance 4 ValueError  -- the model's patch and its logical operators are defined on odd distances
+# n_qubits=0 ValueError  -- a footprint over no logical qubit is not a smaller footprint
+```
+
+**One code model, named, with its conventions travelling beside its numbers.** The
+report states `rotated_surface_code_2d`: `d**2` data qubits and `d**2 - 1` measure
+qubits, so `2 d**2 - 1` physical qubits per logical qubit. That is the model's own
+convention rather than a measurement, the distance must be an odd integer of at
+least 3, and `surface_code_qubits_per_logical` is exposed on its own because
+tabulating several distances needs the patch size without a program to estimate.
+
+**A measurement is charged one logical layer, and the charge is visible.** A
+measurement is an IR-level record outside the instruction sequence the scheduler
+walks, so it is not in the schedule depth; the report adds one logical layer per
+measurement record rather than dropping it, and the section below shows the same
+program with and without two records so the difference is on the page rather than in
+the arithmetic.
+
+**What the report refuses to state is the failure rate.** No physical error rate is
+read and no logical error rate is reported, because a threshold fit's prefactor and
+its threshold are a device's numbers rather than this unit's. So this unit says how
+much hardware a logical program would occupy and for how long, and never how often
+it would fail — and the volume it reports is a floor for a circuit of these layers,
+not a compiled estimate, because there is no distillation factory, no magic-state
+budget, no routing overhead, no placement, no scheduling, and no device model.
+
+The distance sweep is where that boundary is easiest to misread, so the guide states
+it plainly: the patch grows as `d` squared and the cycles grow as `d`, so the volume
+grows as `d` cubed for a fixed program. What that volume *buys* in logical error is
+the device's threshold fit and not this report's, so the cost of a distance is
+printed here and the benefit never is.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -1855,6 +1990,16 @@ algorithms the walk step exists to serve, are absent.
   quantum singular value transformation for sparse matrices at constant precision; their
   hardness result is for a different task, estimating a local Hamiltonian's ground-state
   energy at inverse-polynomial precision given a state close to the ground state.
+
+- The rotated surface code, its patch, and its logical operators are recorded to
+  Fowler, Mariantoni, Martinis & Cleland, "Surface codes: Towards practical
+  large-scale quantum computation", *Physical Review A* **86**(3), 032324 (2012),
+  DOI 10.1103/PhysRevA.86.032324 — the `d**2` data and `d**2 - 1` measure qubit
+  patch and the `d` cycles per logical operation that
+  `flagquantum/algorithms/logical_resources.py` costs a program on. **The citation
+  covers the code model and not the resource estimate**: the operation counts, the T
+  family, and the schedule depth are this repository's own compiler record, and the
+  estimator cites it there rather than here.
 
 ## Scope
 
