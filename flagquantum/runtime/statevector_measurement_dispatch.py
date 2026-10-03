@@ -18,9 +18,9 @@ from ..simulation.kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MEAS-003-A"
 _MAX_QUBITS = 30
-_MAX_SELECTED_QUBITS = 8
-_MIN_AMPLITUDES_PER_STATE = 1 << 16
-_MIN_TOTAL_AMPLITUDES = 1 << 20
+_DISPATCH_AMPLITUDES_PER_STATE = 1 << 24
+_DISPATCH_BATCH = 1
+_DISPATCH_SELECTED_QUBITS = 4
 
 
 def _statevector_marginal_dispatch_enabled() -> bool:
@@ -28,7 +28,7 @@ def _statevector_marginal_dispatch_enabled() -> bool:
 
     return os.getenv(
         "FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES",
-        "0",
+        "1",
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
@@ -48,12 +48,11 @@ def _statevector_marginal_kernel_enabled(
         and state.is_contiguous()
         and not state.is_conj()
         and not state.is_neg()
-        and int(state.shape[0]) > 0
+        and int(state.shape[0]) == _DISPATCH_BATCH
         and 2**n_qubits == amplitudes
         and n_qubits <= _MAX_QUBITS
-        and len(qubits) <= _MAX_SELECTED_QUBITS
-        and amplitudes >= _MIN_AMPLITUDES_PER_STATE
-        and state.numel() >= _MIN_TOTAL_AMPLITUDES
+        and len(qubits) == _DISPATCH_SELECTED_QUBITS
+        and amplitudes == _DISPATCH_AMPLITUDES_PER_STATE
     )
 
 

@@ -68,19 +68,19 @@ def test_statevector_marginal_dispatch_fails_closed() -> None:
         )
 
 
-@pytest.mark.parametrize("enabled", ("1", "true", "on", "yes", " TRUE "))
-def test_statevector_marginal_rollout_defaults_off_and_supports_opt_in(
+@pytest.mark.parametrize("disabled", ("0", "false", "off", "no", " FALSE "))
+def test_statevector_marginal_rollout_defaults_on_and_supports_kill_switch(
     monkeypatch: pytest.MonkeyPatch,
-    enabled: str,
+    disabled: str,
 ) -> None:
     monkeypatch.delenv(
         "FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES",
         raising=False,
     )
-    assert not _statevector_marginal_dispatch_enabled()
-
-    monkeypatch.setenv("FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES", enabled)
     assert _statevector_marginal_dispatch_enabled()
+
+    monkeypatch.setenv("FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES", disabled)
+    assert not _statevector_marginal_dispatch_enabled()
 
 
 def test_statevector_marginal_cpu_runtime_preserves_reference_path(
@@ -107,11 +107,12 @@ def test_statevector_marginal_route_enforces_evidenced_window(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES", "1")
-    state = torch.randn(16, 1 << 16, device="cuda", dtype=torch.complex64)
+    state = torch.empty(1, 1 << 24, device="cuda", dtype=torch.complex64)
 
-    assert _statevector_marginal_kernel_enabled(state, (15, 0, 7))
-    assert not _statevector_marginal_kernel_enabled(state[:, ::2], (14, 0))
-    assert not _statevector_marginal_kernel_enabled(state[:1], (15, 0, 7))
+    assert _statevector_marginal_kernel_enabled(state, (23, 0, 15, 8))
+    assert not _statevector_marginal_kernel_enabled(state[:, ::2], (22, 0, 8, 4))
+    small = torch.empty(16, 1 << 16, device="cuda", dtype=torch.complex64)
+    assert not _statevector_marginal_kernel_enabled(small, (15, 0, 7, 4))
     assert not _statevector_marginal_kernel_enabled(state, tuple(range(9)))
 
 
@@ -139,20 +140,20 @@ def test_statevector_marginal_runtime_uses_catalog(
         "_require_statevector_marginal_kernel",
         capture_catalog_route,
     )
-    state = torch.randn(16, 1 << 16, device="cuda", dtype=torch.complex64)
+    state = torch.randn(1, 1 << 24, device="cuda", dtype=torch.complex64)
     state = state / torch.linalg.vector_norm(state, dim=-1, keepdim=True)
 
     actual = _joint_marginal_probabilities(
         state,
-        (15, 0, 7),
-        n_wires=16,
+        (23, 0, 15, 8),
+        n_wires=24,
         noise_model=None,
     )
     probabilities = torch.abs(state) ** 2
-    selected = {15, 0, 7}
-    axes = tuple(qubit + 1 for qubit in range(16) if qubit not in selected)
-    expected = probabilities.reshape(16, *(2,) * 16).sum(dim=axes)
-    expected = expected.permute(0, 3, 1, 2).reshape(16, 8)
+    selected = {23, 0, 15, 8}
+    axes = tuple(qubit + 1 for qubit in range(24) if qubit not in selected)
+    expected = probabilities.reshape(1, *(2,) * 24).sum(dim=axes)
+    expected = expected.permute(0, 4, 1, 3, 2).reshape(1, 16)
 
     assert actual is not None
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-5)
@@ -166,7 +167,7 @@ def test_statevector_marginal_kill_switch_uses_reference(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_STATEVECTOR_MARGINAL_PROBABILITIES", "0")
-    state = torch.randn(16, 1 << 16, device="cuda", dtype=torch.complex64)
+    state = torch.randn(1, 1 << 24, device="cuda", dtype=torch.complex64)
     called = False
 
     def fail_if_called(*args, **kwargs):
@@ -182,8 +183,8 @@ def test_statevector_marginal_kill_switch_uses_reference(
 
     actual = _joint_marginal_probabilities(
         state,
-        (15, 0, 7),
-        n_wires=16,
+        (23, 0, 15, 8),
+        n_wires=24,
         noise_model=None,
     )
 
