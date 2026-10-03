@@ -264,6 +264,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_flagtree_tle_provider.py::test_tle_capability_maps_cuda_target_to_nvidia_registry",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
+        ),
     ),
 )
 
