@@ -44,6 +44,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-002-A",
         "tests/test_statevector_triton_gates.py::test_local_cx_inplace_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_local_cx_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_cx_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-003-A",
