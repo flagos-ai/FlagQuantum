@@ -185,7 +185,7 @@ def test_undeclared_device_is_a_malformed_request_not_a_capability_mismatch() ->
     assert declared_but_unimplemented.semantic_known is True
     assert declared_but_unimplemented.matched is False
     assert not declared_but_unimplemented.candidates
-    assert len(declared_but_unimplemented.rejections) == 2
+    assert len(declared_but_unimplemented.rejections) == 3
     assert all(
         tuple(item.code for item in rejection.mismatches) == ("device",)
         and item.requested == ("flagos",)
@@ -227,7 +227,11 @@ def test_a_declared_cpu_provider_is_selectable_without_hardware() -> None:
     ) == ("FQKI-PYTORCH-SV-001-C",)
     assert tuple(
         item.implementation.implementation_id for item in declared.rejections
-    ) == ("FQKI-TRITON-SV-001-A", "FQKI-TRITON-SV-001-B")
+    ) == (
+        "FQKI-TRITON-SV-001-A",
+        "FQKI-TRITON-SV-001-B",
+        "FQKI-FLAGTREE-SV-001-A",
+    )
     assert all(
         tuple(item.code for item in rejection.mismatches) == ("provider", "device")
         for rejection in declared.rejections

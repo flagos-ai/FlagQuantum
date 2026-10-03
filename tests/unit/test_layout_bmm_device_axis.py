@@ -90,8 +90,22 @@ def _declare_cpu_implementations(monkeypatch) -> None:
 
 
 def _count_fused_route(monkeypatch) -> list[tuple[str, torch.Tensor, torch.Tensor]]:
+    """Record fused-kernel calls, opening the shape gate to isolate the device axis.
+
+    NUM-002 is narrowed to the one forward complex64 signature it was measured to
+    win, and that narrowing is a second authority with its own coverage in
+    ``tests/unit/test_real_imag_kernels.py``. These tests measure which authority
+    answers the device question, so the shape gate is opened here and the catalog
+    declaration below stays the only difference from the control.
+    """
+
     calls: list[tuple[str, torch.Tensor, torch.Tensor]] = []
-    monkeypatch.setattr(kernels_runtime, "_FUSED_WORKING_SET_BYTES", 0)
+    monkeypatch.setattr(
+        kernels_runtime, "_layout_bmm_signature_supported", lambda *_: True
+    )
+    monkeypatch.setattr(
+        kernels_runtime, "_layout_bmm_dispatch_supported", lambda *_: True
+    )
 
     def counted(
         equation: str, left: torch.Tensor, right: torch.Tensor, layout: object
