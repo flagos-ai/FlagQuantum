@@ -269,6 +269,18 @@ _PERIOD = {
 #:
 #: These are read under whatever the rest of the pipeline does, so a later pass
 #: landing on main may move them and they are re-measured rather than assumed.
+#:
+#: ``full_turn_rotations`` has moved once, when `collapse_one_qubit_runs` learned to
+#: delete a run whose product is exactly the identity. That pass sits beside this rule
+#: rather than inside it, and it reaches the *superseded* arm further than the shipped
+#: one: the shipped rule has already removed part of a run before the fold sees it,
+#: where the superseded rule leaves those gates standing and the fold then deletes the
+#: whole run. So the superseded count fell by ten and the shipped count by four, and
+#: the row reads as more lengthened (-5 -> -11) although neither rule changed. The
+#: difference between the two rules is still real -- 139 against 150 -- and
+#: `removed_by_the_rule_alone` below, which drives this rule directly, did not move.
+#: This is the coupling the note above warns about, in the direction that is easy to
+#: misread as a regression in this rule.
 _DELTA = {
     "parameter_free_gates": {
         "circuit_count": 30,
@@ -296,12 +308,12 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 554,
-        "superseded_rule_instruction_count": 149,
-        "optimized_instruction_count": 154,
+        "superseded_rule_instruction_count": 139,
+        "optimized_instruction_count": 150,
         "removed_by_the_rule_alone": 181,
-        "removed_by_the_rule_in_the_pipeline": 14,
-        "net_instruction_delta_against_the_superseded_rule": -5,
-        "changed_circuit_count": 23,
+        "removed_by_the_rule_in_the_pipeline": 6,
+        "net_instruction_delta_against_the_superseded_rule": -11,
+        "changed_circuit_count": 19,
     },
     "zero_polar_u3": {
         "circuit_count": 30,

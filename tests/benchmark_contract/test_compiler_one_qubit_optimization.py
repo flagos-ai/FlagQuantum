@@ -69,21 +69,23 @@ _LEGAL_GATES_NOT_DECLINING_LOCAL = 907
 _LEGAL_GATES_NOT_DECLINING_SPREAD = 30
 _REFUSING_BASIS = "clifford-t"
 
-#: The identity population's legal gate count, with the decline as it was and as
-#: it shipped. These two are exact rather than bounded: both arms leave the
-#: program in the target's own vocabulary or delete runs from it, and there is no
-#: ``u3`` synthesis on this path to round a transcendental angle -- the only gate
-#: the fold can emit here is a ``u3`` whose angles are checked to be exactly zero,
-#: which is why the exemption deletes it instead. The 174-gate difference is the
-#: exemption's whole reach.
+#: The identity population's legal gate count under the decline as it was, and the
+#: band it is allowed to land in. The first draft of this made both arms exact, on
+#: the reasoning that neither one synthesises here -- and CI returned 684 where the
+#: development checkout returned 685 on the very first run. That is the lesson the
+#: ``_LEGAL_GATES_NOT_DECLINING_LOCAL`` band above already carries: this count is
+#: read *after* the target's lowering, so it is a synthesis outcome and it rounds
+#: differently on a different machine. The assertions are on directions with margin
+#: instead.
 #:
-#: Both numbers moved by six when the exact-identity pass in ``pipeline`` was
-#: strengthened to read the declared angle triple instead of a table of opcode
-#: names: six gates on this population are now removed before the fold sees them.
-#: The difference did not move, which is the point -- the two passes act on
-#: disjoint rows.
+#: The difference between the two rules is the number that matters, and it has to
+#: clear the 8 gates the same exemption moves on the seeded control population by an
+#: order of magnitude. Locally it is 174 and in CI 173; the floor is deliberately far
+#: below either so that it fails only when the exemption stops working, not when the
+#: lowering rounds.
 _IDENTITY_LEGAL_GATES_STRICT = 685
-_IDENTITY_LEGAL_GATES_SHIPPED = 511
+_IDENTITY_STRICT_SPREAD = 3
+_IDENTITY_EXEMPTION_MINIMUM_GAIN = 150
 
 
 @pytest.fixture(scope="module")
@@ -253,9 +255,9 @@ def test_the_identity_exemption_shrinks_a_local_program(payload: dict) -> None:
     identity = measured["identity_vocabulary"]
     strict = identity["strict_rule"]["legal_gates"]
     shipped = identity["shipped_rule"]["legal_gates"]
-    assert strict == _IDENTITY_LEGAL_GATES_STRICT
-    assert shipped == _IDENTITY_LEGAL_GATES_SHIPPED
+    assert abs(strict - _IDENTITY_LEGAL_GATES_STRICT) <= _IDENTITY_STRICT_SPREAD, strict
     assert shipped < strict
+    assert strict - shipped >= _IDENTITY_EXEMPTION_MINIMUM_GAIN
     # Per circuit, not in total: a program that grew behind programs that shrank
     # is exactly what the aggregate would hide.
     assert identity["circuits_improved"] > 0
@@ -273,6 +275,10 @@ def test_the_identity_exemption_shrinks_a_local_program(payload: dict) -> None:
         control["strict_rule"]["legal_gates"] - control["shipped_rule"]["legal_gates"]
     )
     assert control_gain >= 0
+    # Non-vacuity on the control: ten times zero is zero, so the ratio below would
+    # hold for an exemption that did nothing at all. The control has to have been
+    # seen to move, however little.
+    assert control_gain > 0
     assert identity_gain > 10 * control_gain
 
 
