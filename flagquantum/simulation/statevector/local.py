@@ -974,6 +974,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             )
         )
         native_fused_rotation_layer = native_fused_rotation_layer_compile_enabled()
+        native_scalar_fused_rotation_layer = bool(
+            batch_size == 1 and enable_cpu_native_parameterized_one_qubit_layer
+        )
         enable_cpu_native_clifford_matching = native_clifford_matching_compile_enabled(
             circuit._instructions,
             parameter_bindings,
@@ -1008,6 +1011,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_native_parameterized_one_qubit_layer,
             "cpu_native_fused_rotation_layer",
             native_fused_rotation_layer,
+            "cpu_native_scalar_fused_rotation_layer",
+            native_scalar_fused_rotation_layer,
             "cpu_native_clifford_matching",
             enable_cpu_native_clifford_matching,
             "cpu_native_rotation_clifford_fusion",
@@ -1037,6 +1042,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_native_parameterized_one_qubit_layer
                 ),
                 enable_cpu_native_fused_rotation_layer=native_fused_rotation_layer,
+                enable_cpu_native_scalar_fused_rotation_layer=(
+                    native_scalar_fused_rotation_layer
+                ),
                 enable_cpu_native_clifford_matching=(
                     enable_cpu_native_clifford_matching
                 ),

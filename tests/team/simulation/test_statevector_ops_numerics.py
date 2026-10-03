@@ -5,6 +5,7 @@ import math
 import pytest
 import torch
 
+import flagquantum.simulation.statevector.fixed_layer_cpu as fixed_layer_cpu
 import flagquantum.simulation.statevector.operations as statevector_ops
 import flagquantum.simulation.statevector.product_state as product_state
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
@@ -93,6 +94,29 @@ def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
 
     assert inputs.grad is not None
     assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
+
+
+def test_native_scalar_fused_rotation_has_a_wide_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        fixed_layer_cpu, "native_cpu_one_qubit_layer_available", lambda: True
+    )
+    instructions = (Instruction("ry", (0,), params={"theta": 0.2}),)
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, narrow, batch_size=1
+    )
+    assert fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -325,6 +349,76 @@ def test_native_rotation_clifford_tiles_match_rollback_and_preserve_input(
         assert tuple(step.fused_cx_targets for step in fused_tiles) == (
             (1, 3, 5),
             (7,),
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_rotation_clifford_matches_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9151)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.ry(wire, 0.03 * (wire + 1)).rz(wire, -0.02 * (wire + 1))
+    for wire in range(0, 16, 2):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_fused_rotation_matches_chain_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9157)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.rx(wire, 0.01 * (wire + 1))
+        circuit.ry(wire, 0.02 * (wire + 1))
+        circuit.rz(wire, -0.03 * (wire + 1))
+    for wire in range(15):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
         )
 
 

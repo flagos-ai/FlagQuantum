@@ -30,6 +30,7 @@ from .program import (
 _MAX_NATIVE_FIXED_LAYER_WIRES = 11
 _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES = 11
 _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES = 6
+_MIN_NATIVE_SCALAR_ROTATION_AMPLITUDES = 1 << 16
 _NATIVE_FIXED_GATES = frozenset({"h", "s", "sdg", "x", "y", "z"})
 _NATIVE_PARAMETERIZED_GATES = frozenset({"rx", "ry", "rz"})
 _NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "sdg": 3, "x": 4, "y": 5, "z": 6}
@@ -57,6 +58,7 @@ def _native_layer_compile_safe(
     state: torch.Tensor,
     *,
     batch_size: int,
+    allow_scalar_rotation: bool = False,
 ) -> bool:
     """Whether an inference-only native layer can preserve tensor ownership."""
 
@@ -79,9 +81,16 @@ def _native_layer_compile_safe(
             for value in _matrix_tensors(instruction.matrix)
         )
     )
+    scalar_rotation = bool(
+        allow_scalar_rotation
+        and batch_size == 1
+        and state.shape[1] >= _MIN_NATIVE_SCALAR_ROTATION_AMPLITUDES
+        and os.getenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
     return bool(
         state.device.type == "cpu"
-        and batch_size >= 2
+        and (batch_size >= 2 or scalar_rotation)
         and native_cpu_one_qubit_layer_available()
         and not requires_grad
     )
@@ -116,7 +125,11 @@ def native_parameterized_layer_compile_enabled(
 
     return bool(
         _native_layer_compile_safe(
-            instructions, parameter_bindings, state, batch_size=batch_size
+            instructions,
+            parameter_bindings,
+            state,
+            batch_size=batch_size,
+            allow_scalar_rotation=True,
         )
         and os.getenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "1")
         .strip()
@@ -322,6 +335,7 @@ def fuse_native_parameterized_one_qubit_layers(
     program: Sequence[_StatevectorPreCXStep],
     *,
     include_terminal_fused_regions: bool = False,
+    include_nonterminal_fused_regions: bool = False,
 ) -> list[_StatevectorPreCXStep]:
     """Compile disjoint named rotations for batch-specific native matrices."""
 
@@ -356,9 +370,11 @@ def fuse_native_parameterized_one_qubit_layers(
         cursor = index
         max_wires = (
             _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES
-            if include_terminal_fused_regions
-            and index >= terminal_fused_start
-            and isinstance(program[index], _StatevectorFusedGateStep)
+            if isinstance(program[index], _StatevectorFusedGateStep)
+            and (
+                include_nonterminal_fused_regions
+                or (include_terminal_fused_regions and index >= terminal_fused_start)
+            )
             else _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES
         )
         while cursor < len(program) and len(group) < max_wires:
@@ -366,10 +382,9 @@ def fuse_native_parameterized_one_qubit_layers(
             instructions: tuple[Instruction, ...]
             if isinstance(candidate, _StatevectorGateStep):
                 instructions = (candidate.instruction,)
-            elif (
-                isinstance(candidate, _StatevectorFusedGateStep)
-                and include_terminal_fused_regions
-                and cursor >= terminal_fused_start
+            elif isinstance(candidate, _StatevectorFusedGateStep) and (
+                include_nonterminal_fused_regions
+                or (include_terminal_fused_regions and cursor >= terminal_fused_start)
             ):
                 instructions = fused_rotation_instructions(candidate)
             else:

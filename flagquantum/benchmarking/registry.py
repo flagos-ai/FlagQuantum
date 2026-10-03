@@ -154,6 +154,22 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output benchmarks/results/comparison/workload-corpus.json"
         ),
     ),
+    "socket_local_throughput": RunnerSpec(
+        name="socket_local_throughput",
+        module="flagquantum.benchmarking.socket_local_throughput",
+        attribute="main",
+        category="statevector",
+        summary="Measure independent-simulation throughput on one pinned CPU socket.",
+        hardware="Linux CPU with an explicitly supplied physical socket CPU list",
+        example=(
+            "flagquantum-benchmark run socket_local_throughput "
+            "--workloads random_clifford_statevector local_brickwork_statevector "
+            "--n-wires 22 --engines flagquantum_native qiskit_aer "
+            "pennylane_lightning_qubit --cpu-list 0-31 "
+            "--workers 1 2 4 8 --total-tasks 32 --warmup 1 "
+            "--json-output results/socket-throughput.json"
+        ),
+    ),
     "differentiable_simulator_corpus": RunnerSpec(
         name="differentiable_simulator_corpus",
         module="flagquantum.benchmarking.differentiable_simulator_corpus",
