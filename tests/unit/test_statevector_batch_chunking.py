@@ -10,7 +10,12 @@ from flagquantum.errors import ValidationError
 from flagquantum.simulation.statevector.program import (
     _preallocated_batch_assembly_beneficial,
     _StatevectorCliffordMatchingStep,
+    _StatevectorControlledPhaseGraphStep,
+    _StatevectorCrossWireDiagonalStep,
+    _StatevectorCXSequenceStep,
+    _StatevectorCZGraphStep,
     _StatevectorFusedGateStep,
+    _StatevectorGateStep,
 )
 
 pytestmark = pytest.mark.unit
@@ -58,6 +63,65 @@ def test_preallocated_assembly_avoids_mixed_rotation_clifford_workspace() -> Non
     assert _preallocated_batch_assembly_beneficial((rotation,)) is True
     assert _preallocated_batch_assembly_beneficial((matching,)) is True
     assert _preallocated_batch_assembly_beneficial((rotation, matching)) is False
+
+
+def test_adaptive_budget_is_limited_to_measured_preallocated_programs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        64,
+    )
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_REDUCED_CHUNK_BUDGET_BYTES",
+        32,
+    )
+    gate = _StatevectorGateStep(instruction=Instruction("h", (0,)), layout=((0,), (1,)))
+    cross_wire = _StatevectorCrossWireDiagonalStep((gate,))
+    cx_sequence = _StatevectorCXSequenceStep(controls=(0,), targets=(1,))
+    graph = _StatevectorControlledPhaseGraphStep(edges=((0, 1, 0.2),))
+    cz_graph = _StatevectorCZGraphStep(edges=((0, 1),))
+    matching = _StatevectorCliffordMatchingStep(
+        controls=(0,), targets=(1,), cz_edges=()
+    )
+    rotation = _StatevectorFusedGateStep(
+        instructions=(
+            Instruction("ry", (0,), {"theta": 0.1}),
+            Instruction("rz", (0,), {"theta": 0.2}),
+        ),
+        wires=(0,),
+        layout=((0,), (1,)),
+    )
+
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program((cx_sequence,))
+        == 32
+    )
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program((cross_wire,))
+        == 32
+    )
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program((graph,)) == 64
+    )
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program((cz_graph,))
+        == 32
+    )
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program(
+            (rotation, matching, cx_sequence)
+        )
+        == 64
+    )
+
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_ADAPTIVE_BUDGET", "0")
+    assert (
+        statevector_batching._cpu_statevector_batch_budget_for_program((cx_sequence,))
+        == 64
+    )
 
 
 def test_chunked_batch_matches_monolithic_execution(

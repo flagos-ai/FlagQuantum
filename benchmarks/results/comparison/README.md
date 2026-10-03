@@ -134,6 +134,12 @@ closes the measured single-thread CPU parameter-batch forward phase across five
 Lightning times, speedups, execution RSS growth, public usage, rejected
 copy-elimination candidates, limits, and the exact reproduction command.
 
+[`BATCHED_STATEVECTOR_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md)
+records the program-class adaptive CPU batch-memory budget against its fixed
+64 MiB rollback and PennyLane Lightning native broadcast. It includes absolute
+times and RSS growth, speedups, correctness, the public usage path, exact
+selection and rollback boundaries, and the reproduction command.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
