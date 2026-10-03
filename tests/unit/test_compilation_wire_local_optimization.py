@@ -164,25 +164,28 @@ def _reference_merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
 def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     """The whole optimization pipeline with the wire-local traversal re-derived.
 
-    Only the traversal of the three wire-local passes is re-derived here. The
-    opcode tables and the parameter arithmetic are imported from the
-    implementation so that this oracle differs from the code under test in
-    exactly one respect: the reverse list scan that the wire index replaced. If
-    the two ever disagree, the index is wrong.
+    Only the traversal of the wire-local passes is re-derived here. The opcode
+    tables and the parameter arithmetic are imported from the implementation so
+    that this oracle differs from the code under test in exactly one respect: the
+    reverse list scan that the wire index replaced. If the two ever disagree, the
+    index is wrong.
 
-    The three passes outside that traversal are called from both sides in the same
+    The passes outside that traversal are called from both sides in the same
     position rather than re-derived, because each is a different pass with its own
     rule and not the subject of this oracle. ``remove_zero_state_resets`` reads the
-    register's initial state instead of an opcode table;
+    register's initial state instead of an opcode table; ``merge_inverse_pairs``
+    reads the operator schema's own adjoint declaration, so re-deriving it here
+    would change what this oracle is measuring rather than strengthen it;
     ``cancel_commuting_self_inverse`` reads the commutation rule source, which reads
     the runtime's gate matrices; ``collapse_one_qubit_runs`` has a traversal of its
-    own. All three are in the loop because the loop has to be the one the
+    own. All of them are in the loop because the loop has to be the one the
     implementation runs for the round-by-round comparison to mean anything.
     """
 
     from flagquantum.compiler.commutation_cancellation import (
         cancel_commuting_self_inverse,
     )
+    from flagquantum.compiler.inverse_cancellation import merge_inverse_pairs
     from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 
     ir = ensure_circuit_ir(circuit_or_ir)
@@ -191,6 +194,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = remove_zero_state_resets(ir)
         ir = _reference_remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
+        ir = merge_inverse_pairs(ir)
         ir = _reference_merge_adjacent_rotations(ir)
         ir = cancel_commuting_self_inverse(ir)
         ir = _reference_remove_identity_gates(ir)
@@ -200,7 +204,29 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     raise AssertionError("the reference optimizer did not reach a fixed point")
 
 
-_SINGLE_WIRE = ("h", "x", "y", "z", "i", "id", "rx", "ry", "rz", "phase", "u1")
+# `s`, `t` and their daggers carry no parameter and are not self-inverse in the
+# pipeline's sense: they are the declared inverse pairs `merge_inverse_pairs`
+# handles, so leaving them out of the alphabet would leave that pass uncovered by
+# the differential test below.
+_SINGLE_WIRE = (
+    "h",
+    "x",
+    "y",
+    "z",
+    "i",
+    "id",
+    "rx",
+    "ry",
+    "rz",
+    "phase",
+    "u1",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "sx",
+    "sxdg",
+)
 _TWO_WIRE = ("cx", "cz", "swap")
 _THREE_WIRE = ("ccx", "cswap")
 # A reset is not a gate: it carries no parameter, no matrix, and the dynamic flag the
@@ -247,8 +273,10 @@ def test_wire_index_agrees_with_the_reverse_scan_on_random_circuits() -> None:
 
         rewritten += len(ir) - len(reference)
 
-    # A differential test whose circuits never change proves nothing. 80 seeds
-    # remove this many instructions; the seed set is fixed, so this is stable.
+    # A differential test whose circuits never change proves nothing. These 80
+    # seeds currently remove 294 instructions; the bound is set well below that
+    # because the alphabet may grow, but high enough that a pass silently ceasing
+    # to fire would fail it.
     assert rewritten > 150
 
 

@@ -25,7 +25,13 @@ Four results are recorded here.
 * **The fold shortens a run to a mean of 1.33 to 1.88 gates.** A two-gate run
   becomes 1.3325 gates on average (1.5009x) and a six-gate run becomes 1.8838
   (3.1851x). The mean never reaches 1 because the emitted determinant is a
-  second gate, and because no fold is taken when it is not strictly shorter.
+  second gate, and because no fold is taken when it is not strictly shorter. These
+  numbers are of the shipped pipeline rather than of the fold alone: the declared
+  inverse pass runs on the same programs, and on a run like ``sx tdg t`` it reaches
+  ``sx`` where the fold alone reached ``u3 rz``. That is one gate shorter on four of
+  the 4000 runs here and moves the length-3 mean to 1.5588, and
+  ``benchmarks/compiler_inverse_cancellation.py`` measures both orders of the two
+  passes because on its own populations the same interaction goes the other way.
 * **A run already spelled in one target vocabulary is declined.** Folding an
   ``rz``/``sx``-only program and then lowering it back to a basis that publishes
   ``rz`` and ``sx`` is a 17.6% loss: the fold shortens the intermediate program
