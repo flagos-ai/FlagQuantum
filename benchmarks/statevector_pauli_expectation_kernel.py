@@ -181,19 +181,23 @@ def _case(
             torch.max(torch.abs(output_difference)).detach()
         ),
         "expectation_relative_l2_error": float(
-            torch.linalg.vector_norm(output_difference)
-            / torch.linalg.vector_norm(pytorch_output).clamp_min(
-                torch.finfo(torch.float32).eps
-            )
+            (
+                torch.linalg.vector_norm(output_difference)
+                / torch.linalg.vector_norm(pytorch_output).clamp_min(
+                    torch.finfo(torch.float32).eps
+                )
+            ).detach()
         ),
         "maximum_gradient_absolute_error": float(
             torch.max(torch.abs(gradient_difference)).detach()
         ),
         "gradient_relative_l2_error": float(
-            torch.linalg.vector_norm(gradient_difference)
-            / torch.linalg.vector_norm(pytorch_gradient).clamp_min(
-                torch.finfo(torch.float32).eps
-            )
+            (
+                torch.linalg.vector_norm(gradient_difference)
+                / torch.linalg.vector_norm(pytorch_gradient).clamp_min(
+                    torch.finfo(torch.float32).eps
+                )
+            ).detach()
         ),
         **results,
         "forward_speedup_over_pytorch": (

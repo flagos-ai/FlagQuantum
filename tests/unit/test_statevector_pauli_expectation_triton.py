@@ -110,6 +110,47 @@ def test_statevector_pauli_expectation_cuda_gradient_matches_reference(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_statevector_pauli_expectation_launches_flat_grids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: dict[str, tuple[int, ...]] = {}
+
+    class FakeKernel:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def __getitem__(self, grid: tuple[int, ...]) -> object:
+            observed[self.name] = grid
+
+            def launch(*args: object, **kwargs: object) -> None:
+                return None
+
+            return launch
+
+    monkeypatch.setattr(
+        statevector_measurement,
+        "_statevector_pauli_expectation_partial_kernel",
+        FakeKernel("forward"),
+    )
+    monkeypatch.setattr(
+        statevector_measurement,
+        "_statevector_pauli_expectation_backward_kernel",
+        FakeKernel("backward"),
+    )
+    state = torch.zeros(2, 2048, device="cuda", dtype=torch.complex64)
+    statevector_measurement._launch_pauli_forward(state, 0, 0, 0)
+    statevector_measurement._launch_pauli_backward(
+        state,
+        torch.ones(2, device="cuda"),
+        0,
+        0,
+        0,
+    )
+
+    assert observed == {"forward": (4,), "backward": (16,)}
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.parametrize("case", ("complex128", "noncontiguous", "conjugate"))
 def test_statevector_pauli_expectation_unsupported_cuda_input_uses_fallback(
     monkeypatch: pytest.MonkeyPatch,

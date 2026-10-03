@@ -79,8 +79,9 @@ def _statevector_pauli_expectation_partial_kernel(
     y_mod_four: tl.constexpr,
     block_size: tl.constexpr,
 ) -> None:
-    batch = tl.program_id(0)
-    chunk = tl.program_id(1)
+    program = tl.program_id(0)
+    batch = program // chunk_count
+    chunk = program % chunk_count
     indices = chunk * block_size + tl.arange(0, block_size)
     valid = indices < amplitude_count
     partners = indices ^ x_mask
@@ -126,13 +127,16 @@ def _statevector_pauli_expectation_backward_kernel(
     expectation_gradient: tl.tensor,
     state_gradient_parts: tl.tensor,
     amplitude_count: tl.tensor,
+    chunk_count: tl.tensor,
     x_mask: tl.tensor,
     z_mask: tl.tensor,
     y_mod_four: tl.constexpr,
     block_size: tl.constexpr,
 ) -> None:
-    batch = tl.program_id(0)
-    offsets = tl.program_id(1) * block_size + tl.arange(0, block_size)
+    program = tl.program_id(0)
+    batch = program // chunk_count
+    chunk = program % chunk_count
+    offsets = chunk * block_size + tl.arange(0, block_size)
     valid = offsets < amplitude_count
     partners = offsets ^ x_mask
     batch_offset = batch.to(tl.int64) * amplitude_count
@@ -342,7 +346,7 @@ def _launch_pauli_forward(
         device=state.device,
         dtype=torch.float32,
     )
-    _statevector_pauli_expectation_partial_kernel[(batch, chunk_count)](
+    _statevector_pauli_expectation_partial_kernel[(batch * chunk_count,)](
         torch.view_as_real(state),
         partials,
         amplitude_count,
@@ -369,11 +373,12 @@ def _launch_pauli_backward(
     batch, amplitude_count = (int(value) for value in state.shape)
     block_size = 256
     chunk_count = triton.cdiv(amplitude_count, block_size)
-    _statevector_pauli_expectation_backward_kernel[(batch, chunk_count)](
+    _statevector_pauli_expectation_backward_kernel[(batch * chunk_count,)](
         torch.view_as_real(state),
         expectation_gradient,
         torch.view_as_real(state_gradient),
         amplitude_count,
+        chunk_count,
         x_mask,
         z_mask,
         y_mod_four=y_count % 4,
