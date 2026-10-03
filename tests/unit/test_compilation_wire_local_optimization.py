@@ -170,20 +170,24 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     reverse list scan that the wire index replaced. If the two ever disagree, the
     index is wrong.
 
-    The passes outside that traversal are called from both sides in the same
+    The five passes outside that traversal are called from both sides in the same
     position rather than re-derived, because each is a different pass with its own
     rule and not the subject of this oracle. ``remove_zero_state_resets`` reads the
     register's initial state instead of an opcode table; ``merge_inverse_pairs``
     reads the operator schema's own adjoint declaration, so re-deriving it here
     would change what this oracle is measuring rather than strengthen it;
     ``cancel_commuting_self_inverse`` reads the commutation rule source, which reads
-    the runtime's gate matrices; ``collapse_one_qubit_runs`` has a traversal of its
-    own. All of them are in the loop because the loop has to be the one the
-    implementation runs for the round-by-round comparison to mean anything.
+    the runtime's gate matrices; ``remove_diagonal_gates_before_measure`` reads a
+    measurement boundary and the Euler tables; ``collapse_one_qubit_runs`` has a
+    traversal of its own. All of them are in the loop because the loop has to be the
+    one the implementation runs for the round-by-round comparison to mean anything.
     """
 
     from flagquantum.compiler.commutation_cancellation import (
         cancel_commuting_self_inverse,
+    )
+    from flagquantum.compiler.diagonal_before_measure import (
+        remove_diagonal_gates_before_measure,
     )
     from flagquantum.compiler.inverse_cancellation import merge_inverse_pairs
     from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
@@ -192,6 +196,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     for _ in range(len(ir) + 1):
         previous_count = len(ir)
         ir = remove_zero_state_resets(ir)
+        ir = remove_diagonal_gates_before_measure(ir)
         ir = _reference_remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)
@@ -229,10 +234,13 @@ _SINGLE_WIRE = (
 )
 _TWO_WIRE = ("cx", "cz", "swap")
 _THREE_WIRE = ("ccx", "cswap")
-# A reset is not a gate: it carries no parameter, no matrix, and the dynamic flag the
-# IR requires of an opcode the operator schema does not declare. It is in the alphabet
-# so that the differential test below actually drives the pass that removes one.
-_DYNAMIC = ("reset",)
+# A reset and a measurement are not gates: neither carries a parameter or a matrix,
+# and both carry the dynamic flag the IR requires of an opcode the operator schema
+# does not declare. They are in the alphabet so that the differential test below
+# actually drives the two passes that read a measurement boundary -- without a
+# measurement in the alphabet no diagonal gate can be unobservable, and without a
+# measurement *after* a reset the reset pass has no read-out to keep one for.
+_DYNAMIC = ("reset", "measure")
 # Zero sums are reachable: 0.25 + -0.25 and 1e-13 + 0.0 both collapse, which is
 # what exercises the branch that removes a merged rotation instead of rewriting it.
 _ANGLES = (0.0, 0.25, -0.25, 0.5, -0.5, 1.0, 1e-13)

@@ -227,9 +227,10 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     # Imported here rather than at module scope: these passes read this layer, so a
     # module-level import in this direction would be circular.
     # `commutation_cancellation` reads `_SELF_INVERSE`, `inverse_cancellation` reads
-    # `_WireLocalProgram`, and `one_qubit_optimization` reads the Euler tables and
-    # `_is_zero`.
+    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
+    # `_is_zero`, and `diagonal_before_measure` reads one_qubit_synthesis.
     from .commutation_cancellation import cancel_commuting_self_inverse
+    from .diagonal_before_measure import remove_diagonal_gates_before_measure
     from .inverse_cancellation import merge_inverse_pairs
     from .one_qubit_optimization import collapse_one_qubit_runs
 
@@ -242,6 +243,11 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         # ordering, is what earns the reach on a wire the passes below only empty out
         # later: `x(0) x(0) reset(0)` needs a second round.
         ir = remove_zero_state_resets(ir)
+        # Second, for the same reason: a diagonal gate read out only by measurements is
+        # unobservable whatever the passes below do to the rest of the program, and
+        # dropping it hands them a shorter one. Its own reach is what needs the loop --
+        # `x(0) x(0) z(0) measure(0)` only exposes `z` once the pair cancels.
+        ir = remove_diagonal_gates_before_measure(ir)
         ir = remove_identity_gates(ir)
         ir = merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)

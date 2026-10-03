@@ -31,6 +31,7 @@ Use `optimize(program)` for target-independent optimization and
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
+| Diagonal gates before a measurement | [diagonal_before_measure.py](diagonal_before_measure.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
@@ -197,6 +198,64 @@ which instrument spoke for which population. The share comparison carries a
 control that deletes a reset whose wire has left `|0>` and moves a share by 0.51
 against a 0.03 tolerance, so the tolerance is a bound something exceeded rather
 than a number that happened to hold.
+
+A measurement ends a wire's contribution to the recorded outcome: whatever a later
+gate does on that wire cannot reach the classical bits the measurement already
+wrote. A gate that commutes with the measurement -- one whose operator is diagonal
+in the computational basis -- therefore leaves the outcome distribution exactly as
+it was, and [diagonal_before_measure.py](diagonal_before_measure.py) removes it.
+The rule is a declaration rather than a matrix read, and for a structural reason:
+this layer may not import `simulation/**`, and no `OperatorSchema` field records
+diagonality, so the pass asks the operator instead. A one-wire gate is diagonal
+when the polar angle of its canonical Euler triple -- the table
+[one_qubit_synthesis.py](one_qubit_synthesis.py) already owns -- is exactly zero,
+and a two-wire gate when its opcode is one of four. Both rules are state
+independent: an `x` that happens to be invisible behind a Hadamard preparation is
+still not diagonal and is still kept.
+
+Two consequences are deliberate. A trainable `rz`, `phase` or `u1` is reported
+diagonal while a trainable `rx`, `ry` or `u3` is not, because the first three have
+a tabulated polar angle of exactly zero and the last three do not; a zero-valued
+constant is what the rule sees, and a trainer's current value is not. And the
+declaration is per opcode rather than per value on two wires, because nothing in
+the repository declares two-wire diagonality -- the two hand-written opcode sets
+that do exist live in `simulation/` and `runtime/` and disagree with the matrix
+census in both directions.
+
+Qiskit's counterpart is `RemoveDiagonalGatesBeforeMeasure`, which states the same
+idea as class membership: `RZGate`, `ZGate`, `TGate`, `SGate`, `TdgGate`,
+`SdgGate`, `U1Gate` and `CZGate`, `CRZGate`, `CU1Gate`, `RZZGate`. The declaration
+here names the same four two-wire opcodes and reaches three rows a class list
+cannot express -- an `i` (there is no `IGate` in that list), a `phase`/`p`
+(`PhaseGate` is not a `U1Gate` subclass) and a `cphase` (`CPhaseGate` is not a
+`CU1Gate` subclass) -- and a further reach that no list of classes can express at
+all: `u3(0, phi, lam)`, `rx(0)` and `ry(0)`, which are diagonal as values rather
+than as names.
+
+Like the reset rule, a refusal here is correctness or deferred reach and never one
+total. A candidate carrying a caller-supplied matrix, a condition, the dynamic
+flag, an unknown opcode, or a successor on its own wire that is not an
+unconditional non-dynamic measurement is declined, and the decline is conservative:
+a false "no" costs an optimization, a false "yes" changes the program. Over 196
+shape rows the pass removes 26, none of which was not removable in fact, and
+declines 170 -- of which 81 were invisible in fact, 42 behind a condition and 39
+because a later instruction stood on the candidate's wire. Those two are counted
+apart because they are different limits. The two-wire reach is the largest single
+gap: when only one of the candidate's wires is measured, all eleven two-wire
+candidates are invisible in fact and all eleven are declined, because the rule
+requires a measurement after every wire the candidate touches.
+
+`tests/unit/test_compilation_diagonal_before_measure.py` and the benchmark
+[benchmarks/compiler_diagonal_before_measure.py](../../benchmarks/compiler_diagonal_before_measure.py)
+hold that evidence. The benchmark measures every removal against an exact outcome
+distribution rather than a sampled one, and carries a control that deletes a
+non-diagonal gate and an entangler and moves the distribution by 0.49 against a
+1e-12 tolerance, so the tolerance is a bound something exceeded rather than a
+number that happened to hold. It also runs Qiskit's own pass over the identical 196
+programs: the two agree everywhere the class lists allow a comparison, Qiskit
+removes 20 where this pass removes 26, and the six rows they differ on are exactly
+the three class-membership facts above. The payload records that scope rather than
+claiming agreement everywhere.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.

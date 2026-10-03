@@ -62,14 +62,22 @@ _RULE = {
 #: the pipeline does, so ``collapse_one_qubit_runs`` landed on main and made the two
 #: interact -- a removed reset stops interrupting a wire, which hands the folding pass
 #: a longer run to fold -- and these counts were re-measured rather than kept.
+#:
+#: ``remove_diagonal_gates_before_measure`` landing in the loop did the same thing once
+#: more, and it also exposed how the two columns were being read: the *legacy* side used
+#: to restate the pass list by hand, so it silently lacked every pass added after it was
+#: written and the count in ``removed_by_the_pass_in_the_pipeline`` carried other
+#: passes' removals. The legacy side is now built from the shipped loop with this one
+#: pass swapped for the identity, so the number means what its name says -- on
+#: ``leading_resets`` the honest figure is 63 and not the 68 a stale replica reported.
 _DELTA = {
     "leading_resets": {
         "circuit_count": 30,
         "source_instruction_count": 129,
-        "legacy_instruction_count": 123,
+        "legacy_instruction_count": 118,
         "optimized_instruction_count": 55,
         "removed_by_the_pass_alone": 63,
-        "removed_by_the_pass_in_the_pipeline": 68,
+        "removed_by_the_pass_in_the_pipeline": 63,
         "changed_circuit_count": 30,
         "executed_circuit_count": 30,
         "comparison": "final_state",
@@ -132,11 +140,11 @@ _DELTA = {
     "mixed_dynamic_programs": {
         "circuit_count": 30,
         "source_instruction_count": 295,
-        "legacy_instruction_count": 285,
-        "optimized_instruction_count": 246,
+        "legacy_instruction_count": 268,
+        "optimized_instruction_count": 238,
         "removed_by_the_pass_alone": 29,
-        "removed_by_the_pass_in_the_pipeline": 39,
-        "changed_circuit_count": 21,
+        "removed_by_the_pass_in_the_pipeline": 30,
+        "changed_circuit_count": 19,
         "executed_circuit_count": 30,
         "comparison": "outcome_shares",
     },
@@ -296,11 +304,17 @@ def test_every_population_was_executed_and_not_only_counted(payload: dict) -> No
 
 
 def test_the_delta_belongs_to_this_pass_and_not_to_the_pipeline(payload: dict) -> None:
-    """On the populations that isolate the new rule, the old pipeline removes nothing."""
+    """On the populations that isolate the new rule, the old pipeline removes nothing.
+
+    The three legacy counts below are checked against the *measured* legacy side, not
+    against a constant restated here, because their point is the relationship and not
+    the number: this rule's own removals are the whole difference on these
+    populations, and the populations are built so that no other pass can contribute.
+    """
 
     rows = _delta(payload)
 
-    assert rows["leading_resets"]["legacy_instruction_count"] == 123
+    assert rows["leading_resets"]["legacy_instruction_count"] == 118
     assert rows["reset_after_another_qubit_gate"]["legacy_instruction_count"] == 90
     assert rows["reset_before_a_measurement"]["legacy_instruction_count"] == 120
     isolated = (
@@ -309,6 +323,17 @@ def test_the_delta_belongs_to_this_pass_and_not_to_the_pipeline(payload: dict) -
         + rows["reset_before_a_measurement"]["removed_by_the_pass_alone"]
     )
     assert isolated > 150
+    # The two sides differ by this rule and by nothing else on these populations.
+    for label in (
+        "leading_resets",
+        "reset_after_another_qubit_gate",
+        "reset_before_a_measurement",
+    ):
+        assert (
+            rows[label]["legacy_instruction_count"]
+            - rows[label]["optimized_instruction_count"]
+            == rows[label]["removed_by_the_pass_alone"]
+        ), label
 
 
 def test_the_fixed_point_loop_reaches_further_than_the_pass_alone(
