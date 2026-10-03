@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 53 |
-| `unsupported` | 32 |
+| `partial` | 54 |
+| `unsupported` | 31 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -167,6 +167,49 @@ returns a data-carrying `State` and re-normalises *after* padding, and its
 encoder returns a `Circuit`, pads before normalising, and has no kernel front end
 to be called from. Recording that as the gap, instead of reading "an encoder
 exists" as the row, is the whole content of this move.
+
+`classical_control_flow` moved from `unsupported` to `partial` in the same
+wave, and three reasons beside it were corrected in the same change, because the
+`language_and_programming_model` domain was describing a repository that no longer
+existed. [capture.py](../../flagquantum/compiler/_hybrid/capture.py) has been a
+restricted Python AST bridge since before this document was written: it reads one
+selected synchronous function, carries classical values with real def-use through
+`Value`, `Operation`, `Block`, and `Region`, verifies them with an SSA pass that
+fails closed on a use before definition or a duplicate definition, branches on `if`
+both at compile time and on a measurement result, and unrolls `for` over `range`,
+`enumerate`, and a statically ranked tensor under an explicit ceiling while
+carrying outer names through region results. Three
+[QEC](../../flagquantum/qec/sampling.py)
+[entry](../../flagquantum/qec/repetition.py)
+[points](../../flagquantum/qec/dem_construction.py) execute it in production, and
+`while`, `break`, `continue`, and `for-else` are refused with an exact diagnostic.
+So the row's old reason -- classical values "designed but not implemented" -- was
+not incomplete, it was false, and the row is `partial` rather than `supported`
+because the `while` form the baseline names is absent and no public kernel surface
+exposes any of it: the capability is implemented Compiler machinery, not a
+programming model a user can write.
+
+The three reasons corrected in the same change are the ones that rested on the same
+mistake. `python_ast_kernel` said "there is no AST layer", which is the false half
+of the sentence above; it keeps `partial`, because the layer is private Compiler
+machinery exported from neither `flagquantum` nor `flagquantum.compiler`, and its
+reason now says that instead of denying the layer exists.
+`kernel_first_class_functions` stays `unsupported` -- its capability is genuinely
+absent, because the private operation vocabulary has no call or function op and a
+hybrid program is a single-function container, so parameters, composition, and
+nested calls are inexpressible rather than merely unexposed -- but it no longer
+names
+[MULTI_LEVEL_IR_ARCHITECTURE.md](../architecture/MULTI_LEVEL_IR_ARCHITECTURE.md)
+5.2 as the planned home, because that document is now labelled a historical design
+baseline and the level that exists is narrower than the design it describes.
+`type_system_qubit_register_view` stays `unsupported` because a half-stale reason
+is worse than a missing one: `IRType`, a `linear` flag, and verifier-enforced
+linearity of the quantum-effect token do exist, so "its reference-versus-value
+linearity rules are not implemented" was too broad, but the linear subject is the
+effect token rather than a qubit, and nothing models a qubit, a register, or a view
+over one. `runtime_qubit_allocation` was left untouched on purpose: its claim that
+runtime allocation is not implemented is true, and only the name of the document
+describing it would have changed.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -403,7 +446,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 32 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 31 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

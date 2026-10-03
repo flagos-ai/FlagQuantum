@@ -138,7 +138,7 @@ update_rule = "Refreshing this matrix is a generated-diff change: tools/parity_m
 id = "language_and_programming_model"
 title = "Language and programming model"
 cudaq_surface = ["nvq++", "@cudaq.kernel", "kernel arguments", "classical control flow", "cudaq.control", "cudaq.adjoint", "register_operation", "qudit and photonic operations"]
-evidence = ["flagquantum/circuit.py", "flagquantum/operators", "search:no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema"]
+evidence = ["flagquantum/circuit.py", "flagquantum/operators", "search:no C++ translation unit; no public kernel decorator or kernel type; and no function, call, block, region, or type construct in the CircuitIR 1.0 schema"]
 
 [[domains.capabilities]]
 id = "cpp_kernel_frontend"
@@ -154,7 +154,8 @@ cudaq = "@cudaq.kernel decorator compiling a Python function body through an AST
 status = "partial"
 priority = "now"
 dependency_class = "none"
-reason = "FlagQuantum builds circuits through an explicit builder API. There is no AST layer, so a user cannot write a Python function body as a kernel."
+reason = "The only public way to state a program is the explicit builder API. A restricted Python AST bridge does exist, but it is private Compiler machinery rather than a product surface: flagquantum/compiler/_hybrid/capture.py reads one selected synchronous function through inspect.getsourcelines, it is exported from neither flagquantum nor flagquantum.compiler, and production reaches it only from three flagquantum.qec entry points. So there is no decorator, no kernel type, and no user-facing call form, and the row stays partial rather than supported."
+evidence = ["flagquantum/compiler/_hybrid/capture.py", "flagquantum/compiler/_hybrid/__init__.py", "flagquantum/core/ir.py", "flagquantum/qec/sampling.py", "search:no public kernel decorator and no kernel name in the root namespace"]
 
 [[domains.capabilities]]
 id = "kernel_first_class_functions"
@@ -163,16 +164,18 @@ status = "unsupported"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "ir"
-reason = "The public CircuitIR schema 1.0 has no function or call construct. The internal levels designed in MULTI_LEVEL_IR_ARCHITECTURE.md 5.2 do, and are the planned home."
+reason = "The public CircuitIR schema 1.0 has no function or call construct, and the private hybrid program IR does not supply one either: its closed operation vocabulary has no call or function op, capture admits exactly one selected synchronous function, and a hybrid program is a single-function container, so parameters, composition, and nested calls are inexpressible rather than merely unexposed. The planned home this reason previously named, MULTI_LEVEL_IR_ARCHITECTURE.md 5.2, is now labelled a historical design baseline; the level that actually exists is the narrower private profile under flagquantum/compiler/_hybrid, and closing this row needs a call construct, a multi-function container, and a public entry point."
+evidence = ["flagquantum/compiler/_hybrid/schemas.py", "flagquantum/compiler/_hybrid/capture.py", "flagquantum/compiler/_hybrid/model.py", "flagquantum/core/ir.py", "tests/hybrid_compiler/test_capture.py", "search:no call or function op, no multi-function container, and no composition entry point"]
 
 [[domains.capabilities]]
 id = "classical_control_flow"
 cudaq = "if, for, and while over classical values inside a kernel"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "ir"
-reason = "CircuitIR 1.0 expresses a straight-line instruction list. Classical values with def-use, blocks, branches, and bounded loops are designed but not implemented."
+reason = "Implemented, but only inside the private hybrid compiler and without a while form. flagquantum/compiler/_hybrid carries classical values with real def-use (Value and ValueId, Operation, Block, Region) and an SSA verifier; if branches both compile-time-resolved and measurement-driven; and for loops over range, enumerate, and statically ranked tensors with explicit region-carried results and a bounded unroll ceiling. Straight-line local temporaries and outer-name rebinding are supported. Three flagquantum.qec entry points consume it in production. What is missing is the cudaq baseline in the row title: while, break, continue, and for-else are refused with an exact diagnostic, and there is no public kernel surface, so a user reaches none of this directly. That is why the row is partial and not supported."
+evidence = ["flagquantum/compiler/_hybrid/capture.py", "flagquantum/compiler/_hybrid/model.py", "flagquantum/compiler/_hybrid/verifier.py", "flagquantum/compiler/_hybrid/dynamic_lowering.py", "flagquantum/qec/repetition.py", "tests/hybrid_compiler/test_dynamic_session.py", "search:while, break, continue, and for-else are refused by capture rather than captured"]
 
 [[domains.capabilities]]
 id = "runtime_qubit_allocation"
@@ -200,7 +203,8 @@ status = "unsupported"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "ir"
-reason = "CircuitIR 1.0 addresses wires by integer index and has no type system. The designed QuantumIR type system and its reference-versus-value linearity rules are not implemented."
+reason = "CircuitIR 1.0 addresses wires by integer index and has no type system, and the private hybrid program IR does not close that: its IRType vocabulary is bool, index, quantum.effect, and scalar and tensor forms, and a qubit stays an index value. What the private level does have is a real linearity rule, enforced by its verifier rather than asserted -- the quantum effect is the linear type, and reusing it or dropping it fails closed -- but the linear subject is the effect token, not a qubit, and nothing models a register or a view over one. A qubit, qvector, and qview type with linearity over the qubits themselves is absent."
+evidence = ["flagquantum/compiler/_hybrid/model.py", "flagquantum/compiler/_hybrid/verifier.py", "flagquantum/compiler/_hybrid/capture.py", "flagquantum/core/ir.py", "search:no qubit, register, qvector, or qview type and no aliasing or borrow rule"]
 
 [[domains.capabilities]]
 id = "dynamic_kernel_measurement_feedback"
