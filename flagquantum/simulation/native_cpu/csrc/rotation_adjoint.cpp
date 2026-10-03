@@ -114,6 +114,100 @@ inline int64_t popcount(uint64_t value) {
   return count;
 }
 
+at::Tensor fused_static_product_state_initialization_cpu(
+    at::Tensor state,
+    const at::Tensor& gate_codes,
+    const at::Tensor& wires,
+    int64_t n_wires) {
+  TORCH_CHECK(
+      state.device().is_cpu() && gate_codes.device().is_cpu() &&
+          wires.device().is_cpu(),
+      "static product-state initialization inputs must be on CPU");
+  TORCH_CHECK(
+      state.is_contiguous() && gate_codes.is_contiguous() && wires.is_contiguous(),
+      "static product-state initialization inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(gate_codes.scalar_type() == at::kChar, "gate_codes must be int8");
+  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  TORCH_CHECK(
+      gate_codes.dim() == 1 && wires.dim() == 1 &&
+          gate_codes.numel() == n_wires && wires.numel() == n_wires,
+      "one static Clifford gate is required for every wire");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+
+  const int8_t* code_data = gate_codes.const_data_ptr<int8_t>();
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  std::array<int64_t, 62> hadamard_masks{};
+  int64_t hadamard_count = 0;
+  int64_t y_count = 0;
+  uint64_t occupied_mask = 0;
+  uint64_t required_one_mask = 0;
+  for (int64_t gate = 0; gate < n_wires; ++gate) {
+    TORCH_CHECK(
+        wire_data[gate] >= 0 && wire_data[gate] < n_wires,
+        "static product-state wire is out of range");
+    TORCH_CHECK(
+        code_data[gate] >= 1 && code_data[gate] <= 6,
+        "static product-state gate code is invalid");
+    const uint64_t mask = uint64_t{1} << (n_wires - wire_data[gate] - 1);
+    TORCH_CHECK(
+        (occupied_mask & mask) == 0,
+        "static product-state wires must be unique");
+    occupied_mask |= mask;
+    if (code_data[gate] == 1) {
+      hadamard_masks[hadamard_count++] = static_cast<int64_t>(mask);
+    } else if (code_data[gate] == 4 || code_data[gate] == 5) {
+      required_one_mask |= mask;
+      y_count += code_data[gate] == 5;
+    }
+  }
+
+  state.zero_();
+  const int64_t support_size = int64_t{1} << hadamard_count;
+  const int64_t item_count = state.size(0) * support_size;
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_static_product_state_initialization_cpu", [&] {
+        using real_t = typename scalar_t::value_type;
+        scalar_t value(
+            real_t{1} / std::sqrt(static_cast<real_t>(support_size)), real_t{0});
+        switch (y_count & 3) {
+          case 1:
+            value = scalar_t(real_t{0}, value.real());
+            break;
+          case 2:
+            value = -value;
+            break;
+          case 3:
+            value = scalar_t(real_t{0}, -value.real());
+            break;
+          default:
+            break;
+        }
+        scalar_t* state_data = state.data_ptr<scalar_t>();
+        at::parallel_for(
+            int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / support_size;
+                const int64_t local = item - row * support_size;
+                int64_t basis = static_cast<int64_t>(required_one_mask);
+                for (int64_t bit = 0; bit < hadamard_count; ++bit) {
+                  if ((local & (int64_t{1} << bit)) != 0) {
+                    basis |= hadamard_masks[bit];
+                  }
+                }
+                state_data[row * amplitudes + basis] = value;
+              }
+            });
+      });
+  return state;
+}
+
 at::Tensor fused_static_clifford_layer_cpu(
     at::Tensor state,
     const at::Tensor& gate_codes,
@@ -2108,6 +2202,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "Tensor wires, int n_wires, Tensor cx_controls, Tensor cx_targets) "
       "-> Tensor(a!)");
   library.def(
+      "fused_static_product_state_initialization_(Tensor(a!) state, "
+      "Tensor gate_codes, Tensor wires, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_static_clifford_layer_(Tensor(a!) state, Tensor gate_codes, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
   library.def(
@@ -2147,6 +2244,9 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl(
       "fused_product_state_initialization_",
       &fused_product_state_initialization_cpu);
+  library.impl(
+      "fused_static_product_state_initialization_",
+      &fused_static_product_state_initialization_cpu);
   library.impl("fused_static_clifford_layer_", &fused_static_clifford_layer_cpu);
   library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
