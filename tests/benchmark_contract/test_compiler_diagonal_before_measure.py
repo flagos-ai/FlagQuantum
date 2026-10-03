@@ -581,6 +581,9 @@ def test_the_qiskit_anchor_is_optional_and_reports_its_own_reach(payload: dict) 
     anchor = payload["shape_table"]["reference_anchor"]
 
     if not anchor["available"]:
+        # A skip here is not silence: the sibling test that states the agreement
+        # scope pins the readings that must hold when the anchor did not run, so the
+        # absent case is measured rather than passed over.
         pytest.skip(f"Qiskit is not installed here: {anchor['reason']}")
     for key, expected in _ANCHOR.items():
         assert anchor[key] == expected, key
@@ -601,6 +604,9 @@ def test_every_anchor_disagreement_is_one_of_the_three_published_facts(
     anchor = payload["shape_table"]["reference_anchor"]
 
     if not anchor["available"]:
+        # A skip here is not silence: the sibling test that states the agreement
+        # scope pins the readings that must hold when the anchor did not run, so the
+        # absent case is measured rather than passed over.
         pytest.skip(f"Qiskit is not installed here: {anchor['reason']}")
     reasons = anchor["disagreement_reasons"]
 
@@ -621,21 +627,41 @@ def test_every_anchor_disagreement_is_one_of_the_three_published_facts(
         assert label.split("|", 1)[0] in reason or "subclass" in reason, label
 
 
-def test_the_agreement_scope_says_what_it_does_not_cover(payload: dict) -> None:
-    """A row the anchor cannot be asked about is not an agreement.
+def test_the_agreement_scope_states_the_case_that_actually_happened(
+    payload: dict,
+) -> None:
+    """The scope is a statement about a run, so it has to name the run.
 
     FlagQuantum removes ``u3(0, phi, lam)``, ``rx(0)`` and ``ry(0)`` because their
     diagonality is a property of the value, and Qiskit's list names classes, so it has
     no way to express those rows at all. The scope string and the disagreement count
     are what keep a reader from reading the two ports as agreeing everywhere.
+
+    A host with no Qiskit is the case this test exists for as much as the other one:
+    the anchor drives its port on no row there, and a scope that still said
+    ``row_count`` rows had been driven through both ports -- with a disagreement count
+    of zero -- would read as agreement rather than as silence. The absent branch
+    therefore asserts the readings that must hold *because* nothing ran, and not a
+    skip, so neither branch can pass by having nothing to check.
     """
 
     scope = payload["anchor_agreement_scope"]
+    anchor = payload["shape_table"]["reference_anchor"]
 
-    assert payload["anchor_row_count"] == payload["shape_table"]["row_count"]
-    assert "actually driven" in scope
-    assert "IGate" in scope or "gate-class" in scope
-    assert payload["anchor_disagreement_count"] == _ANCHOR["disagreement_count"]
     assert payload["reference_algorithm"] == (
         "qiskit_remove_diagonal_gates_before_measure"
     )
+
+    if anchor["available"]:
+        assert payload["anchor_row_count"] == payload["shape_table"]["row_count"]
+        assert payload["anchor_disagreement_count"] == _ANCHOR["disagreement_count"]
+        assert "actually driven" in scope
+        assert "IGate" in scope or "gate-class" in scope
+        return
+
+    assert payload["anchor_row_count"] == 0
+    assert payload["anchor_disagreement_count"] == 0
+    assert anchor["reason"]
+    assert "no row was driven" in scope
+    assert "not" in scope and "installed here" in scope
+    assert "no agreement" in scope

@@ -1267,15 +1267,29 @@ def run_benchmark() -> dict[str, Any]:
         "shape_table": shapes,
         "form_table": form_table(),
         "execution_control": execution_control(),
-        "anchor_row_count": shapes["row_count"],
+        # Every anchor reading is stated for the case that actually happened. A host
+        # without Qiskit drives the second port on no row at all, and a scope that
+        # said `row_count` rows had been driven through both ports would be a claim
+        # about a run that never took place -- with a disagreement count of zero
+        # reading as agreement rather than as silence.
+        "anchor_row_count": shapes["row_count"] if anchor["available"] else 0,
         "anchor_disagreement_count": (
             0 if not anchor["available"] else anchor["disagreement_count"]
         ),
         "anchor_agreement_scope": (
-            f"{shapes['row_count']} candidate/gap rows driven through both ports; "
-            "agreement is claimed only over the rows actually driven, and the "
-            "disagreements are the anchor's gate-class list not naming IGate, "
-            "PhaseGate or CPhaseGate"
+            (
+                f"{shapes['row_count']} candidate/gap rows driven through both ports; "
+                "agreement is claimed only over the rows actually driven, and the "
+                "disagreements are the anchor's gate-class list not naming IGate, "
+                "PhaseGate or CPhaseGate"
+            )
+            if anchor["available"]
+            else (
+                "no row was driven through the anchor's port: the anchor is not "
+                f"installed here ({anchor['reason']}), so the two counts above are "
+                "readings of this pass alone and no agreement with the reference is "
+                "claimed at any row"
+            )
         ),
     }
 
