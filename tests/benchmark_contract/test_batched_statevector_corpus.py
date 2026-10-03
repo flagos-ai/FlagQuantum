@@ -52,6 +52,7 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
             "flagquantum_native_dense_width_rollback",
             "flagquantum_native_layout_retention",
             "flagquantum_native_direct_assembly_rollback",
+            "flagquantum_native_static_product_initialization_rollback",
             "flagquantum_native_monolithic_batch",
             "flagquantum_native_serial",
         ),
@@ -134,6 +135,12 @@ def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
         assert (
             case["correctness"]["engines"][
                 "flagquantum_native_direct_assembly_rollback"
+            ]["max_abs_error"]
+            <= 1e-10
+        )
+        assert (
+            case["correctness"]["engines"][
+                "flagquantum_native_static_product_initialization_rollback"
             ]["max_abs_error"]
             <= 1e-10
         )

@@ -53,6 +53,12 @@ includes the copy-based rollback A/B, absolute time and RSS, a prominent
 PennyLane Lightning comparison, public example, boundaries, raw JSON, and an
 exact reproduction command.
 
+[`BATCHED_STATEVECTOR_STATIC_PRODUCT_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_STATIC_PRODUCT_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md)
+records the specialized direct initializer for complete static Clifford product
+layers. It includes the exact rollback A/B, absolute time and RSS, a prominent
+PennyLane Lightning comparison, public example, safety boundaries, raw JSON,
+and an exact reproduction command.
+
 The differentiable simulator corpus adds matched exact expectation-value and
 full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
 default.qubit backprop. Its generated Markdown report contains the workload meaning,
