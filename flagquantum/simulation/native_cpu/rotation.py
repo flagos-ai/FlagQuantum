@@ -35,6 +35,63 @@ def native_cpu_one_qubit_layer_available() -> bool:
     )
 
 
+def native_cpu_product_state_initialization_available() -> bool:
+    """Return whether native dense product-state initialization is enabled."""
+
+    return (
+        os.getenv("FQ_CPU_NATIVE_PRODUCT_STATE_INITIALIZATION", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_one_qubit_layer_available()
+    )
+
+
+def fused_product_state_initialization_(
+    state: torch.Tensor,
+    matrices: torch.Tensor,
+    qubits: torch.Tensor,
+    *,
+    n_qubits: int,
+    cx_controls: torch.Tensor,
+    cx_targets: torch.Tensor,
+) -> bool:
+    """Write the product state produced by one full rotation/CX layer."""
+
+    if (
+        not native_cpu_product_state_initialization_available()
+        or state.device.type != "cpu"
+        or matrices.device.type != "cpu"
+        or qubits.device.type != "cpu"
+        or cx_controls.device.type != "cpu"
+        or cx_targets.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or matrices.dtype != state.dtype
+        or qubits.dtype != torch.int64
+        or cx_controls.dtype != torch.int64
+        or cx_targets.dtype != torch.int64
+        or state.ndim != 2
+        or matrices.ndim not in {3, 4}
+        or matrices.shape[-3:] != (n_qubits, 2, 2)
+        or (matrices.ndim == 4 and matrices.shape[0] != state.shape[0])
+        or qubits.shape != (n_qubits,)
+        or cx_controls.ndim != 1
+        or cx_targets.shape != cx_controls.shape
+        or state.shape[1] != 2**n_qubits
+        or not all(
+            item.is_contiguous()
+            for item in (state, matrices, qubits, cx_controls, cx_targets)
+        )
+    ):
+        return False
+    with torch.no_grad():
+        cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_product_state_initialization_(
+                state, matrices, qubits, n_qubits, cx_controls, cx_targets
+            ),
+        )
+    return True
+
+
 def native_cpu_static_clifford_layer_available() -> bool:
     """Return whether exact static Clifford layer fusion is enabled."""
 

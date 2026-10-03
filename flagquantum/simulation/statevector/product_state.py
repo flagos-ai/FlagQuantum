@@ -53,6 +53,18 @@ _FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})
 _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH = 5
 
 
+def _cpu_product_state_execution_enabled() -> bool:
+    """Whether eligible CPU circuits may keep product components separate."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_EXECUTION", default=True)
+
+
+def _cpu_product_state_swap_remapping_enabled() -> bool:
+    """Whether product components treat SWAP as wire remapping."""
+
+    return _environment_flag("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", default=True)
+
+
 def _cpu_product_state_fixed_clifford_enabled() -> bool:
     """Whether product components use fixed CPU Clifford kernels."""
 

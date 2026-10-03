@@ -339,6 +339,29 @@ scalability claim.
 Reproduce or validate it with
 [`benchmarks/mps_wire_probability_dispatch.py`](../../benchmarks/mps_wire_probability_dispatch.py).
 
+NUM-002 contracts the explicit non-view layout `azcb,czdb->zad` as a strided
+complex batched matrix multiplication, avoiding canonical input
+materialization. The checked-in
+[`tn_layout_contraction_a800.json`](../../benchmarks/results/local/tn_layout_contraction_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for each of four
+fixed contraction shapes on `jp-a800-171` and `jp-a800-172`, under stock
+Triton 3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape
+combinations, the direct forward wrapper ranges from `0.24x` to `1.46x`
+versus native `torch.einsum`, while the public catalog dispatch ranges from
+`0.30x` to `1.84x`. Direct forward plus backward ranges from `0.36x` to
+`0.95x`, so it does not establish a training win. Maximum forward absolute
+and relative L2 error are `2.22e-4` and `8.31e-7`; maximum gradient absolute
+and relative L2 error are `6.10e-5` and `4.27e-7`.
+
+The canonical aggregate records `revisit_current_policy`: NUM-002 remains
+`experimental`, and these measurements do not authorize default dispatch,
+maturity promotion, or a performance claim for the current support window.
+The next NUM-002 change should narrow or retune policy from the observed losing
+cases and then regenerate the complete host/compiler matrix. This is bounded
+single-device development hardware evidence, not a release gate or scalability
+claim. Reproduce or validate it with
+[`benchmarks/tn_layout_contraction.py`](../../benchmarks/tn_layout_contraction.py).
+
 ## Capability matching
 
 `catalog.match_kernel_implementations` answers which cataloged implementations
