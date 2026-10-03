@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 25 semantics,
-27 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 26 semantics,
+28 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -90,6 +90,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
+| FQK-MEAS-003 | `measurement.probabilities.marginal.statevector` | `statevector_marginal_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -259,6 +260,14 @@ speed. The evidence covers one operator pattern and two development hosts, so
 the canonical decision remains `retain_experimental`; it does not authorize
 default dispatch or a release claim. Reproduce or validate it with
 [`benchmarks/statevector_pauli_expectation_kernel.py`](../../benchmarks/statevector_pauli_expectation_kernel.py).
+
+`FQKI-TRITON-MEAS-003-A` computes a joint marginal distribution directly from
+a batched flat statevector without materializing the full probability tensor.
+Wire zero addresses the most-significant statevector bit, and output bits retain
+the exact order requested by the caller. The direct Triton path accepts
+contiguous CUDA `complex64` statevectors with at most 30 wires and selections of
+at most eight wires; other valid inputs retain an exact differentiable PyTorch
+fallback. It is experimental and is not selected by default runtime dispatch.
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -603,9 +612,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 25 semantics and 32 implementations are implemented. MPS-003
+The current 26 semantics and 33 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 27 implementations remain experimental. The rest of the
+promotions; the other 28 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract

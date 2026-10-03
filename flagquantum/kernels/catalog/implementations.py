@@ -273,6 +273,15 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MEAS-003-A",
+        "measurement.probabilities.marginal.statevector",
+        "statevector_measurement",
+        "statevector_marginal_probabilities",
+        layouts=("flat_statevector", "selected_wire_order"),
+        directions=("forward", "backward"),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-NUM-001-A",
         "numerics.matmul.complex_batched",
         "complex_bmm",
