@@ -60,6 +60,20 @@ This module measures four things and refuses to measure a fifth.
   that reason. A population the declared basis cannot express reports an absent count
   rather than a zero.
 
+  Every native count is published three times: as the passes emitted it, and with every
+  float parameter of the same program moved one unit in the last place in either
+  direction. That neighbourhood is not decoration. `one_qubit_synthesis._leaves` picks
+  a `u3`'s short spelling by testing a polar angle -- an `atan2` -- against ``pi/2``
+  with ``==``, so the last bit of a synthesized angle decides how many native gates the
+  basis needs, and a count decided that way is partly a property of the host's libm.
+  The readings say which columns are decided by the branch and which are the pass's own
+  work, and the contract test pins only the ones where the three agree: CI measured 600
+  where this host measures 690 for the same fold-only population, and the shipped total
+  is 1320 here and 1260 one ulp lower. What the order argument rests on -- that the
+  shipped order lowers strictly cheaper than the fold-first one -- is asserted in all
+  three neighbourhoods instead, because it is the one part of the claim that does not
+  depend on which side of the branch a host lands on.
+
 * **That the baselines are still the shipped pipeline.** The comparison pipelines
   below mirror `pipeline._optimize_to_fixed_point` by hand, because it cannot be
   asked for a variant of itself. A hand mirror drifts, and it drifts in the
@@ -82,12 +96,22 @@ This module measures four things and refuses to measure a fifth.
   order against more fold first (2026 where this was first measured), over the five
   populations the declared basis can express. That is the whole of the argument for
   the shipped order, and it is the kind of argument that has to be re-measured rather
-  than assumed -- including the gold number, because it is not portable: the fold-only
-  program still carries a `u3`, and `native_gate_legalization` elides a `u3`'s
-  rotations by testing a synthesized angle against ``pi/2`` with ``==``, so one ulp
-  moves the count. The shipped 1320 does not depend on that test, because this pass
-  leaves a program already spelled in the declared basis; the fold-first side does.
-  This module records both totals and the contract test asserts only the direction.
+  than assumed -- including the gold number, because it is not portable, and the
+  reason is a branch rather than a host. The fold leaves `u3` instructions whose polar
+  angle is exactly ``pi/2`` in exact arithmetic, and `one_qubit_synthesis._leaves`
+  picks that gate's short spelling with ``polar == math.pi/2`` applied to an `atan2`
+  result, so the last bit of the angle decides how many native gates the basis needs.
+  The fold-only and fold-first programs are the ones carrying such a `u3`: measured
+  here the fold-only column is 690 and 736 on the two straddled populations, CI
+  measured 600 for the first of them, and moving every angle of that same program by
+  one unit in the last place changes its count on at least 20 of the 60 circuits in
+  every non-empty population. That column is bounded below rather than pinned for
+  that reason. The shipped 1320 does not depend on the branch on either host measured,
+  but it is not immune to it either -- the with-pass program still carries a `u3` from
+  the fold on a wire the pair never touched, and its `pair_across_another_qubit` count
+  moves from 600 to 540 under the same one-ulp move. Every native column is therefore
+  recorded together with its one-ulp neighbourhood, so the branch is visible in the
+  payload instead of being left to whichever host ran the measurement.
 
 * **What it does not measure:** a gate-count parity claim against Qiskit. The shape
   table feeds both implementations the identical circuit and reports both counts.
@@ -105,7 +129,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -270,6 +296,73 @@ def _add_native_count(total: int | None, ir: CircuitIR) -> int | None:
         return None
     counted = _native_gate_count(ir)
     return None if counted is None else total + counted
+
+
+def _ulp_perturbed(ir: CircuitIR, direction: float) -> CircuitIR:
+    """``ir`` with every float parameter moved by one unit in the last place.
+
+    The native count is not a continuous function of the program. The one-qubit fold
+    leaves `u3` instructions whose polar angle is exactly ``pi/2`` in exact
+    arithmetic, and `one_qubit_synthesis._leaves` selects that gate's short spelling
+    by comparing the angle -- an `atan2` -- against ``math.pi/2`` with ``==``. The
+    last bit therefore decides how many native gates the declared basis needs, which
+    is why the fold-only column has measured 690 here and 600 on CI for the same
+    population. Perturbing the program's own angles by one ulp turns that decision
+    into something this module reports instead of leaving it to the host: a column
+    whose count moves is decided by the branch, and is bounded rather than pinned.
+
+    The perturbation is arithmetic on the caller's own values and contacts no host
+    library, so the *fact* that the count moves is reproducible even where the exact
+    counts are not.
+    """
+
+    moved = []
+    for instruction in ir.instructions:
+        params = dict(instruction.params)
+        for name, value in params.items():
+            if isinstance(value, float):
+                params[name] = math.nextafter(value, direction * math.inf)
+        moved.append(replace(instruction, params=params))
+    return CircuitIR(ir.n_wires, tuple(moved))
+
+
+def _is_branch_decided(count: int | None, above: int | None, below: int | None) -> bool:
+    """Whether ``count`` is decided by the ``pi/2`` branch rather than by the program.
+
+    True means the count moved when the same program's angles were moved one unit in
+    the last place, so the number is partly a property of the host's ``atan2`` and is
+    reported as a neighbourhood instead of being pinned. ``None`` -- a program the
+    declared basis cannot express -- is never branch-decided: the absence is a fact
+    about the basis, not about a rounded angle.
+    """
+
+    if count is None:
+        return False
+    return len({count, above, below}) > 1
+
+
+def _native_column_readings(
+    prefix: str,
+    count: int | None,
+    above: int | None,
+    below: int | None,
+) -> dict[str, Any]:
+    """One native column as the three readings and the flag they imply.
+
+    ``prefix`` is the payload column name (``without_pass``, ``with_pass`` or
+    ``fold_first``). Every native column is published this way so that a reader never
+    sees an integer without the neighbourhood it was decided in, and so that adding or
+    dropping a neighbourhood is one edit here rather than nine edits per row.
+    """
+
+    return {
+        f"native_gate_count_{prefix}": count,
+        f"native_gate_count_{prefix}_one_ulp_above": above,
+        f"native_gate_count_{prefix}_one_ulp_below": below,
+        f"native_gate_count_{prefix}_is_branch_decided": _is_branch_decided(
+            count, above, below
+        ),
+    }
 
 
 def _instruction(opcode: str, wires: tuple[int, ...], angle: float) -> Instruction:
@@ -726,11 +819,21 @@ def pipeline_delta() -> list[dict[str, Any]]:
     differ by 60 on two populations in opposite directions), and it is the native
     column that separates them: 1320 native gates shipped against more fold first
     (2026 where this was first measured), over the five populations a declared basis
-    can express. The fold-first figure is not portable -- the fold-only program still
-    carries a `u3` and the lowerer's elision test is an exact comparison against
-    ``pi/2`` -- so it is recorded and asserted only as a direction. That is why the
-    shipped order is the one in `pipeline._optimize_to_fixed_point`, and it is recorded
-    here so the choice is a measurement and not a preference.
+    can express. The fold-first figure is not portable, and the reason is a branch:
+    the fold leaves a `u3` whose polar angle is exactly ``pi/2`` in exact arithmetic
+    and `one_qubit_synthesis._leaves` picks its short spelling with ``==`` on an
+    `atan2` result. The fold-only and fold-first programs are the ones carrying that
+    `u3`; CI measured 600 where this host measures 690 for the same population, and
+    moving every angle of one of those programs by a unit in the last place changes
+    its count on at least 20 of 60 circuits in every non-empty population, so the
+    column is bounded rather than pinned. The shipped 1320 does not depend on the
+    branch on either host measured, but it is not immune to it either: the with-pass
+    program still carries a `u3` from the fold on a wire the pair never touched, and
+    its `pair_across_another_qubit` count moves 600 to 540 under the same move. Each
+    row therefore carries the one-ulp neighbourhood of all three of its native
+    columns alongside the counts themselves. That is why the shipped order is the one
+    in `pipeline._optimize_to_fixed_point`, and it is recorded here so the choice is a
+    measurement and not a preference.
     """
 
     seed = random.Random(_CIRCUIT_SEED)
@@ -770,6 +873,12 @@ def pipeline_delta() -> list[dict[str, Any]]:
         native_without_pass: int | None = 0
         native_with_pass: int | None = 0
         native_fold_first: int | None = 0
+        native_without_pass_above: int | None = 0
+        native_without_pass_below: int | None = 0
+        native_with_pass_above: int | None = 0
+        native_with_pass_below: int | None = 0
+        native_fold_first_above: int | None = 0
+        native_fold_first_below: int | None = 0
         changed = 0
         executed = 0
         worst = 0.0
@@ -789,6 +898,28 @@ def pipeline_delta() -> list[dict[str, Any]]:
             )
             native_with_pass = _add_native_count(native_with_pass, with_pass_ir)
             native_fold_first = _add_native_count(native_fold_first, fold_first_ir)
+            # The same three programs with every angle moved one unit in the last
+            # place, which is the neighbourhood the counts above are decided in. The
+            # pairs of totals are recorded side by side so a reader can see which
+            # column is a branch decision and which is a number.
+            native_without_pass_above = _add_native_count(
+                native_without_pass_above, _ulp_perturbed(without_pass_ir, +1.0)
+            )
+            native_without_pass_below = _add_native_count(
+                native_without_pass_below, _ulp_perturbed(without_pass_ir, -1.0)
+            )
+            native_with_pass_above = _add_native_count(
+                native_with_pass_above, _ulp_perturbed(with_pass_ir, +1.0)
+            )
+            native_with_pass_below = _add_native_count(
+                native_with_pass_below, _ulp_perturbed(with_pass_ir, -1.0)
+            )
+            native_fold_first_above = _add_native_count(
+                native_fold_first_above, _ulp_perturbed(fold_first_ir, +1.0)
+            )
+            native_fold_first_below = _add_native_count(
+                native_fold_first_below, _ulp_perturbed(fold_first_ir, -1.0)
+            )
             # The soundness check runs on every circuit and not only the changed
             # ones: a pass that removed nothing cannot be caught by comparing states.
             # It runs only where the program is gate-only, and the count of those is
@@ -815,9 +946,31 @@ def pipeline_delta() -> list[dict[str, Any]]:
                 "fold_first_instruction_count": fold_first,
                 "removed_by_declared_inverse_pass_fold_first": without_pass
                 - fold_first,
-                "native_gate_count_without_pass": native_without_pass,
-                "native_gate_count_with_pass": native_with_pass,
-                "native_gate_count_fold_first": native_fold_first,
+                # Each native column is published with the one-ulp neighbourhood it was
+                # decided in. ``_is_branch_decided`` records whether the count is a
+                # property of the pass or of the host's ``atan2``: a column whose three
+                # readings differ is decided by the branch in
+                # `one_qubit_synthesis._leaves`, so it is bounded rather than pinned, and
+                # the contract test asserts that the columns it pins are never the ones
+                # flagged here.
+                **_native_column_readings(
+                    "without_pass",
+                    native_without_pass,
+                    native_without_pass_above,
+                    native_without_pass_below,
+                ),
+                **_native_column_readings(
+                    "with_pass",
+                    native_with_pass,
+                    native_with_pass_above,
+                    native_with_pass_below,
+                ),
+                **_native_column_readings(
+                    "fold_first",
+                    native_fold_first,
+                    native_fold_first_above,
+                    native_fold_first_below,
+                ),
                 "changed_circuit_count": changed,
                 "executed_circuit_count": executed,
                 "max_state_difference": worst,
@@ -1140,6 +1293,12 @@ def _order_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
     skipped such a population would read as a smaller program rather than as a
     missing measurement. ``covered_population_count`` says how many were summed, so
     the total is never read as covering more than it does.
+
+    Each native total is accompanied by the same sum taken with every angle of the
+    program moved one unit in the last place in either direction. The shipped total
+    is the claim; the two neighbours are the neighbourhood it was decided in, and
+    they are what makes the order argument checkable on a host whose `atan2` lands on
+    the other side of the ``pi/2`` branch than this one did.
     """
 
     covered = [
@@ -1148,14 +1307,26 @@ def _order_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if row["native_gate_count_with_pass"] is not None
         and row["native_gate_count_fold_first"] is not None
     ]
+
+    def total(key: str) -> int:
+        return sum(row[key] for row in covered)
+
     return {
         "covered_population_count": len(covered),
         "population_count": len(rows),
-        "native_gate_count_with_pass": sum(
-            row["native_gate_count_with_pass"] for row in covered
+        "native_gate_count_with_pass": total("native_gate_count_with_pass"),
+        "native_gate_count_with_pass_one_ulp_above": total(
+            "native_gate_count_with_pass_one_ulp_above"
         ),
-        "native_gate_count_fold_first": sum(
-            row["native_gate_count_fold_first"] for row in covered
+        "native_gate_count_with_pass_one_ulp_below": total(
+            "native_gate_count_with_pass_one_ulp_below"
+        ),
+        "native_gate_count_fold_first": total("native_gate_count_fold_first"),
+        "native_gate_count_fold_first_one_ulp_above": total(
+            "native_gate_count_fold_first_one_ulp_above"
+        ),
+        "native_gate_count_fold_first_one_ulp_below": total(
+            "native_gate_count_fold_first_one_ulp_below"
         ),
         "instruction_count_with_pass": sum(
             row["with_pass_instruction_count"] for row in covered
@@ -1189,6 +1360,17 @@ def run_benchmark() -> dict[str, Any]:
         "pipeline_fidelity": pipeline_fidelity(),
         "pipeline_delta": delta,
         "pass_order_totals": _order_totals(delta),
+        # How many of the native columns are decided by the ``pi/2`` branch rather than
+        # by the program, so a reader of the payload can see how much of the native
+        # result rests on the last bit of an angle. Reported and not gated: a change
+        # that made the lowering insensitive to that bit would lower this number, and
+        # that would be an improvement rather than a regression.
+        "native_branch_decided_column_count": sum(
+            1
+            for row in delta
+            for column in ("without_pass", "with_pass")
+            if row[f"native_gate_count_{column}_is_branch_decided"]
+        ),
         "shape_table": shapes,
         "anchor_disagreement_count": len(disagreements),
         "anchor_agreement_count": (
@@ -1254,6 +1436,27 @@ def main() -> None:
         )
     print()
     print(
+        "the two native columns again with every float angle of the program moved "
+        "one unit in the last place. A column that moves here is decided by a branch "
+        "rather than by this pass, which is why the fold-only one is bounded and not "
+        "pinned:"
+    )
+    print(
+        f"{'population':32s} {'w/o -1ulp':>10s} {'w/o pass':>9s} {'w/o +1ulp':>10s} "
+        f"{'with -1ulp':>11s} {'with pass':>10s} {'with +1ulp':>11s}"
+    )
+    for row in payload["pipeline_delta"]:
+        print(
+            f"{row['label']:32s} "
+            f"{_native_column(row['native_gate_count_without_pass_one_ulp_below']):>10s} "
+            f"{_native_column(row['native_gate_count_without_pass']):>9s} "
+            f"{_native_column(row['native_gate_count_without_pass_one_ulp_above']):>10s} "
+            f"{_native_column(row['native_gate_count_with_pass_one_ulp_below']):>11s} "
+            f"{_native_column(row['native_gate_count_with_pass']):>10s} "
+            f"{_native_column(row['native_gate_count_with_pass_one_ulp_above']):>11s}"
+        )
+    print()
+    print(
         "the same populations with the one-qubit fold moved ahead of this pass. Both "
         "orders are the whole pipeline; the shipped one is measured against the "
         "fold-first one:"
@@ -1278,6 +1481,14 @@ def main() -> None:
         f"{totals['native_gate_count_fold_first']} fold first; compiler instructions "
         f"{totals['instruction_count_with_pass']} shipped vs "
         f"{totals['instruction_count_fold_first']} fold first"
+    )
+    print(
+        f"  the same two totals in the one-ulp neighbourhood: "
+        f"{totals['native_gate_count_with_pass_one_ulp_below']} vs "
+        f"{totals['native_gate_count_fold_first_one_ulp_below']} one ulp lower, "
+        f"{totals['native_gate_count_with_pass_one_ulp_above']} vs "
+        f"{totals['native_gate_count_fold_first_one_ulp_above']} one ulp higher. The "
+        f"shipped order is cheaper in all three."
     )
     shapes = payload["shape_table"]
     print()

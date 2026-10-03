@@ -84,14 +84,21 @@ _PIPELINE_SELF_INVERSE_GAP = ["i"]
 #: The two ``native_gate_count_without_pass`` keys are deliberately *absent* from the
 #: rows below. That column is not reproducible across hosts and pinning it as an
 #: integer would have recorded a property of the machine rather than of the pass:
-#: the fold-only program still carries a ``u3``, and `native_gate_legalization` elides
-#: its rotations by testing a synthesized polar angle against ``pi/2`` with ``==``.
-#: `_polar_angle` is an ``atan2``, so a ``u3`` whose theta is one unit in the last
-#: place from ``pi/2`` lowers to a different number of gates -- measured, the
-#: ``pair_across_another_qubit`` total moves from 690 to 720 under a one-ulp
-#: perturbation of the emitted angles, and CI measured 600 for the same population.
-#: ``_NATIVE_WITHOUT_PASS_CEILING`` and the direction assertions in
+#: the fold-only program still carries a ``u3``, and `one_qubit_synthesis._leaves`
+#: selects a ``u3``'s short spelling by testing its polar angle against ``pi/2`` with
+#: ``==``. `_polar_angle` is an ``atan2``, so a ``u3`` whose theta is one unit in the
+#: last place from ``pi/2`` lowers to a different number of gates. Measured here that
+#: column is 690 and 736 on the two straddled populations and CI measured 600 for the
+#: first of them. ``_NATIVE_WITHOUT_PASS_CEILING`` and the direction assertions in
 #: `test_the_native_column_is_attributable_to_this_pass` carry that claim instead.
+#:
+#: ``native_gate_count_with_pass`` is pinned here for the five populations whose count
+#: does not move under a one-ulp move of every emitted angle, and omitted for
+#: ``pair_across_another_qubit``, which does move: that row keeps a ``u3`` from the
+#: fold on a wire the pair never touched, and its count is 600 with the angles as
+#: emitted and 540 with each of them one ulp lower. The dedicated native-column test
+#: owns that row and asserts it as a direction plus a bound, so the omission here is a
+#: measurement and not a hole.
 _DELTA = {
     "adjacent_pair_members": {
         "circuit_count": 60,
@@ -115,7 +122,6 @@ _DELTA = {
         "removed_by_declared_inverse_pass": 0,
         "fold_first_instruction_count": 180,
         "removed_by_declared_inverse_pass_fold_first": 0,
-        "native_gate_count_with_pass": 600,
         "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
@@ -173,31 +179,42 @@ _DELTA = {
     },
 }
 
-#: The ``native_gate_count_with_pass`` column, which *is* pinnable. This pass leaves
-#: a program already spelled in the declared basis -- the two pulse-framed populations
-#: are written in it and the other rows are lowered *to* it -- so the lowerer emits
-#: one gate per source gate and classifies no angle. Measured stable under a one-ulp
-#: perturbation of every emitted angle, and equal on the two hosts it has run on.
-#: ``None`` is the barrier population, whose `measure` no declared basis expresses.
+#: The ``native_gate_count_with_pass`` column where it can honestly be pinned: these
+#: five counts do not move when every emitted angle is moved one unit in the last
+#: place in either direction, which the test below asserts rather than assumes. The
+#: reason is that this pass leaves a program already spelled in the declared basis --
+#: the two pulse-framed populations are written in it and the other rows are lowered
+#: *to* it -- so the lowerer emits one gate per source gate on these rows and has no
+#: synthesised angle left to classify. ``None`` is the barrier population, whose
+#: `measure` no declared basis expresses.
 _NATIVE_WITH_PASS = {
     "adjacent_pair_members": 0,
-    "pair_across_another_qubit": 600,
     "interleaved_pairs": 540,
     "pair_across_a_declared_barrier": None,
     "pair_behind_a_half_pi_pulse": 60,
     "pair_between_two_half_pi_pulses": 120,
 }
 
-#: A ceiling on the same column computed on the fold-only and fold-first programs. Each
-#: entry is the highest value measured under any angle perturbation tried (720 and 780
-#: on the two straddled populations, 360 and 240-to-300 on the pulse-framed ones),
-#: rounded up so that a third host crossing the same knife edge does not turn a
-#: portability difference into a red build. ``adjacent_pair_members`` is exact at zero
-#: because the program is empty in both columns, so no angle can move it.
+#: The one population whose with-pass count is decided by that exact comparison rather
+#: than by this pass, and is therefore bounded instead of pinned. The pass is cheaper
+#: on this row in every one of the three neighbourhoods measured -- 600 against 690 as
+#: emitted, 540 against 660 one ulp below, 600 against 630 one ulp above -- so the
+#: claim is the direction asserted in the test and this is only a gross-regression
+#: guard above the 600 measured here.
+_NATIVE_WITH_PASS_CEILING = {
+    "pair_across_another_qubit": 660,
+}
+
+#: A ceiling on the fold-only column, which is computed on the fold-only and fold-first
+#: programs. Each entry is the highest value measured here over the three neighbourhoods
+#: (690 on the first straddled population, 780 on the second, 360 and 240 on the
+#: pulse-framed ones), rounded up so that a third host crossing the same knife edge does
+#: not turn a portability difference into a red build. ``adjacent_pair_members`` is exact
+#: at zero because the program is empty in that column, so no angle can move it.
 #:
 #: A ceiling is only a gross-regression guard; it is not the claim. The claim is the
-#: *strict* inequality against ``_NATIVE_WITH_PASS`` asserted below, which a pass that
-#: stopped helping would fail by pushing this column down to the with-pass value.
+#: inequality against the with-pass column asserted below in every neighbourhood, which
+#: a pass that stopped helping would fail by pushing this column down to that value.
 _NATIVE_WITHOUT_PASS_CEILING = {
     "adjacent_pair_members": 0,
     "pair_across_another_qubit": 800,
@@ -207,39 +224,74 @@ _NATIVE_WITHOUT_PASS_CEILING = {
     "pair_between_two_half_pi_pulses": 340,
 }
 
-#: The populations where the pass is strictly cheaper in native gates even under the
-#: most hostile angle perturbation measured. ``pair_across_another_qubit`` and
-#: ``interleaved_pairs`` are cheaper on this host and were *equal* on CI, so they are
-#: bounded rather than named; these two are the pulse-framed rows, whose difference
-#: comes from a program written in the basis with no angle to classify.
+#: The populations where the pass is strictly cheaper in native gates under every angle
+#: perturbation measured. ``pair_across_another_qubit`` and ``interleaved_pairs`` are
+#: cheaper on this host and were *equal* on CI, so they are bounded rather than named;
+#: these two are the pulse-framed rows, whose difference comes from a program written in
+#: the basis with no angle to classify.
 _STRICTLY_CHEAPER = (
     "pair_behind_a_half_pi_pulse",
     "pair_between_two_half_pi_pulses",
 )
 
 #: The two pass orders summed over the populations the declared basis can express.
-#: The compiler-instruction totals are equal -- the two orders differ by 60 on two
-#: populations and in opposite directions -- and the native totals are not. The
-#: shipped-order total is pinned exactly at 1320; the fold-first total is bounded
-#: rather than pinned for the reason recorded above `_DELTA`, and the bound is not
-#: vacuous because the fold-first total is asserted strictly greater than the
-#: shipped one. The barrier population is outside both sums, and
-#: ``covered_population_count`` says so rather than letting the total read as a
-#: figure for all six.
+#: The compiler-instruction totals are pinned exactly and are equal -- the two orders
+#: differ by 60 on two populations and in opposite directions -- because an instruction
+#: count is decided by the two passes themselves and not by the lowering basis. The
+#: native totals are not pinned: the shipped total is 1320 as emitted and 1260 one ulp lower,
+#: and the fold-first total is 2026 as emitted, so neither is a property of the pass
+#: alone. What is asserted is the direction, in all three neighbourhoods, and that no
+#: neighbourhood is close: the gap is at least 194 native gates. The barrier population
+#: is outside both sums, and ``covered_population_count`` says so rather than letting the
+#: total read as a figure for all six.
 _ORDER_TOTALS = {
     "covered_population_count": 5,
     "population_count": 6,
-    "native_gate_count_with_pass": 1320,
     "instruction_count_with_pass": 540,
     "instruction_count_fold_first": 540,
 }
 
-#: A ceiling on the fold-first native total. It is a gross-regression guard and not a
-#: measurement: the claim the shipped order rests on is the strict inequality below
-#: it, and this only stops a change that made the fold-first program absurdly larger
-#: from passing. It sits above the 2100 measured under the most hostile perturbation
-#: tried, with margin for a third host.
-_NATIVE_FOLD_FIRST_CEILING = 2600
+#: A ceiling on both native totals across the two orders. It is a gross-regression guard
+#: and not a measurement: the claim the shipped order rests on is the strict inequality
+#: below it, and this only stops a change that made one of the two programs absurdly
+#: larger from passing. It sits above the 2040 measured under the most hostile
+#: perturbation tried, with margin for a third host.
+_NATIVE_ORDER_CEILING = 2600
+
+#: The three readings of every native column, in the order the payload records them:
+#: with every float angle one unit in the last place below, as the passes emitted it,
+#: and one unit above. They are named rather than indexed so a failure says which
+#: neighbour disagreed.
+_NEIGHBOURHOOD = ("one_ulp_below", "as_emitted", "one_ulp_above")
+
+#: The payload key suffix for each neighbourhood reading, paired with its position in
+#: ``_NEIGHBOURHOOD``. The as-emitted reading has no suffix because it is the count
+#: itself, which is what makes a missing perturbation visible instead of silent.
+_NEIGHBOURHOOD_KEYS = (
+    ("_one_ulp_below", 0),
+    ("", 1),
+    ("_one_ulp_above", 2),
+)
+
+
+def _native_readings(row: dict, column: str) -> tuple[int | None, ...]:
+    """The three neighbourhood readings of ``row``'s ``column`` native count.
+
+    ``column`` is ``without_pass``, ``with_pass`` or ``fold_first``. The middle reading
+    is the count the rest of the contract is written against; the other two are the
+    same count with every float parameter of the same program moved one unit in the
+    last place. Reading all three is what lets a pinned equality be checked against the
+    branch it was decided on rather than against one host's answer.
+    """
+
+    return tuple(
+        row[f"native_gate_count_{column}{suffix}"] for suffix, _ in _NEIGHBOURHOOD_KEYS
+    )
+
+
+#: The number of readings ``_native_readings`` returns, asserted rather than assumed so
+#: that dropping a neighbourhood from the payload fails here.
+_NEIGHBOURHOOD_LENGTH = len(_NEIGHBOURHOOD_KEYS)
 
 #: The pair/gap census. ``non_commuting_gap_removed_count`` is the correctness gate
 #: and ``declined_but_removable_count`` is the deferred reach; they are separate
@@ -461,44 +513,151 @@ def test_the_native_column_is_attributable_to_this_pass(payload: dict) -> None:
     fold reaches, and the native counts show it, because without the pass the fold
     leaves a `u3` that the declared basis has to expand.
 
-    Only the with-pass column is asserted as an equality. The other column is
-    asserted as a direction plus a ceiling, and the reason is measured rather than
-    assumed: the fold-only program still carries a `u3`, and the lowerer elides a
-    ``u3``'s rotations by comparing `_polar_angle`'s ``atan2`` result against ``pi/2``
-    with ``==``, so a one-ulp difference in an emitted angle changes the count --
-    ``pair_across_another_qubit`` moves between 690 and 720 on this host and CI
-    measured 600 for the same population. A count the declared basis cannot express
-    is reported as ``None`` and never as zero, and the pass must not make the native
-    program longer on any gate-only population.
+    Both columns are read three times: as the programs are emitted, and with every
+    float parameter moved one unit in the last place in either direction. That is not
+    decoration. The lowerer selects a ``u3``'s short spelling by comparing
+    `_polar_angle`'s ``atan2`` result against ``pi/2`` with ``==``, so a synthesized
+    angle one ulp from ``pi/2`` changes how many gates a program lowers to, and the
+    count is then partly a property of the host's ``atan2``. The neighbourhood makes
+    that visible per row instead of leaving it to whichever machine ran first: CI
+    measured 600 where this host measures 690 on the same population, and every
+    non-empty population here moves its fold-only count on at least 20 of its 60
+    circuits under that move.
+
+    The assertions are therefore split by what survives the move. A column whose three
+    readings agree is pinned exactly, and the agreement is asserted rather than
+    assumed, so a population that drifted onto the branch would fail here instead of
+    pinning a coin flip. A column whose readings differ is asserted as a direction
+    plus a ceiling: the pass must not lower to more native gates than the pipeline
+    without it in *any* of the three neighbourhoods, which is a stronger statement
+    than the pinned equality it replaces. A count the declared basis cannot express is
+    reported as ``None`` and never as zero.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
-    assert set(rows) == set(_NATIVE_WITH_PASS)
+    assert set(rows) == set(_NATIVE_WITH_PASS) | set(_NATIVE_WITH_PASS_CEILING)
+    assert set(_NATIVE_WITH_PASS) & set(_NATIVE_WITH_PASS_CEILING) == set()
+    assert set(rows) == set(_NATIVE_WITHOUT_PASS_CEILING)
     assert rows["pair_across_a_declared_barrier"]["native_gate_count_without_pass"] is (
         None
     )
     assert rows["pair_across_a_declared_barrier"]["native_gate_count_with_pass"] is None
     for label, row in rows.items():
-        without = row["native_gate_count_without_pass"]
-        with_pass = row["native_gate_count_with_pass"]
-        if without is None:
-            assert with_pass is None, label
+        readings = _native_readings(row, "with_pass")
+        assert len(readings) == _NEIGHBOURHOOD_LENGTH, label
+        if readings[0] is None:
+            # The basis cannot express this population at all, and that absence has to
+            # hold in the whole neighbourhood: a count appearing under a perturbation
+            # would mean the perturbation had changed which gates the program contains.
+            assert set(readings) == {None}, label
             assert row["executed_circuit_count"] == 0, label
+            assert _native_readings(row, "without_pass") == readings, label
             continue
-        assert with_pass is not None, label
         # A population that still has instructions cannot lower to zero gates, so a
         # zero beside a non-empty program would mean the column was skipped.
         if row["with_pass_instruction_count"]:
-            assert with_pass > 0, label
-        assert with_pass <= without, label
-        assert without <= _NATIVE_WITHOUT_PASS_CEILING[label], label
-        assert with_pass == _NATIVE_WITH_PASS[label], label
+            assert row["native_gate_count_with_pass"] > 0, label
+        for index, with_pass in enumerate(readings):
+            without = _native_readings(row, "without_pass")[index]
+            assert without is not None, label
+            # The claim the pass rests on, asserted in every neighbourhood: lowering
+            # the program this pass produced never costs more native gates than
+            # lowering the program the rest of the pipeline produced without it.
+            assert with_pass <= without, (label, _NEIGHBOURHOOD[index])
+        assert readings[0] <= _NATIVE_WITHOUT_PASS_CEILING[label], label
+        without_readings = _native_readings(row, "without_pass")
+        assert all(
+            value <= _NATIVE_WITHOUT_PASS_CEILING[label] for value in without_readings
+        ), label
+        assert readings[0] <= max(without_readings), label
+        if label in _NATIVE_WITH_PASS:
+            assert readings[0] == _NATIVE_WITH_PASS[label], label
+            # Pinned only where the pin is a property of the pass. The partition is
+            # asserted in this direction only: a pinned count that moves would be a pin
+            # on the host's ``atan2``, which is the failure this test exists to prevent,
+            # but a bounded count that stopped moving is a lowering that got better, and
+            # failing on that would hold the caveat in place instead of the behaviour.
+            assert set(readings) == {_NATIVE_WITH_PASS[label]}, (label, readings)
+            assert not row["native_gate_count_with_pass_is_branch_decided"], label
+        else:
+            assert readings[0] <= _NATIVE_WITH_PASS_CEILING[label], label
     # The pass is strictly cheaper where the difference does not depend on which side
     # of a floating-point knife edge a synthesized angle lands on.
     for label in _STRICTLY_CHEAPER:
         assert rows[label]["native_gate_count_with_pass"] < (
             rows[label]["native_gate_count_without_pass"]
         ), label
+    assert rows["adjacent_pair_members"]["native_gate_count_without_pass"] == 0
+
+
+def test_the_native_neighbourhood_is_recorded_for_every_native_column(
+    payload: dict,
+) -> None:
+    """The one-ulp readings are part of the payload, not an argument in a docstring.
+
+    A count that is decided by ``atan2`` landing on one side of ``pi/2`` cannot be
+    pinned, and the honest response is to publish the neighbourhood rather than to
+    pick whichever member this host happened to produce. This checks that the
+    neighbourhood is present for all three native columns of every population and for
+    both pass orders, that it is ordered (below, as emitted, above) rather than three
+    unlabelled numbers, and that the totals the order argument rests on are the sums of
+    exactly those readings.
+    """
+
+    rows = {row["label"]: row for row in payload["pipeline_delta"]}
+    for label, row in rows.items():
+        for column in ("without_pass", "with_pass", "fold_first"):
+            assert len(_native_readings(row, column)) == _NEIGHBOURHOOD_LENGTH, (
+                label,
+                column,
+            )
+        # The two orders are the same pipeline with the two passes swapped, so the
+        # fold-first program is the fold-only program and has to read the same in all
+        # three neighbourhoods. A difference here would mean the two mirrors this
+        # module drives against each other had drifted apart.
+        assert _native_readings(row, "fold_first") == _native_readings(
+            row, "without_pass"
+        ), label
+        # The flag the payload carries has to be the flag the readings imply, or the
+        # caveat stated to a reader of the JSON would be about a different column.
+        for column in ("without_pass", "with_pass"):
+            readings = _native_readings(row, column)
+            decided = row[f"native_gate_count_{column}_is_branch_decided"]
+            if readings[0] is None:
+                # Absence is a fact about the basis and not about a rounded angle, so
+                # it must hold across the whole neighbourhood and never be flagged as a
+                # branch decision.
+                assert set(readings) == {None}, (label, column)
+                assert decided is False, (label, column)
+            else:
+                assert all(value is not None for value in readings), (label, column)
+                assert decided == (len(set(readings)) > 1), (label, column)
+
+    totals = payload["pass_order_totals"]
+    covered = {
+        label
+        for label, row in rows.items()
+        if row["native_gate_count_with_pass"] is not None
+    }
+    assert totals["covered_population_count"] == len(covered)
+    for column in ("with_pass", "fold_first"):
+        for key, index in _NEIGHBOURHOOD_KEYS:
+            expected = sum(
+                _native_readings(rows[label], column)[index] for label in covered
+            )
+            assert totals[f"native_gate_count_{column}{key}"] == expected, (column, key)
+    # How much of the pipeline delta is decided by the branch is reported and not
+    # required: a change that made the lowering insensitive to the last bit would
+    # *reduce* this number, and a contract test that failed on that improvement would
+    # be pinning the caveat instead of the behaviour. What is required is only that the
+    # summary agrees with the rows, so the payload cannot say one thing and hold another.
+    decided = [
+        (label, column)
+        for label, row in rows.items()
+        for column in ("without_pass", "with_pass")
+        if row[f"native_gate_count_{column}_is_branch_decided"]
+    ]
+    assert payload["native_branch_decided_column_count"] == len(decided)
 
 
 def test_the_two_orders_of_the_two_passes_are_measured_and_named(
@@ -524,12 +683,20 @@ def test_the_two_orders_of_the_two_passes_are_measured_and_named(
     a measured choice; a future change that made fold-first cheaper would have to move
     these rows and say so.
 
+    The totals are where the order argument is actually decided, and they are asserted
+    in all three neighbourhoods rather than at the point this host happened to land on:
+    the shipped order is strictly cheaper as emitted, one ulp lower and one ulp higher,
+    and by more than a hundred native gates each time. Neither total is pinned as an
+    integer, because neither is a property of the pass -- the shipped 1320 becomes 1260
+    one ulp lower -- so what is pinned here is the direction, which is what the shipped
+    order actually rests on, plus a ceiling that only rejects a gross regression.
+
     The list of strictly-cheaper populations is asserted as a *subset* rather than as
     an equality, and the two hardest rows are the reason. Whether
     ``pair_across_another_qubit`` and ``interleaved_pairs`` come out strictly cheaper
-    depends on the same ``u3``-angle knife edge the with-pass column is immune to, so
-    they are cheaper on this host and were equal on CI. Requiring them by name would
-    make this test a portability check instead of a claim about the pass.
+    depends on the same ``u3``-angle branch, so they are cheaper on this host and were
+    equal on CI. Requiring them by name would make this test a portability check
+    instead of a claim about the pass.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
@@ -544,14 +711,15 @@ def test_the_two_orders_of_the_two_passes_are_measured_and_named(
         assert (
             row["fold_first_instruction_count"] == row["without_pass_instruction_count"]
         ), label
-        assert (
-            row["native_gate_count_fold_first"] == row["native_gate_count_without_pass"]
-        ), label
-        if row["native_gate_count_with_pass"] is None:
-            continue
-        assert (
-            row["native_gate_count_with_pass"] <= row["native_gate_count_fold_first"]
-        ), label
+        # The same direction in every neighbourhood, which is the assertion that does
+        # not depend on which side of the branch this host's ``atan2`` lands on.
+        with_pass = _native_readings(row, "with_pass")
+        fold_first = _native_readings(row, "fold_first")
+        for index, neighbourhood in enumerate(_NEIGHBOURHOOD):
+            if with_pass[index] is None:
+                assert fold_first[index] is None, (label, neighbourhood)
+                continue
+            assert with_pass[index] <= fold_first[index], (label, neighbourhood)
 
     cheaper = {
         label
@@ -564,16 +732,27 @@ def test_the_two_orders_of_the_two_passes_are_measured_and_named(
         rows["adjacent_pair_members"]["native_gate_count_with_pass"]
     )
     totals = payload["pass_order_totals"]
-    assert set(totals) == set(_ORDER_TOTALS) | {"native_gate_count_fold_first"}
+    expected_totals = set(_ORDER_TOTALS) | {
+        "native_gate_count_with_pass",
+        "native_gate_count_with_pass_one_ulp_above",
+        "native_gate_count_with_pass_one_ulp_below",
+        "native_gate_count_fold_first",
+        "native_gate_count_fold_first_one_ulp_above",
+        "native_gate_count_fold_first_one_ulp_below",
+    }
+    assert set(totals) == expected_totals
     for key, value in _ORDER_TOTALS.items():
         assert totals[key] == value, key
-    # The one total that is not portable is bounded, and the bound is not vacuous:
-    # the shipped order is asserted strictly cheaper in total, which is the claim the
-    # order rests on. A pass that stopped helping would equalise the two.
-    assert (
-        totals["native_gate_count_fold_first"] > totals["native_gate_count_with_pass"]
-    )
-    assert totals["native_gate_count_fold_first"] <= _NATIVE_FOLD_FIRST_CEILING
+    # The claim the order rests on, in each neighbourhood: the shipped order lowers to
+    # strictly fewer native gates than the fold-first order, and not by a hair. A pass
+    # that stopped helping would equalise the two totals in every neighbourhood.
+    for key, index in _NEIGHBOURHOOD_KEYS:
+        shipped = totals[f"native_gate_count_with_pass{key}"]
+        fold_first = totals[f"native_gate_count_fold_first{key}"]
+        assert shipped < fold_first, _NEIGHBOURHOOD[index]
+        assert fold_first - shipped > 100, _NEIGHBOURHOOD[index]
+        assert fold_first <= _NATIVE_ORDER_CEILING, _NEIGHBOURHOOD[index]
+        assert shipped <= _NATIVE_ORDER_CEILING, _NEIGHBOURHOOD[index]
     # The totals are not a claim about populations the basis cannot express.
     assert _ORDER_TOTALS["covered_population_count"] < _ORDER_TOTALS["population_count"]
 
