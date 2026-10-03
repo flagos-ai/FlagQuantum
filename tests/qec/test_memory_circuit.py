@@ -27,6 +27,8 @@ class _TwoQubitParityCode:
     num_ancilla_qubits = 1
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 1
+    num_x_stabilizers = 0
+    num_z_stabilizers = 1
     data_qubits = (0, 1)
     ancilla_qubits = (2,)
     checks = (
@@ -49,6 +51,8 @@ class _ThreeCheckParityCode:
     num_ancilla_qubits = 3
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 3
+    num_x_stabilizers = 0
+    num_z_stabilizers = 3
     data_qubits = (0, 1, 2)
     ancilla_qubits = (3, 4, 5)
     checks = (
@@ -315,6 +319,8 @@ class _ChecklessCode:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 0
+    num_x_stabilizers = 0
+    num_z_stabilizers = 0
     data_qubits = (0, 1, 2)
     ancilla_qubits = (3, 4)
     checks: tuple[CodeCheck, ...] = ()
@@ -337,6 +343,8 @@ class _RogueLogicalCode:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 2
+    num_x_stabilizers = 0
+    num_z_stabilizers = 2
     data_qubits = (0, 1, 2)
     ancilla_qubits = (3, 4)
     checks = RepetitionCode(3).checks

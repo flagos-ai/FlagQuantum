@@ -5,7 +5,10 @@ ancilla bands are a function of its checks rather than a second declaration
 beside them, which is the shape upstream's code record has: it carries
 ``get_num_ancilla_x_qubits`` and ``get_num_ancilla_z_qubits`` next to
 ``get_num_ancilla_qubits``, and a syndrome-extraction round is laid out against
-the split. The second is that a record can be reached by name, which is what
+the split. Beside those it carries ``get_num_x_stabilizers`` and
+``get_num_z_stabilizers``, and each code class it ships answers the same number
+to a stabilizer count as to the band count of that basis, so the two are one
+quantity here. The second is that a record can be reached by name, which is what
 upstream's ``get_code(name, options)`` and ``get_available_codes()`` do.
 """
 
@@ -186,6 +189,51 @@ def test_the_protocol_declares_the_per_basis_split() -> None:
         assert member in vars(StabilizerCode), f"{member} is not on the protocol"
 
 
+def test_the_protocol_declares_the_stabilizer_counts() -> None:
+    """The two further counts upstream's record declares are on the protocol.
+
+    ``code.h`` declares ``get_num_x_stabilizers`` and ``get_num_z_stabilizers``
+    as pure virtuals beside the three ancilla counts, so a caller reading
+    upstream's accessor list reads five counts. A member only the shipped
+    records carry would leave the next record free to omit it and be accepted.
+    """
+
+    for member in ("num_x_stabilizers", "num_z_stabilizers"):
+        assert member in vars(StabilizerCode), f"{member} is not on the protocol"
+
+
+@pytest.mark.parametrize(
+    ("record", "x_count", "z_count"),
+    [
+        (RepetitionCode(2), 0, 1),
+        (RepetitionCode(7), 0, 6),
+        (RotatedSurfaceCode(3), 4, 4),
+        (RotatedSurfaceCode(5), 12, 12),
+        (SteaneCode(), 3, 3),
+    ],
+)
+def test_each_shipped_record_answers_the_stabilizer_counts_from_its_checks(
+    record: StabilizerCode, x_count: int, z_count: int
+) -> None:
+    """The two stabilizer counts are the two bands rather than a second count.
+
+    One ancilla measures one stabilizer here exactly as it does in each of the
+    three code classes upstream ships, and every one of those answers the same
+    number to a stabilizer count as to the band count of that basis. The two are
+    therefore one quantity: the accessors read the bands, and the number of
+    checks of each basis, which is the definition upstream counts, agrees.
+    """
+
+    checks = tuple(record.checks)
+    assert (record.num_x_stabilizers, record.num_z_stabilizers) == (x_count, z_count)
+    assert (
+        sum(1 for check in checks if check.stabilizer.x_qubits),
+        sum(1 for check in checks if check.stabilizer.z_qubits),
+    ) == (x_count, z_count)
+    assert record.num_x_stabilizers == record.num_ancilla_x_qubits
+    assert record.num_z_stabilizers == record.num_ancilla_z_qubits
+
+
 # --- the registry ----------------------------------------------------------
 
 
@@ -199,6 +247,8 @@ class _Registered:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 2
+    num_x_stabilizers = 0
+    num_z_stabilizers = 2
     data_qubits = (0, 1, 2)
     ancilla_qubits = (3, 4)
     checks = RepetitionCode(3).checks
@@ -275,6 +325,8 @@ def test_a_record_with_no_fields_lists_the_empty_option_set() -> None:
         num_ancilla_qubits = 1
         num_ancilla_x_qubits = 0
         num_ancilla_z_qubits = 1
+        num_x_stabilizers = 0
+        num_z_stabilizers = 1
         data_qubits = (0, 1)
         ancilla_qubits = (2,)
         checks = _repetition_checks(2)
@@ -341,6 +393,8 @@ def test_registering_a_class_that_misses_protocol_members_names_them() -> None:
     assert "'_Partial' cannot be registered as '_partial'" in message
     assert "num_ancilla_x_qubits" in message
     assert "num_ancilla_z_qubits" in message
+    assert "num_x_stabilizers" in message
+    assert "num_z_stabilizers" in message
     assert "_partial" not in code_names()
 
 
@@ -382,6 +436,8 @@ def test_builder_rejects_a_record_whose_stated_bands_disagree_with_its_checks() 
         num_ancilla_qubits = 4
         num_ancilla_x_qubits = 1
         num_ancilla_z_qubits = 1
+        num_x_stabilizers = 1
+        num_z_stabilizers = 1
         data_qubits = (0, 1, 2, 3, 4)
         ancilla_qubits = (5, 6, 7, 8)
         checks = _repetition_checks(5)
