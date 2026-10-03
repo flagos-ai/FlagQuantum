@@ -651,6 +651,29 @@ def test_the_adjacent_gap_is_removed_for_every_pair_in_both_orders(
             assert row["gap_commutes_with_member"] is True, (opcode, gap)
 
 
+def test_the_mirrored_pass_list_is_still_the_shipped_pipeline(payload: dict) -> None:
+    """The baselines mirror the real pipeline, so the mirror is checked as well.
+
+    Both comparison pipelines in the benchmark mirror
+    `pipeline._optimize_to_fixed_point` rather than calling it, because a variant of
+    that pipeline cannot be requested from it. A mirror drifts, and the failure mode
+    is silent in the direction that matters: a pass added to the real pipeline and not
+    to the mirror makes the baselines weaker, and this pass is then credited with
+    removals the new pass performs. So the mirror is driven too -- over the same seeded
+    populations the delta uses, plus a reset program, so that the pass this branch's
+    merge added is covered -- and required to agree program for program.
+
+    The count is pinned rather than only the agreement, because a check that compared
+    an empty list of programs would agree with everything.
+    """
+
+    fidelity = payload["pipeline_fidelity"]
+    assert fidelity["mismatch_count"] == 0
+    assert fidelity["mismatch_indices"] == []
+    assert fidelity["checked_program_count"] == 15
+    assert fidelity["mirrored_pass_count"] == 7
+
+
 def test_the_qiskit_anchor_compares_only_what_both_passes_attempt(
     payload: dict,
 ) -> None:
