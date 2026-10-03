@@ -1139,6 +1139,19 @@ def _expectation_pauli_string(
     """Evaluate one X/Y/Z product observable for a local statevector circuit."""
 
     current_state = state(circuit)
+    operators = tuple(
+        (wire, axis) for axis, wires in (("X", x), ("Y", y), ("Z", z)) for wire in wires
+    )
+    from .pauli_expectation_dispatch import (
+        _try_apply_cataloged_statevector_pauli_expectation,
+    )
+
+    dispatched = _try_apply_cataloged_statevector_pauli_expectation(
+        current_state,
+        operators,
+    )
+    if dispatched is not None:
+        return dispatched
     transformed = current_state
     for operator, wires in ((X_MATRIX, x), (Y_MATRIX, y), (Z_MATRIX, z)):
         matrix = operator.to(
