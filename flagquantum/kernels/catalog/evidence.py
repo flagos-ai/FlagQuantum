@@ -236,6 +236,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-MEAS-001-A",
+        "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_matches_reference",
+        gradient_tests=(
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_gradient_matches_reference",
+        ),
+        capability_tests=(
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cpu_fallback_preserves_gradient",
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_unsupported_cuda_input_uses_fallback",
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_validates_input",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-NUM-001-A",
         "tests/unit/test_triton_complex_bmm.py::test_fused_complex_bmm_forward_and_backward_match_torch",
         gradient_tests=(

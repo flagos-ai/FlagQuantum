@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 23 semantics,
-25 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 24 semantics,
+26 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -88,6 +88,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
+| FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -566,9 +567,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 30 implementations are implemented. MPS-003
+The current 24 semantics and 31 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 25 implementations remain experimental. The rest of the
+promotions; the other 26 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
