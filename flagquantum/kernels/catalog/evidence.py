@@ -277,6 +277,7 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cpu_fallback_preserves_gradient",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_unsupported_cuda_input_uses_fallback",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_wide_selection_uses_fallback",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_small_workload_uses_fallback",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_launches_flat_grids",
             "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_validates_input",
         ),

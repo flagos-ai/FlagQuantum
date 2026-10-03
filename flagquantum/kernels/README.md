@@ -266,8 +266,10 @@ a batched flat statevector without materializing the full probability tensor.
 Wire zero addresses the most-significant statevector bit, and output bits retain
 the exact order requested by the caller. The direct Triton path accepts
 contiguous CUDA `complex64` statevectors with at most 30 wires and selections of
-at most eight wires; other valid inputs retain an exact differentiable PyTorch
-fallback. It is experimental and is not selected by default runtime dispatch.
+at most eight wires. The measured Triton window requires at least `2**16`
+amplitudes per statevector and `2**20` amplitudes across the batch; other valid
+inputs retain an exact differentiable PyTorch fallback. It is experimental and
+is not selected by default runtime dispatch.
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog

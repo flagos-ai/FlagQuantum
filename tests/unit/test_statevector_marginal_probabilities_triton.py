@@ -60,9 +60,8 @@ def test_statevector_marginal_probabilities_preserve_requested_wire_order() -> N
 @pytest.mark.parametrize(
     ("shape", "wires"),
     (
-        ((1, 8), ()),
-        ((3, 256), (7, 0)),
-        ((4, 1 << 16), (1, 8, 15)),
+        ((16, 1 << 16), (1, 8, 15)),
+        ((4, 1 << 18), (17, 0, 11, 4)),
         ((2, 1 << 20), (19, 0, 11, 4)),
     ),
 )
@@ -82,8 +81,8 @@ def test_statevector_marginal_probabilities_cuda_matches_reference(
 @pytest.mark.parametrize(
     ("shape", "wires"),
     (
-        ((2, 256), (0, 7)),
-        ((4, 1 << 16), (12, 2, 7)),
+        ((16, 1 << 16), (12, 2, 7)),
+        ((4, 1 << 18), (17, 0, 11, 4)),
         ((2, 1 << 20), (19, 0, 11, 4)),
     ),
 )
@@ -134,7 +133,6 @@ def test_statevector_marginal_probabilities_unsupported_cuda_input_uses_fallback
         "_launch_marginal_forward",
         unexpected_launch,
     )
-
     torch.testing.assert_close(
         statevector_marginal_probabilities(state, wires),
         _reference(state, wires),
@@ -163,6 +161,27 @@ def test_statevector_marginal_probabilities_wide_selection_uses_fallback(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_statevector_marginal_probabilities_small_workload_uses_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = torch.randn(8, 1 << 16, device="cuda", dtype=torch.complex64)
+    qubits = (15, 0, 7)
+
+    def unexpected_launch(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("small workloads must retain the measured reference path")
+
+    monkeypatch.setattr(
+        statevector_measurement,
+        "_launch_marginal_forward",
+        unexpected_launch,
+    )
+    torch.testing.assert_close(
+        statevector_marginal_probabilities(state, qubits),
+        _reference(state, qubits),
+    )
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 def test_statevector_marginal_probabilities_launches_flat_grids(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -182,29 +201,24 @@ def test_statevector_marginal_probabilities_launches_flat_grids(
 
     monkeypatch.setattr(
         statevector_measurement,
-        "_statevector_marginal_probability_small_kernel",
-        FakeKernel("forward"),
-    )
-    monkeypatch.setattr(
-        statevector_measurement,
         "_statevector_marginal_probability_partial_kernel",
-        FakeKernel("partial"),
+        FakeKernel("forward"),
     )
     monkeypatch.setattr(
         statevector_measurement,
         "_statevector_marginal_probability_backward_kernel",
         FakeKernel("backward"),
     )
-    state = torch.zeros(2, 2048, device="cuda", dtype=torch.complex64)
+    state = torch.zeros(16, 1 << 16, device="cuda", dtype=torch.complex64)
     statevector_measurement._launch_marginal_forward(state, 194, 194, 2)
     statevector_measurement._launch_marginal_backward(
         state,
-        torch.ones(2, 4, device="cuda"),
+        torch.ones(16, 4, device="cuda"),
         194,
         2,
     )
 
-    assert observed == {"forward": (2,), "backward": (16,)}
+    assert observed == {"forward": (1024,), "backward": (4096,)}
 
 
 @pytest.mark.parametrize(

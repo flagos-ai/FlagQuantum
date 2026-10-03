@@ -120,33 +120,6 @@ def _statevector_marginal_probability_partial_kernel(
 
 
 @jit
-def _statevector_marginal_probability_small_kernel(
-    state_parts: tl.tensor,
-    marginal: tl.tensor,
-    amplitude_count: tl.tensor,
-    ordered_positions_packed: tl.tensor,
-    selected_count: tl.constexpr,
-    outcome_count: tl.constexpr,
-    block_size: tl.constexpr,
-) -> None:
-    batch = tl.program_id(0)
-    basis = tl.arange(0, block_size)
-    valid = basis < amplitude_count
-    offsets = batch.to(tl.int64) * amplitude_count + basis
-    real = tl.load(state_parts + 2 * offsets, mask=valid, other=0.0)
-    imag = tl.load(state_parts + 2 * offsets + 1, mask=valid, other=0.0)
-    probabilities = real * real + imag * imag
-    projected = tl.zeros((block_size,), dtype=tl.int32)
-    for slot in range(selected_count):
-        position = (ordered_positions_packed >> (5 * slot)) & 31
-        outcome_bit = (basis >> position) & 1
-        projected = projected | (outcome_bit << (selected_count - slot - 1))
-    for outcome in range(outcome_count):
-        value = tl.sum(tl.where(projected == outcome, probabilities, 0.0), axis=0)
-        tl.store(marginal + batch * outcome_count + outcome, value)
-
-
-@jit
 def _statevector_marginal_probability_backward_kernel(
     state_parts: tl.tensor,
     marginal_gradient: tl.tensor,
@@ -378,7 +351,13 @@ def _marginal_supported(
     n_qubits: int,
     selected_count: int,
 ) -> bool:
-    return _supported(state) and n_qubits <= 30 and selected_count <= 8
+    return bool(
+        _supported(state)
+        and n_qubits <= 30
+        and selected_count <= 8
+        and int(state.shape[1]) >= 1 << 16
+        and state.numel() >= 1 << 20
+    )
 
 
 def _normalize_pauli_product(
@@ -515,25 +494,6 @@ def _launch_marginal_forward(
     batch, amplitude_count = (int(value) for value in state.shape)
     outcome_count = 1 << selected_count
     complement_count = amplitude_count // outcome_count
-    if amplitude_count <= 4096 and outcome_count <= 16:
-        marginal = torch.empty(
-            (batch, outcome_count),
-            device=state.device,
-            dtype=torch.float32,
-        )
-        block_size = 1 << (amplitude_count - 1).bit_length()
-        _statevector_marginal_probability_small_kernel[(batch,)](
-            torch.view_as_real(state),
-            marginal,
-            amplitude_count,
-            ordered_positions_packed,
-            selected_count=selected_count,
-            outcome_count=outcome_count,
-            block_size=block_size,
-            num_warps=4,
-            num_stages=2,
-        )
-        return marginal
     block_size = 1024
     chunk_count = triton.cdiv(complement_count, block_size)
     partials = torch.empty(
