@@ -1562,6 +1562,24 @@ limitations = "The ansatz half of a chemistry workload and not the integrals hal
 focused_tests = "tests/unit/test_algorithms_chemistry.py"
 development_artifact = "flagquantum/algorithms/README.md"
 
+[capabilities.compiler_qir_emission]
+title = "QIR base-profile emission"
+summary = "Emit canonical FlagQuantum IR as QIR base-profile LLVM IR text: the entry point, the QIS calls for the lowered program, and the runtime calls that record the output."
+category = "build_and_compile"
+user_goals = ["Hand a program to a QIR-consuming toolchain", "Check the LLVM IR a program lowers to", "Get the same text through translate or through the emission profile"]
+public_apis = ["flagquantum.compiler.qir", "flagquantum.compiler.qir.emit_qir", "flagquantum.compiler.qir.ENTRY_POINT_NAME", "flagquantum.compiler.qir.OUTPUT_LABELING_SCHEMA", "flagquantum.compiler.translate"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/compiler/README.md"
+documentation = "flagquantum/compiler/README.md"
+level = "development_evidence"
+owner = "compiler maintainers"
+limitations = "Text emission of one program on CPU, and nothing more: no LLVM compilation to an object file or an executable, no linking, no execution, and no external QIR validator was run, so conformance is the repository's own semantic check plus a host C parser accepting the text as LLVM IR syntax. The base profile is the whole of it. Profile-QIR and the adaptive profile are absent, and because both dynamic-management module flags are false, so are __quantum__rt__qubit_allocate_array and __quantum__rt__qubit_release_array and every read_result call; a program therefore cannot allocate a qubit at runtime through this emitter, which is the same gap the runtime qubit allocation row records on the IR side. Pulse-level generation and runtime library extension calls are absent. Only the constant-index pointer kind is emitted: a qubit or result operand is ptr null for index 0 and ptr inttoptr (i64 k to ptr) otherwise. An opcode with no QIS instruction is lowered to a native sequence whose unitary equals the requested gate up to an unconditional global phase, which the base profile cannot express and recorded measurement output cannot observe, so the emitted program is equivalent for every measurable outcome and conformance is checked with a global-phase-invariant overlap rather than elementwise; a gate whose semantics the base profile cannot carry at all is refused by index and opcode rather than approximated. A noise channel, a classical condition, a dynamic instruction, a reset, an arbitrary matrix gate, and an observable request are among what it refuses."
+focused_tests = "tests/hybrid_compiler/test_qir_emission.py"
+development_artifact = "flagquantum/compiler/README.md"
+
 [capabilities.compiler_resource_estimation]
 title = "Static resource estimation over a program's instruction sequence"
 summary = "Report the operations, the schedule depth, the per-wire depth, the T family, and the widest operation of a static program by running the compiler's own scheduler over its instruction sequence."

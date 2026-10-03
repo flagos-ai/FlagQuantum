@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 50 |
-| `unsupported` | 35 |
+| `partial` | 51 |
+| `unsupported` | 34 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -122,6 +122,28 @@ commuting frontier without its author writing the commutation proof. FlagQuantum
 has one consumer hard-coded against the analysis. Recording that as the gap, rather
 than reading the reduction as the pass, is the whole content of this move.
 
+`qir_code_generation` moved from `unsupported` to `partial` in the same wave on the
+same evidence: its reason said FlagQuantum emits OpenQASM and QCIS text only, and
+that was false. [qir.py](../../flagquantum/compiler/qir.py) emits QIR base-profile
+LLVM IR -- the entry point with its `entry_point` attribute, the `__quantum__qis__*`
+calls for the lowered program, the measurement and output-recording runtime calls,
+and the module flags that declare the QIR version and the two dynamic-management
+settings -- and
+[translate.py](../../flagquantum/compiler/translate.py) exposes it as `"qir-2.0"`,
+one of four `TRANSLATION_FORMATS`, so the surface is public and not a private
+helper. QIR is vendor-neutral, which makes this the most valuable row of its class
+to have been closed, and the two vendor-neutral rows it moved ahead of --
+`cpp_kernel_frontend` and `mlir_dialect_stack` -- remain the expensive ones because
+they are toolchain work rather than text emission. The row stays `partial` for the
+half that is absent and it is the half the row is named for: CUDA-Q generates
+*Profile-QIR*, and with both dynamic-management flags `false` this emitter cannot
+express `__quantum__rt__qubit_allocate_array`, `qubit_release_array`, or
+`read_result` at all, so no program it emits allocates a qubit at runtime. The
+adaptive profile, pulse-level generation, and runtime library extension calls are
+absent too, and this is text rather than an object file: no LLVM compilation was
+run and no external QIR validator saw the output, so conformance is the repository's
+own semantic check plus a host C parser accepting the text as LLVM IR syntax.
+
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
 `docs/roadmap/CAPABILITY_MATURITY.md` explains them; a parity row cites a registry
@@ -164,11 +186,11 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 7 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 6 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by integration rather than by
 research: a C++ front end and an MLIR dialect stack, Clifford+T and angle
-synthesis, QIR code generation, a chemistry domain library, a QEC dialect, and
-the arithmetic constructions a logical layer needs. That is the cheapest
+synthesis, a chemistry domain library, a QEC dialect, and the arithmetic
+constructions a logical layer needs. That is the cheapest
 capability per unit of effort available to the
 programme, and § 5 governs it. The first of the family moved off `unsupported`
 without new research, which is the shape the remaining rows are expected to
@@ -357,7 +379,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 35 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 34 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

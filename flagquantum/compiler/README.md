@@ -45,6 +45,7 @@ Use `optimize(program)` for target-independent optimization and
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
 | Static resource estimation | [resource_estimation.py](resource_estimation.py) |
+| QIR base-profile emission | [qir.py](qir.py) |
 
 ## Cost a static program
 
@@ -67,6 +68,35 @@ the depth on a rotated surface code.
 
 ```bash
 pytest tests/unit/test_resource_estimation.py
+```
+
+## Emit QIR
+
+`qir.py` writes one program as QIR base-profile LLVM IR text: the
+`FlagQuantumEntryPoint` definition with its `entry_point` attribute, the
+`__quantum__qis__*` calls for the lowered program, a `__quantum__qis__mz__body`
+per measured wire, the `__quantum__rt__tuple_record_output` and
+`__quantum__rt__result_record_output` calls that record the output, the
+declarations those calls need, and the module flags that declare the QIR version
+and the two dynamic-management settings. `translate(program, format="qir-2.0")`
+reaches the same text, so a consumer can be pointed at either entry point. QIR is
+an open specification, so nothing here depends on a vendor component.
+
+What it does not do is the half its name does not cover. Both dynamic-management
+flags are `false`, so no `__quantum__rt__qubit_allocate_array`,
+`qubit_release_array`, or `read_result` call is emitted and a program cannot
+allocate a qubit at runtime through this path. Profile-QIR, the adaptive
+profile, pulse-level generation, and runtime library extension calls are absent.
+Only the constant-index pointer kind is emitted, and this is text rather than an
+object file: no LLVM compilation runs, so conformance is the repository's own
+semantic check plus a host C parser accepting the text as LLVM IR syntax. An
+opcode with no QIS instruction is lowered to a native sequence equal to the
+requested gate up to an unconditional global phase, which recorded measurement
+output cannot observe; a gate the base profile cannot carry is refused by index
+and opcode rather than approximated.
+
+```bash
+pytest tests/hybrid_compiler/test_qir_emission.py
 ```
 
 ## Save and load OpenQASM

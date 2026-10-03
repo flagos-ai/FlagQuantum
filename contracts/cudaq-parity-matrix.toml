@@ -346,11 +346,12 @@ evidence = ["flagquantum/core/ir.py", "flagquantum/core/operator_schema.py", "fl
 [[domains.capabilities]]
 id = "qir_code_generation"
 cudaq = "QIR and Profile-QIR code generation to LLVM"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
-reason = "FlagQuantum emits OpenQASM and QCIS text only. QIR is an open specification with no NVIDIA dependency, so this is the highest-value compiler gap after the internal levels."
-evidence = ["flagquantum/compiler"]
+maturity_ref = "compiler_qir_emission"
+reason = "The earlier reason on this row was wrong and is replaced by measurement: FlagQuantum does not emit OpenQASM and QCIS text only. `flagquantum/compiler/qir.py` emits QIR base-profile LLVM IR -- a `FlagQuantumEntryPoint` definition carrying the `entry_point` attribute, `__quantum__qis__*` calls for the lowered program, `__quantum__qis__mz__body` for each measured wire, `__quantum__rt__tuple_record_output` and `__quantum__rt__result_record_output` for the output, the declarations those calls need, and the `qir_major_version`/`qir_minor_version`/`dynamic_qubit_management`/`dynamic_result_management` module flags -- and it is reachable from the public compiler surface, since `translate(program, format=\"qir-2.0\")` is one of the four `TRANSLATION_FORMATS` and `target_emission` carries a `qir-2.0` profile whose emitter is this function. QIR is vendor-neutral, so the whole path is software this programme can own. The reason the row is `partial` rather than `supported` is the half of CUDA-Q's row that is absent: CUDA-Q generates *Profile-QIR*, and this emitter is the base profile only. The adaptive profile is absent, and with both dynamic-management module flags `false` so are `__quantum__rt__qubit_allocate_array`, `__quantum__rt__qubit_release_array`, and every `read_result` call, which is the same gap the runtime qubit allocation row records from the IR side. Pulse-level generation and runtime library extension calls are absent, only the constant-index pointer kind is emitted, and there is no LLVM compilation to an object file or an executable: this is text, and no external QIR validator was run against it, so conformance is the repository's own semantic check plus a host C parser accepting the text as LLVM IR syntax. An opcode with no QIS instruction is lowered to a native sequence equal to the requested gate up to an unconditional global phase the base profile cannot express, and a gate the profile cannot carry is refused by index and opcode rather than approximated."
+evidence = ["flagquantum/compiler/qir.py", "flagquantum/compiler/target_emission.py", "flagquantum/compiler/translate.py", "flagquantum/compiler/operator_lowering.py", "tests/hybrid_compiler/test_qir_emission.py", "search:no adaptive profile, no Profile-QIR, no runtime qubit allocation or release call, no read_result, no pulse-level generation, and no LLVM compilation to an object file"]
 
 [[domains.capabilities]]
 id = "target_text_emitters"
