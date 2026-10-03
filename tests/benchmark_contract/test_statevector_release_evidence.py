@@ -33,6 +33,9 @@ from benchmarks.statevector_release_evidence import (
     _production_fields,
     _role_speed_summary,
 )
+from benchmarks.statevector_release_evidence import (
+    main as release_payload_main,
+)
 from flagquantum.runtime.audit.release_policy import validate_distributed_claim_evidence
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
@@ -705,3 +708,68 @@ def test_the_frozen_capacity_workload_rejects_an_edited_gate_list():
 
     with pytest.raises(SystemExit, match="unsupported frozen gate list"):
         _capacity_circuit(manifest, torch.device("cpu"))
+
+
+def test_the_sealer_input_is_projected_out_of_the_document_not_retyped(tmp_path):
+    """The sealed evidence is the release contract the role assembled.
+
+    A role writes a measurements document that states the contract under
+    ``measurements`` beside the per-rank records it came from, while the sealer
+    reads its evidence at the top level. The projection between the two is code
+    here so that what gets sealed can be rebuilt from the document it came from
+    and is never assembled by hand at a shell.
+    """
+
+    document = {
+        "schema": "flagquantum.statevector_release_measurements.v1",
+        "role": "capacity-completion",
+        "rank": 0,
+        "world_size": 8,
+        "local_world_size": 4,
+        "node_count": 2,
+        "measurements": _capacity_completion(8, 4),
+        "ranks": _records(8),
+    }
+    source = tmp_path / "document.json"
+    source.write_text(json.dumps(document), encoding="utf-8")
+    target = tmp_path / "payload.json"
+
+    assert (
+        release_payload_main(
+            [
+                "--role",
+                "release-payload",
+                "--document",
+                str(source),
+                "--measurements",
+                str(target),
+            ]
+        )
+        == 0
+    )
+
+    projected = json.loads(target.read_text(encoding="utf-8"))
+    assert projected == document["measurements"]
+    assert "ranks" not in projected
+    assert projected["world_size"] == 8
+
+
+def test_a_document_without_a_measurements_block_has_nothing_to_seal(tmp_path):
+    """An envelope with no contract under it must fail rather than seal empty."""
+
+    source = tmp_path / "document.json"
+    source.write_text(json.dumps({"role": "speed", "world_size": 8}), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="carries no measurements block"):
+        release_payload_main(
+            [
+                "--role",
+                "release-payload",
+                "--document",
+                str(source),
+                "--measurements",
+                str(tmp_path / "payload.json"),
+            ]
+        )
+
+    assert not (tmp_path / "payload.json").exists()

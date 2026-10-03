@@ -32,6 +32,12 @@ Roles divide by what is measured rather than by which host runs them:
     the release manifest freezes. This role runs no circuit; it is arithmetic
     over two already-measured documents, kept here so the ratio is computed by
     reviewed code rather than by hand.
+``release-payload``
+    Project a measurements document onto the release contract its ``measurements``
+    key carries. The sealer's evidence input is that contract, not the document
+    that wraps it, so the projection is a role rather than a shell step: what
+    gets sealed is then produced by reviewed code and can be rebuilt from the
+    document it came from.
 """
 
 from __future__ import annotations
@@ -47,7 +53,7 @@ import statistics
 import subprocess
 import sys
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -64,6 +70,7 @@ ROLES = (
     "capacity-completion",
     "speed",
     "speed-summary",
+    "release-payload",
 )
 BOOTSTRAP_RESAMPLES = 2000
 BOOTSTRAP_SEED = 440044
@@ -1006,7 +1013,33 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
     return 0
 
 
-def main() -> int:
+def _role_release_payload(args: argparse.Namespace) -> int:
+    """Project one measurements document onto the contract the sealer reads.
+
+    A role document states the release contract under ``measurements`` beside
+    the per-rank records it was assembled from. ``tools/seal_runtime_evidence.py``
+    takes its evidence input at the top level, so something has to lift the
+    contract out; doing it here keeps the projection reviewable and repeatable
+    instead of leaving it to whoever runs the campaign.
+    """
+
+    if args.document is None:
+        raise SystemExit("release-payload requires --document")
+    document = json.loads(Path(args.document).read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise SystemExit(f"{args.document} is not a measurements document")
+    payload = document.get("measurements")
+    if not isinstance(payload, dict):
+        raise SystemExit(
+            f"{args.document} carries no measurements block to project; a "
+            "release payload is the contract a role assembled, so a document "
+            "without one has nothing to seal"
+        )
+    _write(args, payload)
+    return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--role", choices=ROLES, required=True)
     parser.add_argument("--workload-manifest", type=Path)
@@ -1023,17 +1056,28 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--sharded", type=Path)
-    args = parser.parse_args()
+    parser.add_argument(
+        "--document",
+        type=Path,
+        help="measurements document to project with the release-payload role",
+    )
+    args = parser.parse_args(argv)
 
     handlers = {
         "capacity-failure": _role_capacity_failure,
         "capacity-completion": _role_capacity_completion,
         "speed": _role_speed,
         "speed-summary": _role_speed_summary,
+        "release-payload": _role_release_payload,
     }
     if args.role == "speed-summary":
         if args.baseline is None or args.sharded is None:
             parser.error("speed-summary requires --baseline and --sharded")
+    elif args.role == "release-payload":
+        if args.document is None:
+            parser.error("release-payload requires --document")
+        if args.measurements is None:
+            parser.error("release-payload requires --measurements")
     else:
         if args.workload_manifest is None:
             parser.error(f"{args.role} requires --workload-manifest")
