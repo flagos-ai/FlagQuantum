@@ -14,6 +14,7 @@ from .operations import _environment_flag, _gate_parameter_tensor
 from .program import (
     _direct_batch_assembly_beneficial,
     _preallocated_batch_assembly_beneficial,
+    _StatevectorControlledPhaseGraphStep,
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
     _StatevectorCZGraphStep,
@@ -32,9 +33,9 @@ if TYPE_CHECKING:
 _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES = 64 * 1024 * 1024
 
 # The 18-wire/batch-32 complex128 memory corpus measured 32 MiB windows as a
-# lower-RSS win for preallocated CX-sequence and cross-wire-diagonal programs.
-# Graph-heavy QFT and direct-assembly programs retain the general budget because
-# smaller windows regressed their end-to-end timing in the same A/B screen.
+# lower-RSS win for preallocated CX-sequence, cross-wire-diagonal, and
+# controlled-phase-graph programs. Direct-assembly programs retain the general
+# budget because smaller windows regressed their end-to-end timing.
 _CPU_STATEVECTOR_BATCH_REDUCED_CHUNK_BUDGET_BYTES = 32 * 1024 * 1024
 
 
@@ -90,6 +91,7 @@ def _cpu_statevector_batch_budget_for_program(
             step,
             (
                 _StatevectorCXSequenceStep,
+                _StatevectorControlledPhaseGraphStep,
                 _StatevectorCrossWireDiagonalStep,
                 _StatevectorCZGraphStep,
             ),
