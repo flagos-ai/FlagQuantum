@@ -147,7 +147,7 @@ def _cz_graph_signs(
 ) -> tuple[torch.Tensor, tuple[int, ...]]:
     """Return cached compact signs for one compiled CZ graph."""
 
-    key = (id(step), str(device), torch.int8, circuit.n_wires)
+    key = (id(step), str(device), torch.int8, circuit.n_qubits)
     cached = circuit._statevector_fused_matrices.get(key)
     graph_wires = tuple(sorted({wire for edge in step.edges for wire in edge}))
     if cached is None:
@@ -193,12 +193,12 @@ def _cx_sequence_masks(
     cached = circuit._statevector_cx_masks.get(key)
     if cached is None:
         controls = torch.tensor(
-            [1 << (circuit.n_wires - 1 - wire) for wire in step.controls],
+            [1 << (circuit.n_qubits - 1 - wire) for wire in step.controls],
             dtype=torch.int64,
             device=device,
         )
         targets = torch.tensor(
-            [1 << (circuit.n_wires - 1 - wire) for wire in step.targets],
+            [1 << (circuit.n_qubits - 1 - wire) for wire in step.targets],
             dtype=torch.int64,
             device=device,
         )
@@ -268,7 +268,7 @@ def _controlled_phase_graph_factors(
 ) -> tuple[torch.Tensor, tuple[int, ...]]:
     """Return cached factors for one compiled static controlled-phase graph."""
 
-    key = (id(step), str(state.device), state.dtype, circuit.n_wires)
+    key = (id(step), str(state.device), state.dtype, circuit.n_qubits)
     cached = circuit._statevector_fused_matrices.get(key)
     graph_wires = tuple(
         sorted(
@@ -455,7 +455,7 @@ def _apply_fused_gate_step(
                 ry_angles,
                 rz_angles,
                 wire=step.wires[0],
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
             )
             return result
 
@@ -473,7 +473,7 @@ def _apply_fused_gate_step(
             state,
             constant_matrix,
             wire=step.wires[0],
-            n_wires=circuit.n_wires,
+            n_wires=circuit.n_qubits,
         )
         return result
 
@@ -502,14 +502,14 @@ def _apply_fused_gate_step(
             state,
             matrix,
             wire=step.wires[0],
-            n_wires=circuit.n_wires,
+            n_wires=circuit.n_qubits,
         )
         return result
     return _apply_gate_matrix(
         state,
         matrix,
         step.wires,
-        circuit.n_wires,
+        circuit.n_qubits,
         uses_diagonal_kernel=step.diagonal,
         layout=step.layout,
     )
@@ -600,7 +600,7 @@ def _apply_disjoint_dense_step(
         )
     )
     matrix = _batched_kronecker_product(matrices, batch_size=state.shape[0])
-    return _apply_matrix(state, matrix, wires, circuit.n_wires)
+    return _apply_matrix(state, matrix, wires, circuit.n_qubits)
 
 
 def _dense_region_matrix(
@@ -648,7 +648,7 @@ def _apply_cx_sequence(
             target_masks=target_masks,
             reverse_control_masks=reverse_control_masks,
             reverse_target_masks=reverse_target_masks,
-            n_wires=circuit.n_wires,
+            n_wires=circuit.n_qubits,
         )
 
     if (
@@ -656,11 +656,11 @@ def _apply_cx_sequence(
         and len(step.controls) >= _CX_SEQUENCE_GATHER_MINIMUM_LENGTH
     ):
         return _apply_cx_sequence_gather(
-            state, step.controls, step.targets, circuit.n_wires
+            state, step.controls, step.targets, circuit.n_qubits
         )
 
     for control, target in zip(step.controls, step.targets, strict=True):
-        state = _apply_cx_permutation(state, (control, target), circuit.n_wires)
+        state = _apply_cx_permutation(state, (control, target), circuit.n_qubits)
     return state
 
 
@@ -703,7 +703,7 @@ def _apply_cross_wire_diagonal_step(
         wire_groups.append(wires)
         diagonals.append(torch.diagonal(matrix, dim1=-2, dim2=-1))
     return _apply_disjoint_diagonal_regions_cpu(
-        state, diagonals, wire_groups, circuit.n_wires
+        state, diagonals, wire_groups, circuit.n_qubits
     )
 
 
@@ -736,7 +736,7 @@ def _execute_statevector_program(
             native_output, clifford_scratch = apply_native_clifford_matching(
                 step,
                 output,
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
                 scratch=clifford_scratch,
                 reuse_output=reuse_clifford_output,
                 owns_state=owns_output,
@@ -751,7 +751,7 @@ def _execute_statevector_program(
                 continue
             for control, target in zip(step.controls, step.targets, strict=True):
                 output = _apply_cx_permutation(
-                    output, (control, target), circuit.n_wires
+                    output, (control, target), circuit.n_qubits
                 )
             if step.cz_edges:
                 signs, wires = _cz_graph_signs_cpu(step.cz_edges, device=output.device)
@@ -759,7 +759,7 @@ def _execute_statevector_program(
                     output,
                     signs,
                     wires,
-                    circuit.n_wires,
+                    circuit.n_qubits,
                     inplace=owns_output or bool(step.controls),
                 )
             owns_output = True
@@ -767,14 +767,14 @@ def _execute_statevector_program(
         if isinstance(step, _StatevectorControlledPhaseGraphStep):
             factors, wires = _controlled_phase_graph_factors(circuit, step, output)
             output = _apply_controlled_phase_graph_cpu(
-                output, factors, wires, circuit.n_wires, inplace=owns_output
+                output, factors, wires, circuit.n_qubits, inplace=owns_output
             )
             owns_output = True
             continue
         if isinstance(step, _StatevectorCZGraphStep):
             signs, wires = _cz_graph_signs(circuit, step, output.device)
             output = _apply_cz_graph_cpu(
-                output, signs, wires, circuit.n_wires, inplace=owns_output
+                output, signs, wires, circuit.n_qubits, inplace=owns_output
             )
             continue
         if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
@@ -782,14 +782,14 @@ def _execute_statevector_program(
                 output,
                 _controlled_phase_decomposition_matrix(circuit, step, output),
                 (step.control, step.target),
-                circuit.n_wires,
+                circuit.n_qubits,
             )
             continue
         if isinstance(step, _StatevectorDisjointDenseStep):
             native_output = apply_native_fixed_one_qubit_layer(
                 step,
                 output,
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
                 owns_state=owns_output,
                 parameter_bindings=parameter_bindings,
                 matrix_builder=lambda region, state: _dense_region_matrix(
@@ -848,7 +848,7 @@ def _execute_statevector_program(
             output = _apply_rx_rz_loop(
                 output,
                 step,
-                circuit.n_wires,
+                circuit.n_qubits,
                 parameter_bindings,
             )
             continue
@@ -866,11 +866,11 @@ def _execute_statevector_program(
         name = canonical_opcode(instruction.name)
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
-                output, name, instruction.wires, circuit.n_wires
+                output, name, instruction.wires, circuit.n_qubits
             )
         elif name == "y":
             output = _apply_single_qubit_fixed(
-                output, name, instruction.wires[0], circuit.n_wires
+                output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
             matrix = _gate_matrix(
@@ -884,7 +884,7 @@ def _execute_statevector_program(
                 output,
                 matrix,
                 instruction.wires,
-                circuit.n_wires,
+                circuit.n_qubits,
                 uses_diagonal_kernel=_diagonal_region((instruction,)),
                 layout=step.layout,
             )
@@ -913,7 +913,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and circuit._inputs is None
             and circuit.bsz == 1
             and device.type == "cpu"
-            and circuit.n_wires >= 16
+            and circuit.n_qubits >= 16
         )
         product_swap_remapping = _cpu_product_state_swap_remapping_enabled()
         product_clifford_matching = _cpu_product_state_clifford_matching_enabled()
@@ -932,7 +932,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             if cached_product_program is None:
                 product_program = _compile_statevector_program(
                     circuit._instructions,
-                    circuit.n_wires,
+                    circuit.n_qubits,
                     enable_triton_loop=False,
                     enable_cpu_controlled_phase_decomposition=(
                         enable_cpu_controlled_phase_decomposition
@@ -947,12 +947,12 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 product_program = cached_product_program
         if product_state_candidate and product_state_execution_is_beneficial(
             product_program,
-            circuit.n_wires,
+            circuit.n_qubits,
             enable_swap_remapping=product_swap_remapping,
         ):
             output = execute_product_state_program(
                 product_program,
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
                 device=device,
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
@@ -1014,7 +1014,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         )
         max_cpu_dense_wires = (
             _cpu_disjoint_dense_max_wires(
-                circuit.n_wires,
+                circuit.n_qubits,
                 batch_size,
                 output.dtype,
             )
@@ -1052,7 +1052,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         if program is None:
             program = _compile_statevector_program(
                 circuit._instructions,
-                circuit.n_wires,
+                circuit.n_qubits,
                 enable_triton_loop=enable_triton_loop,
                 enable_cpu_cross_wire_diagonal=enable_cpu_cross_wire_diagonal,
                 enable_cpu_cz_graph=enable_cpu_cz_graph,
@@ -1127,7 +1127,7 @@ def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
     # negative shift, so the wire silently reported +1 at every step instead of
     # being refused.  The range is knowable here, before the state is built.
     for wire in wires:
-        if not 0 <= wire < circuit.n_wires:
+        if not 0 <= wire < circuit.n_qubits:
             raise ValueError("wire is outside the statevector")
     probabilities = torch.abs(state(circuit)) ** 2
     key = (wires, str(probabilities.device), probabilities.dtype)
@@ -1140,7 +1140,7 @@ def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
         )
         signs = torch.stack(
             tuple(
-                1 - 2 * ((basis >> (circuit.n_wires - 1 - wire)) & 1) for wire in wires
+                1 - 2 * ((basis >> (circuit.n_qubits - 1 - wire)) & 1) for wire in wires
             ),
             dim=-1,
         ).to(dtype=probabilities.dtype)
@@ -1173,7 +1173,7 @@ def _expectation_pauli_string(
                 transformed,
                 matrix,
                 (wire,),
-                circuit.n_wires,
+                circuit.n_qubits,
                 uses_diagonal_kernel=False,
             )
     value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
@@ -1196,7 +1196,7 @@ def _sample_statevector(
         replacement=True,
         generator=generator,
     )
-    return _bits_from_indices(samples, circuit.n_wires) if return_bits else samples
+    return _bits_from_indices(samples, circuit.n_qubits) if return_bits else samples
 
 
 def _expectation_from_operators(

@@ -317,7 +317,7 @@ def test_a_data_location_precedes_its_round_and_a_measurement_location_its_reado
     # and only the index says which side of the readout the flip is on.
     assert (
         tuple(
-            located[("measurement", 0, check.ancilla_wire)]
+            located[("measurement", 0, check.ancilla_qubit)]
             for check in memory.code.checks
         )
         == plan.measure_offsets
@@ -353,7 +353,7 @@ def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
     ] == ["bit_flip"] * 3
     assert (
         sum(1 for instruction in program.instructions if instruction.name == "bit_flip")
-        == len(memory.code.data_wires) * memory.rounds
+        == len(memory.code.data_qubits) * memory.rounds
     )
 
 
@@ -390,7 +390,7 @@ def test_the_placement_does_not_depend_on_the_strength_it_is_built_for() -> None
     assert weak == strong
     assert (
         len(weak)
-        == len(memory.code.data_wires) * memory.rounds
+        == len(memory.code.data_qubits) * memory.rounds
         + len(memory.code.checks) * memory.rounds
     )
 
@@ -514,7 +514,7 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
 
     inner = RepetitionCode(distance=3)
     memory = _memory(inner, 2)
-    orphaned = _OrphanAncilla(inner, orphan_wire=5)
+    orphaned = _OrphanAncilla(inner, orphan_qubit=5)
     # A syndrome detector compares two rounds, so it reads an ancilla rather than
     # a data wire, which is what makes it the reference that can go orphaned.
     index = next(
@@ -523,7 +523,7 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
         if item.parity[0].round_index is not None
     )
     detector = memory.detectors.detectors[index]
-    owned = detector.parity[0].wire
+    owned = detector.parity[0].qubit
 
     circuit = replace(
         memory,
@@ -542,9 +542,9 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
         ),
     )
 
-    assert owned in orphaned.ancilla_wires
-    assert 5 in orphaned.ancilla_wires
-    assert all(check.ancilla_wire != 5 for check in orphaned.checks)
+    assert owned in orphaned.ancilla_qubits
+    assert 5 in orphaned.ancilla_qubits
+    assert all(check.ancilla_qubit != 5 for check in orphaned.checks)
     with pytest.raises(ValueError, match="which no check owns"):
         sample_memory_circuit(
             circuit, noise=PhenomenologicalNoise(data_flip=0.01), shots=4, seed=_SEED
@@ -561,7 +561,7 @@ class _OrphanAncilla:
     """
 
     inner: RepetitionCode
-    orphan_wire: int
+    orphan_qubit: int
 
     @property
     def distance(self) -> int:
@@ -576,12 +576,12 @@ class _OrphanAncilla:
         return self.inner.num_ancilla_qubits + 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
-        return self.inner.data_wires
+    def data_qubits(self) -> tuple[int, ...]:
+        return self.inner.data_qubits
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
-        return self.inner.ancilla_wires + (self.orphan_wire,)
+    def ancilla_qubits(self) -> tuple[int, ...]:
+        return self.inner.ancilla_qubits + (self.orphan_qubit,)
 
     @property
     def checks(self) -> tuple[CodeCheck, ...]:

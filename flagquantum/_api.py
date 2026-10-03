@@ -125,7 +125,9 @@ def run(
             )
             measurements = import_module(".observables", __package__).lower_outputs(
                 outputs,
-                n_wires=ir.n_wires,
+                # ``lower_outputs`` took the qubit spelling; ``CircuitIR.n_wires``
+                # keeps the old one because it is a frozen payload key.
+                n_qubits=ir.n_wires,
                 shots=selected_shots,
                 seed=selected_seed,
             )
@@ -308,7 +310,7 @@ def plan(
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     measurements = import_module(".observables", __package__).lower_outputs(
         outputs,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         shots=getattr(options, "shots", None),
         seed=getattr(options, "seed", None),
     )

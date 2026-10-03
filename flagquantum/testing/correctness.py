@@ -82,20 +82,20 @@ def certification_matrix() -> tuple[CertificationCase, ...]:
     return tuple(cases)
 
 
-def generate_circuit_ir(*, seed: int, n_wires: int = 3, depth: int = 8) -> CircuitIR:
+def generate_circuit_ir(*, seed: int, n_qubits: int = 3, depth: int = 8) -> CircuitIR:
     """Generate a minimal deterministic unitary IR inside the common envelope."""
 
-    if n_wires < 3 or depth < 0:
-        raise ValueError("generated envelope requires n_wires >= 3 and depth >= 0")
+    if n_qubits < 3 or depth < 0:
+        raise ValueError("generated envelope requires n_qubits >= 3 and depth >= 0")
     rng = random.Random(seed)
     schemas = tuple(schema for schema in OPERATOR_SCHEMAS.values() if schema.unitary)
     instructions = []
     for _ in range(depth):
         schema = rng.choice(schemas)
-        wires = tuple(rng.sample(range(n_wires), schema.arity))
+        wires = tuple(rng.sample(range(n_qubits), schema.arity))
         params = {name: rng.uniform(-3.14159, 3.14159) for name in schema.parameters}
         instructions.append(Instruction(name=schema.opcode, wires=wires, params=params))
-    return CircuitIR(n_wires=n_wires, instructions=tuple(instructions))
+    return CircuitIR(n_wires=n_qubits, instructions=tuple(instructions))
 
 
 def execute_certification_case(case: CertificationCase) -> CertificationResult:

@@ -14,7 +14,7 @@ class _CurrentTotals:
     """Accumulated circuit strings"""
 
     finished_lines: list[str]  # Completed lines (used when wrapping)
-    wire_totals: list[str]  # Accumulated quantum wire strings
+    qubit_totals: list[str]  # Accumulated quantum wire strings
     bit_totals: list[str]  # Accumulated classical bit strings
 
 
@@ -22,21 +22,21 @@ class _CurrentTotals:
 class _Config:
     """Drawing configuration"""
 
-    wire_map: dict[Any, int]  # Wire label -> display position
-    wire_order: list[Any]  # Wire order (top to bottom)
+    qubit_map: dict[Any, int]  # Wire label -> display position
+    qubit_order: list[Any]  # Wire order (top to bottom)
     num_op_layers: int  # Number of operation layers
     cur_layer: int = -1  # Current layer index
     decimals: Optional[int] = None  # Parameter precision
-    show_wire_labels: bool = True  # Whether to show wire labels
+    show_qubit_labels: bool = True  # Whether to show wire labels
 
     @property
-    def wire_filler(self) -> str:
+    def qubit_filler(self) -> str:
         """Filler character: '─' for operation layers, space for measurement layers"""
         return "─" if self.cur_layer < self.num_op_layers else " "
 
     @property
-    def n_wires(self) -> int:
-        return len(self.wire_map)
+    def n_qubits(self) -> int:
+        return len(self.qubit_map)
 
 
 class TextDrawer:
@@ -44,9 +44,9 @@ class TextDrawer:
     Text circuit drawer
 
     Core mechanism:
-    1. Maintain totals.wire_totals as accumulated strings
+    1. Maintain totals.qubit_totals as accumulated strings
     2. Each layer is connected via filler.join([t, s])
-    3. _left_justify ensures all wires have equal length
+    3. _left_justify ensures all qubit rows have equal length
     """
 
     # Gate name to symbol mapping
@@ -98,8 +98,8 @@ class TextDrawer:
     def __init__(
         self,
         qdev: object,
-        wire_order: Sequence[int | str] | None = None,
-        show_all_wires: bool = False,
+        qubit_order: Sequence[int | str] | None = None,
+        show_all_qubits: bool = False,
         decimals: int | None = 3,
         max_length: int = 100,
         show_initial_state: bool = False,
@@ -107,50 +107,50 @@ class TextDrawer:
         qdev = to_drawable_circuit(qdev)
         self.qdev = qdev
         self.op_history: Sequence[dict[str, Any]] = getattr(qdev, "op_history", ())
-        self.n_wires: int = (
-            qdev.n_wires if hasattr(qdev, "n_wires") else self._detect_n_wires()
+        self.n_qubits: int = (
+            qdev.n_qubits if hasattr(qdev, "n_qubits") else self._detect_n_qubits()
         )
         self.decimals = decimals
         self.max_length = max_length
-        self.show_all_wires = show_all_wires
+        self.show_all_qubits = show_all_qubits
         self.show_initial_state = show_initial_state
 
-        # Determine wire order
-        self.wire_order = self._create_wire_order(wire_order)
-        self.wire_map = {wire: idx for idx, wire in enumerate(self.wire_order)}
-        self.reverse_wire_map = {idx: wire for wire, idx in self.wire_map.items()}
+        # Determine qubit order
+        self.qubit_order = self._create_qubit_order(qubit_order)
+        self.qubit_map = {qubit: idx for idx, qubit in enumerate(self.qubit_order)}
+        self.reverse_qubit_map = {idx: qubit for qubit, idx in self.qubit_map.items()}
 
         # Create layers
         self.layers = self._create_layers()
         self.num_op_layers = len(self.layers)
 
-    def _detect_n_wires(self) -> int:
+    def _detect_n_qubits(self) -> int:
         """Automatically detect the number of qubits"""
-        max_wire = -1
+        max_qubit = -1
         for op in self.op_history:
-            wires = op.get("wires", [])
-            if isinstance(wires, int):
-                wires = [wires]
-            for w in wires:
-                if isinstance(w, int) and w > max_wire:
-                    max_wire = w
-        return max_wire + 1 if max_wire >= 0 else 0
+            qubits = op.get("qubits", [])
+            if isinstance(qubits, int):
+                qubits = [qubits]
+            for w in qubits:
+                if isinstance(w, int) and w > max_qubit:
+                    max_qubit = w
+        return max_qubit + 1 if max_qubit >= 0 else 0
 
-    def _create_wire_order(
+    def _create_qubit_order(
         self, wire_order: Sequence[int | str] | None
     ) -> list[int | str]:
-        """Create wire order"""
+        """Create qubit order"""
         if wire_order is None:
-            wire_order = list(range(self.n_wires))
+            wire_order = list(range(self.n_qubits))
 
-        if not self.show_all_wires:
-            used_wires = set()
+        if not self.show_all_qubits:
+            used_qubits = set()
             for op in self.op_history:
-                wires = op.get("wires", [])
-                if isinstance(wires, int):
-                    wires = [wires]
-                used_wires.update(wires)
-            wire_order = [w for w in wire_order if w in used_wires]
+                qubits = op.get("qubits", [])
+                if isinstance(qubits, int):
+                    qubits = [qubits]
+                used_qubits.update(qubits)
+            wire_order = [w for w in wire_order if w in used_qubits]
 
         return list(wire_order)
 
@@ -178,35 +178,35 @@ class TextDrawer:
         """
         Layering algorithm
 
-        Multi-qubit gates occupy all wires in between to prevent overlap with other operations
+        Multi-qubit gates occupy all qubits in between to prevent overlap with other operations
         """
         last_layer: dict[int, int] = {}  # wire -> last_layer_index
         layers: list[list[dict[str, Any]]] = []
 
         for op in self.op_history:
-            wires = op.get("wires", [])
-            if isinstance(wires, int):
-                wires = [wires]
+            qubits = op.get("qubits", [])
+            if isinstance(qubits, int):
+                qubits = [qubits]
 
-            if not wires:
-                # Operations without wires (e.g., global operations) occupy all wires
-                wires = list(range(self.n_wires))
+            if not qubits:
+                # Operations without qubits (e.g., global operations) occupy all qubits
+                qubits = list(range(self.n_qubits))
 
-            # Get all wires occupied by this operation (including intermediate wires)
-            min_wire = min(wires)
-            max_wire = max(wires)
-            occupied_wires = set(range(min_wire, max_wire + 1))
+            # Get all qubits occupied by this operation (including intermediate qubits)
+            min_qubit = min(qubits)
+            max_qubit = max(qubits)
+            occupied_qubits = set(range(min_qubit, max_qubit + 1))
 
-            # Map to display wire indices
+            # Map to display qubit indices
             mapped_occupied = set()
-            for w in occupied_wires:
-                if w in self.wire_map:
-                    mapped_occupied.add(self.wire_map[w])
+            for w in occupied_qubits:
+                if w in self.qubit_map:
+                    mapped_occupied.add(self.qubit_map[w])
 
             if not mapped_occupied:
                 continue
 
-            # Find the maximum layer index among the last layers of these wires
+            # Find the maximum layer index among the last layers of these qubits
             max_layer = -1
             for w in mapped_occupied:
                 if w in last_layer:
@@ -220,7 +220,7 @@ class TextDrawer:
 
             layers[new_layer].append(op)
 
-            # Update the last layer for these wires
+            # Update the last layer for these qubits
             for w in mapped_occupied:
                 last_layer[w] = new_layer
 
@@ -262,17 +262,17 @@ class TextDrawer:
         Control line 2: ├●
         Target line:    ╰X
         """
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 # First control line
@@ -298,17 +298,17 @@ class TextDrawer:
         Target line 1:  ├╳
         Target line 2:  ╰╳
         """
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 # Control line
@@ -329,26 +329,26 @@ class TextDrawer:
         """
         Render SWAP gate (avoid misleading: draw only ends, connectors in between)
 
-        Adjacent wires SWAP(wires=[0,1]):
+        Adjacent qubits SWAP(qubits=[0,1]):
             0: ╳
             1: ╳
 
-        Non-adjacent wires SWAP(wires=[0,2]):
+        Non-adjacent qubits SWAP(qubits=[0,2]):
             0: ╳
             1: │   (just a connector)
             2: ╳
         """
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0 or i == n_lines - 1:
                 # Ends: draw X
@@ -363,17 +363,17 @@ class TextDrawer:
         self, wires: Sequence[int], target_symbol: str
     ) -> list[tuple[int, str]]:
         """Render controlled gate (CZ, CY, CX, etc.)"""
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 # Top: control line
@@ -391,13 +391,13 @@ class TextDrawer:
         self, wires: Sequence[int], gate_name: str, params: object
     ) -> list[tuple[int, str]]:
         """Render parameterized controlled gate (CRX, CRY, CRZ)"""
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         param_str = self._get_param_str(params)
         if param_str:
@@ -407,7 +407,7 @@ class TextDrawer:
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 lines.append((abs_idx, "╭●"))
@@ -422,13 +422,13 @@ class TextDrawer:
         self, wires: Sequence[int], gate_name: str, params: object
     ) -> list[tuple[int, str]]:
         """Render Ising gate (RXX, RYY, RZZ)"""
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         param_str = self._get_param_str(params)
         if param_str:
@@ -438,7 +438,7 @@ class TextDrawer:
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 lines.append((abs_idx, f"╭{label}"))
@@ -468,17 +468,17 @@ class TextDrawer:
         else:
             label = symbol
 
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return []
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
-        n_lines = max_wire - min_wire + 1
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
+        n_lines = max_qubit - min_qubit + 1
 
         lines = []
         for i in range(n_lines):
-            abs_idx = min_wire + i
+            abs_idx = min_qubit + i
 
             if i == 0:
                 lines.append((abs_idx, f"╭{label}"))
@@ -491,91 +491,91 @@ class TextDrawer:
 
     def _render_op(self, op: dict[str, Any]) -> list[tuple[int, str]]:
         """
-        Render a single operation, returning [(wire_index, string), ...]
+        Render a single operation, returning [(qubit_index, string), ...]
 
         Note: Only the content to be added is returned here, not including filler characters
         Filler characters are handled by _initialize_layer_str and _left_justify
         """
         name = op.get("name_or_mat", "").lower()
-        wires = op.get("wires", [])
+        qubits = op.get("qubits", [])
         params = op.get("params", [])
 
-        if isinstance(wires, int):
-            wires = [wires]
+        if isinstance(qubits, int):
+            qubits = [qubits]
 
         # Skip measurement operations (handled uniformly in _finalize_layers)
         if name == "measure_allz":
             return []
 
-        if not wires:
+        if not qubits:
             return []
 
-        # Filter existing wires
-        valid_wires = [w for w in wires if w in self.wire_map]
-        if not valid_wires:
+        # Filter existing qubits
+        valid_qubits = [w for w in qubits if w in self.qubit_map]
+        if not valid_qubits:
             return []
 
         # Single-qubit gate
-        if len(valid_wires) == 1:
-            wire_idx = self.wire_map[valid_wires[0]]
-            return [(wire_idx, self._render_single_gate(name, params))]
+        if len(valid_qubits) == 1:
+            qubit_idx = self.qubit_map[valid_qubits[0]]
+            return [(qubit_idx, self._render_single_gate(name, params))]
 
         # Toffoli (CCX) - 3 qubits
-        if name in ["ccx", "toffoli"] and len(valid_wires) == 3:
-            return self._render_toffoli(valid_wires)
+        if name in ["ccx", "toffoli"] and len(valid_qubits) == 3:
+            return self._render_toffoli(valid_qubits)
 
         # Fredkin (CSWAP) - 3 qubits
-        if name in ["cswap", "fredkin"] and len(valid_wires) == 3:
-            return self._render_cswap(valid_wires)
+        if name in ["cswap", "fredkin"] and len(valid_qubits) == 3:
+            return self._render_cswap(valid_qubits)
 
         # CZ gate (controlled-Z)
         if name == "cz":
-            return self._render_controlled_gate(valid_wires, "Z")
+            return self._render_controlled_gate(valid_qubits, "Z")
 
         # CNOT/CX
         if name in ["cx", "cnot"]:
-            return self._render_controlled_gate(valid_wires, "X")
+            return self._render_controlled_gate(valid_qubits, "X")
 
         # CY gate (controlled-Y)
         if name == "cy":
-            return self._render_controlled_gate(valid_wires, "Y")
+            return self._render_controlled_gate(valid_qubits, "Y")
 
         # CPhase gate
         if name in ["cphase", "controlledphase"]:
-            return self._render_controlled_gate_with_param(valid_wires, "CP", params)
+            return self._render_controlled_gate_with_param(valid_qubits, "CP", params)
 
         # CRX, CRY, CRZ controlled rotation gates
         if name == "crx":
-            return self._render_controlled_gate_with_param(valid_wires, "CRX", params)
+            return self._render_controlled_gate_with_param(valid_qubits, "CRX", params)
         if name == "cry":
-            return self._render_controlled_gate_with_param(valid_wires, "CRY", params)
+            return self._render_controlled_gate_with_param(valid_qubits, "CRY", params)
         if name == "crz":
-            return self._render_controlled_gate_with_param(valid_wires, "CRZ", params)
+            return self._render_controlled_gate_with_param(valid_qubits, "CRZ", params)
 
         # Ising gates (RXX, RYY, RZZ)
         if name in ["rxx", "ryy", "rzz"]:
-            return self._render_ising_gate(valid_wires, name.upper(), params)
+            return self._render_ising_gate(valid_qubits, name.upper(), params)
 
         # SWAP gate
         if name == "swap":
-            return self._render_swap_gate(valid_wires)
+            return self._render_swap_gate(valid_qubits)
 
         # Default multi-qubit gate
-        return self._render_multi_gate(name, valid_wires, params)
+        return self._render_multi_gate(name, valid_qubits, params)
 
     def _initialize_layer_str(self, config: _Config) -> list[str]:
         """Initialize the string array for a new layer"""
-        return [config.wire_filler] * config.n_wires
+        return [config.qubit_filler] * config.n_qubits
 
     def _left_justify(self, layer_str: list[str], config: _Config) -> list[str]:
-        """Pad all wires in this layer to the same length"""
+        """Pad all qubits in this layer to the same length"""
         if not layer_str:
             return layer_str
 
         max_label_len = max(len(s) for s in layer_str)
 
-        for w in range(config.n_wires):
-            layer_str[w] = layer_str[w].ljust(max_label_len, config.wire_filler)
+        for w in range(config.n_qubits):
+            layer_str[w] = layer_str[w].ljust(max_label_len, config.qubit_filler)
 
         return layer_str
 
@@ -583,10 +583,10 @@ class TextDrawer:
         self, totals: _CurrentTotals, layer_str: list[str], config: _Config
     ) -> _CurrentTotals:
         """Merge the current layer into accumulated strings"""
-        totals.wire_totals = [
-            config.wire_filler.join([t, s])
+        totals.qubit_totals = [
+            config.qubit_filler.join([t, s])
             for t, s in zip(
-                totals.wire_totals, layer_str[: config.n_wires], strict=True
+                totals.qubit_totals, layer_str[: config.n_qubits], strict=True
             )
         ]
 
@@ -598,7 +598,7 @@ class TextDrawer:
         """Save current line to finished_lines when exceeding max_length and start a new line"""
         suffix = " ···"
 
-        saved_lines = [line + suffix for line in totals.wire_totals]
+        saved_lines = [line + suffix for line in totals.qubit_totals]
 
         totals.finished_lines += saved_lines
         totals.finished_lines[-1] += "\n"
@@ -606,12 +606,16 @@ class TextDrawer:
         # Reset totals (new line)
         prefix = "··· "
 
-        if config.show_wire_labels:
-            totals.wire_totals = [f"{wire}: " + prefix for wire in config.wire_order]
-            line_length = max(len(s) for s in totals.wire_totals)
-            totals.wire_totals = [s.rjust(line_length, " ") for s in totals.wire_totals]
+        if config.show_qubit_labels:
+            totals.qubit_totals = [
+                f"{qubit}: " + prefix for qubit in config.qubit_order
+            ]
+            line_length = max(len(s) for s in totals.qubit_totals)
+            totals.qubit_totals = [
+                s.rjust(line_length, " ") for s in totals.qubit_totals
+            ]
         else:
-            totals.wire_totals = [prefix] * config.n_wires
+            totals.qubit_totals = [prefix] * config.n_qubits
 
         return totals
 
@@ -627,69 +631,69 @@ class TextDrawer:
         )
 
         if has_all_measure:
-            # All wires are measured
-            for i in range(len(totals.wire_totals)):
-                totals.wire_totals[i] = f"{totals.wire_totals[i]}─┤  <Z>"
+            # All qubits are measured
+            for i in range(len(totals.qubit_totals)):
+                totals.qubit_totals[i] = f"{totals.qubit_totals[i]}─┤  <Z>"
         else:
-            # Check measurement per wire
-            for i, wire in enumerate(config.wire_order):
+            # Check measurement per qubit
+            for i, qubit in enumerate(config.qubit_order):
                 has_measure = any(
                     op.get("name_or_mat", "").lower()
                     in ["measure", "measurement", "measurez"]
                     and (
-                        wire in op.get("wires", [])
-                        if isinstance(op.get("wires"), list)
-                        else op.get("wires") == wire
+                        qubit in op.get("qubits", [])
+                        if isinstance(op.get("qubits"), list)
+                        else op.get("qubits") == qubit
                     )
                     for op in self.op_history
                 )
                 if has_measure:
-                    totals.wire_totals[i] = f"{totals.wire_totals[i]}─┤  <Z>"
+                    totals.qubit_totals[i] = f"{totals.qubit_totals[i]}─┤  <Z>"
                 else:
-                    totals.wire_totals[i] = f"{totals.wire_totals[i]}─┤"
+                    totals.qubit_totals[i] = f"{totals.qubit_totals[i]}─┤"
 
         return totals
 
-    def _initialize_wire_totals(self, config: _Config) -> list[str]:
-        """Initialize wire_totals (include wire labels, optionally show initial state)"""
-        if config.show_wire_labels:
+    def _initialize_qubit_totals(self, config: _Config) -> list[str]:
+        """Initialize qubit_totals (include qubit labels, optionally show initial state)"""
+        if config.show_qubit_labels:
             # Check whether to show initial state (can be controlled via attribute)
             show_initial_state = getattr(self, "show_initial_state", False)
 
             if show_initial_state:
-                wire_totals = [f"{wire}: |0⟩ " for wire in config.wire_order]
+                qubit_totals = [f"{qubit}: |0⟩ " for qubit in config.qubit_order]
             else:
-                wire_totals = [f"{wire}: " for wire in config.wire_order]
+                qubit_totals = [f"{qubit}: " for qubit in config.qubit_order]
 
-            # Right-align wire labels (make all wire labels equal width)
-            line_length = max(len(s) for s in wire_totals)
-            wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
+            # Right-align qubit labels (make all qubit labels equal width)
+            line_length = max(len(s) for s in qubit_totals)
+            qubit_totals = [s.rjust(line_length, " ") for s in qubit_totals]
         else:
-            wire_totals = [""] * config.n_wires
+            qubit_totals = [""] * config.n_qubits
 
-        return wire_totals
+        return qubit_totals
 
     def draw(self) -> str:
         """Draw the circuit diagram (supports automatic line wrapping)"""
         if not self.op_history:
             return "Empty circuit"
 
-        if not self.wire_order:
-            return "No wires"
+        if not self.qubit_order:
+            return "No qubits"
 
         config = _Config(
-            wire_map=self.wire_map,
-            wire_order=self.wire_order,
+            qubit_map=self.qubit_map,
+            qubit_order=self.qubit_order,
             num_op_layers=self.num_op_layers,
             decimals=self.decimals,
-            show_wire_labels=True,
+            show_qubit_labels=True,
         )
 
-        # Initialize accumulator (include wire labels)
-        wire_totals = self._initialize_wire_totals(config)
+        # Initialize accumulator (include qubit labels)
+        qubit_totals = self._initialize_qubit_totals(config)
 
         totals = _CurrentTotals(
-            finished_lines=[], wire_totals=wire_totals, bit_totals=[]
+            finished_lines=[], qubit_totals=qubit_totals, bit_totals=[]
         )
 
         len_suffix = 4  # Length of " ···"
@@ -704,8 +708,8 @@ class TextDrawer:
             # Add all operations in this layer
             for op in layer:
                 rendered = self._render_op(op)
-                for wire_idx, s in rendered:
-                    layer_str[wire_idx] += s
+                for qubit_idx, s in rendered:
+                    layer_str[qubit_idx] += s
 
             # Left justify (pad to same length)
             layer_str = self._left_justify(layer_str, config)
@@ -717,8 +721,8 @@ class TextDrawer:
             )
 
             if (
-                totals.wire_totals
-                and len(totals.wire_totals[0]) + len(layer_str[0]) > cur_max_length - 1
+                totals.qubit_totals
+                and len(totals.qubit_totals[0]) + len(layer_str[0]) > cur_max_length - 1
             ):
                 totals = self._add_to_finished_lines(
                     totals, config, add_measurement=False
@@ -731,7 +735,7 @@ class TextDrawer:
         totals = self._finalize_layers(totals, config)
 
         # Merge final results
-        result_lines = totals.finished_lines + totals.wire_totals + totals.bit_totals
+        result_lines = totals.finished_lines + totals.qubit_totals + totals.bit_totals
 
         # Filter empty lines
         result_lines = [line for line in result_lines if line.strip() or line == "\n"]
@@ -741,8 +745,8 @@ class TextDrawer:
 
 def draw_text(
     qdev: object,
-    wire_order: Sequence[int | str] | None = None,
-    show_all_wires: bool = False,
+    qubit_order: Sequence[int | str] | None = None,
+    show_all_qubits: bool = False,
     decimals: int | None = 3,
     max_length: int = 100,
     show_initial_state: bool = False,
@@ -752,8 +756,8 @@ def draw_text(
 
     Args:
         qdev: FlagQuantum Circuit, CircuitIR, or device object
-        wire_order: Wire order (top to bottom), e.g., [0, 1, 2, 3] or ["q0", "q1"]
-        show_all_wires: Whether to show all wires (including unused ones)
+        qubit_order: Qubit order (top to bottom), e.g., [0, 1, 2, 3] or ["q0", "q1"]
+        show_all_qubits: Whether to show all qubits (including unused ones)
         decimals: Precision for parameter display
         max_length: Maximum width per line
         show_initial_state: Whether to show initial state (e.g., "0: |0⟩")
@@ -762,6 +766,6 @@ def draw_text(
         str: Circuit diagram string
     """
     drawer = TextDrawer(
-        qdev, wire_order, show_all_wires, decimals, max_length, show_initial_state
+        qdev, qubit_order, show_all_qubits, decimals, max_length, show_initial_state
     )
     return drawer.draw()

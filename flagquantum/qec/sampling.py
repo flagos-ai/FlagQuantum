@@ -57,8 +57,7 @@ class _MeasurementPlan:
     round ``r`` owns ``program.instructions[r * block : (r + 1) * block]``.
     ``measure_offsets`` is the template position of each check's readout, in the
     code's declared check order. ``syndrome_columns`` and ``terminal_columns``
-    are engine record columns: the first indexes ``(round_index, ancilla_wire)``,
-    the second a data wire.
+    are engine record columns: the first indexes ``(round_index, ancilla_qubit)``, the second a data qubit.
     """
 
     program: CircuitIR
@@ -146,7 +145,7 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
     measures = tuple(
         index for index, (name, _) in enumerate(template) if name == _MEASURE_OPCODE
     )
-    expected = tuple((check.ancilla_wire,) for check in checks)
+    expected = tuple((check.ancilla_qubit,) for check in checks)
     if tuple(template[index][1] for index in measures) != expected:
         raise ValueError(
             "the memory program's syndrome round does not measure the code's "
@@ -155,11 +154,11 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
         )
     columns = len(checks)
     syndrome_columns = {
-        (round_index, check.ancilla_wire): round_index * columns + position
+        (round_index, check.ancilla_qubit): round_index * columns + position
         for round_index in range(rounds)
         for position, check in enumerate(checks)
     }
-    data_wires = tuple(memory.code.data_wires)
+    data_wires = tuple(memory.code.data_qubits)
     terminal_columns = {
         wire: columns * rounds + position for position, wire in enumerate(data_wires)
     }
@@ -178,7 +177,7 @@ def _noise_locations(
     """Return every location the noise record configures, in placement order.
 
     A data location sits before the round's first instruction for every data
-    wire; a measurement location sits before the readout of the check it
+    qubit; a measurement location sits before the readout of the check it
     corrupts. Both are dropped here rather than at placement when their
     probability is zero, so the caller never pays for a channel that cannot
     fire.
@@ -190,7 +189,7 @@ def _noise_locations(
             start = round_index * plan.block
             locations.extend(
                 _NoiseLocation("data", round_index, int(wire), start)
-                for wire in memory.code.data_wires
+                for wire in memory.code.data_qubits
             )
     if noise.measurement_flip:
         for round_index in range(memory.rounds):
@@ -199,7 +198,7 @@ def _noise_locations(
                 _NoiseLocation(
                     "measurement",
                     round_index,
-                    int(check.ancilla_wire),
+                    int(check.ancilla_qubit),
                     start + plan.measure_offsets[position],
                 )
                 for position, check in enumerate(memory.code.checks)
@@ -262,12 +261,12 @@ def _recorded_bits(
 
     def recorded(reference: MeasurementRef) -> torch.Tensor:
         if reference.round_index is None:
-            return record[:, plan.terminal_columns[reference.wire]]
-        column = plan.syndrome_columns.get((reference.round_index, reference.wire))
+            return record[:, plan.terminal_columns[reference.qubit]]
+        column = plan.syndrome_columns.get((reference.round_index, reference.qubit))
         if column is None:
             raise ValueError(
-                f"detector syndrome measurement names ancilla wire "
-                f"{reference.wire}, which no check owns"
+                f"detector syndrome measurement names ancilla qubit "
+                f"{reference.qubit}, which no check owns"
             )
         return record[:, column]
 
@@ -279,7 +278,7 @@ def _recorded_bits(
     for observable in memory.observables.observables:
         parity = torch.zeros(shots, dtype=dtype)
         for reference in observable.measurement_parity:
-            parity ^= record[:, plan.terminal_columns[reference.wire]]
+            parity ^= record[:, plan.terminal_columns[reference.qubit]]
         observables[:, observable.index] = parity
     return detectors, observables
 
@@ -337,7 +336,7 @@ def sample_memory_circuit(
     plan = _measurement_plan(circuit)
     locations = _noise_locations(circuit, plan, noise)
     program = _noisy_program(plan, locations, noise)
-    data_wires = tuple(circuit.code.data_wires)
+    data_wires = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
         program, shots=shots, terminal_wires=data_wires, seed=seed
     )

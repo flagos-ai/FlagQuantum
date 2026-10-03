@@ -415,7 +415,7 @@ class Module(torch.nn.Module):
         except Exception as error:
             raise ExecutionError(
                 "Module builder compilation requires static circuit topology; "
-                "do not branch on Tensor values when choosing gates or wires"
+                "do not branch on Tensor values when choosing gates or qubits"
             ) from error
         program.graph.eliminate_dead_code()
         program.recompile()
@@ -435,7 +435,7 @@ class Module(torch.nn.Module):
         )
         constructor = template.circuit_param
         bound = type(template)(
-            n_qubits=constructor["n_wires"],
+            n_qubits=constructor["n_qubits"],
             bsz=constructor["bsz"],
             device=constructor["device"],
             dtype=constructor["dtype"],
@@ -820,7 +820,7 @@ class Module(torch.nn.Module):
                         backend="jax",
                         interface="torch",
                         mode=self.policy.mode,
-                        n_wires=circuit.n_wires,
+                        n_wires=circuit.n_qubits,
                         observable=self.policy.observable,
                         observable_wires=wires,
                         hamiltonian=self.hamiltonian,

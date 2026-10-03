@@ -369,7 +369,7 @@ class CssCodeMatrices:
 def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
     """Return a code record's CSS generator matrices.
 
-    Column ``q`` of every matrix is the ``q``-th wire :attr:`data_wires` names, so
+    Column ``q`` of every matrix is the ``q``-th qubit :attr:`data_qubits` names, so
     a code is free to declare its data qubits on any wires, and the rows follow the
     code's own declaration order. Each of the code's checks contributes one row to
     the matrix of its own type and none to the other, and each logical observable
@@ -389,7 +389,7 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
 
     if not isinstance(code, StabilizerCode):
         raise TypeError("code must be a StabilizerCode")
-    data_wires = tuple(code.data_wires)
+    data_wires = tuple(code.data_qubits)
     columns = {wire: index for index, wire in enumerate(data_wires)}
 
     def _rows(entries: tuple[tuple[str, tuple[int, ...]], ...]) -> torch.Tensor:
@@ -398,8 +398,8 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
             for wire in support:
                 if wire not in columns:
                     raise ValueError(
-                        f"{label} acts on wire {wire}, which "
-                        f"{type(code).__name__} does not declare as a data wire"
+                        f"{label} acts on qubit {wire}, which "
+                        f"{type(code).__name__} does not declare as a data qubit"
                     )
                 matrix[row, columns[wire]] = 1
         return matrix
@@ -407,21 +407,21 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
     checks = tuple(code.checks)
     hz = _rows(
         tuple(
-            (f"check {check.index}", check.stabilizer.z_wires)
+            (f"check {check.index}", check.stabilizer.z_qubits)
             for check in checks
-            if check.stabilizer.z_wires
+            if check.stabilizer.z_qubits
         )
     )
     hx = _rows(
         tuple(
-            (f"check {check.index}", check.stabilizer.x_wires)
+            (f"check {check.index}", check.stabilizer.x_qubits)
             for check in checks
-            if check.stabilizer.x_wires
+            if check.stabilizer.x_qubits
         )
     )
     observables = tuple(code.logical_observables)
     for index, observable in enumerate(observables):
-        if observable.x_wires and observable.z_wires:
+        if observable.x_qubits and observable.z_qubits:
             raise ValueError(
                 f"logical observable {index} is neither an X-type nor a Z-type "
                 "operator, so it is not a CSS logical operator: reading it as one "
@@ -429,16 +429,16 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
             )
     lz = _rows(
         tuple(
-            (f"logical observable {index}", observable.z_wires)
+            (f"logical observable {index}", observable.z_qubits)
             for index, observable in enumerate(observables)
-            if observable.z_wires
+            if observable.z_qubits
         )
     )
     lx = _rows(
         tuple(
-            (f"logical observable {index}", observable.x_wires)
+            (f"logical observable {index}", observable.x_qubits)
             for index, observable in enumerate(observables)
-            if observable.x_wires
+            if observable.x_qubits
         )
     )
     return CssCodeMatrices(hz=hz, hx=hx, lz=lz, lx=lx)
@@ -452,15 +452,15 @@ _FLIP_INDENT = "        "
 class _Mechanism:
     """One physical noise location, by kind, round, and wire.
 
-    The record carries the coordinates the matching injector needs rather than a
-    rendered source. A caller that fires a set of mechanisms at once has to
-    re-inject them into the one program it executes, and it cannot rebuild a
-    source from a string alone; carrying coordinates also keeps injection in
-    exactly one place. ``kind`` is ``"data"`` for a flip on a data wire, where
-    ``wire`` is that data wire, and ``"measurement"`` for a flip on a check's
-    syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
-    literal rather than a free string, so a caller that builds a record by hand
-    is told at the type checker which two flips exist.
+        The record carries the coordinates the matching injector needs rather than a
+        rendered source. A caller that fires a set of mechanisms at once has to
+        re-inject them into the one program it executes, and it cannot rebuild a
+        source from a string alone; carrying coordinates also keeps injection in
+        exactly one place. ``kind`` is ``"data"`` for a flip on a data qubit, where ``wire`` is that
+    data qubit, and ``"measurement"`` for a flip on a check's
+        syndrome measurement, where ``wire`` is that check's ancilla. The kind is a
+        literal rather than a free string, so a caller that builds a record by hand
+        is told at the type checker which two flips exist.
     """
 
     kind: Literal["data", "measurement"]
@@ -474,7 +474,7 @@ def _mechanisms(
 ) -> tuple[_Mechanism, ...]:
     """Return every noise location a probability makes possible, in order.
 
-    Data flips come first — one per round per data wire — and measurement flips
+    Data flips come first — one per round per data qubit — and measurement flips
     second, one per round per check. Both loops walk the code's own tuples in
     order, which is the order the emitted program measures in. A location whose
     probability is zero cannot flip anything, so it is not enumerated at all: a
@@ -494,19 +494,19 @@ def _mechanisms(
     is enumerated.
     """
 
-    data_wires = circuit.code.data_wires
+    data_wires = circuit.code.data_qubits
     if len(set(data_wires)) != len(data_wires):
         raise ValueError(
-            "the code declares a repeated data wire, so a mechanism at that "
+            "the code declares a repeated data qubit, so a mechanism at that "
             "location would be enumerated twice and merged with itself"
         )
-    ancilla_wires = [check.ancilla_wire for check in circuit.code.checks]
+    ancilla_wires = [check.ancilla_qubit for check in circuit.code.checks]
     if len(set(ancilla_wires)) != len(ancilla_wires):
         repeated = sorted(
             wire for wire in set(ancilla_wires) if ancilla_wires.count(wire) > 1
         )
         raise ValueError(
-            f"the code declares a repeated check ancilla wire ({repeated[0]}): "
+            f"the code declares a repeated check ancilla qubit ({repeated[0]}): "
             "two checks record one syndrome bit, so the model would read the "
             "same bit for both"
         )
@@ -529,7 +529,7 @@ def _mechanisms(
                     _Mechanism(
                         kind="measurement",
                         round_index=round_index,
-                        wire=check.ancilla_wire,
+                        wire=check.ancilla_qubit,
                         probability=noise.measurement_flip,
                     )
                 )
@@ -584,7 +584,7 @@ def _forced_flip(round_index: int, wire: int) -> str:
 
 
 def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) -> str:
-    """Return ``circuit``'s source with one ``X`` forced on a data wire.
+    """Return ``circuit``'s source with one ``X`` forced on a data qubit.
 
     The flip is guarded by ``if round_index == <round_index>:`` and inserted at
     the start of that round, before any of the round's CNOTs, so the error opens
@@ -592,7 +592,7 @@ def _inject_data_flip(circuit: MemoryCircuit, *, round_index: int, wire: int) ->
     """
 
     checked_round = _checked_round(circuit, round_index, label="data-flip round")
-    checked_wire = _checked_wire(circuit.code.data_wires, wire, label="data-flip wire")
+    checked_wire = _checked_wire(circuit.code.data_qubits, wire, label="data-flip wire")
     offset = _single_anchor(
         circuit.source, _ROUND_LOOP_ANCHOR, label="the round loop anchor"
     )
@@ -618,7 +618,7 @@ def _inject_measurement_flip(
 
     checked_round = _checked_round(circuit, round_index, label="measurement-flip round")
     checked_wire = _checked_wire(
-        circuit.code.ancilla_wires, ancilla_wire, label="measurement-flip ancilla"
+        circuit.code.ancilla_qubits, ancilla_wire, label="measurement-flip ancilla"
     )
     offset = _single_anchor(
         circuit.source,
@@ -672,7 +672,7 @@ def _forced_signature(
     classical: list[list[int]] = execution.classical_bits.tolist()
     samples: list[list[int]] = execution.samples.tolist()
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(circuit.code.checks)
     }
     checks = len(circuit.code.checks)
@@ -685,17 +685,17 @@ def _forced_signature(
         A syndrome reference is read at the position of the check that owns its
         ancilla, so an ancilla no check owns has no recorded bit to read. A
         layout may name one — ``MemoryCircuit`` ties the reference to the code's
-        declared ancilla wires, not to its checks — so the lookup states the
+        declared ancilla qubits, not to its checks — so the lookup states the
         failure instead of raising a bare ``KeyError``.
         """
 
         if reference.round_index is None:
-            return sample_row[reference.wire]
-        position = positions.get(reference.wire)
+            return sample_row[reference.qubit]
+        position = positions.get(reference.qubit)
         if position is None:
             raise ValueError(
-                f"detector syndrome measurement names ancilla wire "
-                f"{reference.wire}, which no check owns"
+                f"detector syndrome measurement names ancilla qubit "
+                f"{reference.qubit}, which no check owns"
             )
         return classical_row[reference.round_index * checks + position]
 

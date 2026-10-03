@@ -55,3 +55,22 @@ and [its decision record](../development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULAR
 Aliases are owed only where the name is reachable from `fq.*`. On the attribute
 surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`, and
 `fq.OutputRequest.wires`; everything else is renamed in place in the same release.
+
+## Spellings the census cannot see
+
+The scanner reads names — parameters, attributes, definitions — and reports
+string literals without judging them. Two further user-visible spellings are
+reachable exactly the way a parameter is, and neither is on a ledger. Both are
+listed here so that "the ledger is clean" is not read as "no user-visible `wire`
+is left":
+
+| Spelling | Where a user meets it | Disposition |
+|---|---|---|
+| `wire_options`, `show_wire_labels`, `active_wire_notches`, `n_wires` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | open; the drawer docstrings document the accepted spelling, which is still the old one |
+| `wires` | the keyword a captured hybrid program must use — `qp.H(wires=...)`, `qp.measure(wires=...)`, `qp.reset(wires=...)` — required by the capture layer, which rejects any other keyword | open; renaming it changes the source language, not a signature |
+
+Neither is renamed here. Renaming the first would make the drawer docstrings
+describe keywords the code does not accept; renaming the second would break every
+hybrid program the capture layer can read. Both are candidates for their own
+change, and the capture keyword is a decision for the hybrid-language owner
+rather than for this migration.

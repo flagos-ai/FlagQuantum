@@ -266,10 +266,10 @@ def test_wire_order_reorders_labels_and_is_copied() -> None:
     circuit.h(0)
     wire_order: list[int | str] = [2, 0, 1]
 
-    fig, ax = _render(circuit, wire_order=wire_order, show_initial_state=True)
+    fig, ax = _render(circuit, qubit_order=wire_order, show_initial_state=True)
     try:
         assert wire_order == [2, 0, 1]
-        assert MPLDrawer(circuit, wire_order=[2, 0, 1]).wire_map == {2: 0, 0: 1, 1: 2}
+        assert MPLDrawer(circuit, qubit_order=[2, 0, 1]).qubit_map == {2: 0, 0: 1, 1: 2}
         assert [text for text in _texts(ax) if "|0⟩" in text] == [
             "2: |0⟩",
             "0: |0⟩",
@@ -284,10 +284,10 @@ def test_wire_labels_missing_from_wire_order_are_appended() -> None:
     circuit = fq.Circuit(3)
     circuit.h(0)
 
-    drawer = MPLDrawer(circuit, wire_order=[2])
+    drawer = MPLDrawer(circuit, qubit_order=[2])
     plt.close(drawer.fig)
 
-    assert drawer.wire_map == {2: 0, 0: 1, 1: 2}
+    assert drawer.qubit_map == {2: 0, 0: 1, 1: 2}
 
 
 def test_operations_without_wires_do_not_create_layers() -> None:

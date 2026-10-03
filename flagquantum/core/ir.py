@@ -39,11 +39,11 @@ OPCODE_SCHEMAS = OPERATOR_SCHEMAS
 def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if not normalized:
-        raise IRValidationError(f"{owner} requires at least one wire")
+        raise IRValidationError(f"{owner} requires at least one qubit")
     if any(wire < 0 for wire in normalized):
-        raise IRValidationError(f"{owner} wires must be non-negative: {normalized}")
+        raise IRValidationError(f"{owner} qubits must be non-negative: {normalized}")
     if len(set(normalized)) != len(normalized):
-        raise IRValidationError(f"{owner} cannot repeat a wire: {normalized}")
+        raise IRValidationError(f"{owner} cannot repeat a qubit: {normalized}")
     return normalized
 
 
@@ -100,7 +100,7 @@ def _normalize_dtype(value: Any) -> str:
 def _normalize_count(value: Any, *, what: str) -> int:
     """Return a count as an integer, refusing anything that does not denote one.
 
-    ``n_wires`` is a number of wires and a ``shape`` entry is a dimension, so a value
+    ``n_wires`` is a number of qubits and a ``shape`` entry is a dimension, so a value
     that is not exactly an integer is not a count.  ``int(value)`` accepted ``2.7`` as
     ``2``, ``"3"`` as ``3`` and ``True`` as ``1``, which silently rewrote the width of
     the program the caller described and then executed it at that other width.  Only
@@ -372,7 +372,7 @@ class Instruction:
         if schema is not None:
             if len(self.wires) != schema.arity:
                 raise IRValidationError(
-                    f"opcode {name!r} requires {schema.arity} wire(s), got {len(self.wires)}"
+                    f"opcode {name!r} requires {schema.arity} qubit(s), got {len(self.wires)}"
                 )
             # A gate has one representation, so every parameter it declares is
             # required. A channel has two: the declared probability or rate, and the
@@ -487,7 +487,7 @@ class CircuitIR:
                 outside = tuple(wire for wire in node.wires if wire >= self.n_wires)
                 if outside:
                     raise IRValidationError(
-                        f"{owner} {index} references wire(s) {outside} outside "
+                        f"{owner} {index} references qubit(s) {outside} outside "
                         f"circuit range [0, {self.n_wires - 1}]"
                     )
         return self
@@ -692,7 +692,7 @@ def _measurement_from_dict(payload: Mapping[str, Any]) -> MeasurementNode:
     )
 
 
-def from_engine_qir(n_wires: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR:
+def from_engine_qir(n_qubits: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR:
     """Normalize rich circuit QIR into validated canonical FlagQuantum IR."""
 
     instructions: list[Instruction] = []
@@ -706,13 +706,13 @@ def from_engine_qir(n_wires: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR
         instructions.append(
             Instruction(
                 name=str(item.get("name", "")),
-                wires=tuple(int(wire) for wire in item.get("index", ())),
+                wires=tuple(int(qubit) for qubit in item.get("index", ())),
                 params=params,
                 matrix=item.get("gate"),
                 metadata=metadata,
             )
         )
-    return CircuitIR(n_wires=int(n_wires), instructions=tuple(instructions))
+    return CircuitIR(n_wires=int(n_qubits), instructions=tuple(instructions))
 
 
 def ensure_circuit_ir(program: Any) -> CircuitIR:

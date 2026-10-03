@@ -122,7 +122,7 @@ def _initial_state_batch_window(circuit: Circuit, batch_size: int) -> torch.Tens
     """Return a cached zero-state window without materializing the full batch."""
 
     workspace = circuit._initial_state_batch_window_workspace
-    expected_shape = (int(batch_size), 2**circuit.n_wires)
+    expected_shape = (int(batch_size), 2**circuit.n_qubits)
     if workspace is None or tuple(workspace.shape) != expected_shape:
         workspace = torch.zeros(
             expected_shape,
@@ -146,7 +146,7 @@ def _statevector_batch_input(
     )
     initial_window_size = _cpu_statevector_batch_chunk_size_for(
         batch_size=batch_size,
-        amplitudes=2**circuit.n_wires,
+        amplitudes=2**circuit.n_qubits,
         element_size=torch.empty((), dtype=circuit.dtype).element_size(),
         device_type=torch.device(circuit.device).type,
     )
@@ -173,7 +173,7 @@ def _initial_state(circuit: Circuit) -> torch.Tensor:
     if workspace is None:
         workspace = torch.zeros(
             circuit.bsz,
-            2**circuit.n_wires,
+            2**circuit.n_qubits,
             dtype=circuit.dtype,
             device=circuit.device,
         )

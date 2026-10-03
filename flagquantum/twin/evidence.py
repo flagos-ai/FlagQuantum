@@ -131,7 +131,7 @@ class TwinEvidenceEnvelope:
         """Return whether a circuit remains inside the structural boundary."""
 
         return (
-            circuit.n_wires == len(self.physical_qubits)
+            circuit.n_qubits == len(self.physical_qubits)
             and len(circuit.instructions) <= self.maximum_instruction_count
             and all(
                 instruction.name in self.supported_operations

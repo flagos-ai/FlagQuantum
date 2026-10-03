@@ -16,7 +16,7 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
     lines = [
         "OPENQASM 3.0;",
         'include "stdgates.inc";',
-        f"qubit[{circuit.n_wires}] q;",
+        f"qubit[{circuit.n_qubits}] q;",
         *([f"bit[{classical_width}] c;"] if classical_width else []),
     ]
     for instruction in circuit._instructions:

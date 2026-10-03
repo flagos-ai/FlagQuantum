@@ -75,7 +75,7 @@ public_attribute_persisted = 22
 public_attribute_reproduce = "python -c \"from tools.census_wire_vocabulary import attribute_census as f; c = f(); print(len(c.ledgered), len(c.excluded))\""
 public_attribute_owner = "WQ-2"
 public_attribute_condition = "ledgered: [attribute_ledger] and [attribute_exclusions] are reconciled against the census on every run, so the split cannot drift and a name cannot be renamed while it is still a payload key"
-public_attribute_aliased = 0
+public_attribute_aliased = 2
 public_attribute_alias_condition = "aliases: a name here is renamed and still reachable through a deprecated forwarder until [attribute_aliases] removal_version; it is counted as remaining, so a slice cannot bank an alias as finished work"
 public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
@@ -86,8 +86,10 @@ message_strings_reproduce = "python -c \"from tools.census_wire_vocabulary impor
 message_strings_owner = "WQ-8"
 message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording"
 # Canonical sites still spelled `wire`, one per line, keyed by module,
-# qualified name, and parameter. A slice removes the lines it retires from
-# this list and adds the same identifiers to [retirement] sites.
+# qualified name, and parameter. The list is the frozen baseline and keeps
+# every line after a rename lands: a slice adds the identifiers it retired to
+# [retirement] sites, so `canonical` minus `retirement` is the live surface
+# and each slice's counts stay the record of what it owed.
 [ledger]
 canonical = [
     "flagquantum/algorithms/amplitude_estimation.py::amplitude_estimation_circuit::n_counting_wires",
@@ -456,7 +458,24 @@ declared = [
 # absent from the live scan: an identifier may not move here while it still
 # exists, which is what makes this list progress rather than bookkeeping.
 [retirement]
-sites = []
+sites = [
+    "flagquantum/circuit.py::Circuit.any::*wires",
+    "flagquantum/circuit.py::Circuit.expectation_z::wires",
+    "flagquantum/circuit.py::Circuit.gate::wires",
+    "flagquantum/core/ir.py::from_engine_qir::n_wires",
+    "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
+    "flagquantum/drawer/mpl_drawer.py::MPLDrawer.__init__::wire_order",
+    "flagquantum/drawer/text_drawer.py::TextDrawer.__init__::show_all_wires",
+    "flagquantum/drawer/text_drawer.py::TextDrawer.__init__::wire_order",
+    "flagquantum/drawer/text_drawer.py::draw_text::show_all_wires",
+    "flagquantum/drawer/text_drawer.py::draw_text::wire_order",
+    "flagquantum/ecosystem/qiskit/conformance.py::qiskit_statevector_to_flagquantum::n_wires",
+    "flagquantum/ecosystem/simulators/advisor.py::recommend::n_wires",
+    "flagquantum/observables/__init__.py::lower_outputs::n_wires",
+    "flagquantum/qec/pauli.py::Pauli.from_label::wire",
+    "flagquantum/testing/correctness.py::generate_circuit_ir::n_wires",
+    "flagquantum/testing/remote.py::InMemoryRemoteTarget.discover_backends::n_wires",
+]
 
 [[slices]]
 id = "WQ-2"
@@ -464,8 +483,8 @@ title = "qubit-facing leaves"
 owner_team = "core + integration + ecosystem"
 canonical_count = 16
 attribute_count = 28
-attribute_field_count = 12
-attribute_member_count = 9
+attribute_field_count = 11
+attribute_member_count = 10
 attribute_instance_count = 7
 persisted_attribute_count = 5
 definition_count = 0
@@ -1049,14 +1068,122 @@ removal_condition = "the `TwinPrediction` payload schema is versioned and migrat
 # the site had when it was frozen, because the per-slice kind split is a record
 # of what the slice owed and would otherwise collapse to zero.
 [attribute_retirement]
-sites = []
+[[attribute_retirement.sites]]
+site = "flagquantum/core/operator_schema.py::GateInfo::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/core/operator_schema.py::OperatorSchema::wire_convention"
+replacement = "qubit_convention"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/ir_adapter.py::DrawableCircuit::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/mpl_drawer.py::MPLDrawer::n_wires"
+replacement = "n_qubits"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/mpl_drawer.py::MPLDrawer::wire_map"
+replacement = "qubit_map"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/text_drawer.py::TextDrawer::n_wires"
+replacement = "n_qubits"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/text_drawer.py::TextDrawer::reverse_wire_map"
+replacement = "reverse_qubit_map"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/text_drawer.py::TextDrawer::show_all_wires"
+replacement = "show_all_qubits"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/text_drawer.py::TextDrawer::wire_map"
+replacement = "qubit_map"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/drawer/text_drawer.py::TextDrawer::wire_order"
+replacement = "qubit_order"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/circuit.py::MeasurementRef::wire"
+replacement = "qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::CodeCheck::ancilla_wire"
+replacement = "ancilla_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::CodeCheck::cnot_wires"
+replacement = "cnot_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::RepetitionCode::ancilla_wires"
+replacement = "ancilla_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::RepetitionCode::data_wires"
+replacement = "data_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::RotatedSurfaceCode::ancilla_wires"
+replacement = "ancilla_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::RotatedSurfaceCode::data_wires"
+replacement = "data_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::StabilizerCode::ancilla_wires"
+replacement = "ancilla_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::StabilizerCode::data_wires"
+replacement = "data_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::SteaneCode::ancilla_wires"
+replacement = "ancilla_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/codes.py::SteaneCode::data_wires"
+replacement = "data_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/pauli.py::Pauli::x_wires"
+replacement = "x_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/pauli.py::Pauli::z_wires"
+replacement = "z_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/types.py::Correction::wire"
+replacement = "qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/types.py::ErrorEvent::wire"
+replacement = "qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/qec/types.py::PauliFrame::x_wires"
+replacement = "x_qubits"
+declaration = "field"
 
 # Names that are renamed and still reachable. They stay in [attribute_ledger],
 # so the slice still counts them as remaining work: a deprecated alias is a
 # migration in progress, not a finished one.
 [attribute_aliases]
 removal_version = "0.4.0"
-sites = []
+[[attribute_aliases.sites]]
+site = "flagquantum/circuit.py::Circuit::n_wires"
+replacement = "n_qubits"
+[[attribute_aliases.sites]]
+site = "flagquantum/observables/__init__.py::OutputRequest::wires"
+replacement = "qubits"
 
 
 # The third door: a module-level public function or class whose own name says

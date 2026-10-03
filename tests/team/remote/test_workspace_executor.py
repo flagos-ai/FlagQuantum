@@ -55,7 +55,7 @@ def test_cpu_executor_returns_measurements_without_statevector():
             fq.probabilities(),
             fq.expectation(fq.X(0) @ fq.X(1), name="xx"),
         ),
-        n_wires=2,
+        n_qubits=2,
         shots=None,
     )
     assert measurements is not None
@@ -90,7 +90,7 @@ def test_cpu_executor_returns_samples_and_counts_without_statevector():
     ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
     measurements = lower_outputs(
         (fq.samples(qubits=(0, 1)), fq.counts(qubits=(0, 1))),
-        n_wires=2,
+        n_qubits=2,
         shots=32,
         seed=7,
     )
@@ -124,7 +124,7 @@ def test_cpu_executor_returns_samples_and_counts_without_statevector():
 def test_cpu_executor_runs_measurement_batch_in_one_request():
     from flagquantum.observables import lower_outputs
 
-    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_wires=1, shots=None)
+    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_qubits=1, shots=None)
     assert measurements is not None
     programs = [
         replace(circuit.to_ir(), measurements=measurements).to_dict()
@@ -161,7 +161,7 @@ def test_cpu_executor_runs_measurement_batch_in_one_request():
 def test_cpu_executor_rejects_invalid_batch_before_execution(monkeypatch):
     from flagquantum.observables import lower_outputs
 
-    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_wires=1, shots=None)
+    measurements = lower_outputs(fq.expectation(fq.Z(0)), n_qubits=1, shots=None)
     assert measurements is not None
     valid = replace(fq.Circuit(1).to_ir(), measurements=measurements).to_dict()
     monkeypatch.setattr(

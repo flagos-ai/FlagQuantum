@@ -44,9 +44,9 @@ class Observable:
         products: list[_PauliTerm] = []
         for left in self.terms:
             for right in other.terms:
-                left_wires = {wire for wire, _ in left.factors}
-                right_wires = {wire for wire, _ in right.factors}
-                if left_wires & right_wires:
+                left_qubits = {wire for wire, _ in left.factors}
+                right_qubits = {wire for wire, _ in right.factors}
+                if left_qubits & right_qubits:
                     raise ValueError("Pauli tensor products require disjoint qubits")
                 factors = tuple(sorted((*left.factors, *right.factors)))
                 products.append(
@@ -89,7 +89,7 @@ class OutputRequest:
     """A backend-neutral description of one requested execution output."""
 
     kind: str
-    wires: tuple[int, ...] = ()
+    qubits: tuple[int, ...] = ()
     observable: Observable | None = None
     name: str | None = None
 
@@ -97,7 +97,7 @@ class OutputRequest:
         if self.kind not in {"counts", "expectation", "probabilities", "samples"}:
             raise ValueError(f"unsupported output kind {self.kind!r}")
         object.__setattr__(
-            self, "wires", _qubits(self.wires, owner=f"{self.kind} output")
+            self, "qubits", _qubits(self.qubits, owner=f"{self.kind} output")
         )
         if self.name is not None and (
             not isinstance(self.name, str) or not self.name.strip()
@@ -109,6 +109,13 @@ class OutputRequest:
             raise TypeError(f"{self.kind} output does not accept an observable")
         if self.kind in {"samples", "counts"} and self.observable is not None:
             _sampled_pauli_term(self.observable)
+
+    @property
+    def wires(self) -> tuple[int, ...]:
+        """Deprecated alias for :attr:`qubits`."""
+
+        warn_qubit_alias("wires", "qubits")
+        return self.qubits
 
 
 def _real_scalar(value: object) -> float | None:
@@ -336,7 +343,7 @@ def _sampled_pauli_term(observable: Observable) -> _PauliTerm:
 def lower_outputs(
     outputs: OutputRequest | Sequence[OutputRequest] | None,
     *,
-    n_wires: int,
+    n_qubits: int,
     shots: int | None,
     seed: int | None = None,
 ) -> tuple[MeasurementNode, ...] | None:
@@ -368,14 +375,14 @@ def lower_outputs(
             term_count = len(request.observable.terms)
             for term_index, term in enumerate(request.observable.terms):
                 axes = {
-                    axis: tuple(wire for wire, value in term.factors if value == axis)
+                    axis: tuple(qubit for qubit, value in term.factors if value == axis)
                     for axis in ("x", "y", "z")
                 }
-                term_wires = tuple(wire for wire, _ in term.factors)
+                term_qubits = tuple(qubit for qubit, _ in term.factors)
                 lowered.append(
                     MeasurementNode(
-                        "expectation_identity" if not term_wires else "expectation_ps",
-                        term_wires or (0,),
+                        "expectation_identity" if not term_qubits else "expectation_ps",
+                        term_qubits or (0,),
                         metadata={
                             **metadata,
                             **axes,
@@ -389,7 +396,7 @@ def lower_outputs(
         if request.observable is not None:
             term = _sampled_pauli_term(request.observable)
             axes = {
-                axis: tuple(wire for wire, value in term.factors if value == axis)
+                axis: tuple(qubit for qubit, value in term.factors if value == axis)
                 for axis in ("x", "y", "z")
             }
             metadata.update(axes)
@@ -402,13 +409,13 @@ def lower_outputs(
             lowered.append(
                 MeasurementNode(
                     "sample_ps" if request.kind == "samples" else "counts_ps",
-                    tuple(wire for wire, _ in term.factors),
+                    tuple(qubit for qubit, _ in term.factors),
                     shots=shots,
                     metadata=metadata,
                 )
             )
             continue
-        wires = request.wires or tuple(range(n_wires))
+        qubits = request.qubits or tuple(range(n_qubits))
         request_shots = shots if request.kind in {"samples", "counts"} else None
         if request.kind in {"samples", "counts"} and request_shots is None:
             raise ValueError(f"{request.kind} output requires shots")
@@ -417,7 +424,7 @@ def lower_outputs(
         lowered.append(
             MeasurementNode(
                 "sample" if request.kind == "samples" else request.kind,
-                wires,
+                qubits,
                 shots=request_shots,
                 metadata=metadata,
             )

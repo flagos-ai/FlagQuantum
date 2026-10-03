@@ -303,10 +303,10 @@
       "opcode": "i",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -321,10 +321,10 @@
       "opcode": "x",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -339,10 +339,10 @@
       "opcode": "y",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -357,10 +357,10 @@
       "opcode": "z",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -377,10 +377,10 @@
       "opcode": "h",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sdg",
@@ -395,10 +395,10 @@
       "opcode": "s",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "s",
@@ -415,10 +415,10 @@
       "opcode": "sdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "tdg",
@@ -433,10 +433,10 @@
       "opcode": "t",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "t",
@@ -453,10 +453,10 @@
       "opcode": "tdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sxdg",
@@ -471,10 +471,10 @@
       "opcode": "sx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sx",
@@ -489,10 +489,10 @@
       "opcode": "sxdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -513,10 +513,10 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -537,10 +537,10 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -561,10 +561,10 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -587,10 +587,10 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -611,10 +611,10 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "adjoint_u2_angles",
@@ -639,10 +639,10 @@
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "adjoint_u3_angles",
@@ -673,10 +673,10 @@
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -693,11 +693,11 @@
       "opcode": "cx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -712,11 +712,11 @@
       "opcode": "cy",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -731,11 +731,11 @@
       "opcode": "cz",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -750,11 +750,11 @@
       "opcode": "swap",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -776,11 +776,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -802,11 +802,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -828,11 +828,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -853,11 +853,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -878,11 +878,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -903,11 +903,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -928,11 +928,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -950,12 +950,12 @@
       "opcode": "ccx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -972,12 +972,12 @@
       "opcode": "cswap",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "not_applicable",
@@ -994,10 +994,10 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -1014,10 +1014,10 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -1034,10 +1034,10 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -1054,10 +1054,10 @@
       "parameters": [
         "gamma"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     }
   ],
   "schema_version": "flagquantum_operator_manifest_v1"

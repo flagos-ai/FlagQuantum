@@ -111,11 +111,11 @@ class _IndexSwappedCode:
         return 2
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4)
 
     @property
@@ -123,15 +123,15 @@ class _IndexSwappedCode:
         return (
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
         )
 
@@ -141,7 +141,7 @@ class _IndexSwappedCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_signatures_key_on_check_position_not_on_declared_index() -> None:
@@ -241,11 +241,11 @@ class _ThreeCheckCode:
         return 3
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4, 5)
 
     @property
@@ -253,21 +253,21 @@ class _ThreeCheckCode:
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
             CodeCheck(
                 index=2,
-                stabilizer=Pauli(z_wires=(0, 2)),
-                ancilla_wire=5,
-                cnot_wires=((0, 5), (2, 5)),
+                stabilizer=Pauli(z_qubits=(0, 2)),
+                ancilla_qubit=5,
+                cnot_qubits=((0, 5), (2, 5)),
             ),
         )
 
@@ -277,7 +277,7 @@ class _ThreeCheckCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 @dataclass(frozen=True)
@@ -300,11 +300,11 @@ class _TwoObservableCode:
         return 2
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4)
 
     @property
@@ -312,15 +312,15 @@ class _TwoObservableCode:
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
         )
 
@@ -330,7 +330,7 @@ class _TwoObservableCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)), Pauli(z_wires=(0,)))
+        return (Pauli(z_qubits=(0, 1, 2)), Pauli(z_qubits=(0,)))
 
 
 def test_check_count_drives_the_mechanism_count_not_distance() -> None:
@@ -396,7 +396,7 @@ class _SpareAncillaCode(_TwoObservableCode):
         return 3
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4, 5)
 
 
@@ -513,7 +513,7 @@ class _RepeatedDataWireCode(_TwoObservableCode):
     """
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2, 1)
 
 
@@ -526,7 +526,7 @@ def test_duplicate_data_wires_are_refused() -> None:
     """
 
     built = build_memory_circuit(_RepeatedDataWireCode(), rounds=2)
-    with pytest.raises(ValueError, match="repeated data wire"):
+    with pytest.raises(ValueError, match="repeated data qubit"):
         DetectorErrorModel.from_memory_circuit(
             built, noise=PhenomenologicalNoise(data_flip=0.05)
         )
@@ -548,7 +548,7 @@ class _RepeatedAncillaCode(_TwoObservableCode):
         return 1
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3,)
 
     @property
@@ -556,15 +556,15 @@ class _RepeatedAncillaCode(_TwoObservableCode):
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=3,
-                cnot_wires=((1, 3), (2, 3)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=3,
+                cnot_qubits=((1, 3), (2, 3)),
             ),
         )
 
@@ -580,7 +580,7 @@ def test_repeated_check_ancilla_wires_are_refused() -> None:
     """
 
     built = build_memory_circuit(_RepeatedAncillaCode(), rounds=2)
-    with pytest.raises(ValueError, match="repeated check ancilla wire"):
+    with pytest.raises(ValueError, match="repeated check ancilla qubit"):
         DetectorErrorModel.from_memory_circuit(
             built, noise=PhenomenologicalNoise(data_flip=0.05)
         )

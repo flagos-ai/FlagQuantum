@@ -33,7 +33,7 @@ def route_dynamic_circuit(
     metadata["routing"] = routing
     routed_ir = replace(routed_ir, metadata=metadata)
     routed = DynamicCircuit(
-        n_qubits=circuit.n_wires,
+        n_qubits=circuit.n_qubits,
         bsz=circuit.bsz,
         device=circuit.device,
         dtype=circuit.dtype,

@@ -88,10 +88,17 @@ def test_the_checked_in_contract_passes() -> None:
 
 
 def test_the_gate_reports_progress_per_slice() -> None:
+    """Retirement moves a site from `remaining` to `retired`, never off the books.
+
+    The ledger is the frozen baseline, so the two columns always add back up to
+    the measured surface. A slice that could shrink the total would look finished
+    while it still had sites to rename.
+    """
+
     rows = _GATE.slice_progress(_contract())
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert all(retired == 0 for _, retired, _ in rows)
-    assert sum(remaining for _, _, remaining in rows) == 341
+    assert {row[0]: (row[1], row[2]) for row in rows}["WQ-2"] == (16, 0)
+    assert sum(retired + remaining for _, retired, remaining in rows) == 341
 
 
 def test_the_gate_reports_attribute_progress_per_slice() -> None:
@@ -104,8 +111,8 @@ def test_the_gate_reports_attribute_progress_per_slice() -> None:
 
     rows = _GATE.slice_progress(_contract(), "attribute")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert all(retired == 0 for _, retired, _ in rows)
-    assert sum(remaining for _, _, remaining in rows) == 122
+    assert {row[0]: (row[1], row[2]) for row in rows}["WQ-2"] == (26, 2)
+    assert sum(retired + remaining for _, retired, remaining in rows) == 122
 
 
 def test_the_gate_reports_definition_progress_per_slice() -> None:
@@ -119,7 +126,7 @@ def test_the_gate_reports_definition_progress_per_slice() -> None:
     rows = _GATE.slice_progress(_contract(), "definition")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
     assert all(retired == 0 for _, retired, _ in rows)
-    assert sum(remaining for _, _, remaining in rows) == 10
+    assert sum(retired + remaining for _, retired, remaining in rows) == 10
 
 
 def test_the_gate_is_wired_into_ci_and_pre_push() -> None:
@@ -244,15 +251,22 @@ def test_a_retirement_entry_outside_the_baseline_is_reported() -> None:
 
 
 def test_a_baseline_line_deleted_without_a_retirement_entry_is_reported() -> None:
-    """The rule that makes the ledger shrink-only: deleting a line is a defect.
+    """The rule that makes the ledger a record of what was owed, not a live count.
 
-    The deleted site is still in the code, so it is now a live `wire` parameter
-    that no ledger entry covers. That is the right diagnosis: the line did not
-    retire anything, it only stopped claiming the site.
+    Deleting a line retires nothing: the site is still spelled `wire` in the code
+    and now no ledger entry covers it. The fixture deletes a line that has not
+    been retired, because deleting one that has would also break the retirement
+    table's anchor on the baseline.
     """
 
     contract = _contract()
-    removed = contract["ledger"]["canonical"].pop()
+    retired = set(contract["retirement"]["sites"])
+    removed = next(
+        identifier
+        for identifier in contract["ledger"]["canonical"]
+        if identifier not in retired
+    )
+    contract["ledger"]["canonical"].remove(removed)
     errors = _errors(contract)
     _one(errors, "ledger length")
     _some(errors, "outside the ledger")
@@ -260,11 +274,21 @@ def test_a_baseline_line_deleted_without_a_retirement_entry_is_reported() -> Non
 
 
 def test_a_fabricated_retirement_entry_is_reported() -> None:
-    """A slice may not claim it renamed something that is still spelled `wire`."""
+    """A slice may not claim it renamed something that is still spelled `wire`.
+
+    The fabricated entry is appended, not substituted: replacing the table would
+    un-retire every landed site as well, and the fixture must fail for the one
+    reason it names.
+    """
 
     contract = _contract()
-    claimed = "flagquantum/circuit.py::Circuit.gate::wires"
-    contract["retirement"]["sites"] = [claimed]
+    claimed = next(
+        identifier
+        for identifier in contract["ledger"]["canonical"]
+        if identifier.startswith("flagquantum/algorithms/")
+    )
+    assert claimed not in contract["retirement"]["sites"]
+    contract["retirement"]["sites"].append(claimed)
     errors = _errors(contract)
     _some(errors, "outside the ledger")
     _some(errors, claimed)
@@ -882,9 +906,13 @@ def test_an_attribute_alias_is_reported_as_remaining_work_not_as_progress() -> N
     contract["other_surfaces"]["public_attribute_aliased"] = 1
     assert _errors(contract) == ()
     rows = _GATE.slice_progress(contract, "attribute")
-    assert sum(done for _, done, _ in rows) == 0
-    assert sum(left for _, _, left in rows) == len(
-        contract["attribute_ledger"]["canonical"]
+    # The alias is the only site this fixture moves, and it moves nothing: the
+    # retired column is exactly the retirement table, and the aliased site is
+    # still counted in the remaining column.
+    retired = len(contract["attribute_retirement"]["sites"])
+    assert sum(done for _, done, _ in rows) == retired
+    assert sum(left for _, _, left in rows) == (
+        len(contract["attribute_ledger"]["canonical"]) - retired
     )
 
 
@@ -899,22 +927,18 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     eleven declared aliases from the canonical sites it has yet to retire.
     """
 
-    marked = min(_contract()["attribute_ledger"]["canonical"])
     contract = _contract()
-    contract["attribute_aliases"] = {
-        "removal_version": "0.4.0",
-        "sites": [
-            {
-                "site": marked,
-                "replacement": _CENSUS.replacement_name(marked.rsplit("::", 1)[1]),
-            }
-        ],
-    }
-    contract["other_surfaces"]["public_attribute_aliased"] = 1
+    contract["attribute_aliases"]["sites"].append(
+        {
+            "site": "flagquantum/algorithms/core.py::Hamiltonian::n_wires",
+            "replacement": "qubits",
+        }
+    )
+    contract["other_surfaces"]["public_attribute_aliased"] = 3
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
-    assert "0 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
-    assert "0 of 122 attribute sites retired, 1 kept as deprecated aliases" in lines[8]
+    assert "16 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+    assert "26 of 122 attribute sites retired, 3 kept as deprecated aliases" in lines[8]
     assert "0 of 10 definition names retired" in lines[16]
 
 
@@ -1143,11 +1167,18 @@ def test_the_definition_ledger_is_the_scanner_output_at_the_baseline() -> None:
 
 
 def test_the_ledger_is_the_scanner_output_at_the_baseline() -> None:
+    """The ledger is measured, not hand-written: it is the scan plus what landed.
+
+    A ledger line may only disappear from the live surface through a retirement
+    row, so the two together have to equal the scanner exactly. A missing
+    retirement row puts a live site on the right-hand side only.
+    """
+
     contract = _contract()
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    assert set(contract["ledger"]["canonical"]) == {
-        site.identifier for site in scanned.canonical
-    }
+    assert set(contract["ledger"]["canonical"]) - set(
+        contract["retirement"]["sites"]
+    ) == {site.identifier for site in scanned.canonical}
 
 
 def test_the_existing_aliases_are_the_ones_the_scanner_finds() -> None:

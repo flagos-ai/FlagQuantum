@@ -21,14 +21,14 @@ class ErrorEvent:
     """One deterministic Pauli error injected before checks in a QEC round."""
 
     round_index: int
-    wire: int
+    qubit: int
     pauli: str = "x"
 
     def __post_init__(self) -> None:
         if self.round_index < 0:
             raise ValueError("error-event round index must be non-negative")
-        if self.wire not in {0, 1, 2}:
-            raise ValueError("repetition error wire must be 0, 1, or 2")
+        if self.qubit not in {0, 1, 2}:
+            raise ValueError("repetition error qubit must be 0, 1, or 2")
         if self.pauli != "x":
             raise ValueError("the repetition reference profile supports Pauli X only")
 
@@ -45,9 +45,9 @@ class ErrorSchedule:
         events = tuple(sorted(self.events))
         if len(events) > 64:
             raise ValueError("error schedule exceeds the 64-event reference limit")
-        identities = tuple((event.round_index, event.wire) for event in events)
+        identities = tuple((event.round_index, event.qubit) for event in events)
         if len(set(identities)) != len(identities):
-            raise ValueError("an error schedule cannot repeat a round/wire event")
+            raise ValueError("an error schedule cannot repeat a round/qubit event")
         object.__setattr__(self, "events", events)
 
     def for_round(self, round_index: int) -> tuple[ErrorEvent, ...]:
@@ -96,44 +96,44 @@ class Correction:
     """One decoder or compiled-feedback correction decision."""
 
     round_index: int
-    wire: int | None
+    qubit: int | None
     pauli: str = "x"
 
     def __post_init__(self) -> None:
         if self.round_index < 0:
             raise ValueError("correction round index must be non-negative")
-        if self.wire is not None and self.wire not in {0, 1, 2}:
-            raise ValueError("repetition correction wire must be 0, 1, 2, or None")
+        if self.qubit is not None and self.qubit not in {0, 1, 2}:
+            raise ValueError("repetition correction qubit must be 0, 1, 2, or None")
         if self.pauli != "x":
             raise ValueError("the repetition reference profile supports Pauli X only")
 
     @property
     def applied(self) -> bool:
-        return self.wire is not None
+        return self.qubit is not None
 
 
 @dataclass(frozen=True)
 class PauliFrame:
     """Parity-reduced X corrections recommended at a readout boundary."""
 
-    x_wires: tuple[int, ...] = ()
+    x_qubits: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
-        if tuple(sorted(set(self.x_wires))) != self.x_wires:
-            raise ValueError("Pauli-frame X wires must be unique and ordered")
-        if any(wire not in {0, 1, 2} for wire in self.x_wires):
-            raise ValueError("Pauli-frame wire must be 0, 1, or 2")
+        if tuple(sorted(set(self.x_qubits))) != self.x_qubits:
+            raise ValueError("Pauli-frame X qubits must be unique and ordered")
+        if any(qubit not in {0, 1, 2} for qubit in self.x_qubits):
+            raise ValueError("Pauli-frame qubit must be 0, 1, or 2")
 
     @classmethod
     def from_corrections(cls, corrections: Sequence[Correction]) -> "PauliFrame":
         parity: set[int] = set()
         for correction in corrections:
-            if correction.wire is None:
+            if correction.qubit is None:
                 continue
-            if correction.wire in parity:
-                parity.remove(correction.wire)
+            if correction.qubit in parity:
+                parity.remove(correction.qubit)
             else:
-                parity.add(correction.wire)
+                parity.add(correction.qubit)
         return cls(tuple(sorted(parity)))
 
     def apply(self, bits: Sequence[int]) -> tuple[int, int, int]:
@@ -141,8 +141,8 @@ class PauliFrame:
         if len(normalized) != 3:
             raise ValueError("repetition Pauli frame requires three data bits")
         result = list(normalized)
-        for wire in self.x_wires:
-            result[wire] ^= 1
+        for qubit in self.x_qubits:
+            result[qubit] ^= 1
         return result[0], result[1], result[2]
 
 

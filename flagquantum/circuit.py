@@ -137,6 +137,7 @@ def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
     if isinstance(other, Circuit):
         return other.n_qubits, other.bsz, tuple(other._instructions)
     if isinstance(other, CircuitIR):
+        # `CircuitIR.n_wires` is a frozen payload key, so it keeps its spelling.
         return other.n_wires, other.metadata.get("batch_size", 1), other.instructions
     raise TypeError(
         "Circuit.compose accepts a Circuit or a CircuitIR, got "
@@ -147,7 +148,7 @@ def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
 class _CircuitConstructionOptions(TypedDict):
     """Configuration retained when binding or copying a circuit."""
 
-    n_wires: int
+    n_qubits: int
     bsz: int
     device: torch.device | str | None
     dtype: torch.dtype
@@ -197,7 +198,7 @@ class Circuit:
     """
 
     _parameter_bindings: BuilderBindings
-    _n_wires: int
+    _n_qubits: int
     _bsz: int
 
     def __init__(
@@ -238,8 +239,7 @@ class Circuit:
         # The backing fields are written directly here: the setters below refresh
         # derived state that does not exist yet, and both values were already read
         # through ``_count_argument`` when the aliases were resolved.
-        self._n_wires = next(iter(counts.values()))
-        self._nqubits = self._n_wires
+        self._n_qubits = next(iter(counts.values()))
         self._bsz = _count_argument("bsz", bsz)
         self.runtime_config = config or get_runtime_config()
         if dtype is not None:
@@ -270,7 +270,7 @@ class Circuit:
         ] = {}
         self._inputs = inputs
         self.circuit_param: _CircuitConstructionOptions = {
-            "n_wires": self.n_wires,
+            "n_qubits": self.n_qubits,
             "bsz": self.bsz,
             "device": self.device,
             "dtype": self.dtype,
@@ -293,7 +293,7 @@ class Circuit:
     def _set_declared_count(self, name: str, value: Any) -> None:
         """Apply one declared count under the rule the constructor already applies.
 
-        ``bsz`` and ``n_wires`` are read by the program builder and by every
+        ``bsz`` and ``n_qubits`` are read by the program builder and by every
         executor, so the rule that reads them from ``Circuit(...)`` has to be the
         rule that reads them from an assignment. Without this, ``circuit.bsz = 2.7``
         was stored as ``2.7``, reported back as ``2.7``, and executed as a
@@ -302,33 +302,36 @@ class Circuit:
         """
 
         count = _count_argument(name, value)
-        if name == "n_wires":
-            self._require_width_covers_recorded_wires(count)
+        if name == "n_qubits":
+            self._require_width_covers_recorded_qubits(count)
         if getattr(self, f"_{name}") == count:
             return
         setattr(self, f"_{name}", count)
-        if name == "n_wires":
-            self._nqubits = count
         self._after_declared_count_change()
 
-    def _require_width_covers_recorded_wires(self, n_wires: int) -> None:
-        """Refuse a width that would strand an instruction already recorded."""
+    def _require_width_covers_recorded_qubits(self, n_wires: int) -> None:
+        """Refuse a width that would strand an instruction already recorded.
+
+        The parameter keeps its ``wire`` spelling: private parameters are outside
+        the migration boundary, and the contract records their count so the
+        exclusion stays honest.
+        """
 
         for index, instruction in enumerate(self._instructions):
-            stranded = tuple(wire for wire in instruction.wires if wire >= n_wires)
+            stranded = tuple(qubit for qubit in instruction.wires if qubit >= n_wires)
             if stranded:
                 raise ValidationError(
-                    f"Circuit n_wires must cover every recorded wire: instruction "
-                    f"{index} references wire {stranded[0]}, which needs n_wires >= "
+                    f"Circuit n_qubits must cover every recorded qubit: instruction "
+                    f"{index} references qubit {stranded[0]}, which needs n_qubits >= "
                     f"{stranded[0] + 1}."
                 )
 
     def _after_declared_count_change(self) -> None:
-        """Discard everything derived from ``n_wires`` and ``bsz``.
+        """Discard everything derived from ``n_qubits`` and ``bsz``.
 
         A count change reaches further than a gate edit. The cached IR carries both
         counts, the cached backend programs are built from them, and the statevector
-        workspaces are shaped ``(bsz, 2**n_wires)`` — including
+        workspaces are shaped ``(bsz, 2**n_qubits)`` — including
         :attr:`_initial_state_workspace` and the Z-sign table, which a gate edit may
         keep but a width or batch change cannot.
         """
@@ -339,19 +342,35 @@ class Circuit:
         self._statevector_z_signs.clear()
         self.circuit_param = {
             **self.circuit_param,
-            "n_wires": self._n_wires,
+            "n_qubits": self._n_qubits,
             "bsz": self._bsz,
         }
 
     @property
-    def n_wires(self) -> int:
-        """Number of wires the recorded instructions may reference."""
+    def n_qubits(self) -> int:
+        """Number of qubits the recorded instructions may reference."""
 
-        return self._n_wires
+        return self._n_qubits
+
+    @n_qubits.setter
+    def n_qubits(self, value: Any) -> None:
+        self._set_declared_count("n_qubits", value)
+
+    @property
+    def n_wires(self) -> int:
+        """Deprecated alias for :attr:`n_qubits`."""
+
+        from .core._qubit_aliases import warn_qubit_alias
+
+        warn_qubit_alias("n_wires", "n_qubits")
+        return self.n_qubits
 
     @n_wires.setter
     def n_wires(self, value: Any) -> None:
-        self._set_declared_count("n_wires", value)
+        from .core._qubit_aliases import warn_qubit_alias
+
+        warn_qubit_alias("n_wires", "n_qubits")
+        self.n_qubits = value
 
     @property
     def bsz(self) -> int:
@@ -364,21 +383,15 @@ class Circuit:
         self._set_declared_count("bsz", value)
 
     @property
-    def n_qubits(self) -> int:
-        """Number of public circuit qubits."""
-
-        return self.n_wires
-
-    @property
     def num_qubits(self) -> int:
         """Qiskit-compatible alias for :attr:`n_qubits`."""
 
-        return self.n_wires
+        return self.n_qubits
 
     def gate(
         self,
         name: str,
-        wires: Iterable[int] | int,
+        qubits: Iterable[int] | int,
         *,
         params: Mapping[str, Any] | None = None,
         matrix: Any | None = None,
@@ -386,12 +399,12 @@ class Circuit:
     ) -> "Circuit":
         merged_params = dict(params or {})
         merged_params.update(kwargs)
-        normalized_wires = normalize_qubits(wires, owner=f"Gate {name!r}")
-        outside = tuple(wire for wire in normalized_wires if wire >= self.n_wires)
+        normalized_qubits = normalize_qubits(qubits, owner=f"Gate {name!r}")
+        outside = tuple(qubit for qubit in normalized_qubits if qubit >= self.n_qubits)
         if outside:
             raise ValidationError(
-                f"Gate {name!r} references wire(s) {outside} outside circuit "
-                f"range [0, {self.n_wires - 1}]."
+                f"Gate {name!r} references qubit(s) {outside} outside circuit "
+                f"range [0, {self.n_qubits - 1}]."
             )
         opcode = canonical_opcode(name)
         schema = get_operator_schema(opcode)
@@ -413,7 +426,7 @@ class Circuit:
             metadata["is_channel"] = True
         instruction = Instruction(
             name=opcode,
-            wires=normalized_wires,
+            wires=normalized_qubits,
             params=merged_params,
             matrix=matrix,
             metadata=metadata,
@@ -422,8 +435,8 @@ class Circuit:
         self._invalidate_execution_cache(instructions_changed=True)
         return self
 
-    def any(self, *wires: int, unitary: Any, name: str = "any") -> "Circuit":
-        return self.gate(name, wires, matrix=unitary)
+    def any(self, *qubits: int, unitary: Any, name: str = "any") -> "Circuit":
+        return self.gate(name, qubits, matrix=unitary)
 
     unitary = any
 
@@ -461,7 +474,7 @@ class Circuit:
         """
 
         inverse = type(self)(
-            n_qubits=self.n_wires,
+            n_qubits=self.n_qubits,
             bsz=self.bsz,
             device=self.device,
             dtype=self.dtype,
@@ -535,11 +548,11 @@ class Circuit:
             raise ValidationError(
                 f"Circuit.compose target qubit(s) {negative} must be non-negative."
             )
-        outside = tuple(qubit for qubit in target if qubit >= self.n_wires)
+        outside = tuple(qubit for qubit in target if qubit >= self.n_qubits)
         if outside:
             raise ValidationError(
                 f"Circuit.compose target qubit(s) {outside} outside circuit range "
-                f"[0, {self.n_wires - 1}]."
+                f"[0, {self.n_qubits - 1}]."
             )
         for instruction in instructions:
             self._instructions.append(
@@ -559,17 +572,17 @@ class Circuit:
 
     def to_ir(self) -> CircuitIR:
         if self._ir_cache is None:
-            # A decimal JSON encoding of ``2**n_wires`` is irrelevant to
+            # A decimal JSON encoding of ``2**n_qubits`` is irrelevant to
             # MPS/TN execution and eventually hits Python's large-integer
             # string guard. Keep dense shapes for statevector-sized circuits
             # and describe larger logical amplitude spaces symbolically.
-            dense_shape_available = self.n_wires <= 4096
+            dense_shape_available = self.n_qubits <= 4096
             self._ir_cache = CircuitIR(
-                self.n_wires,
+                self.n_qubits,
                 tuple(self._instructions),
                 dtype=str(self.dtype).removeprefix("torch."),
                 shape=(
-                    (self.bsz, 2**self.n_wires)
+                    (self.bsz, 2**self.n_qubits)
                     if dense_shape_available
                     else (self.bsz,)
                 ),
@@ -581,7 +594,7 @@ class Circuit:
                         else {
                             "batch_size": self.bsz,
                             "amplitude_dimension": "power_of_two",
-                            "amplitude_exponent": self.n_wires,
+                            "amplitude_exponent": self.n_qubits,
                         }
                     ),
                     "runtime_config": self.runtime_config.to_manifest(),
@@ -732,12 +745,12 @@ class Circuit:
             name=None,
         )
 
-    def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
+    def expectation_z(self, qubits: Iterable[int] | int | None = None) -> torch.Tensor:
         from .simulation.statevector.local import _expectation_z
 
-        if wires is None:
-            wires = range(self.n_wires)
-        return _expectation_z(self, normalize_qubits(wires, owner="expectation_z"))
+        if qubits is None:
+            qubits = range(self.n_qubits)
+        return _expectation_z(self, normalize_qubits(qubits, owner="expectation_z"))
 
     def expectation_ps(
         self,
@@ -752,7 +765,7 @@ class Circuit:
         y_set = set(y or ())
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
-            raise ValidationError("A wire can appear in only one of x, y, or z.")
+            raise ValidationError("A qubit can appear in only one of x, y, or z.")
 
         return _expectation_pauli_string(
             self,
@@ -808,7 +821,7 @@ class Circuit:
                 if format == "int":
                     out_key: str | int = int(key)
                 else:
-                    out_key = f"{int(key):0{self.n_wires}b}"
+                    out_key = f"{int(key):0{self.n_qubits}b}"
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)
         return outputs
@@ -900,7 +913,7 @@ _CONTROLLED_TWO_QUBIT_GATES = {
 
 
 def _public_qubit_keywords(opcode: str, arity: int) -> tuple[tuple[str, ...], ...]:
-    """Return public keyword aliases without changing internal wire vocabulary."""
+    """Return public keyword aliases without changing internal qubit vocabulary."""
 
     if arity == 1:
         return (("qubit", "target"),)
@@ -921,7 +934,7 @@ def _install_gate_method(name: str) -> None:
     def method(self: Circuit, *args: Any, **kwargs: Any) -> Circuit:
         arity = schema.arity if schema is not None else len(args)
         positional = list(args)
-        wires: list[Any | None] = [None] * arity
+        qubits: list[Any | None] = [None] * arity
         if schema is not None:
             for index, aliases in enumerate(
                 _public_qubit_keywords(schema.opcode, schema.arity)
@@ -933,18 +946,18 @@ def _install_gate_method(name: str) -> None:
                         f"{name} got multiple names for qubit {index}: {rendered}"
                     )
                 if supplied:
-                    wires[index] = kwargs.pop(supplied[0])
-        for index, wire in enumerate(wires):
-            if wire is None and positional:
-                wires[index] = positional.pop(0)
-        resolved_wires = []
-        for wire in wires:
-            if wire is None:
+                    qubits[index] = kwargs.pop(supplied[0])
+        for index, qubit in enumerate(qubits):
+            if qubit is None and positional:
+                qubits[index] = positional.pop(0)
+        resolved_qubits = []
+        for qubit in qubits:
+            if qubit is None:
                 expected = ", ".join(
                     aliases[0] for aliases in _public_qubit_keywords(name, arity)
                 )
                 raise TypeError(f"{name} requires qubit arguments: {expected}")
-            resolved_wires.append(wire)
+            resolved_qubits.append(qubit)
 
         values = positional
         parameter_names = schema.parameters if schema is not None else ()
@@ -961,7 +974,7 @@ def _install_gate_method(name: str) -> None:
             if parameter_name in kwargs:
                 raise TypeError(f"{name} got multiple values for {parameter_name!r}")
             kwargs[parameter_name] = value
-        return self.gate(name, resolved_wires, **kwargs)
+        return self.gate(name, resolved_qubits, **kwargs)
 
     method.__name__ = name
     setattr(Circuit, name, method)

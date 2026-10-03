@@ -65,11 +65,11 @@ class _Code:
         return len(self.ancillas)
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return self.data
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return self.ancillas
 
     @property
@@ -86,9 +86,9 @@ def _z_check(index: int, ancilla: int, support: tuple[int, ...]) -> CodeCheck:
 
     return CodeCheck(
         index=index,
-        stabilizer=Pauli(z_wires=support),
-        ancilla_wire=ancilla,
-        cnot_wires=tuple((wire, ancilla) for wire in support),
+        stabilizer=Pauli(z_qubits=support),
+        ancilla_qubit=ancilla,
+        cnot_qubits=tuple((wire, ancilla) for wire in support),
     )
 
 
@@ -97,9 +97,9 @@ def _x_check(index: int, ancilla: int, support: tuple[int, ...]) -> CodeCheck:
 
     return CodeCheck(
         index=index,
-        stabilizer=Pauli(x_wires=support),
-        ancilla_wire=ancilla,
-        cnot_wires=tuple((ancilla, wire) for wire in support),
+        stabilizer=Pauli(x_qubits=support),
+        ancilla_qubit=ancilla,
+        cnot_qubits=tuple((ancilla, wire) for wire in support),
     )
 
 
@@ -164,14 +164,14 @@ def test_css_code_matrices_keep_the_declaration_order_of_each_type() -> None:
 
     matrices = css_code_matrices(code)
 
-    z_checks = [check for check in code.checks if check.stabilizer.z_wires]
-    x_checks = [check for check in code.checks if check.stabilizer.x_wires]
+    z_checks = [check for check in code.checks if check.stabilizer.z_qubits]
+    x_checks = [check for check in code.checks if check.stabilizer.x_qubits]
     assert matrices.hz.tolist() == [
-        [1 if wire in check.stabilizer.support else 0 for wire in code.data_wires]
+        [1 if wire in check.stabilizer.support else 0 for wire in code.data_qubits]
         for check in z_checks
     ]
     assert matrices.hx.tolist() == [
-        [1 if wire in check.stabilizer.support else 0 for wire in code.data_wires]
+        [1 if wire in check.stabilizer.support else 0 for wire in code.data_qubits]
         for check in x_checks
     ]
 
@@ -183,7 +183,7 @@ def test_css_code_matrices_index_columns_by_the_declared_data_wires() -> None:
         data=(10, 11, 12),
         ancillas=(20,),
         checks=(_z_check(0, 20, (10, 12)),),
-        observables=(Pauli(z_wires=(10,)),),
+        observables=(Pauli(z_qubits=(10,)),),
     )
 
     matrices = css_code_matrices(code)
@@ -201,7 +201,7 @@ def test_css_code_matrices_read_an_x_only_code() -> None:
         data=(0, 1),
         ancillas=(2,),
         checks=(_x_check(0, 2, (0, 1)),),
-        observables=(Pauli(x_wires=(1,)),),
+        observables=(Pauli(x_qubits=(1,)),),
     )
 
     matrices = css_code_matrices(code)
@@ -226,10 +226,10 @@ def test_css_code_matrices_measure_the_surface_patch_checks() -> None:
 
     matrices = css_code_matrices(code)
 
-    z_checks = [check for check in code.checks if check.stabilizer.z_wires]
+    z_checks = [check for check in code.checks if check.stabilizer.z_qubits]
     assert matrices.hz.shape == (len(z_checks), code.num_data_qubits)
     expected = [
-        [1 if wire in check.stabilizer.support else 0 for wire in code.data_wires]
+        [1 if wire in check.stabilizer.support else 0 for wire in code.data_qubits]
         for check in z_checks
     ]
     assert matrices.hz.tolist() == expected
@@ -237,7 +237,7 @@ def test_css_code_matrices_measure_the_surface_patch_checks() -> None:
     # first ``distance`` data wires rather than on every wire of the patch.
     observable = code.logical_observables[0]
     assert matrices.lz.tolist() == [
-        [1 if wire in observable.z_wires else 0 for wire in code.data_wires]
+        [1 if wire in observable.z_qubits else 0 for wire in code.data_qubits]
     ]
     assert matrices.lx.shape == (0, code.num_data_qubits)
 
@@ -249,7 +249,7 @@ def test_css_code_matrices_refuse_a_mixed_type_logical_operator() -> None:
         data=(0, 1, 2),
         ancillas=(3,),
         checks=(_z_check(0, 3, (0, 1)),),
-        observables=(Pauli(x_wires=(0,), z_wires=(1,)),),
+        observables=(Pauli(x_qubits=(0,), z_qubits=(1,)),),
     )
 
     with pytest.raises(ValueError, match="not a CSS logical operator"):
@@ -266,7 +266,7 @@ def test_css_code_matrices_refuse_a_check_outside_the_data_wires() -> None:
         observables=(),
     )
 
-    with pytest.raises(ValueError, match="does not declare as a data wire"):
+    with pytest.raises(ValueError, match="does not declare as a data qubit"):
         css_code_matrices(code)
 
 
@@ -277,7 +277,7 @@ def test_css_code_matrices_report_the_offending_logical_observable() -> None:
         data=(0, 1),
         ancillas=(2,),
         checks=(_z_check(0, 2, (0, 1)),),
-        observables=(Pauli(z_wires=(0,)), Pauli(z_wires=(0, 5))),
+        observables=(Pauli(z_qubits=(0,)), Pauli(z_qubits=(0, 5))),
     )
 
     with pytest.raises(ValueError, match="logical observable 1"):

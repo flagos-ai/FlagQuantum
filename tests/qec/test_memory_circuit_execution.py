@@ -47,12 +47,12 @@ def _detector_bits(
 ) -> tuple[int, ...]:
     code = memory.code
     checks = len(code.checks)
-    ancilla_index = {check.ancilla_wire: check.index for check in code.checks}
+    ancilla_index = {check.ancilla_qubit: check.index for check in code.checks}
 
     def value(reference: MeasurementRef) -> int:
         if reference.round_index is None:
-            return int(sample[reference.wire])
-        offset = reference.round_index * checks + ancilla_index[reference.wire]
+            return int(sample[reference.qubit])
+        offset = reference.round_index * checks + ancilla_index[reference.qubit]
         return int(classical[offset])
 
     return tuple(
@@ -63,7 +63,7 @@ def _detector_bits(
 
 def _observable_bits(memory: MemoryCircuit, sample: list[int]) -> tuple[int, ...]:
     return tuple(
-        sum(int(sample[reference.wire]) for reference in observable.measurement_parity)
+        sum(int(sample[reference.qubit]) for reference in observable.measurement_parity)
         % 2
         for observable in memory.observables.observables
     )
@@ -222,7 +222,7 @@ def _check_rows(checks: tuple[CodeCheck, ...], *, x_type: bool) -> tuple[int, ..
     return tuple(
         index
         for index, check in enumerate(checks)
-        if bool(check.stabilizer.x_wires) is x_type
+        if bool(check.stabilizer.x_qubits) is x_type
     )
 
 

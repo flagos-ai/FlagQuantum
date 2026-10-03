@@ -185,15 +185,15 @@ def _measured_flips(
     sample = execution.samples.tolist()[0]
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(memory.code.checks)
     }
 
     def measurement_bit(reference: MeasurementRef) -> int:
         if reference.round_index is None:
-            return int(sample[reference.wire])
+            return int(sample[reference.qubit])
         return int(
-            classical[reference.round_index * checks + positions[reference.wire]]
+            classical[reference.round_index * checks + positions[reference.qubit]]
         )
 
     def parity(references: Sequence[MeasurementRef]) -> int:
@@ -385,11 +385,11 @@ class _SharedSupportCode:
         return 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3,)
 
     @property
@@ -397,9 +397,9 @@ class _SharedSupportCode:
         return (
             CodeCheck(
                 index=7,
-                stabilizer=Pauli(z_wires=(0, 1, 2)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3), (2, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1, 2)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3), (2, 3)),
             ),
         )
 
@@ -409,7 +409,7 @@ class _SharedSupportCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_merged_mechanisms_agree_with_sampled_rates() -> None:

@@ -101,7 +101,7 @@ class QuantumProvider:
     ) -> tuple[CloudBackendProfile, ...]:
         legacy_method = type(self).discover_backends
         if legacy_method is not QuantumProvider.discover_backends:
-            return legacy_method(self, n_wires=n_qubits)
+            return legacy_method(self, n_qubits=n_qubits)
         raise NotImplementedError(f"{self.provider} list_devices is not implemented")
 
     def discover_backends(
