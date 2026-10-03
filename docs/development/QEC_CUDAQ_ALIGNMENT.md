@@ -53,9 +53,9 @@ from the matrix's `priority`, the row states why.
 | --- | --- | --- | --- | --- |
 | `qec_code_record` | partial | now | `qec_code_library` | Two families declared and both now feed the matrix route, but no named matrix record, no X-type logical readout, no Steane/colour/qLDPC. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
-| `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Route named after cudaq-qec's own. |
-| `qec_dem_construction` | partial | now | — | Construction is exact on both the circuit and the matrix route; no context object, no X/Y fault family. |
-| `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches and the error-id column landed; no rates vector, no context object. |
+| `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
+| `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
+| `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches, the error-id column and the context object landed; no per-mechanism rates vector, no canonicalization. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
@@ -434,6 +434,40 @@ decoder base protocol. The widest of these:
   code-capacity model can carry a per-location profile and not only a uniform
   one. There is no extended-record sibling, which is the absence the field row's
   negative search names.
+- **Measurement-to-detector map, and the context that carries it.** Upstream
+  reaches this relation two ways: `decoder_init.measurement_to_detectors()`
+  returns the dense `(detectors, raw measurements)` matrix `D`, and the
+  free-function helpers `d_sparse`, `dem_chunks_to_d_sparse`,
+  `dem_chunks_to_o_sparse` and `dem_chunks_to_pcm` produce the `-1`-terminated
+  sparse forms a realtime decoder configuration takes. Here one record,
+  `MeasurementMap`, stores the row structure itself — one row per detector or
+  observable, holding the measurements whose parity it is — and projects to both
+  forms: `dense()` gives upstream's orientation and `flattened()` the sparse one,
+  with the terminator being what keeps a row that reads nothing visible to a
+  sparse reader. Its projections are closed rather than conventional: a row is
+  sorted because a parity is a set, it may not name one measurement twice
+  because two reads of one measurement cancel rather than add, and an index
+  outside the buffer the map states is refused. What still differs is the
+  context around it. Upstream's `decoder_context` is a lazy handle over raw
+  circuit analysis, with `num_measurements()`, the `x_component()` /
+  `z_component()` / `full_component()` methods and a boundary-aware
+  canonicalization variant that exists because its `D` is laid out in uniform
+  per-round blocks; here `decoder_context_from_memory_circuit` builds the model
+  once and each component is a projection of it, with `DecoderInputs` pairing
+  the model with both maps. That the layout states its boundary detectors itself
+  is what makes the union need no separate bookkeeping, and what makes the
+  terminal detectors a member of the Z component rather than a third category.
+  Two refusals keep the projection from being a rewrite: a component of a model
+  that states error ids is refused, because projecting a group of alternatives
+  would either drop the correlation or merge two of its members, and a component
+  whose basis has no detector is refused rather than returned empty. The
+  chunk-scoped helpers remain absent, which is the seam absence
+  `dem_seam_and_chunk_api` records. The one property the whole arrangement rests
+  on is pinned by measurement rather than by construction: the numbering this
+  module derives from the circuit's *declaration* is asserted equal to the
+  numbering the sampler derives from the *lowered program*, so a decoder fed a
+  sampled syndrome is matching its detectors against the measurements that
+  actually compose them.
 - **Sampling function.** Upstream
   `dem_sampling(check_matrix, num_shots, error_probabilities, seed=None, backend="auto")`
   is a free function over a matrix plus a rate vector returning sampled check
@@ -487,7 +521,13 @@ refuses.
    implemented it under exactly that name, so the row turned red and was
    rewritten rather than exempted. That is the decision the row was opened to
    force: this repository is on cudaq-qec's route, and the extraction entry point
-   is named for what it does because that is what cudaq-qec calls it.
+   is named for what it does because that is what cudaq-qec calls it. The other
+   half of that route landed the same way and for the same reason:
+   `decoder_context_from_memory_circuit` was named in the same `symbols_absent`
+   list, so when the decoder context was implemented under that name the row
+   turned red a second time and the name moved to `symbols_present` instead of
+   being exempted. Both moves are the row working as intended: it fails closed on
+   the names it says are missing.
 
 3. **No `for-stim-users` page exists for cudaq-qec.** The only such page is
    *CUDA-Q Logical for Stim users*, in the preview layer, with a companion *Stim
@@ -639,12 +679,12 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), same `use_decomp_suggestions` flag with the same default, free function against classmethod; the default reading is the one stim's own sampler means, and the expanded one is the approximation upstream documents it as. |
 | `dem_to_stim_text` | extra | No writer found upstream at this layer; the produced text comes from CUDA-Q core. |
 | `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. The rates arrive as a separate `PhenomenologicalNoise` rather than folded into one `CssNoise`, and the vectors are read against these matrices. |
-| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. No context object. |
+| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. The context matches, but upstream canonicalizes lazily against a uniform per-round D layout and here the components are projections of the model as built. |
 | `dem_code_capacity_noise` | reshaped | The four families line up one for one against X/Y/Z data rates plus a measurement rate, scalars and per-qubit/per-check vectors alike, with the same wholesale override. The difference is the carrier: a standalone record read beside a code rather than a field of the matrix entry point's argument, so the vector lengths are validated against a count the reader supplies. |
 | `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |
 | `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |
 | `dem_seam_and_chunk_api` | absent | Monolithic model; no chunk, no seam, nothing to slide a window over. |
-| `dem_measurement_to_detector_map` | reshaped | Ordered `MeasurementRef` records on the layout against a stored sparse D matrix on the model. |
+| `dem_measurement_to_detector_map` | reshaped | One `MeasurementMap` record against a stored dense D matrix plus free-function sparse helpers: it projects to both forms, but the chunk-scoped helpers have no counterpart. |
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |
 | `kernel_dem_from_kernel` | absent | CUDA-Q core derives the DEM from the kernel's own annotations; here it is assembled by hand. |
 | `decoder_registry` | reshaped | Upstream reaches a decoder by name — `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` with a decorator putting a class behind a name; here `flagquantum.qec.get_decoder` takes a carrier and `register_decoder` puts one there, checked while the registering module is imported. Narrower on two deliberate points: the source argument is one of the three carriers a caller can hold a model in rather than a parity-check matrix, and only the detector-error-model family is registered, because the repetition-code decoders take an ordered syndrome history rather than detection events. |
