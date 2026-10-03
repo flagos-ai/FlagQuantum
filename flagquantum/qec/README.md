@@ -206,6 +206,51 @@ the other. The rate record is what still limits the fault family: it states
 uniform scalars, so a per-qubit or per-check `px`/`py`/`pz`/`pm` profile is not
 expressible.
 
+## Say that two mechanisms are alternatives
+
+Every mechanism in a model is an independent fault unless it carries an
+`error_id`, and mechanisms sharing one are mutually exclusive: at most one of
+them fires in a shot. This is the one statement the parity matrices cannot carry,
+because two columns of a parity matrix are independent by construction.
+`dem_alternatives.py` owns its arithmetic:
+
+```python
+from flagquantum.qec import DemError, DetectorErrorModel
+
+model = DetectorErrorModel(
+    num_detectors=3,
+    num_observables=1,
+    errors=(
+        DemError(probability=0.1, detectors=(0, 1), error_id=0),
+        DemError(probability=0.2, detectors=(0, 1), error_id=0),
+    ),
+)
+print(model.detector_rates()[0])  # 0.30000000000000004, not the 0.26 of two
+                                  # independent mechanisms
+print(model.error_ids)            # (0, 0): upstream's parallel id vector
+```
+
+The members of a group are disjoint pieces of one shot. Each keeps the
+probability it states, the left-over mass is the group firing none of them, a
+target's rate over the group is the sum of the members touching it rather than
+their parity, and `dem_sampling` draws once per group and lets at most one member
+fire. A group summing to exactly one is admitted — it fires every shot — and a
+lone id excludes nothing, so a model with no ids is this arithmetic's empty case
+and behaves exactly as it did before the field existed. A group whose
+probabilities sum *above* one is refused rather than renormalized, because
+renormalizing would change every rate the caller read.
+
+The statement is about the distribution and not about the signature, so the three
+operations that assume independence refuse such a model and name the ids instead
+of dropping the structure: `to_stim_text()` (the format reads every error
+instruction as independent), `merge_duplicate_mechanisms()` (both rules combine a
+group by assuming independence), and `MinimumWeightMatchingDecoder` (one weight
+per mechanism is the weight of a fault that fires alone, while a group is one
+fault whose weight is the group's own negative log-likelihood). Folding a group
+under its exclusivity into the single mechanism a matcher can weigh is not
+implemented here; that gap is recorded against the `canonicalize_for_rounds`
+family in `contracts/qec-cudaq-alignment-checklist.toml`.
+
 ## Sample the circuit itself, not the model
 
 `sampling.py` samples the same experiment from the circuit rather than from the

@@ -22,6 +22,18 @@ shape never depends on how many mechanisms a signature has, and the decoder is
 what refuses to read an unmerged duplicate rather than quietly weighting a fault
 by the cheaper of its parts.
 
+A mechanism may also carry an error *id*, and mechanisms sharing an id are
+mutually exclusive rather than independent: at most one of them fires in a shot.
+That is how a correlated or decomposed mechanism is stated, and it is the one
+thing about a model the parity matrices cannot express, because two columns of a
+parity matrix are independent by construction. The id is a field of a mechanism's
+own record, so the model carries it through every entry point unchanged and
+refuses the statements that would drop it. ``dem_alternatives`` owns the reading
+-- what a group means for a rate and for a draw, and what a group that does not
+fit one shot earns -- and this module holds the field the reading is stated on.
+A model with no ids is what every construction route here produces and what
+stim's text states, and it behaves exactly as it did before the field existed.
+
 The model is defined for Pauli noise only. It is built on the memory circuit
 *without* in-circuit feedback, because the model describes the physical
 noise-to-detection mapping that a decoder inverts; the compiled feedback layer
@@ -46,6 +58,14 @@ import torch
 
 from .circuit import MemoryCircuit
 from .codes import StabilizerCode
+from .dem_alternatives import (
+    alternative_groups,
+    fold_marginals,
+    projected_ids,
+    require_groups_fit,
+    sample_groups,
+    stated_ids,
+)
 from .dem_construction import (
     CssCodeMatrices,
     _code_matrix_entries,
@@ -119,6 +139,19 @@ def _count(value: int, *, name: str) -> int:
     if value < 0:
         raise ValueError(f"{name} must be non-negative")
     return int(value)
+
+
+def _error_id(value: int | None) -> int | None:
+    """Normalize an error id, which is an opaque non-negative label.
+
+    Two mechanisms are alternatives exactly when their ids are equal, so the
+    value of an id is a label and not a quantity: ids are compared and never
+    ordered or counted, and a caller may renumber a model without changing it.
+    """
+
+    if value is None:
+        return None
+    return _count(value, name="error id")
 
 
 def _normalized_indices(values: Iterable[int], *, name: str) -> tuple[int, ...]:
@@ -444,11 +477,23 @@ def _parse_stim_text(
 
 @dataclass(frozen=True)
 class DemError:
-    """One independent error mechanism and the signature it flips."""
+    """One error mechanism, the signature it flips, and what it excludes.
+
+    A mechanism is an independent fault by default. Setting ``error_id`` states
+    the opposite about a group of them: every mechanism carrying the same id is
+    an alternative to the others, so at most one of them fires in a shot. An id
+    says nothing about the signature, so a group may hold mechanisms with
+    different signatures -- which is how a fault with several possible effects
+    is stated -- and mechanisms with the same signature -- which is how one
+    fault with several possible causes is stated. Both are correlations the
+    parity matrices cannot carry, because two columns of a parity matrix are
+    independent by construction.
+    """
 
     probability: float
     detectors: tuple[int, ...] = ()
     observables: tuple[int, ...] = ()
+    error_id: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -466,6 +511,7 @@ class DemError:
             "observables",
             _normalized_indices(self.observables, name="error observables"),
         )
+        object.__setattr__(self, "error_id", _error_id(self.error_id))
         if not self.detectors and not self.observables:
             raise ValueError(
                 "an error mechanism must flip at least one detector or observable"
@@ -527,6 +573,7 @@ class DetectorErrorModel:
                         error.detectors,
                         error.observables,
                         error.probability,
+                        error.error_id if error.error_id is not None else -1,
                     ),
                 )
             ),
@@ -542,6 +589,54 @@ class DetectorErrorModel:
                     raise ValueError(
                         f"observable index {index} is outside the model shape"
                     )
+        self._require_exclusive_groups_fit()
+
+    def _require_exclusive_groups_fit(self) -> None:
+        """Refuse a model whose alternatives cannot exclude one another.
+
+        The reading of a group, and why a group that does not fit one shot is
+        refused rather than renormalized, is
+        :func:`flagquantum.qec.dem_alternatives.require_groups_fit`.
+        """
+
+        require_groups_fit(self.errors)
+
+    @property
+    def error_ids(self) -> tuple[int, ...] | None:
+        """Return one error id per mechanism, or ``None`` if the model has none.
+
+        This is the model's parallel id column in the sense upstream gives
+        ``error_ids``: entry ``i`` is the id of mechanism ``i``, mechanisms
+        sharing an id are alternatives rather than independent faults, and
+        ``None`` -- upstream's ``nullopt`` -- is the state every construction
+        route here produces and the state stim's text always describes. The
+        values are opaque labels and the vector is a numbering of them, so what
+        is a fact about the model is the partition the vector induces;
+        :func:`flagquantum.qec.dem_alternatives.projected_ids` states the rule.
+        """
+
+        return projected_ids(self.errors)
+
+    def stated_error_ids(self) -> tuple[int, ...]:
+        """Return the distinct error ids the mechanisms state, ascending.
+
+        Empty exactly when the model is independent, which is the premise each
+        refusal checks before it names the ids it would otherwise lose.
+        """
+
+        return stated_ids(self.errors)
+
+    def exclusive_groups(self) -> tuple[tuple[int, ...], ...]:
+        """Return the index groups of mechanisms that exclude one another.
+
+        Only groups of more than one mechanism are returned, because a lone
+        mechanism excludes nothing and grouping it would say otherwise, and a
+        model that states no ids has no groups -- which is what makes the
+        independent arithmetic the empty case of the exclusive arithmetic rather
+        than a second path through it.
+        """
+
+        return alternative_groups(self.errors)
 
     def mechanisms_are_unique(self) -> bool:
         """Return whether no two mechanisms share a detector and observable pair.
@@ -612,6 +707,16 @@ class DetectorErrorModel:
         this one. What changes under either rule is the number of mechanisms
         and, for a caller that reads one weight per signature, those weights.
 
+        The premise of both rules is that the mechanisms they combine are
+        independent, so neither may be applied to a model that states otherwise.
+        A model with error ids says at most one of a group fires, and combining
+        two members of one group by either rule would invent a shot in which both
+        did; the result would carry the same signatures, a plausible number of
+        mechanisms and a different distribution, which is the one failure a
+        caller cannot see from the shape. Such a model is refused rather than
+        merged, and what such a model needs is an operation that folds a group
+        under exclusivity, which this method is not.
+
         Args:
             rule: The rule that gives one prior to a shared signature. The
                 default, :attr:`DemMergeRule.INDEPENDENT_PARITY`, is the exact
@@ -621,10 +726,20 @@ class DetectorErrorModel:
             A model over the same shape with unique signatures.
 
         Raises:
-            ValueError: ``rule`` is not one of the two stated rules.
+            ValueError: ``rule`` is not one of the two stated rules, or a
+                mechanism carries an error id.
         """
 
         selected = DemMergeRule(rule)
+        stated = self.stated_error_ids()
+        if stated:
+            listed = ", ".join(str(value) for value in stated)
+            raise ValueError(
+                "merging states one prior for a shared signature by combining the "
+                "mechanisms that hold it, which assumes they are independent, and "
+                f"this model states the error ids {listed} and so states the "
+                "opposite; a model with alternatives has no merge under either rule"
+            )
         accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
         for error in self.errors:
             signature = (error.detectors, error.observables)
@@ -671,16 +786,14 @@ class DetectorErrorModel:
     def _marginal_rates(
         self, count: int, select: Callable[[DemError], tuple[int, ...]]
     ) -> torch.Tensor:
-        rates = torch.zeros((count,), dtype=torch.float64)
-        if count == 0:
-            # Reachable only for ``num_observables == 0``; detectors are never zero.
-            return rates
-        complements = torch.ones((count,), dtype=torch.float64)
-        for error in self.errors:
-            factor = 1.0 - 2.0 * error.probability
-            for index in select(error):
-                complements[index] *= factor
-        return (1.0 - complements) / 2.0
+        """Return the exact marginal flip probability of ``count`` targets.
+
+        :func:`flagquantum.qec.dem_alternatives.fold_marginals` states the
+        arithmetic and why a group of alternatives is summed rather than composed
+        by parity; this method only supplies the model's own fields.
+        """
+
+        return fold_marginals(self.errors, count, select)
 
     def detector_rates(self) -> torch.Tensor:
         """Return the exact marginal flip probability of every detector."""
@@ -720,6 +833,13 @@ class DetectorErrorModel:
         if not self.errors:
             return DemSample(detectors=detector_bits, observables=observable_bits)
 
+        if self.exclusive_groups():
+            return self._sample_exclusive_groups(
+                generator=generator,
+                detector_bits=detector_bits,
+                observable_bits=observable_bits,
+            )
+
         probabilities = torch.tensor(
             [error.probability for error in self.errors], dtype=torch.float64
         )
@@ -733,6 +853,31 @@ class DetectorErrorModel:
                 detector_bits[:, index] ^= active.to(torch.int8)
             for index in error.observables:
                 observable_bits[:, index] ^= active.to(torch.int8)
+        return DemSample(detectors=detector_bits, observables=observable_bits)
+
+    def _sample_exclusive_groups(
+        self,
+        *,
+        generator: torch.Generator,
+        detector_bits: torch.Tensor,
+        observable_bits: torch.Tensor,
+    ) -> DemSample:
+        """Sample one fault per group of alternatives.
+
+        :func:`flagquantum.qec.dem_alternatives.sample_groups` draws a group once
+        and lands the shot in one member's interval or in the left-over mass; this
+        method only wraps the two bit tensors the caller owns. The id-free path
+        stays in :meth:`dem_sampling`, because a model with no ids is the state
+        every construction route here produces and its draws are pinned against
+        the circuit simulator.
+        """
+
+        sample_groups(
+            self.errors,
+            generator=generator,
+            detector_bits=detector_bits,
+            observable_bits=observable_bits,
+        )
         return DemSample(detectors=detector_bits, observables=observable_bits)
 
     @classmethod
@@ -970,7 +1115,28 @@ class DetectorErrorModel:
         follow, one per detector and one per observable, so a model whose
         trailing detectors no error touches keeps its shape through a round
         trip. Every line, including the last, ends with a newline.
+
+        The format has no way to say that two mechanisms exclude each other, and
+        stim's reader has no field to put it in: upstream states that the ids a
+        text is read into are always empty. A model that states an id therefore
+        has no transcription here, and printing one would turn a correlated model
+        into an independent one under the same probabilities, which is a
+        different model rather than a rounded one. It is refused instead, and the
+        refusal names the ids.
+
+        Raises:
+            ValueError: A mechanism carries an error id.
         """
+
+        stated = self.stated_error_ids()
+        if stated:
+            listed = ", ".join(str(value) for value in stated)
+            raise ValueError(
+                "stim's detector error model text cannot state that mechanisms are "
+                f"alternatives, and this model states the error ids {listed}; the "
+                "format reads every error instruction as an independent mechanism, "
+                "so printing this model would state a different one"
+            )
 
         lines: list[str] = []
         for error in self.errors:
@@ -989,7 +1155,12 @@ class DetectorErrorModel:
 
     @property
     def num_errors(self) -> int:
-        """Number of independent error mechanisms in the model."""
+        """Number of error mechanisms in the model.
+
+        The count is of mechanisms and not of faults a decoder distinguishes: two
+        mechanisms that share a signature are two here, and two that share an
+        error id are two here, because both are two records.
+        """
 
         return len(self.errors)
 

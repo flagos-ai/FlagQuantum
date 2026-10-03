@@ -214,21 +214,27 @@ symbols_present = [
     "flagquantum.qec.DetectorErrorModel.detector_rates",
     "flagquantum.qec.DetectorErrorModel.observable_rates",
     "flagquantum.qec.DetectorErrorModel.num_errors",
+    "flagquantum.qec.DetectorErrorModel.error_ids",
+    "flagquantum.qec.DetectorErrorModel.stated_error_ids",
+    "flagquantum.qec.DetectorErrorModel.exclusive_groups",
     "flagquantum.qec.DemError",
+    "flagquantum.qec.DemError.error_id",
     "flagquantum.qec.DetectorErrorModel.from_code_matrices",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
 ]
-symbols_absent = ["error_ids", "canonicalize_for_rounds", "measurement_to_detectors"]
+symbols_absent = ["canonicalize_for_rounds", "measurement_to_detectors"]
 evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
+    "flagquantum/qec/decoding_graph.py",
     "tests/qec/test_dem_rates.py",
     "tests/qec/test_dem_sampling.py",
+    "tests/qec/test_dem_error_ids.py",
     "tests/qec/test_dem_code_matrices.py",
 ]
-next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side carries every block a code declares now: css_code_matrices reads hz, hx, lz and lx into one CssCodeMatrices record and DetectorErrorModel.from_code_matrices turns it into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit reaches a model without building a circuit, on either readout basis. Three additions would still close the row. An error-id column, because mutually exclusive errors are how a correlated or decomposed mechanism is expressed and there is no way to say it here. A rates vector, because a matcher wants the column vector and this model stores a record per error. And a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand."
-fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. Three named absences cover the three additions, so the row moves when one lands rather than staying quietly stale."
+next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side carries every block a code declares now: css_code_matrices reads hz, hx, lz and lx into one CssCodeMatrices record and DetectorErrorModel.from_code_matrices turns it into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit reaches a model without building a circuit, on either readout basis. The error-id column is the first of the three additions the previous revision of this row listed and it has landed: DemError.error_id states that a group of mechanisms are alternatives, DetectorErrorModel.error_ids projects upstream's parallel vector, and the marginal rates and the sampling path read a group as one fault, so a detector's rate over a group is the sum of the members touching it. The two remaining additions are a rates vector, because a matcher wants the column vector and this model stores a record per error, and a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand. The id also made dem_canonicalize more load-bearing rather than less: folding a group under exclusivity is an operation this row does not own, and three call sites refuse an id-carrying model by naming the ids rather than discarding them."
+fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. The id column is fail-closed on both sides of its own change: a group whose probabilities sum above one is refused rather than renormalized, so no member's stated rate is quietly changed, and the three operations that assume independence refuse an id-carrying model instead of dropping the structure, which is what to_stim_text (the format cannot state it), merge_duplicate_mechanisms (either rule would invent a shot in which two alternatives both fired) and the decoding graph (one weight per mechanism is the weight of a fault that fires alone) each do by naming the ids. tests/qec/test_dem_error_ids.py pins the refusal messages, the exact rates, the sampled rates against the exact ones at a stated standard-error bound, and the absence of any shot in which two members of one group fire. The two remaining additions are still named absences, so the row moves when one lands rather than staying quietly stale."
 
 [[rows]]
 id = "qec_dem_merge"
@@ -517,13 +523,9 @@ note = "The rates are the same quantity, stored per column upstream and per erro
 [[fields]]
 id = "dem_error_ids"
 cudaq_symbol = "DetectorErrorModel.error_ids -- optional; errors sharing an id are mutually exclusive (correlated), a documented loss of the stim-text path where it is always empty"
-flagquantum_symbol = ""
-verdict = "absent"
-negative_search = [
-    "symbol:flagquantum.qec.DemError.error_id",
-    "symbol:flagquantum.qec.DetectorErrorModel.error_ids",
-]
-note = "This is the one field with no local counterpart at all: a model here cannot say that two mechanisms are alternatives rather than independent, which is what a decomposed or correlated error needs. Merging the parity rule performs is the opposite operation."
+flagquantum_symbol = "flagquantum.qec.DemError.error_id"
+verdict = "reshaped"
+note = "The correlation is now stated, in the record rather than in a parallel vector. Upstream keeps an optional vector parallel to error_rates whose entry i is the id of mechanism i; here the id is a field of the mechanism's own record and flagquantum.qec.DetectorErrorModel.error_ids projects the same vector back out, None when no mechanism states one, which is upstream's nullopt and the state stim's text always describes. Three things the upstream declaration does not fix are fixed here and are the reason this is `reshaped` rather than `renamed`. Exclusivity needs a distribution to be a statement at all, so the members of a group are read as disjoint pieces of one shot: each keeps the probability it states, the left-over mass is the group firing none of them, and a group whose probabilities sum above one is refused rather than renormalized because renormalizing would change every rate the caller read. The marginal rates and the sampling path honour the groups, so a detector's rate over a group is the sum of the members touching it instead of their parity. And the two operations that assume independence refuse an id-carrying model instead of silently discarding the structure: stim text cannot state the correlation, so to_stim_text names the ids it would lose, merge_duplicate_mechanisms names them because combining by either rule invents a shot in which two alternatives both fired, and the decoding graph refuses because one weight per mechanism is the weight of a fault that fires alone. What is still absent is an operation that folds a group under exclusivity, which is what dem_canonicalize records."
 
 [[fields]]
 id = "dem_counts"

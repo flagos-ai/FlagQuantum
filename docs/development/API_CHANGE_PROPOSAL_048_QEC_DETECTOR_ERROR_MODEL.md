@@ -128,9 +128,48 @@ equality is an acceptance test, not a comment.
 ### Stage 2 — Detector error model
 
 - `dem.py`: `DetectorErrorModel`, `DemError` (a probability, a detector
-  signature, and an observable-flip signature), `DetectorErrorModel.from_memory_circuit(...)`,
+  signature, an observable-flip signature, and an optional error id),
+  `DetectorErrorModel.from_memory_circuit(...)`,
   `detector_error_matrix()`, `observables_flips_matrix()`, `dem_sampling()`,
   `to_stim_text()`, and `from_stim_text()`.
+- `dem_alternatives.py`: `stated_ids(errors)`, `projected_ids(errors)`,
+  `fault_groups(errors)`, `require_groups_fit(errors)`,
+  `fold_marginals(errors, count, select)`, and
+  `sample_groups(errors, *, generator, detector_bits, observable_bits)` — the
+  reading of `DemError.error_id`, split out because the model module would
+  otherwise pass its line ceiling -- `dem.py` ends at 1168 lines and this module
+  at 247, which is past the 1250 the architecture gate allows, so the arithmetic
+  could not have stayed beside the carrier -- and because the arithmetic is about
+  the ids rather than about the carrier. `DetectorErrorModel.error_ids`, `.stated_error_ids()`, and
+  `.exclusive_groups()` are the carrier's own statement of the same structure.
+  Mechanisms sharing an id are alternatives rather than independent faults: at most
+  one of them fires in a shot, which is how a correlated or decomposed mechanism
+  is stated and is the one statement the parity matrices cannot carry, because two
+  columns of a parity matrix are independent by construction. Upstream has the
+  column — `error_ids` is a parallel `std::optional<vector<size_t>>` on its DEM
+  result — and documents nothing about the distribution a group implies, so the
+  reading here is stated rather than assumed: the members are disjoint pieces of
+  one shot, each keeping the probability it states, the left-over mass being the
+  group firing none of them, a target's marginal rate over the group being the sum
+  of the members that touch it rather than their parity, and sampling drawing once
+  per group into one member's interval or the left-over mass. A group of one
+  excludes nothing and a group summing to exactly one is admitted; a group summing
+  *above* one is refused rather than renormalized, because renormalizing would
+  change every member's stated rate and leave nothing to read back. Every
+  construction route here produces no ids and stim's text states none, so the
+  id-free arithmetic is this arithmetic's empty case and its draws are unchanged.
+  The statement is a fact about the distribution, so the three operations that
+  assume independence refuse an id-carrying model and name the ids instead of
+  silently dropping the structure: `to_stim_text()` (the format reads every error
+  instruction as an independent mechanism),
+  `merge_duplicate_mechanisms()` (both rules combine a group by assuming
+  independence), and the decoding graph the matcher weighs (one weight per
+  mechanism is the weight of a fault firing alone, while a group is one fault whose
+  weight is the negative log-likelihood of the group). What no route here does is
+  the operation that resolves the refusal rather than avoiding it — folding a group
+  under its exclusivity into the single mechanism a matcher can weigh — which is
+  upstream's `canonicalize_for_rounds` family and is recorded as absent against
+  `dem_canonicalize` in the alignment contract.
 
 Construction is exact and does not sample, which is possible because the
 reference gate set is Clifford and every configured channel is a Pauli channel.
