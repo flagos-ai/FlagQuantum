@@ -531,6 +531,31 @@ measured region. Unlike the statevector artifact it belongs to a capability
 that also claims single-host and multi-GPU support, so it is the multi-node leg
 of a broader entry rather than an entry of its own.
 
+That finding was then taken apart rather than left as a label. Most of the
+transfers were the distributed accounting: the per-rank site footprint, the
+bond dimensions and the canonicalization counters are host-known integers, and
+each was written into a device vector one element at a time, which lifts a
+fresh device scalar per element inside whatever region is being timed.
+Assembling those vectors from device scalars instead, reading each gathered
+table back once rather than once per field per rank, and initialising the
+rank-owned `|0>` from an `arange` rather than from the host integer one, takes
+the same forward workload at one rank from 57 explicit transfers to 13 -- 43
+host-to-device copies down to six. Binding the circuit's angles to the device,
+as the statevector probe already does, takes it to nine.
+`classify_explicit_host_transfer` is the classifier both audits use, so the
+rule is a measured one: a device scalar times a Python int, and a stack of
+such products, stage nothing.
+
+Nine is a floor rather than the next defect. What is left is scalar read-back:
+a canonicalization residual, a norm vector, an exchange length and a per-rank
+byte count -- and each of those has to become a Python number before it can be
+reported at all. Nine is not zero, so this is still staging inside the measured
+region and `host_staging_in_measured_region` stands for MPS. The claim is
+therefore a latency claim over a workload whose measured region contains some
+host accounting, and the honest reading of the number is the one the artifact
+already gives: the record is reproducible and the accounting is bounded and
+disclosed, not that the measured region is pure device work.
+
 The cut width was swept rather than declared, and the sweep is a leg of its own
 rather than part of the declared workload. The declared circuit could not carry
 it: its Schmidt profile is flat at rank two across all five cuts, so moving the
