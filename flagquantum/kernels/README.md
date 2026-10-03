@@ -269,7 +269,19 @@ contiguous CUDA `complex64` statevectors with at most 30 wires and selections of
 at most eight wires. The measured Triton window requires at least `2**16`
 amplitudes per statevector and `2**20` amplitudes across the batch; other valid
 inputs retain an exact differentiable PyTorch fallback. It is experimental and
-is not selected by default runtime dispatch.
+is not selected by default runtime dispatch. The checked-in
+[`statevector_marginal_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_marginal_probability_kernel_a800.json)
+artifact records 30 synchronized groups of 10 invocations for five fixed
+complex64 workloads from 1,048,576 through 16,777,216 total amplitudes on
+`jp-a800-171` and `jp-a800-172` with stock Triton 3.7.1. Maximum probability
+and gradient absolute errors are `1.49e-8` and `5.27e-9`. Against the exact
+same-semantic eager PyTorch reference, Triton reaches `1.080x` to `2.724x` the
+forward speed and `1.014x` to `3.625x` the forward/backward speed; every fixed
+host/workload result must remain at or above the runner's `1.0x` performance
+floor. The evidence covers one dtype and two development hosts, so the
+canonical decision remains `retain_experimental`; it does not authorize
+default dispatch or a release claim. Reproduce or validate it with
+[`benchmarks/statevector_marginal_probability_kernel.py`](../../benchmarks/statevector_marginal_probability_kernel.py).
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog

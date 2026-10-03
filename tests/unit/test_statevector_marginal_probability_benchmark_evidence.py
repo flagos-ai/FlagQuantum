@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -16,12 +18,17 @@ from benchmarks.statevector_marginal_probability_kernel import (
     SEMANTIC_ID,
     SHAPE_MATRIX,
     merge_runs,
+    validate_evidence,
     validate_run,
 )
 
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/statevector_marginal_probability_kernel_a800.json"
+)
 
 
 def _run(host: str, *, speedup: float = 1.2) -> dict[str, object]:
@@ -161,3 +168,11 @@ def test_aggregate_records_speedup_ranges_and_floor() -> None:
     assert payload["forward_backward_speedup_range"] == [1.3, 1.3]
     assert payload["performance_floor"] == 1.0
     assert payload["implementation_decision"] == "retain_experimental"
+
+
+def test_checked_in_a800_artifact_is_canonical() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["source_revision"] == ("d8ee6259428c92c65ca0a4efe3bba462c3b2d760")
