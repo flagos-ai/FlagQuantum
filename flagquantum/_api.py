@@ -133,7 +133,7 @@ def run(
             )
             import_module(".runtime.measurements", __package__).validate_measurements(
                 measurements,
-                n_wires=ir.n_wires,
+                n_qubits=ir.n_wires,
             )
         elif shots is not None:
             raise TypeError(
@@ -317,7 +317,7 @@ def plan(
     if measurements is not None:
         import_module(".runtime.measurements", __package__).validate_measurements(
             measurements,
-            n_wires=ir.n_wires,
+            n_qubits=ir.n_wires,
         )
     from .runtime.planner import plan as plan_execution
 

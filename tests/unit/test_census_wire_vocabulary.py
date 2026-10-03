@@ -174,10 +174,11 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    # The scan is live, not frozen: `WQ-2` renamed 16 of the 341 baseline sites,
-    # so 325 wire-named parameters are still on screen. The frozen number lives
-    # in the contract's `[ledger]`, and the two agree through `[retirement]`.
-    assert len(scanned.canonical) == 325
+    # The scan is live, not frozen: `WQ-2` and `WQ-3` renamed 30 of the 341
+    # baseline sites, so 311 wire-named parameters are still on screen. The frozen
+    # number lives in the contract's `[ledger]`, and the two agree through
+    # `[retirement]`.
+    assert len(scanned.canonical) == 311
     assert len(scanned.aliases) == 11
     assert len(scanned.internal) == 397
     assert scanned.canonical and scanned.aliases and scanned.internal
@@ -384,11 +385,12 @@ def test_a_class_name_alone_is_not_evidence_of_containment(tmp_path: Path) -> No
 
 def test_the_repository_split_accounts_for_every_wire_named_attribute() -> None:
     scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
-    # Live, like the parameter scan: `WQ-2` retired 26 of the 122 ledgered names
-    # and kept 2 of them as deprecated forwarders, so 96 are still on screen.
-    assert len(scanned.ledgered) == 96
+    # Live, like the parameter scan: `WQ-2` and `WQ-3` retired 27 of the 122
+    # ledgered names and kept 3 of them as deprecated forwarders, so 95 are still
+    # on screen.
+    assert len(scanned.ledgered) == 95
     assert len(scanned.excluded) == 22
-    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 118
+    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 117
     assert _CENSUS.public_attribute_names(_ROOT / "flagquantum") == tuple(
         sorted(site.identifier for site in (*scanned.ledgered, *scanned.excluded))
     )

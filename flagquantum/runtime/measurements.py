@@ -135,10 +135,10 @@ def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if any(wire < 0 or wire >= n_wires for wire in normalized):
         raise ValueError(
-            f"measurement wires {normalized!r} are outside a {n_wires}-qubit circuit"
+            f"measurement qubits {normalized!r} are outside a {n_wires}-qubit circuit"
         )
     if len(set(normalized)) != len(normalized):
-        raise ValueError("measurement wires must be unique")
+        raise ValueError("measurement qubits must be unique")
     return normalized
 
 
@@ -276,7 +276,9 @@ def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
 def _postselection(metadata: dict[str, Any], n_wires: int) -> dict[int, int]:
     raw = metadata.get("postselect", {})
     if not isinstance(raw, dict):
-        raise TypeError("measurement postselect metadata must be a wire-to-bit mapping")
+        raise TypeError(
+            "measurement postselect metadata must be a qubit-to-bit mapping"
+        )
     conditions = {int(wire): int(bit) for wire, bit in raw.items()}
     _validate_wires(tuple(conditions), n_wires)
     if any(bit not in {0, 1} for bit in conditions.values()):
@@ -312,14 +314,14 @@ def _validate_sampling_request(
         return
     if kind == "probabilities":
         raise ValueError(
-            f"marginal probabilities over {len(wires)} wires exceed the "
+            f"marginal probabilities over {len(wires)} qubits exceed the "
             f"supported limit of {limit}; increase max_marginal_wires "
             "explicitly to raise it"
         )
     raise ValueError(
-        f"Pauli-basis sampling over {len(wires)} wires exceeds the supported "
-        f"limit of {limit}; a request that reads any wire in X or Y needs one "
-        "contraction per subset of those wires, so increase max_marginal_wires "
+        f"Pauli-basis sampling over {len(wires)} qubits exceeds the supported "
+        f"limit of {limit}; a request that reads any qubit in X or Y needs one "
+        "contraction per subset of those qubits, so increase max_marginal_wires "
         "explicitly to accept that cost"
     )
 
@@ -338,13 +340,13 @@ def _validate_pauli_request(
     axis_wires = axes["x"] + axes["y"] + axes["z"]
     _validate_wires(axis_wires, n_wires)
     if set(axis_wires) != set(wires):
-        raise ValueError(f"{kind} request wires must match metadata x/y/z wires")
+        raise ValueError(f"{kind} request qubits must match metadata x/y/z qubits")
 
 
 def validate_measurements(
     requests: Sequence[MeasurementNode],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> None:
     """Validate all requests before a backend performs any execution."""
 
@@ -356,12 +358,12 @@ def validate_measurements(
                 f"unsupported measurement kind {kind!r}; expected {choices}"
             )
         wires = _validate_wires(
-            request.wires or tuple(range(n_wires)),
-            n_wires,
+            request.wires or tuple(range(n_qubits)),
+            n_qubits,
         )
         metadata = dict(request.metadata)
-        _validate_sampling_request(kind, wires, request.shots, metadata, n_wires)
-        _validate_pauli_request(kind, wires, metadata, n_wires)
+        _validate_sampling_request(kind, wires, request.shots, metadata, n_qubits)
+        _validate_pauli_request(kind, wires, metadata, n_qubits)
 
 
 def _collect_postselected_samples(
@@ -758,20 +760,20 @@ def execute_measurements(
     output: Any,
     requests: Sequence[MeasurementNode],
     *,
-    n_wires: int,
+    n_qubits: int,
     noise_model: Any | None = None,
 ) -> tuple[MeasurementResult, ...]:
     """Execute ordered measurement requests against one native backend result."""
 
     if not requests:
         return ()
-    validate_measurements(requests, n_wires=n_wires)
+    validate_measurements(requests, n_qubits=n_qubits)
     target: Any | None = None
 
     def measurement_target() -> Any:
         nonlocal target
         if target is None:
-            target = _statevector_target(output, n_wires, noise_model)
+            target = _statevector_target(output, n_qubits, noise_model)
         return target
 
     results: list[MeasurementResult] = []
@@ -779,8 +781,8 @@ def execute_measurements(
         kind = request.kind.strip().lower()
         metadata = dict(request.metadata)
         wires = _validate_wires(
-            request.wires or tuple(range(n_wires)),
-            n_wires,
+            request.wires or tuple(range(n_qubits)),
+            n_qubits,
         )
 
         value: torch.Tensor | list[dict[str | int, int]]
@@ -797,7 +799,7 @@ def execute_measurements(
                 kind,
                 wires,
                 metadata,
-                n_wires,
+                n_qubits,
                 noise_model,
             )
         else:
@@ -809,14 +811,14 @@ def execute_measurements(
                 kind,
                 wires,
                 metadata,
-                n_wires,
+                n_qubits,
                 noise_model,
             )
 
         results.append(
             MeasurementResult(
                 kind=kind,
-                wires=wires,
+                qubits=wires,
                 value=value,
                 shots=request.shots,
                 metadata=metadata,
