@@ -427,6 +427,23 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "export": {
+            "measurement": _MODULE.EXPORT_MEASUREMENT,
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": True,
+                "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+                "distribution_semantics": "replicated_per_rank",
+            },
+            "gather": {
+                "measured": True,
+                "synchronized": True,
+                "measurement": _MODULE.EXPORT_MEASUREMENT,
+                "warmup_iterations": _MODULE.EXPORT_WARMUP_ITERATIONS,
+                "measured_iterations": _MODULE.EXPORT_ITERATIONS,
+                "seconds": [0.002, 0.0021, 0.0019, 0.002, 0.0022],
+            },
+        },
         "cut_widths": {
             "widths": [2, 4],
             "exact_schmidt_ranks": [2, 4, 4, 4, 2],
@@ -471,12 +488,54 @@ def test_every_retracted_blocker_needs_its_own_observation(
     complete = blockers()
     # The pair and the circuit are declared boundaries. The cut width is not:
     # the sweep moved the site boundary and read back what each placement
-    # carried, so the blocker that says no cut ever moved is gone.
-    assert complete == {
-        "two_node_pair_only_no_wider_topology",
-        "toy_circuit_parameters_only",
-        "validation_only_tiny_full_mps_gather",
+    # carried, so the blocker that says no cut ever moved is gone. The full-state
+    # export is not either: the leg produces the whole state rather than checking
+    # an answer, so the blocker that says the only full MPS was a validation
+    # gather is gone too.
+    assert (
+        complete
+        - {
+            "two_node_pair_only_no_wider_topology",
+            "toy_circuit_parameters_only",
+        }
+        == set()
+    )
+
+    # The full-MPS gather blocker turns on whether a materialization the workload
+    # needs was recorded. A validation gather is not one, so an absent export
+    # leaves the blocker; so does an export that did not materialize the whole
+    # state, one published in some other site order, and one whose product was a
+    # shard rather than the state. Each of those is a real way the leg could fail
+    # to be the product the blocker is about.
+    full_state = {
+        "result": {
+            "full_state_materialization": True,
+            "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+        }
     }
+    assert "validation_only_tiny_full_mps_gather" in blockers(export=None)
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={**full_state, "product": "shard_state"}
+    )
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": False,
+                "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+            },
+        }
+    )
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": True,
+                "site_order": "internal_site_order_requires_permutation",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_mps_gather" not in complete
 
     # A socket run, and a run with no debug log to read, both leave the fabric
     # untested: the route cannot be asserted from the configuration alone.

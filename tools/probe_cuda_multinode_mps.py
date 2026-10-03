@@ -67,6 +67,10 @@ from flagquantum.runtime.executors.mps.forward import (
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
 )
+from flagquantum.runtime.executors.mps.gather import (
+    SITE_ORDER_CANONICAL_LOGICAL,
+    export_distributed_mps,
+)
 from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
 )
@@ -115,6 +119,21 @@ TRAINABLE_VALUES = (0.23, -0.37)
 MEASUREMENT = "sharded_mps_forward"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
+
+#: The export leg. The forward executor refuses to reconstruct the global state,
+#: so the whole matrix product state can only exist because a workload asked for
+#: it by name. This leg is that ask: it exports the state through the runtime's
+#: own export surface and reports the exported state as its product. It is a
+#: separate measurement from `MEASUREMENT` because the export is a second full
+#: interchange of the same sites, and a duration that had one inside it would not
+#: be a duration of the forward.
+EXPORT_MEASUREMENT = "distributed_mps_full_state_export"
+EXPORT_WARMUP_ITERATIONS = 2
+EXPORT_ITERATIONS = 5
+#: The slice of the exported state the product is read from, and the name the
+#: artifact publishes for it. The exported object is the whole state; the digest
+#: is taken over its site tensors so a reader can compare two exports.
+EXPORTED_PRODUCT = "full_mps_state"
 
 #: The staging audit profiles the steady state for the same reason the samples
 #: warm up: a circuit's first execution also does the planning it will not
@@ -441,6 +460,154 @@ def _performance_observations(*, device: torch.device) -> dict[str, Any]:
     observation["n_wires"] = N_WIRES
     observation["max_bond"] = MAX_BOND
     return observation
+
+
+def _require_export_placement(
+    summary: dict[str, Any], *, world_size: int, local_world_size: int
+) -> None:
+    """The export leg has to have resolved the shape the launch declared.
+
+    The export reports `replicated_per_rank` rather than the forward's
+    `sharded_across_ranks`, because after it every rank holds the whole state.
+    That is the point of the leg rather than a defect in it, so the shape is
+    checked against what was launched and the distribution against what an
+    export is allowed to say.
+    """
+
+    if summary["world_size"] != world_size:
+        raise RuntimeError(
+            f"the export leg ran at {summary['world_size']} ranks where "
+            f"{world_size} were launched"
+        )
+    if summary["local_world_size"] != local_world_size:
+        raise RuntimeError(
+            f"the export leg resolved {summary['local_world_size']} ranks per node "
+            f"where {local_world_size} were launched"
+        )
+    if summary["node_count"] != 2:
+        raise RuntimeError(
+            "the export leg resolved "
+            f"{summary['node_count']} nodes rather than the two hosts this probe "
+            f"requires (world_size={summary['world_size']} "
+            f"local_world_size={summary['local_world_size']})"
+        )
+    expected = "replicated_per_rank"
+    if summary["distribution_semantics"] != expected:
+        raise RuntimeError(
+            f"the export leg reported {summary['distribution_semantics']!r} where "
+            f"an export leaves every rank holding the whole state ({expected!r})"
+        )
+    if summary["site_order"] != SITE_ORDER_CANONICAL_LOGICAL:
+        raise RuntimeError(
+            f"the export leg published site order {summary['site_order']!r} rather "
+            f"than {SITE_ORDER_CANONICAL_LOGICAL!r}"
+        )
+
+
+def _export_observation(
+    forward: Any,
+    *,
+    device: torch.device,
+    world_size: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    """Export the whole matrix product state, and time the gather that produces it.
+
+    This is a separate act from the forward validation. Validation gathers the
+    sites to compare them against a single-device statevector, so the gathered
+    object is a check on an answer computed elsewhere. The export is the runtime's
+    own export surface, called because the whole state is what this leg produces,
+    and the export's own record is the product's description.
+
+    Each sample is checked against the same reference as it is taken, so the
+    duration and the state it belongs to cannot come from different calls: an
+    export that returned sites in the wrong order, or a truncated state, would
+    otherwise be published as a product.
+
+    Every rank runs this, because the gather is a collective.
+    """
+
+    reference = _reference_statevector().reshape(1, -1).to(device=device)
+
+    durations: list[float] = []
+    errors: list[float] = []
+    latest: Any = None
+    for index in range(EXPORT_WARMUP_ITERATIONS + EXPORT_ITERATIONS):
+        _synchronize(device)
+        started = time.perf_counter()
+        exported = export_distributed_mps(forward)
+        _synchronize(device)
+        elapsed = time.perf_counter() - started
+        errors.append(
+            float(
+                torch.max(torch.abs(exported.state.to_statevector() - reference)).item()
+            )
+        )
+        if index >= EXPORT_WARMUP_ITERATIONS:
+            durations.append(elapsed)
+        latest = exported
+    if latest is None:  # pragma: no cover - both counts are positive constants
+        raise RuntimeError("the export leg has no iterations to run")
+    summary = latest.summary()
+    _require_export_placement(
+        summary, world_size=world_size, local_world_size=local_world_size
+    )
+
+    observed_error = max(errors)
+    if observed_error > NUMERICAL_TOLERANCE:
+        raise RuntimeError(
+            "the exported matrix product state disagrees with the single-device "
+            f"statevector reference: max_abs_error={observed_error}"
+        )
+
+    digest = hashlib.sha256()
+    product_bytes = 0
+    for wire, tensor in enumerate(latest.state.tensors):
+        canonical = tensor.detach().to(device="cpu", dtype=COMPLEX_DTYPE).contiguous()
+        digest.update(f"{wire}:{tuple(canonical.shape)}:{canonical.dtype}".encode())
+        digest.update(canonical.numpy().tobytes())
+        product_bytes += int(canonical.numel() * canonical.element_size())
+    return {
+        "measurement": EXPORT_MEASUREMENT,
+        "operation": summary["operation"],
+        "operation_semantics": summary["operation_semantics"],
+        "gather_cost_semantics": summary["gather_cost_semantics"],
+        "product": EXPORTED_PRODUCT,
+        "product_is_the_full_state": True,
+        "product_bytes": product_bytes,
+        "site_tensors_sha256": digest.hexdigest(),
+        "max_abs_error": observed_error,
+        "gather": measured_performance(
+            durations,
+            warmup_iterations=EXPORT_WARMUP_ITERATIONS,
+            measurement=EXPORT_MEASUREMENT,
+        ),
+        # The export's own record, published whole rather than paraphrased: it
+        # carries the site order, the rank ownership, the byte counts, and the
+        # blocker that keeps these durations from being read as a speedup.
+        "result": summary,
+    }
+
+
+def _exports_the_full_state(export: dict[str, Any] | None) -> bool:
+    """Whether the export leg produced the whole matrix product state as its product.
+
+    Read from the recorded export summary rather than from a bare flag beside it,
+    so the fact the blocker turns on and the fact the artifact publishes cannot
+    drift apart. Two things have to hold: the state was materialized in full, and
+    it was the product rather than a shard moved aside to check an answer.
+    """
+
+    if export is None:
+        return False
+    result = export.get("result")
+    if not isinstance(result, dict):
+        return False
+    return (
+        result.get("full_state_materialization") is True
+        and result.get("site_order") == SITE_ORDER_CANONICAL_LOGICAL
+        and export.get("product") == EXPORTED_PRODUCT
+    )
 
 
 def _profiler_activities(device: torch.device) -> list[torch.profiler.ProfilerActivity]:
@@ -990,6 +1157,7 @@ def _artifact(
     network: dict[str, Any],
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
+    export: dict[str, Any] | None,
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
@@ -1004,8 +1172,12 @@ def _artifact(
         "network": network,
         "performance": performance,
         "host_staging": host_staging,
+        "export": export,
         "validation_full_mps_materialization": True,
-        "production_full_mps_materialization": False,
+        # Derived from the export's own record rather than written down here: the
+        # gather that validates the forward and the export that produces the
+        # whole state are different acts, and only the second one is a product.
+        "production_full_mps_materialization": _exports_the_full_state(export),
     }
     evidence = {
         "schema": "flagquantum.cuda_multinode_mps_probe.v1",
@@ -1030,7 +1202,10 @@ def _artifact(
             "site_ownership": [record["owned_sites"] for record in rank_records],
             "observable_wires": list(OBSERVABLE_WIRES),
             "distribution_semantics": "sharded_across_ranks",
-            "execution": "forward_backward_optimizer_and_checkpoint_resume",
+            "execution": (
+                "forward_backward_optimizer_checkpoint_resume_and_full_state_export"
+            ),
+            "exported_product": EXPORTED_PRODUCT,
         },
         "observations": observations,
         # The declared blockers, and why the pair and the circuit are among them,
@@ -1476,6 +1651,16 @@ def probe(
             performance = _performance_observations(device=device)
         host_staging = _host_staging_observation(device=device)
 
+        # The export is a collective and comes after the staging audit, because
+        # it is a second full interchange of the same sites the audit profiles
+        # and the audit is about the execution path rather than about this leg.
+        export = _export_observation(
+            forward,
+            device=device,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+
         properties = torch.cuda.get_device_properties(device)
         record = forward_summary
         record.update(
@@ -1505,6 +1690,7 @@ def probe(
                 network={},
                 performance=performance,
                 host_staging=host_staging,
+                export=export,
                 world_size=world_size,
                 local_world_size=local_world_size,
             )
