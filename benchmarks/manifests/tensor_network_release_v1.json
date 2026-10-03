@@ -244,7 +244,40 @@
       6
     ],
     "timing_unit": "one full forward-and-reverse training step over the sliced network",
-    "warmup_steps": 2
+    "warmup_steps": 2,
+    "measured_single_device_floor": [
+      {
+        "name": "matched_speed_14q_l6_s4",
+        "qubits": 14,
+        "layers": 6,
+        "slice_label_counts": 4,
+        "parameter_count": 84,
+        "status": "completed",
+        "seconds": 15.043,
+        "peak_memory_bytes": 850956288
+      },
+      {
+        "name": "matched_speed_16q_l8_s4",
+        "qubits": 16,
+        "layers": 8,
+        "slice_label_counts": 4,
+        "parameter_count": 128,
+        "status": "completed",
+        "seconds": 30.367,
+        "peak_memory_bytes": 9159390208
+      },
+      {
+        "name": "matched_speed_18q_l10_s6",
+        "qubits": 18,
+        "layers": 10,
+        "slice_label_counts": 6,
+        "parameter_count": 180,
+        "status": "oom",
+        "seconds": 50.738,
+        "peak_memory_bytes": 71869284352
+      }
+    ],
+    "measured_single_device_floor_note": "The frozen ladder was measured on one A800 before any release payload was sealed, and the measurement falsifies its own acceptance configuration. The two narrower rungs complete: 84 trainable angles at 0.79 GiB peak in 15.0 s, and 128 at 8.53 GiB in 30.4 s. The acceptance configuration the freeze names, 180 trainable angles over eighteen wires and ten layers at six sliced labels, exhausts the device: it peaks at 66.9 GiB and then asks for a further 16 GiB, which does not fit on an 80 GiB accelerator. The pair does not rescue it, for the reason the capacity ladder already records: the rung fails on both ranks with the same 58.9 GiB resident and the same 16 GiB refused, so the reverse-mode peak is not slice-owned and adding a second host does not shrink it. The acceptance configuration is therefore unrunnable on this pair in either mode, and no matched-speed baseline or pair leg can be recorded from it. This is recorded rather than corrected: re-freezing the ladder now, after the measurement, would make the manifest describe a protocol chosen to fit the hardware it was measured on, and the freeze exists to prevent exactly that. The finding is the reason the tensor-network lane holds at production_supported instead of release_certified."
   },
   "topologies": {
     "devices_per_node": 1,

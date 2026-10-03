@@ -644,6 +644,54 @@ exactly zero and lets a run report sharded execution while one rank does the
 arithmetic. The slicer now excludes those labels and this workload passes its
 cut explicitly.
 
+#### Why this workload cannot reach `release_certified`
+
+The tensor-network slice contract is different from the statevector one, and the
+difference is worth stating before anyone tries to close the gap with another
+run. Its release manifest freezes a *matched-speed* protocol at six
+configurations, whose acceptance configuration is `matched_speed_18q_l10_s6` --
+180 trainable angles over eighteen wires and ten layers at six sliced labels.
+That configuration was measured on one A800 before any payload was sealed, and
+it exhausts the device. The two narrower rungs of the same frozen ladder
+complete: `matched_speed_14q_l6_s4` at 0.79 GiB peak in 15.0 s and
+`matched_speed_16q_l8_s4` at 8.53 GiB in 30.4 s. The acceptance configuration
+peaks at 66.9 GiB and then asks for a further 16 GiB, which an 80 GiB device
+does not have, and it fails in 50.7 s.
+
+Adding the second host does not change that. The pair fails the rung with the
+same 58.9 GiB resident and the same 16 GiB refused, because the reverse-mode peak
+is not slice-owned -- the same finding the capacity ladder records, where the
+per-rank peak is identical at world size 1 and world size 2 to within a few
+megabytes. So `missing_statistically_significant_speedup_artifact` cannot be
+cleared by running the frozen protocol on this pair: there is no configuration in
+the freeze that both ranks can complete, and the only way to produce one would be
+to re-freeze the ladder *after* measuring it, which is precisely what a
+`frozen_before_release_run` manifest exists to prevent. The measurement is
+therefore recorded in the manifest's own `measured_single_device_floor` rather
+than quietly corrected, in the same spirit as the capacity ladder's twelve
+recorded rungs.
+
+The same structural reason blocks the capacity route.
+`capacity_premise_not_established` requires one measured shape that exhausts a
+single device *and* that a sharded run completes at the same frozen slicing. The
+ladder shows no such shape: the rung that exhausts one device, two sliced labels
+at 80930380288 bytes, fails on the pair at the same number, and the rung that
+completes on one device at four sliced labels completes on the pair too. Slicing
+reduces the forward peak and not the reverse one, so a pair cannot train a
+tensor-network workload that one device cannot.
+
+Two further blockers are also not closable by a run. `toy_circuit_parameters_only`
+attaches to the five-wire hardware artifact itself and is not retractable by any
+measurement, and `two_node_pair_only_no_wider_topology` is permanent because this
+cluster has two hosts. The host-staging and validation-only-gather blockers are
+in principle closable -- the statevector lane closed both with a production
+full-state readout leg -- but the tensor-network producer has no such leg, so
+they stand as recorded.
+
+The lane therefore holds at `production_supported` with all four blockers and
+both claim flags false. That is the honest ceiling for this capability on this
+pair, and it is a measured one.
+
 ### Repeatability of the measured leg
 
 The artifacts as first recorded were produced by two independent invocations of
