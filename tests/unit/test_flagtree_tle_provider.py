@@ -116,6 +116,30 @@ def test_tle_transpose_1q_rejects_cpu_before_capability_probe(monkeypatch) -> No
         )
 
 
+def test_tle_sharded_vjp_rejects_cpu_before_capability_probe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        provider,
+        "require_flagtree_tle_primitive",
+        lambda *args, **kwargs: pytest.fail("capability probe must not run"),
+    )
+    local_before = torch.zeros(1, 4, dtype=torch.complex64)
+    remote_before = torch.zeros_like(local_before)
+    local_adjoint = torch.zeros_like(local_before)
+    remote_adjoint = torch.zeros_like(local_before)
+    matrix = torch.eye(2, dtype=torch.complex64)
+
+    with pytest.raises(ValueError, match="matching nonempty contiguous CUDA"):
+        provider.fused_complex64_sharded_1q_vjp_adjoint_tle(
+            local_before,
+            remote_before,
+            local_adjoint,
+            remote_adjoint,
+            matrix,
+            matrix,
+            rank_basis=0,
+        )
+
+
 def test_tle_control_pack_rejects_cpu_before_capability_probe(monkeypatch) -> None:
     monkeypatch.setattr(
         provider,

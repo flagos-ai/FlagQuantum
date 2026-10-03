@@ -62,7 +62,7 @@ version and are never reused for a different semantic.
 ## Current inventory
 
 The catalog describes the code that already exists. It contains 23 semantics,
-25 Triton implementation entry points, and four FlagTree TLE implementation
+25 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -77,7 +77,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
-| FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint` |
+| FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
 | FQK-GR-004 | `gradient.jacobian.rx_rz_sequence` | `repeated_rx_rz_tangents` |
 | FQK-GR-005 | `gradient.jacobian.pauli_rotation_sequence_2q` | `repeated_rxx_ryy_rzz_tangents` |
 | FQK-GR-006 | `gradient.forward_tangent.heisenberg_hva` | `heisenberg_hva_forward_tangents` |
@@ -191,6 +191,29 @@ surface, but does not authorize default dispatch. This is single-device
 development evidence only, not a distributed scalability or release claim.
 Reproduce or validate it with
 [`benchmarks/flagtree_tle_control_transport.py`](../../benchmarks/flagtree_tle_control_transport.py).
+
+`FQKI-FLAGTREE-GR-003-A` extends the explicit provider boundary to one rank's
+sharded one-qubit adjoint VJP. The four complex local and remote ket/adjoint
+streams use TLE async loads, while the selected matrix and derivative scalars
+remain ordinary `tl.load` operations for the FlagTree 0.7.0 scalar-lowering
+limitation. The wrapper validates matching nonempty contiguous CUDA `complex64`
+chunks and a binary rank basis before probing FlagTree. Default distributed
+reverse execution continues to select the shared Triton implementation.
+
+The checked-in
+[`flagtree_tle_sharded_adjoint_a800.json`](../../benchmarks/results/local/flagtree_tle_sharded_adjoint_a800.json)
+artifact records 30 synchronized groups of 10 invocations for both rank-basis
+values and four fixed chunk sizes from `2**10` through `2**24` elements on
+`jp-a800-171` and `jp-a800-172` with FlagTree 0.7.0. TLE reaches `0.903x` to
+`0.952x` the speed of shared Triton and `1.708x` to `17.375x` the speed of the
+PyTorch reference. Maximum adjoint absolute and relative L2 errors are
+`4.77e-7` and `4.08e-8`; maximum gradient absolute and relative errors are
+`3.66e-4` and `7.42e-7`. The canonical decision is `retain_explicit`: the
+provider establishes a directly measurable FlagTree gradient slice but lacks a
+cross-matrix win, so it does not authorize default dispatch. This rank-local,
+single-device result is development evidence, not distributed scalability or
+release evidence. Reproduce or validate it with
+[`benchmarks/flagtree_tle_sharded_adjoint.py`](../../benchmarks/flagtree_tle_sharded_adjoint.py).
 
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
@@ -543,9 +566,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 23 semantics and 26 implementations are implemented. MPS-003
+The current 23 semantics and 30 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 21 implementations remain experimental. The rest of the
+promotions; the other 25 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract

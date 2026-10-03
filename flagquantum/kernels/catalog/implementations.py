@@ -303,6 +303,15 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("packed_subspace", "flat_statevector"),
         addressing=("distributed", "control_subspace"),
     ),
+    _flagtree(
+        "FQKI-FLAGTREE-GR-003-A",
+        "gradient.vjp.adjoint_1q.sharded",
+        "flagquantum.kernels.flagtree",
+        "fused_complex64_sharded_1q_vjp_adjoint_tle",
+        layouts=("sharded_statevector",),
+        directions=("vjp",),
+        addressing=("distributed",),
+    ),
 )
 
 
