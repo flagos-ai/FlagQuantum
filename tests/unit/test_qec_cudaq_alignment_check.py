@@ -390,6 +390,25 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
             "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms",
         ),
     ),
+    (
+        # The registry is the newest diff row to gain a symbol, so the wrong-owner
+        # mistake has to be caught here too: `get_decoder` is a real name in the
+        # tree, and only following the dotted path separates the registry's
+        # factory from a method of the model.
+        "point the registry diff row at a real name under the wrong owner",
+        "'get_decoder' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "decoder_registry",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.get_decoder"',
+        ),
+    ),
+    (
+        "keep the registry diff row absent now that the tree has it",
+        "verdict `absent` but",
+        lambda t: set_key(t, "decoder_registry", "verdict", 'verdict = "absent"'),
+    ),
 ]
 
 

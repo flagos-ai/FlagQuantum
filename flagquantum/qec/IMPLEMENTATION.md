@@ -600,3 +600,62 @@ extra rather than a build dependency. That cross-check is
 than here: the two decoders agree on the cheapest weight of every syndrome and on
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
+
+## Reaching a decoder by name
+
+`registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
+reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
+**options)` and registers one with a decorator, and this module offers
+`get_decoder(name, source, **options)`, `register_decoder(name, *,
+replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
+those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
+two registrations this package ships.
+
+Three things about it are narrower than upstream on purpose, and each is a
+decision rather than an omission.
+
+The source argument is a *carrier*, not a decoder setting, which is why the three
+accepted forms are the three a caller can hold a model in: the detector error
+model, stim's text for one, and the decoding graph the model defines. A model is
+lifted through the class's own `from_detector_error_model`; a graph is passed to
+the constructor, because the graph is already the thing a matcher searches and
+rebuilding a model from it would lose the observable labels the caller has in
+hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+parity-check matrix is not a carrier, although upstream's
+`H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
+model and a round count rather than defaulting them, so a factory that lifted a
+matrix would also be choosing the noise the caller decodes against. The caller
+who holds the matrix and the noise together does the lifting.
+
+The registry holds the detector-error-model family alone. The repetition-code
+decoders in this layer take an ordered syndrome history rather than detection
+events, and `DetectorErrorModelDecoder` requires
+`from_detector_error_model`, so one name space over two input protocols would
+make a name mean one of two things. They stay directly constructed, which is also
+why the registry is a module of its own rather than methods on `Decoder`.
+
+Registration is checked at registration time, while the registering module is
+being imported. `register_decoder` refuses a name that is not a non-empty string,
+a second registration of a name unless the caller passes `replace=True`, and a
+class missing `decode` or `from_detector_error_model` — the two members every
+decoder in this family shares. A `TypeError` at import time, naming the member
+that is missing, is a better failure than an `AttributeError` at the first call,
+where the name is all the caller has to go on.
+
+`get_decoder` fails closed in two more places. An unregistered name raises
+`ValueError` and lists the names that are registered, rather than reaching any
+implementation, and a source that is not one of the three carriers raises
+`TypeError` naming `DecodingGraph`, since that is the carrier a caller is most
+likely to have held. `**options` goes to whichever route the source selects and
+is not filtered here, so passing the text reader's `use_decomp_suggestions` to
+the graph route raises rather than being dropped.
+
+The optional implementation is registered whether or not it is installed, so
+`pymatching` is part of this package's surface rather than the extra's: asking
+for it without the extra raises the error that names the extra, instead of a name
+that silently is not there. The adapter module is imported, but it reaches
+PyMatching through a function rather than at import time, so `import
+flagquantum.qec` does not import `pymatching` — a test starts a fresh interpreter
+and measures that rather than asserting it. No name is preferred over another, so
+`get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
+happens to be installed; the cross-check is never reached by accident.

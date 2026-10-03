@@ -166,6 +166,26 @@ the DEM and is required, not optional.
 - `adapters.py`: a `pymatching` adapter behind a new `pymatching` optional extra,
   used as a cross-check rather than as the authority, plus a stim-text round-trip
   path.
+- `registry.py`: `get_decoder(name, source, **options)`, `register_decoder(name,
+  *, replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder`
+  protocol, with `AUTHORITY_NAME` and `CROSS_CHECK_NAME` naming the two
+  registrations this package ships. This is the factory half of the CUDA-Q QEC
+  decoder surface — upstream reaches a decoder through
+  `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` and registers one
+  with a decorator — and it is deliberately narrower. The source argument takes
+  the three carriers a caller can hold a model in (the detector error model,
+  stim's text for one, and the decoding graph the model defines) rather than a
+  parity-check matrix, because lifting a matrix would also mean choosing the
+  noise model and round count that `DetectorErrorModel.from_code_matrices` reads
+  rather than defaults. The registry holds the detector-error-model family alone:
+  the repetition-code decoders take an ordered syndrome history rather than
+  detection events, and one name space over two input protocols would make a name
+  mean one of two things. Registration is checked while the registering module is
+  imported, so a class missing `decode` or `from_detector_error_model` is refused
+  there rather than at the first caller, and an unregistered name raises and lists
+  what is registered rather than falling back to any implementation. The optional
+  implementation is registered whether or not it is installed, so its name is
+  part of this package's surface rather than the extra's.
 
 Self-implementation is the authority for three reasons: it adds no runtime
 dependency, it runs in the `cpu-core` lane that installs only `.[dev]`, and it is
@@ -253,8 +273,8 @@ threshold is claimed from it.
 from flagquantum.qec.codes import RepetitionCode
 from flagquantum.qec.circuit import build_memory_circuit
 from flagquantum.qec.dem import DetectorErrorModel
-from flagquantum.qec.matching import MatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
+from flagquantum.qec.registry import AUTHORITY_NAME, get_decoder
 from flagquantum.qec.statistics import estimate_crossing
 
 code = RepetitionCode(distance=5)
@@ -266,12 +286,17 @@ print(dem.detector_error_matrix().shape)
 print(dem.observables_flips_matrix().shape)
 print(dem.to_stim_text()[:80])
 
+# A name reaches a decoder, and the carrier is the model, its stim text, or the
+# graph the model defines -- never a decoder setting.
+decoder = get_decoder(AUTHORITY_NAME, dem)
+print(decoder.decode(dem.dem_sampling(shots=1, seed=0).detectors[0].nonzero()[0]))
+
 crossing = estimate_crossing(
     probabilities=(0.02, 0.04, 0.06, 0.08, 0.10, 0.12),
     distances=(3, 5, 7),
     rounds=5,
     noise=noise,
-    decoder_factory=MatchingDecoder,
+    decoder_factory=lambda **options: get_decoder(AUTHORITY_NAME, dem, **options),
     shots=200_000,
     seed=0,
 )
