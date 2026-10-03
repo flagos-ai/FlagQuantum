@@ -60,6 +60,17 @@ This module measures four things and refuses to measure a fifth.
   that reason. A population the declared basis cannot express reports an absent count
   rather than a zero.
 
+* **That the baselines are still the shipped pipeline.** The comparison pipelines
+  below mirror `pipeline._optimize_to_fixed_point` by hand, because it cannot be
+  asked for a variant of itself. A hand mirror drifts, and it drifts in the
+  direction that flatters this pass: a pass added to the real pipeline and not to
+  the mirror makes the baselines weaker and credits this pass with work another pass
+  now does. So the mirror is driven against the real pipeline on every seeded
+  population plus a reset program, and required to agree program for program. This
+  is not hypothetical -- the merge that produced this version of the module added
+  `remove_zero_state_resets` to the real pipeline while the mirror kept the old pass
+  list, and this check is what caught it.
+
 * **Which of the two passes should run first.** A third column re-runs each
   population with the one-qubit fold ahead of this pass, so the order chosen in
   `pipeline._optimize_to_fixed_point` is measured rather than assumed. It comes out
@@ -115,6 +126,7 @@ from flagquantum.compiler.pipeline import (
     merge_self_inverse,
     remove_identity_gates,
 )
+from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import (
     OPERATOR_SCHEMAS,
@@ -147,6 +159,10 @@ _SWEEP_SEED = 20261008
 _CIRCUIT_SEED = 20261013
 _REGISTER_WIDTH = 3
 _ANGLE = 0.7137
+
+#: A reset and a measure are IR instructions rather than declared gates: the schema
+#: does not know them, so the IR requires the metadata that says they read a draw.
+_DYNAMIC = {"is_dynamic": True}
 
 #: The operator comparison is exact, so it uses one absolute tolerance and no
 #: relative slack. Two operators that differ are a shape that was not redundant.
@@ -471,6 +487,46 @@ def identity_proof() -> dict[str, Any]:
     }
 
 
+#: The shipped optimization round, as an ordered list of passes.
+#:
+#: This mirrors `pipeline._optimize_to_fixed_point` rather than calling it, because
+#: the comparison pipelines below have to be that pipeline with one pass moved or
+#: removed, and there is no way to ask it for a variant of itself. Mirroring is
+#: therefore unavoidable and also the exact hazard this module keeps running into: a
+#: pass added to the real pipeline would silently be missing from the baselines, and
+#: the delta would credit this pass with work another pass now does. So the mirror is
+#: checked rather than trusted -- `_pipeline_as_shipped` applies this list and the
+#: benchmark asserts it agrees with `pipeline._optimize_to_fixed_point` on every
+#: seeded circuit, and that assertion is what fails the day the two diverge.
+_PIPELINE_PASSES = (
+    remove_zero_state_resets,
+    remove_identity_gates,
+    merge_self_inverse,
+    merge_inverse_pairs,
+    merge_adjacent_rotations,
+    remove_identity_gates,
+    collapse_one_qubit_runs,
+)
+
+
+def _run_rounds(ir: CircuitIR, passes: tuple[Any, ...]) -> CircuitIR:
+    """Apply ``passes`` in order until the instruction count stops falling."""
+
+    for _ in range(len(ir) + 1):
+        previous = len(ir)
+        for apply_pass in passes:
+            ir = apply_pass(ir)
+        if len(ir) == previous:
+            return ir
+    raise AssertionError("a comparison pipeline did not reach a fixed point")
+
+
+def _pipeline_as_shipped(ir: CircuitIR) -> CircuitIR:
+    """The pass list above applied to a program, for the fidelity check to compare."""
+
+    return _run_rounds(ir, _PIPELINE_PASSES)
+
+
 def _pipeline_without_this_pass(ir: CircuitIR) -> CircuitIR:
     """The pipeline with this pass removed, and nothing else changed.
 
@@ -480,41 +536,40 @@ def _pipeline_without_this_pass(ir: CircuitIR) -> CircuitIR:
     delta would have credited it with removals the fold already performs on its own.
     """
 
-    for _ in range(len(ir) + 1):
-        previous = len(ir)
-        ir = remove_identity_gates(ir)
-        ir = merge_self_inverse(ir)
-        ir = merge_adjacent_rotations(ir)
-        ir = remove_identity_gates(ir)
-        ir = collapse_one_qubit_runs(ir)
-        if len(ir) == previous:
-            return ir
-    raise AssertionError("the pipeline without this pass did not reach a fixed point")
+    return _run_rounds(
+        ir,
+        tuple(
+            apply_pass
+            for apply_pass in _PIPELINE_PASSES
+            if apply_pass is not merge_inverse_pairs
+        ),
+    )
 
 
 def _fold_first_fixed_point(ir: CircuitIR) -> CircuitIR:
-    """The same pipeline with the one-qubit fold ahead of this pass instead of behind it.
+    """The same pipeline with the one-qubit fold at the head of the round.
 
     The alternative order, measured rather than argued about.
     ``_optimize_to_fixed_point`` runs this pass before ``merge_adjacent_rotations``
-    and the fold after both, so a framed run is decided by this pass and the fold
-    then declines the half-pi vocabulary it leaves standing. Here the fold runs
-    first, so the same run is decided by the fold and this pass never sees it. Both
-    orders still terminate in a fixed point, so the comparison is between two
-    complete pipelines rather than between one that terminates and one that does not.
+    and the fold last, so a framed run is decided by this pass and the fold then
+    declines the half-pi vocabulary it leaves standing. Here the fold runs first in
+    the round -- after the reset pass, which neither order is about and which the
+    shipped pipeline also runs first -- so the same run is decided by the fold and
+    this pass never sees it. Both orders still terminate in a fixed point, so the
+    comparison is between two complete pipelines rather than between one that
+    terminates and one that does not.
     """
 
-    for _ in range(len(ir) + 1):
-        previous = len(ir)
-        ir = collapse_one_qubit_runs(ir)
-        ir = remove_identity_gates(ir)
-        ir = merge_self_inverse(ir)
-        ir = merge_inverse_pairs(ir)
-        ir = merge_adjacent_rotations(ir)
-        ir = remove_identity_gates(ir)
-        if len(ir) == previous:
-            return ir
-    raise AssertionError("the fold-first pipeline did not reach a fixed point")
+    return _run_rounds(
+        ir,
+        (remove_zero_state_resets, collapse_one_qubit_runs)
+        + tuple(
+            apply_pass
+            for apply_pass in _PIPELINE_PASSES
+            if apply_pass is not collapse_one_qubit_runs
+            and apply_pass is not remove_zero_state_resets
+        ),
+    )
 
 
 def _executable(ir: CircuitIR) -> bool:
@@ -1027,6 +1082,56 @@ def shape_table() -> dict[str, Any]:
     }
 
 
+def pipeline_fidelity() -> dict[str, Any]:
+    """Whether the mirrored pass list still is the pipeline the project ships.
+
+    The comparison pipelines in this module mirror `pipeline._optimize_to_fixed_point`
+    instead of calling it, and a mirror drifts: a pass added to the real pipeline and
+    not to the mirror would quietly make the baselines weaker, and this pass would be
+    credited with removals another pass now performs. So the mirror is driven here as
+    well and compared against the real pipeline, program by program, on the same
+    seeded populations the delta uses plus a reset program, so that a newly added pass
+    has to be mirrored or this check fails and says so.
+    """
+
+    seed = random.Random(_CIRCUIT_SEED)
+    programs: list[CircuitIR] = [
+        CircuitIR(_REGISTER_WIDTH, tuple(_pair_sequence(seed, 4))) for _ in range(8)
+    ]
+    programs += [
+        _prepared(_straddled_pair(seed).instructions),
+        _prepared(_interleaved_pairs(seed).instructions),
+        _prepared(_barrier_pair(seed).instructions),
+        _pulse_framed_pair(seed),
+        _pulse_framed_pair_both_sides(seed),
+        # Reset programs, which is the pass the mirror gained last: a mirror that
+        # omitted it would agree with the real pipeline on every population above and
+        # disagree here. The second one needs a second round, because the wire is only
+        # emptied of instructions by the self-inverse pass that runs after it.
+        CircuitIR(_REGISTER_WIDTH, (Instruction("reset", (0,), metadata=_DYNAMIC),)),
+        CircuitIR(
+            _REGISTER_WIDTH,
+            (
+                Instruction("x", (0,)),
+                Instruction("x", (0,)),
+                Instruction("reset", (0,), metadata=_DYNAMIC),
+            ),
+        ),
+    ]
+    mismatches = [
+        index
+        for index, program in enumerate(programs)
+        if _pipeline_as_shipped(program).instructions
+        != _optimize_to_fixed_point(program).instructions
+    ]
+    return {
+        "checked_program_count": len(programs),
+        "mirrored_pass_count": len(_PIPELINE_PASSES),
+        "mismatch_count": len(mismatches),
+        "mismatch_indices": mismatches,
+    }
+
+
 def _order_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Sum the two pass orders over the populations both of them can be counted on.
 
@@ -1081,6 +1186,7 @@ def run_benchmark() -> dict[str, Any]:
         "reference_revision": "qiskit 1.2.4 InverseCancellation",
         "declaration_table": declaration_table(),
         "identity_proof": identity_proof(),
+        "pipeline_fidelity": pipeline_fidelity(),
         "pipeline_delta": delta,
         "pass_order_totals": _order_totals(delta),
         "shape_table": shapes,
