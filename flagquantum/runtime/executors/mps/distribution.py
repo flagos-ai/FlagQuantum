@@ -64,12 +64,32 @@ def apply_rank_boundary_gate(
     return messages, sent_bytes, record
 
 
+def _device_footprint(state: RankOwnedMPSState, wire: int) -> torch.Tensor:
+    """One site's byte footprint as a device scalar, on the state's device.
+
+    The footprint is `numel * element_size`, which the host already knows from
+    the tensor's shape and dtype, so stating it reads nothing back from the
+    device. Writing that integer into a device vector would instead lift a fresh
+    device scalar per site, which a profiler reports as one host-to-device copy
+    per site inside whatever region asked for the footprint. Multiplying a
+    device scalar by the same integer passes it as a kernel argument, so the
+    vector assembles on the device and the collective below is the only
+    interchange this accounting performs.
+    """
+
+    reference = next(iter(state.local_tensors.values()))
+    tensor = state.local_tensors.get(wire)
+    if tensor is None:
+        return torch.zeros((), dtype=torch.int64, device=reference.device)
+    one = torch.ones((), dtype=torch.int64, device=reference.device)
+    return one * _tensor_nbytes(tensor)
+
+
 def global_mps_tensor_bytes(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current per-site tensor footprint on every rank."""
-    reference = next(iter(state.local_tensors.values()))
-    sizes = torch.zeros(state.n_wires, dtype=torch.int64, device=reference.device)
-    for wire, tensor in state.local_tensors.items():
-        sizes[wire] = _tensor_nbytes(tensor)
+    sizes = torch.stack(
+        [_device_footprint(state, wire) for wire in range(state.n_wires)]
+    )
     dist.all_reduce(sizes)
     return tuple(int(value) for value in sizes.tolist())
 
@@ -77,12 +97,15 @@ def global_mps_tensor_bytes(state: RankOwnedMPSState) -> tuple[int, ...]:
 def global_mps_bond_dimensions(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current internal bond dimensions on every rank."""
     reference = next(iter(state.local_tensors.values()))
-    dimensions = torch.zeros(
-        max(0, state.n_wires - 1), dtype=torch.int64, device=reference.device
-    )
-    for wire, tensor in state.local_tensors.items():
-        if wire < state.n_wires - 1:
-            dimensions[wire] = int(tensor.shape[3])
+    entries: list[torch.Tensor] = []
+    for wire in range(max(0, state.n_wires - 1)):
+        tensor = state.local_tensors.get(wire)
+        if tensor is None:
+            entries.append(torch.zeros((), dtype=torch.int64, device=reference.device))
+        else:
+            one = torch.ones((), dtype=torch.int64, device=reference.device)
+            entries.append(one * int(tensor.shape[3]))
+    dimensions = torch.stack(entries)
     dist.all_reduce(dimensions)
     return tuple(int(value) for value in dimensions.tolist())
 
@@ -117,6 +140,14 @@ def rebalance_mps_if_needed(
     state: RankOwnedMPSState, threshold: float
 ) -> tuple[bool, int, int]:
     """Rebalance rank ownership when the measured byte ratio crosses a threshold."""
+    if threshold == float("inf"):
+        # No ratio can cross an infinite threshold, so the footprint collective
+        # below could only ever return "do not migrate". The compiled site
+        # kernel path requires exactly this threshold, because its buckets are
+        # sized for the plan and must not move between ranks mid-layer; paying
+        # for a collective per two-site gate to re-confirm that would be work
+        # the configuration cannot act on.
+        return False, 0, 0
     sizes = global_mps_tensor_bytes(state)
     rank_bytes = [sum(sizes[wire] for wire in wires) for wires in state.ownership]
     positive = [value for value in rank_bytes if value > 0]

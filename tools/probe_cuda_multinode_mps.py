@@ -301,19 +301,37 @@ def _git_revision() -> str:
         return "unavailable"
 
 
-def _forward_circuit() -> fq.Circuit:
-    """An adjacent-gate circuit whose middle gate crosses the site boundary."""
+def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
+    """An adjacent-gate circuit whose middle gate crosses the site boundary.
+
+    Without a device the angles are Python floats, which is the form the
+    single-device reference uses. With one they are device tensors, which is the
+    form a training loop holds its parameters in: an accelerator workload handed
+    a host scalar has to copy that scalar across, so a host-scalar circuit would
+    make the measured region carry one parameter upload per rotation that the
+    production shape does not have.
+
+    The tensors are detached leaves rather than `nn.Parameter`s, for the same
+    reason the statevector probe gives: a parameter's gradient metadata is
+    additional state to move, and this workload's parameters are not
+    differentiated.
+    """
+
+    def angle(value: float) -> Any:
+        if device is None:
+            return value
+        return torch.tensor(value, dtype=REAL_DTYPE, device=device)
 
     return (
         fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
         .h(0)
-        .ry(1, 0.31)
+        .ry(1, angle(0.31))
         .cx(0, 1)
-        .rx(2, -0.27)
+        .rx(2, angle(-0.27))
         .cx(1, 2)
         .cx(*BOUNDARY_PAIR)
-        .ry(3, 0.41)
-        .rz(4, 0.19)
+        .ry(3, angle(0.41))
+        .rz(4, angle(0.19))
         .cx(3, 4)
         .cx(4, 5)
     )
@@ -435,7 +453,7 @@ def _performance_observations(*, device: torch.device) -> dict[str, Any]:
     is visible rather than summarized away.
     """
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
 
     def once() -> float:
         _synchronize(device)
@@ -667,7 +685,7 @@ def _host_staging_observation(*, device: torch.device) -> dict[str, Any]:
             "profiler_error": reason or "the profiler is unavailable on another rank",
         }
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
     for _ in range(HOST_STAGING_WARMUP_EXECUTIONS):
         execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
     _synchronize(device)
@@ -1335,7 +1353,7 @@ def probe(
     host_staging: dict[str, Any] | None = None
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
-        circuit = _forward_circuit()
+        circuit = _forward_circuit(device=device)
         forward = execute_torch_distributed_mps_forward(
             circuit,
             device=device,
