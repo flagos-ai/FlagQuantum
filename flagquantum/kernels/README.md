@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 24 semantics,
-26 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 25 semantics,
+27 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -89,6 +89,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
+| FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -237,6 +238,27 @@ smaller cases remain at parity or slower, so the canonical decision is
 `retain_experimental` and no default runtime dispatch is authorized. Reproduce
 or validate the evidence with
 [`benchmarks/statevector_probability_kernel.py`](../../benchmarks/statevector_probability_kernel.py).
+
+`FQKI-TRITON-MEAS-002-A` evaluates exact Pauli-product expectations directly
+from a batched flat statevector. It fuses basis-index permutation, X/Y/Z phase,
+and complex inner-product work, and its explicit backward computes the complex
+gradient of the real expectation. Wire zero addresses the most-significant
+statevector bit, matching the simulation contract. The implementation accepts
+contiguous CUDA `complex64` statevectors with at most 30 wires and retains an
+exact differentiable PyTorch fallback for other supported inputs. It remains
+experimental and is not selected by default runtime dispatch. The checked-in
+[`statevector_pauli_expectation_kernel_a800.json`](../../benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json)
+artifact records 30 synchronized groups of 10 invocations for five fixed
+three-factor Pauli products over complex64 shapes from 1,024 through 16,777,216
+amplitudes on `jp-a800-171` and `jp-a800-172` with stock Triton 3.7.1. Maximum
+expectation absolute and relative L2 errors are `5.59e-9` and `2.75e-7`; the
+explicit gradient matches exactly for this matrix. Against FlagQuantum's
+current sequential PyTorch Pauli-product reference, Triton reaches `5.239x` to
+`36.581x` the forward speed and `4.627x` to `37.859x` the forward/backward
+speed. The evidence covers one operator pattern and two development hosts, so
+the canonical decision remains `retain_experimental`; it does not authorize
+default dispatch or a release claim. Reproduce or validate it with
+[`benchmarks/statevector_pauli_expectation_kernel.py`](../../benchmarks/statevector_pauli_expectation_kernel.py).
 
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
@@ -581,9 +603,9 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 24 semantics and 31 implementations are implemented. MPS-003
+The current 25 semantics and 32 implementations are implemented. MPS-003
 through MPS-007 are provisional after their evidenced default-dispatch
-promotions; the other 26 implementations remain experimental. The rest of the
+promotions; the other 27 implementations remain experimental. The rest of the
 100/800 portfolio is planned or candidate work, not shipped capability.
 
 ## Validation contract
