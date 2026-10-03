@@ -13,6 +13,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -27,6 +28,7 @@ from benchmarks.statevector_release_evidence import (
     _agreed_ownership,
     _bootstrap_ratio_interval,
     _capacity_circuit,
+    _control_group,
     _gather,
     _production_fields,
     _role_speed_summary,
@@ -581,28 +583,105 @@ def test_a_non_zero_rank_gathers_nothing_and_contributes_its_record(monkeypatch)
     """Only rank 0 writes a document; the others must return an empty result."""
 
     contributed: list[object] = []
+    destroyed: list[object] = []
+    control = object()
     monkeypatch.setenv("RANK", "3")
     monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence._control_group", lambda world: control
+    )
+    monkeypatch.setattr(
         "benchmarks.statevector_release_evidence.dist.gather_object",
-        lambda record, buffer, dst: contributed.append((record, buffer, dst)),
+        lambda record, buffer, dst, group: contributed.append(
+            (record, buffer, dst, group)
+        ),
+    )
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.destroy_process_group",
+        destroyed.append,
     )
 
     assert _gather({"rank": 3}, 8) == []
-    assert contributed == [({"rank": 3}, None, 0)]
+    assert contributed == [({"rank": 3}, None, 0, control)]
+    assert destroyed == [control]
 
 
 def test_rank_zero_returns_every_rank_it_gathered(monkeypatch):
     records = [{"rank": index} for index in range(4)]
+    destroyed: list[object] = []
+    control = object()
 
-    def gather(record, buffer, dst):
+    def gather(record, buffer, dst, group):
+        assert group is control
         buffer[:] = records
 
     monkeypatch.setenv("RANK", "0")
     monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence._control_group", lambda world: control
+    )
+    monkeypatch.setattr(
         "benchmarks.statevector_release_evidence.dist.gather_object", gather
+    )
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.destroy_process_group",
+        destroyed.append,
     )
 
     assert _gather({"rank": 0}, 4) == records
+    assert destroyed == [control]
+
+
+def test_a_short_gather_raises_instead_of_sealing_a_partial_document(monkeypatch):
+    """A record that never arrived must fail the leg, not shrink the payload."""
+
+    def gather(record, buffer, dst, group):
+        buffer[0] = {"rank": 0}
+        buffer[1] = {"rank": 1}
+
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence._control_group", lambda world: object()
+    )
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.gather_object", gather
+    )
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.destroy_process_group",
+        lambda group: None,
+    )
+
+    with pytest.raises(RuntimeError, match="for rank 2 of 4"):
+        _gather({"rank": 0}, 4)
+
+
+def test_the_record_gather_runs_on_a_cpu_group_not_the_device_group(monkeypatch):
+    """NCCL cannot carry the records after a long training leg; gloo can."""
+
+    opened: list[dict[str, object]] = []
+    monkeypatch.delenv("GLOO_SOCKET_IFNAME", raising=False)
+    monkeypatch.setenv("NCCL_SOCKET_IFNAME", "ens22f0")
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.new_group",
+        lambda **kwargs: opened.append(kwargs) or object(),
+    )
+
+    assert _control_group(8) is not None
+    assert opened[0]["backend"] == "gloo"
+    assert opened[0]["timeout"].total_seconds() == 300
+    assert os.environ["GLOO_SOCKET_IFNAME"] == "ens22f0"
+
+
+def test_the_record_gather_single_device_run_needs_no_group(monkeypatch):
+    """A one-device leg writes its own record and opens nothing."""
+
+    def refuse(**kwargs):
+        raise AssertionError("a single-device leg must not open a group")
+
+    monkeypatch.setattr(
+        "benchmarks.statevector_release_evidence.dist.new_group", refuse
+    )
+
+    assert _gather({"rank": 0}, 1) == [{"rank": 0}]
+    assert _control_group(1) is None
 
 
 def test_the_frozen_capacity_workload_is_the_one_the_runner_builds():

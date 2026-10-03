@@ -48,6 +48,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Iterable, Mapping
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -393,22 +394,90 @@ def _rank_record(
     }
 
 
+def _control_group(world: int) -> dist.ProcessGroup | None:
+    """Create the CPU group that carries the rank records back to rank 0.
+
+    The records are a few tens of kilobytes of control-plane metadata, and they
+    travel over a gloo group rather than over the device communicator that did
+    the training. That is a measured requirement on this hardware, not a
+    preference.
+
+    On two hosts with four A800s each, a 330 s statevector training leg leaves
+    the default NCCL process group unable to open a further collective. The next
+    cross-rank call fails on every rank with ``NCCL Error 2: unhandled system
+    error``, and node 1 reports ``UDS: Sending data over socket
+    /tmp/nccl-socket-4-<id> failed : Connection refused`` plus
+    ``[Proxy Service 4] Failed to execute operation Connect from rank 5,
+    retcode 6`` -- the intra-node proxy cannot bind its socket file after the
+    long training loop. Three separate forms of the same exchange were measured
+    after that loop: ``dist.gather_object``, a ``dist.gather`` of an explicit
+    ``uint8`` byte buffer, and ``dist.all_gather`` of the same buffer. All three
+    fail identically, so the failure is the NCCL group and not the collective,
+    the payload, or the object serializer. Each of the three succeeds when run
+    against a freshly initialized group with no training in front of it, which
+    is why a probe that only exercises the gather cannot see it.
+
+    The same gather over a gloo group of the same world returns all eight
+    records, before and after the training loop, with no NCCL warning. PyTorch
+    documents object collectives as unsupported on NCCL for exactly this class
+    of reason, and the statevector executor already opens a gloo group when it
+    needs a control-plane barrier instead of a data-plane collective.
+
+    Gloo resolves the hostname to pick its listening address, and on hosts whose
+    own name resolves to a loopback alias that choice cannot be reached from a
+    peer. Where the run was told which interface carries its traffic, that same
+    interface is handed to gloo before the group is created, so the release leg
+    does not need a second, differently named environment variable to be correct.
+    The timeout bounds group creation against an unreachable peer, so a network
+    fault fails the run instead of hanging it.
+    """
+
+    if world <= 1:
+        return None
+    if "GLOO_SOCKET_IFNAME" not in os.environ:
+        carried = os.environ.get("NCCL_SOCKET_IFNAME")
+        if carried:
+            os.environ["GLOO_SOCKET_IFNAME"] = carried
+    return dist.new_group(backend="gloo", timeout=timedelta(seconds=300))
+
+
 def _gather(record: dict[str, Any], world: int) -> list[dict[str, Any]]:
     """Collect every rank's record onto rank 0, and nothing onto the others.
 
     A non-zero rank has no records to write: it contributes its own record to
     rank 0's gather buffer and then returns an empty list, so the caller can
     return early instead of writing a second, partial document.
+
+    Rank 0 checks that it received a well-formed record from every rank. A
+    partial gather is the failure this call exists to make visible, so a short
+    or malformed result raises rather than quietly sealing a payload that
+    describes fewer ranks than the run used.
     """
 
     if world <= 1:
         return [record]
-    if int(os.environ.get("RANK", "0")) != 0:
-        dist.gather_object(record, None, dst=0)
-        return []
-    gathered: list[Any] = [None] * world
-    dist.gather_object(record, gathered, dst=0)
-    return [item for item in gathered if isinstance(item, dict)]
+    group = _control_group(world)
+    try:
+        if int(os.environ.get("RANK", "0")) != 0:
+            dist.gather_object(record, None, dst=0, group=group)
+            return []
+        gathered: list[Any] = [None] * world
+        dist.gather_object(record, gathered, dst=0, group=group)
+        records: list[dict[str, Any]] = []
+        for rank, item in enumerate(gathered):
+            if not isinstance(item, dict):
+                raise RuntimeError(
+                    f"the rank-record gather returned {type(item).__name__} "
+                    f"for rank {rank} of {world}; run with GLOO_SOCKET_IFNAME "
+                    f"set to the interface that carries the run's traffic, "
+                    f"which on this cluster is the same value as "
+                    f"NCCL_SOCKET_IFNAME"
+                )
+            records.append(item)
+        return records
+    finally:
+        if group is not None:
+            dist.destroy_process_group(group)
 
 
 def _write(args: argparse.Namespace, document: dict[str, Any]) -> None:
