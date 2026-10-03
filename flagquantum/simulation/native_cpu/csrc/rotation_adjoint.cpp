@@ -1701,11 +1701,11 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
       }
       const int64_t blocks_per_row = amplitudes >> unique_count;
       const int64_t item_count = ket.size(0) * blocks_per_row;
+      // Keep enough chunks to occupy every worker when wide tiles leave only
+      // a few thousand outer items on many-core hosts.
       const int64_t effective_parallel_grain =
           parallel_grain == 0
-          ? (item_count >= 1024
-                 ? 128
-                 : std::max<int64_t>(1, item_count / (4 * thread_count)))
+          ? std::max<int64_t>(1, item_count / (4 * thread_count))
           : parallel_grain;
       at::parallel_for(
           int64_t{0},

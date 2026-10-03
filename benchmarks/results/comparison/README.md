@@ -158,6 +158,11 @@ records the Ubuntu 22.04/GCC 11 native-adjoint build fix, two-node build and
 correctness validation, and pinned single-thread Xeon comparison with
 PennyLane Lightning.
 
+[`NATIVE_CPU_ADJOINT_MANY_CORE_GRAIN_LINUX_X86_20261003.md`](NATIVE_CPU_ADJOINT_MANY_CORE_GRAIN_LINUX_X86_20261003.md)
+records the two-node 32-thread rotation-tile scheduling A/B, the absolute
+PennyLane Lightning comparison, and the single-socket versus dual-socket NUMA
+boundary on 64 physical Xeon cores.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
