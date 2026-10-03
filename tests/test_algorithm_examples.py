@@ -48,6 +48,7 @@ SCRIPTS = (
     "pec",
     "spsa_optimizer",
     "trotter",
+    "block_encoding",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -129,6 +130,16 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # as a bound on the unit's accuracy rather than as a number this script
     # measured is exactly the misreading the second half prevents.
     "trotter": (
+        "nothing here bounds",
+        "belongs to the caller",
+    ),
+    # Two halves. "the eigendecomposition is dense and exact, so the gate is one
+    # dense matrix on n + 1 qubits and the cost is diagonalising H" is the input
+    # model's own cost, and "nothing here bounds it" with the error left to the
+    # caller is who owns the accuracy. Pinning only the first would leave the
+    # ownership deletable, and a dense exact construction read as scale-free is
+    # the misreading the second half prevents.
+    "block_encoding": (
         "nothing here bounds",
         "belongs to the caller",
     ),
@@ -503,6 +514,122 @@ def test_trotter_example_measures_the_defect_and_shows_every_refusal() -> None:
     )
     assert "NOT REFUSED" not in output
     _assert_premise("trotter", output)
+    assert "take away" in output
+
+
+def test_block_encoding_example_reads_its_block_back_out_of_the_circuit() -> None:
+    output = _run("block_encoding")
+
+    assert (
+        "Block encoding -- flagquantum.algorithms.primitives.block_encoding" in output
+    )
+    assert _labelled(output, "num_system") == "2"
+    assert _labelled(output, "num_ancilla") == "1"
+    # The default factor is the Frobenius norm, and the two are printed side by
+    # side so a factor that quietly became the spectral norm would show.
+    assert _labelled(output, "Frobenius norm") == _labelled(output, "alpha")
+    assert _labelled(output, "alpha clears the spectral norm") == "True"
+    # The block is read out of the circuit and checked against both `H / alpha`
+    # and `H`, because a construction that returned its argument agrees with the
+    # second and not the first. Both residuals are at the statevector's own floor.
+    assert float(_labelled(output, "circuit block vs H / alpha")) < 1e-6
+    assert float(_labelled(output, "dense block vs circuit block")) < 1e-6
+    assert float(_labelled(output, "circuit block vs H")) > 1.0
+    # The reflection is a reflection identically, not to within a truncated series.
+    assert float(_labelled(output, "U is Hermitian")) < 1e-12
+    assert float(_labelled(output, "U squared is the identity")) < 1e-12
+    assert float(_labelled(output, "U is unitary")) < 1e-12
+    # The walk identity: the observed cosines come from `eigvals` of the circuit's
+    # unitary and the expected ones from `eigvalsh` of the matrix, so the two sides
+    # are different routines and the agreement is the claim.
+    assert _labelled(output, "expected cosines") == _labelled(
+        output, "observed cosines"
+    )
+    assert float(_labelled(output, "agreement")) < 1e-6
+    # And the phases are non-trivial, which is what makes the identity more than a
+    # statement about a Hermitian matrix's own phases.
+    assert _labelled(output, "cosines off the endpoints") == "True"
+    # Without the phase flip the same unitary has cosines on the endpoints alone,
+    # and its spectrum is nowhere near the encoded one.
+    assert (
+        _labelled(output, "plain U cosines")
+        == "[-1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0]"
+    )
+    assert float(_labelled(output, "plain vs encoded spectrum")) > 1.0
+    # The step's definition, not only its spectrum: `W` is compared against the flag
+    # flip composed with the encoding, which is a matrix identity the cosines above
+    # cannot express because a step and its own encoding have the same kind of spectrum.
+    assert float(_labelled(output, "walk step vs flag flip of the encoding")) < 1e-6
+    # `W^dagger W` against the identity rather than the adjoint's cosines, which are
+    # `W`'s: this construction's step is Hermitian, so only the composition tells the two
+    # apart. The residual is the register's own floor, which is 5e-8 rather than 1e-15
+    # because the unitary is built by applying the gate to each basis state.
+    assert float(_labelled(output, "adjoint step inverts the step")) < 1e-6
+    # Two implementations, one consumer: the second one holds no matrix at all and
+    # the same protocol reads it, so the surface is a boundary rather than a class.
+    assert _labelled(output, "spectral is a BlockEncoding") == "True"
+    assert _labelled(output, "spectral is a WalkEncoding") == "True"
+    assert _labelled(output, "built is a WalkEncoding") == "True"
+    assert _labelled(output, "built source") == "two named gates, no matrix anywhere"
+    assert _labelled(output, "built walk cosines") == "[-1.0, -1.0, 1.0, 1.0]"
+    # And the second implementation is held to the same composition as the first, which
+    # is the part of the protocol a name alone cannot pin: it holds no matrix, so the
+    # composed unitary is the only witness that its walk step is the flag flip of its
+    # encoding rather than some other unitary with the same spectrum.
+    assert float(_labelled(output, "built walk vs flag flip of the encoding")) < 1e-6
+    # Ten construction refusals, each by name.
+    assert _labelled(output, "a matrix that is not a tensor").startswith(
+        "refused -- ValueError: matrix must be a torch.Tensor"
+    )
+    assert _labelled(output, "a matrix that is not square").startswith(
+        "refused -- ValueError: matrix must be square, got 2 row(s) and 3 column(s)"
+    )
+    assert _labelled(output, "a dimension that is not a power of two").startswith(
+        "refused -- ValueError: matrix must have a power-of-two dimension"
+    )
+    assert _labelled(output, "an integer matrix").startswith(
+        "refused -- ValueError: matrix must be a floating-point or complex matrix"
+    )
+    assert _labelled(output, "the zero matrix").startswith(
+        "refused -- ValueError: the zero matrix has no block to normalise"
+    )
+    assert _labelled(output, "a matrix with a non-finite entry").startswith(
+        "refused -- ValueError: matrix must hold only finite values"
+    )
+    assert _labelled(output, "a matrix that is not Hermitian").startswith(
+        "refused -- ValueError: the block encoding is built from the matrix's own "
+        "eigenbasis, and eigh reads one triangle"
+    )
+    assert _labelled(output, "a factor below the spectral norm").startswith(
+        "refused -- ValueError: the subnormalisation must be at least the matrix's "
+        "spectral norm"
+    )
+    assert _labelled(output, "a factor that is zero").startswith(
+        "refused -- ValueError: the subnormalisation must be positive and finite, got 0.0"
+    )
+    assert _labelled(output, "a factor that is not a real number").startswith(
+        "refused -- ValueError: the subnormalisation must be a real number, got True"
+    )
+    # Three register refusals, each taken before the first gate, so the circuit is
+    # empty rather than half-built: the gate is one dense matrix and there is no
+    # partial form of it.
+    assert _labelled(output, "the flag inside the register").startswith(
+        "refused -- ValueError: ancilla 1 is one of the operator's own wires"
+    )
+    assert _labelled(output, "one qubit for a two-qubit operator").startswith(
+        "refused -- ValueError: the register must be 2 wire(s) for this encoding, got 1"
+    )
+    assert _labelled(output, "a repeated qubit").startswith(
+        "refused -- ValueError: the register must be distinct, got [1, 1]"
+    )
+    for label in (
+        "the flag inside the register",
+        "one qubit for a two-qubit operator",
+        "a repeated qubit",
+    ):
+        assert _labelled(output, f"gates after {label}") == "0"
+    assert "NOT REFUSED" not in output
+    _assert_premise("block_encoding", output)
     assert "take away" in output
 
 

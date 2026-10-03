@@ -19,6 +19,7 @@ python -m examples.algorithms.error_mitigation
 python -m examples.algorithms.pec
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.trotter
+python -m examples.algorithms.block_encoding
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -58,6 +59,13 @@ What they show:
   measured against `torch.matrix_exp`, the primitive's own emitted gates printed
   for six words, and the resulting circuit run through the static resource
   estimator and the gradient path.
+- [`block_encoding.py`](block_encoding.py): a Hermitian matrix encoded into the
+  flagged block of a unitary, with the block read back out of the circuit one
+  basis state at a time and checked against both the matrix over `alpha` and the
+  matrix itself, the walk step's eigenphases matched against the matrix's own
+  spectrum from a different routine, a second implementation that holds no matrix
+  read by the same consumer, and the ten construction and three register refusals
+  printed by name.
 
 ## These scripts use the subpackage surface
 
@@ -68,8 +76,9 @@ rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both
 the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
 and `fq.run` calls its objective makes. `trotter.py` needs no root alias either:
 the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
-is the package's own `expectation_ps`. `examples/README.md` records that
-boundary.
+is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
+either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
+the package's own `get_unitary`. `examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the
@@ -86,5 +95,7 @@ the location it declares it and pays for the inversion in programs rather than
 shots, the SPSA update is built from a finite-difference estimate that is an
 estimate rather than a gradient, and the product formula approximates the
 evolution with a defect that is measured rather than bounded, because a bound
-needs a commutator norm the caller has to supply. The guide holds the full
-boundary for each.
+needs a commutator norm the caller has to supply, and the block encoding is
+built from a dense exact eigendecomposition whose cost is diagonalising the
+matrix with nothing here bounding the error of an approximate one. The guide
+holds the full boundary for each.

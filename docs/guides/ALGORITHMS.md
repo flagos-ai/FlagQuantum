@@ -19,6 +19,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/phase_estimation.py` — phase estimation | Available. Applies a controlled unitary's powers to a uniform counting register, then inverts the Fourier transform on it, turning the accumulated phase into a readable integer. | Kitaev 1995; Brassard et al. 2002 | **None.** It is a subroutine, and the cost of preparing the operator's eigenstate is not counted. |
 | `primitives/state_preparation.py` — state preparation | Available. Prepares a uniform superposition, and prepares an arbitrary state from a classical amplitude vector with uniformly controlled rotations. | Möttönen et al. 2005 | **None, and the input is exponential.** The rotation angles come from a classical pass over all `2**n` amplitudes and a `2**n` by `2**n` linear solve, so the amplitudes must already be known. |
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
+| `primitives/block_encoding.py` — block encoding and qubitization walk step | Available. Encodes a Hermitian matrix into the flagged block of a unitary at a subnormalisation the caller chooses, and appends one qubitization walk step whose eigenphases are the arccosines of the encoded eigenvalues. | Gilyén, Su, Low & Wiebe 2019 | **None, and the cost is a dense eigendecomposition.** The gate is one dense matrix on `n + 1` qubits built from `torch.linalg.eigh` of the input, so the cost is diagonalising the caller's matrix; the error of an approximate input is the caller's, because nothing here bounds it. |
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
@@ -38,7 +39,9 @@ expected to need it and the expectation is later confirmed — the Fourier
 transform shipped with one consumer, phase estimation, and was admitted on the
 expectation of a second, which amplitude estimation's arrival confirmed — or
 when it is a public unit callers use directly, which is how state preparation
-was admitted, with no consumer inside `flagquantum/` at all. A primitive does
+was admitted, with no consumer inside `flagquantum/` at all, and how block
+encoding was admitted after the singular-value unit held it privately and the
+comment recording its own promotion condition named that ground. A primitive does
 not by itself change what a caller can run.
 
 The Phase 2 quantum machine learning units are indexed in the table under
@@ -70,7 +73,7 @@ units carries a root-level `fq.` name.
 | `quantum_kernel.py` — quantum kernel estimation and kernel ridge classification | Available. Estimates a kernel matrix by swap test over an angle-encoded feature map — one sampled entry per pair of points, mirrored across the diagonal — and fits a **classical** kernel ridge classifier on the estimated entries. | Havlíček et al. 2019; Liu et al. 2021 | **The premise is the data-access model, and it is not met.** The kernel-matrix circuit's cost counts the swap tests and not the data access: the two feature states are assumed to be available, through a qRAM or an amplitude-encoding unitary, and each is built here gate by gate from the classical feature vector. No end-to-end advantage follows. |
 | `feature_selection.py` — feature selection as a QUBO | Available. Builds the binary objective of a feature-selection instance — a subset's relevance and pairwise redundancy, scored with a penalty on the subset's size — and evaluates it at an assignment or maps it to an Ising Hamiltonian. | Ferrari Dacrema et al. 2022 | **This unit does not solve, and there is no solver here.** The repository has no annealer: the unit builds the objective and evaluates it, so which subset comes back, and at what cost, belongs to whatever solver the problem is handed to, and any advantage such a solver observes is the solver's. |
 | `qarm.py` — frequent-item fractions by amplitude estimation | Available. Estimates the fraction of a database's items whose support meets a threshold: a uniform superposition over the items, a support register the circuit fills one controlled increment per transaction-item membership, and a mark at the threshold, read out by amplitude estimation. | Yu et al. 2016 | **The premise is coherent entry-wise database access, and it is not met.** The paper's speed-up counts calls to an oracle that returns one database entry per call, and it reaches the candidate itemset superpositions it prepares through a qRAM; here the transactions are iterated classically and the incidence matrix is read in Python to emit that loop. Its improvement is **quadratic and conditional**, stated for the case `M_f^(k) << M_c^(k)` — not exponential. No end-to-end advantage follows. |
-| `svd.py` — singular values by phase estimation | Available. Estimates a matrix's singular values from the phase of its Hermitian embedding — exponentiated, phase-estimated, and read at the counting register's mode — and builds that embedding's block encoding in private. | Kerenidis & Prakash 2017; Rebentrost et al. 2018; Gilyén et al. 2019 | **The premise is the input model, and it is not met.** The algorithm's cost is counted in queries to a structure that returns the matrix's entries, and against that count the state the estimation is applied to is assumed to be preparable. Here the matrix, its embedding, the embedding's exponential and the input state are all formed classically, the input state from the very decomposition the readout estimates. No end-to-end advantage follows. |
+| `svd.py` — singular values by phase estimation | Available. Estimates a matrix's singular values from the phase of its Hermitian embedding — exponentiated, phase-estimated, and read at the counting register's mode — and builds that embedding's block encoding out of the shared primitive. | Kerenidis & Prakash 2017; Rebentrost et al. 2018; Gilyén et al. 2019 | **The premise is the input model, and it is not met.** The algorithm's cost is counted in queries to a structure that returns the matrix's entries, and against that count the state the estimation is applied to is assumed to be preparable. Here the matrix, its embedding, the embedding's exponential and the input state are all formed classically, the input state from the very decomposition the readout estimates. No end-to-end advantage follows. |
 
 ## Advantage premises
 
@@ -1519,10 +1522,185 @@ and autograd reach a tensor coefficient through them.
 supply; higher-order Yoshida and Suzuki compositions, which spend more
 exponentials than they buy until a caller measures otherwise; time-dependent
 Hamiltonians; and the rest of the family the parity contract groups with this unit
-— block encoding, qubitization, QSVT, and double factorization. The block encoding
-exists and is private to `svd.py`; promoting it to a primitive waits on a second
-consumer, and the comment beside it records that.
+— qubitization, QSVT, and double factorization. The block encoding underneath is
+now the shared primitive documented in the next section; the SVD unit is its only
+consumer today, and the walk step it admits is what the family above would be
+built from.
 
+
+## Block encoding and the qubitization walk step
+
+`primitives/block_encoding.py` is the first primitive in this guide that is a
+*contract* rather than a construction. A block encoding of a Hermitian `H` at a
+subnormalisation `alpha` is a unitary `U` whose flagged block is `H / alpha`:
+writing `|0>` for the flag register's all-zero state and `P = |0><0|` for the
+projector onto it, `P U P = H / alpha`, and `U` is otherwise unconstrained. Two
+protocols state that — `BlockEncoding`, which names `num_system`, `num_ancilla`,
+`alpha` and `append_apply`, and `WalkEncoding`, which adds `append_walk_step` and
+`append_adjoint_walk_step` — and `spectral_block_encoding(matrix, alpha=None)`
+is the implementation that ships.
+
+**The construction is the direct spectral reflection, and it is exact in the
+sense that matters here.** With `A = H / alpha` and `V` the eigenbasis of `A`,
+
+```text
+U = [[ A,                      sqrt(I - A**2) ],
+     [ sqrt(I - A**2),         -A            ]]
+```
+
+built as one dense matrix on `n + 1` qubits, with the flag left in `|0>` rather
+than prepared, so `append_apply` emits exactly one gate. `A` and
+`sqrt(I - A**2)` are functions of the same Hermitian matrix and therefore
+commute, which is why `U ** 2 = I` holds identically rather than to within the
+quality of an eigenbasis; that is the property a truncated series or a
+mean-of-two-branches approximation does not have.
+
+**The walk step is what makes this more than a repackaging.** `W = Z_ancilla U`
+is a rotation whose eigenphases are the arccosines of the encoded eigenvalues:
+one phase `+-arccos(w_j / alpha)` per encoded eigenvalue `w_j`, so the cosines of
+`W`'s eigenphases are the encoded spectrum twice over. That is the identity every
+spectral algorithm in this family is built from, and it is what `WalkEncoding`
+names. It holds for the reflection above and **not** for `U` on its own, whose
+eigenphases are only `0` and `pi`.
+
+The block below prints the step's *definition* as well as its spectrum, `W` against
+`Z_ancilla U` as matrices. A spectrum alone does not pin a walk step: `W` and the
+encoding it was built from are both Hermitian unitaries on the same register, so a
+construction that never applied the flip would still have a spectrum. The adjoint
+is printed as `W^dagger W` against the identity for the same reason — this
+construction's step is its own adjoint, so an adjoint's cosines are its own.
+
+The block is read back out of the *circuit* rather than asserted, one basis state
+at a time, and it is checked against both the matrix over `alpha` and the matrix,
+because a construction that returned its argument would agree with the second and
+not the first:
+
+```python
+import torch
+
+from flagquantum.algorithms.primitives import (
+    BlockEncoding,
+    WalkEncoding,
+    spectral_block_encoding,
+)
+from flagquantum.circuit import Circuit
+from flagquantum.simulation.unitary import get_unitary
+
+matrix = torch.tensor(
+    [
+        [1.0, 0.5, 0.0, 0.0],
+        [0.5, -2.0, 0.25, 0.0],
+        [0.0, 0.25, 0.75, 0.0],
+        [0.0, 0.0, 0.0, 1.5],
+    ],
+    dtype=torch.float64,
+)
+encoding = spectral_block_encoding(matrix)
+print(encoding.num_system, encoding.num_ancilla, f"{encoding.alpha:.6f}")
+# 2 1 2.904738  -- two system qubits, one flag qubit, and the Frobenius norm as the default factor
+
+columns = []
+for basis in range(4):
+    circuit = Circuit(3)
+    for index in range(2):
+        if (basis >> (1 - index)) & 1:
+            circuit.gate("x", 1 + index)
+    encoding.append_apply(circuit, ancilla=0, qubits=[1, 2])
+    columns.append(circuit.state().reshape(-1)[:4])
+block = torch.stack(columns, dim=1)
+print([round(float(block[index, index]), 3) for index in range(4)])
+# [0.344, -0.689, 0.258, 0.516]  -- the block's diagonal, read back one basis state at a time
+print([round(float(matrix[index, index] / encoding.alpha), 3) for index in range(4)])
+# [0.344, -0.689, 0.258, 0.516]  -- the same entries of the matrix over the factor
+print(round(float((block - matrix).abs().max()), 3))
+# 1.311  -- and not the matrix, which is what a construction returning its argument would print as 0.0
+print(round(float((block - matrix.to(torch.complex128) / encoding.alpha).abs().max()), 6))
+# 0.0  -- while the block is the matrix over alpha to the statevector's own precision
+
+select = encoding.select
+identity = torch.eye(8, dtype=torch.complex128)
+print(
+    bool((select - select.mH).abs().max() < 1e-12),
+    bool((select @ select - identity).abs().max() < 1e-12),
+)
+# True True  -- Hermitian, and its own inverse rather than only unitary
+
+
+def step(target, adjoint=False):
+    circuit = Circuit(3)
+    if adjoint:
+        target.append_adjoint_walk_step(circuit, ancilla=0, qubits=[1, 2])
+    else:
+        target.append_walk_step(circuit, ancilla=0, qubits=[1, 2])
+    return get_unitary(circuit).to(torch.complex128)
+
+
+def step_cosines(target, adjoint=False):
+    return torch.sort(
+        torch.cos(torch.angle(torch.linalg.eigvals(step(target, adjoint))))
+    ).values
+
+
+encoded = torch.linalg.eigvalsh(matrix) / encoding.alpha
+expected = torch.sort(torch.cat((encoded, encoded))).values
+observed = step_cosines(encoding)
+print([round(float(value), 3) for value in expected])
+# [-0.724, -0.724, 0.264, 0.264, 0.374, 0.374, 0.516, 0.516]  -- eigvalsh of the matrix, over alpha, twice over
+print([round(float(value), 3) for value in observed])
+# [-0.724, -0.724, 0.264, 0.264, 0.374, 0.374, 0.516, 0.516]  -- eigvals of the circuit's unitary, cosine of each phase
+print(bool((observed - expected).abs().max() < 1e-6))
+# True  -- two different routines on two different objects agree, so this is the identity and not one computation written twice
+print(bool((torch.abs(torch.abs(observed) - 1.0) > 1e-3).all()))
+# True  -- and no phase is trivial, so the identity carries more than the endpoints
+
+plain = Circuit(3)
+encoding.append_apply(plain, ancilla=0, qubits=[1, 2])
+plain_cosines = torch.sort(torch.cos(torch.angle(torch.linalg.eigvals(get_unitary(plain))))).values
+print([round(float(value), 3) for value in plain_cosines])
+# [-1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0]  -- U without the flag flip: an involution, with cosines only on the endpoints
+print(bool((plain_cosines - expected).abs().max() > 1.0))
+# True  -- so the phase flip is the construction and not a convention about which flip to use
+flip = torch.kron(
+    torch.diag(torch.tensor([1.0, -1.0], dtype=torch.complex128)),
+    torch.eye(4, dtype=torch.complex128),
+)
+print(f"{(step(encoding) - flip @ select).abs().max():.3e}")
+# 2.600e-08  -- the step is the flag flip composed with the encoding, by definition: a spectrum cannot show this, because the step and its own encoding are both Hermitian unitaries on the register
+print(f"{(step(encoding, adjoint=True) @ step(encoding) - identity).abs().max():.3e}")
+# 4.997e-08  -- and the adjoint inverts it, which the adjoint's own cosines would not show, since this construction's step is its own adjoint
+```
+
+**The surface is a protocol because two implementations are read by one
+consumer.** A consumer written against `BlockEncoding` and `WalkEncoding` names
+three numbers and one method, and this guide's readback above is such a consumer:
+it reads the spectral encoding, which holds a dense matrix, and it would read an
+encoding that holds no matrix at all just as well. That is what
+[ARCH-012](../architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md)'s
+replacement gate asks for, and it is the ground this primitive was admitted on:
+`flagquantum/algorithms/svd.py` used to carry a private mean-of-two-branches
+construction, the direct reflection above replaced it, and the walk identity is
+the capability the private form did not have — its `Z * U` product missed the
+identity by `2.216` in the largest entry.
+
+**Two divergences from CUDA-Q are deliberate and are stated rather than
+smoothed over.** The flagged block is `+H / alpha` here, where CUDA-Q's
+qubitization folds the sign of `H` into the walk step and carries `-H / alpha` in
+the block; the identity above is stated for the block this unit emits. And
+FlagQuantum addresses qubits individually, so `append_apply` takes the flag
+`ancilla` and the operator's `qubits` as separate arguments rather than the
+combined register a CUDA-Q control set needs. Neither divergence changes what the
+walk step computes.
+
+**Not here, and each is an owned gap rather than an omission.** The gate is one
+dense matrix on `n + 1` qubits built from `torch.linalg.eigh` of the input, so
+the cost is diagonalising the caller's matrix and there is no gate-efficient
+synthesis; no error bound is reported, because an approximate `H` is the caller's
+error and nothing here estimates it. A Pauli linear-combination encoding — whose
+preparation is a superposition over coefficients rather than the identity, and
+which needs a multi-wire flag reflection — is the next family member and is
+absent. Qubitization is exposed as two protocol methods rather than as a public
+walk object holding a moment count, and QSVT and double factorization, the two
+algorithms the walk step exists to serve, are absent.
 
 ## Sources
 

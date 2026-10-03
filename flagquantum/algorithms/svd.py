@@ -9,11 +9,13 @@ Recommendation Systems", ITCS 2017, LIPIcs Vol. 67, 49:1-49:21, DOI
 10.4230/LIPIcs.ITCS.2017.49; the singular value decomposition of non-sparse low-rank
 matrices is the subject of Rebentrost, Steffens, Marvian and Lloyd, *Physical Review A*
 **97**(1), 012327 (2018), DOI 10.1103/PhysRevA.97.012327, approached there by exponentiating
-the matrix. The block encoding this module builds in private is the one of Gilyén, Su, Low
+the matrix. The block encoding this module is read against is the one of Gilyén, Su, Low
 and Wiebe, "Quantum singular value transformation and beyond: exponential improvements for
 quantum matrix arithmetics", STOC 2019, pp. 193-204, DOI 10.1145/3313276.3316366,
 Definition 1, which is where the subnormalisation factor and the convention
-``||A|| <= alpha + eps`` are fixed.
+``||A|| <= alpha + eps`` are fixed; the construction itself now lives in
+:mod:`flagquantum.algorithms.primitives.block_encoding`, which is the module this unit's
+own readout and the walk step are both written against.
 
 **The premise is the input model, and this unit does not meet it.** The algorithm's cost
 is counted in queries to a structure that returns the matrix's entries, and against that
@@ -39,8 +41,8 @@ at constant precision; their hardness result is for a different task, estimating
 Hamiltonian's ground-state energy at inverse-polynomial precision given a state close to
 the ground state.
 
-**The block encoding, and what reading it costs.** The private construction below
-composes a preparation, a selection and the adjoint of the preparation. Its
+**The block encoding, and what reading it costs.** The primitive construction the
+readout is written against flags its block on a single ancilla left in ``|0>``. Its
 subnormalisation ``alpha`` is what the block is smaller than the embedding by: the
 extracted block is the embedding over ``alpha``, and ``alpha`` is at least the embedding's
 spectral norm, so ``||A|| <= alpha`` holds for the matrix whose embedding that is. **A
@@ -105,6 +107,7 @@ from dataclasses import dataclass
 import torch
 
 from ..circuit import Circuit
+from .primitives.block_encoding import subnormalisation as _subnormalisation
 from .primitives.phase_estimation import append_phase_estimation
 from .primitives.state_preparation import append_arbitrary_state
 
@@ -343,7 +346,7 @@ class _PhaseFromEmbedding:
     U**power)`` in the control wire's block order, which is the block diagonal of the two.
     The unconditional ``apply`` embeds the matrix on the embedding's own wires.
 
-    The exponential is taken of the block the private construction extracts, which is the
+    The exponential is taken of the block the primitive construction extracts, which is the
     embedding over ``alpha`` rather than the embedding itself. The readout's inversion is
     stated against ``alpha``, so a run taken against the unnormalised embedding would not
     be inverted by it.
@@ -416,112 +419,12 @@ class _PhaseFromEmbedding:
         circuit.any(control, *wires, unitary=controlled, name="embedding_phase_power")
 
 
-# A block encoding is a construction the primitive layer would admit only if a second
-# algorithm module needed one, and this is its only consumer: ``pca`` was measured not to
-# need it, and no other Phase 2 unit encodes a matrix at all. Keep it here, private, until
-# that changes; promote it to ``primitives/block_encoding.py`` if a second algorithm
-# module ever needs a block encoding, since one consumer does not earn a module.
-def _append_block_encoding(
-    circuit: Circuit,
-    embedding: torch.Tensor,
-    alpha: float,
-    *,
-    ancilla: int,
-    wires: Sequence[int],
-) -> None:
-    """Append the block encoding of ``embedding`` over ``alpha`` to ``circuit``.
-
-    The construction is ``(PREP^dagger (x) I) . SELECT . (PREP (x) I)``. ``SELECT`` is
-    diagonal in the ancilla, its ``|0>`` branch carrying the unitary ``U_0`` and its
-    ``|1>`` branch the unitary ``U_1``, and the two are chosen so that
-    ``(U_0 + U_1) / 2`` is the embedding over ``alpha``: each is diagonal in the
-    embedding's own eigenbasis, and on an eigenvector of eigenvalue ``mu`` they act as the
-    unit-modulus pair whose mean is ``mu / alpha``. ``PREP`` is then the preparation whose
-    two amplitudes are equal, which is the Hadamard on the ancilla; the ``h`` gates below
-    are that preparation and its adjoint, and they are the general construction's special
-    case of one ancilla wire with equal coefficients rather than a decoration. The block
-    the composition extracts is ``<0| U |0> = (U_0 + U_1) / 2`` on the embedding's wires.
-
-    ``embedding`` must be Hermitian, which is what makes the eigenvalues real and the
-    pair's mean their quotient by ``alpha``: the decomposition is the spectral one, and
-    ``eigh`` reads one triangle of its argument, so encoding a non-Hermitian matrix would
-    take that one triangle as the spectrum. That case is refused rather than encoded, and
-    :func:`_select_unitary` is where. Every call site of this module passes the Hermitian
-    embedding that :func:`_embedding_of` forms.
-
-    Args:
-        circuit: The circuit to extend.
-        embedding: The Hermitian matrix to encode, of power-of-two dimension.
-        alpha: The subnormalisation, at least the embedding's spectral norm.
-        ancilla: The wire the preparation and the selection are controlled on, outside
-            ``wires``.
-        wires: The embedding's wires, block qubit first.
-
-    Raises:
-        ValueError: If ``alpha`` fails the validation :func:`_subnormalisation` applies to
-            it, which is checked here because a factor below the embedding's spectral norm
-            would otherwise reach the selection's arccosine and be folded into the unit
-            circle silently; or if ``embedding`` is not Hermitian. Both are checked before
-            the circuit is touched, so a refused call leaves it as it was.
-    """
-    alpha = _subnormalisation(embedding, alpha)
-    select = _select_unitary(embedding, alpha)
-    circuit.gate("h", ancilla)
-    circuit.any(
-        ancilla,
-        *wires,
-        unitary=select,
-        name="block_encoding_select",
-    )
-    circuit.gate("h", ancilla)
-
-
-def _select_unitary(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
-    """Return the ``SELECT`` matrix of the block encoding on the ancilla and ``wires``.
-
-    The matrix is ``diag(U_0, U_1)`` in the ancilla's block order, which is the two
-    branches' unitaries stacked along the diagonal the prepared ancilla selects between.
-    Each branch is diagonal in the embedding's eigenbasis with eigenvalues of modulus one,
-    and the two eigenvalues on an eigenvector of the embedding are the conjugate pair whose
-    mean is that eigenvector's eigenvalue over ``alpha``.
-
-    Args:
-        embedding: The Hermitian matrix to encode.
-        alpha: The subnormalisation, at least the embedding's spectral norm.
-
-    Returns:
-        The dense ``SELECT`` gate, ``2 ** (n + 1)`` by ``2 ** (n + 1)`` for an ``n``-wire
-        embedding.
-
-    Raises:
-        ValueError: If ``embedding`` is not Hermitian.
-    """
-    if not bool(torch.allclose(embedding, embedding.T.conj())):
-        raise ValueError(
-            "the block encoding is built from the matrix's own eigenbasis, and eigh "
-            "reads one triangle of its argument, so this matrix, which is not Hermitian, "
-            "is refused rather than encoded from that one triangle"
-        )
-    eigenvalues, eigenvectors = torch.linalg.eigh(embedding)
-    # The eigenvalues of a contraction, and the pair of phases whose mean they are: the
-    # cosine is the eigenvalue over alpha, and the two phases are its two arccosines.
-    phases = torch.arccos((eigenvalues / alpha).clamp(-1.0, 1.0))
-    basis = eigenvectors.to(torch.complex128)
-    branch = []
-    for sign in (1.0, -1.0):
-        branch.append(
-            basis @ torch.diag(torch.exp(1j * sign * phases)) @ basis.conj().T
-        )
-    zeros = torch.zeros_like(branch[0])
-    return torch.cat(
-        (
-            torch.cat((branch[0], zeros), dim=1),
-            torch.cat((zeros, branch[1]), dim=1),
-        ),
-        dim=0,
-    )
-
-
+# The block encoding this module's readout is read against is
+# :func:`~flagquantum.algorithms.primitives.block_encoding.spectral_block_encoding`: it
+# was private here in the mean-of-two-branches form, and it was promoted to the primitive
+# layer when the consumer written against it arrived, which is the condition the comment
+# that used to sit here named. The extracted block is unchanged, and the unit tests assert
+# the equality against the matrix's own spectrum rather than against the old circuit.
 def _embedding_of(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     """Validate ``A`` and return the Hermitian embedding ``[[0, A], [A^T, 0]]``.
 
@@ -586,61 +489,6 @@ def _embedding_of(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     return embedding
 
 
-def _subnormalisation(embedding: torch.Tensor, alpha: float | None) -> float:
-    """Return the subnormalisation a block encoding of ``embedding`` is read at.
-
-    ``None`` is the embedding's Frobenius norm, which is at least its spectral norm and is
-    available without diagonalising anything. A value is accepted when it is at least that
-    spectral norm, and **refused when it is below it**: the extracted block would then be
-    an operator of norm greater than one, and no unitary has such an operator as one of
-    its blocks, so the construction has no encoding to build and would be building
-    something else under the name of one.
-
-    Args:
-        embedding: The Hermitian matrix to encode.
-        alpha: The candidate subnormalisation, or ``None`` for the embedding's Frobenius
-            norm.
-
-    Returns:
-        The subnormalisation.
-
-    Raises:
-        ValueError: If the matrix is the zero matrix, whose Frobenius norm is not a
-            positive factor; if ``alpha`` is not a positive finite real number; or if it
-            is below the embedding's spectral norm.
-    """
-    if alpha is None:
-        factor = float(torch.linalg.matrix_norm(embedding, ord="fro"))
-        if factor == 0.0:
-            raise ValueError(
-                "the zero matrix has no embedding to normalise; its Frobenius norm is "
-                "zero, so the block would be divided by nothing"
-            )
-        return factor
-    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)):
-        raise ValueError(
-            f"the subnormalisation must be a real number, got {alpha!r}; it is the "
-            "factor the block is smaller than the matrix by, and a flag or a tensor is "
-            "not one"
-        )
-    factor = float(alpha)
-    if not math.isfinite(factor) or factor <= 0.0:
-        raise ValueError(
-            f"the subnormalisation must be positive and finite, got {factor}; a "
-            "non-positive factor is not what the block is smaller than the matrix by"
-        )
-    spectral = float(torch.linalg.matrix_norm(embedding, ord=2))
-    if factor < spectral:
-        raise ValueError(
-            "the subnormalisation must be at least the embedding's spectral norm "
-            f"{spectral}, got {factor}; the block would be that matrix over {factor}, an "
-            "operator of norm greater than one, and no unitary has an operator of norm "
-            "greater than one as one of its blocks, so this is not a matrix that can be "
-            "encoded at this factor at all"
-        )
-    return factor
-
-
 def _input_amplitudes(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     """Return the amplitudes of the state phase estimation is applied to.
 
@@ -699,7 +547,8 @@ def _estimation_circuit(
         ValueError: If the amplitudes, the widths or the subnormalisation fail the
             validation :func:`~flagquantum.algorithms.primitives.state_preparation.append_arbitrary_state`,
             :func:`~flagquantum.algorithms.primitives.phase_estimation.append_phase_estimation`
-            or :func:`_subnormalisation` applies to them.
+            or :func:`~flagquantum.algorithms.primitives.block_encoding.subnormalisation`
+            applies to them.
     """
     n_embedding_wires = int(embedding.shape[0]).bit_length() - 1
     evaluation = list(range(n_counting_wires, n_counting_wires + n_embedding_wires))

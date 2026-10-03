@@ -27,13 +27,17 @@ from dataclasses import FrozenInstanceError
 import pytest
 import torch
 
+from flagquantum.algorithms.primitives.block_encoding import (
+    spectral_block_encoding,
+)
+from flagquantum.algorithms.primitives.block_encoding import (
+    subnormalisation as _subnormalisation,
+)
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
 from flagquantum.algorithms.svd import (
     SingularValueResult,
-    _append_block_encoding,
     _input_amplitudes,
     _PhaseFromEmbedding,
-    _subnormalisation,
     estimate_singular_values,
 )
 from flagquantum.circuit import Circuit
@@ -102,12 +106,8 @@ def _extracted_block(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
         for index in range(n_wires):
             if (basis >> (n_wires - 1 - index)) & 1:
                 circuit.gate("x", 1 + index)
-        _append_block_encoding(
-            circuit,
-            embedding,
-            alpha,
-            ancilla=0,
-            wires=list(range(1, 1 + n_wires)),
+        spectral_block_encoding(embedding, alpha).append_apply(
+            circuit, ancilla=0, qubits=list(range(1, 1 + n_wires))
         )
         columns.append(circuit.state().reshape(-1)[:dimension])
     return torch.stack(columns, dim=1)
@@ -190,44 +190,42 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
     with pytest.raises(ValueError, match="divided by nothing"):
         _subnormalisation(torch.zeros((4, 4), dtype=torch.float64), None)
     # The construction checks the same thing at its own entry, so a factor that never
-    # passed through the builder cannot reach the selection's arccosine and be folded
+    # passed through the builder cannot reach the reflection's arccosine and be folded
     # into the unit circle silently.
     with pytest.raises(ValueError, match="no unitary has an operator of norm"):
-        _append_block_encoding(
-            Circuit(3), embedding, spectral / 2.0, ancilla=0, wires=[1, 2]
-        )
-    # And the one thing the selection itself refuses: an argument that is not Hermitian.
+        spectral_block_encoding(embedding, spectral / 2.0)
+    # And the one thing the construction refuses outright: a matrix that is not Hermitian.
     spoiled = _embedding(_NON_SYMMETRIC)
     spoiled[0, 3] += 0.5
     with pytest.raises(ValueError, match="not Hermitian"):
-        _append_block_encoding(
-            Circuit(3),
-            spoiled,
-            _subnormalisation(spoiled, None),
-            ancilla=0,
-            wires=[1, 2],
-        )
+        spectral_block_encoding(spoiled)
 
 
-def test_a_refused_encoding_leaves_the_circuit_as_it_was() -> None:
-    """Both refusals are taken before the first gate, so a caller's circuit is untouched.
+def test_a_refused_append_leaves_the_circuit_as_it_was() -> None:
+    """Every refusal the append path can take is taken before the first gate.
 
-    The construction appends the ancilla's preparation before its selection, so a refusal
-    taken after that first gate would leave the caller holding a half-built encoding. This
-    asserts the circuit is empty afterwards for each of the two refusal paths.
+    The register checks run before the encoding's gate is emitted, so a caller whose wires
+    are wrong keeps an empty circuit rather than a half-built encoding. The matrix and
+    subnormalisation refusals moved to construction when the encoding was promoted to the
+    primitive layer, where there is no caller's circuit yet to spoil.
     """
-    embedding = _embedding(_NON_SYMMETRIC)
-    alpha = _subnormalisation(embedding, None)
-    spoiled = _embedding(_NON_SYMMETRIC)
-    spoiled[0, 3] += 0.5
-    for target, factor in (
-        (spoiled, _subnormalisation(spoiled, None)),
-        (embedding, alpha / 2.0),
-    ):
+    encoding = spectral_block_encoding(_embedding(_NON_SYMMETRIC))
+    for ancilla, qubits in ((0, [0, 1]), (0, [1]), (0, [1, 1])):
         circuit = Circuit(3)
         with pytest.raises(ValueError):
-            _append_block_encoding(circuit, target, factor, ancilla=0, wires=[1, 2])
+            encoding.append_apply(circuit, ancilla=ancilla, qubits=qubits)
         assert circuit.to_qir() == []
+    # And the two refusals that used to be taken at the append's entry are now taken at
+    # construction, where the caller's circuit does not exist yet.
+    spoiled = _embedding(_NON_SYMMETRIC)
+    spoiled[0, 3] += 0.5
+    spectral = float(torch.linalg.matrix_norm(_embedding(_NON_SYMMETRIC), ord=2))
+    for target, factor in (
+        (spoiled, None),
+        (_embedding(_NON_SYMMETRIC), spectral / 2.0),
+    ):
+        with pytest.raises(ValueError):
+            spectral_block_encoding(target, factor)
 
 
 def test_a_mode_in_the_register_lower_half_is_refused() -> None:
@@ -401,8 +399,8 @@ def test_the_post_selection_probability_of_the_dominant_direction_is_the_ratio()
         append_arbitrary_state(
             circuit, _positive_eigenvector(matrix, 0), list(range(1, 1 + n_wires))
         )
-        _append_block_encoding(
-            circuit, embedding, alpha, ancilla=0, wires=list(range(1, 1 + n_wires))
+        spectral_block_encoding(embedding, alpha).append_apply(
+            circuit, ancilla=0, qubits=list(range(1, 1 + n_wires))
         )
         state = circuit.state().reshape(-1)
         dimension = int(embedding.shape[0])
@@ -526,7 +524,7 @@ def test_the_result_is_frozen() -> None:
         (torch.zeros(3, 3, dtype=torch.float64), "power of two"),
         (torch.zeros(8, 8, dtype=torch.float64), "bounded at 2 index wires"),
         (torch.zeros(2, 2, dtype=torch.int64), "floating-point"),
-        (torch.zeros(2, 2, dtype=torch.float64), "no embedding to normalise"),
+        (torch.zeros(2, 2, dtype=torch.float64), "no block to normalise"),
         (torch.tensor([[1.0, float("nan")], [0.0, 1.0]]), "must be finite"),
     ],
 )

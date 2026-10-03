@@ -1,18 +1,20 @@
 # Algorithms primitives
 
 Reusable quantum primitives that the algorithm modules share. This layer owns
-the quantum Fourier transform, phase estimation, state preparation, and oracle
-synthesis, and all four of them ship today.
+the quantum Fourier transform, phase estimation, state preparation, oracle
+synthesis, and block encoding, and all five of them ship today.
 
 A primitive is admitted here when more than one algorithm module needs it or is
 expected to need it and the expectation is confirmed, or when it is a public
 unit callers use directly: state preparation shipped on the public-unit ground,
-with no consumer inside `flagquantum/` at all, and the Fourier transform on the
+with no consumer inside `flagquantum/` at all, the Fourier transform on the
 expectation ground, admitted with one consumer, phase estimation, and confirmed
-when amplitude estimation landed. This package is not a general-purpose quantum
-toolkit, and a construction only one workflow uses stays in that workflow's
-module until admitting it is justified, whether by a second consumer arriving or
-by a grounded expectation of one.
+when amplitude estimation landed, and block encoding on the public-unit ground
+after the singular-value unit held it privately and the comment recording that
+promotion condition named this module. This package is not a general-purpose
+quantum toolkit, and a construction only one workflow uses stays in that
+workflow's module until admitting it is justified, whether by a second consumer
+arriving or by a grounded expectation of one.
 
 ## Where to start
 
@@ -26,6 +28,10 @@ by a grounded expectation of one.
 - `oracle.py`: the reversible classical building blocks the oracle units are
   composed from -- a multi-controlled X and a bit-string comparator -- and the
   truth-table synthesis of a phase or bit oracle on top of them.
+- `block_encoding.py`: the block-encoding protocol consumers are written
+  against, the spectral encoding that satisfies it, and the qubitization walk
+  step that encoding admits, whose eigenvalues are the arccosines of the encoded
+  matrix's eigenvalues over `alpha`.
 - `types.py`: the callable protocols the primitives are written against.
 - `__init__.py`: the public primitives surface.
 

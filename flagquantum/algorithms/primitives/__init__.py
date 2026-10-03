@@ -11,6 +11,11 @@ directly; this package is not a general-purpose quantum toolkit.
 
 from __future__ import annotations
 
+from .block_encoding import BlockEncoding as BlockEncoding
+from .block_encoding import SpectralBlockEncoding as SpectralBlockEncoding
+from .block_encoding import WalkEncoding as WalkEncoding
+from .block_encoding import spectral_block_encoding as spectral_block_encoding
+from .block_encoding import subnormalisation as subnormalisation
 from .oracle import append_bit_oracle as append_bit_oracle
 from .oracle import append_comparator as append_comparator
 from .oracle import append_multi_controlled_x as append_multi_controlled_x
@@ -33,10 +38,13 @@ from .types import StatePreparationOperator as StatePreparationOperator
 
 __all__ = [
     "AmplitudeOperator",
+    "BlockEncoding",
     "ControlledUnitary",
     "PhaseEstimationSpec",
     "Predicate",
+    "SpectralBlockEncoding",
     "StatePreparationOperator",
+    "WalkEncoding",
     "append_arbitrary_state",
     "append_bit_oracle",
     "append_comparator",
@@ -50,5 +58,7 @@ __all__ = [
     "phase_estimation_circuit",
     "phase_oracle",
     "qft",
+    "spectral_block_encoding",
+    "subnormalisation",
     "uniform_state",
 ]
