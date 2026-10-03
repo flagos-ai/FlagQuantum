@@ -62,8 +62,8 @@ version and are never reused for a different semantic.
 ## Current inventory
 
 The catalog describes the code that already exists. It contains 23 semantics,
-25 Triton implementation entry points, and one FlagTree TLE implementation
-entry point; no planned kernel appears as an empty machine record.
+25 Triton implementation entry points, and three FlagTree TLE implementation
+entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
 | --- | --- | --- |
@@ -73,8 +73,8 @@ entry point; no planned kernel appears as an empty machine record.
 | FQK-SV-004 | `statevector.apply.ry_rz_pair.local` | `ry_rz_pair` |
 | FQK-SV-005 | `statevector.apply.rx_rz_sequence.local` | `repeated_rx_rz` |
 | FQK-SV-006 | `statevector.distributed.transpose_apply_1q` | `apply_complex64_transpose_1q_inplace` |
-| FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one` |
-| FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one` |
+| FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
+| FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint` |
@@ -147,6 +147,28 @@ not authorize default dispatch. It is bounded single-device development
 evidence, not a release gate or scalability claim. Reproduce or validate it
 with
 [`benchmarks/flagtree_tle_local_1q.py`](../../benchmarks/flagtree_tle_local_1q.py).
+
+`FQKI-FLAGTREE-SV-007-A` and `FQKI-FLAGTREE-SV-008-A` extend the same explicit
+provider boundary to distributed-CX control-subspace pack and unpack. Their TLE
+source uses async loads for the non-contiguous state gather and packed-buffer
+read while preserving the established `flat_statevector` ↔ `packed_subspace`
+semantic contract. The wrappers require contiguous CUDA `complex64` tensors,
+validate the address range before probing FlagTree, and remain outside default
+dispatch.
+
+The checked-in
+[`flagtree_tle_control_transport_a800.json`](../../benchmarks/results/local/flagtree_tle_control_transport_a800.json)
+artifact records the same 30 synchronized groups of 10 invocations for pack and
+unpack across four fixed state sizes from `2**10` through `2**24` amplitudes on
+`jp-a800-171` and `jp-a800-172` with FlagTree 0.7.0. Against the existing shared
+Triton source, TLE reaches `0.867x` to `0.921x` for pack and `0.828x` to
+`0.972x` for unpack; all measured values are exact against the indexed
+reference. The canonical decision is therefore `retain_explicit`: this
+establishes a direct FlagTree transport provider and a reproducible optimization
+surface, but does not authorize default dispatch. This is single-device
+development evidence only, not a distributed scalability or release claim.
+Reproduce or validate it with
+[`benchmarks/flagtree_tle_control_transport.py`](../../benchmarks/flagtree_tle_control_transport.py).
 
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
