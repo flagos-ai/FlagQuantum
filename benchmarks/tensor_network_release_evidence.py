@@ -131,6 +131,21 @@ def _dtype(name: str) -> torch.dtype:
     return torch.complex128 if name == "complex128" else torch.complex64
 
 
+def _initialize(device: torch.device) -> None:
+    """Join the rendezvous every role runs inside.
+
+    `train_distributed_tensor_network` requires an initialized group even at
+    world size one, because the caller owns initialization and a group of one
+    rank is still a group. Every role here is launched through a rendezvous --
+    `torchrun` for the timed legs, an explicit `MASTER_ADDR`/`MASTER_PORT` pair
+    for the capacity ones -- so the group is created unconditionally and the
+    recording role decides what the world size means.
+    """
+
+    if not dist.is_initialized():
+        dist.init_process_group("nccl", device_id=device)
+
+
 def _parameters(device) -> list[torch.Tensor]:
     """Return the two trainable scalars the capacity protocol trains."""
 
@@ -198,6 +213,7 @@ def _role_capacity_failure(arguments: argparse.Namespace) -> int:
 
     device = torch.device("cuda", int(os.environ.get("LOCAL_RANK", 0)))
     torch.cuda.set_device(device)
+    _initialize(device)
     rows, columns, cycles = (int(item) for item in contract["grid"])
     shape = (rows, columns, cycles)
     record = _rank_record(
@@ -282,6 +298,7 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
 
     device = torch.device("cuda", int(os.environ.get("LOCAL_RANK", 0)))
     torch.cuda.set_device(device)
+    _initialize(device)
     rows, columns, cycles = (int(item) for item in contract["grid"])
     shape = (rows, columns, cycles)
     record = _rank_record(
@@ -489,8 +506,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
     local_rank = int(os.environ["LOCAL_RANK"])
     device = torch.device("cuda", local_rank)
     torch.cuda.set_device(device)
-    if world > 1 and not dist.is_initialized():
-        dist.init_process_group(backend="nccl")
+    _initialize(device)
 
     dtype = _dtype(str(manifest["runtime"]["dtype"]))
     try:
