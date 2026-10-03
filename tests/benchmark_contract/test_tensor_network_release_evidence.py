@@ -21,6 +21,8 @@ import torch
 
 from benchmarks import tensor_network_release_evidence as producer
 
+pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
+
 RELEASE_MANIFEST = Path("benchmarks/manifests/tensor_network_release_v1.json")
 FROZEN = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))
 SPEED = FROZEN["speed_workload"]

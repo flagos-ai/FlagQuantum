@@ -29,6 +29,8 @@ from flagquantum.runtime.observability.evidence import (
     create_evidence_artifact,
 )
 
+pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
+
 KEY = b"tensor-network-release-gate-test-key"
 DEVICE = "NVIDIA A800-SXM4-80GB"
 
