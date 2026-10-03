@@ -16,9 +16,10 @@ from typing import Any, TypeAlias, TypedDict
 import torch
 
 from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.real_imag_kernels import _FUSED_LAYOUT_BMM_SHAPES
 
-RUN_SCHEMA = "flagquantum.kernel_benchmark_run.tn_layout_contraction.v1"
-EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.tn_layout_contraction.v1"
+RUN_SCHEMA = "flagquantum.kernel_benchmark_run.tn_layout_contraction.v2"
+EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.tn_layout_contraction.v2"
 SEMANTIC_ID = "numerics.matmul.complex_batched_layout"
 IMPLEMENTATION_ID = "FQKI-TRITON-NUM-002-A"
 RUNNER = "benchmarks/tn_layout_contraction.py"
@@ -30,6 +31,9 @@ SHAPE_MATRIX = (
     (16, 64, 16, 64, 64),
 )
 COMPILER_LANES = ("stock_triton", "flagtree")
+SELECTED_LOGICAL_BMM_SHAPES = _FUSED_LAYOUT_BMM_SHAPES
+FALLBACK_MINIMUM_SPEEDUP = 0.95
+FALLBACK_MAXIMUM_OVERHEAD_SECONDS = 5e-6
 RESULT_NAMES = (
     "direct_layout_forward",
     "materialized_torch_bmm_forward",
@@ -118,6 +122,20 @@ def _public(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
     from flagquantum.simulation.real_imag_kernels import complex_einsum_pair
 
     return complex_einsum_pair(EQUATION, left, right)
+
+
+def _public_route(left: torch.Tensor, right: torch.Tensor) -> str:
+    from flagquantum.simulation.real_imag_kernels import (
+        _canonical_bmm_layout,
+        _layout_bmm_dispatch_supported,
+    )
+
+    layout = _canonical_bmm_layout(EQUATION, left, right)
+    if layout is not None and _layout_bmm_dispatch_supported(
+        EQUATION, left, right, layout
+    ):
+        return "catalog_kernel"
+    return "native_einsum"
 
 
 def _measure(
@@ -289,6 +307,7 @@ def _case(
         "dtype": "complex64",
         "layout": "explicit_strided_batch",
         "equation": EQUATION,
+        "public_dispatch_route": _public_route(left, right),
         "maximum_absolute_error": max(
             float(torch.max(torch.abs(error))) for error in output_errors
         ),
@@ -475,10 +494,28 @@ def validate_run(payload: Mapping[str, Any]) -> None:
                 )
             )
         )
+        expected_logical_shape = (
+            shape.get("batch"),
+            shape.get("rows"),
+            shape.get("reduction_left") * shape.get("reduction_right"),
+            shape.get("columns"),
+        )
+        if tuple(case.get("logical_bmm_shape", ())) != expected_logical_shape:
+            raise ValueError(f"cases[{index}] records the wrong logical BMM shape")
         if case.get("layout") != "explicit_strided_batch":
             raise ValueError(f"cases[{index}] records the wrong layout")
         if case.get("equation") != EQUATION:
             raise ValueError(f"cases[{index}] records the wrong equation")
+        logical_shape = tuple(case["logical_bmm_shape"])
+        expected_route = (
+            "catalog_kernel"
+            if logical_shape in SELECTED_LOGICAL_BMM_SHAPES
+            else "native_einsum"
+        )
+        if case.get("public_dispatch_route") != expected_route:
+            raise ValueError(
+                f"cases[{index}] public dispatch route must equal {expected_route!r}"
+            )
         for error_field, tolerance in (
             ("maximum_absolute_error", 2e-3),
             ("relative_l2_error", 5e-4),
@@ -544,6 +581,15 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         raise ValueError("run does not contain the fixed NUM-002 shape matrix")
 
 
+def _fallback_within_overhead_budget(case: Mapping[str, Any]) -> bool:
+    public_seconds = case["public_catalog_dispatch"]["median_seconds_per_invocation"]
+    native_seconds = case["native_einsum_forward"]["median_seconds_per_invocation"]
+    return (
+        case["public_dispatch_speedup_over_native"] >= FALLBACK_MINIMUM_SPEEDUP
+        or public_seconds - native_seconds <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+    )
+
+
 def merge_runs(
     payloads: Sequence[Mapping[str, Any]], *, required_hosts: Sequence[str]
 ) -> dict[str, object]:
@@ -576,10 +622,17 @@ def merge_runs(
         for run in ordered
         for case in run["cases"]
     )
-    public_wins = all(
+    selected_kernel_wins = all(
         case["public_dispatch_speedup_over_native"] > 1.0
         for run in ordered
         for case in run["cases"]
+        if case["public_dispatch_route"] == "catalog_kernel"
+    )
+    fallback_within_budget = all(
+        _fallback_within_overhead_budget(case)
+        for run in ordered
+        for case in run["cases"]
+        if case["public_dispatch_route"] == "native_einsum"
     )
     direct_training_wins = all(
         case["direct_training_speedup_over_native"] > 1.0
@@ -607,10 +660,15 @@ def merge_runs(
         "required_hosts": sorted(required_hosts),
         "required_compiler_lanes": list(COMPILER_LANES),
         "direct_forward_win_on_all_cases": direct_forward_wins,
-        "public_dispatch_win_on_all_cases": public_wins,
+        "selected_kernel_win_on_all_cases": selected_kernel_wins,
+        "fallback_within_overhead_budget_on_all_cases": fallback_within_budget,
+        "fallback_minimum_speedup": FALLBACK_MINIMUM_SPEEDUP,
+        "fallback_maximum_overhead_seconds": FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
         "direct_training_win_on_all_cases": direct_training_wins,
         "dispatch_evidence_decision": (
-            "retain_current_policy" if public_wins else "revisit_current_policy"
+            "retain_current_policy"
+            if selected_kernel_wins and fallback_within_budget
+            else "revisit_current_policy"
         ),
         "runs": ordered,
     }

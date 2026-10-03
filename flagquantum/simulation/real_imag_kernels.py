@@ -10,8 +10,13 @@ import torch
 
 _COMPILED_PAIR_CACHE: dict[tuple[Any, ...], Callable[..., torch.Tensor]] = {}
 _COMPILE_FAILURES: set[tuple[Any, ...]] = set()
-_FUSED_WORKING_SET_BYTES = 256 * 1024 * 1024
-_FUSED_INFERENCE_MIN_VOLUME = 2**25
+_FUSED_LAYOUT_BMM_SHAPES = frozenset({(16, 64, 1024, 64)})
+_FUSED_LAYOUT_BMM_SIGNATURES = frozenset(
+    {("azcb,czdb->zad", (64, 16, 64, 16), (64, 16, 64, 16))}
+)
+_FUSED_LAYOUT_BMM_EQUATIONS = frozenset(
+    signature[0] for signature in _FUSED_LAYOUT_BMM_SIGNATURES
+)
 _CanonicalBMMLayout: TypeAlias = tuple[
     tuple[int, ...],
     tuple[int, ...],
@@ -143,6 +148,40 @@ def _canonical_layout_requires_materialization(
     return False
 
 
+def _layout_bmm_signature_supported(
+    equation: str,
+    left: torch.Tensor,
+    right: torch.Tensor,
+) -> bool:
+    return (
+        not (left.requires_grad or right.requires_grad)
+        and (equation, tuple(left.shape), tuple(right.shape))
+        in _FUSED_LAYOUT_BMM_SIGNATURES
+    )
+
+
+def _layout_bmm_dispatch_supported(
+    equation: str,
+    left: torch.Tensor,
+    right: torch.Tensor,
+    layout: _CanonicalBMMLayout,
+) -> bool:
+    """Return whether NUM-002 evidence supports the cataloged runtime route."""
+
+    if not _layout_bmm_signature_supported(equation, left, right):
+        return False
+    _, _, (batch, rows, columns), _, _, _ = layout
+    reduction = left.numel() // (batch * rows)
+    return (
+        batch,
+        rows,
+        reduction,
+        columns,
+    ) in _FUSED_LAYOUT_BMM_SHAPES and _canonical_layout_requires_materialization(
+        left, right, layout
+    )
+
+
 def _real_imag_eager(
     equation: str,
     left_real: torch.Tensor,
@@ -256,6 +295,10 @@ def complex_einsum_pair(
 ) -> torch.Tensor:
     """Contract two tensors without placing complex operators in the compiled graph."""
 
+    if equation in _FUSED_LAYOUT_BMM_EQUATIONS and not (
+        _layout_bmm_signature_supported(equation, left, right)
+    ):
+        return torch.einsum(equation, left, right)
     if not (left.is_complex() and right.is_complex()):
         return torch.einsum(equation, left, right)
     if not left.is_cuda:
@@ -272,19 +315,11 @@ def complex_einsum_pair(
         # materialize multi-GiB contiguous copies. Native einsum avoids that
         # hidden workspace and is the production high-precision path.
         return torch.einsum(equation, left, right)
+    if not _layout_bmm_signature_supported(equation, left, right):
+        return torch.einsum(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:
-        _, _, (b, m, n), _, _, _ = layout
-        output_elements = b * m * n
-        working_set_bytes = (
-            left.numel() + right.numel() + output_elements
-        ) * left.element_size()
-        inference_layout_crossover = (
-            not (left.requires_grad or right.requires_grad)
-            and b * m * (left.numel() // (b * m)) * n >= _FUSED_INFERENCE_MIN_VOLUME
-            and _canonical_layout_requires_materialization(left, right, layout)
-        )
-        if working_set_bytes >= _FUSED_WORKING_SET_BYTES or inference_layout_crossover:
+        if _layout_bmm_dispatch_supported(equation, left, right, layout):
             return _fused_layout_bmm(equation, left, right, layout)
         return torch.einsum(equation, left, right)
     if not compile_cuda:
