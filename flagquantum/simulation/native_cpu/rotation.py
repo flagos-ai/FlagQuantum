@@ -92,6 +92,44 @@ def fused_product_state_initialization_(
     return True
 
 
+def fused_static_product_state_initialization_(
+    state: torch.Tensor,
+    gate_codes: torch.Tensor,
+    qubits: torch.Tensor,
+    *,
+    n_qubits: int,
+) -> bool:
+    """Write one complete static Clifford product layer directly from ``|0>``."""
+
+    if (
+        not native_cpu_product_state_initialization_available()
+        or os.getenv("FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION", "1")
+        .strip()
+        .lower()
+        in {"0", "false", "off", "no"}
+        or state.device.type != "cpu"
+        or gate_codes.device.type != "cpu"
+        or qubits.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or gate_codes.dtype != torch.int8
+        or qubits.dtype != torch.int64
+        or state.ndim != 2
+        or gate_codes.shape != (n_qubits,)
+        or qubits.shape != gate_codes.shape
+        or state.shape[1] != 2**n_qubits
+        or not all(item.is_contiguous() for item in (state, gate_codes, qubits))
+    ):
+        return False
+    with torch.no_grad():
+        cast(
+            torch.Tensor,
+            torch.ops.flagquantum_native.fused_static_product_state_initialization_(
+                state, gate_codes, qubits, n_qubits
+            ),
+        )
+    return True
+
+
 def native_cpu_static_clifford_layer_available() -> bool:
     """Return whether exact static Clifford layer fusion is enabled."""
 

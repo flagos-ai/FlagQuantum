@@ -247,6 +247,79 @@ def test_chunked_native_layer_initializes_final_slices_directly(
     )
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_chunked_static_clifford_layer_initializes_final_slices_directly(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    angles = torch.linspace(-0.3, 0.4, 5, dtype=torch.float64)
+
+    def circuit() -> fq.Circuit:
+        result = fq.Circuit(6, bsz=5, dtype=dtype)
+        for wire, name in reversed(tuple(enumerate(("h", "s", "sdg", "x", "y", "z")))):
+            getattr(result, name)(wire)
+        result.cx(5, 4).cz(3, 2).cx(1, 0)
+        result.s(0).h(1).x(2).z(3).sdg(4).y(5)
+        result.cx(0, 1).cx(2, 3).cx(4, 5)
+        for wire in reversed(range(6)):
+            result.ry(wire, angles + 0.02 * wire)
+        return result
+
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**6) * torch.empty((), dtype=dtype).element_size(),
+    )
+    selected = circuit()
+    actual = selected.state()
+    monkeypatch.setenv("FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION", "0")
+    rollback = circuit()
+    expected = rollback.state()
+
+    tolerance = 1e-6 if dtype == torch.complex64 else 1e-14
+    torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
+    assert selected._initial_state_batch_window_workspace is None
+    assert selected._last_statevector_runtime["statevector_batch_assembly"] == (
+        "direct_preallocated"
+    )
+    assert (
+        selected._last_statevector_runtime["native_cpu_product_state_initialization"]
+        == 1
+    )
+    assert rollback._last_statevector_runtime["statevector_batch_assembly"] == (
+        "preallocated_copy"
+    )
+    assert (
+        rollback._last_statevector_runtime["native_cpu_product_state_initialization"]
+        == 0
+    )
+
+
+def test_static_product_initializer_declines_an_incomplete_first_layer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**4) * torch.empty((), dtype=torch.complex128).element_size(),
+    )
+    angles = torch.linspace(-0.2, 0.3, 5, dtype=torch.float64)
+    circuit = fq.Circuit(4, bsz=5, dtype=torch.complex128)
+    circuit.h(0).x(1).s(2).cx(0, 3)
+    for qubit in range(4):
+        circuit.ry(qubit, angles + 0.01 * qubit)
+
+    result = circuit.state()
+
+    assert result.shape == (5, 2**4)
+    assert circuit._last_statevector_runtime["statevector_batch_assembly"] == (
+        "preallocated_copy"
+    )
+    assert (
+        circuit._last_statevector_runtime["native_cpu_product_state_initialization"]
+        == 0
+    )
+
+
 def test_chunked_batch_slices_compiled_module_bindings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
