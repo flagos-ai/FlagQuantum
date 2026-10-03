@@ -229,6 +229,9 @@ This catalog is generated from the machine-validated
 | Sample a wide Clifford circuit that has no representable amplitude store | Clifford circuit sampling by Pauli stabilizer tracking | Development evidence | [Run example](../../examples/stabilizer_sampling.py) |
 | Reproduce a sampling run from a seed | Clifford circuit sampling by Pauli stabilizer tracking | Development evidence | [Run example](../../examples/stabilizer_sampling.py) |
 | Measure a chosen subset of wires in a chosen output order | Clifford circuit sampling by Pauli stabilizer tracking | Development evidence | [Run example](../../examples/stabilizer_sampling.py) |
+| Describe a call between a running program and a service without hardware | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
+| Give a hardware partner an exact slot, payload, and status layout to implement against | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
+| Exercise the protocol end to end offline over an in-process transport | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
 
 ## Build and compile
 
@@ -1150,6 +1153,20 @@ Build and qualify optional extensions through the Ecosystem extension protocol.
 - **Start:** [quick example](../../docs/guides/COMPILER_PLUGINS.md)
 - **Documentation:** [guide](../../docs/reference/EXTENSION_SDK.md)
 - **Known boundary:** The migrated SDK protocol is approved but not frozen; individual extensions remain experimental until separately qualified. Compiler plugins currently exchange CircuitIR only; pulse and native-binary artifacts are not supported. An execution backend is admitted in-process through the host-side admission module and executes FlagQuantum IR; there is no stable C ABI, no out-of-process backend, no per-execution discovery, and no numerical equivalence certification between an admitted backend and the built-in engine.
+
+### Realtime device-call messaging protocol
+
+Frame a device call into a fixed-size slot, type its payload against a handler schema, resolve it through a function table, and carry it over a channel chosen at runtime by name.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.remote.realtime`
+- **Runtime modes:** `offline_messaging_conformance`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../examples/remote/realtime_device_call.py)
+- **Documentation:** [guide](../../flagquantum/remote/realtime/README.md)
+- **Known boundary:** This is the software half of a realtime control surface and nothing else. It owns the 24-byte packed request and response headers, the ten payload type ids, the 12-byte type descriptor, the eight-argument and four-result limits, little-endian and IEEE-754 encoding, least-significant-bit-first bit packing, the function-id hash, the function table, the status convention, and the channel-selection seam. It does not own, implement, or reach an FPGA, a ConnectX NIC, RDMA or RoCE transport, GPUDirect, NVQLink, a Holoscan sensor bridge, persistent RX or TX dispatch kernels, a ring buffer, or a dispatcher, and it contains no compiler surface: there is no device_call lowering, no realtime dialect, and no slot-count, slot-size, or timeout flag family. No hardware was contacted and no hardware evidence exists; no realtime link has ever been established by this package. It carries a 64-bit timestamp field and echoes it verbatim, so it reads no clock, measures no duration, bounds no wait, and makes no latency, jitter, throughput, cycle-count, or realtime-ness claim of any kind; there is deliberately no per-dispatch timeout because waiting belongs to the transport. The type ids, the descriptor layout, and the argument and result limits are taken from CUDA-Q's published protocol so an interoperating implementation produces the same bytes, while the field names, the default slot size of 384 bytes, and every Python behaviour are FlagQuantum's own: CUDA-Q requires a slot size explicitly and documents no default, and a function-id miss raises a FlagQuantum exception here whereas the published dispatcher clears the slot with no response. Payloads are typeless on the wire, so a schema disagreement between a caller and a handler is caught out of band and not at runtime. LoopbackTransport is the contract fake and performs no I/O. A realtime call is consumed by a service-side handler; the simulator is not a sanctioned consumer, because architecture.toml forbids simulation from importing remote, and no realtime execution mode, runtime option, target, or result field is added anywhere. The parity rows for realtime_transport, realtime_feedback_loop, and realtime_sensor_bridge remain unsupported; only realtime_host_api moves to partial. No Stable Core export, capability availability claim, or maturity claim above development evidence follows from this entry.
 
 
 ## Validated public performance claims

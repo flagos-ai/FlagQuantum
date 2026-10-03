@@ -89,10 +89,10 @@ No row in this document is a performance comparison or a scalability claim.
 | quantum_error_correction | 0 | 4 | 3 | 0 | 7 |
 | logical_and_ftqc_layer | 0 | 0 | 5 | 0 | 5 |
 | hardware_and_cloud_targets | 3 | 2 | 1 | 0 | 6 |
-| realtime_control | 0 | 0 | 4 | 0 | 4 |
+| realtime_control | 0 | 1 | 3 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 10 | 42 | 43 | 0 | 95 |
+| **Total** | 10 | 43 | 42 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -173,9 +173,9 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `qec_stim_user_migration` (quantum_error_correction): Absent, and its upstream counterpart is not where the surface list implies. cudaq-qec publishes no for-Stim-users page: the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, and it states there that the layer does not simulate, sample, or decode, emits no detector annotations and no detector error models, and that those studies belong to the Stim ecosystem. So the document cannot be translated from that page, and reading the row's name as pointing at it would aim a `next`-priority capability at a component that produces no detector error model. The counterpart is cudaq-qec's own Stim surface: reading Stim detector error model text through dem_from_stim_text, sampling a model through dem_sampling, and decoding from a Stim DEM through the decoder framework. The document is conformance work rather than a new implementation, so it is still sequenced after the Stim integration row's halves are joined; until then a migration guide would describe a route that stops at the join.
 - `logical_resource_estimation` (logical_and_ftqc_layer): Absent as a domain. Qualtran carries the same mathematics under an Apache-2.0 licence, so the planned route is adaptation into a FlagQuantum-owned report format aligned with capability-maturity.toml evidence.
 - `runtime_endpoint` (hardware_and_cloud_targets): Absent as a named contract. FlagQuantum has remote adapters and a deployment surface, but no provider-neutral endpoint object.
-- `realtime_feedback_loop` (realtime_control): Absent. This is the one capability that cannot be closed by software alone: it needs an FPGA and a remote-direct-memory-access capable network interface, so it requires a hardware partner.
-- `realtime_transport` (realtime_control): Absent. The software side can define a vendor-neutral messaging protocol and device-call abstraction before hardware exists, and that is the part worth doing first.
-- `realtime_host_api` (realtime_control): Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against.
+- `realtime_feedback_loop` (realtime_control): Blocked, not merely absent. The software half of the surface now exists in flagquantum/remote/realtime, but the microsecond feedback loop itself needs an FPGA and a remote-direct-memory-access capable network interface, so it cannot be closed by software at all and is delivered, if at all, with a hardware partner. ARCH-013 records it as an owned blocked row rather than as a plan.
+- `realtime_transport` (realtime_control): Partly closed and still not a transport. The vendor-neutral messaging protocol and the device-call channel seam a transport plugs into now exist in flagquantum/remote/realtime, with the slot framing, payload type system, status convention, and function table specified and exercised offline. What remains absent is the transport itself: RoCE and Ethernet carriage, a ring buffer, a dispatcher, and every timing property, none of which software alone can supply. The row stays unsupported so the dependency-class accounting is not flattered by a protocol that measures nothing.
+- `realtime_host_api` (realtime_control): Partly delivered. The vendor-neutral half is the messaging protocol and the device-call abstraction, and both are now implemented and conformance-checked offline in flagquantum/remote/realtime: a fixed-size slot, a typed payload declared by a handler schema, a function table keyed by a hashed handler name, a status convention, and a channel resolved by name at runtime. What keeps the row at partial rather than supported is the other half of the host-facing surface: the dispatcher, the ring buffer, the function-table launch path, and the occupancy and graph entry points are absent by design, because they belong to the hardware partner and to a device runtime this repository does not own.
 - `distribution_packaging` (engineering_ecosystem_and_abi): FlagQuantum ships a single package plus a development container. A metapackage that selects a FlagOS and accelerator generation has no equivalent and is needed for a domestic-accelerator install story.
 
 **later** (20 open)
@@ -196,7 +196,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `physical_placement_and_scheduling` (logical_and_ftqc_layer): Absent. It also depends on a physical target model, so it follows the compiler routing work.
 - `ftqc_device_modeling` (logical_and_ftqc_layer): Absent. It is a modeling surface with no consumer until logical resource estimation exists.
 - `logical_gadget_verification` (logical_and_ftqc_layer): Absent, and it depends on both the logical layer and the QEC decoders.
-- `realtime_sensor_bridge` (realtime_control): Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition.
+- `realtime_sensor_bridge` (realtime_control): Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition; the protocol now exists, while the sensor bridge and its transport do not, so nothing about this row is closed.
 - `stable_c_abi` (engineering_ecosystem_and_abi): Absent by decision rather than by omission. A stable C ABI requires a real performance backend as its justification, so it is sequenced after the Python admission path proves the boundary by replacement.
 - `cpp_api_surface` (engineering_ecosystem_and_abi): Absent. It is not a product goal for the Python-first FlagQuantum surface, and it is listed here so the gap is recorded rather than implied.
 - `vendor_certification` (engineering_ecosystem_and_abi): Absent. FlagQuantum evidence governance is stronger than the baseline in maturity levels and benchmark auditing, but there is no certification path by which a vendor attests to a backend.
@@ -463,16 +463,21 @@ CUDA-Q surface: FPGA-to-GPU microsecond feedback, NVQLink network layer, Holosca
 
 | Capability | CUDA-Q baseline | Status | Priority | Dependency class | FlagQuantum maturity | Reason |
 | --- | --- | --- | --- | --- | --- | --- |
-| `realtime_feedback_loop` | Microsecond-scale FPGA-to-GPU feedback loop | unsupported | next | A_nvidia_proprietary | none | Absent. This is the one capability that cannot be closed by software alone: it needs an FPGA and a remote-direct-memory-access capable network interface, so it requires a hardware partner. |
-| `realtime_transport` | RoCE and Ethernet realtime transport with a device call channel | unsupported | next | A_nvidia_proprietary | none | Absent. The software side can define a vendor-neutral messaging protocol and device-call abstraction before hardware exists, and that is the part worth doing first. |
-| `realtime_host_api` | Host API and messaging protocol for realtime control | unsupported | next | B_open_neutral | none | Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against. |
-| `realtime_sensor_bridge` | Holoscan sensor bridge integration | unsupported | later | A_nvidia_proprietary | none | Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition. |
+| `realtime_feedback_loop` | Microsecond-scale FPGA-to-GPU feedback loop | unsupported | next | A_nvidia_proprietary | none | Blocked, not merely absent. The software half of the surface now exists in flagquantum/remote/realtime, but the microsecond feedback loop itself needs an FPGA and a remote-direct-memory-access capable network interface, so it cannot be closed by software at all and is delivered, if at all, with a hardware partner. ARCH-013 records it as an owned blocked row rather than as a plan. |
+| `realtime_transport` | RoCE and Ethernet realtime transport with a device call channel | unsupported | next | A_nvidia_proprietary | none | Partly closed and still not a transport. The vendor-neutral messaging protocol and the device-call channel seam a transport plugs into now exist in flagquantum/remote/realtime, with the slot framing, payload type system, status convention, and function table specified and exercised offline. What remains absent is the transport itself: RoCE and Ethernet carriage, a ring buffer, a dispatcher, and every timing property, none of which software alone can supply. The row stays unsupported so the dependency-class accounting is not flattered by a protocol that measures nothing. |
+| `realtime_host_api` | Host API and messaging protocol for realtime control | partial | next | B_open_neutral | `realtime_device_call_messaging` | Partly delivered. The vendor-neutral half is the messaging protocol and the device-call abstraction, and both are now implemented and conformance-checked offline in flagquantum/remote/realtime: a fixed-size slot, a typed payload declared by a handler schema, a function table keyed by a hashed handler name, a status convention, and a channel resolved by name at runtime. What keeps the row at partial rather than supported is the other half of the host-facing surface: the dispatcher, the ring buffer, the function-table launch path, and the occupancy and graph entry points are absent by design, because they belong to the hardware partner and to a device runtime this repository does not own. |
+| `realtime_sensor_bridge` | Holoscan sensor bridge integration | unsupported | later | A_nvidia_proprietary | none | Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition; the protocol now exists, while the sensor bridge and its transport do not, so nothing about this row is closed. |
 
 Evidence:
 
-- domain default, negative search: no FPGA, remote-direct-memory-access, device-call, or realtime messaging module anywhere under flagquantum/
+- domain default: `flagquantum/remote/realtime`
+- domain default: `contracts/realtime-messaging-v1-candidate.json`
+- domain default: `docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md`
+- domain default, negative search: no FPGA, remote-direct-memory-access, or RDMA transport module anywhere under flagquantum/
 
-- `realtime_feedback_loop` override: `search:CUDA-Q realtime control surface and no FPGA, RDMA, or device-call module under flagquantum/`
+- `realtime_feedback_loop` override: `docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md`, `flagquantum/remote/realtime/README.md`, `search:no FPGA or remote-direct-memory-access transport under flagquantum/, so no part of the timing property is claimed or measured here`
+- `realtime_transport` override: `flagquantum/remote/realtime`, `contracts/realtime-messaging-v1-candidate.json`, `tools/check_realtime_messaging_contract.py`, `search:no RoCE, RDMA, verbs, socket, or shared-memory transport and no dispatcher under flagquantum/`
+- `realtime_host_api` override: `flagquantum/remote/realtime`, `contracts/realtime-messaging-v1-candidate.json`, `tools/check_realtime_messaging_contract.py`, `tests/unit/test_realtime_protocol.py`, `examples/remote/realtime_device_call.py`, `docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md`
 
 #### Engineering, ecosystem, and ABI
 

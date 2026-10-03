@@ -940,7 +940,7 @@ baseline_gap = "The registered deployment level is development evidence. This ro
 id = "realtime_control"
 title = "Realtime control"
 cudaq_surface = ["FPGA-to-GPU microsecond feedback", "NVQLink network layer", "Holoscan sensor bridge", "RoCE and Ethernet transport", "device call channels", "host API", "messaging protocol"]
-evidence = ["search:no FPGA, remote-direct-memory-access, device-call, or realtime messaging module anywhere under flagquantum/"]
+evidence = ["flagquantum/remote/realtime", "contracts/realtime-messaging-v1-candidate.json", "docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md", "search:no FPGA, remote-direct-memory-access, or RDMA transport module anywhere under flagquantum/"]
 
 [[domains.capabilities]]
 id = "realtime_feedback_loop"
@@ -948,8 +948,8 @@ cudaq = "Microsecond-scale FPGA-to-GPU feedback loop"
 status = "unsupported"
 priority = "next"
 dependency_class = "A_nvidia_proprietary"
-reason = "Absent. This is the one capability that cannot be closed by software alone: it needs an FPGA and a remote-direct-memory-access capable network interface, so it requires a hardware partner."
-evidence = ["search:CUDA-Q realtime control surface and no FPGA, RDMA, or device-call module under flagquantum/"]
+reason = "Blocked, not merely absent. The software half of the surface now exists in flagquantum/remote/realtime, but the microsecond feedback loop itself needs an FPGA and a remote-direct-memory-access capable network interface, so it cannot be closed by software at all and is delivered, if at all, with a hardware partner. ARCH-013 records it as an owned blocked row rather than as a plan."
+evidence = ["docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md", "flagquantum/remote/realtime/README.md", "search:no FPGA or remote-direct-memory-access transport under flagquantum/, so no part of the timing property is claimed or measured here"]
 
 [[domains.capabilities]]
 id = "realtime_transport"
@@ -957,15 +957,18 @@ cudaq = "RoCE and Ethernet realtime transport with a device call channel"
 status = "unsupported"
 priority = "next"
 dependency_class = "A_nvidia_proprietary"
-reason = "Absent. The software side can define a vendor-neutral messaging protocol and device-call abstraction before hardware exists, and that is the part worth doing first."
+reason = "Partly closed and still not a transport. The vendor-neutral messaging protocol and the device-call channel seam a transport plugs into now exist in flagquantum/remote/realtime, with the slot framing, payload type system, status convention, and function table specified and exercised offline. What remains absent is the transport itself: RoCE and Ethernet carriage, a ring buffer, a dispatcher, and every timing property, none of which software alone can supply. The row stays unsupported so the dependency-class accounting is not flattered by a protocol that measures nothing."
+evidence = ["flagquantum/remote/realtime", "contracts/realtime-messaging-v1-candidate.json", "tools/check_realtime_messaging_contract.py", "search:no RoCE, RDMA, verbs, socket, or shared-memory transport and no dispatcher under flagquantum/"]
 
 [[domains.capabilities]]
 id = "realtime_host_api"
 cudaq = "Host API and messaging protocol for realtime control"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
-reason = "Absent. Defining the protocol is software work and is the prerequisite a hardware partner would implement against."
+maturity_ref = "realtime_device_call_messaging"
+reason = "Partly delivered. The vendor-neutral half is the messaging protocol and the device-call abstraction, and both are now implemented and conformance-checked offline in flagquantum/remote/realtime: a fixed-size slot, a typed payload declared by a handler schema, a function table keyed by a hashed handler name, a status convention, and a channel resolved by name at runtime. What keeps the row at partial rather than supported is the other half of the host-facing surface: the dispatcher, the ring buffer, the function-table launch path, and the occupancy and graph entry points are absent by design, because they belong to the hardware partner and to a device runtime this repository does not own."
+evidence = ["flagquantum/remote/realtime", "contracts/realtime-messaging-v1-candidate.json", "tools/check_realtime_messaging_contract.py", "tests/unit/test_realtime_protocol.py", "examples/remote/realtime_device_call.py", "docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md"]
 
 [[domains.capabilities]]
 id = "realtime_sensor_bridge"
@@ -973,7 +976,7 @@ cudaq = "Holoscan sensor bridge integration"
 status = "unsupported"
 priority = "later"
 dependency_class = "A_nvidia_proprietary"
-reason = "Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition."
+reason = "Absent and NVIDIA-specific. A FlagOS-family equivalent is the replacement target, and it follows the protocol definition; the protocol now exists, while the sensor bridge and its transport do not, so nothing about this row is closed."
 
 [[domains]]
 id = "engineering_ecosystem_and_abi"

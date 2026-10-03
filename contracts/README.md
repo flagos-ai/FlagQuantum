@@ -36,6 +36,7 @@ must validate the resulting behavior directly.
 | `gradient-api-v1-candidate.json` | Authorized additive Stable Core contract for the `gradient` root export, its accepted method values, and the method it refuses. |
 | `openqasm-import-v1-candidate.json` | Authorized additive Stable Core contract for the `from_openqasm` root export, its refusal vocabulary, and the accepted OpenQASM versions. |
 | `execution-options-v1-candidate.json` | Proposed, not-yet-authorized Stable Core contract for `ExecutionOptions`. |
+| `realtime-messaging-v1-candidate.json` | The software half of the realtime control surface: the slot framing, payload type system, handler schema limits, status convention, function-id hash, and the device-call channel seam a hardware partner implements a transport against. |
 
 Validate the API migration baseline with
 `python tools/public_api_snapshot.py`. It is not the final Stable Core contract
@@ -45,6 +46,11 @@ An authorized contract is read by a gate of its own, so a claim with no consumer
 is a defect rather than decoration. `tools/check_openqasm_import_contract.py`
 reads `openqasm-import-v1-candidate.json` against the shipped importer and
 requires each of its declared rules to name an existing check or witness test.
+`tools/check_realtime_messaging_contract.py` does the same for
+`realtime-messaging-v1-candidate.json`, and additionally compares the response
+magic with the published protocol's own worked example and the function-id hash
+with the FNV specification's published vectors, so the contract is not merely
+checked against the code it was written from.
 
 The v1 candidate remains a proposal until API Change Proposal 001 is approved.
 Candidate validation does not authorize changing the current public API.

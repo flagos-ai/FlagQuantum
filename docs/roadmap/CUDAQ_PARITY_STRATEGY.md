@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 42 |
-| `unsupported` | 43 |
+| `partial` | 43 |
+| `unsupported` | 42 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -75,6 +75,16 @@ fail-closed and turns it into a capability snapshot. It is deliberately not
 `supported`, because a registered description is not yet a runnable backend, and
 claiming the row closed would hide the remaining work behind an interface that
 does exist.
+
+`realtime_host_api` moved from `unsupported` to `partial` in the same wave, and it
+is the only realtime row that moved. It is also the only row in the domain whose
+`dependency_class` is `B_open_neutral`, so the vendor-neutral half of the realtime
+surface -- a messaging protocol and a device-call abstraction -- is software this
+programme can own and deliver, while the FPGA, the network interface, and every
+timing property are not. The row is deliberately not `supported`: the dispatcher,
+the ring buffer, and the host entry points that launch through them are absent by
+design, and the three `A_nvidia_proprietary` rows beside it stay `unsupported` so
+a protocol that measures nothing cannot be read as a transport.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -118,7 +128,7 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 11 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 10 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by
 integration rather than by research: a detector error model, chemistry and
 algorithm domain libraries, a decoder family, Clifford+T and
@@ -293,7 +303,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 43 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 42 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

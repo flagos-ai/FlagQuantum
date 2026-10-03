@@ -1,0 +1,211 @@
+{
+  "schema": "flagquantum.realtime_messaging_contract",
+  "schema_version": "1.0",
+  "status": "candidate",
+  "owner": "remote maintainers",
+  "approval": {
+    "record": "docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md",
+    "state": "contract_candidate",
+    "public_api_change": false,
+    "capability_claim": false
+  },
+  "source": {
+    "documents": [
+      "https://nvidia.github.io/cuda-quantum/latest/using/realtime/protocol.html",
+      "https://nvidia.github.io/cuda-quantum/latest/using/realtime/host.html",
+      "https://nvidia.github.io/cuda-quantum/latest/using/realtime/device_call.html",
+      "https://nvidia.github.io/cuda-quantum/latest/using/realtime/cpu_transport.html"
+    ],
+    "read_at": "2026-10-06",
+    "note": "The wire format is transcribed from the published CUDA-Q realtime protocol; the accompanying hardware pages are read only to fix the boundary of what this contract does not cover."
+  },
+  "wire": {
+    "byte_order": "little",
+    "float_format": "ieee754",
+    "packed": true,
+    "header_size_bytes": 24,
+    "slot_rule": "sizeof(header) + payload_length <= slot_size",
+    "padding_rule": "the bytes between the payload and the end of a slot are unused and carry no meaning",
+    "request": {
+      "magic": 1129664850,
+      "magic_bytes_little_endian": "52515543",
+      "fields": [
+        { "name": "magic", "type": "uint32", "bytes": 4 },
+        { "name": "function_id", "type": "uint32", "bytes": 4 },
+        { "name": "arg_len", "type": "uint32", "bytes": 4 },
+        { "name": "request_id", "type": "uint32", "bytes": 4 },
+        { "name": "ptp_timestamp", "type": "uint64", "bytes": 8 }
+      ]
+    },
+    "response": {
+      "magic": 1129664851,
+      "magic_bytes_little_endian": "53515543",
+      "magic_source": "the published protocol's worked response example, whose leading bytes are 53 51 55 43",
+      "fields": [
+        { "name": "magic", "type": "uint32", "bytes": 4 },
+        { "name": "status", "type": "int32", "bytes": 4 },
+        { "name": "result_len", "type": "uint32", "bytes": 4 },
+        { "name": "request_id", "type": "uint32", "bytes": 4 },
+        { "name": "ptp_timestamp", "type": "uint64", "bytes": 8 }
+      ]
+    },
+    "request_example": {
+      "handler": "majority_decode",
+      "function_id": 4129752785,
+      "arg_len": 1,
+      "request_id": 17,
+      "ptp_timestamp": 0,
+      "payload_hex": "0b",
+      "slot_size": 32,
+      "slot_hex": "52515543d10627f6010000001100000000000000000000000b00000000000000"
+    },
+    "response_example": {
+      "status": 0,
+      "result_len": 1,
+      "request_id": 17,
+      "ptp_timestamp": 0,
+      "payload_hex": "01",
+      "slot_size": 32,
+      "slot_hex": "5351554300000000010000001100000000000000000000000100000000000000"
+    }
+  },
+  "payload": {
+    "descriptor_size_bytes": 12,
+    "descriptor_fields": [
+      { "name": "type_id", "type": "uint8" },
+      { "name": "reserved", "type": "uint8[3]" },
+      { "name": "size_bytes", "type": "uint32" },
+      { "name": "num_elements", "type": "uint32" }
+    ],
+    "type_ids": {
+      "UINT8": 16,
+      "INT32": 17,
+      "INT64": 18,
+      "FLOAT32": 19,
+      "FLOAT64": 20,
+      "ARRAY_UINT8": 32,
+      "ARRAY_INT32": 33,
+      "ARRAY_FLOAT32": 34,
+      "ARRAY_FLOAT64": 35,
+      "BIT_PACKED": 48
+    },
+    "scalar_widths_bytes": {
+      "UINT8": 1,
+      "INT32": 4,
+      "INT64": 8,
+      "FLOAT32": 4,
+      "FLOAT64": 8
+    },
+    "array_element_widths_bytes": {
+      "ARRAY_UINT8": 1,
+      "ARRAY_INT32": 4,
+      "ARRAY_FLOAT32": 4,
+      "ARRAY_FLOAT64": 8
+    },
+    "num_elements_semantics": "one for a scalar, the element count for an array, and the bit count for bit-packed data",
+    "max_arguments": 8,
+    "max_results": 4,
+    "schema_size_bytes": 148,
+    "bit_order": "lsb_first_within_each_byte",
+    "bit_packed_size_rule": "ceil(num_elements / 8)",
+    "payload_rule": "arguments are concatenated in schema order with no padding and no delimiters",
+    "bit_packed_example": {
+      "bits": [1, 1, 0, 1, 0],
+      "bytes_hex": "0b"
+    },
+    "typing_note": "the wire carries no type information; a handler schema registered out of band is the only thing that gives the payload meaning"
+  },
+  "status_codes": {
+    "success": 0,
+    "handler_error": "positive",
+    "protocol_error": "negative",
+    "protocol_codes": {
+      "unknown_function": -1,
+      "invalid_arguments": -2,
+      "handler_raised": -3
+    },
+    "echo_rule": "request_id and ptp_timestamp are echoed verbatim on success and on failure alike, so a caller can match an answer to the request that asked",
+    "non_invention_rule": "a failed call reports its status; no path reports success for a request that was not served"
+  },
+  "function_id": {
+    "algorithm": "fnv1a_32",
+    "offset_basis": 2166136261,
+    "prime": 16777619,
+    "mask": 4294967295,
+    "published_vectors": {
+      "a": 3826002220,
+      "foobar": 3214735720
+    },
+    "published_vectors_source": "the FNV specification's own 32-bit test vectors, which are independent of this repository",
+    "implementation_vectors": {
+      "majority_decode": 4129752785,
+      "qec_decode": 3299927231
+    }
+  },
+  "device_call": {
+    "compiled_facts": ["device_id", "function_id"],
+    "runtime_selection": "the channel name is not compiled in; the program selects a channel when it starts",
+    "dispatch_modes": ["host_call", "graph_launch"],
+    "unsupported_mode_result": "a service returns nothing for a mode it cannot serve rather than degrading to one it can",
+    "session_key": "device_id",
+    "function_table_validity": "a session owns its function table and the table stays valid until the session is stopped",
+    "transport_ownership": "ring allocation, frame leasing, request publication, response completion and transport shutdown belong to the channel, not to the service",
+    "collision_rule": "two handler names that hash to the same function id are refused when the table is built"
+  },
+  "hardware_boundary": {
+    "falsified_claims": {
+      "hardware_evidence": false,
+      "realtime_latency": false,
+      "realtime_decoder_integration": false,
+      "realtime_session_execution_mode": false,
+      "device_call_compiler_lowering": false,
+      "cudaq_library_abi_compatibility": false
+    },
+    "out_of_scope": [
+      "fpga_bitstream_and_programmable_logic",
+      "rdma_roce_transport",
+      "connectx_nic",
+      "gpu_direct",
+      "nvqlink",
+      "holoscan_sensor_bridge",
+      "ptp_clock_accuracy",
+      "microsecond_latency"
+    ],
+    "not_claimed": [
+      "hardware_evidence",
+      "latency",
+      "throughput",
+      "scalability",
+      "a working realtime link"
+    ],
+    "statement": "This contract defines the software half of the realtime surface: the wire format, the payload type system, the function-table abstraction, and channel selection. It defines nothing about the hardware that carries a slot, and it is not evidence that any hardware carries one."
+  },
+  "readers": {
+    "wire": [
+      "tool:check_wire",
+      "test:test_realtime_protocol.py::test_request_slot_matches_the_declared_bytes",
+      "test:test_realtime_protocol.py::test_response_slot_matches_the_declared_bytes"
+    ],
+    "payload": [
+      "tool:check_payload",
+      "test:test_realtime_protocol.py::test_bit_packed_payload_is_lsb_first",
+      "test:test_realtime_protocol.py::test_schema_image_is_the_declared_size"
+    ],
+    "status_codes": [
+      "tool:check_status",
+      "test:test_realtime_protocol.py::test_a_failed_call_echoes_the_request_id"
+    ],
+    "function_id": [
+      "tool:check_function_id",
+      "test:test_realtime_protocol.py::test_function_id_matches_the_published_vectors"
+    ],
+    "device_call": [
+      "tool:check_device_call",
+      "test:test_realtime_protocol.py::test_a_channel_is_selected_at_run_time_by_name",
+      "test:test_realtime_protocol.py::test_a_session_refuses_a_mode_it_does_not_serve"
+    ],
+    "hardware_boundary": [
+      "tool:check_hardware_boundary"
+    ]
+  }
+}
