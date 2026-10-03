@@ -125,6 +125,17 @@ def test_the_timing_protocol_is_read_from_the_manifest_not_from_arguments(
     ]
     with pytest.raises(SystemExit, match="frozen matched-speed protocol requires"):
         producer.main(parser_arguments)
+    # Omitting the counts entirely is the same refusal: the protocol is not
+    # something a caller may leave to a default.
+    with pytest.raises(SystemExit, match="frozen matched-speed protocol requires"):
+        producer.main(
+            [
+                "--role",
+                "matched-speed",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+            ]
+        )
 
     # The same call with the frozen counts gets past the protocol check and
     # fails later, on the environment a rank has to be launched with.

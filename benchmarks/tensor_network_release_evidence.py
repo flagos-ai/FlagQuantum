@@ -484,9 +484,6 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
             "the frozen matched-speed protocol requires "
             f"--warmup {speed['warmup_steps']} --iterations {speed['measured_steps']}"
         )
-    if arguments.warmup is None or arguments.iterations is None:
-        raise SystemExit("the frozen matched-speed protocol sets both counts")
-
     rank = int(os.environ["RANK"])
     world = int(os.environ["WORLD_SIZE"])
     local_rank = int(os.environ["LOCAL_RANK"])
