@@ -11,6 +11,8 @@ from flagquantum.simulation.real_imag_kernels import (
     _canonical_bmm_inputs,
     _canonical_bmm_layout,
     _canonical_layout_requires_materialization,
+    _fused_layout_bmm,
+    _layout_bmm_dispatch_supported,
     complex_einsum_pair,
     kernel_cache_summary,
 )
@@ -38,6 +40,33 @@ def test_canonical_layout_detects_real_reshape_copy_without_materializing() -> N
     assert copied_layout is not None
     assert _canonical_layout_requires_materialization(
         copied_left, copied_right, copied_layout
+    )
+
+
+def test_layout_bmm_dispatch_is_limited_to_evidenced_forward_shape() -> None:
+    winning_left = torch.empty(64, 16, 64, 16, device="meta", dtype=torch.complex64)
+    winning_right = torch.empty(64, 16, 64, 16, device="meta", dtype=torch.complex64)
+    winning_layout = _canonical_bmm_layout(
+        "azcb,czdb->zad", winning_left, winning_right
+    )
+    assert winning_layout is not None
+    assert _layout_bmm_dispatch_supported(
+        "azcb,czdb->zad", winning_left, winning_right, winning_layout
+    )
+
+    losing_left = torch.empty(64, 16, 32, 16, device="meta", dtype=torch.complex64)
+    losing_right = torch.empty(32, 16, 64, 16, device="meta", dtype=torch.complex64)
+    losing_layout = _canonical_bmm_layout("azcb,czdb->zad", losing_left, losing_right)
+    assert losing_layout is not None
+    assert not _layout_bmm_dispatch_supported(
+        "azcb,czdb->zad", losing_left, losing_right, losing_layout
+    )
+
+    assert not _layout_bmm_dispatch_supported(
+        "azcb,czdb->zad",
+        winning_left.requires_grad_(True),
+        winning_right,
+        winning_layout,
     )
 
 
@@ -149,7 +178,7 @@ def test_canonical_cuda_lowering_forward_and_backward_matches_einsum(
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.gpu
 @pytest.mark.triton
-def test_memory_pressure_keeps_canonical_fused_bmm(monkeypatch) -> None:
+def test_evidenced_nonview_inference_uses_layout_fused_bmm(monkeypatch) -> None:
     calls = 0
     original = triton_bmm_runtime.fused_complex_layout_bmm
 
@@ -159,14 +188,14 @@ def test_memory_pressure_keeps_canonical_fused_bmm(monkeypatch) -> None:
         return original(*args, **kwargs)
 
     monkeypatch.setattr(triton_bmm_runtime, "fused_complex_layout_bmm", counted)
-    monkeypatch.setattr(kernels_runtime, "_FUSED_WORKING_SET_BYTES", 0)
-    left = torch.randn(2, 3, 4, device="cuda", dtype=torch.complex64)
-    right = torch.randn(2, 4, 5, device="cuda", dtype=torch.complex64)
+    left = torch.randn(64, 16, 64, 16, device="cuda", dtype=torch.complex64)
+    right = torch.randn(64, 16, 64, 16, device="cuda", dtype=torch.complex64)
 
-    actual = complex_einsum_pair("zab,zbc->zac", left, right, compile_cuda=False)
+    actual = complex_einsum_pair("azcb,czdb->zad", left, right, compile_cuda=False)
+    reference = torch.einsum("azcb,czdb->zad", left, right)
 
     assert calls == 1
-    torch.testing.assert_close(actual, torch.bmm(left, right), atol=2e-5, rtol=2e-5)
+    torch.testing.assert_close(actual, reference, atol=2e-4, rtol=2e-4)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
@@ -191,7 +220,6 @@ def test_fused_layout_route_does_not_materialize_canonical_inputs(
         "_require_layout_complex_bmm_kernel",
         capture_catalog_route,
     )
-    monkeypatch.setattr(kernels_runtime, "_FUSED_WORKING_SET_BYTES", 0)
 
     def unexpected_materialization(*args, **kwargs):
         raise AssertionError("layout-aware fused route must read original tensors")
@@ -213,7 +241,9 @@ def test_fused_layout_route_does_not_materialize_canonical_inputs(
     reference_left = left.detach().clone().requires_grad_(True)
     reference_right = right.detach().clone().requires_grad_(True)
 
-    actual = complex_einsum_pair("abc,cbd->da", left, right, compile_cuda=False)
+    layout = _canonical_bmm_layout("abc,cbd->da", left, right)
+    assert layout is not None
+    actual = _fused_layout_bmm("abc,cbd->da", left, right, layout)
     reference = torch.einsum("abc,cbd->da", reference_left, reference_right)
     gradient = torch.randn_like(reference)
     actual_gradients = torch.autograd.grad(actual, (left, right), gradient)
@@ -234,7 +264,7 @@ def test_fused_layout_route_does_not_materialize_canonical_inputs(
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.gpu
 @pytest.mark.triton
-def test_large_nonview_inference_uses_layout_fused_bmm(monkeypatch) -> None:
+def test_unevidenced_nonview_inference_prefers_native_einsum(monkeypatch) -> None:
     calls = 0
     original = triton_bmm_runtime.fused_complex_layout_bmm
 
@@ -250,30 +280,30 @@ def test_large_nonview_inference_uses_layout_fused_bmm(monkeypatch) -> None:
     actual = complex_einsum_pair("azcb,czdb->zad", left, right)
     reference = torch.einsum("azcb,czdb->zad", left, right)
 
-    assert calls == 1
+    assert calls == 0
     torch.testing.assert_close(actual, reference, atol=2e-4, rtol=2e-4)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.gpu
 @pytest.mark.triton
-def test_small_training_contraction_prefers_native_einsum(monkeypatch) -> None:
+def test_evidenced_training_contraction_prefers_native_einsum(monkeypatch) -> None:
     calls = 0
 
-    def counted(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
+    def counted(*args, **kwargs) -> torch.Tensor:
         nonlocal calls
         calls += 1
-        return torch.bmm(left, right)
+        raise AssertionError("training must not use the cataloged layout kernel")
 
-    monkeypatch.setattr(triton_bmm_runtime, "fused_complex_bmm", counted)
+    monkeypatch.setattr(triton_bmm_runtime, "fused_complex_layout_bmm", counted)
     left = torch.randn(
-        2, 3, 4, device="cuda", dtype=torch.complex64, requires_grad=True
+        64, 16, 64, 16, device="cuda", dtype=torch.complex64, requires_grad=True
     )
     right = torch.randn(
-        2, 4, 5, device="cuda", dtype=torch.complex64, requires_grad=True
+        64, 16, 64, 16, device="cuda", dtype=torch.complex64, requires_grad=True
     )
 
-    actual = complex_einsum_pair("zab,zbc->zac", left, right, compile_cuda=False)
+    actual = complex_einsum_pair("azcb,czdb->zad", left, right, compile_cuda=False)
     actual.sum().backward(torch.ones_like(actual.sum()))
 
     assert calls == 0
@@ -285,12 +315,12 @@ def test_small_training_contraction_prefers_native_einsum(monkeypatch) -> None:
 def test_small_inference_contraction_prefers_native_einsum(monkeypatch) -> None:
     calls = 0
 
-    def counted(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
+    def counted(*args, **kwargs) -> torch.Tensor:
         nonlocal calls
         calls += 1
-        return torch.bmm(left, right)
+        raise AssertionError("unevidenced shape must not use the layout kernel")
 
-    monkeypatch.setattr(triton_bmm_runtime, "fused_complex_bmm", counted)
+    monkeypatch.setattr(triton_bmm_runtime, "fused_complex_layout_bmm", counted)
 
     def unexpected_materialization(*args, **kwargs):
         raise AssertionError("native route must not materialize canonical matrices")
