@@ -60,6 +60,16 @@ quarter-turn table is the one place a value selects a candidate, and it does so
 only for an angle whose residue is exact. Every rule forwards the source
 instruction's own parameter objects and metadata instead of rebuilding them from
 constants, so a trainable rotation stays in the autograd graph.
+
+The table above is the built-in one. A caller who holds a verified identity the
+table does not carry -- a vendor's own decomposition of a two-qubit entangler,
+say -- extends the table with `with_equivalence_rule`, which validates the rule
+and returns a *new* frozen mapping rather than editing the shared one. That is
+the whole extension surface: an operation on a mapping, not a second registry,
+so a rule set is an argument a caller can hold and pass rather than global state
+two callers have to agree about. Registration is not permission to leave the
+target: `translate` expands a rule's leaves through the table again and the
+caller re-checks every one of them.
 """
 
 from __future__ import annotations
@@ -70,11 +80,16 @@ from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import Instruction
-from ..core.operator_schema import get_operator_schema
+from ..core.operator_schema import canonical_opcode, get_operator_schema
+from ..errors import CompilationError
 from .angle_synthesis import quarter_turn_words
 from .one_qubit_synthesis import synthesize_one_qubit
 
 _HALF = 0.5
+
+
+class EquivalenceRuleError(CompilationError):
+    """A rule set that cannot be admitted, named by the entry that failed."""
 
 
 @dataclass(frozen=True)
@@ -394,6 +409,105 @@ EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
 )
 
 
+def _probe_instruction(opcode: str) -> Instruction:
+    """A parameterless-value instance of `opcode`, for validating a rule."""
+
+    schema = get_operator_schema(opcode)
+    assert schema is not None  # guarded by the caller
+    return Instruction(
+        opcode,
+        tuple(range(schema.arity)),
+        params=dict.fromkeys(schema.parameters, 0.0),
+    )
+
+
+def validate_equivalence_rule(rule: EquivalenceRule) -> None:
+    """Refuse a rule that cannot rewrite the opcode it names.
+
+    A rule is a claim about one opcode, and every clause here is something the
+    search depends on: the key has to be the canonical spelling, because that is
+    what the lookup uses; the opcode has to be a declared unitary of at least one
+    wire, because a channel has no matrix in this layer; and the build has to
+    return a non-empty sequence of instructions that does not consist of the
+    source opcode alone, because such a rule would either do nothing or send the
+    search straight back into itself.
+    """
+
+    if not isinstance(rule, EquivalenceRule):
+        raise EquivalenceRuleError(
+            f"a rule is an EquivalenceRule, not {type(rule).__name__}"
+        )
+    if canonical_opcode(rule.opcode) != rule.opcode:
+        raise EquivalenceRuleError(
+            f"rule key {rule.opcode!r} is not canonical; "
+            f"use {canonical_opcode(rule.opcode)!r}"
+        )
+    schema = get_operator_schema(rule.opcode)
+    if schema is None:
+        raise EquivalenceRuleError(f"rule names an unknown opcode: {rule.opcode!r}")
+    if schema.channel or not schema.unitary:
+        raise EquivalenceRuleError(f"rule names a non-unitary opcode: {rule.opcode!r}")
+    if schema.arity < 1:
+        raise EquivalenceRuleError(f"rule names a zero-wire opcode: {rule.opcode!r}")
+    if not callable(rule.build):
+        raise EquivalenceRuleError(f"rule for {rule.opcode!r} has no build callable")
+    probed = rule.build(_probe_instruction(rule.opcode))
+    if not isinstance(probed, tuple):
+        raise EquivalenceRuleError(
+            f"rule for {rule.opcode!r} returned {type(probed).__name__}, not a tuple"
+        )
+    if not probed:
+        raise EquivalenceRuleError(f"rule for {rule.opcode!r} replaces it with nothing")
+    for item in probed:
+        if not isinstance(item, Instruction):
+            raise EquivalenceRuleError(
+                f"rule for {rule.opcode!r} built a {type(item).__name__}, "
+                "not an Instruction"
+            )
+    if all(item.name == rule.opcode for item in probed):
+        raise EquivalenceRuleError(
+            f"rule for {rule.opcode!r} rewrites it only to itself"
+        )
+
+
+def with_equivalence_rule(
+    rules: Mapping[str, tuple[EquivalenceRule, ...]],
+    opcode: str,
+    build: Callable[[Instruction], tuple[Instruction, ...]],
+    *,
+    replace: bool = False,
+) -> Mapping[str, tuple[EquivalenceRule, ...]]:
+    """Return `rules` with one more rule for `opcode`, validated first.
+
+    A new rule is *appended*, so a rewrite the table already had keeps winning a
+    tie and a caller cannot change what a program the table already reaches
+    becomes. Displacing the rules for an opcode is possible and has to be asked
+    for with `replace=True`, because the built-in entries are checked against the
+    runtime and a silent replacement would drop that check without saying so.
+
+    The returned mapping is frozen and the argument is not modified, so a caller
+    who wants one extra rule for one conversion can have it without a second
+    registry and without changing what any other caller sees.
+    """
+
+    if not isinstance(rules, Mapping):
+        raise EquivalenceRuleError(
+            f"a rule set is a mapping, not {type(rules).__name__}"
+        )
+    rule = EquivalenceRule(opcode=canonical_opcode(opcode), build=build)
+    validate_equivalence_rule(rule)
+    existing = tuple(rules.get(rule.opcode, ()))
+    if replace and not existing:
+        raise EquivalenceRuleError(
+            f"replace=True was passed but {rule.opcode!r} has no rule to replace"
+        )
+    updated = dict(rules)
+    updated[rule.opcode] = (rule,) if replace else existing + (rule,)
+    return MappingProxyType(
+        {name: tuple(items) for name, items in sorted(updated.items())}
+    )
+
+
 @dataclass(frozen=True)
 class _Translation:
     """A fully expanded rewrite, with the leaves it could not resolve."""
@@ -423,6 +537,7 @@ def _expand(
     z_rotation: str | None,
     pulse_opcode: str | None,
     active: frozenset[str],
+    rules: Mapping[str, tuple[EquivalenceRule, ...]],
 ) -> _Translation | None:
     """Return the best rewrite of one instruction, or None when it has none.
 
@@ -468,6 +583,7 @@ def _expand(
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
                 active=nested_active,
+                rules=rules,
             )
             if child is None:
                 return None
@@ -482,7 +598,7 @@ def _expand(
         option = rewrite_of(word)
         if option is not None:
             options.append(option)
-    for rule in EQUIVALENCE_RULES.get(opcode, ()):
+    for rule in rules.get(opcode, ()):
         option = rewrite_of(rule.build(instruction))
         if option is not None:
             options.append(option)
@@ -497,6 +613,7 @@ def translate(
     can_run: Callable[[Instruction], bool],
     z_rotation: str | None = None,
     pulse_opcode: str | None = None,
+    rules: Mapping[str, tuple[EquivalenceRule, ...]] = EQUIVALENCE_RULES,
 ) -> tuple[Instruction, ...] | None:
     """Return `instruction` as the shortest rewrite whose leaves can all run.
 
@@ -512,6 +629,11 @@ def translate(
     replacement that was never verified. When a rewrite exists but no fully
     runnable one does, the shortest rewrite is returned anyway -- the caller
     re-checks every leaf and names the gate the target is missing.
+
+    `rules` defaults to `EQUIVALENCE_RULES`. A caller that extended the table
+    with `with_equivalence_rule` passes the result here, and nothing else about
+    the search changes: the same `can_run`, the same quarter-turn words, the same
+    shortest-first tie break.
     """
 
     result = _expand(
@@ -520,10 +642,18 @@ def translate(
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,
         active=frozenset(),
+        rules=rules,
     )
     if result is None or not result.rewritten:
         return None
     return result.instructions
 
 
-__all__ = ("EQUIVALENCE_RULES", "EquivalenceRule", "translate")
+__all__ = (
+    "EQUIVALENCE_RULES",
+    "EquivalenceRule",
+    "EquivalenceRuleError",
+    "translate",
+    "validate_equivalence_rule",
+    "with_equivalence_rule",
+)

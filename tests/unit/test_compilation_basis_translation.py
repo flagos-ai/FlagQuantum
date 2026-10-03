@@ -18,7 +18,10 @@ import torch
 from flagquantum.compiler.basis_translation import (
     EQUIVALENCE_RULES,
     EquivalenceRule,
+    EquivalenceRuleError,
     translate,
+    validate_equivalence_rule,
+    with_equivalence_rule,
 )
 from flagquantum.compiler.native_gate_legalization import (
     NativeGateLegalizationError,
@@ -39,6 +42,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.errors import CompilationError
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit
@@ -610,3 +614,255 @@ def test_the_replacement_leaves_a_consumer_program_running_and_equal() -> None:
     assert set(names) <= {"h", "z", "s", "sdg", "rz", "cx"}
     assert len(result.decompositions) == 3
     assert result.source_content_hash == source.content_hash
+
+
+# --- the table is extensible, one validated rule at a time ------------------
+
+
+def _tdg_to_x_t_x(instruction: Instruction) -> tuple[Instruction, ...]:
+    """`Tdg` is `X T X` up to one global phase, the phase this IR cannot hold."""
+
+    wire = instruction.wires
+    metadata = dict(instruction.metadata)
+    return tuple(Instruction(name, wire, metadata=metadata) for name in ("x", "t", "x"))
+
+
+def test_a_registered_rule_does_not_touch_the_built_in_table() -> None:
+    """The argument is a value, so no other caller sees the addition."""
+
+    before = dict(EQUIVALENCE_RULES)
+    extended = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", _tdg_to_x_t_x)
+    assert "tdg" not in EQUIVALENCE_RULES
+    assert {name: items for name, items in EQUIVALENCE_RULES.items()} == before
+    assert extended["tdg"][0].opcode == "tdg"
+    assert set(extended) == set(before) | {"tdg"}
+
+
+def test_a_registered_rule_reaches_the_search() -> None:
+    """`tdg` has no built-in rewrite, and one registration gives it one.
+
+    The leaves are the registered rule's `x` and `t` expanded through the table
+    again -- `x` becomes `h z h` -- which is the same treatment a built-in rule
+    receives.
+    """
+
+    extended = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", _tdg_to_x_t_x)
+    basis = ("h", "s", "t", "cx")
+    assert translate(Instruction("tdg", (0,)), can_run=_can_run(*basis)) is None
+    leaves = translate(
+        Instruction("tdg", (0,)), can_run=_can_run(*basis), rules=extended
+    )
+    assert leaves is not None
+    names = [item.name for item in leaves]
+    assert names == ["h", "s", "s", "h", "t", "h", "s", "s", "h"]
+    # The `t` is the rule's own middle leaf, not a quarter-turn word.
+    assert names[4] == "t"
+    assert set(names) <= set(basis)
+
+
+def test_a_registered_rule_is_expanded_through_the_table_like_any_other() -> None:
+    """A rule may name a gate the target lacks, and the search still reaches it."""
+
+    extended = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", _tdg_to_x_t_x)
+    leaves = translate(
+        Instruction("tdg", (0,)),
+        can_run=_can_run("h", "s", "sdg", "t", "z"),
+        rules=extended,
+    )
+    assert leaves is not None
+    assert [item.name for item in leaves] == ["h", "z", "h", "t", "h", "z", "h"]
+
+
+def test_a_registered_rule_forwards_the_callers_own_objects() -> None:
+    """A trainable angle stays in the graph through a registered rule too."""
+
+    theta = torch.tensor(0.7137, requires_grad=True)
+
+    def build(instruction: Instruction) -> tuple[Instruction, ...]:
+        return (
+            Instruction(
+                "rz",
+                instruction.wires,
+                params={"theta": theta},
+                metadata=dict(instruction.metadata),
+            ),
+        )
+
+    extended = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", build)
+    leaves = translate(
+        Instruction("tdg", (0,), metadata={"tag": 1}),
+        can_run=_can_run("rz"),
+        rules=extended,
+    )
+    assert leaves is not None
+    assert leaves[0].params["theta"] is theta
+    assert dict(leaves[0].metadata) == {"tag": 1}
+
+
+def test_a_second_rule_is_appended_rather_than_put_first() -> None:
+    """An earlier rule keeps the tie, so a later one cannot displace it."""
+
+    def longer(instruction: Instruction) -> tuple[Instruction, ...]:
+        return (
+            Instruction("x", instruction.wires),
+            Instruction("x", instruction.wires),
+            Instruction("t", instruction.wires),
+            Instruction("x", instruction.wires),
+        )
+
+    first = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", longer)
+    second = with_equivalence_rule(first, "tdg", _tdg_to_x_t_x)
+    assert [rule.build for rule in second["tdg"]] == [longer, _tdg_to_x_t_x]
+    leaves = translate(
+        Instruction("tdg", (0,)), can_run=_can_run("h", "s", "t", "cx"), rules=second
+    )
+    assert leaves is not None
+    # The shorter registered rule wins, and the longer one is still there.
+    assert [item.name for item in leaves] == [
+        "h",
+        "s",
+        "s",
+        "h",
+        "t",
+        "h",
+        "s",
+        "s",
+        "h",
+    ]
+
+
+def test_a_built_in_rule_is_not_displaced_without_asking() -> None:
+    """Registering for an opcode that already has a rule appends, it does not swap."""
+
+    appended = with_equivalence_rule(EQUIVALENCE_RULES, "x", _tdg_to_x_t_x)
+    assert len(appended["x"]) == 2
+    assert appended["x"][0].build is EQUIVALENCE_RULES["x"][0].build
+    leaves = translate(
+        Instruction("x", (0,)), can_run=_can_run("h", "z"), rules=appended
+    )
+    assert leaves is not None
+    assert [item.name for item in leaves] == ["h", "z", "h"]
+
+    replaced = with_equivalence_rule(
+        EQUIVALENCE_RULES, "x", _tdg_to_x_t_x, replace=True
+    )
+    assert len(replaced["x"]) == 1
+    assert replaced["x"][0].build is _tdg_to_x_t_x
+    # Non-vacuity: the two really are different rules.
+    assert EQUIVALENCE_RULES["x"][0].build is not _tdg_to_x_t_x
+
+
+def test_replacing_a_rule_that_does_not_exist_is_refused() -> None:
+    """`replace=True` is not a way to say "add this one", and saying it is an error."""
+
+    with pytest.raises(EquivalenceRuleError, match="no rule to replace"):
+        with_equivalence_rule(EQUIVALENCE_RULES, "tdg", _tdg_to_x_t_x, replace=True)
+
+
+def test_registration_validates_before_it_returns_a_rule_set() -> None:
+    """A rule that cannot be a rule never reaches a mapping, let alone the search."""
+
+    with pytest.raises(EquivalenceRuleError, match="replaces it with nothing"):
+        with_equivalence_rule(EQUIVALENCE_RULES, "tdg", lambda instruction: ())
+    with pytest.raises(EquivalenceRuleError, match="unknown opcode"):
+        with_equivalence_rule(EQUIVALENCE_RULES, "frobnicate", _tdg_to_x_t_x)
+
+
+def test_a_rule_set_that_is_not_a_mapping_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="a rule set is a mapping"):
+        with_equivalence_rule(
+            [EquivalenceRule("h", _tdg_to_x_t_x)], "tdg", _tdg_to_x_t_x
+        )
+
+
+def test_the_key_is_canonicalised_before_it_is_checked() -> None:
+    """A caller writing `CNOT` registers a rule under the name the search looks up."""
+
+    def build(instruction: Instruction) -> tuple[Instruction, ...]:
+        return (
+            Instruction("h", (instruction.wires[1],)),
+            Instruction("cz", instruction.wires),
+            Instruction("h", (instruction.wires[1],)),
+        )
+
+    extended = with_equivalence_rule(EQUIVALENCE_RULES, "CNOT", build, replace=True)
+    assert "CNOT" not in extended
+    assert extended["cx"][0].build is build
+
+
+# --- a rule that cannot be a rule is refused, clause by clause --------------
+
+
+def test_a_non_canonical_key_is_refused_by_the_validator() -> None:
+    """Only reachable directly: `with_equivalence_rule` canonicalises first."""
+
+    with pytest.raises(EquivalenceRuleError, match="is not canonical"):
+        validate_equivalence_rule(EquivalenceRule("CNOT", _tdg_to_x_t_x))
+
+
+def test_a_rule_for_an_unknown_opcode_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="unknown opcode"):
+        validate_equivalence_rule(EquivalenceRule("frobnicate", _tdg_to_x_t_x))
+
+
+def test_a_rule_for_a_channel_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="non-unitary opcode"):
+        validate_equivalence_rule(EquivalenceRule("bit_flip", _tdg_to_x_t_x))
+
+
+def test_a_rule_with_no_build_callable_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="no build callable"):
+        validate_equivalence_rule(EquivalenceRule("h", None))  # type: ignore[arg-type]
+
+
+def test_a_rule_that_builds_a_list_is_refused() -> None:
+    """A sequence and a tuple are not the same promise, and the loop indexes one."""
+
+    with pytest.raises(EquivalenceRuleError, match="not a tuple"):
+        validate_equivalence_rule(
+            EquivalenceRule("h", lambda instruction: [instruction])  # type: ignore[arg-type,return-value]
+        )
+
+
+def test_a_rule_that_replaces_nothing_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="replaces it with nothing"):
+        validate_equivalence_rule(EquivalenceRule("h", lambda instruction: ()))
+
+
+def test_a_rule_that_builds_something_that_is_not_an_instruction_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="not an Instruction"):
+        validate_equivalence_rule(
+            EquivalenceRule("h", lambda instruction: ("h",))  # type: ignore[arg-type,return-value]
+        )
+
+
+def test_a_rule_that_rewrites_an_opcode_only_to_itself_is_refused() -> None:
+    """Such a rule is a loop, and the search would re-enter it forever."""
+
+    with pytest.raises(EquivalenceRuleError, match="only to itself"):
+        validate_equivalence_rule(
+            EquivalenceRule("h", lambda instruction: (instruction,))
+        )
+
+
+def test_a_rule_that_is_not_a_rule_is_refused() -> None:
+    with pytest.raises(EquivalenceRuleError, match="is an EquivalenceRule, not str"):
+        validate_equivalence_rule("h")  # type: ignore[arg-type]
+
+
+def test_the_built_in_table_passes_its_own_validator() -> None:
+    """The validator and the table agree, entry for entry."""
+
+    for opcode, rules in EQUIVALENCE_RULES.items():
+        assert rules, opcode
+        for rule in rules:
+            validate_equivalence_rule(rule)
+
+
+def test_the_registration_surface_is_what_the_module_exports() -> None:
+    import flagquantum.compiler.basis_translation as module
+
+    assert "with_equivalence_rule" in module.__all__
+    assert "validate_equivalence_rule" in module.__all__
+    assert "EquivalenceRuleError" in module.__all__
+    assert issubclass(EquivalenceRuleError, CompilationError)

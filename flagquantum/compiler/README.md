@@ -37,6 +37,7 @@ Use `optimize(program)` for target-independent optimization and
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
+| Conversion into a named basis | [basis_conversion.py](basis_conversion.py) |
 | Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
@@ -91,6 +92,88 @@ it.
 
 ```bash
 pytest tests/unit/test_compilation_angle_synthesis.py
+```
+
+## Convert a program into a named basis
+
+Native-gate legalization answers a question about a device. The loop underneath
+it was never about one: choose a rewrite, check every leaf, bound the added
+operations, record the replacement. `basis_conversion.py` is that loop, and
+`native_gate_legalization.py` keeps the part that really is about a device --
+reading `gates.native` out of a capability snapshot, matching it through the
+capability matcher, and the wording its own refusals use.
+
+```python
+import flagquantum as fq
+
+from flagquantum.compiler.basis_conversion import convert_basis
+
+result = convert_basis(fq.Circuit(2).h(0).cx(0, 1), gates=("h", "cz"))
+print([item.name for item in result.program.instructions])  # ['h', 'h', 'cz', 'h']
+print([item.source_opcode for item in result.decompositions])  # ['cx']
+print(result.source_basis, result.target_basis)  # ('cx', 'h') ('cz', 'h')
+```
+
+The answer is a report, not a bare program: the result, both bases as distinct
+opcode names, one `GateDecompositionRecord` per rewritten instruction naming the
+source position and the replacement opcodes, both content hashes, and a
+`conversion_identity` over the whole claim. When nothing needed rewriting,
+`changed` is False and `program is result.source_program`, so a caller can tell
+"already in the basis" from "converted to it".
+
+A named basis is validated before it is used, and every offending entry is
+reported at once rather than the first. A bare string is refused instead of
+being iterated character by character, aliases are canonicalised, and a channel
+or a non-gate is refused by name -- there is no vendor basis table here and no
+default basis, because a conversion that guessed would be a conversion nobody
+asked for.
+
+What it will not do is approximate. A gate outside the basis with no exact
+decomposition is refused by name, and so is a decomposition whose own leaves
+escape the basis, so a converted program is always exactly the program it was
+given, up to the one global phase the IR cannot record. The four refusal kinds
+are listed in `REFUSAL_KINDS` and each one names the instruction it is about.
+
+The identity table is extensible without a second registry. A caller holding a
+verified identity the table does not carry appends it with
+`basis_translation.with_equivalence_rule`, which validates the rule and returns a
+new frozen mapping, and passes the result to `convert_basis`:
+
+```python
+from flagquantum.compiler.basis_conversion import convert_basis
+from flagquantum.compiler.basis_translation import (
+    EQUIVALENCE_RULES,
+    with_equivalence_rule,
+)
+from flagquantum.core.ir import Instruction
+
+
+def tdg_to_x_t_x(instruction):
+    # Tdg is X T X up to one global phase, the phase FlagQuantum IR cannot hold.
+    return tuple(
+        Instruction(name, instruction.wires, metadata=dict(instruction.metadata))
+        for name in ("x", "t", "x")
+    )
+
+
+rules = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", tdg_to_x_t_x)
+converted = convert_basis(
+    fq.Circuit(1).gate("tdg", 0), gates=("h", "s", "t", "cx"), rules=rules
+)
+print([item.name for item in converted.program.instructions])
+# ['h', 's', 's', 'h', 't', 'h', 's', 's', 'h']
+```
+
+Registration is not permission to leave the basis: the search expands a
+registered rule's leaves through the table again, and every leaf is re-checked,
+so a rule that names a gate the target lacks is refused exactly like a built-in
+one. A new rule is appended rather than put first, so a rewrite the table
+already had keeps winning a tie; displacing the built-ins takes an explicit
+`replace=True`.
+
+```bash
+pytest tests/unit/test_compilation_basis_conversion.py
+pytest tests/unit/test_compilation_basis_translation.py
 ```
 
 ## Cost a static program

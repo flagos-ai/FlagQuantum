@@ -6,7 +6,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import torch
 
+from flagquantum.compiler.basis_conversion import (
+    GateDecompositionRecord as MovedRecord,
+)
 from flagquantum.compiler.native_gate_legalization import (
+    GateDecompositionRecord,
     NativeGateLegalizationError,
     legalize_native_gates,
 )
@@ -196,9 +200,29 @@ def test_separate_native_descriptor_variants_do_not_merge_parameters() -> None:
         legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
 
 
+def test_a_named_gate_with_no_native_rule_keeps_its_own_wording() -> None:
+    """The shared rewrite loop prints this layer's sentence, not the other's.
+
+    `h` is not native here and the equivalence table has no rule for it, so the
+    loop stops in its `no_rule` branch. `basis_conversion` reaches the same
+    branch and says "outside the named basis" instead, which is why the wording
+    is supplied by the caller rather than held in the loop.
+    """
+
+    source = CircuitIR(1, (Instruction("h", (0,)),), dtype="complex128")
+    with pytest.raises(
+        NativeGateLegalizationError,
+        match="instruction 'h' is not native and has no verified decomposition",
+    ):
+        legalize_native_gates(source, snapshot=_snapshot(("cx",)), evaluated_at=_NOW)
+
+
 def test_decomposition_expansion_limit_fails_closed() -> None:
     source = CircuitIR(1, (Instruction("x", (0,)),), dtype="complex128")
-    with pytest.raises(NativeGateLegalizationError, match="max_added_operations"):
+    with pytest.raises(
+        NativeGateLegalizationError,
+        match="native-gate decomposition exceeds max_added_operations",
+    ):
         legalize_native_gates(
             source,
             snapshot=_snapshot(("h", "z")),
@@ -884,3 +908,28 @@ def test_a_basis_without_a_z_rotation_reaches_only_the_identities() -> None:
     assert len(missing) == 7
     # A failure names the native gate the target is missing, not the source gate.
     assert all("requires unsupported native gate" in text for text in missing.values())
+
+
+def test_the_decomposition_record_is_the_moved_class_and_not_a_copy() -> None:
+    """`remote/emulation.py` imports this name from here, so identity has to hold.
+
+    The record moved to `basis_conversion` when the rewrite loop did. This module
+    re-exports it rather than redeclaring it, and the external consumer keeps
+    importing it from the same path. A second class with the same fields would
+    satisfy every behaviour test in this file and still break that consumer's
+    type and `isinstance` checks, so the identity is asserted directly.
+    """
+
+    assert GateDecompositionRecord is MovedRecord
+    record = GateDecompositionRecord(
+        instruction_index=0, source_opcode="x", replacement_opcodes=("h", "z", "h")
+    )
+    assert isinstance(record, MovedRecord)
+
+
+def test_the_emulation_consumer_still_imports_the_record_from_this_module() -> None:
+    """The import path the production consumer uses still resolves to the class."""
+
+    import flagquantum.remote.emulation as emulation
+
+    assert emulation.GateDecompositionRecord is GateDecompositionRecord

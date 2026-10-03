@@ -16,6 +16,15 @@ table rather than through a matrix decomposition, because the matrix of a named
 gate belongs to `flagquantum.simulation`, which this layer must not import. A
 named gate the table does not reach, and a matrix too wide for the entangler
 basis, are refused.
+
+The rewrite loop itself -- choose a rewrite, check every leaf, bound the added
+operations, record the replacement -- is not here. It is `basis_conversion`'s
+`convert_instructions`, because the same loop answers a second question that has
+no device in it: convert this program from the basis it is written in into a
+basis the caller names. What stays here is the part that is about a device:
+reading `gates.native` out of the snapshot, matching it through the capability
+matcher, and the wording a refusal uses, which `_REFUSALS` holds. A reader
+looking for the search should follow the import.
 """
 
 from __future__ import annotations
@@ -23,7 +32,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
 from typing import Any
@@ -43,26 +52,16 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
-from .basis_translation import translate
-from .one_qubit_synthesis import (
-    HALF_PI_PULSE_OPCODES,
-    Z_ROTATION_OPCODES,
-    synthesize_one_qubit_matrix,
-)
-from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubit
+
+# `GateDecompositionRecord` is re-exported rather than defined here because the
+# loop that produces it moved to `basis_conversion`; `remote/emulation.py`
+# imports it from this module and is unchanged, which is the replacement this
+# move had to pass. It is the same class object, so the two import paths agree.
+from .basis_conversion import GateDecompositionRecord, convert_instructions
 
 
 class NativeGateLegalizationError(CompilationError):
     """A circuit cannot be expressed by the evidenced native gate set."""
-
-
-@dataclass(frozen=True)
-class GateDecompositionRecord:
-    """One deterministic source-to-native instruction replacement."""
-
-    instruction_index: int
-    source_opcode: str
-    replacement_opcodes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -184,78 +183,12 @@ def _supports(
     )
 
 
-def _z_rotation_opcode(
-    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
-) -> str | None:
-    """Return the z-rotation the target publishes, or None when it has none."""
-    for opcode in Z_ROTATION_OPCODES:
-        if opcode in descriptors:
-            return opcode
-    return None
-
-
-def _half_pi_pulse_opcode(
-    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
-) -> str | None:
-    """Return the pi/2 x-rotation the target publishes, or None."""
-    for opcode in HALF_PI_PULSE_OPCODES:
-        if opcode in descriptors:
-            return opcode
-    return None
-
-
-def _entangler_opcode(
-    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
-) -> str | None:
-    """Return the supercontrolled entangler the target publishes, or None.
-
-    The table is iterated rather than the target's descriptor map, because a
-    target may publish several entanglers and the choice has to be a fixed
-    function of the published set. `SUPERCONTROLLED_ENTANGLERS` is ordered so a
-    parameter-free spelling is always preferred over one that has to be applied
-    at an angle, and so the answer for a given target never depends on a mapping's
-    insertion order.
-    """
-
-    for opcode in SUPERCONTROLLED_ENTANGLERS:
-        if opcode in descriptors:
-            return opcode
-    return None
-
-
-def _matrix_replacement(
-    instruction: Instruction,
-    *,
-    z_rotation: str | None,
-    pulse_opcode: str | None,
-    entangler: str | None,
-) -> tuple[Instruction, ...] | None:
-    """Rewrite a matrix-carrying instruction, which no schema table describes.
-
-    One wire goes through Euler synthesis, two through KAK synthesis, and
-    anything wider is refused because the entangler basis reaches exactly two.
-    """
-
-    if z_rotation is None or pulse_opcode is None:
-        return None
-    if len(instruction.wires) == 1:
-        return synthesize_one_qubit_matrix(
-            instruction.matrix,
-            wire=instruction.wires[0],
-            z_rotation=z_rotation,
-            pulse_opcode=pulse_opcode,
-            metadata=instruction.metadata,
-        )
-    if len(instruction.wires) == 2 and entangler is not None:
-        return synthesize_two_qubit(
-            instruction.matrix,
-            wires=instruction.wires,
-            entangler=entangler,
-            z_rotation=z_rotation,
-            pulse_opcode=pulse_opcode,
-            metadata=instruction.metadata,
-        )
-    return None
+_REFUSALS = {
+    "matrix": "custom matrix instruction {name!r} has no native contract",
+    "no_rule": "instruction {name!r} is not native and has no verified decomposition",
+    "escapes": ("decomposition of {name!r} requires unsupported native gate {gate!r}"),
+    "budget": "native-gate decomposition exceeds max_added_operations",
+}
 
 
 def _identity(
@@ -300,69 +233,23 @@ def legalize_native_gates(
     if max_added_operations < 0:
         raise ValueError("max_added_operations must be non-negative")
     descriptors = _native_descriptors(snapshot, evaluated_at=evaluated_at)
-    z_rotation = _z_rotation_opcode(descriptors)
-    pulse_opcode = _half_pi_pulse_opcode(descriptors)
-
-    instructions: list[Instruction] = []
-    records: list[GateDecompositionRecord] = []
-    for index, instruction in enumerate(ir.instructions):
-        if _supports(descriptors, instruction):
-            instructions.append(instruction)
-            continue
-        if instruction.matrix is not None:
-            replacement = _matrix_replacement(
-                instruction,
-                z_rotation=z_rotation,
-                pulse_opcode=pulse_opcode,
-                entangler=_entangler_opcode(descriptors),
-            )
-            if replacement is None:
-                raise NativeGateLegalizationError(
-                    f"custom matrix instruction {instruction.name!r} has no native contract"
-                )
-        else:
-            replacement = translate(
-                instruction,
-                can_run=partial(_supports, descriptors),
-                z_rotation=z_rotation,
-                pulse_opcode=pulse_opcode,
-            )
-            if replacement is None:
-                raise NativeGateLegalizationError(
-                    f"instruction {instruction.name!r} is not native and has no verified decomposition"
-                )
-        for item in replacement:
-            if not _supports(descriptors, item):
-                raise NativeGateLegalizationError(
-                    f"decomposition of {instruction.name!r} requires unsupported native gate {item.name!r}"
-                )
-        added = len(instructions) + len(replacement) - index - 1
-        if added > max_added_operations:
-            raise NativeGateLegalizationError(
-                "native-gate decomposition exceeds max_added_operations"
-            )
-        instructions.extend(replacement)
-        records.append(
-            GateDecompositionRecord(
-                instruction_index=index,
-                source_opcode=instruction.name,
-                replacement_opcodes=tuple(item.name for item in replacement),
-            )
-        )
-
-    result = replace(ir, instructions=tuple(instructions)) if records else ir
+    result, records = convert_instructions(
+        ir,
+        published=set(descriptors),
+        can_run=partial(_supports, descriptors),
+        refusals=_REFUSALS,
+        error=NativeGateLegalizationError,
+        max_added_operations=max_added_operations,
+    )
     native_opcodes = tuple(sorted(descriptors))
-    decompositions = tuple(records)
     return NativeGateLegalizationResult(
         source_program=ir,
         program=result,
         source_content_hash=ir.content_hash,
         target_snapshot_id=snapshot.snapshot_id,
         native_opcodes=native_opcodes,
-        decompositions=decompositions,
-        legalization_identity=_identity(
-            ir, result, snapshot, native_opcodes, decompositions
-        ),
+        decompositions=records,
+        legalization_identity=_identity(ir, result, snapshot, native_opcodes, records),
     )
 
 

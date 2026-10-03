@@ -303,7 +303,9 @@ status = "partial"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "ir"
-reason = "Partial coverage follows from the legalization table; there is no general conversion between two arbitrary named bases."
+reason = "A program converts into any named basis the caller writes down, and every rewrite is exact: a gate outside the basis with no verified decomposition is refused by name, a decomposition whose own leaves escape the basis is refused by name, and the four refusal kinds are enumerated in REFUSAL_KINDS. The identity table is extensible through with_equivalence_rule, which validates a rule and returns a new frozen mapping rather than editing the shared one, so a caller holding a verified identity the table does not name can register it without a second registry and without changing what any other caller sees."
+baseline_gap = "What is still missing: the built-in table does not name every gate, so a gate outside it is reachable only when the caller registers a rule, and nothing is approximated, so a rotation angle that is not an exact multiple of pi/4 is still refused."
+evidence = ["flagquantum/compiler/basis_conversion.py", "flagquantum/compiler/basis_translation.py", "tests/unit/test_compilation_basis_conversion.py"]
 
 [[domains.capabilities]]
 id = "clifford_t_synthesis"
