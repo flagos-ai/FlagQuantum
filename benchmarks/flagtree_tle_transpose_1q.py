@@ -142,6 +142,12 @@ def _case(
     )
     torch.testing.assert_close(tle_actual, expected, atol=3e-5, rtol=3e-5)
     torch.testing.assert_close(shared_actual, expected, atol=3e-5, rtol=3e-5)
+    difference = tle_actual - expected
+    maximum_absolute_error = float(torch.max(torch.abs(difference)))
+    relative_l2_error = float(
+        torch.linalg.vector_norm(difference)
+        / torch.linalg.vector_norm(expected).clamp_min(torch.finfo(torch.float32).eps)
+    )
 
     tle_state.copy_(state)
     shared_state.copy_(state)
@@ -177,7 +183,6 @@ def _case(
         repeats=repeats,
         group_size=group_size,
     )
-    difference = tle_actual - expected
     tle_median = float(tle_result["median_seconds_per_invocation"])
     shared_median = float(shared_result["median_seconds_per_invocation"])
     reference_median = float(reference_result["median_seconds_per_invocation"])
@@ -190,13 +195,8 @@ def _case(
         },
         "dtype": "complex64",
         "layout": "contiguous_sharded_statevector",
-        "maximum_absolute_error": float(torch.max(torch.abs(difference))),
-        "relative_l2_error": float(
-            torch.linalg.vector_norm(difference)
-            / torch.linalg.vector_norm(expected).clamp_min(
-                torch.finfo(torch.float32).eps
-            )
-        ),
+        "maximum_absolute_error": maximum_absolute_error,
+        "relative_l2_error": relative_l2_error,
         "flagtree_tle": tle_result,
         "shared_triton": shared_result,
         "pytorch_reference": reference_result,
