@@ -692,6 +692,71 @@ The lane therefore holds at `production_supported` with all four blockers and
 both claim flags false. That is the honest ceiling for this capability on this
 pair, and it is a measured one.
 
+#### The frozen capacity workload does not contract at its own slicing
+
+The paragraph above records the capacity route as blocked by the pair. That is
+true, and it is not the whole reason. Re-measuring the frozen grid at the
+current revision through the producer's own `capacity-failure` role shows the
+rung does not reach a memory measurement at all:
+
+```bash
+python -m benchmarks.tensor_network_release_evidence \
+  --role capacity-failure --node-count 1 --local-world-size 1 \
+  --slice-count 4 --checkpoint-budget-bytes 4294967296
+```
+
+On one A800 this raises `RuntimeError: tensor has too many (>25) dims` from
+`_canonical_layout_pair`, reached along `checkpointing.py` -> `stages.py` ->
+`complex_einsum_pair` -> `_fused_layout_bmm`. The cause is the default
+slice-label selection, not the device:
+`flagquantum/runtime/executors/tensor_network/training.py` chooses the
+*lowest-numbered* contracted internal labels, and for the frozen `[4, 6, 2]`
+grid those are the deepest labels in the network. Slicing them leaves both
+operands above the twenty-five-dimension ceiling that `torch.einsum` and
+PyTorch's copy machinery share, and because the operands must be transposed
+before they can be grouped, the copy is not available as a fallback either.
+
+The labels are the whole difference. Holding the circuit, the parameters, the
+step count, the optimizer and the tape budget fixed and varying only the
+`sliced_labels` argument, the same rung gives:
+
+| Label choice | Labels | Peak | Rematerialized |
+| --- | --- | --- | --- |
+| default (lowest) | 25, 26, 27, 28 | `RuntimeError` | -- |
+| highest | 446, 447, 448, 449 | 55820657664 B | 2512 |
+| middle | 223, 224, 250, 251 | 4433595904 B | 0 |
+| stride | 25, 125, 250, 350 | 4099927552 B | 0 |
+
+A spread choice therefore completes in 4.10 GiB where the default cannot start,
+an order of magnitude below the 51.19 GiB completion the frozen ladder records
+for this rung. Two consequences follow, and both matter more than the capacity
+verdict.
+
+First, the frozen `measured_ladder` rungs are not reproducible from the
+revision the manifest declares. The rung above is recorded as `completed` at
+51191433216 bytes, and `_default_sliced_labels` is byte-identical at that
+revision, so the recorded completions must have been measured with an explicit
+label argument that the manifest does not name. A reader cannot re-derive the ladder
+from the freeze, which is a provenance defect in the manifest rather than a
+property of the hardware.
+
+Second, the capacity premise was never a property of the workload. With a
+spread label choice the frozen grid is a small single-device problem; with the
+default choice it is unrunnable on any number of devices. Neither outcome
+describes a workload that needs a second host, so
+`capacity_premise_not_established` is the right verdict and it stays right until
+the frozen workload is replaced with one whose *best-sliced* single-device peak
+exceeds one device.
+
+The fix for the default selection is not a change of order within the candidate
+list. Choosing slice labels by plan is the correct route --
+`TensorNetworkSlicingPlan` exposes `peak_bytes`, so labels can be chosen by the
+criterion the capability actually cares about -- but that is an executor change
+that has to be measured across the workload family before it lands, and it is
+not made here. What is changed here is only the record: the default's behaviour
+is named, its consequence is measured, and the frozen manifest is left alone
+rather than edited after the measurement.
+
 ### Repeatability of the measured leg
 
 The artifacts as first recorded were produced by two independent invocations of
