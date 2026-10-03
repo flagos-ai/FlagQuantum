@@ -254,6 +254,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_triton_complex_bmm.py::test_fused_complex_layout_bmm_cpu_fallback_matches_torch",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/tn_layout_contraction_a800.json",
+        ),
     ),
 )
 
