@@ -1060,9 +1060,18 @@ class DetectorErrorModel:
         Each location the circuit's round structure and ``noise`` imply is forced
         through the circuit on its own and its signature is read off the layouts,
         so the model is derived from the program rather than asserted about it.
-        The refusals of the injection engine reach the caller unchanged: a
-        hand-built circuit whose source does not match its layouts fails closed
-        with a stated reason instead of building a model that misdescribes it.
+        The three Pauli data families are locations here as they are on the matrix
+        route: the record's own fields name them, an X fault is the forced ``X``,
+        and the Z and Y faults are that Pauli conjugated by the ``h`` and ``sdg``
+        the circuit's source language carries, so they are forced as one fault at
+        one rate rather than as two independent draws. A Z fault on the Z-memory
+        layout this route requires reaches no detector in round zero and never
+        flips the logical observable, so it is enumerated only where it is a
+        mechanism -- and where that is nowhere, it is no mechanism rather than a
+        mechanism at a rate the model would have to invent. The refusals of the
+        injection engine reach the caller unchanged: a hand-built circuit whose
+        source does not match its layouts fails closed with a stated reason
+        instead of building a model that misdescribes it.
         """
 
         num_detectors, num_observables, entries = _memory_circuit_entries(
@@ -1095,10 +1104,14 @@ class DetectorErrorModel:
 
         The rates come from ``noise`` as they do on the circuit route: a data
         fault at a round boundary, and a syndrome bit flipped at a check's
-        readout. The matrix route carries all three Pauli data faults where the
-        circuit route carries the bit flip alone, because a circuit's detectors
-        are laid out for the basis it measures in and matrices have no such
-        layout. A per-element rate vector is read against these matrices, so the
+        readout. Both routes carry all three Pauli data faults; the difference is
+        what a fault's signature is read from. A circuit's detectors are laid out
+        for the basis it measures in, so the circuit route reads a fault's
+        signature off the program it forces and a Z fault is enumerated only in
+        the rounds and at the wires where it reaches a detector. Matrices have no
+        such layout, so here a fault's signature is its support read against the
+        matrices and every family is enumerated with the rate the record states
+        for it. A per-element rate vector is read against these matrices, so the
         per-qubit vectors are indexed by column -- the code's own ``data_wires``
         order -- and the per-check vector by row, Z-type checks first.
         """

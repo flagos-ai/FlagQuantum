@@ -241,11 +241,15 @@ free to declare its checks in any order, so the declaration order and the vector
 order are related by one named translation rather than by a convention each route
 re-states.
 
-This is a description of noise locations, not a `NoiseModel`, and the sampler
-places only the two families the engine has a channel for: a data flip at a round
-boundary and a measurement flip at a check's readout. The phase and Y data rates
-are read by the construction routes, which read matrices and supports rather than
-executing a program.
+This is a description of noise locations, not a `NoiseModel`, and every family it
+states is a location on **both** routes. The sampler executes one channel — the
+engine's single-wire bit flip — so a Z or Y location is that channel conjugated by
+the Clifford that turns a bit flip into the Pauli the family names: `h` around it
+for `phase_flip`, `sdg`/`s` around it for `both_flip`. That is one draw at that
+family's rate, not a pair of independent bit flips, and the noiseless circuit is
+untouched because the pair cancels when the channel does not fire. A measurement
+flip is the bit flip itself, since a readout is flipped in the basis it is read
+in.
 
 ## Say that two mechanisms are alternatives
 
@@ -328,13 +332,15 @@ print(sample.detectors.shape, sample.observables.shape)
 
 A data flip is placed at the round boundary *before* the round's first gate, so it
 opens the frame that round's detectors compare against, and a measurement flip is
-placed immediately *before* the readout of the check it corrupts. Neither position
-exists in the source program, whose bounded hybrid capture refuses a channel call
-outright, so both are derived from the lowered program — and the program must
-lower to `rounds` identical blocks measuring each check once in the code's
-declared order. A program that lowers to anything else, a channel that is not the
-bit-flip pair, and a lowered measurement node are each refused with a stated
-reason rather than sampled under an attribution that may be wrong.
+placed immediately *before* the readout of the check it corrupts. A Z or Y data
+fault is placed at that same boundary, as the one channel the engine has wrapped
+in the conjugation that names the Pauli. Neither position exists in the source
+program, whose bounded hybrid capture refuses a channel call outright, so both are
+derived from the lowered program — and the program must lower to `rounds` identical
+blocks measuring each check once in the code's declared order. A program that
+lowers to anything else, a channel that is not the bit-flip pair, and a lowered
+measurement node are each refused with a stated reason rather than sampled under an
+attribution that may be wrong.
 
 Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the

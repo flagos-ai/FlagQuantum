@@ -59,7 +59,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
-| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
+| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; the noise grammar has no location for a channel bound to a named gate, so arbitrary annotated circuits are still declined. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, and a name-keyed registry all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
@@ -184,11 +184,25 @@ repetition and the rotated surface code. The join then decodes: a
 sampled events, and the residual logical-failure rate falls below the raw
 observable-flip rate and below its own value at the next distance up.
 
-What the row did not close is the noise grammar. The record names two
-mechanisms, so there are two placement classes; a depolarizing or damping channel
-placed after a named gate has no location here and is declined. The baseline's
+What the row did not close is the noise grammar. The record names four
+families, and all four are now placed, but they are placed at two kinds of
+location: a data fault at a round boundary and a flip at a check's readout. The
+engine executes exactly one channel — a single-wire bit flip — so the Z and Y
+data families are *that* channel conjugated by the Clifford that turns the flip
+into the Pauli they name: `h` around it for `phase_flip`, since `H X H = Z`, and
+`sdg`/`s` around it for `both_flip`, since `S_DAG X S = iY`. Conjugating one draw
+is what makes a fault with one rate one fault; sampling two independent bit flips
+at that rate would be a different distribution, so the two are not compared
+against each other anywhere. The wrapper cancels when the channel does not fire,
+which is why the noiseless circuit is untouched. The construction route states
+the same identity in the language it injects into, which carries `h` and `x` and
+no other parameter-free single-qubit gate, by composing `H X H` and `H X H X`
+instead of emitting a conjugation. What has no location here is therefore not a
+Pauli family but a *placement*: a depolarizing or damping channel, and any
+channel bound to a named gate rather than to a round boundary. The baseline's
 `x_` and `z_` variants have no counterpart either, because the code record is a
-Z-memory record. The row stays `partial` on that scope, not on the connection.
+Z-memory record. The row stays `partial` on that scope, not on the connection or
+on which families reach a sampled record.
 One placement is worth recording because it is invisible to any parity
 comparison: the code gadgets prepare their ancilla with the CNOTs immediately
 preceding the readout, so moving a measurement channel one instruction earlier
