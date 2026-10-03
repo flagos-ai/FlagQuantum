@@ -69,6 +69,22 @@ _LEGAL_GATES_NOT_DECLINING_LOCAL = 907
 _LEGAL_GATES_NOT_DECLINING_SPREAD = 30
 _REFUSING_BASIS = "clifford-t"
 
+#: The identity population's legal gate count, with the decline as it was and as
+#: it shipped. These two are exact rather than bounded: both arms leave the
+#: program in the target's own vocabulary or delete runs from it, and there is no
+#: ``u3`` synthesis on this path to round a transcendental angle -- the only gate
+#: the fold can emit here is a ``u3`` whose angles are checked to be exactly zero,
+#: which is why the exemption deletes it instead. The 174-gate difference is the
+#: exemption's whole reach.
+#:
+#: Both numbers moved by six when the exact-identity pass in ``pipeline`` was
+#: strengthened to read the declared angle triple instead of a table of opcode
+#: names: six gates on this population are now removed before the fold sees them.
+#: The difference did not move, which is the point -- the two passes act on
+#: disjoint rows.
+_IDENTITY_LEGAL_GATES_STRICT = 685
+_IDENTITY_LEGAL_GATES_SHIPPED = 511
+
 
 @pytest.fixture(scope="module")
 def payload() -> dict:
@@ -165,6 +181,14 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
     (384 against 771) and strictly longer after the target's own lowering (907
     against 771 here). Both halves have to hold, or the rule is not justified.
 
+    The ``shipped`` arm is in the table because the rule now has an exemption, and
+    the exemption must not be able to answer this test for it: the comparison is
+    made against the shipped rule as it behaves on this population, which is 763
+    rather than 771, and the direction is unchanged. If a future change made the
+    fold fire on the rest of these runs, the shipped arm would fall toward the
+    no-decline arm and the direction asserted on the last line would be what
+    caught it.
+
     Both halves are asserted as directions, because only the directions survive a
     change of platform's transcendental library. See the note on
     `_LEGAL_GATES_NOT_DECLINING_LOCAL`: the folded side's post-lowering count is a
@@ -177,17 +201,25 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
     for label, row in measured.items():
         if label == _REFUSING_BASIS:
             assert row["refused_circuits"] == 80, label
-            assert row["declined_rule"]["legal_gates"] == 0, label
+            assert row["strict_rule"]["legal_gates"] == 0, label
+            assert row["shipped_rule"]["legal_gates"] == 0, label
             continue
-        assert row["declined_rule"]["optimized_gates"] == _OPTIMIZED_GATES_DECLINING
-        assert row["declined_rule"]["legal_gates"] == _LEGAL_GATES_DECLINING
+        assert row["strict_rule"]["optimized_gates"] == _OPTIMIZED_GATES_DECLINING
+        assert row["strict_rule"]["legal_gates"] == _LEGAL_GATES_DECLINING
         assert (
             row["no_decline_rule"]["optimized_gates"] == _OPTIMIZED_GATES_NOT_DECLINING
         )
+        # The exemption moves this population by eight gates, against a gain of
+        # 176 on the identity population. The asymmetry is the evidence that the
+        # exemption is about the identity rather than about the vocabulary.
+        assert (
+            row["shipped_rule"]["optimized_gates"] == _OPTIMIZED_GATES_DECLINING - 8
+        ), label
+        assert row["shipped_rule"]["legal_gates"] < row["strict_rule"]["legal_gates"]
         assert row["refused_circuits"] == 0, label
         assert (
             row["no_decline_rule"]["optimized_gates"]
-            < row["declined_rule"]["optimized_gates"]
+            < row["shipped_rule"]["optimized_gates"]
         )
         # Folding looks better on the intermediate program and ends worse after
         # the target's own lowering. The second half is the rule's whole
@@ -198,10 +230,130 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
             abs(folded_legal - _LEGAL_GATES_NOT_DECLINING_LOCAL)
             <= _LEGAL_GATES_NOT_DECLINING_SPREAD
         ), (label, folded_legal)
-        assert folded_legal > row["declined_rule"]["legal_gates"], label
+        assert folded_legal > row["shipped_rule"]["legal_gates"], label
         # Non-vacuity: the ratio has to be about a synthesis that actually ran, so
         # the folded side must still be larger than its own intermediate program.
         assert folded_legal > row["no_decline_rule"]["optimized_gates"], label
+
+
+def test_the_identity_exemption_shrinks_a_local_program(payload: dict) -> None:
+    """What the exemption buys, and the control that bounds what it means.
+
+    The identity population is built out of runs whose product is the identity and
+    whose opcodes spell one z-rotation/pulse vocabulary, so it is the only
+    population that can see the change at all. The seeded ``rz``/``sx`` population
+    is carried beside it as the control: if the exemption were a general
+    relaxation of the decline, that population would move with it, and it moves by
+    eight gates instead of by 176.
+    """
+
+    measured = {row["label"]: row for row in payload["identity_reach"]}
+    assert set(measured) == {"identity_vocabulary", "random_vocabulary"}
+
+    identity = measured["identity_vocabulary"]
+    strict = identity["strict_rule"]["legal_gates"]
+    shipped = identity["shipped_rule"]["legal_gates"]
+    assert strict == _IDENTITY_LEGAL_GATES_STRICT
+    assert shipped == _IDENTITY_LEGAL_GATES_SHIPPED
+    assert shipped < strict
+    # Per circuit, not in total: a program that grew behind programs that shrank
+    # is exactly what the aggregate would hide.
+    assert identity["circuits_improved"] > 0
+    assert identity["circuits_regressed"] == 0
+    assert identity["worst_raw_state_difference"] < 1e-12
+
+    control = measured["random_vocabulary"]
+    assert control["circuits_regressed"] == 0
+    assert control["worst_raw_state_difference"] < 1e-12
+    # The control moves in the same direction and by far less. Asserting the
+    # ratio rather than two integers is what keeps this a statement about the
+    # exemption's reach rather than about the seed.
+    identity_gain = strict - shipped
+    control_gain = (
+        control["strict_rule"]["legal_gates"] - control["shipped_rule"]["legal_gates"]
+    )
+    assert control_gain >= 0
+    assert identity_gain > 10 * control_gain
+
+
+def test_the_exemption_is_not_the_decline(payload: dict) -> None:
+    """The reach the exemption leaves, measured per circuit on both populations.
+
+    This is the evidence that the change is the part of the decline that was never
+    doing anything rather than the decline itself. On the seeded population,
+    disabling the decline entirely is a net loss: more circuits get worse than get
+    better, and by more gates. On the identity population the same arm is a gain,
+    which is honest to record and is the reason the decline is not simply deleted
+    here.
+    """
+
+    measured = {row["label"]: row for row in payload["identity_reach"]}
+    control = measured["random_vocabulary"]
+    assert (
+        control["disabled_rule_regresses"]["circuits"]
+        > control["disabled_rule_improves"]["circuits"]
+    )
+    assert (
+        control["disabled_rule_regresses"]["gates"]
+        > control["disabled_rule_improves"]["gates"]
+    )
+    # Non-vacuity: the further gain on the identity population is real and is
+    # recorded rather than hidden, so it must not have silently become zero. If it
+    # ever does, this file's account of why the decline stays is out of date.
+    identity = measured["identity_vocabulary"]
+    assert identity["disabled_rule_improves"]["gates"] > 0
+    assert identity["disabled_rule_regresses"]["gates"] == 0
+
+
+def test_no_run_is_deleted_unless_its_product_is_the_identity(payload: dict) -> None:
+    """The fail-closed side, swept densely rather than argued.
+
+    A deletion is the direction that needs evidence, because the vocabulary
+    decline was refusing these runs and the exemption removes that refusal. The
+    sweep is asserted to have deleted something -- a clean sweep over a population
+    that deleted nothing would prove nothing -- and every deletion is asserted to
+    be within the tolerance of the identity.
+    """
+
+    sweep = payload["identity_boundary"]["sweep"]
+    assert sweep["run_count"] == 60000
+    assert sweep["readable_run_count"] > 50000
+    assert sweep["runs_emitting_nothing"] > 0
+    assert sweep["false_yes_count"] == 0
+    assert (
+        sweep["worst_identity_distance_over_emptied"] < sweep["distance_band_asserted"]
+    )
+
+
+def test_a_minus_identity_run_is_written_back_rather_than_deleted(
+    payload: dict,
+) -> None:
+    """The one edge the exemption must not cross, on named shapes and in the sweep.
+
+    ``-I`` is a global phase. ``CircuitIR`` has no field for one, so a run whose
+    product is ``-I`` has to keep a gate. Both halves are asserted: the sweep saw
+    products equal to ``-I``, and it deleted none of them. Without the first
+    assertion the second would hold on a population that never reached the edge.
+    """
+
+    sweep = payload["identity_boundary"]["sweep"]
+    assert sweep["minus_identity_product_count"] > 0
+    assert sweep["minus_identity_emptied_count"] == 0
+
+    cases = {case["case"]: case for case in payload["identity_boundary"]["cases"]}
+    for label, case in cases.items():
+        if case["product_is_identity"]:
+            assert case["emits_nothing"] is True, label
+        if case["product_is_minus_identity"]:
+            assert case["emits_nothing"] is False, label
+    minus_i = cases["minus_i_of_two_half_turns"]
+    assert minus_i["product_is_minus_identity"] is True
+    # The run is refused rather than rewritten: one `rz` would be shorter than the
+    # two gates it replaces, but the fold declines a run in this vocabulary, and
+    # `test_a_minus_identity_vocabulary_run_is_not_deleted` in the unit suite pins
+    # that from the pass's own side.
+    assert minus_i["replacement_length"] is None
+    assert cases["i_identity_of_four_half_pi_pulses"]["replacement_length"] == 0
 
 
 def test_the_qiskit_anchor_reports_the_global_phase_split(payload: dict) -> None:
