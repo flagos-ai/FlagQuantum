@@ -184,8 +184,23 @@ def _rank_record(
         "steps": int(arguments.steps),
         "workload_sha256": digest,
         "device_name": torch.cuda.get_device_properties(device).name,
+        "checkpoint_budget_bytes": _checkpoint_budget_bytes(arguments),
         "software": _software(),
     }
+
+
+def _checkpoint_budget_bytes(arguments: argparse.Namespace) -> int | None:
+    """Return the reverse-tape budget the run was launched with, if any.
+
+    The budget changes a step's memory profile and not its arithmetic, so it is
+    not part of the frozen protocol. It is recorded with every measurement
+    instead, because two legs are only comparable when they ran under the same
+    one, and a reader cannot otherwise tell whether a rung completed because the
+    device holds it or because the tape was bounded.
+    """
+
+    value = getattr(arguments, "checkpoint_budget_bytes", None)
+    return None if value is None else int(value)
 
 
 def _write(arguments: argparse.Namespace, document: Mapping[str, Any]) -> None:
@@ -242,6 +257,7 @@ def _role_capacity_failure(arguments: argparse.Namespace) -> int:
             slice_count=int(arguments.slice_count),
             slice_batch_size=int(contract.get("slice_batch_size", 1)),
             gradient_reduction="owner_reduce",
+            checkpoint_budget_bytes=_checkpoint_budget_bytes(arguments),
         )
     except torch.cuda.OutOfMemoryError as error:  # pragma: no cover - device only
         status = "expected_oom"
@@ -323,6 +339,7 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
             slice_count=int(arguments.slice_count),
             slice_batch_size=int(contract.get("slice_batch_size", 1)),
             gradient_reduction="owner_reduce",
+            checkpoint_budget_bytes=_checkpoint_budget_bytes(arguments),
         )
         torch.cuda.synchronize(device)
         samples.append(round(time.perf_counter() - started, 6))
@@ -509,6 +526,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
     _initialize(device)
 
     dtype = _dtype(str(manifest["runtime"]["dtype"]))
+    budget = _checkpoint_budget_bytes(arguments)
     try:
         configurations: list[dict[str, Any]] = []
         for frozen in _speed_ladder(speed):
@@ -530,6 +548,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
                     slice_count=int(frozen["slice_count"]),
                     slice_batch_size=1,
                     gradient_reduction="owner_reduce",
+                    checkpoint_budget_bytes=budget,
                 )
                 if device.type == "cuda":
                     torch.cuda.synchronize(device)
@@ -588,6 +607,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
             "measured_peak_memory_bytes": peak,
             "device_name": torch.cuda.get_device_properties(device).name,
             "workload_sha256": _protocol_digest(arguments.release_manifest),
+            "checkpoint_budget_bytes": budget,
             "software": _software(),
         }
         records = _gather(record, world)
@@ -857,6 +877,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--sharded", type=Path)
     parser.add_argument("--local-world-size", type=int, default=1)
+    parser.add_argument(
+        "--checkpoint-budget-bytes",
+        type=int,
+        help=(
+            "bound the reverse tape at this many bytes per rank; the arithmetic "
+            "is unchanged, so both legs of a comparison must use one value"
+        ),
+    )
     parser.add_argument(
         "--node-count",
         type=int,

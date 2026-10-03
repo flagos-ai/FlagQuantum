@@ -11,6 +11,7 @@ these wrong would seal a run as evidence for something it did not measure.
 
 from __future__ import annotations
 
+import argparse
 import copy
 import hashlib
 import json
@@ -208,3 +209,41 @@ def test_the_protocol_digest_identifies_the_manifest_that_froze_the_ladder() -> 
     assert producer._protocol_digest(RELEASE_MANIFEST) != producer._workload_digest(
         FROZEN["capacity_workload"]
     )
+
+
+def test_the_checkpoint_budget_is_absent_unless_the_run_was_launched_with_one() -> None:
+    # A measurement taken without a bounded tape must say so, rather than
+    # carrying a zero that reads as an empty budget.
+    assert producer._checkpoint_budget_bytes(argparse.Namespace()) is None
+    bounded = argparse.Namespace(checkpoint_budget_bytes=4 * 1024**3)
+    assert producer._checkpoint_budget_bytes(bounded) == 4 * 1024**3
+
+
+def test_the_launcher_hands_the_checkpoint_budget_to_the_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The budget changes the memory profile of a step, so it is the one input a
+    # pair leg and a single-device leg have to share for their peaks to be
+    # comparable. It travels as a recorded input rather than as an assumption.
+    captured: list[argparse.Namespace] = []
+
+    def record(arguments: argparse.Namespace) -> int:
+        captured.append(arguments)
+        return 0
+
+    monkeypatch.setattr(producer, "_role_capacity_failure", record)
+    budget = 6 * 1024**3
+    assert (
+        producer.main(
+            [
+                "--role",
+                "capacity-failure",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--checkpoint-budget-bytes",
+                str(budget),
+            ]
+        )
+        == 0
+    )
+    assert producer._checkpoint_budget_bytes(captured[0]) == budget
