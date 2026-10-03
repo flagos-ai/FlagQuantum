@@ -47,6 +47,7 @@ SCRIPTS = (
     "error_mitigation",
     "pec",
     "spsa_optimizer",
+    "trotter",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -120,6 +121,16 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "spsa_optimizer": (
         "an estimate rather than a gradient",
         "cheaper and exact without it",
+    ),
+    # Two halves. "the product approximates exp(-i t H) and nothing here bounds how
+    # far apart they are" is the approximation's own concession, and "a commutator
+    # norm belongs to the caller" is who owns the bound that would close it.
+    # Pinning only the first would leave the ownership deletable, and a defect read
+    # as a bound on the unit's accuracy rather than as a number this script
+    # measured is exactly the misreading the second half prevents.
+    "trotter": (
+        "nothing here bounds",
+        "belongs to the caller",
     ),
 }
 
@@ -407,6 +418,91 @@ def test_spsa_example_measures_its_cost_and_converges() -> None:
         "the objective modified the tensor it was given"
     )
     _assert_premise("spsa_optimizer", output)
+    assert "take away" in output
+
+
+def test_trotter_example_measures_the_defect_and_shows_every_refusal() -> None:
+    output = _run("trotter")
+
+    assert "Trotter product formula -- flagquantum.algorithms.trotter" in output
+    # The terms are printed in the order they were declared, and the count is
+    # pinned because a silently sorted or deduplicated term list would change the
+    # formula while leaving every downstream number plausible.
+    assert _labelled(output, "term count") == "5 in declared order"
+    assert _labelled(output, "wires") == "3"
+    # The primitive's residual is measured against the dense exponential of the
+    # same word after dividing out one global phase, so every entry is at the
+    # dtype's own floor. The gate lists are the decomposition itself: no basis
+    # change for a diagonal word, a Hadamard for x, sdg-h forward and h-s backward
+    # for y, and one CX per extra supported wire either side of the rotation.
+    assert _labelled(output, "Z on (0,)") == "residual 1.110e-16, gates 1 ['rz']"
+    assert (
+        _labelled(output, "X on (0,)") == "residual 0.000e+00, gates 3 ['h', 'rz', 'h']"
+    )
+    assert _labelled(output, "Y on (0,)") == (
+        "residual 1.475e-17, gates 5 ['sdg', 'h', 'rz', 'h', 's']"
+    )
+    assert _labelled(output, "ZZ on (0, 1)") == (
+        "residual 1.110e-16, gates 3 ['cx', 'rz', 'cx']"
+    )
+    assert _labelled(output, "XZY on (2, 0, 1)").startswith(
+        "residual 1.120e-16, gates 11 ['h', 'sdg', 'h', 'cx', 'cx', 'rz', 'cx', 'cx'"
+    )
+    # The same word with a target in the middle that carries I: the identity
+    # consumes its wire and contributes no support, so this is the ZZ ladder.
+    assert _labelled(output, "ZIZ on (0, 1, 2)") == (
+        "residual 1.110e-16, gates 3 ['cx', 'rz', 'cx']"
+    )
+    # The defect against torch.matrix_exp, at three step counts per order.
+    assert _labelled(output, "order 1, 2 steps") == "defect 5.085577e-02"
+    assert _labelled(output, "order 1, 4 steps") == "defect 2.533908e-02"
+    assert _labelled(output, "order 1, 8 steps") == "defect 1.265847e-02"
+    assert _labelled(output, "order 2, 2 steps") == "defect 3.442249e-03"
+    assert _labelled(output, "order 2, 4 steps") == "defect 8.546989e-04"
+    assert _labelled(output, "order 2, 8 steps") == "defect 2.133117e-04"
+    # And the rate, which is the composition's rather than a bound: halving the
+    # step halves the first order's defect and quarters the second's.
+    assert _labelled(output, "order 1 rate").startswith("2.007 per doubling")
+    assert "(the defect falls off as step**1)" in output
+    assert _labelled(output, "order 2 rate").startswith("4.027 per doubling")
+    assert "(the defect falls off as step**2)" in output
+    # Commuting terms are reached exactly, which is what makes the defect above a
+    # statement about non-commutation rather than about the method being inexact.
+    assert _labelled(output, "two commuting z terms") == "defect 2.220e-16"
+    # The declared order is not sorted: the same two terms in the other order emit
+    # a different gate sequence and reach a different state.
+    assert _labelled(output, "z then x gates") == "['rz', 'h', 'rz', 'h']"
+    assert _labelled(output, "x then z gates") == "['h', 'rz', 'h', 'rz']"
+    assert _labelled(output, "same circuit") == "False"
+    assert _labelled(output, "state distance") == "0.303293"
+    # The result is an ordinary circuit: the static estimator reads gates out of
+    # it, which is the whole reason exp_pauli is not an opcode here.
+    assert _labelled(output, "basis") == "static_instruction_sequence"
+    assert _labelled(output, "operations") == "4 over 1 of 1 wires"
+    assert _labelled(output, "counts") == "{'h': 2, 'rz': 2}"
+    assert _labelled(output, "t count") == "0"
+    # The coefficient reaches the rotation as a tensor, so it differentiates.
+    assert _labelled(output, "readout <Z>") == "0.715813373694"
+    assert _labelled(output, "d<Z>/d coefficient") == "-0.161660517061"
+    # Five refusals, each by name and each before a circuit exists.
+    assert _labelled(output, "a term that is a multiple of the identity").startswith(
+        "refused -- CapabilityError: term 0 is a multiple of the identity"
+    )
+    assert _labelled(output, "a coefficient with an imaginary part").startswith(
+        "refused -- CapabilityError: term 0 has coefficient (1+2j)"
+    )
+    assert _labelled(output, "a term past the declared register").startswith(
+        "refused -- ValueError: Pauli word 'Z' addresses wire(s) [2] outside a "
+        "2-wire circuit"
+    )
+    assert _labelled(output, "an order the module does not build").startswith(
+        "refused -- ValueError: order must be one of 1, 2, got 3"
+    )
+    assert _labelled(output, "a step count that is not a positive integer").startswith(
+        "refused -- ValueError: steps must be a positive integer, got 0"
+    )
+    assert "NOT REFUSED" not in output
+    _assert_premise("trotter", output)
     assert "take away" in output
 
 

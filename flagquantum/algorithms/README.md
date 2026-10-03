@@ -3,8 +3,8 @@
 Algorithms assemble user-facing quantum and hybrid workflows from FlagQuantum
 circuits, observables, differentiation, and optimization. This package owns
 Hamiltonian helpers, reusable ansatz construction, VQE/QAOA-style workflows,
-and staged optimization recipes whose scientific behavior is tested end to
-end.
+Trotterized time evolution, and staged optimization recipes whose scientific
+behavior is tested end to end.
 
 Algorithms do not define circuit or operator semantics, compiler passes,
 runtime selection, provider lifecycle, numerical kernels, or benchmark claims.
@@ -75,6 +75,18 @@ executed by `tests/test_algorithm_examples.py`.
   gradient is served more cheaply and exactly by autograd or parameter shift, and
   the reason to use this unit is its evaluation cost. Demonstration scale: the
   perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
+- `trotter.py`: time evolution by a product formula — a weighted Pauli sum
+  becomes an ordinary `Circuit` whose unitary approximates `exp(-i * time * H)`,
+  with the exact circuit for one Pauli word's exponential underneath it, as a
+  basis change, a CX ladder, and one rotation. Two orders are built, 1 and 2, and
+  neither comes with a bound: the product is exact only when the terms commute,
+  and how far it is from exact otherwise is a number the caller measures, because
+  a bound needs a commutator norm the caller has. An identity term is refused
+  rather than dropped, since no gate here applies a global phase, and the declared
+  term order is preserved rather than sorted. There is no `exp_pauli` opcode:
+  emitting the decomposition is what lets the compiler's own passes count, route,
+  and differentiate it. Demonstration scale: the exact side of every comparison is
+  a dense matrix exponential, which exists at the sizes this repository simulates.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

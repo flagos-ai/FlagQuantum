@@ -694,10 +694,11 @@ reason = "Circuit.state exists. A full unitary accessor is absent."
 [[domains.capabilities]]
 id = "algorithm_block_encoding_family"
 cudaq = "CUDA-Q Algorithms: block encoding, qubitization, QSVT, Trotter, double factorization, fermion-qubit transforms"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "B_open_neutral"
-reason = "The whole layer is absent. Qualtran is Apache-2.0 licensed and covers the same mathematics, so the plan is adaptation rather than research."
+maturity_ref = "algorithms_trotter_time_evolution"
+reason = "One member of the family is implemented natively and the rest are absent. Trotter time evolution landed as flagquantum.algorithms.trotter: a weighted Pauli sum becomes an ordinary Circuit through a product formula of order 1 or 2, with the exact circuit for one Pauli word's exponential as its primitive, and the fermion-qubit transform family already had jordan_wigner at flagquantum.observables.fermion. Still absent: block encoding as a public primitive (the only implementation is private to flagquantum.algorithms.svd, which pre-authorizes promotion to a module when a second consumer needs one), qubitization, QSVT, double factorization, and the Bravyi-Kitaev, parity and ternary-tree transforms. The plan's original route -- adapt Qualtran, Apache-2.0, which covers the same mathematics -- was ruled out by the repository owner: Qualtran 0.7.0 carries 27 transitive dependencies and is not declared in dependency-policy.toml, so the mathematics is implemented natively instead and no third-party quantum-algorithm library is a dependency."
 
 [[domains.capabilities]]
 id = "error_mitigation"

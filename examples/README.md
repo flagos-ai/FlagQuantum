@@ -14,9 +14,9 @@ These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py`,
-  `error_mitigation.py` and `pec.py`, which import the unit they demonstrate from
-  the subpackage surface because `flagquantum.algorithms.<unit>` carries no
-  root-level `fq.` name.
+  `error_mitigation.py`, `pec.py` and `trotter.py`, which import the unit they
+  demonstrate from the subpackage surface because
+  `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
   [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside
   that directory: it imports its optimizer from the subpackage surface and also
   `import flagquantum as fq`, because the objective it minimizes is a circuit it
@@ -36,6 +36,9 @@ These examples do not use that alias:
   namespace and the Core capability vocabulary that describes evidence. It builds
   no circuit, so it needs no root alias either.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+  the realtime messaging module directly, because the feedback loop it models is
+  a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 

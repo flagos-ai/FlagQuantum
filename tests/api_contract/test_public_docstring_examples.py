@@ -17,6 +17,10 @@ from flagquantum.algorithms.chemistry import (
     uccsd_factors,
 )
 from flagquantum.algorithms.spsa import SPSAOptimizer
+from flagquantum.algorithms.trotter import (
+    pauli_exponential_circuit,
+    trotter_circuit,
+)
 from flagquantum.compiler import Layout
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
@@ -60,7 +64,9 @@ pytestmark = pytest.mark.unit
 # workflow namespace. The chemistry
 # module contributes seven: the generator, the excitation census, the two
 # circuit builders, and the UCCSD and hardware-efficient products, each of which
-# documents a different workflow step.
+# documents a different workflow step. The Trotter module contributes two more: the
+# exponential of one Pauli word, and the product formula built from a Hamiltonian's
+# terms.
 ENTRIES = (
     BosonOperator,
     CssCodeMatrices,
@@ -90,6 +96,7 @@ ENTRIES = (
     import_openqasm,
     import_openqasm_to_ir,
     jordan_wigner,
+    pauli_exponential_circuit,
     plan_lindblad_evolution,
     planner.plan,
     recommend_simulator,
@@ -99,6 +106,7 @@ ENTRIES = (
     single_excitation,
     target_capability_snapshot,
     translate,
+    trotter_circuit,
     uccsd_ansatz,
     uccsd_excitations,
     uccsd_factors,

@@ -22,6 +22,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
+| `trotter.py` — time evolution by a product formula | Available. Turns a weighted Pauli sum into the circuit a product formula applies, as a basis change and a CX ladder per term, so a time-evolution workload is an ordinary circuit; the primitive underneath it is the exact circuit for ``exp(-i * theta * P)`` of one Pauli word. | Trotter 1959; Suzuki 1990; Suzuki 1991; Lloyd 1996 | **The premise is commutativity, and it fails by exactly the amount nothing here bounds.** A product formula is exact only when the terms commute; otherwise the defect falls off with the step length at the composition's own rate and no bound is reported, because a bound needs a commutator norm that belongs to the caller. The term count is the caller's Hamiltonian's, so no end-to-end advantage follows. |
 
 Two rows carry `—` in the Citation column rather than a source, and that is a
 statement rather than a placeholder: the Fourier transform and oracle synthesis
@@ -165,6 +166,15 @@ units carries a root-level `fq.` name.
   available should use autograd or parameter shift instead. The claim this unit
   supports is a cost claim on a stochastic objective, not an accuracy claim and
   not an end-to-end advantage. See the section below.
+- **The time-evolution unit carries no advantage premise, and the quantity that
+  would bound it is not computed.** `trotter.py` is a compiler-facing
+  construction: it turns a Pauli sum into the circuit that approximates
+  `exp(-i t H)`, and nothing there is asymptotically better than exponentiating
+  the dense generator at the sizes this repository simulates. The defect is real
+  and stated — a product formula is exact only when the terms commute — but it is
+  a number the caller measures rather than one the unit reports, because a bound
+  on it needs a commutator norm the caller has and the unit does not. See the
+  section below.
 - **The error-mitigation units carry no advantage premise, because they are not
   advantage algorithms: what they rest on is an assumption about the noise.**
   `error_mitigation.py` measures one observable at several error strengths and
@@ -1422,6 +1432,98 @@ per-coordinate perturbation scale, and resuming an optimizer from serialized
 state are all absent, and each is a second algorithm with its own conditions
 rather than a knob on this one.
 
+## Time evolution by a product formula
+
+`trotter.py` is the first unit in this guide that exists to build a circuit rather
+than to read one out. `trotter_circuit(hamiltonian, time, steps=..., order=...,
+n_qubits=..., dtype=...)` returns an ordinary `Circuit` whose unitary approximates
+`exp(-i * time * H)` for a weighted Pauli sum `H`, and
+`pauli_exponential_circuit(theta, word, targets, n_qubits, ...)` returns the exact
+circuit for `exp(-i * theta * P)` of one word — a basis change that maps `X` and `Y`
+onto the `Z` axis, one `rz` at twice the angle, and a CX ladder down to the
+word's first supported wire and back. Nothing here is a new instruction: the
+result is gates the compiler, the router, and the gradient path already read.
+
+**The premise is commutativity, and it is what a product formula trades.** A
+product of single-word exponentials equals the exponential of the sum exactly when
+the words commute; when they do not, the difference is the defect and it shrinks
+with the step length at the composition's own rate. `order=1` is the Lie-Trotter
+product, whose defect falls off as the step length, so halving the step halves it;
+`order=2` is the symmetric product, whose leading defect cancels, so halving the
+step quarters it. Both rates are measured below against `torch.matrix_exp` of the
+dense generator rather than asserted, and a dense generator exists only at the sizes
+this repository simulates: **the exact side of every comparison here is a classical
+matrix exponential, so the numbers certify the composition and not a scaling.**
+
+```python
+import torch
+
+from flagquantum.algorithms import (
+    Hamiltonian,
+    pauli_term,
+    transverse_field_ising,
+    trotter_circuit,
+)
+from flagquantum.algorithms.trotter import pauli_exponential_circuit
+from flagquantum.compiler.resource_estimation import estimate_resources
+from flagquantum.simulation.unitary import get_unitary
+
+primitive = pauli_exponential_circuit(0.37, "XYZ", (0, 1, 2), 3)
+print([instruction.name for instruction in primitive.to_ir().instructions])
+# ['h', 'sdg', 'h', 'cx', 'cx', 'rz', 'cx', 'cx', 'h', 'h', 's']  -- the exact word
+
+hamiltonian = transverse_field_ising(3, coupling=0.7, field=0.5)
+exact = torch.matrix_exp(-1j * 0.4 * hamiltonian.matrix(dtype=torch.complex128))
+for order, steps in ((1, 2), (2, 2), (2, 4)):
+    circuit = trotter_circuit(
+        hamiltonian, 0.4, steps=steps, order=order, dtype=torch.complex128
+    )
+    defect = float((get_unitary(circuit) - exact).abs().max())
+    print(order, steps, f"{defect:.9f}")
+# 1 2 0.050855770  -- first order, two steps
+# 2 2 0.003442249  -- second order, the same two steps
+# 2 4 0.000854699  -- second order, twice the steps: a quarter, not a half
+
+diagonal = Hamiltonian([pauli_term(1.0, "Z", 0), pauli_term(0.5, "Z", 1)])
+diagonal_exact = torch.matrix_exp(-1j * 0.4 * diagonal.matrix(dtype=torch.complex128))
+commuting = trotter_circuit(diagonal, 0.4, steps=3, order=1, dtype=torch.complex128)
+print(f"{float((get_unitary(commuting) - diagonal_exact).abs().max()):.12f}")
+# 0.000000000000  -- commuting terms are reached exactly at the first order
+
+estimate = estimate_resources(trotter_circuit(hamiltonian, 0.4, steps=1, order=2))
+print(estimate.n_wires, estimate.used_wires, dict(sorted(estimate.operation_counts.items())))
+# 3 3 {'cx': 8, 'h': 12, 'rz': 10}  -- gates a static pass can already count
+```
+
+The commuting pair is the control for the other three numbers: it reaches the
+exact evolution at the first order because there is nothing for the product to
+get wrong, which is what makes the defects above a statement about the
+Hamiltonian's term structure rather than about the method being inexact.
+
+**Two refusals are deliberate and neither is worked around.** A term that is a
+multiple of the identity exponentiates to a global phase, and no gate in this
+repository applies one — `Circuit` and `CircuitIR` carry no `global_phase` field —
+so such a term is refused by the index that names it rather than dropped, because
+dropping it leaves a circuit that is right about the observable and wrong about the
+state. And a product formula's value depends on the order its terms are declared
+in, so the declared order is preserved: the same two terms written in the other
+order emit a different gate sequence and reach a different state, and sorting them
+into a canonical order would be a second, silent parameterization.
+
+**`exp_pauli` is not here.** CUDA-Q applies `exp(-i * theta * P)` as one opaque
+instruction and decomposes it in its compiler; this module emits the decomposition,
+which is what lets the static estimator count the `rz`s above, a router move them,
+and autograd reach a tensor coefficient through them.
+
+**Not here:** an error bound, which needs a commutator norm the caller has to
+supply; higher-order Yoshida and Suzuki compositions, which spend more
+exponentials than they buy until a caller measures otherwise; time-dependent
+Hamiltonians; and the rest of the family the parity contract groups with this unit
+— block encoding, qubitization, QSVT, and double factorization. The block encoding
+exists and is private to `svd.py`; promoting it to a primitive waits on a second
+consumer, and the comment beside it records that.
+
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -1440,6 +1542,25 @@ rather than a knob on this one.
   APL Technical Digest* **19**(4), 482-492 (1998). The second is a technical
   digest rather than a peer-reviewed article and is cited for the practical
   defaults only, not for the convergence result, which is the 1992 paper's.
+- The product formula is attributed to H. F. Trotter, "On the product of
+  semi-groups of operators", *Proceedings of the American Mathematical Society*
+  **10**(4), 545-551 (1959), DOI 10.1090/S0002-9939-1959-0108732-6 — the
+  factorization a product of exponentials approximates. The general decomposition
+  this unit's two orders are instances of is M. Suzuki, "Fractal decomposition of
+  exponential operators with applications to many-body theories and Monte Carlo
+  simulations", *Physics Letters A* **146**(6), 319-323 (1990), DOI
+  10.1016/0375-9601(90)90962-N, and M. Suzuki, "General theory of fractal path
+  integrals with applications to many-body theories and statistical physics",
+  *Journal of Mathematical Physics* **32**(2), 400-407 (1991), DOI
+  10.1063/1.529425 — the symmetric composition whose leading defect cancels, which
+  is what the measured quartering above is the rate of. **The two orders here are
+  the ones this unit builds and not a claim about the theory**: the higher orders
+  those papers develop are deliberately absent, and the module records why.
+- Quantum simulation by exponentiating a Hamiltonian's terms is recorded to S.
+  Lloyd, "Universal Quantum Simulators", *Science* **273**(5278), 1073-1078 (1996),
+  DOI 10.1126/science.273.5278.1073 — the local-decomposition construction this
+  unit's circuit is the classical description of. It is cited for that
+  construction and not for a resource result.
 - Barahona, *J. Phys. A* **15**(10), 3241-3253 (1982),
   DOI 10.1088/0305-4470/15/10/028 — the ground state of a spin glass in a field
   is NP-hard, which is why the mapping is interesting to a solver at all.

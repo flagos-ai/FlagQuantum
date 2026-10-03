@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 43 |
-| `unsupported` | 42 |
+| `partial` | 44 |
+| `unsupported` | 41 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -128,17 +128,21 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 10 of the 16 `B_open_neutral` rows
-are `unsupported`, and every one of them is closed by
-integration rather than by research: a detector error model, chemistry and
-algorithm domain libraries, a decoder family, Clifford+T and
-angle synthesis, QIR code generation, and an MLIR dialect stack. That is the
-cheapest capability per unit of effort available to the programme, and § 5
-governs it. The first of the family moved off `unsupported` without new research,
-which is the shape the remaining rows are expected to follow: the stabilizer
-backend landed by adopting the same permissively licensed engine CUDA-Q uses
-behind its own stabilizer target, while the execution route that would make it a
-planner-selectable backend is a separate change.
+The practical consequence is a scheduling one. 9 of the 16 `B_open_neutral` rows
+are `unsupported`, and every one of them is closed by integration rather than by
+research: a C++ front end and an MLIR dialect stack, Clifford+T and angle
+synthesis, QIR code generation, a chemistry domain library, a QEC dialect,
+logical resource estimation, and the arithmetic constructions a logical layer
+needs. That is the cheapest capability per unit of effort available to the
+programme, and § 5 governs it. The first of the family moved off `unsupported`
+without new research, which is the shape the remaining rows are expected to
+follow: the stabilizer backend landed by adopting the same permissively licensed
+engine CUDA-Q uses behind its own stabilizer target, while the execution route
+that would make it a planner-selectable backend is a separate change. The Trotter
+slice of `algorithm_block_encoding_family` followed the same shape from the other
+direction: it was written here rather than borrowed, because the plan's route -- adapt
+Qualtran -- was ruled out when the repository owner weighed a 27-dependency
+Apache-2.0 package against implementing the mathematics natively.
 
 ## 4. What must be owned
 
@@ -303,7 +307,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 42 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 41 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

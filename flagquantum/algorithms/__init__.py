@@ -13,6 +13,7 @@ from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
 from . import spsa as spsa
 from . import svd as svd
+from . import trotter as trotter
 from .core import (
     AdaptVQEIteration,
     AdaptVQEResult,
@@ -60,6 +61,11 @@ from .pec import (
     run_pec,
 )
 from .spsa import SPSAOptimizer
+from .trotter import (
+    TROTTER_ORDERS,
+    pauli_exponential_circuit,
+    trotter_circuit,
+)
 
 __all__ = [
     "AdaptVQEIteration",
@@ -76,6 +82,7 @@ __all__ = [
     "PecLocation",
     "PecResult",
     "SPSAOptimizer",
+    "TROTTER_ORDERS",
     "VQEResult",
     "ZneMeasurement",
     "ZneResult",
@@ -92,6 +99,7 @@ __all__ = [
     "heisenberg_hva_parameter_count",
     "kmedians",
     "optimize_hybrid",
+    "pauli_exponential_circuit",
     "pauli_term",
     "pauli_twirl_decomposition",
     "pca",
@@ -110,6 +118,8 @@ __all__ = [
     "scale_noise_model",
     "spsa",
     "svd",
+    "trotter",
+    "trotter_circuit",
     "transverse_field_ising",
     "vqe_loss",
     "zz_chain_hamiltonian",

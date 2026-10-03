@@ -92,13 +92,18 @@ def pauli_product_density_expectation(
     return torch.real(values)
 
 
-def _finite_angle(theta: float) -> float:
+def finite_rotation_angle(theta: float) -> float:
     """Read one rotation angle, refusing a value that does not denote a number.
 
     ``bool`` and ``str`` are refused although ``float`` reads both: a flag is not an
     angle, and the text of a number is a mistyped value rather than the number.  An
     infinite or NaN angle would be carried into a silently wrong unitary, so it is
     refused here rather than at the arithmetic.
+
+    This reader exists for callers that combine the angle *before* a gate sees it --
+    a dense exponential, or a Trotter step that scales an angle by a coefficient and
+    a step length.  A gate angle written straight onto :class:`~flagquantum.Circuit`
+    is read by :func:`flagquantum.core.ir._normalize_angle` instead.
     """
 
     if isinstance(theta, (bool, str)):
@@ -140,7 +145,7 @@ def _pauli_word_targets(targets: Sequence[int]) -> tuple[int, ...]:
     return tuple(labels)
 
 
-def _pauli_word_operators(
+def pauli_word_operators(
     word: str,
     targets: Sequence[int],
 ) -> tuple[tuple[int, str], ...]:
@@ -206,8 +211,8 @@ def exponential_pauli_operator(
         0.5403023058681398
     """
 
-    angle = _finite_angle(theta)
-    operators = _pauli_word_operators(word, targets)
+    angle = finite_rotation_angle(theta)
+    operators = pauli_word_operators(word, targets)
     identity = pauli_product_operator((), n_qubits, dtype=dtype, device=device)
     product = pauli_product_operator(operators, n_qubits, dtype=dtype, device=device)
     return math.cos(angle) * identity - 1j * math.sin(angle) * product
@@ -215,8 +220,10 @@ def exponential_pauli_operator(
 
 __all__ = (
     "exponential_pauli_operator",
+    "finite_rotation_angle",
     "infer_n_wires_from_dense_state",
     "pauli_product_density_expectation",
     "pauli_product_operator",
     "pauli_product_statevector_expectation",
+    "pauli_word_operators",
 )

@@ -18,6 +18,7 @@ python -m examples.algorithms.svd
 python -m examples.algorithms.error_mitigation
 python -m examples.algorithms.pec
 python -m examples.algorithms.spsa_optimizer
+python -m examples.algorithms.trotter
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -52,6 +53,11 @@ What they show:
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
+- [`trotter.py`](trotter.py): a transverse-field Ising Hamiltonian turned into the
+  circuit a product formula applies, with the defect at two step counts per order
+  measured against `torch.matrix_exp`, the primitive's own emitted gates printed
+  for six words, and the resulting circuit run through the static resource
+  estimator and the gradient path.
 
 ## These scripts use the subpackage surface
 
@@ -60,7 +66,9 @@ root-level `fq.` name, with one exception. The algorithm scripts import from the
 subpackage -- `from flagquantum.algorithms.pca import principal_components` --
 rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both:
 the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
-and `fq.run` calls its objective makes. `examples/README.md` records that
+and `fq.run` calls its objective makes. `trotter.py` needs no root alias either:
+the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
+is the package's own `expectation_ps`. `examples/README.md` records that
 boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
@@ -75,5 +83,8 @@ zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
 that is not checkable from the measurements it fits, probabilistic error
 cancellation rests on the noise being exactly the channel the model declares at
 the location it declares it and pays for the inversion in programs rather than
-shots, and the SPSA update is built from a finite-difference estimate that is an
-estimate rather than a gradient. The guide holds the full boundary for each.
+shots, the SPSA update is built from a finite-difference estimate that is an
+estimate rather than a gradient, and the product formula approximates the
+evolution with a defect that is measured rather than bounded, because a bound
+needs a commutator norm the caller has to supply. The guide holds the full
+boundary for each.
