@@ -36,6 +36,10 @@ _GATES = {
         "benchmarks.internal.evidence.tensor_network_release_gate",
         "evaluate_tensor_network_release",
     ),
+    "mps": (
+        "benchmarks.internal.evidence.mps_release_gate",
+        "evaluate_mps_release",
+    ),
 }
 _DEFAULT_GATE = "statevector"
 
