@@ -259,7 +259,7 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
     from .inverse_cancellation import merge_inverse_pairs
     from .one_qubit_optimization import collapse_one_qubit_runs
-    from .two_qubit_optimization import collapse_two_qubit_runs
+    from .two_qubit_optimization import collapse_two_qubit_blocks
 
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
@@ -285,12 +285,12 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)
-        # Last, so that a run this pass composes is one the single-qubit passes have
-        # already had, and so that the single-qubit gates they leave behind on one of
-        # the pair's wires have already ended the run. Its own reach needs the loop:
-        # the `cz` that replaces `swap cz swap` is a gate the next round can then
-        # cancel against a neighbour.
-        ir = collapse_two_qubit_runs(ir)
+        # Last, so that a block this pass composes is one the single-qubit passes have
+        # already had: `collapse_one_qubit_runs` folds the single-qubit gates it draws
+        # in as members, and running it first keeps those members the smallest spelling
+        # of themselves. Its own reach needs the loop: the `cz` that replaces
+        # `swap cz swap` is a gate the next round can then cancel against a neighbour.
+        ir = collapse_two_qubit_blocks(ir)
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")

@@ -327,7 +327,7 @@ _DELTA = {
         "changed_circuit_count": 5,
     },
     # The next three rows are the only ones later passes co-own, and this is the
-    # population group where they have reach. `collapse_two_qubit_runs` composes
+    # population group where they have reach. `collapse_two_qubit_blocks` composes
     # adjacent two-qubit rotations -- `rzz(a) rzz(b)` into `rzz(a + b)` -- and
     # `merge_commuting_rotations` adds two rotations of one opcode across a proven
     # commuting gap. Both run inside *both* pipelines, so the two post-pipeline counts
@@ -342,6 +342,14 @@ _DELTA = {
     # `test_compiler_commutation_cancellation.py::test_the_identity_rows_the_rotation_merge_moved_are_attributed`
     # holds this rule and the fold fixed and moves only the rotation merge. The literals
     # below are the shipped pipeline, which is both co-owners active.
+    #
+    # The fold reached further once already, and this is the second occurrence of the
+    # hazard rather than a new one: widening its membership from an all-two-qubit run to
+    # a block that also draws in the single-qubit gates on the pair's wires moved these
+    # two rows again and left the other five exactly where they were. That measurement
+    # -- only its own two populations move -- is what keeps this an attribution rather
+    # than a re-baselining, and it is why the literals here were re-measured from a
+    # fresh payload instead of the assertions being relaxed.
     "two_wire_rotations": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
@@ -357,28 +365,30 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 678,
-        "superseded_rule_instruction_count": 396,
+        "superseded_rule_instruction_count": 392,
         "optimized_instruction_count": 382,
         "removed_by_the_rule_alone": 164,
-        "removed_by_the_rule_in_the_pipeline": 14,
-        "net_instruction_delta_against_the_superseded_rule": 14,
-        "changed_circuit_count": 15,
+        "removed_by_the_rule_in_the_pipeline": 10,
+        "net_instruction_delta_against_the_superseded_rule": 10,
+        "changed_circuit_count": 13,
     },
     "mixed_with_mid_circuit_measures": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 761,
-        "superseded_rule_instruction_count": 504,
-        "optimized_instruction_count": 492,
+        "superseded_rule_instruction_count": 498,
+        "optimized_instruction_count": 491,
         "removed_by_the_rule_alone": 159,
-        # One lower than before the fold, and the clamped column is why: it is a sum
-        # of per-circuit `max(0, legacy - shipped)`, so a fold that shrinks one
-        # circuit's two pipelines by different amounts moves it by a circuit, not by
-        # the gate count. The signed column below follows it by one, which is the
-        # identity this test asserts.
-        "removed_by_the_rule_in_the_pipeline": 13,
-        "net_instruction_delta_against_the_superseded_rule": 12,
-        "changed_circuit_count": 16,
+        # The clamped column is a sum of per-circuit `max(0, legacy - shipped)`, so it
+        # does not compose the way the signed column below does: a fold that shrinks one
+        # circuit's two pipelines by different amounts moves it by a circuit rather than
+        # by the gate count. The signed column happens to agree with it here, and the
+        # identity this test asserts is the signed one -- reading the clamped column as
+        # if it carried the sign is how a lengthened population would get reported as a
+        # tie.
+        "removed_by_the_rule_in_the_pipeline": 8,
+        "net_instruction_delta_against_the_superseded_rule": 7,
+        "changed_circuit_count": 11,
     },
 }
 

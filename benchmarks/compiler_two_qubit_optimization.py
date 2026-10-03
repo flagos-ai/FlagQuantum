@@ -5,23 +5,33 @@ not this: on a gate-level circuit in Qiskit 1.2.4 and 2.0.3 it is a **no-op**, a
 its sibling ``CollectCliffords`` selects on an opcode *name* list and emits one
 opaque ``clifford`` operation, which needs a native ``Clifford`` type FlagQuantum
 does not have. So this round re-scoped W9-13 and this module measures what was
-built instead: ``collapse_two_qubit_runs``, which composes a maximal run over one
-*ordered wire pair* of declared two-qubit gates and re-spells it as one declared
-two-qubit opcode when the product is exactly that opcode. The Qiskit anchor at the
-bottom reports the no-op measurement rather than an alignment claim.
+built instead: ``collapse_two_qubit_blocks``, which composes a maximal *block* over one
+*ordered wire pair* -- the two-qubit members, plus the contiguous single-qubit gates on
+those wires that the rule can read -- and re-spells it as one declared two-qubit opcode
+when the product is exactly that opcode. The Qiskit anchor at the bottom reports the
+no-op measurement rather than an alignment claim.
 
-Five results are recorded here.
+Six results are recorded here.
 
 * **The fold is exact.** Over 1200 entangled three-wire programs the whole
   program's statevector moves by at most ``7.11e-16`` at ``complex128``, and the
   comparison is on the raw statevector, so a dropped phase would show up as an
   amplitude difference rather than cancelling.
 * **The fold's reach is real but narrow in shape.** It fires on consecutive
-  two-qubit gates over one ordered pair. A population whose two-qubit gates are
-  separated by single-qubit gates sees nothing at all, because a single-qubit gate
-  on either wire ends the run: the ``interleaved`` population's intermediate
-  program does shrink, but only through the runs where the random draw happened to
-  place two two-qubit gates adjacently.
+  two-qubit gates over one ordered pair, and it draws in the contiguous
+  single-qubit gates immediately to the left that sit on one of those wires -- which
+  is what lets a conjugation by a single-qubit gate be folded, ``h(1) cz(0, 1)
+  h(1)`` being exactly ``cx(0, 1)``. A population whose two-qubit gates are separated by
+  single-qubit gates is therefore the one where the widening matters: ``interleaved``
+  is the only population where it earns anything (1463 to 1461 instructions) and the
+  only one where it costs the rule a fold the narrower rule would have taken.
+* **Widening the membership is not monotone, and the fallback is what makes it so.**
+  A larger product is not more likely to be one declared two-qubit opcode, so
+  enlarging a block can lose a fold. The measurement is in the ``membership`` table:
+  with the sub-run fallback removed, the widened rule is **53 instructions longer**
+  than the rule it replaced on ``interleaved`` (1516 against 1463) while rescuing
+  folds on 40 of 120 circuits; with it, the pass is 2 instructions shorter than that
+  rule. The fallback is load-bearing, and the table bounds it as well as requiring it.
 * **The decline is what keeps it a win.** A parameterized replacement re-spells a
   run into a *different* parameterization of the two-qubit group rather than a more
   primitive operation, and ``optimize`` cannot see whether the target publishes the
@@ -82,8 +92,8 @@ from flagquantum.compiler.pipeline import optimize
 from flagquantum.compiler.two_qubit_optimization import (
     _FAMILIES,
     _IDENTITY,
+    _block_product,
     _replacement,
-    _run_product,
     _same,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -252,14 +262,14 @@ def _fold_patch(policy: str) -> Any:
 
     if policy == "off":
         return unittest.mock.patch.object(
-            two_qubit_optimization, "collapse_two_qubit_runs", lambda ir: ir
+            two_qubit_optimization, "collapse_two_qubit_blocks", lambda ir: ir
         )
     if policy == "identity":
         return unittest.mock.patch.object(
             two_qubit_optimization,
             "_replacement",
             lambda instructions, *, pair, metadata: (
-                () if _same(_run_product(instructions), _IDENTITY) else None
+                () if _same(_block_product(instructions, pair), _IDENTITY) else None
             ),
         )
     if policy == "disabled":
@@ -357,6 +367,125 @@ def decline_reach(bases: tuple[Basis, ...] = DEFAULT_BASES) -> list[DeclineReach
     return rows
 
 
+#: The three versions of the block rule the membership table is measured under.
+#: ``runs_only`` is the rule this pass shipped before single-qubit members existed --
+#: one ordered pair, two-wire members only -- and it is the floor the widened rule has
+#: to stay under. ``shipped`` is the widened rule with its sub-run fallback in place.
+#: ``wide_without_the_floor`` is the widened membership with that fallback removed, so
+#: the gap between it and ``runs_only`` is exactly what the fallback buys.
+MEMBERSHIP_POLICIES: tuple[str, ...] = (
+    "runs_only",
+    "shipped",
+    "wide_without_the_floor",
+)
+
+
+@contextlib.contextmanager
+def _membership_patch(policy: str) -> Iterator[None]:
+    """Put the fold's block membership into one of the three versions.
+
+    Both non-shipped arms patch a *rule* rather than carrying a second copy of the loop:
+    ``runs_only`` removes the single-qubit member predicate, and
+    ``wide_without_the_floor`` removes the fallback that offers a block the widened
+    membership could not re-spell to the narrower rule one two-qubit sub-run at a time.
+    Removing either one is what makes the other's contribution measurable rather than
+    argued.
+    """
+
+    if policy == "runs_only":
+        with unittest.mock.patch.object(
+            two_qubit_optimization,
+            "_draws_in_as_leading_member",
+            lambda instruction, pair: False,
+        ):
+            yield
+        return
+    if policy == "wide_without_the_floor":
+        with unittest.mock.patch.object(
+            two_qubit_optimization,
+            "_two_qubit_sub_runs",
+            lambda positions, output: [],
+        ):
+            yield
+        return
+    if policy == "shipped":
+        yield
+        return
+    raise ValueError(f"unknown membership policy {policy!r}")
+
+
+@dataclass(frozen=True)
+class MembershipReach:
+    """One population measured under all three versions of the block rule."""
+
+    label: str
+    circuit_count: int
+    runs_only_optimized: int
+    shipped_optimized: int
+    wide_without_the_floor_optimized: int
+    circuits_the_widening_shortens: int
+    circuits_the_widening_lengthens: int
+    circuits_the_fallback_rescues: int
+
+
+def membership_table() -> list[MembershipReach]:
+    """Whether drawing single-qubit gates into a block is monotone, and what makes it so.
+
+    Drawing a single-qubit gate into a block strictly enlarges the product the rule has
+    to re-spell as one declared two-qubit opcode, and a larger product is *not* more
+    likely to be one: the same block that the two-qubit-run rule re-spelled can become
+    unre-spellable once a Hadamard on one of its wires is inside it. So the widening is
+    not monotone by construction, and the pass carries a fallback for exactly that --
+    a block the widened membership cannot re-spell is offered to the narrower rule one
+    two-qubit sub-run at a time. This table is the measurement of that claim rather than
+    a restatement of it.
+
+    Three arms per population, all through the shipped ``optimize`` so that every other
+    pass is the same object in all three: the rule as it shipped before single-qubit
+    members existed, the shipped rule, and the widened membership with the fallback
+    removed. The last two differ only by the fallback, and the first two are what the
+    fallback has to keep the pass under.
+    """
+
+    rows: list[MembershipReach] = []
+    for label, seed, kind in POPULATION_SEEDS:
+        circuits = population(kind, seed)
+        arms: dict[str, list[int]] = {}
+        for policy in MEMBERSHIP_POLICIES:
+            with _membership_patch(policy):
+                arms[policy] = [
+                    len(optimize(circuit).instructions) for circuit in circuits
+                ]
+        runs_only = arms["runs_only"]
+        shipped = arms["shipped"]
+        no_floor = arms["wide_without_the_floor"]
+        rows.append(
+            MembershipReach(
+                label=label,
+                circuit_count=len(circuits),
+                runs_only_optimized=sum(runs_only),
+                shipped_optimized=sum(shipped),
+                wide_without_the_floor_optimized=sum(no_floor),
+                circuits_the_widening_shortens=sum(
+                    1
+                    for before, after in zip(runs_only, shipped, strict=True)
+                    if after < before
+                ),
+                circuits_the_widening_lengthens=sum(
+                    1
+                    for before, after in zip(runs_only, shipped, strict=True)
+                    if after > before
+                ),
+                circuits_the_fallback_rescues=sum(
+                    1
+                    for covered, bare in zip(shipped, no_floor, strict=True)
+                    if bare > covered
+                ),
+            )
+        )
+    return rows
+
+
 def _oracle_product(instructions: tuple[Instruction, ...]) -> torch.Tensor:
     """The product of a run read out of the runtime gate table, not the closed forms."""
 
@@ -406,7 +535,7 @@ def run_table() -> list[dict[str, Any]]:
             if folded_at == 0:
                 # An empty replacement is the identity, which no `Instruction` can
                 # stand for; the product of nothing is the identity by definition.
-                assert _same(_run_product(run), _IDENTITY)
+                assert _same(_block_product(run, pair), _IDENTITY)
             else:
                 worst_gap = max(worst_gap, _run_gap(run, replacement))
             if folded_at < length:
@@ -699,6 +828,7 @@ def run_benchmark(*, bases: tuple[Basis, ...] = DEFAULT_BASES) -> dict[str, Any]
             for label, seed, kind in POPULATION_SEEDS
         ],
         "decline_reach": [row.__dict__ for row in reach],
+        "membership": [row.__dict__ for row in membership_table()],
         "run_table": run_table(),
         "state_evidence": state_evidence(),
         "boundary": boundary(),

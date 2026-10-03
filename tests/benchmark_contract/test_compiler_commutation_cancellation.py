@@ -658,15 +658,18 @@ _ROTATION_MERGE_IDENTITY_REACH = {
 }
 #: The same seven rows with the fold as shipped, which is the pipeline those rows
 #: actually describe and therefore the pair of numbers the identity benchmark's own
-#: pins carry.
+#: pins carry. Two of the three moved when the fold widened its membership from an
+#: all-two-qubit run to a block that also draws in the single-qubit gates on the pair's
+#: wires; the other five did not move at all, which is what makes this a re-measurement
+#: of a co-owned row rather than a re-baselining of the table.
 _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD = {
     "parameter_free_gates": ((167, 167), (167, 167)),
     "zero_angle_rotations": ((162, 162), (162, 162)),
     "full_turn_rotations": ((139, 150), (139, 150)),
     "zero_polar_u3": ((176, 176), (176, 176)),
     "two_wire_rotations": ((201, 201), (200, 200)),
-    "mixed": ((398, 383), (396, 382)),
-    "mixed_with_mid_circuit_measures": ((505, 493), (504, 492)),
+    "mixed": ((393, 383), (392, 382)),
+    "mixed_with_mid_circuit_measures": ((499, 492), (498, 491)),
 }
 #: The rows this pass moves, which are exactly the three the fold also co-owns. That
 #: the sets coincide is the point rather than a coincidence of naming: both passes
@@ -676,6 +679,32 @@ _ROTATION_MERGE_IDENTITY_ROWS_MOVED = (
     "mixed",
     "mixed_with_mid_circuit_measures",
 )
+#: What this pass is responsible for, per table and per population, as ``paused minus
+#: active`` on each column. It is pinned per table because the two tables are different
+#: pipelines rather than two readings of one.
+#:
+#: On ``mixed`` the two tables disagree, and the disagreement is the measurement rather
+#: than noise. With the fold as it shipped before this round, that row's superseded
+#: column moved by two while its shipped column moved by one: the fold and this merge
+#: were each taking one of the two placements, and the identity rule's substitution is
+#: what let both be visible at once. Once the fold drew single-qubit members into its
+#: blocks it took both, and this pass is left with one on each column -- the same one it
+#: has everywhere else. The fold earned five more instructions on that row in the same
+#: move, so the row is strictly shorter; the asymmetry going away is a consequence of
+#: the fold reaching further, and it is recorded here instead of being smoothed into a
+#: rule that would no longer describe either pipeline.
+_ROTATION_MERGE_DELTA = {
+    "fold_out": {
+        "two_wire_rotations": (1, 1),
+        "mixed": (2, 1),
+        "mixed_with_mid_circuit_measures": (1, 1),
+    },
+    "fold_in": {
+        "two_wire_rotations": (1, 1),
+        "mixed": (1, 1),
+        "mixed_with_mid_circuit_measures": (1, 1),
+    },
+}
 
 
 def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
@@ -737,20 +766,20 @@ def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
         for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH.items()
         if paused != active
     } == moved
-    for label in moved:
-        for table in (
-            _ROTATION_MERGE_IDENTITY_REACH,
-            _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD,
-        ):
+    for name, table in (
+        ("fold_out", _ROTATION_MERGE_IDENTITY_REACH),
+        ("fold_in", _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD),
+    ):
+        for label in moved:
             (paused_superseded, paused_shipped), (active_superseded, active_shipped) = (
                 table[label]
             )
-            assert active_superseded <= paused_superseded, label
-            assert active_shipped <= paused_shipped, label
-            assert paused_shipped - active_shipped == 1, label
-            assert paused_superseded - active_superseded == (
-                2 if label == "mixed" else 1
-            ), label
+            assert active_superseded <= paused_superseded, (name, label)
+            assert active_shipped <= paused_shipped, (name, label)
+            assert (
+                paused_superseded - active_superseded,
+                paused_shipped - active_shipped,
+            ) == _ROTATION_MERGE_DELTA[name][label], (name, label)
     # Non-vacuity: four of the seven rows are populations this pass cannot reach at
     # all, so the table is not three measurements of one behaviour.
     assert len(_ROTATION_MERGE_IDENTITY_REACH) - len(moved) == 4

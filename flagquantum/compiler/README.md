@@ -39,6 +39,7 @@ Use `optimize(program)` for target-independent optimization and
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
+| Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
@@ -120,6 +121,37 @@ carrying a trainable angle is folded at all -- composition reads numbers, and
 [benchmarks/compiler_one_qubit_optimization.py](../../benchmarks/compiler_one_qubit_optimization.py)
 holds the per-length reduction, the statevector exactness, the decline, and the
 count difference from Qiskit's pass.
+
+Two-qubit block folding is the same idea one arity up, with one difference that
+matters. `collapse_one_qubit_runs` composes a maximal run over one *wire*; the fold
+composes a maximal **block** over one *ordered wire pair*, whose members are the
+two-qubit gates on that pair plus the contiguous single-qubit gates immediately to
+their left that sit on one of the pair's wires. A member's wires are read as a
+Kronecker product on the side the pair gives it, so the block's product is the 4x4
+operator the program computes, and the product is then compared entry for entry
+against each declared two-qubit opcode. That draw-in is what reaches a conjugation
+by a single-qubit gate -- `h(1) cz(0, 1) h(1)` is exactly `cx(0, 1)` -- which
+neither this pass's two-qubit-run predecessor nor `collapse_one_qubit_runs` can see.
+The conjugated wire has to be the one whose role changes, because `wires=(0, 1)` and
+`wires=(1, 0)` are different blocks: the same three gates with the `h`s on `0`
+compose to `cx(1, 0)` and are declined rather than relabelled.
+[two_qubit_optimization.py](two_qubit_optimization.py) is the pass, and it is the
+Compiler-layer counterpart of Qiskit's `ConsolidateBlocks` run at the granularity
+this IR can prove. It is exact rather than exact-up-to-phase, and it emits at most
+one gate: a block whose product is no declared opcode is left where it was, and a
+trainable or batched angle is never read.
+A larger product is not a more likely one: drawing a single-qubit gate into a block
+can turn a product that *was* one declared gate into one that is not, so the widening
+is not monotone by construction. The pass therefore keeps the narrower rule it
+replaced as a floor -- a block it cannot re-spell is offered to that rule one
+all-two-qubit sub-run at a time -- and the floor is measured rather than asserted:
+with the sub-run fallback removed, the widened rule is 53 instructions longer than
+the rule it replaced over one benchmark population while rescuing folds on 40 of that
+population's 120 circuits, and 2 instructions shorter with it.
+[benchmarks/compiler_two_qubit_optimization.py](../../benchmarks/compiler_two_qubit_optimization.py)
+holds the membership table, the reach and its decline, the boundary sweep with
+`false_yes` required to be zero, and a Qiskit anchor that reports what
+`OptimizeCliffords` and `CollectCliffords` actually do to a gate-level circuit.
 
 A gate that is its own inverse is one thing; a gate whose inverse is a *different*
 opcode is another, and `merge_self_inverse` only saw the first kind, so it left
