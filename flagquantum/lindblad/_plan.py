@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Any, cast
 
 import torch
@@ -20,9 +20,32 @@ from ..simulation.lindblad import (
     _normalize_times,
     plan_density_matrix_evolution,
 )
+from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR
+from ..simulation.matrix_free_hamiltonian import PauliSum
 
 _SCHEMA = "flagquantum.lindblad_plan"
-_VERSION = "1.0"
+# 1.1 adds ``numerics.solve_tolerance`` to the decision, which version 1.0 did
+# not record, and 1.2 widens ``numerics.order`` to admit a scheme that has no
+# step-size order. 1.3 records the declared batch axis in the decision, which is
+# also what the reported ``trajectory_bytes`` now counts. The stored decision is
+# rebuilt from its request and compared, so an older payload cannot be
+# reconstructed by this build; refusing it by version reports that fact instead
+# of a misleading decision mismatch.
+_VERSION = "1.3"
+
+
+def _request_hamiltonian_matrix(
+    hamiltonian: PauliSum | torch.Tensor,
+) -> torch.Tensor:
+    """Return the dense matrix the serialized request stores.
+
+    The request payload is the one place that still needs ``H`` entry by entry,
+    so this is the only remaining ``4**n`` Hamiltonian allocation on the
+    planning path. Evolution itself keeps the Pauli sum matrix-free, and an
+    in-process plan does not pass through this payload at all.
+    """
+
+    return hamiltonian.dense() if isinstance(hamiltonian, PauliSum) else hamiltonian
 
 
 def _canonical_json(payload: Mapping[str, Any]) -> str:
@@ -63,9 +86,34 @@ def _complex_tensor(payload: object, *, dtype: torch.dtype, field: str) -> torch
 
 
 def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
+    """Rebuild the decision record from a serialized payload.
+
+    ``numerics.order`` is ``None`` for a scheme that has no step-size order, and
+    ``batch_size`` sits beside ``trajectory_bytes`` because both count the batch
+    axis. A payload that omits the batch axis is read as one member, which is
+    what version 1.2 and earlier recorded implicitly.
+    """
+
     numerics = payload.get("numerics")
     if not isinstance(numerics, Mapping):
         raise SerializationError("decision.numerics must be a mapping")
+    solve_tolerance = numerics.get("solve_tolerance")
+    if solve_tolerance is not None and (
+        isinstance(solve_tolerance, bool)
+        or not isinstance(solve_tolerance, (int, float))
+    ):
+        raise SerializationError("decision.numerics.solve_tolerance must be numeric")
+    order = numerics.get("order")
+    if order is not None and (isinstance(order, bool) or not isinstance(order, int)):
+        raise SerializationError("decision.numerics.order must be an integer or null")
+    require_gradients = numerics.get("require_gradients", False)
+    if type(require_gradients) is not bool:
+        raise SerializationError(
+            "decision.numerics.require_gradients must be a boolean"
+        )
+    batch_size = payload.get("batch_size", 1)
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int):
+        raise SerializationError("decision.batch_size must be an integer")
     try:
         return EvolutionPlan(
             n_wires=int(payload["n_wires"]),
@@ -73,10 +121,15 @@ def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
             dimension=int(payload["dimension"]),
             trajectory_bytes=int(payload["trajectory_bytes"]),
             method=str(numerics["method"]),
-            order=int(numerics["order"]),
+            order=order,
             step_size=float(numerics["step_size"]),
             device=str(numerics["device"]),
             precision=str(numerics["precision"]),
+            solve_tolerance=(
+                None if solve_tolerance is None else float(solve_tolerance)
+            ),
+            batch_size=batch_size,
+            require_gradients=require_gradients,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise SerializationError("invalid Lindblad plan decision") from exc
@@ -84,9 +137,19 @@ def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
 
 @dataclass(frozen=True, slots=True)
 class LindbladPlan:
-    """A sealed Lindblad request that can be inspected, serialized, and run."""
+    """A sealed Lindblad request that can be inspected, serialized, and run.
+
+    A plan built in this process also holds the live request it was validated
+    from. Running it therefore keeps the matrix-free Hamiltonian and the
+    autograd graph of the tensors the caller supplied, instead of rebuilding
+    detached tensors from JSON. Nothing about the serialized form depends on
+    that live request, and a plan restored by :meth:`from_json` has none.
+    """
 
     _payload_json: str
+    _live_request: dict[str, Any] | None = field(
+        default=None, compare=False, repr=False
+    )
 
     def to_dict(self) -> dict[str, Any]:
         payload = json.loads(self._payload_json)
@@ -164,7 +227,7 @@ class LindbladPlan:
         return self._decision.method
 
     @property
-    def order(self) -> int:
+    def order(self) -> int | None:
         return self._decision.order
 
     @property
@@ -180,12 +243,32 @@ class LindbladPlan:
         return self._decision.precision
 
     @property
+    def solve_tolerance(self) -> float | None:
+        """Return the implicit-solve residual target, or ``None`` if explicit."""
+
+        return self._decision.solve_tolerance
+
+    @property
+    def require_gradients(self) -> bool:
+        """Return whether the caller made the returned trajectory differentiable."""
+
+        return self._decision.require_gradients
+
+    @property
+    def batch_size(self) -> int:
+        """Return the declared batch axis the trajectory reports."""
+
+        return self._decision.batch_size
+
+    @property
     def _decision(self) -> EvolutionPlan:
         decision = self.to_dict()["decision"]
         assert isinstance(decision, Mapping)
         return _summary(decision)
 
     def _execution_request(self) -> dict[str, Any]:
+        if self._live_request is not None:
+            return dict(self._live_request)
         payload = self.to_dict()
         request = payload["request"]
         decision = payload["decision"]
@@ -205,6 +288,10 @@ def build_lindblad_plan(
     device: torch.device | str,
     dtype: torch.dtype,
     return_density_matrices: bool,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
 ) -> LindbladPlan:
     summary = plan_density_matrix_evolution(
         hamiltonian,
@@ -216,6 +303,10 @@ def build_lindblad_plan(
         device=device,
         dtype=dtype,
         return_density_matrices=return_density_matrices,
+        method=method,
+        solve_tolerance=solve_tolerance,
+        batch_size=batch_size,
+        require_gradients=require_gradients,
     )
     resolved_device = torch.device(device)
     dimension = 2**n_qubits
@@ -224,12 +315,13 @@ def build_lindblad_plan(
     time_grid = _normalize_times(
         times, device=resolved_device, real_dtype=real_dtype
     ).detach()
-    hamiltonian_matrix = _normalize_hamiltonian(
+    hamiltonian_representation = _normalize_hamiltonian(
         hamiltonian,
         n_wires=n_qubits,
         dim=dimension,
         dtype=dtype,
         device=resolved_device,
+        tolerance=tolerance,
     )
     density_matrix = _normalize_initial_state(
         initial_state,
@@ -250,7 +342,9 @@ def build_lindblad_plan(
     )
     request = {
         "n_qubits": n_qubits,
-        "hamiltonian": _complex_tensor_payload(hamiltonian_matrix),
+        "hamiltonian": _complex_tensor_payload(
+            _request_hamiltonian_matrix(hamiltonian_representation)
+        ),
         "initial_density_matrix": _complex_tensor_payload(density_matrix),
         "times": time_grid.to(device="cpu", dtype=torch.float64).tolist(),
         "collapse_operators": [
@@ -270,7 +364,26 @@ def build_lindblad_plan(
         "decision": summary.to_dict(),
     }
     payload["identity"] = _identity(payload)
-    return LindbladPlan.from_dict(payload)
+    validated = LindbladPlan.from_dict(payload)
+    # The live request is the same one the payload describes, holding the
+    # tensors as the caller passed them. It is what makes execution keep the
+    # matrix-free Hamiltonian and the autograd graph.
+    live = {
+        "hamiltonian": hamiltonian_representation,
+        "initial_state": density_matrix,
+        "n_wires": n_qubits,
+        "times": time_grid,
+        "collapse_operators": list(collapse_terms),
+        "observables": dict(observable_matrices),
+        "device": resolved_device,
+        "dtype": dtype,
+        "return_density_matrices": return_density_matrices,
+        "method": summary.method,
+        "solve_tolerance": summary.solve_tolerance,
+        "batch_size": summary.batch_size,
+        "require_gradients": summary.require_gradients,
+    }
+    return replace(validated, _live_request=live)
 
 
 def _decode_request(
@@ -345,6 +458,10 @@ def _decode_request(
         "device": summary.device,
         "dtype": dtype,
         "return_density_matrices": return_density_matrices,
+        "method": summary.method,
+        "solve_tolerance": summary.solve_tolerance,
+        "batch_size": summary.batch_size,
+        "require_gradients": summary.require_gradients,
     }
 
 

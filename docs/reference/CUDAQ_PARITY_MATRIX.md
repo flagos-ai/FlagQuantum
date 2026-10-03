@@ -84,7 +84,7 @@ No row in this document is a performance comparison or a scalability claim.
 | compiler_and_ir | 0 | 7 | 7 | 0 | 14 |
 | simulation_backends | 4 | 6 | 4 | 0 | 14 |
 | noise_and_error_models | 0 | 5 | 1 | 0 | 6 |
-| operator_algebra_and_domain_libraries | 0 | 3 | 5 | 0 | 8 |
+| operator_algebra_and_domain_libraries | 0 | 4 | 4 | 0 | 8 |
 | algorithm_layer | 1 | 5 | 3 | 0 | 9 |
 | quantum_error_correction | 0 | 3 | 4 | 0 | 7 |
 | logical_and_ftqc_layer | 0 | 0 | 5 | 0 | 5 |
@@ -92,7 +92,7 @@ No row in this document is a performance comparison or a scalability claim.
 | realtime_control | 0 | 0 | 4 | 0 | 4 |
 | engineering_ecosystem_and_abi | 1 | 2 | 3 | 0 | 6 |
 | performance_and_scalability | 1 | 2 | 0 | 0 | 3 |
-| **Total** | 9 | 39 | 47 | 0 | 95 |
+| **Total** | 9 | 40 | 46 | 0 | 95 |
 
 ### Dependency class of every open gap
 
@@ -129,7 +129,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `detector_error_model` (noise_and_error_models): Both directions of the stim text interchange work. `from_memory_circuit` builds a model exactly for Pauli noise over the reference Clifford gate set; `to_stim_text` emits text stim 1.16.0 parses; `from_stim_text` reads everything stim wrote in a 240-model developer-time sweep except a `repeat` block, and `str(model.flattened())` is a complete route around that one refusal; both readings of a `^` separator are offered under upstream's own `use_decomp_suggestions` flag name, and the default is the one stim itself means, measured against stim's own sampler rather than asserted. The model can also state that mechanisms are alternatives rather than independent, which is the one thing its parity matrices cannot carry: an error id groups them, the marginal rates and the sampler read a group as one fault, and the text writer refuses an id-carrying model instead of printing an independent one under the same probabilities. The row stays partial because conversion is narrower than the baseline at the input end: `from_memory_circuit` accepts one circuit record and one noise record, so an arbitrary circuit carrying detector and observable annotations has no route to a model, and a non-Pauli channel is refused rather than decomposed. `flagquantum/qec/IMPLEMENTATION.md` records the sweeps and the arithmetic.
 - `spin_operator_algebra` (operator_algebra_and_domain_libraries): Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent.
 - `fermion_operator_algebra` (operator_algebra_and_domain_libraries): Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction.
-- `super_operator_algebra` (operator_algebra_and_domain_libraries): Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale.
+- `super_operator_algebra` (operator_algebra_and_domain_libraries): The algebra is implemented: `flagquantum/operators/superoperator.py` states a superoperator as a sum of `coefficient * left @ state @ right` terms, where a missing side is a one-sided multiplication, with the three CUDA-Q constructors and an accumulating `+=`; `apply` and `dense` are two independent formulas in the repository-wide row-major vectorization `vec(A rho B) = (A (x) B^T) vec(rho)`, and the Lindblad generator assembled that way is the same arithmetic as `Liouvillian.dense()`, so the check that used to read 4.441e-16 now reads exactly 0.0. What is absent is everything beyond construction and the two views: no Choi, PTM, or Kraus representation transform, no partial trace, and no adjoint on the algebra. The factor contract has two implementations, `torch.Tensor` and `PauliSum`, both supplying `__matmul__`, `__rmatmul__` and `dense()`, so a matrix-free Hamiltonian enters a term without being materialized. The row stays partial rather than supported because CUDA-Q's row is about superoperator representations and this is the construction-and-evaluation half.
 - `chemistry_domain_library` (operator_algebra_and_domain_libraries): Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral.
 - `execution_entry_points` (algorithm_layer): Run, counts, expectation, compile, and plan exist. evolve and translate have no equivalent, and draw exists in a narrower form.
 - `error_mitigation` (algorithm_layer): Zero-noise extrapolation only. An observable is measured at several error strengths by scaling the one error-probability parameter each noise channel declares, and the curve is continued to zero by polynomial least squares or Richardson extrapolation, which reports the residual it left and the variance amplification of its weights. The channel families whose parameters are not error probabilities are refused by name, and a model that declares a readout rule is refused rather than measured without it, because the estimate is Tr(O rho) and classical readout confusion is applied after measurement. Probabilistic error cancellation and Clifford data regression are absent, and so is readout-error mitigation.
@@ -164,7 +164,7 @@ The replacement battlefield is the set of capabilities where the CUDA-Q implemen
 - `batched_trajectory` (noise_and_error_models): Trajectory simulation exists; batched execution across trajectories is narrower than the baseline.
 - `unitary_mixture_degradation` (noise_and_error_models): Absent. The distinction matters because a unitary mixture admits sampling that a general channel does not.
 - `noise_trajectory_shot_allocation` (noise_and_error_models): FlagQuantum samples Kraus trajectories, but the trajectory choice belongs to the engine rather than to the caller: the MPS trajectory path draws them implicitly and exposes an ensemble size, so there is no trajectory enumeration, no ordered or probabilistic selection strategy, and no shot-allocation policy. Those strategies are the whole of this row.
-- `matrix_and_custom_operator` (operator_algebra_and_domain_libraries): A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra.
+- `matrix_and_custom_operator` (operator_algebra_and_domain_libraries): A stable operator schema and discovery interface exist, and a matrix can now enter the superoperator algebra as a term factor. What is still missing is a matrix-valued operator type in the operator algebra itself: no `MatrixOperator` or `custom_op` type composes with `Observable` or the fermionic sum through products, sums, scalars, adjoints, or commutators, and the superoperator factor contract is deliberately narrower than that, requiring only `__matmul__`, `__rmatmul__` and `dense()`.
 - `exponential_pauli_operator` (operator_algebra_and_domain_libraries): Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent.
 - `state_and_unitary_access` (algorithm_layer): Circuit.state exists. A full unitary accessor is absent.
 - `algorithm_block_encoding_family` (algorithm_layer): The whole layer is absent. Qualtran is Apache-2.0 licensed and covers the same mathematics, so the plan is adaptation rather than research.
@@ -229,11 +229,11 @@ CUDA-Q surface: nvq++, @cudaq.kernel, kernel arguments, classical control flow, 
 Evidence:
 
 - domain default: `flagquantum/circuit.py`
-- domain default: `flagquantum/operators.py`
+- domain default: `flagquantum/operators`
 - domain default, negative search: no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema
 
 - `control_adjoint_modifiers` override: `contracts/circuit-composition-contract.toml`, `tests/unit/test_circuit_composition_contract.py`
-- `custom_operation_registration` override: `flagquantum/circuit.py`, `flagquantum/operators.py`
+- `custom_operation_registration` override: `flagquantum/circuit.py`, `flagquantum/operators`
 - `pauli_tracking_sbe` override: `flagquantum/simulation/stabilizer/engine.py`, `search:the sampling engine declines a noise instruction instead of tracking its frame`
 - `asynchronous_execution` override: `search:no asynchronous entry point and no in-flight result handle`
 - `global_seed_control` override: `flagquantum/runtime/options.py`, `flagquantum/runtime/training_state.py`, `search:no process-wide seed entry point`
@@ -339,8 +339,8 @@ CUDA-Q surface: SpinOperator, FermionOperator, BosonOperator, SuperOperator, Mat
 | `spin_operator_algebra` | SpinOperator and Pauli operator algebra | partial | now | none | `ir` | Pauli observables exist. Operator arithmetics for products, sums, scalars, exponentials, commutators, and anticommutators are absent. |
 | `fermion_operator_algebra` | FermionOperator with Jordan-Wigner and related mappings | unsupported | now | none | none | Absent. It is the precondition for a chemistry workflow and for exact fermionic observable construction. |
 | `boson_operator_algebra` | BosonOperator algebra | unsupported | later | none | none | Absent, and it has no consumer until a bosonic or photonic workload exists. |
-| `super_operator_algebra` | SuperOperator for superoperator representations | unsupported | now | none | `continuous_time_lindblad` | Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale. |
-| `matrix_and_custom_operator` | MatrixOperator and custom_op | partial | next | none | none | A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra. |
+| `super_operator_algebra` | SuperOperator for superoperator representations | partial | now | none | `continuous_time_lindblad` | The algebra is implemented: `flagquantum/operators/superoperator.py` states a superoperator as a sum of `coefficient * left @ state @ right` terms, where a missing side is a one-sided multiplication, with the three CUDA-Q constructors and an accumulating `+=`; `apply` and `dense` are two independent formulas in the repository-wide row-major vectorization `vec(A rho B) = (A (x) B^T) vec(rho)`, and the Lindblad generator assembled that way is the same arithmetic as `Liouvillian.dense()`, so the check that used to read 4.441e-16 now reads exactly 0.0. What is absent is everything beyond construction and the two views: no Choi, PTM, or Kraus representation transform, no partial trace, and no adjoint on the algebra. The factor contract has two implementations, `torch.Tensor` and `PauliSum`, both supplying `__matmul__`, `__rmatmul__` and `dense()`, so a matrix-free Hamiltonian enters a term without being materialized. The row stays partial rather than supported because CUDA-Q's row is about superoperator representations and this is the construction-and-evaluation half. |
+| `matrix_and_custom_operator` | MatrixOperator and custom_op | partial | next | none | none | A stable operator schema and discovery interface exist, and a matrix can now enter the superoperator algebra as a term factor. What is still missing is a matrix-valued operator type in the operator algebra itself: no `MatrixOperator` or `custom_op` type composes with `Observable` or the fermionic sum through products, sums, scalars, adjoints, or commutators, and the superoperator factor contract is deliberately narrower than that, requiring only `__matmul__`, `__rmatmul__` and `dense()`. |
 | `exponential_pauli_operator` | exp_pauli and pauli_word construction | partial | next | none | `ir` | Pauli words are representable. An explicit exponential-of-Pauli operator constructor is absent. |
 | `chemistry_domain_library` | PySCF driver, UCCSD, and hardware-efficient ansatz libraries | unsupported | now | B_open_neutral | none | Absent, and it is the first entry point for most chemistry users. The underlying integrals come from PySCF, which is open and vendor-neutral. |
 | `rydberg_analog_hamiltonian` | RydbergHamiltonian for analog neutral-atom evolution | unsupported | later | none | none | Absent. It is the observable-side input an analog neutral-atom target would need, so it follows that target rather than preceding it. |
@@ -348,11 +348,12 @@ CUDA-Q surface: SpinOperator, FermionOperator, BosonOperator, SuperOperator, Mat
 Evidence:
 
 - domain default: `flagquantum/observables`
-- domain default: `flagquantum/operators.py`
+- domain default: `flagquantum/operators`
 - domain default, negative search: no fermionic, bosonic, or superoperator algebra and no chemistry driver
 
 - `fermion_operator_algebra` override: `flagquantum/observables`
-- `matrix_and_custom_operator` override: `flagquantum/operators.py`
+- `super_operator_algebra` override: `flagquantum/operators/superoperator.py`, `flagquantum/simulation/lindblad_generator.py`, `flagquantum/simulation/matrix_free_hamiltonian.py`, `search:no superoperator representation transform (Choi, partial trace, or Kraus) and no per-term coefficient accessor`
+- `matrix_and_custom_operator` override: `flagquantum/operators`, `search:no matrix-valued operator type joining the observable or fermion algebra`
 - `chemistry_domain_library` override: `flagquantum/algorithms`
 - `rydberg_analog_hamiltonian` override: `search:no Rydberg or analog Hamiltonian model`
 

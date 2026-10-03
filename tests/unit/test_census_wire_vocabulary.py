@@ -173,9 +173,9 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    assert len(scanned.canonical) == 341
+    assert len(scanned.canonical) == 345
     assert len(scanned.aliases) == 11
-    assert len(scanned.internal) == 397
+    assert len(scanned.internal) == 411
     assert scanned.canonical and scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"

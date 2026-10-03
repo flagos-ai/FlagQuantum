@@ -12,7 +12,7 @@ from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import is_parameterized_value, parameter_names_in_value
 from .openqasm_gates import EMITTED_GATES as _DIRECT_GATES
-from .operator_lowering import validate_lowering
+from .operator_lowering import require_static_gate_program, validate_lowering
 
 
 def _format_number(value: Any) -> str:
@@ -123,10 +123,10 @@ def _instruction_lines(instruction: Instruction, *, version: float) -> list[str]
     return [_gate(target_name, instruction.wires, parameters)]
 
 
-def _validated_ir(program: Any) -> CircuitIR:
+def _validated_ir(program: Any, *, version: float) -> CircuitIR:
     ir = ensure_circuit_ir(program)
     validate_lowering(ir, "qasm")
-    return ir
+    return require_static_gate_program(ir, language=f"OpenQASM {version:.1f}")
 
 
 def emit_openqasm(
@@ -139,7 +139,7 @@ def emit_openqasm(
 
     if version not in {2.0, 3.0}:
         raise ValueError("OpenQASM version must be 2.0 or 3.0.")
-    ir = _validated_ir(program)
+    ir = _validated_ir(program, version=version)
     projected = result_wires is not None
     measured_wires = (
         tuple(range(ir.n_wires)) if result_wires is None else tuple(result_wires)

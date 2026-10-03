@@ -24,11 +24,11 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler.target_legalization import legalize_circuit_for_target
-from flagquantum.ecosystem.extensions import run_device_conformance
 from flagquantum.ecosystem.extensions.admission import (
     admit_backend_extension,
     withdraw_backend,
 )
+from flagquantum.ecosystem.extensions.conformance import run_device_conformance
 from flagquantum.ecosystem.extensions.target_sdk import (
     check_target_description,
     target_capability_snapshot,
@@ -127,7 +127,9 @@ def test_a_user_circuit_is_legalized_onto_the_declared_device(declared_target):
     assert legalized.schedule.depth == 14
     assert legalized.program.dtype == "complex64"
     assert legalized.target_snapshot_id == snapshot.snapshot_id
-    assert [item.source_opcode for item in legalized.native_gate_legalization.decompositions] == [
+    assert [
+        item.source_opcode for item in legalized.native_gate_legalization.decompositions
+    ] == [
         "ry",
         "swap",
         "swap",
@@ -210,7 +212,9 @@ def test_declared_gate_errors_damp_the_measured_correlator_as_reported(
         program, backend="provider", snapshot=snapshot, coupling_map=coupling_map
     )
 
-    noiseless = float(fq.run(program, options=options, outputs=_CORRELATOR).expectations[0])
+    noiseless = float(
+        fq.run(program, options=options, outputs=_CORRELATOR).expectations[0]
+    )
     noisy = float(
         fq.run(
             program, options=options, outputs=_CORRELATOR, noise_model=model

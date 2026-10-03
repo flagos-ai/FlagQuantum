@@ -39,7 +39,7 @@ reduction is real.
 **No trainable angle is folded.** Composition reads numeric amplitudes, and a
 trainable angle has no numeric value to read; the same reason
 `one_qubit_synthesis` refuses to select a branch on one. A run that carries any
-trainable angle is left to `pipeline.merge_adjacent_rotations`, which adds angles
+trainable angle is left to `passes._merge_adjacent_rotations`, which adds angles
 with the caller's own objects and keeps them in the autograd graph.
 """
 

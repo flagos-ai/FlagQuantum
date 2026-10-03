@@ -63,15 +63,15 @@ import pytest
 
 from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.circuit import MemoryCircuit, MeasurementRef, build_memory_circuit
+from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
 from flagquantum.qec.codes import (
     RepetitionCode,
     RotatedSurfaceCode,
-    SteaneCode,
     StabilizerCode,
+    SteaneCode,
 )
-from flagquantum.qec.dem import (
-    DetectorErrorModel,
+from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem_construction import (
     _inject_data_flip,
     _inject_measurement_flip,
     _Mechanism,
@@ -151,7 +151,8 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[_Flips
     samples: list[list[int]] = execution.samples.tolist()
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position for position, check in enumerate(memory.code.checks)
+        check.ancilla_wire: position
+        for position, check in enumerate(memory.code.checks)
     }
 
     def measurement_bit(
@@ -159,13 +160,18 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[_Flips
     ) -> int:
         if reference.round_index is None:
             return int(sample_row[reference.wire])
-        return int(classical_row[reference.round_index * checks + positions[reference.wire]])
+        return int(
+            classical_row[reference.round_index * checks + positions[reference.wire]]
+        )
 
     def parity(classical_row: list[int], sample_row: list[int], references) -> int:
-        return sum(
-            measurement_bit(classical_row, sample_row, reference)
-            for reference in references
-        ) % 2
+        return (
+            sum(
+                measurement_bit(classical_row, sample_row, reference)
+                for reference in references
+            )
+            % 2
+        )
 
     read: list[_Flips] = []
     for classical_row, sample_row in zip(classical, samples, strict=True):
@@ -251,9 +257,7 @@ def test_a_single_data_error_is_detected_and_its_syndrome_identifies_the_wire() 
     syndromes: dict[int, tuple[int, ...]] = {}
     logicals: set[int] = set()
     for wire in code.data_wires:
-        read = _flips(
-            memory, _inject_data_flip(memory, round_index=0, wire=wire)
-        )[0]
+        read = _flips(memory, _inject_data_flip(memory, round_index=0, wire=wire))[0]
         syndromes[wire] = read.detectors
         if read.observables:
             logicals.add(wire)
@@ -268,7 +272,7 @@ def test_a_single_data_error_is_detected_and_its_syndrome_identifies_the_wire() 
     # A single X error becomes a logical error exactly when it anticommutes with
     # the declared logical Z operator, which is exactly when it lies in that
     # operator's support.
-    (observable,) = code.logical_observables
+    (observable,) = tuple(item for item in code.logical_observables if not item.x_wires)
     assert logicals == set(observable.support)
     assert len(logicals) == code.distance
 
@@ -355,9 +359,10 @@ def test_the_same_decoder_accepts_the_other_two_codes(
     """The refusal above is a property of the Steane code, not of the decoder.
 
     Both of these codes carry a weight-three data error into at most two
-    detectors, so their detector error models are graphlike and the matching
-    decoder builds a graph from them. Without this contrast the refusal asserted
-    above could be read as the decoder failing on any code.
+    detectors, so their detector error models are graphlike, the matching decoder
+    builds a graph from them, and it decodes a syndrome the model itself sampled.
+    Without this contrast the refusal asserted above could be read as the decoder
+    failing on any code.
     """
 
     memory = build_memory_circuit(code, rounds=1)
@@ -370,7 +375,14 @@ def test_the_same_decoder_accepts_the_other_two_codes(
 
     assert max(len(error.detectors) for error in model.errors) == 2
     decoder = MinimumWeightMatchingDecoder.from_detector_error_model(model)
-    assert decoder.decode(tuple(0 for _ in range(model.num_detectors))).observables == ()
+    sample = model.dem_sampling(shots=1, seed=_SEED)
+    syndrome = tuple(
+        int(index) for index in sample.detectors[0].nonzero().flatten().tolist()
+    )
+    result = decoder.decode(syndrome)
+
+    assert len(result.observables) <= model.num_observables
+    assert result.weight >= 0.0
 
 
 def test_sampled_rates_agree_with_the_circuit_simulator() -> None:

@@ -39,7 +39,7 @@ from numbers import Complex
 
 import torch
 
-from . import _wire, _wires
+from . import _qubit, _qubits
 
 _DEFAULT_TRUNCATION_DIMENSION = 2
 """The Fock truncation a degree gets when a caller declares no space for it."""
@@ -72,7 +72,7 @@ def _complex_scalar(value: object) -> complex | None:
 def _degree(value: object) -> int:
     """Read one degree index by the same protocol the package reads a wire label with."""
 
-    return _wire("bosonic", value, noun="degree")
+    return _qubit("bosonic", value, noun="degree")
 
 
 def _degrees(value: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
@@ -84,7 +84,7 @@ def _degrees(value: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
     that is what makes the stored monomial the one form of its value.
     """
 
-    degrees = _wires(value, owner=owner, noun="degree", unique=False)
+    degrees = _qubits(value, owner=owner, noun="degree", unique=False)
     if degrees != tuple(sorted(degrees)):
         raise ValueError(
             f"{owner} degrees must be listed in ascending order; a canonical monomial "
@@ -302,9 +302,7 @@ class BosonOperator:
     def degrees(self) -> tuple[int, ...]:
         """Return every distinct degree this operator acts on, in ascending order."""
 
-        return tuple(
-            sorted({degree for term in self.terms for degree in term.degrees})
-        )
+        return tuple(sorted({degree for term in self.terms for degree in term.degrees}))
 
     def dagger(self) -> BosonOperator:
         """Return the adjoint, which exchanges the two groups of every monomial."""
@@ -426,7 +424,7 @@ def _truncation(
 def _levels(degree: object, dimension: object) -> int:
     """Read one level count, which keeps at least the vacuum level."""
 
-    levels = _wire(f"bosonic degree {degree}", dimension, noun="truncation")
+    levels = _qubit(f"bosonic degree {degree}", dimension, noun="truncation")
     if levels < 1:
         raise ValueError(
             f"bosonic degree {degree} truncation must keep at least one level, got "

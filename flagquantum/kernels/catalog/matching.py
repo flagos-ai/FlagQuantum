@@ -9,6 +9,7 @@ from typing import Literal
 from .evidence import EVIDENCE
 from .implementations import IMPLEMENTATIONS
 from .schema import (
+    KERNEL_DEVICES,
     KernelDirection,
     KernelEvidence,
     KernelImplementation,
@@ -38,7 +39,14 @@ _MATURITY_RANK: dict[KernelMaturity, int] = {
 
 @dataclass(frozen=True, slots=True)
 class KernelRequest:
-    """Capabilities required for one provider-neutral kernel semantic."""
+    """Capabilities required for one provider-neutral kernel semantic.
+
+    ``device`` must name a declared execution device. A device outside
+    ``KERNEL_DEVICES`` is a malformed request and is refused here rather than
+    reported as a capability mismatch, so callers cannot read a typo as an
+    unsupported device. The annotation stays :class:`str` because callers derive
+    it from ``torch.device.type``; the runtime check is the authority.
+    """
 
     semantic_id: str
     device: str
@@ -54,6 +62,11 @@ class KernelRequest:
         if any(not value for value in required):
             raise ValueError(
                 "kernel request identity and capabilities must be non-empty"
+            )
+        if self.device not in KERNEL_DEVICES:
+            raise ValueError(
+                f"undeclared kernel request device: {self.device}; "
+                f"declared devices are {', '.join(sorted(KERNEL_DEVICES))}"
             )
         if len(set(self.addressing)) != len(self.addressing):
             raise ValueError("kernel request addressing entries must be unique")

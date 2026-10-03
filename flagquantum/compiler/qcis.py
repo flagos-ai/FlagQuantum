@@ -16,6 +16,7 @@ import torch
 
 from ..core.ir import CircuitIR
 from ..core.parameters import is_parameterized_value, parameter_names_in_value
+from .operator_lowering import require_static_gate_program, validate_lowering
 
 _PI = round(math.pi, 6)
 
@@ -213,15 +214,10 @@ def emit_qcis(program: Any) -> str:
     """Compile a FlagQuantum circuit or IR to QCIS text."""
 
     ir = _as_ir(program)
-    from ..compiler.operator_lowering import validate_lowering
-
     validate_lowering(ir, "qcis")
+    require_static_gate_program(ir, language="QCIS")
     lines: list[str] = []
     for instruction in ir.instructions:
-        if instruction.matrix is not None:
-            raise NotImplementedError(
-                "QCIS export does not support arbitrary matrix gates."
-            )
         for native in _decompose(
             instruction.name.lower(), instruction.wires, instruction.params
         ):

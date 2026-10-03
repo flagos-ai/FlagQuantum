@@ -78,9 +78,7 @@ def _factor_dtype(operator: object) -> torch.dtype:
             f"an operator factor must expose a torch dtype, got {operator!r}"
         )
     if not dtype.is_complex:
-        raise ValueError(
-            f"an operator factor must have a complex dtype, got {dtype}"
-        )
+        raise ValueError(f"an operator factor must have a complex dtype, got {dtype}")
     return dtype
 
 
@@ -109,7 +107,12 @@ def _factor_dimension(operator: object) -> int:
 def _dense_matrix(operator: Factor) -> torch.Tensor:
     if isinstance(operator, torch.Tensor):
         return operator
-    return operator.dense()
+    matrix = operator.dense()
+    if not isinstance(matrix, torch.Tensor):
+        raise ValueError(
+            f"an operator factor must return a tensor from dense(), got {matrix!r}"
+        )
+    return matrix
 
 
 def _coefficient(value: object) -> complex:
@@ -293,7 +296,8 @@ class SuperOperator:
                 "the state dtype must match the superoperator dtype: "
                 f"{state.dtype} != {dtype}"
             )
-        shape = tuple(state.shape)
+        shape = tuple(int(size) for size in state.shape)
+        expected: tuple[int, ...]
         if state.ndim == 2:
             expected = (dimension, dimension)
         elif state.ndim == 3:
@@ -321,9 +325,17 @@ class SuperOperator:
         for coefficient, left, right in self._terms:
             term = state
             if left is not None:
-                term = left @ term if isinstance(left, torch.Tensor) else left.__matmul__(term)
+                term = (
+                    left @ term
+                    if isinstance(left, torch.Tensor)
+                    else left.__matmul__(term)
+                )
             if right is not None:
-                term = term @ right if isinstance(right, torch.Tensor) else right.__rmatmul__(term)
+                term = (
+                    term @ right
+                    if isinstance(right, torch.Tensor)
+                    else right.__rmatmul__(term)
+                )
             total = total + coefficient * term
         return total
 

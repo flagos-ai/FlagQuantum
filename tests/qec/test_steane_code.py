@@ -114,18 +114,18 @@ def test_wire_layout_is_seven_data_wires_and_six_ancillas() -> None:
     assert code.ancilla_wires == (7, 8, 9, 10, 11, 12)
 
 
-def test_checks_are_three_x_type_then_three_z_type_all_of_weight_four() -> None:
+def test_checks_are_three_z_type_then_three_x_type_all_of_weight_four() -> None:
     checks = SteaneCode().checks
 
     assert [check.index for check in checks] == [0, 1, 2, 3, 4, 5]
     assert [check.ancilla_wire for check in checks] == [7, 8, 9, 10, 11, 12]
     assert [bool(check.stabilizer.x_wires) for check in checks] == [
-        True,
-        True,
-        True,
         False,
         False,
         False,
+        True,
+        True,
+        True,
     ]
     assert {check.stabilizer.weight for check in checks} == {4}
 
@@ -177,7 +177,8 @@ def test_every_check_class_has_distance_three(x_type: bool) -> None:
 
 def test_the_declared_logical_observable_is_the_lightest_z_representative() -> None:
     code = SteaneCode()
-    (observable,) = code.logical_observables
+    z_type = tuple(item for item in code.logical_observables if not item.x_wires)
+    (observable,) = z_type
 
     assert observable.z_wires
     assert not observable.x_wires
@@ -192,6 +193,17 @@ def test_the_declared_logical_observable_is_the_lightest_z_representative() -> N
 
     rows = [_symplectic(check.stabilizer, _DATA_WIRES) for check in code.checks]
     assert _gf2_rank(rows + [_symplectic(observable, _DATA_WIRES)]) == 7
+
+    # The record declares the X-type partner as well, on the same support, and
+    # the two anticommute because their overlap has odd size. That partner is a
+    # real logical operator of the code; it is simply not one a Z-basis readout
+    # can measure, so a memory circuit built from this record carries the Z-type
+    # operator alone.
+    x_type = tuple(item for item in code.logical_observables if item.x_wires)
+    (partner,) = x_type
+    assert partner.x_wires == _kernel_vectors(x_type=True)[0]
+    assert partner.x_wires == observable.z_wires
+    assert not observable.commutes_with(partner)
 
 
 def test_an_x_type_check_couples_the_ancilla_into_the_data() -> None:
@@ -234,16 +246,15 @@ def test_no_basis_of_the_group_produces_a_graphlike_check_matrix() -> None:
             for wire in range(_DATA_WIRES)
         )
         assert coverage >= 2
-        coverage_minimum = coverage if coverage_minimum is None else min(
-            coverage_minimum, coverage
+        coverage_minimum = (
+            coverage if coverage_minimum is None else min(coverage_minimum, coverage)
         )
 
     assert coverage_minimum == 3
 
     declared = _check_supports(x_type=False)
     declared_coverage = [
-        sum(1 for support in declared if wire in support)
-        for wire in range(_DATA_WIRES)
+        sum(1 for support in declared if wire in support) for wire in range(_DATA_WIRES)
     ]
     assert max(declared_coverage) == 3
     assert declared_coverage[6] == 3
@@ -271,10 +282,10 @@ def test_the_registered_checks_and_stabilizers_agree() -> None:
 
     assert code.stabilizers == tuple(check.stabilizer for check in code.checks)
     assert code.stabilizers == (
-        Pauli(x_wires=(0, 2, 4, 6)),
-        Pauli(x_wires=(1, 2, 5, 6)),
-        Pauli(x_wires=(3, 4, 5, 6)),
-        Pauli(z_wires=(0, 2, 4, 6)),
-        Pauli(z_wires=(1, 2, 5, 6)),
         Pauli(z_wires=(3, 4, 5, 6)),
+        Pauli(z_wires=(1, 2, 5, 6)),
+        Pauli(z_wires=(0, 2, 4, 6)),
+        Pauli(x_wires=(3, 4, 5, 6)),
+        Pauli(x_wires=(1, 2, 5, 6)),
+        Pauli(x_wires=(0, 2, 4, 6)),
     )

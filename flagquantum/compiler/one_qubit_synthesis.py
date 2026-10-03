@@ -42,7 +42,7 @@ from typing import Any
 
 from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
-from .pipeline import _is_zero
+from .passes import _is_zero
 
 #: A 2x2 matrix of Python complex numbers, rows first.
 Matrix = list[list[complex]]
@@ -133,7 +133,7 @@ def _polar_angle(value: Any) -> float | None:
     """Return `value` as a float for branch selection, or None when it has none.
 
     A trainable value never selects a branch, for the same reason
-    `pipeline._is_zero` refuses to call a trainable angle zero: the short forms
+    `passes._is_zero` refuses to call a trainable angle zero: the short forms
     omit `theta` entirely, which would silently detach a rotation initialized at
     zero from the autograd graph.
     """

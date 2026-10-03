@@ -14,7 +14,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives import qft
-from flagquantum.compiler.pipeline import _SELF_INVERSE
+from flagquantum.compiler.passes import _SELF_INVERSE
 from flagquantum.core import (
     ADJOINT_RULES,
     OPERATOR_SCHEMAS,

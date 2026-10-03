@@ -68,8 +68,8 @@ class ResourceEstimate:
     T-dagger operations, the pair a T-depth is defined over.
 
     ``max_operation_width`` is the widest single operation, so a program of
-    three-wire operations has width 3 however many wires it declares -- this is
-    the *operation* width, not the register size, which is :attr:`n_qubits`.
+    three-wire operations has width 3 however many wires it declares: that is the
+    operation width, not the register size, which is :attr:`n_qubits`.
     ``used_wires`` counts the wires at least one operation touches, so it is
     narrower than :attr:`n_qubits` for a program that does not use its whole
     register, and ``channel_count`` counts the noise channels a lowered noise
@@ -173,6 +173,7 @@ def estimate_resources(program: Any) -> ResourceEstimate:
                 f"{index} ({instruction.name!r}): {reason}"
             )
 
+    layers = schedule_layers(ir)
     operation_counts: dict[str, int] = {}
     max_operation_width = 0
     channel_count = 0
@@ -180,7 +181,7 @@ def estimate_resources(program: Any) -> ResourceEstimate:
     per_wire_depth = [0] * ir.n_wires
     per_wire_t_depth = [0] * ir.n_wires
 
-    for layer_index, layer in enumerate(schedule_layers(ir)):
+    for layer_index, layer in enumerate(layers):
         for instruction in layer:
             name = instruction.name
             operation_counts[name] = operation_counts.get(name, 0) + 1
@@ -190,11 +191,11 @@ def estimate_resources(program: Any) -> ResourceEstimate:
             is_t_family = name in _T_FAMILY_OPCODES
             if is_t_family:
                 t_count += 1
-            # A layer holds operations that share no wire, so every operation in
-            # it reads the wire state left by the layers before it and the order
-            # within a layer cannot matter.  An operation in the T family opens a
-            # new T layer on top of the deepest one among the wires it touches;
-            # every other operation carries each wire's T layer forward.
+            # A layer holds operations sharing no wire, so every operation in it
+            # reads the wire state left by the layers before it and the order
+            # within a layer cannot matter.  A T-family operation opens a new T
+            # layer on top of the deepest one among the wires it touches; every
+            # other operation carries each wire's T layer forward.
             next_t_depth = max(per_wire_t_depth[wire] for wire in instruction.wires)
             if is_t_family:
                 next_t_depth += 1
@@ -210,7 +211,7 @@ def estimate_resources(program: Any) -> ResourceEstimate:
         n_operations=len(ir),
         operation_counts=operation_counts,
         max_operation_width=max_operation_width,
-        depth=len(schedule_layers(ir)),
+        depth=len(layers),
         per_wire_depth=tuple(per_wire_depth),
         t_count=t_count,
         t_depth=max(per_wire_t_depth),

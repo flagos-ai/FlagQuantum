@@ -18,7 +18,6 @@ from flagquantum.errors import CapabilityError
 from flagquantum.observables import (
     Observable,
     X,
-    Z,
     annihilate,
     create,
     jordan_wigner,
@@ -84,7 +83,9 @@ def _observable_matrix(observable: Observable, n_modes: int) -> np.ndarray:
     return matrix
 
 
-def _random_hermitian_operator(n_modes: int, rng: np.random.Generator) -> FermionOperator:
+def _random_hermitian_operator(
+    n_modes: int, rng: np.random.Generator
+) -> FermionOperator:
     """Build a random Hermitian operator from products of two or three factors."""
 
     operator = FermionOperator()
@@ -111,7 +112,9 @@ def test_terms_that_share_a_monomial_are_combined_and_zero_terms_are_dropped() -
     assert FermionOperator().terms == ()
 
 
-def test_addition_subtraction_and_scalar_multiplication_are_the_algebra_operations() -> None:
+def test_addition_subtraction_and_scalar_multiplication_are_the_algebra_operations() -> (
+    None
+):
     total = create(0) + annihilate(0) - 2.0 * annihilate(0)
     assert total.terms == (
         FermionTerm(-1.0, (), (0,)),
@@ -160,7 +163,9 @@ def test_the_dense_form_of_a_composition_is_the_product_of_the_dense_forms() -> 
     assert checked == 60
 
 
-def test_creation_and_annihilation_obey_the_canonical_anticommutation_relations() -> None:
+def test_creation_and_annihilation_obey_the_canonical_anticommutation_relations() -> (
+    None
+):
     for degree in (0, 1, 2):
         anticommutator = create(degree).anticommutator(annihilate(degree))
         assert anticommutator.terms == (FermionTerm(1.0, (), ()),)
@@ -182,12 +187,8 @@ def test_adjacent_equal_factors_vanish_but_a_nested_pair_contracts() -> None:
 
 
 def test_the_adjoint_reverses_a_product_and_carries_its_sign() -> None:
-    assert (create(0) * create(1)).dagger().terms == (
-        FermionTerm(-1.0, (), (0, 1)),
-    )
-    assert (create(0) * annihilate(1)).dagger().terms == (
-        FermionTerm(1.0, (1,), (0,)),
-    )
+    assert (create(0) * create(1)).dagger().terms == (FermionTerm(-1.0, (), (0, 1)),)
+    assert (create(0) * annihilate(1)).dagger().terms == (FermionTerm(1.0, (1,), (0,)),)
     assert number(0).dagger() == number(0)
 
 
@@ -203,9 +204,7 @@ def test_commutator_and_anticommutator_follow_their_definitions() -> None:
     assert number(0).commutator(number(1)).terms == ()
     assert number(3).commutator(create(3)).terms == create(3).terms
     assert number(3).commutator(annihilate(3)).terms == (-annihilate(3)).terms
-    assert number(0).anticommutator(number(0)).terms == (
-        FermionTerm(2.0, (0,), (0,)),
-    )
+    assert number(0).anticommutator(number(0)).terms == (FermionTerm(2.0, (0,), (0,)),)
     with pytest.raises(TypeError):
         number(0).commutator(X(0))
     with pytest.raises(TypeError):
@@ -255,7 +254,9 @@ def test_jordan_wigner_refuses_a_zero_mode_request() -> None:
         jordan_wigner(FermionOperator(), n_modes=0)
 
 
-def test_the_jordan_wigner_image_equals_the_fock_matrix_on_the_known_operators() -> None:
+def test_the_jordan_wigner_image_equals_the_fock_matrix_on_the_known_operators() -> (
+    None
+):
     cases = (
         create(0) * annihilate(1) + create(1) * annihilate(0),
         number(0),
@@ -272,7 +273,9 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_the_known_operators()
             )
 
 
-def test_the_jordan_wigner_image_equals_the_fock_matrix_on_random_hermitian_operators() -> None:
+def test_the_jordan_wigner_image_equals_the_fock_matrix_on_random_hermitian_operators() -> (
+    None
+):
     rng = np.random.default_rng(20260902)
     checked = 0
     for n_modes in (2, 3, 4):
@@ -290,7 +293,9 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_random_hermitian_oper
     assert checked > 100
 
 
-def test_the_jordan_wigner_image_equals_the_fock_matrix_on_every_short_monomial() -> None:
+def test_the_jordan_wigner_image_equals_the_fock_matrix_on_every_short_monomial() -> (
+    None
+):
     factors = [
         create(0),
         annihilate(0),

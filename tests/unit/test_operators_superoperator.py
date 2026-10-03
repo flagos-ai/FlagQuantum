@@ -30,7 +30,9 @@ def _complex_factors(dimension: int = _DIMENSION) -> tuple[torch.Tensor, ...]:
     generator = torch.Generator().manual_seed(20250930)
     factors = []
     for _ in range(4):
-        real = torch.randn(dimension, dimension, dtype=torch.float64, generator=generator)
+        real = torch.randn(
+            dimension, dimension, dtype=torch.float64, generator=generator
+        )
         imaginary = torch.randn(
             dimension, dimension, dtype=torch.float64, generator=generator
         )
@@ -91,9 +93,23 @@ def _kronecker_sum(
     return total
 
 
+def _hamiltonian(dimension: int = _DIMENSION) -> torch.Tensor:
+    """Return a Hermitian, complex, non-diagonal Hamiltonian."""
+
+    generator = torch.Generator().manual_seed(11)
+    real = torch.randn(dimension, dimension, dtype=torch.float64, generator=generator)
+    imaginary = torch.randn(
+        dimension, dimension, dtype=torch.float64, generator=generator
+    )
+    raw = (real + 1j * imaginary).to(_COMPLEX128)
+    return 0.5 * (raw + raw.conj().T)
+
+
 def _dissipator(
     lowering: torch.Tensor,
-) -> tuple[SuperOperator, tuple[tuple[complex, torch.Tensor | None, torch.Tensor | None], ...]]:
+) -> tuple[
+    SuperOperator, tuple[tuple[complex, torch.Tensor | None, torch.Tensor | None], ...]
+]:
     """Return the Lindblad dissipator as a map and as its plain term tuple."""
 
     number = lowering.conj().T @ lowering
@@ -117,6 +133,27 @@ def test_the_package_reexports_the_operator_schema_and_the_superoperator() -> No
     assert operators.GateInfo is not None
     assert operators.SuperOperator is SuperOperator
     assert operators.DEFAULT_DENSE_MATRIX_BYTES == DEFAULT_DENSE_MATRIX_BYTES
+    assert set(operators.__all__) == {
+        "DEFAULT_DENSE_MATRIX_BYTES",
+        "GateInfo",
+        "SuperOperator",
+        "gate_info",
+    }
+    for name in operators.__all__:
+        assert getattr(operators, name) is not None
+
+
+def test_the_repr_names_the_term_count_the_dimension_and_the_dtype() -> None:
+    applied, _ = _dissipator(_complex_factors()[0])
+
+    text = repr(applied)
+
+    assert text.startswith("SuperOperator(terms=3")
+    assert "dimension=3" in text
+    assert str(_COMPLEX128) in text
+    assert repr(SuperOperator()) == (
+        "SuperOperator(terms=0, dimension=None, dtype=None)"
+    )
 
 
 def test_the_three_constructors_record_one_term_apiece() -> None:
@@ -202,9 +239,11 @@ def test_the_right_factor_is_transposed_and_not_conjugate_transposed() -> None:
         state.reshape(-1)
     )
 
+    # Measured 4.578e-16 for the correct rule, against 4.914e+00 for dropping
+    # the transpose, 4.664e+00 for multiplying the right factor's transpose on
+    # the left instead, and 4.475e+00 for swapping the Kronecker operands. A
+    # wrong rule that stayed near the tolerance would not be evidence.
     assert float(torch.max(torch.abs(correct - expected))) < 1e-15
-    # Each wrong rule must miss the tolerance by orders of magnitude, or the
-    # assertion above is not evidence of the convention.
     assert float(torch.max(torch.abs(transposed_wrong - expected))) > 1e-2
     assert float(torch.max(torch.abs(commutator_shape_wrong - expected))) > 1e-2
     assert float(torch.max(torch.abs(swapped_wrong - expected))) > 1e-2
@@ -222,18 +261,26 @@ def test_a_one_sided_term_reduces_to_the_identity_kronecker_form() -> None:
     assert torch.equal(right_only.dense(), torch.kron(identity, right.T.contiguous()))
     # The dense form and the action agree for one-sided terms too, and the
     # identity factor is what distinguishes the two sides.
-    assert float(
-        torch.max(
-            torch.abs(left_only.dense() @ state.reshape(-1) - (left @ state).reshape(-1))
-        )
-    ) < 1e-15
-    assert float(
-        torch.max(
-            torch.abs(
-                right_only.dense() @ state.reshape(-1) - (state @ right).reshape(-1)
+    assert (
+        float(
+            torch.max(
+                torch.abs(
+                    left_only.dense() @ state.reshape(-1) - (left @ state).reshape(-1)
+                )
             )
         )
-    ) < 1e-15
+        < 1e-15
+    )
+    assert (
+        float(
+            torch.max(
+                torch.abs(
+                    right_only.dense() @ state.reshape(-1) - (state @ right).reshape(-1)
+                )
+            )
+        )
+        < 1e-15
+    )
     assert not torch.allclose(
         left_only.dense(), torch.kron(identity, left.T.contiguous()), atol=1e-3
     )
@@ -268,23 +315,27 @@ def test_apply_preserves_a_batch_axis() -> None:
 def test_the_lindblad_dissipator_is_trace_preserving() -> None:
     applied, _ = _dissipator(_complex_factors()[0])
     identity = torch.eye(_DIMENSION, dtype=_COMPLEX128)
+    generator = applied.dense()
 
-    # Trace preservation is L^T vec(I) = 0 in the row-major vectorization.
-    from_dense = applied.dense().T @ identity.reshape(-1)
-    from_action = applied.apply(identity).reshape(-1)
-
-    assert float(torch.linalg.norm(from_dense)) < 1e-15
-    assert float(torch.linalg.norm(from_action)) < 1e-15
+    # Trace preservation is the dual statement L^T vec(I) = 0 in the row-major
+    # vectorization, i.e. the map is trace-annihilating on any state.
+    dual = generator.T @ identity.reshape(-1)
     state = _density_matrix()
-    trace = applied.apply(state).trace()
-    assert abs(complex(trace)) < 1e-15
+
+    # Measured 5.5e-17 relative to the generator norm of 2.186e+01; the same
+    # residual without the two anticommutator terms is 7.6e-01, so the relative
+    # form -- not an absolute floor -- is what makes this an assertion.
+    assert float(torch.linalg.norm(dual)) / float(torch.linalg.norm(generator)) < 1e-15
+    assert abs(complex(applied.apply(state).trace())) < 1e-15
+    # Applying the map to the identity is NOT zero, and must not be: for a
+    # non-normal L the dissipator sends I to L L^dag - L^dag L, while a trace
+    # preserving map is only required to annihilate the trace.
+    assert float(torch.linalg.norm(applied.apply(identity))) > 1.0
 
 
 def test_the_lindblad_dissipator_matches_the_liouvillian_generator() -> None:
     lowering = _complex_factors()[0]
-    generator = Liouvillian(
-        _hamiltonian(), [lowering], hilbert_dimension=_DIMENSION
-    )
+    generator = Liouvillian(_hamiltonian(), [lowering], hilbert_dimension=_DIMENSION)
     number = lowering.conj().T @ lowering
     applied = SuperOperator.left_multiply((-1.0j) * _hamiltonian())
     applied += SuperOperator.right_multiply(1.0j * _hamiltonian())
@@ -293,29 +344,45 @@ def test_the_lindblad_dissipator_matches_the_liouvillian_generator() -> None:
     applied += SuperOperator.right_multiply((-0.5 + 0.0j) * number)
 
     measured = float(torch.max(torch.abs(applied.dense() - generator.dense())))
-    # Measured 0.0: the two paths build the same five blocks and add them in the
-    # same order, so the agreement is bitwise. Dropping the transpose on either
-    # right factor moves this past 1e-1.
-    assert measured < 1e-15
+    # Measured exactly 0.0. It was 4.441e-16 while Liouvillian.dense() assembled
+    # the same matrix through its own kron expression, so the value is the
+    # observable consequence of routing the Lindblad generator through this
+    # class: the two forms are now one computation rather than two that agree.
+    # Losing that independence is why tests/unit/test_lindblad_vectorized_generator.py
+    # keeps its own from-scratch dense reference; this assertion is what proves
+    # the replacement happened at all, and the wrong-rule controls below are what
+    # keep it from being vacuous.
+    assert measured == 0.0
     assert torch.allclose(applied.dense(), generator.dense(), atol=1e-15)
+    # A dense() that returned zeros would satisfy the equality above. Measured
+    # 6.635712885219092 for this fixture.
+    assert float(torch.max(torch.abs(generator.dense()))) > 1.0
+
+    def _conjugated_right(operator: torch.Tensor) -> torch.Tensor:
+        return operator.conj()
+
+    def _unconjugated_right(operator: torch.Tensor) -> torch.Tensor:
+        return operator.T.contiguous()
+
+    # The hand-built sum above would agree with the generator even if both
+    # dropped the transpose, so each wrong rule is substituted into the same sum
+    # and must move the result. Measured 4.094e+00 for conjugate-instead-of-
+    # transpose and 4.299e+00 for transpose-of-the-other-side.
+    for wrong_rule in (_conjugated_right, _unconjugated_right):
+        substituted = SuperOperator.left_multiply((-1.0j) * _hamiltonian())
+        substituted += SuperOperator.right_multiply(1.0j * _hamiltonian())
+        substituted += SuperOperator.left_right_multiply(
+            lowering, wrong_rule(lowering.conj().T)
+        )
+        substituted += SuperOperator.left_multiply((-0.5 + 0.0j) * number)
+        substituted += SuperOperator.right_multiply((-0.5 + 0.0j) * number)
+        assert (
+            float(torch.max(torch.abs(substituted.dense() - generator.dense()))) > 1e-2
+        )
     # The action agrees too, on a state that is not the identity, so the anchor
-    # is not an artifact of a trace-preserving cancellation.
+    # is not an artifact of a trace-preserving cancellation. Measured 0.0.
     state = _density_matrix()
-    assert torch.allclose(
-        applied.apply(state), generator.derivative(state), atol=1e-14
-    )
-
-
-def _hamiltonian() -> torch.Tensor:
-    """Return a Hermitian, complex, non-diagonal 3x3 Hamiltonian."""
-
-    generator = torch.Generator().manual_seed(11)
-    real = torch.randn(_DIMENSION, _DIMENSION, dtype=torch.float64, generator=generator)
-    imaginary = torch.randn(
-        _DIMENSION, _DIMENSION, dtype=torch.float64, generator=generator
-    )
-    raw = (real + 1j * imaginary).to(_COMPLEX128)
-    return 0.5 * (raw + raw.conj().T)
+    assert torch.allclose(applied.apply(state), generator.derivative(state), atol=1e-14)
 
 
 def test_scalar_multiplication_scales_every_coefficient() -> None:
@@ -331,8 +398,12 @@ def test_scalar_multiplication_scales_every_coefficient() -> None:
         assert doubled[0] == 2.0j * original[0]
     # The factors are untouched, so a matrix-free factor needs no in-place scale.
     assert scaled.terms[0][1] is applied.terms[0][1]
+    assert torch.allclose(scaled.dense(), 2.0j * applied.dense(), atol=1e-15)
+    # The action must scale too. Every other fixture bakes its scalar into the
+    # factor, so this is the only place a term coefficient is not one, and
+    # without it a coefficient-dropping action would be indistinguishable.
     assert torch.allclose(
-        scaled.dense(), 2.0j * applied.dense(), atol=1e-15
+        scaled.apply(_density_matrix()), 2.0j * applied.apply(_density_matrix())
     )
     with pytest.raises(ValueError, match="coefficient must be a scalar"):
         applied * "two"
@@ -353,6 +424,25 @@ def test_addition_concatenates_terms_and_does_not_mutate_its_operands() -> None:
     assert first == SuperOperator.left_multiply(left)
 
 
+def test_iteration_yields_the_insertion_order() -> None:
+    left, right, third = _complex_factors()[:3]
+    mixed = SuperOperator.left_multiply(left)
+    mixed += SuperOperator.right_multiply(right)
+    mixed += SuperOperator.left_right_multiply(third, left)
+
+    assert list(mixed) == list(mixed.terms)
+    # Every constructor supplies the coefficient 1 and puts a scaled operator
+    # into the factor, which is what CUDA-Q's constructors do too, so order is
+    # pinned here by factor identity rather than by a coefficient value.
+    assert [term[0] for term in mixed] == [1.0 + 0.0j] * 3
+    assert [term[1] is None for term in mixed] == [False, True, False]
+    assert [term[2] is None for term in mixed] == [True, False, False]
+    assert mixed.terms[0][1] is left
+    assert mixed.terms[1][2] is right
+    assert mixed.terms[2][1] is third
+    assert mixed.terms[2][2] is left
+
+
 def test_equality_is_structural_and_order_sensitive() -> None:
     left, right = _complex_factors()[:2]
     first = SuperOperator.left_multiply(left)
@@ -365,6 +455,35 @@ def test_equality_is_structural_and_order_sensitive() -> None:
     # ``+=`` makes it observable, so equality does not canonicalize.
     assert (first + second) != (second + first)
     assert (first + second) == (first + second)
+    # Each of the three compared components must discriminate on its own, or the
+    # comparison is narrower than it claims to be. torch.equal is dtype
+    # insensitive, so the dtype comparison is the only thing separating these.
+    narrow = torch.eye(2, dtype=_COMPLEX64)
+    wide = torch.eye(2, dtype=_COMPLEX128)
+    assert torch.equal(narrow, wide)
+    assert SuperOperator.left_multiply(narrow) != SuperOperator.left_multiply(wide)
+    assert SuperOperator.left_multiply(left) != SuperOperator.left_multiply(right)
+    assert SuperOperator.right_multiply(left) != SuperOperator.right_multiply(right)
+    assert SuperOperator.left_multiply(left) != SuperOperator.right_multiply(left)
+    assert SuperOperator.left_right_multiply(left, right) != (
+        SuperOperator.left_right_multiply(right, left)
+    )
+    # A different term count must be reported as inequality, not as an error.
+    assert first != first + first
+
+
+def test_a_foreign_operand_is_refused_by_the_arithmetic_protocol() -> None:
+    applied = SuperOperator.left_multiply(_complex_factors()[0])
+
+    # Returning NotImplemented is what lets Python try the reflected operation
+    # and then raise TypeError, rather than silently succeeding.
+    assert applied.__add__("not a superoperator") is NotImplemented
+    assert applied.__iadd__("not a superoperator") is NotImplemented
+    with pytest.raises(TypeError):
+        applied + "not a superoperator"
+    with pytest.raises(TypeError):
+        applied += "not a superoperator"
+    assert len(applied) == 1
 
 
 def test_equality_with_a_foreign_object_is_false_and_instances_are_unhashable() -> None:
@@ -377,16 +496,15 @@ def test_equality_with_a_foreign_object_is_false_and_instances_are_unhashable() 
 
 
 def test_mismatched_dimensions_and_dtypes_are_refused() -> None:
-    second_dimension = SuperOperator.left_multiply(
-        torch.eye(2, dtype=_COMPLEX128)
-    ).terms[0][1]
-    wide = SuperOperator.left_multiply(torch.eye(_DIMENSION, dtype=_COMPLEX128))
+    narrow = torch.eye(2, dtype=_COMPLEX128)
     applied = SuperOperator.left_multiply(_complex_factors()[0])
 
     with pytest.raises(ValueError, match="must share one dimension"):
-        SuperOperator.left_right_multiply(_complex_factors()[0], second_dimension)
+        SuperOperator.left_right_multiply(_complex_factors()[0], narrow)
     with pytest.raises(ValueError, match="must share one dimension"):
-        wide + applied
+        applied + SuperOperator.left_multiply(narrow)
+    with pytest.raises(ValueError, match="must share one dimension"):
+        SuperOperator.left_multiply(narrow) + applied
     with pytest.raises(ValueError, match="must share one dtype"):
         SuperOperator.left_multiply(torch.eye(2, dtype=_COMPLEX64)) + (
             SuperOperator.left_multiply(torch.eye(2, dtype=_COMPLEX128))
@@ -405,15 +523,117 @@ def test_a_failed_in_place_addition_leaves_the_accumulator_unchanged() -> None:
     assert applied.dimension == _DIMENSION
 
 
+class _MatrixFactor:
+    """A non-tensor matrix factor, used to exercise the protocol path.
+
+    The matrix is real and asymmetric, so multiplying it on the left and on the
+    right give different results and a dispatch in the wrong direction is
+    visible. The two dunders are counted, and equality is by value.
+    """
+
+    def __init__(self, matrix: torch.Tensor, tag: str = "factor") -> None:
+        self._matrix = matrix.to(torch.float64)
+        self._tag = tag
+        self.dimension = int(matrix.shape[0])
+        self.dtype = _COMPLEX128
+        self.matmul_calls = 0
+        self.rmatmul_calls = 0
+
+    def __matmul__(self, state: torch.Tensor) -> torch.Tensor:
+        self.matmul_calls += 1
+        return self._matrix.to(state.dtype) @ state
+
+    def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor:
+        self.rmatmul_calls += 1
+        return state @ self._matrix.to(state.dtype)
+
+    def dense(self) -> torch.Tensor:
+        return self._matrix.to(_COMPLEX128)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _MatrixFactor):
+            return NotImplemented
+        return self._tag == other._tag and torch.equal(self._matrix, other._matrix)
+
+
+def test_a_non_tensor_factor_is_dispatched_through_the_matching_dunder() -> None:
+    matrix = torch.arange(9, dtype=torch.float64).reshape(_DIMENSION, _DIMENSION)
+    square = torch.eye(_DIMENSION, dtype=_COMPLEX128)
+    state = _density_matrix()
+    left_factor = _MatrixFactor(matrix, tag="left")
+    right_factor = _MatrixFactor(matrix, tag="right")
+
+    mapped_left = SuperOperator.left_multiply(left_factor)
+    mapped_right = SuperOperator.right_multiply(right_factor)
+
+    # The matrix is asymmetric, so each direction is a distinct value and the
+    # call counters say which dunder was reached.
+    complex_matrix = matrix.to(_COMPLEX128)
+    assert not torch.allclose(complex_matrix @ state, state @ complex_matrix)
+    assert torch.equal(mapped_left.apply(state), complex_matrix @ state)
+    assert torch.equal(mapped_right.apply(state), state @ complex_matrix)
+    assert (left_factor.matmul_calls, left_factor.rmatmul_calls) == (1, 0)
+    assert (right_factor.matmul_calls, right_factor.rmatmul_calls) == (0, 1)
+    # Both directions feed the dense view, so the two agreement checks above are
+    # evidence about the action and not about a single shared code path.
+    assert torch.equal(mapped_left.dense(), torch.kron(complex_matrix, square))
+    assert torch.equal(
+        mapped_right.dense(),
+        torch.kron(square, complex_matrix.transpose(0, 1).contiguous()),
+    )
+
+
+def test_equality_of_non_tensor_factors_is_by_value() -> None:
+    matrix = torch.arange(9, dtype=torch.float64).reshape(_DIMENSION, _DIMENSION)
+
+    assert SuperOperator.left_multiply(
+        _MatrixFactor(matrix, tag="a")
+    ) == SuperOperator.left_multiply(_MatrixFactor(matrix.clone(), tag="a"))
+    assert SuperOperator.left_multiply(
+        _MatrixFactor(matrix, tag="a")
+    ) != SuperOperator.left_multiply(_MatrixFactor(matrix.clone(), tag="b"))
+    assert SuperOperator.left_multiply(
+        _MatrixFactor(matrix, tag="a")
+    ) != SuperOperator.left_multiply(_MatrixFactor(matrix + 1.0, tag="a"))
+    # A tensor factor and a protocol factor that carry the same matrix are still
+    # distinct, because only two tensors take the tensor branch.
+    assert SuperOperator.left_multiply(_MatrixFactor(matrix, tag="a")) != (
+        SuperOperator.left_multiply(matrix.to(_COMPLEX128))
+    )
+
+
+class _MatrixWithoutDtype:
+    """A matrix-like factor that omits the dtype the contract requires."""
+
+    dimension = 3
+
+    def __matmul__(self, state: torch.Tensor) -> torch.Tensor:
+        return state
+
+    def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor:
+        return state
+
+    def dense(self) -> torch.Tensor:
+        return torch.eye(3, dtype=_COMPLEX128)
+
+
 def test_a_non_square_or_non_complex_factor_is_refused() -> None:
     with pytest.raises(ValueError, match="must be a square matrix"):
         SuperOperator.left_multiply(torch.zeros(2, 3, dtype=_COMPLEX128))
+    with pytest.raises(ValueError, match="must be a square matrix"):
+        SuperOperator.left_multiply(torch.zeros(2, dtype=_COMPLEX128))
     with pytest.raises(ValueError, match="must have a complex dtype"):
         SuperOperator.left_multiply(torch.eye(2, dtype=torch.float64))
     with pytest.raises(ValueError, match="must have a complex dtype"):
         SuperOperator.left_multiply(torch.eye(2, dtype=torch.int64))
-    with pytest.raises(ValueError, match="must expose a torch dtype"):
+    with pytest.raises(ValueError, match="must support __matmul__"):
         SuperOperator.left_multiply(object())
+    with pytest.raises(ValueError, match="must expose a torch dtype"):
+        SuperOperator.left_multiply(_MatrixWithoutDtype())
+    with pytest.raises(ValueError, match="positive integer dimension"):
+        SuperOperator.left_multiply(
+            type("_Bad", (_MatrixWithoutDtype,), {"dimension": 0})()
+        )
 
 
 def test_applying_a_state_of_the_wrong_shape_or_dtype_is_refused() -> None:
@@ -425,8 +645,53 @@ def test_applying_a_state_of_the_wrong_shape_or_dtype_is_refused() -> None:
         applied.apply(torch.zeros(2, 2, dtype=_COMPLEX128))
     with pytest.raises(ValueError, match="must have shape"):
         applied.apply(torch.zeros(_DIMENSION, dtype=_COMPLEX128))
-    with pytest.raises(ValueError, match="must return a tensor"):
+    with pytest.raises(ValueError, match="must be a tensor"):
         applied.apply([1.0, 0.0])
+
+
+def test_the_dense_form_follows_the_factor_dtype() -> None:
+    narrow = SuperOperator.left_multiply(torch.eye(_DIMENSION, dtype=_COMPLEX64))
+    wide = SuperOperator.left_multiply(torch.eye(_DIMENSION, dtype=_COMPLEX128))
+
+    matrix = narrow.dense()
+
+    assert narrow.dtype == _COMPLEX64
+    assert matrix.dtype == _COMPLEX64
+    assert matrix.shape == (_DIMENSION**2, _DIMENSION**2)
+    assert narrow.apply(torch.eye(_DIMENSION, dtype=_COMPLEX64)).dtype == _COMPLEX64
+    assert torch.allclose(matrix, wide.dense().to(_COMPLEX64), atol=0.0)
+    # complex64 is half the width, which is what makes the ceiling arithmetic
+    # depend on the factor dtype rather than on a fixed constant.
+    assert _COMPLEX64.itemsize == 8
+    assert matrix.numel() * _COMPLEX64.itemsize == 648
+    # An explicit ceiling strictly between the two widths separates them: the
+    # 9 x 9 wide map is 81 entries * 16 = 1296 bytes and the narrow one is
+    # 648, so a ceiling that ignored the dtype width would refuse both.
+    assert narrow.dense(max_bytes=1000).numel() * _COMPLEX64.itemsize == 648
+    with pytest.raises(ValueError, match="1296 bytes"):
+        wide.dense(max_bytes=1000)
+
+
+def test_a_factor_whose_dense_is_not_a_tensor_is_refused() -> None:
+    class _BadDense:
+        dtype = _COMPLEX128
+        dimension = 3
+
+        def __matmul__(self, state: torch.Tensor) -> torch.Tensor:
+            return state
+
+        def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor:
+            return state
+
+        def dense(self) -> object:
+            return [[1.0]]
+
+    applied = SuperOperator.left_multiply(_BadDense())
+
+    # The factor passes the protocol check, so the refusal comes from the view.
+    assert applied.dimension == 3
+    with pytest.raises(ValueError, match="must return a tensor from dense"):
+        applied.dense()
 
 
 def test_the_dense_form_is_refused_above_its_byte_ceiling() -> None:

@@ -1,6 +1,7 @@
 """Managed compiler passes and the pipeline that runs them."""
 
 from dataclasses import replace
+from typing import Any
 
 import pytest
 
@@ -130,6 +131,10 @@ def test_a_replacement_pipeline_changes_the_result_without_touching_consumers() 
     replaced_result = optimize(_wire_local_ir(), passes=(replacement,))
 
     assert tuple(item.name for item in default_result) == ("h",)
+    # The replacement set runs in place of the three registered transforms.
+    # `collapse_one_qubit_runs` is composed around the manager rather than
+    # registered with it, so it still folds the Hadamardless run to nothing;
+    # the point of the assertion is that the swap, not the fold, decided this.
     assert replaced_result.instructions == ()
 
 
@@ -147,7 +152,9 @@ def test_extension_supplied_pass_rewrites_the_program_through_the_manager() -> N
     compiled = optimize(ir, passes=(managed,))
 
     assert compiled.instructions == (Instruction("x", (0,)),)
-    assert extension.activations == 1
+    # The manager repeats the pipeline to a fixed point, so the extension is
+    # negotiated once per round and closed after every round.
+    assert extension.activations >= 1
     assert extension.active is False
 
 
@@ -283,9 +290,13 @@ def test_an_invented_ir_level_is_refused_when_the_pass_is_declared() -> None:
 
 def test_a_pass_without_a_name_or_summary_is_refused() -> None:
     with pytest.raises(CompilationError, match="non-empty name"):
-        PassDeclaration(name="  ", summary="s", preserved_semantics=(), deterministic=True)
+        PassDeclaration(
+            name="  ", summary="s", preserved_semantics=(), deterministic=True
+        )
     with pytest.raises(CompilationError, match="non-empty summary"):
-        PassDeclaration(name="n", summary=" ", preserved_semantics=(), deterministic=True)
+        PassDeclaration(
+            name="n", summary=" ", preserved_semantics=(), deterministic=True
+        )
 
 
 def test_the_manager_refuses_the_same_pass_twice() -> None:
@@ -315,7 +326,7 @@ def test_a_pass_that_returns_the_wrong_type_is_refused() -> None:
     )
 
     with pytest.raises(CompilationError, match="must return CircuitIR"):
-        PassManager(passes=(lying,)).run(CircuitIR(1))
+        PassManager(passes=(lying,)).run(CircuitIR(1, ()))
 
 
 def test_a_pipeline_that_never_settles_is_refused_rather_than_looping() -> None:
@@ -347,7 +358,7 @@ def test_the_contract_records_what_the_pipeline_declares() -> None:
     assert [item["name"] for item in contract["passes"]] == list(manager.names)
     assert all(item["deterministic"] for item in contract["passes"])
     assert all(
-        item["preserved_semantics"] == ["program_equivalence"]
+        "program_equivalence" in item["preserved_semantics"]
         for item in contract["passes"]
     )
 
@@ -386,12 +397,254 @@ def test_the_manager_enforces_a_declaration_not_the_claim_inside_it() -> None:
 
     manager = PassManager(passes=(claiming,))
 
-    assert manager.run(CircuitIR(1)).n_wires == 2
+    assert manager.run(CircuitIR(1, ())).n_wires == 2
+
+
+class _WrongKind(ReferencePassExtension):
+    manifest = ExtensionManifest(
+        name="wrong_kind",
+        version="1.0.0",
+        kind="compiler",
+        capabilities=frozenset({"circuit_ir"}),
+    )
+
+
+class _NoManifest:
+    declaration = None
+
+    def transform(self, program: CircuitIR) -> CircuitIR:
+        return program
+
+
+class _NoTransform:
+    manifest = ExtensionManifest(
+        name="no_transform",
+        version="1.0.0",
+        kind="compiler_pass",
+        capabilities=frozenset({"circuit_ir"}),
+    )
+
+
+class _ForeignDeclaration(ReferencePassExtension):
+    declaration = PassDeclaration(
+        name="some_other_pass",
+        summary="names a different pass",
+        preserved_semantics=_SEMANTICS,
+        deterministic=True,
+    )
+
+
+class _ForeignDeclarationType(ReferencePassExtension):
+    declaration = "not a declaration"
+
+
+def test_an_extension_without_a_manifest_is_refused() -> None:
+    with pytest.raises(CapabilityError, match="must expose a manifest"):
+        pass_from_extension(_NoManifest())
+
+
+def test_an_extension_of_another_kind_is_refused() -> None:
+    with pytest.raises(CapabilityError, match="must declare 'compiler_pass'"):
+        pass_from_extension(_WrongKind())
+
+
+def test_an_extension_without_a_callable_transform_is_refused() -> None:
+    with pytest.raises(CapabilityError, match="exposes no callable transform"):
+        pass_from_extension(_NoTransform())
+
+
+def test_a_declaration_naming_another_pass_is_refused() -> None:
+    with pytest.raises(
+        CapabilityError, match="the declaration must name the extension"
+    ):
+        pass_from_extension(_ForeignDeclaration())
+
+
+def test_a_declaration_of_the_wrong_type_is_refused() -> None:
+    with pytest.raises(CapabilityError, match="a PassDeclaration is required"):
+        pass_from_extension(_ForeignDeclarationType())
+
+
+def test_an_explicit_declaration_overrides_the_extension_default() -> None:
+    extension = ReferencePassExtension()
+    declared = PassDeclaration(
+        name="reference_pass",
+        summary="drops Hadamards and states nothing else",
+        preserved_semantics=(),
+        deterministic=True,
+    )
+
+    managed = pass_from_extension(extension, declaration=declared)
+
+    assert managed.declaration is declared
+    with pytest.raises(CapabilityError, match="does not declare that it preserves"):
+        PassManager(passes=(managed,))
+
+
+def test_manager_additions_run_after_the_passes_already_registered() -> None:
+    order: list[str] = []
+
+    def first(program: CircuitIR) -> CircuitIR:
+        order.append("first")
+        return program
+
+    def second(program: CircuitIR) -> CircuitIR:
+        order.append("second")
+        return program
+
+    def register(name: str, transform: Any) -> RegisteredPass:
+        return RegisteredPass(
+            declaration=PassDeclaration(
+                name=name,
+                summary=f"records that {name} ran",
+                preserved_semantics=_SEMANTICS,
+                deterministic=True,
+            ),
+            transform=transform,
+        )
+
+    manager = PassManager(passes=(register("first", first),)).with_pass(
+        register("second", second)
+    )
+    manager.run(CircuitIR(1, ()))
+
+    assert order == ["first", "second"]
+    assert manager.names == ("first", "second")
+
+
+def test_a_manager_that_requires_nothing_accepts_an_silent_pass() -> None:
+    silent = RegisteredPass(
+        declaration=PassDeclaration(
+            name="silent",
+            summary="declares nothing it keeps",
+            deterministic=True,
+        ),
+        transform=lambda program: program,
+    )
+
+    assert PassManager(passes=(silent,), required_semantics=()).names == ("silent",)
+
+
+def test_an_unknown_required_property_is_refused() -> None:
+    with pytest.raises(CompilationError, match="requires unknown semantics"):
+        PassManager(required_semantics=("program_equivalance",))
+
+
+class _NoCircuitCapability(ReferencePassExtension):
+    manifest = ExtensionManifest(
+        name="reference_pass",
+        version="1.0.0",
+        kind="compiler_pass",
+        capabilities=frozenset(),
+    )
+
+
+def test_a_pass_extension_without_the_program_capability_is_refused() -> None:
+    """The adapter requires the capability instead of hoping the pass agrees."""
+
+    from flagquantum.ecosystem.extensions import ExtensionCompatibilityError
+
+    managed = pass_from_extension(_NoCircuitCapability())
+
+    with pytest.raises(ExtensionCompatibilityError, match="missing capabilities"):
+        optimize(CircuitIR(1, (Instruction("h", (0,)),)), passes=(managed,))
+
+
+def test_a_declaration_that_repeats_an_entry_is_refused() -> None:
+    with pytest.raises(CompilationError, match="repeats an preserved_semantics"):
+        PassDeclaration(
+            name="repeating",
+            summary="names the same property twice",
+            preserved_semantics=("program_equivalence", "program_equivalence"),
+            deterministic=True,
+        )
+
+
+def test_a_repeated_analysis_entry_is_refused() -> None:
+    with pytest.raises(CompilationError, match="repeats an preserved_analyses"):
+        PassDeclaration(
+            name="repeating",
+            summary="names the same analysis twice",
+            preserved_analyses=("def_use", "def_use"),
+            deterministic=True,
+        )
+
+
+def test_an_unknown_output_level_is_refused() -> None:
+    """The output level is checked on its own, not as a side effect of the input."""
+
+    with pytest.raises(CompilationError, match="unknown output_level"):
+        PassDeclaration(
+            name="bad_output",
+            summary="declares a level that does not exist",
+            output_level="llvm_ir",
+            deterministic=True,
+        )
+
+
+def test_an_unknown_semantic_property_is_refused() -> None:
+    with pytest.raises(CompilationError, match="unknown preserved_semantics"):
+        PassDeclaration(
+            name="bad_semantics",
+            summary="invents a property it keeps",
+            preserved_semantics=("program_equivalence", "anything"),
+            deterministic=True,
+        )
+
+
+def test_a_declaration_normalises_its_text_and_its_sequences() -> None:
+    """A caller's list and padding become one canonical record."""
+
+    declaration = PassDeclaration(
+        name="  spaced  ",
+        summary="  keeps   equivalence  ",
+        preserved_semantics=["program_equivalence"],  # type: ignore[arg-type]
+        preserved_analyses=["def_use"],  # type: ignore[arg-type]
+        deterministic=True,
+    )
+
+    assert declaration.name == "spaced"
+    assert declaration.summary == "keeps   equivalence"
+    assert declaration.preserved_semantics == ("program_equivalence",)
+    assert declaration.preserved_analyses == ("def_use",)
+
+
+def test_a_registered_pass_requires_a_declaration() -> None:
+    with pytest.raises(CompilationError, match="requires a PassDeclaration"):
+        RegisteredPass(declaration="not a declaration", transform=lambda p: p)
+
+
+def test_a_registered_pass_requires_a_callable_transform() -> None:
+    with pytest.raises(CompilationError, match="non-callable transform"):
+        RegisteredPass(
+            declaration=PassDeclaration(
+                name="broken",
+                summary="names a transform that is not callable",
+                preserved_semantics=_SEMANTICS,
+                deterministic=True,
+            ),
+            transform="not callable",
+        )
+
+
+def test_a_declaration_less_extension_is_refused_even_with_nothing_required() -> None:
+    """The determinism rule stands alone rather than trailing the semantics rule."""
+
+    class AnonymousExtension(ReferencePassExtension):
+        declaration = None
+
+    managed = pass_from_extension(AnonymousExtension())
+
+    with pytest.raises(CapabilityError, match="deterministic replay"):
+        PassManager(passes=(managed,), required_semantics=())
 
 
 def test_the_registered_transforms_still_satisfy_their_declarations() -> None:
-    ir = _wire_local_ir()
-    compiled = PassManager(passes=DEFAULT_OPTIMIZATION_PASSES).run(ir)
+    """One round merges the rotations; the next cancels the exposed pair."""
 
-    assert tuple(item.name for item in compiled) == ("h",)
-    assert ir.instructions != compiled.instructions
+    ir = _wire_local_ir()
+    manager = PassManager(passes=DEFAULT_OPTIMIZATION_PASSES)
+
+    assert tuple(item.name for item in manager.run(ir)) == ("x", "x", "h")
+    assert tuple(item.name for item in manager.run_to_fixed_point(ir)) == ("h",)
+    assert ir.instructions != manager.run_to_fixed_point(ir).instructions

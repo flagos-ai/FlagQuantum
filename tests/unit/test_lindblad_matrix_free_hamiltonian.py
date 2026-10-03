@@ -7,6 +7,9 @@ reproduce ``H @ rho - rho @ H``, and every acceptance decision must match.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
 import torch
 
 import flagquantum as fq
@@ -19,14 +22,19 @@ from flagquantum.simulation import (
     plan_density_matrix_evolution,
 )
 from flagquantum.simulation import lindblad as lindblad_module
+from flagquantum.simulation.density_matrix import expand_operator
 from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
-
-import pytest
 
 pytestmark = pytest.mark.unit
 
 _DEVICE = torch.device("cpu")
 _TOLERANCE = 1e-10
+
+
+def _complex_term(coefficient: complex, factors: Any) -> _PauliTerm:
+    """Build a term whose coefficient is complex, which the algebra rejects."""
+
+    return _PauliTerm(cast(Any, coefficient), factors)
 
 
 def _dense_hamiltonian(hamiltonian: object, *, n_wires: int) -> torch.Tensor:
@@ -64,7 +72,7 @@ def _dense_hamiltonian(hamiltonian: object, *, n_wires: int) -> torch.Tensor:
             device=_DEVICE,
         )
     matrix = torch.zeros((dim, dim), dtype=dtype, device=_DEVICE)
-    for term in hamiltonian:  # type: ignore[union-attr]
+    for term in hamiltonian:  # type: ignore[attr-defined]
         matrix = matrix + float(term.get("coefficient", 1.0)) * (
             lindblad_module._descriptor_matrix(
                 term,
@@ -98,9 +106,7 @@ def _dense_trajectory(
         )
         operators.append(
             collapse_rate**0.5
-            * lindblad_module.expand_operator(
-                sigma_minus, (0,), n_wires, dtype=dtype, device=_DEVICE
-            )
+            * expand_operator(sigma_minus, (0,), n_wires, dtype=dtype, device=_DEVICE)
         )
     grid = torch.tensor(times, dtype=torch.float64)
     states = [state]
@@ -111,9 +117,14 @@ def _dense_trajectory(
             def derivative(value: torch.Tensor) -> torch.Tensor:
                 total = -1j * (matrix @ value - value @ matrix)
                 for operator in operators:
-                    total = total + operator @ value @ operator.conj().T - 0.5 * (
-                        operator.conj().T @ operator @ value
-                        + value @ operator.conj().T @ operator
+                    total = (
+                        total
+                        + operator @ value @ operator.conj().T
+                        - 0.5
+                        * (
+                            operator.conj().T @ operator @ value
+                            + value @ operator.conj().T @ operator
+                        )
                     )
                 return total
 
@@ -126,12 +137,14 @@ def _dense_trajectory(
     return torch.stack(states)
 
 
-def _normalize(hamiltonian: object, *, n_wires: int) -> PauliSum | torch.Tensor:
+def _normalize(
+    hamiltonian: object, *, n_wires: int, dtype: torch.dtype = torch.complex128
+) -> PauliSum | torch.Tensor:
     return lindblad_module._normalize_hamiltonian(
         hamiltonian,
         n_wires=n_wires,
         dim=2**n_wires,
-        dtype=torch.complex128,
+        dtype=dtype,
         device=_DEVICE,
         tolerance=_TOLERANCE,
     )
@@ -165,7 +178,9 @@ def test_repeated_pauli_strings_are_summed_entry_for_entry() -> None:
     )
     representation = _normalize(cancelling, n_wires=1)
     assert isinstance(representation, PauliSum)
-    assert torch.equal(representation.dense(), torch.zeros(2, 2, dtype=torch.complex128))
+    assert torch.equal(
+        representation.dense(), torch.zeros(2, 2, dtype=torch.complex128)
+    )
     assert torch.equal(
         representation.commutator(state), torch.zeros(2, 2, dtype=torch.complex128)
     )
@@ -216,9 +231,7 @@ def test_the_pauli_action_reproduces_the_dense_matrix_entry_for_entry(
             factors = tuple(
                 (wire, "xyz"[int(torch.randint(0, 3, (1,)).item())]) for wire in wires
             )
-            terms.append(
-                _PauliTerm(float(torch.randn(1).item()), factors)
-            )
+            terms.append(_PauliTerm(float(torch.randn(1).item()), factors))
         hamiltonian = Observable(terms=tuple(terms))
         representation = _normalize(hamiltonian, n_wires=n_wires)
         assert isinstance(representation, PauliSum)
@@ -255,7 +268,9 @@ def test_a_descriptor_sequence_reaches_the_same_representation() -> None:
         assert float((representation.dense() - reference).abs().max()) < 1e-14
 
         state = torch.randn(8, 8, dtype=torch.complex128)
-        drift = representation.commutator(state) - (reference @ state - state @ reference)
+        drift = representation.commutator(state) - (
+            reference @ state - state @ reference
+        )
         assert float(drift.abs().max()) < 1e-14
 
 
@@ -266,9 +281,7 @@ def test_a_descriptor_sequence_reaches_the_same_representation() -> None:
         (1.5 * fq.Y(0), 1, 0.3),
         (0.4 * (fq.Y(0) @ fq.Y(1)) + 0.9 * fq.X(1), 2, None),
         (
-            0.3 * (fq.X(0) @ fq.X(1))
-            + 0.2 * (fq.Z(0) @ fq.Z(1))
-            + 0.1 * fq.Z(0),
+            0.3 * (fq.X(0) @ fq.X(1)) + 0.2 * (fq.Z(0) @ fq.Z(1)) + 0.1 * fq.Z(0),
             2,
             None,
         ),
@@ -375,9 +388,11 @@ def test_the_block_budget_bounds_the_working_set(
 
     Every block size is numerically equivalent, so a wrong budget is invisible
     to a comparison of results; the number of blocks is what makes the bound
-    observable. The temporaries per row are three complex128 matrices of one
-    row each, 48 bytes at 2 wires, so a 48-byte budget holds one row and a
-    budget above 192 bytes holds all four.
+    observable. The temporaries per row are three complex128 rows of four
+    entries each, 192 bytes at 2 wires, so a 192-byte budget holds exactly
+    one row while a 768-byte budget holds all four. The complex64 phase repeats
+    the measurement at half the width, where the same 192 bytes hold two rows:
+    an estimate that assumed one element width would take four.
     """
 
     hamiltonian = 0.5 * fq.X(0) + 0.75 * (fq.Z(0) @ fq.Z(1))
@@ -395,12 +410,101 @@ def test_the_block_budget_bounds_the_working_set(
         return original(self, value, start, stop)
 
     monkeypatch.setattr(PauliSum, "_commutator_block", recorded)
-    representation.commutator(state, block_bytes=48)
+    representation.commutator(state, block_bytes=192)
     assert blocks == [(0, 1), (1, 2), (2, 3), (3, 4)]
 
     blocks.clear()
-    representation.commutator(state, block_bytes=193)
+    representation.commutator(state, block_bytes=768)
     assert blocks == [(0, 4)]
+
+    narrow = _normalize(hamiltonian, n_wires=2, dtype=torch.complex64)
+    assert isinstance(narrow, PauliSum)
+    blocks.clear()
+    narrow.commutator(state.to(torch.complex64), block_bytes=192)
+    assert blocks == [(0, 2), (2, 4)]
+
+
+def test_the_matrix_products_are_the_two_one_sided_actions() -> None:
+    """``H @ rho`` and ``rho @ H`` must not be interchangeable.
+
+    Both actions are checked against the dense product, and against each other:
+    for a Hermitian ``H`` the two agree only when ``rho`` commutes with ``H``, so
+    the fixture uses a state that does not. A swapped dispatch would still match
+    the dense form of the other side here and is therefore caught. Measured
+    2.2e-16 and 4.4e-16 against the dense products, 4.4e+00 between the two
+    sides, and exactly 0.0 between the commutator and their difference.
+    """
+
+    hamiltonian = 0.5 * fq.X(0) + 0.75 * (fq.Y(0) @ fq.Z(1)) + 1.25 * fq.Z(1)
+    representation = _normalize(hamiltonian, n_wires=2)
+    assert isinstance(representation, PauliSum)
+    dense = representation.dense()
+    state = torch.randn(4, 4, dtype=torch.complex128)
+
+    left = representation @ state
+    right = state @ representation
+    assert torch.allclose(left, dense @ state, atol=1e-14)
+    assert torch.allclose(right, state @ dense, atol=1e-14)
+    assert float(torch.max(torch.abs(left - right))) > 1e-2
+    # The commutator is the difference of the two one-sided results.
+    assert torch.allclose(representation.commutator(state), left - right, atol=1e-14)
+
+
+def test_the_matrix_products_carry_the_batch_axis() -> None:
+    hamiltonian = 0.5 * fq.X(0) + 0.75 * (fq.Z(0) @ fq.Z(1))
+    representation = _normalize(hamiltonian, n_wires=2)
+    assert isinstance(representation, PauliSum)
+    dense = representation.dense()
+    batch = torch.randn(3, 4, 4, dtype=torch.complex128)
+
+    assert torch.allclose(representation @ batch, dense @ batch, atol=1e-14)
+    assert torch.allclose(batch @ representation, batch @ dense, atol=1e-14)
+
+
+def test_the_matrix_products_share_the_commutator_block_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A one-sided product is blocked by the same rule, not left unbounded.
+
+    The budget is read at call time, so it can be lowered to the 192 bytes that
+    hold one complex128 row at 2 wires; a product that ignored it would show one
+    block instead of four.
+    """
+
+    hamiltonian = 0.5 * fq.X(0) + 0.75 * (fq.Z(0) @ fq.Z(1))
+    representation = _normalize(hamiltonian, n_wires=2)
+    assert isinstance(representation, PauliSum)
+    dense = representation.dense()
+    state = torch.randn(4, 4, dtype=torch.complex128)
+
+    blocks: list[tuple[int, int]] = []
+    original = PauliSum._left_block
+
+    def recorded(
+        self: PauliSum, value: torch.Tensor, start: int, stop: int
+    ) -> torch.Tensor:
+        blocks.append((start, stop))
+        return original(self, value, start, stop)
+
+    monkeypatch.setattr(PauliSum, "_left_block", recorded)
+    monkeypatch.setattr(
+        "flagquantum.simulation.matrix_free_hamiltonian."
+        "DEFAULT_COMMUTATOR_BLOCK_BYTES",
+        192,
+    )
+    assert torch.allclose(representation @ state, dense @ state, atol=1e-14)
+    assert blocks == [(0, 1), (1, 2), (2, 3), (3, 4)]
+
+
+def test_the_matrix_products_refuse_a_state_the_commutator_refuses() -> None:
+    representation = _normalize(1.5 * fq.Z(0), n_wires=1)
+    assert isinstance(representation, PauliSum)
+    with pytest.raises(ValueError, match="shape"):
+        representation @ torch.zeros(3, 3, dtype=torch.complex128)
+    with pytest.raises(ValueError, match="shape"):
+        torch.zeros(3, 3, dtype=torch.complex128) @ representation
+    with pytest.raises(ValueError, match="dtype and device"):
+        representation @ torch.zeros(2, 2, dtype=torch.complex64)
 
 
 def test_the_representation_is_not_a_matrix() -> None:
@@ -442,14 +546,18 @@ def test_an_empty_pauli_sum_is_the_identity_free_zero_operator() -> None:
 @pytest.mark.parametrize(
     ("hamiltonian", "expected_code"),
     [
-        (_PauliTerm(1j, ((0, "z"),)), "non_hermitian_hamiltonian"),
+        (_complex_term(1j, ((0, "z"),)), "non_hermitian_hamiltonian"),
         ([{"pauli": "Z", "wires": [0], "coefficient": 1j}], "invalid_hamiltonian"),
         ([{"pauli": "XX", "wires": [0, 0], "coefficient": 1.0}], "invalid_operator"),
         ([{"pauli": "ZZ", "wires": [0, 0], "coefficient": 1.0}], "invalid_operator"),
         ([{"pauli": "Z", "wires": [5], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "Z", "wires": [-1], "coefficient": 1.0}], "invalid_operator"),
         ([{"pauli": "ZZ", "wires": [0], "coefficient": 1.0}], "invalid_operator"),
         ([{"pauli": "Q", "wires": [0], "coefficient": 1.0}], "unknown_operator"),
-        ([{"pauli": "Z", "wires": [0], "coefficient": float("inf")}], "invalid_hamiltonian"),
+        (
+            [{"pauli": "Z", "wires": [0], "coefficient": float("inf")}],
+            "invalid_hamiltonian",
+        ),
         ([{"pauli": "Z", "wires": [0]}, 3], "invalid_hamiltonian"),
     ],
 )
@@ -490,9 +598,7 @@ def test_the_hermiticity_boundary_matches_the_dense_comparison() -> None:
     """
 
     for imaginary, accepted in ((5e-11, True), (1.1e-10, False)):
-        hamiltonian = Observable(
-            terms=(_PauliTerm(1.0 + 1j * imaginary, ((0, "z"),)),)
-        )
+        hamiltonian = Observable(terms=(_PauliTerm(1.0 + 1j * imaginary, ((0, "z"),)),))
         try:
             representation = _normalize(hamiltonian, n_wires=1)
         except EvolutionValidationError as error:
@@ -524,7 +630,9 @@ def test_a_real_coefficient_on_a_y_string_stays_hermitian() -> None:
         )
 
 
-def test_planning_does_not_materialize_the_hamiltonian() -> None:
+def test_planning_does_not_materialize_the_hamiltonian(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Planning decides Hermiticity without building ``4**n`` entries.
 
     The dense matrix is still what the serialized request stores, so this
@@ -535,16 +643,11 @@ def test_planning_does_not_materialize_the_hamiltonian() -> None:
     plan = plan_density_matrix_evolution(hamiltonian, "00", 2, [0.0, 0.1])
     assert plan.trajectory_bytes > 0
 
-    original = lindblad_module.PauliSum.dense
-
     def forbidden(self: PauliSum) -> torch.Tensor:
         raise AssertionError("evolution planning materialized the Hamiltonian")
 
-    lindblad_module.PauliSum.dense = forbidden  # type: ignore[method-assign]
-    try:
-        plan_density_matrix_evolution(hamiltonian, "00", 2, [0.0, 0.1])
-    finally:
-        lindblad_module.PauliSum.dense = original  # type: ignore[method-assign]
+    monkeypatch.setattr(PauliSum, "dense", forbidden)
+    plan_density_matrix_evolution(hamiltonian, "00", 2, [0.0, 0.1])
 
 
 def test_the_serialized_request_schema_is_unchanged() -> None:

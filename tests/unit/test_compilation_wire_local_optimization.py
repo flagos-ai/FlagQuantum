@@ -7,7 +7,7 @@ import torch
 
 from flagquantum.compiler import optimize
 from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
-from flagquantum.compiler.pipeline import (
+from flagquantum.compiler.passes import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
     _add_values,

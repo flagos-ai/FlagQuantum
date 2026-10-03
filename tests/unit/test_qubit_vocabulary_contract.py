@@ -90,7 +90,7 @@ def test_the_gate_reports_progress_per_slice() -> None:
     rows = _GATE.slice_progress(_contract())
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
     assert all(retired == 0 for _, retired, _ in rows)
-    assert sum(remaining for _, _, remaining in rows) == 341
+    assert sum(remaining for _, _, remaining in rows) == 345
 
 
 def test_the_gate_is_wired_into_ci_and_pre_push() -> None:

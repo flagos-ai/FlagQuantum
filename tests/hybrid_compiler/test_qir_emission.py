@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from dataclasses import replace
@@ -13,6 +14,7 @@ from flagquantum import Circuit
 from flagquantum.compiler.qir import ENTRY_POINT_NAME, emit_qir
 from flagquantum.compiler.target_conformance import (
     TargetConformanceError,
+    _parse_qir,
     verify_target_emission,
 )
 from flagquantum.compiler.target_emission import (
@@ -150,7 +152,7 @@ def test_qir_text_carries_the_base_profile_module_contract() -> None:
         in lines
     )
     assert (
-        '  call void @__quantum__qis__rx__body(double 3.69999999999999996e-01, '
+        "  call void @__quantum__qis__rx__body(double 3.69999999999999996e-01, "
         "ptr inttoptr (i64 1 to ptr))" in lines
     )
     assert "  call void @__quantum__rt__tuple_record_output(i64 2, ptr @0)" in lines
@@ -162,7 +164,7 @@ def test_qir_text_carries_the_base_profile_module_contract() -> None:
         '"required_num_results"="2" }' in lines
     )
     assert 'attributes #1 = { "irreversible" }' in lines
-    assert 'declare void @__quantum__qis__mz__body(ptr, ptr writeonly) #1' in lines
+    assert "declare void @__quantum__qis__mz__body(ptr, ptr writeonly) #1" in lines
     assert '!0 = !{i32 1, !"qir_major_version", i32 2}' in lines
     assert '!1 = !{i32 7, !"qir_minor_version", i32 0}' in lines
     assert '!2 = !{i32 1, !"dynamic_qubit_management", i1 false}' in lines
@@ -179,7 +181,7 @@ def test_qir_text_is_accepted_by_an_llvm_ir_parser(tmp_path: Path) -> None:
     source.write_text(emitted.text, encoding="utf-8")
 
     def parse(path: Path) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(  # noqa: S603 - fixed argv, no shell
+        return subprocess.run(
             [
                 str(_CLANG),
                 "-x",
@@ -229,9 +231,7 @@ def _opcode_legalized(opcode: str) -> tuple[CircuitIR, tuple[Instruction, ...]]:
     wires = tuple(range(schema.arity))
     n_wires = max(schema.arity, 1)
     preparation = tuple(
-        Instruction(name, (wire,))
-        for name in ("h", "s")
-        for wire in range(n_wires)
+        Instruction(name, (wire,)) for name in ("h", "s") for wire in range(n_wires)
     )
     circuit = CircuitIR(
         n_wires,
@@ -756,6 +756,9 @@ def test_qir_parser_accepts_the_unmodified_module() -> None:
     text = emit_legalized_target(legalized, profile="qir-2.0").text
     reconstructed = _parse_qir(text, template=legalized.program)
 
-    assert reconstructed.content_hash == verify_target_emission(
-        emit_legalized_target(legalized, profile="qir-2.0"), legalized
-    ).reconstructed_circuit_hash
+    assert (
+        reconstructed.content_hash
+        == verify_target_emission(
+            emit_legalized_target(legalized, profile="qir-2.0"), legalized
+        ).reconstructed_circuit_hash
+    )

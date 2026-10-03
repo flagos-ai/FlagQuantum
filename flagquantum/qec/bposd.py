@@ -183,7 +183,9 @@ class BeliefPropagationOsdDecoder:
         probabilities = torch.tensor(
             [error.probability for error in self.model.errors], dtype=torch.float64
         ).clamp(_MINIMUM_PROBABILITY, 1.0 - _MINIMUM_PROBABILITY)
-        object.__setattr__(self, "_prior", torch.log((1.0 - probabilities) / probabilities))
+        object.__setattr__(
+            self, "_prior", torch.log((1.0 - probabilities) / probabilities)
+        )
         object.__setattr__(self, "_decodable", flips.any(dim=0))
 
     def decode(
@@ -259,7 +261,9 @@ class BeliefPropagationOsdDecoder:
         for iteration in range(1, self.max_iterations + 1):
             magnitudes = torch.where(flips, variable_to_check.abs(), _INFINITY)
             smallest, chosen = magnitudes.min(dim=1)
-            exclusive = torch.where(chosen.unsqueeze(1) == positions, _INFINITY, magnitudes)
+            exclusive = torch.where(
+                chosen.unsqueeze(1) == positions, _INFINITY, magnitudes
+            )
             excluded = torch.where(
                 chosen.unsqueeze(1) == positions,
                 exclusive.min(dim=1).values.unsqueeze(1),

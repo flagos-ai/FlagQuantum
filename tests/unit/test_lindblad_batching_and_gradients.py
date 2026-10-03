@@ -98,14 +98,6 @@ def _five_point(values: list[float], step: float = STENCIL_STEP) -> float:
     return (-values[0] + 8 * values[1] - 8 * values[2] + values[3]) / (12 * step)
 
 
-def _sampled(values: list[float], base: float) -> list[float]:
-    """Order a symmetric five-point stencil around ``base``."""
-
-    offsets = (2 * STENCIL_STEP, STENCIL_STEP, -STENCIL_STEP, -2 * STENCIL_STEP)
-    by_offset = dict(zip(offsets, values, strict=True))
-    return [by_offset[offset] for offset in offsets]
-
-
 def _two_wire_run(
     scale: torch.Tensor,
     *,
@@ -201,9 +193,10 @@ class TestBatchedEvolution:
         )
         assert from_vector.populations.shape == (4, 4)
         assert from_matrix.populations.shape == (4, 4)
-        assert float(
-            (from_vector.populations - from_matrix.populations).abs().max()
-        ) < 1e-12
+        assert (
+            float((from_vector.populations - from_matrix.populations).abs().max())
+            < 1e-12
+        )
 
     def test_the_batch_axis_is_kept_by_every_integrator(self) -> None:
         batch = _two_wire_batch()
@@ -251,9 +244,7 @@ class TestBatchedEvolution:
 
     def test_the_wire_count_is_inferred_from_a_batched_state(self) -> None:
         batch = _two_wire_batch()
-        matrices = torch.stack(
-            [torch.outer(vector, vector.conj()) for vector in batch]
-        )
+        matrices = torch.stack([torch.outer(vector, vector.conj()) for vector in batch])
         from_vectors = fql.plan(IDENTITY_TWO_WIRE, batch, TWO_WIRE_TIMES)
         from_matrices = fql.plan(IDENTITY_TWO_WIRE, matrices, TWO_WIRE_TIMES)
         assert from_vectors.n_qubits == 2
@@ -297,7 +288,7 @@ class TestBatchDeclaration:
         assert plan.batch_size == 3
         payload = plan.to_dict()
         assert payload["batch_size"] == 3
-        assert payload["trajectory_bytes"] == 3 * 4 * 4 * 4 * 2
+        assert payload["trajectory_bytes"] == 3072
         assert payload["numerics"]["require_gradients"] is False
 
     def test_an_undeclared_batch_adopts_the_one_the_state_carries(self) -> None:
@@ -417,7 +408,10 @@ class TestIntegratorGradients:
         base = 0.6
         scale = torch.tensor(base, dtype=torch.float64, requires_grad=True)
         _two_wire_run(
-            scale, method=method, solve_tolerance=solve_tolerance, state=_two_wire_batch()
+            scale,
+            method=method,
+            solve_tolerance=solve_tolerance,
+            state=_two_wire_batch(),
         )[-1, :, 0].sum().backward()
         autograd = float(scale.grad)
         sampled = [
@@ -429,7 +423,12 @@ class TestIntegratorGradients:
                     state=_two_wire_batch(),
                 )[-1, :, 0].sum()
             )
-            for delta in (2 * STENCIL_STEP, STENCIL_STEP, -STENCIL_STEP, -2 * STENCIL_STEP)
+            for delta in (
+                2 * STENCIL_STEP,
+                STENCIL_STEP,
+                -STENCIL_STEP,
+                -2 * STENCIL_STEP,
+            )
         ]
         stencil = _five_point(sampled)
         # Measured margins at step 1e-4: 2.5e-12, 4.2e-11, 7.5e-12. A gradient
@@ -499,8 +498,15 @@ class TestIntegratorGradients:
         ).populations[-1, :, 0].sum().backward()
         autograd = float(scale.grad)
         stencil = _five_point(
-            [float(advance(base + delta)[-1, :, 0].sum())
-             for delta in (2 * STENCIL_STEP, STENCIL_STEP, -STENCIL_STEP, -2 * STENCIL_STEP)]
+            [
+                float(advance(base + delta)[-1, :, 0].sum())
+                for delta in (
+                    2 * STENCIL_STEP,
+                    STENCIL_STEP,
+                    -STENCIL_STEP,
+                    -2 * STENCIL_STEP,
+                )
+            ]
         )
         members = []
         for index in range(3):
@@ -527,7 +533,7 @@ class TestIntegratorGradients:
         # run tracked through a density-matrix element is not zero, which is
         # what shows the measurement is capable of seeing this Hamiltonian.
         z3 = _wire_operator(PAULI_Z, 3, n_wires=4)
-        fixed = 0.4 * _wire_operator(PAULI_Z, 0, n_wires=4)
+        fixed = _wide_hamiltonian()
         scale = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
         evolve_density_matrix(
             scale.to(DTYPE) * z3 + fixed,
@@ -595,13 +601,18 @@ class TestBatchedKrylovWork:
         collapse = _normalize_collapse_operators(
             AMPLITUDE_DAMPING, n_wires=2, dim=4, dtype=DTYPE, device=DEVICE
         )
-        batch = _two_wire_batch()
+        vectors = _two_wire_batch()
+        matrices = torch.stack(
+            [torch.outer(vector, vector.conj()) for vector in vectors]
+        )
         counts = []
-        for state in (batch[0], batch):
+        for state in (matrices[0], matrices):
             generator = Liouvillian(hamiltonian, collapse, hilbert_dimension=4)
             calls = 0
 
-            def counting(vector: torch.Tensor, _derivative=generator.derivative) -> torch.Tensor:
+            def counting(
+                vector: torch.Tensor, _derivative=generator.derivative
+            ) -> torch.Tensor:
                 nonlocal calls
                 calls += 1
                 return _derivative(vector)
@@ -616,11 +627,14 @@ class TestBatchedKrylovWork:
             )
             counts.append(calls)
             assert residual < 1e-12
-            assert float(
-                (torch.diagonal(advanced, dim1=-2, dim2=-1).sum(dim=-1).real - 1.0)
-                .abs()
-                .max()
-            ) < 1e-12
+            assert (
+                float(
+                    (torch.diagonal(advanced, dim1=-2, dim2=-1).sum(dim=-1).real - 1.0)
+                    .abs()
+                    .max()
+                )
+                < 1e-12
+            )
         # One restart window covers every member, because the flattened
         # generator is block diagonal. A solve per member would report 3x the
         # measured 12 and 4 applies.
@@ -643,7 +657,8 @@ class TestBatchedKrylovWork:
             max_iterations=50,
             restart=10,
         )[0]
-        assert float((matrix @ solution - right_hand_side).abs().max()) < 1e-14
+        residual = (matrix @ solution - right_hand_side).detach()
+        assert float(residual.abs().max()) < 1e-14
         solution.real.sum().backward()
         autograd = float(scale.grad)
         # Measured: autograd +1.777777777777779 against the closed form
@@ -702,9 +717,7 @@ class TestBatchedKrylovWork:
             PauliSumTerm(coefficient=0.25, mask=0, signs=(1,)),
             PauliSumTerm(coefficient=0.1, mask=0b11, signs=(0,)),
         ]
-        pauli = PauliSum(
-            terms, n_wires=2, dimension=4, dtype=DTYPE, device=DEVICE
-        )
+        pauli = PauliSum(terms, n_wires=2, dimension=4, dtype=DTYPE, device=DEVICE)
         batch = torch.stack(
             [torch.outer(vector, vector.conj()) for vector in _two_wire_batch()]
         )
@@ -715,7 +728,9 @@ class TestBatchedKrylovWork:
         assert float((commuted - expected).abs().max()) < 1e-15
         single = pauli.commutator(batch[0])
         assert single.shape == (4, 4)
-        assert float((single - (dense @ batch[0] - batch[0] @ dense)).abs().max()) < 1e-15
+        assert (
+            float((single - (dense @ batch[0] - batch[0] @ dense)).abs().max()) < 1e-15
+        )
 
 
 class TestSealedPlanBatchAndGradients:
@@ -732,11 +747,11 @@ class TestSealedPlanBatchAndGradients:
         )
         payload = plan.to_dict()
         assert payload["version"] == "1.3"
-        assert payload["batch_size"] == 3
-        assert payload["numerics"]["require_gradients"] is True
+        assert payload["decision"]["batch_size"] == 3
+        assert payload["decision"]["numerics"]["require_gradients"] is True
         assert plan.batch_size == 3
         assert plan.require_gradients is True
-        assert plan.trajectory_bytes == 3 * 4 * 4 * 4 * 2
+        assert plan.trajectory_bytes == 3072
 
     def test_a_live_plan_keeps_the_matrix_free_graph(self) -> None:
         coefficient = torch.tensor(0.4, dtype=torch.float64, requires_grad=True)

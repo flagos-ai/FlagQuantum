@@ -35,7 +35,7 @@ import operator
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Union
+from typing import Any, Union
 
 import torch
 
@@ -62,7 +62,7 @@ _HALF_PI = math.pi / 2.0
 """The basis-change angle both excitation sequences use."""
 
 
-def _count(subject: object, noun: str, *, minimum: int = 0) -> int:
+def _count(subject: Any, noun: str, *, minimum: int = 0) -> int:
     """Return ``subject`` as an integer count, or refuse it by name."""
 
     if isinstance(subject, (bool, str)):
@@ -76,7 +76,7 @@ def _count(subject: object, noun: str, *, minimum: int = 0) -> int:
     return value
 
 
-def _angle(subject: object, noun: str) -> Angle:
+def _angle(subject: Any, noun: str) -> Angle:
     """Return ``subject`` as an angle, or refuse it by name."""
 
     if isinstance(subject, torch.Tensor):
@@ -84,7 +84,7 @@ def _angle(subject: object, noun: str) -> Angle:
     if isinstance(subject, (bool, str)):
         raise ValueError(f"{noun} must be a real number, got {subject!r}")
     try:
-        value = float(subject)  # type: ignore[arg-type]
+        value = float(subject)
     except (TypeError, ValueError):
         raise ValueError(f"{noun} must be a real number, got {subject!r}") from None
     if not math.isfinite(value):
@@ -92,7 +92,7 @@ def _angle(subject: object, noun: str) -> Angle:
     return value
 
 
-def _index(subject: object, *, n_qubits: int | None, noun: str) -> int:
+def _index(subject: Any, *, n_qubits: int | None, noun: str) -> int:
     """Return one spin-orbital index, or refuse it by name.
 
     ``n_qubits`` is ``None`` when the caller has no register to bound the index
@@ -102,7 +102,7 @@ def _index(subject: object, *, n_qubits: int | None, noun: str) -> int:
     if isinstance(subject, bool):
         raise ValueError(f"{noun} must be an integer, got {subject!r}")
     try:
-        value = operator.index(subject)  # type: ignore[arg-type]
+        value = operator.index(subject)
     except TypeError:
         raise ValueError(f"{noun} must be an integer, got {subject!r}") from None
     if value < 0:
@@ -356,9 +356,7 @@ def uccsd_excitations(n_electrons: int, n_qubits: int) -> UCCSDExcitations:
     virtual_beta = tuple(index for index in range(electrons, width) if index % 2 == 1)
 
     singles_alpha = tuple(
-        (occupied, virtual)
-        for occupied in occupied_alpha
-        for virtual in virtual_alpha
+        (occupied, virtual) for occupied in occupied_alpha for virtual in virtual_alpha
     )
     singles_beta = tuple(
         (occupied, virtual) for occupied in occupied_beta for virtual in virtual_beta
@@ -781,9 +779,7 @@ def _apply_double(
     sign = 1.0 if (occupied[0] < occupied[1]) == (virtual[0] < virtual[1]) else -1.0
     _apply_sequence(
         circuit,
-        _double_excitation_sequence(
-            *sorted(occupied), *sorted(virtual)
-        ),
+        _double_excitation_sequence(*sorted(occupied), *sorted(virtual)),
         rotation_scale=0.125 * angle * sign,
     )
 
@@ -828,7 +824,7 @@ def uccsd_ansatz(
     values = _parameters(parameters, excitations.parameter_count, _device(device))
     circuit = _circuit(excitations.n_qubits, dtype, device)
     for spin_orbital in excitations.reference_occupation:
-        circuit.x(spin_orbital)
+        circuit.gate("x", (spin_orbital,))
     _apply_factors(circuit, excitations.factors, values)
     return circuit
 
@@ -846,7 +842,7 @@ def coupler_hardware_efficient_parameter_count(n_qubits: int, layers: int) -> in
     return 2 * _count(n_qubits, "n_qubits") * (1 + _count(layers, "layers"))
 
 
-def _coupler_pair(coupler: object, *, n_qubits: int) -> tuple[int, int]:
+def _coupler_pair(coupler: Any, *, n_qubits: int) -> tuple[int, int]:
     """Return one coupler as a pair of distinct in-range qubits, or refuse it."""
 
     if isinstance(coupler, (str, bytes)) or not isinstance(coupler, Iterable):
@@ -929,15 +925,15 @@ def coupler_hardware_efficient_ansatz(
     circuit = _circuit(width, dtype, device)
     cursor = 0
     for qubit in range(width):
-        circuit.ry(qubit, theta=values[cursor])
-        circuit.rz(qubit, theta=values[cursor + 1])
+        circuit.gate("ry", (qubit,), theta=values[cursor])
+        circuit.gate("rz", (qubit,), theta=values[cursor + 1])
         cursor += 2
     for _ in range(depth):
         for control, target in pairs:
-            circuit.cx(control, target)
+            circuit.gate("cx", (control, target))
         for qubit in range(width):
-            circuit.ry(qubit, theta=values[cursor])
-            circuit.rz(qubit, theta=values[cursor + 1])
+            circuit.gate("ry", (qubit,), theta=values[cursor])
+            circuit.gate("rz", (qubit,), theta=values[cursor + 1])
             cursor += 2
     return circuit
 

@@ -30,9 +30,9 @@ packages_included = ["flagquantum"]
 private_excluded = true
 dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
-measured_canonical = 341
+measured_canonical = 345
 measured_deprecated_aliases = 11
-measured_private = 397
+measured_private = 411
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -158,6 +158,7 @@ canonical = [
     "flagquantum/compiler/layout.py::remove_layout_restore.rename::wires",
     "flagquantum/compiler/one_qubit_synthesis.py::synthesize_one_qubit_matrix::wire",
     "flagquantum/compiler/openqasm.py::emit_openqasm::result_wires",
+    "flagquantum/compiler/qir.py::emit_qir::result_wires",
     "flagquantum/compiler/routing.py::CouplingMap.__init__::n_wires",
     "flagquantum/compiler/routing.py::CouplingMap.line::n_wires",
     "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
@@ -315,6 +316,7 @@ canonical = [
     "flagquantum/simulation/lindblad.py::amplitude_damping::wire",
     "flagquantum/simulation/lindblad.py::evolve_density_matrix::n_wires",
     "flagquantum/simulation/lindblad.py::plan_density_matrix_evolution::n_wires",
+    "flagquantum/simulation/matrix_free_hamiltonian.py::PauliSum.__init__::n_wires",
     "flagquantum/simulation/mps/brickwork.py::compiled_local_z_zz::wires",
     "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan.equal_width::n_wires",
     "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan.island_for_wire::wire",
@@ -378,6 +380,8 @@ canonical = [
     "flagquantum/simulation/pauli.py::pauli_product_statevector_expectation::n_wires",
     "flagquantum/simulation/stabilizer/engine.py::sample_noisy_measurements::terminal_wires",
     "flagquantum/simulation/stabilizer/engine.py::sample_stabilizer::wires",
+    "flagquantum/simulation/stabilizer/tableau.py::CliffordTableau.apply_gate::wires",
+    "flagquantum/simulation/stabilizer/tableau.py::CliffordTableau.measure_z::wire",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::n_wires",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::wire",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_chunk::n_wires",
@@ -529,16 +533,18 @@ files = [
 id = "WQ-6"
 title = "simulation CPU cores"
 owner_team = "simulation"
-canonical_count = 77
+canonical_count = 80
 files = [
     "flagquantum/simulation/density_matrix.py",
     "flagquantum/simulation/lindblad.py",
+    "flagquantum/simulation/matrix_free_hamiltonian.py",
     "flagquantum/simulation/native_cpu/adjoint.py",
     "flagquantum/simulation/native_cpu/permutation.py",
     "flagquantum/simulation/native_cpu/rotation.py",
     "flagquantum/simulation/native_cpu/rzz.py",
     "flagquantum/simulation/pauli.py",
     "flagquantum/simulation/stabilizer/engine.py",
+    "flagquantum/simulation/stabilizer/tableau.py",
     "flagquantum/simulation/statevector/adjoint.py",
     "flagquantum/simulation/statevector/clifford_matching.py",
     "flagquantum/simulation/statevector/double_single.py",
@@ -548,6 +554,7 @@ files = [
     "flagquantum/simulation/statevector/product_state.py",
     "flagquantum/simulation/statevector/single_qubit_cpu.py",
     "flagquantum/simulation/statevector/split_real_imag.py",
+
 ]
 
 [[slices]]
@@ -575,7 +582,7 @@ files = [
 id = "WQ-8"
 title = "compiler, tooling, and measurement support"
 owner_team = "compiler + hardware"
-canonical_count = 55
+canonical_count = 56
 files = [
     "flagquantum/benchmarking/batched_statevector_corpus.py",
     "flagquantum/benchmarking/batched_statevector_memory.py",
@@ -589,6 +596,7 @@ files = [
     "flagquantum/compiler/layout.py",
     "flagquantum/compiler/one_qubit_synthesis.py",
     "flagquantum/compiler/openqasm.py",
+    "flagquantum/compiler/qir.py",
     "flagquantum/compiler/routing.py",
     "flagquantum/compiler/two_qubit_synthesis.py",
     "flagquantum/deployment/cloud.py",
@@ -601,6 +609,7 @@ files = [
     "flagquantum/remote/qpu/contracts.py",
     "flagquantum/remote/qpu/execution.py",
     "flagquantum/remote/qpu/http.py",
+
 ]
 
 [verification]

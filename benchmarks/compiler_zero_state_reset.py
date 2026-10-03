@@ -235,19 +235,19 @@ def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
     comparison of two changes instead of one.
     """
 
-    from flagquantum.compiler.pipeline import (
-        merge_adjacent_rotations,
-        merge_self_inverse,
-        remove_identity_gates,
+    from flagquantum.compiler.passes import (
+        _merge_adjacent_rotations,
+        _merge_self_inverse,
+        _remove_identity_gates,
     )
 
     current = ir
     for _ in range(len(ir) + 1):
         previous_count = len(current)
-        current = remove_identity_gates(current)
-        current = merge_self_inverse(current)
-        current = merge_adjacent_rotations(current)
-        current = remove_identity_gates(current)
+        current = _remove_identity_gates(current)
+        current = _merge_self_inverse(current)
+        current = _merge_adjacent_rotations(current)
+        current = _remove_identity_gates(current)
         if len(current) == previous_count:
             return current
     raise AssertionError("the legacy optimizer did not reach a fixed point")

@@ -14,19 +14,29 @@ from .matching import (
     KernelRequest,
     match_kernel_implementations,
 )
-from .schema import KernelEvidence, KernelImplementation, KernelSemantic
+from .schema import (
+    KERNEL_DEVICES,
+    KernelDevice,
+    KernelEvidence,
+    KernelImplementation,
+    KernelProvider,
+    KernelSemantic,
+)
 from .semantics import SEMANTICS
 from .validation import validate_catalog
 
 __all__ = [
     "IMPLEMENTATIONS",
+    "KERNEL_DEVICES",
     "SEMANTICS",
     "EVIDENCE",
+    "KernelDevice",
     "KernelEvidence",
     "KernelImplementation",
     "KernelCandidate",
     "KernelMatchResult",
     "KernelMismatch",
+    "KernelProvider",
     "KernelRejection",
     "KernelRequest",
     "KernelSemantic",

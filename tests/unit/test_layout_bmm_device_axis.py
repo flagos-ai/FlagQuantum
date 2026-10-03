@@ -76,9 +76,7 @@ def _operands(dtype: torch.dtype = torch.complex64):
 def _declare_cpu_implementations(monkeypatch) -> None:
     """Add CPU records to the catalog the dispatcher actually reads."""
 
-    def with_cpu_records(
-        request: KernelRequest, **kwargs: object
-    ) -> KernelMatchResult:
+    def with_cpu_records(request: KernelRequest, **kwargs: object) -> KernelMatchResult:
         return match_kernel_implementations(
             request,
             semantics=SEMANTICS,

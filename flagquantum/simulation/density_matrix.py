@@ -9,12 +9,48 @@ import torch
 
 from ..core.ir import CircuitIR
 from ..core.runtime_config import get_runtime_config
+from ..kernels.catalog import KERNEL_DEVICES
 from ..noise import KrausChannel
 from .gate_matrix import gate_matrix
 
 
 def _complex_dtype(dtype: torch.dtype | None = None) -> torch.dtype:
     return dtype or getattr(torch, get_runtime_config().complex_dtype)
+
+
+def _resolve_device(
+    device: torch.device | str | None, *, fallback: torch.device
+) -> torch.device:
+    """Resolve a requested device against the declared execution device axis.
+
+    The axis is declared once, by the kernel catalog, so this simulator cannot
+    drift into accepting a device no kernel record names. A device requested as
+    a string must already spell a declared device: ``torch.device`` would accept
+    ``"CUDA"``, while the catalog matches record fields by exact spelling.
+    """
+    if device is None:
+        return fallback
+    name = device.split(":", maxsplit=1)[0] if isinstance(device, str) else device.type
+    if name not in KERNEL_DEVICES:
+        raise ValueError(
+            f"undeclared density-matrix device: {name}; declared devices are "
+            + ", ".join(sorted(KERNEL_DEVICES))
+        )
+    return torch.device(device)
+
+
+def _resolve_density_dtype(
+    dtype: torch.dtype | None, *, fallback: torch.dtype
+) -> torch.dtype:
+    """Resolve a requested precision, refusing a silent downgrade to real."""
+    if dtype is None:
+        return fallback
+    if not dtype.is_complex:
+        raise ValueError(
+            f"density matrix dtype must be complex, got {dtype}; a real dtype "
+            "would discard the phase rather than record a downgrade"
+        )
+    return dtype
 
 
 def density_matrix(circuit_or_state: Any) -> torch.Tensor:
@@ -141,20 +177,49 @@ def apply_kraus_density(
 def density_matrix_from_ir(
     circuit_or_ir: Any,
     *,
-    bsz: int = 1,
-    device: torch.device | str = "cpu",
+    bsz: int | None = None,
+    device: torch.device | str | None = None,
     dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
-    """Execute unitary and channel IR instructions as a density matrix."""
+    """Execute unitary and channel IR instructions as a density matrix.
 
+    ``bsz``, ``device``, and ``dtype`` request the batch size, execution device,
+    and precision of the result. A request is either honoured or refused; it is
+    never ignored. Omitting one inherits what the input already declares: a
+    ``Circuit`` supplies its own batch size, device, and dtype, and a
+    :class:`CircuitIR` uses the runtime complex default. A ``Circuit`` whose
+    state carries a different number of batch rows than a requested ``bsz`` is
+    refused, because a fresh state of that size would not be that circuit's
+    state.
+    """
+
+    if bsz is not None and bsz < 1:
+        raise ValueError(f"density matrix batch size must be positive, got {bsz}")
     if hasattr(circuit_or_ir, "to_ir"):
         circuit = circuit_or_ir
         ir = circuit.to_ir()
         state = circuit.initial_state()
+        target_device = _resolve_device(device, fallback=state.device)
+        target_dtype = _resolve_density_dtype(dtype, fallback=state.dtype)
+        if state.device != target_device or state.dtype != target_dtype:
+            state = state.to(device=target_device, dtype=target_dtype)
+        if bsz is not None and state.shape[0] != bsz:
+            raise ValueError(
+                "density matrix batch size mismatch: the circuit state carries "
+                f"{state.shape[0]} batch rows but bsz={bsz} was requested"
+            )
     elif isinstance(circuit_or_ir, CircuitIR):
         ir = circuit_or_ir
-        out_dtype = dtype or getattr(torch, get_runtime_config().complex_dtype)
-        state = torch.zeros(bsz, 2**ir.n_wires, dtype=out_dtype, device=device)
+        target_device = _resolve_device(device, fallback=torch.device("cpu"))
+        target_dtype = _resolve_density_dtype(
+            dtype, fallback=getattr(torch, get_runtime_config().complex_dtype)
+        )
+        state = torch.zeros(
+            bsz or 1,
+            2**ir.n_wires,
+            dtype=target_dtype,
+            device=target_device,
+        )
         state[:, 0] = 1
     else:
         raise TypeError("density_matrix_from_ir expects a Circuit or CircuitIR.")

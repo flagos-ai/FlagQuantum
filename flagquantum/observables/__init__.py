@@ -6,6 +6,7 @@ import math
 import operator
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from importlib import import_module
 from numbers import Real
 from typing import Any, cast
 
@@ -120,7 +121,7 @@ def _real_scalar(value: object) -> float | None:
     return result
 
 
-def _qubit(owner: str, value: Any) -> int:
+def _qubit(owner: str, value: Any, *, noun: str = "qubit") -> int:
     """Read one qubit label without quietly rewriting or iterating the caller's value.
 
     A label is an integer, read through the interpreter's own ``__index__`` protocol,
@@ -129,20 +130,25 @@ def _qubit(owner: str, value: Any) -> int:
     the reason the package's counts give: it is a flag rather than a label.  ``TypeError``
     reports a wrong Python type, which is what the errors-module boundary reserves for it;
     a negative label is a magnitude and keeps its own error below.
+
+    ``noun`` names the label in those messages, because an oscillator degree is read by
+    this same rule and must not be reported as a qubit.
     """
 
     if isinstance(value, bool):
-        raise TypeError(f"{owner} qubit must be an integer, got {value!r}")
+        raise TypeError(f"{owner} {noun} must be an integer, got {value!r}")
     try:
         label = operator.index(value)
     except TypeError:
-        raise TypeError(f"{owner} qubit must be an integer, got {value!r}") from None
+        raise TypeError(f"{owner} {noun} must be an integer, got {value!r}") from None
     if label < 0:
-        raise ValueError(f"{owner} qubit must be a non-negative integer")
+        raise ValueError(f"{owner} {noun} must be a non-negative integer")
     return label
 
 
-def _qubits(qubits: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
+def _qubits(
+    qubits: Iterable[int] | int, *, owner: str, noun: str = "qubit", unique: bool = True
+) -> tuple[int, ...]:
     """Read a selection of qubit labels, one label at a time.
 
     A single label and a sequence of labels are both accepted, and the order matters: a
@@ -151,14 +157,18 @@ def _qubits(qubits: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
     occurs -- is reported as the bad label it is instead of as ``'float' object is not
     iterable``.  ``str`` is excluded from the sequence form, because ``"01"`` is a
     mistyped label rather than two labels.
+
+    ``unique=False`` admits a repeated label, which is what an oscillator degree list
+    needs: ``ad[k] ad[k]`` is a power rather than two operators, so the group is a
+    multiset.  A qubit selection keeps the default, where a repeat is a mistake.
     """
 
     normalized: tuple[int, ...]
     if isinstance(qubits, (str, bytes)):
-        normalized = (_qubit(owner, qubits),)
+        normalized = (_qubit(owner, qubits, noun=noun),)
     else:
         try:
-            normalized = (_qubit(owner, qubits),)
+            normalized = (_qubit(owner, qubits, noun=noun),)
         except TypeError as scalar_error:
             if not hasattr(qubits, "__iter__"):
                 raise
@@ -169,9 +179,9 @@ def _qubits(qubits: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
                 # zero-dimensional tensor is the case that occurs -- is a bad label, not
                 # a bad sequence, so the scalar refusal is the true one.
                 raise scalar_error from None
-            normalized = tuple(_qubit(owner, qubit) for qubit in items)
-    if len(set(normalized)) != len(normalized):
-        raise ValueError("output qubits must be unique")
+            normalized = tuple(_qubit(owner, qubit, noun=noun) for qubit in items)
+    if unique and len(set(normalized)) != len(normalized):
+        raise ValueError(f"{owner} {noun}s must be unique")
     return normalized
 
 
@@ -425,6 +435,21 @@ def lower_outputs(
     return tuple(lowered)
 
 
+_FERMION_EXPORTS = (
+    "FermionOperator",
+    "FermionTerm",
+    "annihilate",
+    "create",
+    "jordan_wigner",
+    "number",
+)
+
+# The bosonic algebra cannot be flattened into this namespace: `create`, `annihilate` and
+# `number` are already the fermionic generators here, so a flat merge would make the name
+# mean whichever algebra was flattened last.  The module itself is what is reachable, and
+# it is resolved on first use for the same reason the fermionic names are.
+_SUBMODULES = ("boson",)
+
 __all__ = (
     "I",
     "Observable",
@@ -436,4 +461,18 @@ __all__ = (
     "expectation",
     "probabilities",
     "samples",
+    *_SUBMODULES,
+    *_FERMION_EXPORTS,
 )
+
+
+def __getattr__(name: str) -> Any:
+    # The fermionic algebra imports `Observable` and the Pauli term it builds on from this
+    # module, so it can only be imported once this module has finished defining them.
+    # Resolving the names on first use is what keeps that direction legal in either import
+    # order, and it keeps a name an author of this module did not export an error.
+    if name in _SUBMODULES:
+        return import_module(f".{name}", __name__)
+    if name in _FERMION_EXPORTS:
+        return getattr(import_module(".fermion", __name__), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

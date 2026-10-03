@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from numbers import Complex
 
 from ..errors import CapabilityError
-from . import Observable, _PauliTerm, _wire, _wires
+from . import Observable, _PauliTerm, _qubit, _qubits
 
 # sigma_minus = (X + iY) / 2 annihilates and sigma_plus = (X - iY) / 2 creates in the
 # occupation basis where |1> is occupied.  A factor on mode k is the Pauli string
@@ -66,13 +66,13 @@ def _complex_scalar(value: object) -> complex | None:
 def _degree(value: object) -> int:
     """Read one mode index by the same protocol the package reads a wire label with."""
 
-    return _wire("fermionic", value, noun="degree")
+    return _qubit("fermionic", value, noun="degree")
 
 
 def _degrees(value: Iterable[int] | int, *, owner: str) -> tuple[int, ...]:
     """Read one group of mode indices and require them to be in canonical order."""
 
-    degrees = _wires(value, owner=owner, noun="degree")
+    degrees = _qubits(value, owner=owner, noun="degree")
     if degrees != tuple(sorted(degrees)):
         raise ValueError(
             f"{owner} degrees must be listed in ascending order; a canonical monomial "
@@ -159,7 +159,9 @@ def _factor_sequence(term: "FermionTerm") -> _Monomial:
     return creations + annihilations
 
 
-def _merge_pauli(left: PauliFactors, right: PauliFactors) -> tuple[PauliFactors, complex]:
+def _merge_pauli(
+    left: PauliFactors, right: PauliFactors
+) -> tuple[PauliFactors, complex]:
     """Multiply two Pauli products, returning the result and the accumulated phase."""
 
     merged: dict[int, str] = dict(left)
@@ -195,9 +197,7 @@ def _factor_image(degree: int, is_creation: bool) -> _PauliSum:
 
     string = tuple((mode, "z") for mode in range(degree))
     image = _CREATION_IMAGE if is_creation else _ANNIHILATION_IMAGE
-    return {
-        (*string, (degree, axis)): coefficient for coefficient, axis in image
-    }
+    return {(*string, (degree, axis)): coefficient for coefficient, axis in image}
 
 
 @dataclass(frozen=True, slots=True)
@@ -432,7 +432,7 @@ def jordan_wigner(operator: FermionOperator, *, n_modes: int) -> Observable:
         [(0.5, ((0, 'x'), (1, 'x'))), (0.5, ((0, 'y'), (1, 'y')))]
     """
 
-    modes = _wire("fermionic operator", n_modes, noun="mode")
+    modes = _qubit("fermionic operator", n_modes, noun="mode")
     if modes < 1:
         raise ValueError("jordan_wigner requires at least one mode")
     if not operator.is_hermitian():

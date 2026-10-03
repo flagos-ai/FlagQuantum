@@ -92,9 +92,7 @@ class CliffordTableau:
 
     def __init__(self, n_qubits: int) -> None:
         if isinstance(n_qubits, bool) or not isinstance(n_qubits, int):
-            raise ValidationError(
-                f"n_qubits must be an integer, got {n_qubits!r}"
-            )
+            raise ValidationError(f"n_qubits must be an integer, got {n_qubits!r}")
         if n_qubits <= 0:
             raise ValidationError(f"n_qubits must be positive, got {n_qubits}")
         self._n_qubits = n_qubits
@@ -131,15 +129,22 @@ class CliffordTableau:
                 raise ValidationError(
                     f"gate {opcode!r} acts on one wire, got {len(wires)}"
                 )
-            self._apply_single(opcode, _normalize_wire(wires[0], self._n_qubits, what=f"gate {opcode!r} wire"))
+            self._apply_single(
+                opcode,
+                _normalize_wire(wires[0], self._n_qubits, what=f"gate {opcode!r} wire"),
+            )
             return
         if opcode in _TWO_QUBIT_RECIPES:
             if len(wires) != 2:
                 raise ValidationError(
                     f"gate {opcode!r} acts on two wires, got {len(wires)}"
                 )
-            left = _normalize_wire(wires[0], self._n_qubits, what=f"gate {opcode!r} wire")
-            right = _normalize_wire(wires[1], self._n_qubits, what=f"gate {opcode!r} wire")
+            left = _normalize_wire(
+                wires[0], self._n_qubits, what=f"gate {opcode!r} wire"
+            )
+            right = _normalize_wire(
+                wires[1], self._n_qubits, what=f"gate {opcode!r} wire"
+            )
             if left == right:
                 raise ValidationError(
                     f"gate {opcode!r} requires two distinct wires, got {left} twice"
@@ -213,7 +218,9 @@ class CliffordTableau:
         # Deterministic: Z on this wire is a product of the stabilizer rows
         # selected by the destabilizer generators that anticommute with it.
         selecting = self._x[:n, index]
-        if outcome is not None and bool(outcome) != self._deterministic_outcome(selecting):
+        if outcome is not None and bool(outcome) != self._deterministic_outcome(
+            selecting
+        ):
             raise ValidationError(
                 f"measurement of wire {index} is deterministic; a forced outcome "
                 "cannot disagree with the tableau"

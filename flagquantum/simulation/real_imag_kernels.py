@@ -254,23 +254,29 @@ def complex_einsum_pair(
     *,
     compile_cuda: bool = True,
 ) -> torch.Tensor:
-    """Contract two tensors without placing complex operators in the compiled graph."""
+    """Contract two tensors without placing complex operators in the compiled graph.
+
+    The fused layout BMM runs only where the kernel catalog declares an
+    implementation for this device and precision. Everywhere else this returns
+    native ``torch.einsum``, which is the Simulation-owned semantic authority and
+    test oracle rather than a cataloged kernel: it must stay installable and
+    runnable without Triton, FlagTree, Torch-FL, or a native extension.
+    """
+
+    from .complex_bmm_dispatch import _layout_complex_bmm_declared
 
     if not (left.is_complex() and right.is_complex()):
-        return torch.einsum(equation, left, right)
-    if not left.is_cuda:
-        # Native CPU complex einsum is faster than four real contractions.
         return torch.einsum(equation, left, right)
     if left.is_conj() or right.is_conj():
         # Preserve lazy conjugation for reverse-mode capacity: resolving a
         # multi-GiB operand would create a full-size temporary before the
         # contraction output is allocated.
         return torch.einsum(equation, left, right)
-    if left.dtype != torch.complex64 or right.dtype != torch.complex64:
-        # The layout BMM kernel is fused only for complex64. Its generic
-        # complex128 fallback reshapes permuted high-rank operands and may
-        # materialize multi-GiB contiguous copies. Native einsum avoids that
-        # hidden workspace and is the production high-precision path.
+    if not _layout_complex_bmm_declared(left, right):
+        # Either no cataloged implementation covers this device/precision, or
+        # the declared records do not apply to these operands. The eager
+        # contraction above is the policy-sanctioned route, not a silent
+        # substitution: the catalog is what decided it.
         return torch.einsum(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:

@@ -27,8 +27,8 @@ import numpy as np
 import pytest
 
 import flagquantum as fq
-from flagquantum.observables import boson as boson_module
 from flagquantum import observables
+from flagquantum.observables import boson as boson_module
 from flagquantum.observables.boson import (
     BosonOperator,
     BosonTerm,
@@ -93,8 +93,9 @@ _SPACE = {0: 3, 1: 4}
 def _occupations(index: int, dimensions: dict[int, int]) -> dict[int, int]:
     """Read a basis index as the occupation of every degree.
 
-    The lowest degree is the least significant position, which is the same convention the
-    module places its Kronecker factors in with the lowest degree leftmost.
+    The lowest degree is the most significant position, which is the order the module
+    places its Kronecker factors in: the factor for degree 0 is leftmost, so it multiplies
+    the index by the size of everything to its right.
     """
 
     levels: dict[int, int] = {}
@@ -106,7 +107,7 @@ def _occupations(index: int, dimensions: dict[int, int]) -> dict[int, int]:
 
 def _index(levels: dict[int, int], dimensions: dict[int, int]) -> int:
     index = 0
-    for degree in sorted(dimensions, reverse=True):
+    for degree in sorted(dimensions):
         index = index * dimensions[degree] + levels[degree]
     return index
 
@@ -187,13 +188,13 @@ def test_repeated_factors_are_powers_rather_than_zero() -> None:
 
     assert (create(0) * create(0)).terms == (BosonTerm(1.0, (0, 0), ()),)
     assert (annihilate(0) * annihilate(0)).terms == (BosonTerm(1.0, (), (0, 0)),)
-    assert (create(0) * annihilate(0)).terms == (
+    # `ad a` is already normal-ordered and needs no contraction, while `a ad` does.
+    assert (create(0) * annihilate(0)).terms == (BosonTerm(1.0, (0,), (0,)),)
+    assert (annihilate(0) * create(0)).terms == (
         BosonTerm(1.0, (), ()),
         BosonTerm(1.0, (0,), (0,)),
     )
-    assert (create(0) * create(0) * create(0)).terms == (
-        BosonTerm(1.0, (0, 0, 0), ()),
-    )
+    assert (create(0) * create(0) * create(0)).terms == (BosonTerm(1.0, (0, 0, 0), ()),)
     assert BosonOperator().terms == ()
 
 
@@ -320,7 +321,9 @@ def test_the_number_operator_counts_levels() -> None:
     assert number(0).to_matrix({0: 5}).diagonal().numpy() == pytest.approx(
         np.arange(5, dtype=complex)
     )
-    assert np.allclose(number(0).to_matrix(_SPACE).numpy(), _dense(_times(_AD0, _A0), _SPACE))
+    assert np.allclose(
+        number(0).to_matrix(_SPACE).numpy(), _dense(_times(_AD0, _A0), _SPACE)
+    )
 
 
 def test_the_zero_operator_and_the_unit_are_values_of_the_algebra() -> None:
@@ -351,8 +354,12 @@ def test_the_dense_ladder_matrices_are_the_oscillator_action() -> None:
     assert annihilate(0).to_matrix({0: levels}).numpy() == pytest.approx(
         expected_annihilate
     )
-    assert np.allclose(create(0).to_matrix({0: levels}).numpy(), _dense(_AD0, {0: levels}))
-    assert np.allclose(annihilate(0).to_matrix({0: levels}).numpy(), _dense(_A0, {0: levels}))
+    assert np.allclose(
+        create(0).to_matrix({0: levels}).numpy(), _dense(_AD0, {0: levels})
+    )
+    assert np.allclose(
+        annihilate(0).to_matrix({0: levels}).numpy(), _dense(_A0, {0: levels})
+    )
 
 
 def test_the_dense_form_of_a_sum_is_the_sum_of_the_dense_forms() -> None:

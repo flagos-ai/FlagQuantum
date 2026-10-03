@@ -91,7 +91,7 @@ FlagQuantum IR does not. A run already spelled in one z-rotation/pulse alphabet
 is left alone, because the target's own lowering would re-spell the fold into
 more gates than the run had; that decline is measured, not assumed. No run
 carrying a trainable angle is folded at all -- composition reads numbers, and
-`merge_adjacent_rotations` keeps those angles in the autograd graph.
+`passes._merge_adjacent_rotations` keeps those angles in the autograd graph.
 [benchmarks/compiler_one_qubit_optimization.py](../../benchmarks/compiler_one_qubit_optimization.py)
 holds the per-length reduction, the statevector exactness, the decline, and the
 count difference from Qiskit's pass.

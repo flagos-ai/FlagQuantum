@@ -24,8 +24,7 @@ def _cnot(dtype: torch.dtype = torch.complex64) -> torch.Tensor:
 
 _SINGLE_WIRE_REFERENCES = {
     "x": lambda: torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64),
-    "h": lambda: torch.tensor([[1, 1], [1, -1]], dtype=torch.complex64)
-    / math.sqrt(2),
+    "h": lambda: torch.tensor([[1, 1], [1, -1]], dtype=torch.complex64) / math.sqrt(2),
     "y": lambda: torch.tensor([[0, -1j], [1j, 0]], dtype=torch.complex64),
     "z": lambda: torch.tensor([[1, 0], [0, -1]], dtype=torch.complex64),
     "s": lambda: torch.tensor([[1, 0], [0, 1j]], dtype=torch.complex64),
@@ -53,9 +52,7 @@ def test_single_wire_rotations_match_their_matrices(gate: str, theta: float) -> 
         "rx": torch.tensor(
             [[cosine, -1j * sine], [-1j * sine, cosine]], dtype=torch.complex64
         ),
-        "ry": torch.tensor(
-            [[cosine, -sine], [sine, cosine]], dtype=torch.complex64
-        ),
+        "ry": torch.tensor([[cosine, -sine], [sine, cosine]], dtype=torch.complex64),
         "rz": torch.tensor(
             [
                 [complex(cosine, -sine), 0],
@@ -71,11 +68,12 @@ def test_single_wire_rotations_match_their_matrices(gate: str, theta: float) -> 
 
 
 def test_the_two_wire_bell_circuit_matches_h_tensor_identity_then_cnot() -> None:
-    identity, _, hadamard, cnot = _dense()
+    identity = torch.eye(2, dtype=torch.complex64)
+    hadamard = _SINGLE_WIRE_REFERENCES["h"]()
 
     unitary = get_unitary(fq.Circuit(2).h(0).cx(0, 1))
 
-    assert torch.allclose(unitary, cnot @ torch.kron(hadamard, identity), atol=_ATOL)
+    assert torch.allclose(unitary, _cnot() @ torch.kron(hadamard, identity), atol=_ATOL)
 
 
 def test_wire_zero_is_the_most_significant_amplitude_bit() -> None:
@@ -92,7 +90,7 @@ def test_wire_zero_is_the_most_significant_amplitude_bit() -> None:
 def test_control_and_target_wires_are_not_interchangeable() -> None:
     """``cx(0, 1)`` and ``cx(1, 0)`` differ, which a transposed result would hide."""
 
-    _, _, _, cnot = _dense()
+    cnot = _cnot()
     identities = torch.tensor(
         [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
         dtype=torch.complex64,
@@ -284,7 +282,7 @@ def test_a_channel_named_instruction_is_refused_by_index_and_opcode() -> None:
             Instruction(
                 name="bit_flip",
                 wires=(0,),
-                params={"p": 0.1},
+                params={"probability": 0.1},
                 metadata={"is_channel": True},
             ),
         ),

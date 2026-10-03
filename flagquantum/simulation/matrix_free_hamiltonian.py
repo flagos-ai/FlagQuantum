@@ -18,7 +18,7 @@ amplitude bit, matching ``expand_operator`` in
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 
 import torch
@@ -47,7 +47,9 @@ class PauliSumTerm:
     def __post_init__(self) -> None:
         object.__setattr__(self, "coefficient", complex(self.coefficient))
         object.__setattr__(self, "mask", int(self.mask))
-        object.__setattr__(self, "signs", tuple(sorted(int(sign) for sign in self.signs)))
+        object.__setattr__(
+            self, "signs", tuple(sorted(int(sign) for sign in self.signs))
+        )
 
     def action_coefficient(self) -> complex:
         """Return the coefficient of the bit-flip word this term executes.
@@ -64,7 +66,11 @@ class PauliSumTerm:
 
 
 def _sign_vector(
-    indices: torch.Tensor, signs: Sequence[int], *, dtype: torch.dtype, device: torch.device
+    indices: torch.Tensor,
+    signs: Sequence[int],
+    *,
+    dtype: torch.dtype,
+    device: torch.device,
 ) -> torch.Tensor:
     """Return ``(-1) ** popcount(index & signs)`` for every index."""
 
@@ -162,28 +168,130 @@ class PauliSum:
         ``4**n`` while the result and the state keep their full size.
         """
 
+        self._require_applicable(state)
+        result = torch.empty_like(state)
+        for start, stop in self._blocks(state, block_bytes):
+            result[..., start:stop, :] = self._commutator_block(state, start, stop)
+        return result
+
+    def __matmul__(self, state: torch.Tensor) -> torch.Tensor:
+        """Return ``H @ state`` without materializing ``H``.
+
+        This is the left factor of the commutator exposed on its own, because a
+        dissipator needs one side at a time. The row axis is blocked exactly as
+        the commutator blocks it, so the temporary working set is the same.
+        """
+
+        return self._one_sided(state, block=self._left_block)
+
+    def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor:
+        """Return ``state @ H`` without materializing ``H``."""
+
+        return self._one_sided(state, block=self._right_block)
+
+    def _one_sided(
+        self,
+        state: torch.Tensor,
+        *,
+        block: Callable[[torch.Tensor, int, int], torch.Tensor],
+    ) -> torch.Tensor:
+        self._require_applicable(state)
+        result = torch.empty_like(state)
+        for start, stop in self._blocks(state, DEFAULT_COMMUTATOR_BLOCK_BYTES):
+            result[..., start:stop, :] = block(state, start, stop)
+        return result
+
+    def _require_applicable(self, state: torch.Tensor) -> None:
+        """Refuse a state whose dtype, device, or shape this action cannot take."""
+
         if state.dtype != self._dtype or state.device != self._device:
             raise ValueError(
                 "the state dtype and device must match the planned Hamiltonian"
             )
-        if state.ndim not in (2, 3):
+        if state.ndim not in (2, 3) or tuple(state.shape[-2:]) != (
+            self._dimension,
+            self._dimension,
+        ):
             raise ValueError(
                 f"the state must have shape ({self._dimension}, {self._dimension}) "
                 f"or (batch, {self._dimension}, {self._dimension})"
             )
-        if tuple(state.shape[-2:]) != (self._dimension, self._dimension):
-            raise ValueError(
-                f"the state must have shape ({self._dimension}, {self._dimension}) "
-                f"or (batch, {self._dimension}, {self._dimension})"
-            )
-        per_row = (1 if state.ndim == 2 else int(state.shape[0]))
+
+    def _blocks(
+        self, state: torch.Tensor, block_bytes: int
+    ) -> Iterator[tuple[int, int]]:
+        """Yield the row ranges whose temporaries fit inside ``block_bytes``.
+
+        The budget is read at call time so a caller can lower it, and the
+        arithmetic counts the three same-sized temporaries one block allocates
+        once per batch member.
+        """
+
+        per_row = 1 if state.ndim == 2 else int(state.shape[0])
         per_row *= 3 * self._dimension * state.element_size()
         rows = max(1, min(self._dimension, int(block_bytes) // per_row))
-        result = torch.empty_like(state)
         for start in range(0, self._dimension, rows):
-            stop = min(start + rows, self._dimension)
-            result[..., start:stop, :] = self._commutator_block(state, start, stop)
-        return result
+            yield start, min(start + rows, self._dimension)
+
+    def _left_block(self, state: torch.Tensor, start: int, stop: int) -> torch.Tensor:
+        """Return rows ``start:stop`` of ``H @ state``."""
+
+        if state.ndim == 2:
+            total = torch.zeros(
+                (stop - start, self._dimension), dtype=self._dtype, device=self._device
+            )
+            for coefficient, key in zip(self._coefficients, self._keys, strict=True):
+                permutation = self._permutations[key]
+                scale = self._scales[key]
+                sources = permutation[start:stop]
+                total = total + coefficient * (
+                    state.index_select(0, sources)
+                    * scale.index_select(0, sources).unsqueeze(1)
+                )
+            return total
+        total = torch.zeros(
+            (state.shape[0], stop - start, self._dimension),
+            dtype=self._dtype,
+            device=self._device,
+        )
+        for coefficient, key in zip(self._coefficients, self._keys, strict=True):
+            permutation = self._permutations[key]
+            scale = self._scales[key]
+            sources = permutation[start:stop]
+            total = total + coefficient * (
+                state.index_select(1, sources)
+                * scale.index_select(0, sources).reshape(1, -1, 1)
+            )
+        return total
+
+    def _right_block(self, state: torch.Tensor, start: int, stop: int) -> torch.Tensor:
+        """Return rows ``start:stop`` of ``state @ H``."""
+
+        if state.ndim == 2:
+            block = state[start:stop]
+            total = torch.zeros(
+                (stop - start, self._dimension), dtype=self._dtype, device=self._device
+            )
+            for coefficient, key in zip(self._coefficients, self._keys, strict=True):
+                permutation = self._permutations[key]
+                scale = self._scales[key]
+                total = total + coefficient * (
+                    block.index_select(1, permutation) * scale.unsqueeze(0)
+                )
+            return total
+        block = state[:, start:stop]
+        total = torch.zeros(
+            (block.shape[0], stop - start, self._dimension),
+            dtype=self._dtype,
+            device=self._device,
+        )
+        for coefficient, key in zip(self._coefficients, self._keys, strict=True):
+            permutation = self._permutations[key]
+            scale = self._scales[key]
+            total = total + coefficient * (
+                block.index_select(2, permutation) * scale.reshape(1, 1, -1)
+            )
+        return total
 
     def _commutator_block(
         self, state: torch.Tensor, start: int, stop: int

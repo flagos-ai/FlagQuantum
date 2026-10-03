@@ -58,13 +58,17 @@ def exponential_action(
         raise ValueError("the exponential argument must be a flat vector")
     if restart < 1:
         raise ValueError("restart must admit at least one Krylov vector")
-    norm = float(torch.linalg.vector_norm(vector))
+    # The norm stays a tensor: it scales the returned vector, so reading it into
+    # a Python float would detach the magnitude of the argument from the graph
+    # and return a wrong derivative together with a right value.
+    norm_tensor = torch.linalg.vector_norm(vector)
+    norm = float(norm_tensor.detach())
     if norm == 0.0:
         return torch.zeros_like(vector), 0.0
     window = min(restart, max_iterations)
     if window < 1:
         return vector.clone(), float("inf")
-    basis = [vector / norm]
+    basis = [vector / norm_tensor]
     hessenberg = torch.zeros((window + 1, window), dtype=_COEFFICIENT_DTYPE)
     coefficients = torch.zeros(1, dtype=_COEFFICIENT_DTYPE)
     relative = float("inf")
@@ -77,26 +81,27 @@ def exponential_action(
             projection = torch.vdot(basis[row], candidate)
             hessenberg[row, index] = projection.to(_COEFFICIENT_DTYPE)
             candidate = candidate - projection * basis[row]
-        next_norm = float(torch.linalg.vector_norm(candidate))
-        hessenberg[index + 1, index] = next_norm
+        next_norm_tensor = torch.linalg.vector_norm(candidate)
+        next_norm = float(next_norm_tensor.detach())
+        hessenberg[index + 1, index] = next_norm_tensor
         # exp(H_m) e_1 is the exponential of the projected generator applied to
         # the projected starting vector; it is the only exponential computed.
-        coefficients = torch.linalg.matrix_exp(
-            hessenberg[: index + 1, : index + 1]
-        )[:, 0]
+        coefficients = torch.linalg.matrix_exp(hessenberg[: index + 1, : index + 1])[
+            :, 0
+        ]
         if next_norm == 0.0:
             # The Krylov space closed on the operator: the advance is exact.
             relative = 0.0
             break
         relative = (
             next_norm
-            * float(torch.abs(coefficients[index]))
-            / float(torch.linalg.vector_norm(coefficients))
+            * float(torch.abs(coefficients[index]).detach())
+            / float(torch.linalg.vector_norm(coefficients).detach())
         )
         if relative <= tolerance:
             break
-        basis.append(candidate / next_norm)
-    result = norm * torch.stack(
+        basis.append(candidate / next_norm_tensor)
+    result = norm_tensor * torch.stack(
         [
             coefficient.to(vector.dtype) * basis[row]
             for row, coefficient in enumerate(coefficients)

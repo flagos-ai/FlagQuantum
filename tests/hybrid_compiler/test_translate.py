@@ -4,8 +4,8 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import TRANSLATION_FORMATS, translate
-from flagquantum.compiler.operator_lowering import UnsupportedLoweringError
 from flagquantum.compiler.openqasm import emit_openqasm
+from flagquantum.compiler.operator_lowering import UnsupportedLoweringError
 from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.compiler.qir import emit_qir
 from flagquantum.compiler.target_emission import EMISSION_PROFILES
@@ -27,7 +27,7 @@ def _channel_ir() -> CircuitIR:
             Instruction(
                 name="bit_flip",
                 wires=(0,),
-                params={"p": 0.1},
+                params={"probability": 0.1},
                 metadata={"is_channel": True},
             ),
         ),
@@ -38,7 +38,7 @@ def _channel_ir() -> CircuitIR:
 def test_translation_formats_are_the_emission_profile_names() -> None:
     """The accepted vocabulary is the Compiler's profile set, not a second list."""
 
-    assert TRANSLATION_FORMATS == tuple(sorted(EMISSION_PROFILES))
+    assert tuple(sorted(EMISSION_PROFILES)) == TRANSLATION_FORMATS
     assert set(EMISSION_PROFILES) == {
         "openqasm-2.0",
         "openqasm-3.0",
@@ -76,9 +76,7 @@ def test_translation_is_deterministic(translation_format: str) -> None:
     assert first.endswith("\n") is False
 
 
-@pytest.mark.parametrize(
-    "spelling", ("OpenQASM-3.0", " openqasm-3.0 ", "OPENQASM-3.0")
-)
+@pytest.mark.parametrize("spelling", ("OpenQASM-3.0", " openqasm-3.0 ", "OPENQASM-3.0"))
 def test_the_format_name_is_case_and_whitespace_insensitive(spelling: str) -> None:
     assert translate(_circuit(), format=spelling) == translate(
         _circuit(), format="openqasm-3.0"

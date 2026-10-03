@@ -138,7 +138,7 @@ update_rule = "Refreshing this matrix is a generated-diff change: tools/parity_m
 id = "language_and_programming_model"
 title = "Language and programming model"
 cudaq_surface = ["nvq++", "@cudaq.kernel", "kernel arguments", "classical control flow", "cudaq.control", "cudaq.adjoint", "register_operation", "qudit and photonic operations"]
-evidence = ["flagquantum/circuit.py", "flagquantum/operators.py", "search:no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema"]
+evidence = ["flagquantum/circuit.py", "flagquantum/operators", "search:no C++ translation unit, no AST bridge, and no function or call construct in the CircuitIR 1.0 schema"]
 
 [[domains.capabilities]]
 id = "cpp_kernel_frontend"
@@ -218,7 +218,7 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 reason = "Circuit.any accepts a raw unitary but there is no operation registry, no schema, and no backend degradation contract for a user-defined operation."
-evidence = ["flagquantum/circuit.py", "flagquantum/operators.py"]
+evidence = ["flagquantum/circuit.py", "flagquantum/operators"]
 
 [[domains.capabilities]]
 id = "qudit_and_photonic_operations"
@@ -593,7 +593,7 @@ evidence = ["flagquantum/runtime/executors/mps/noisy.py", "flagquantum/runtime/p
 id = "operator_algebra_and_domain_libraries"
 title = "Operator algebra and domain libraries"
 cudaq_surface = ["SpinOperator", "FermionOperator", "BosonOperator", "SuperOperator", "MatrixOperator", "operator arithmetics", "pauli_word and exp_pauli", "chemistry libraries"]
-evidence = ["flagquantum/observables", "flagquantum/operators.py", "search:no fermionic, bosonic, or superoperator algebra and no chemistry driver"]
+evidence = ["flagquantum/observables", "flagquantum/operators", "search:no fermionic, bosonic, or superoperator algebra and no chemistry driver"]
 
 [[domains.capabilities]]
 id = "spin_operator_algebra"
@@ -624,11 +624,12 @@ reason = "Absent, and it has no consumer until a bosonic or photonic workload ex
 [[domains.capabilities]]
 id = "super_operator_algebra"
 cudaq = "SuperOperator for superoperator representations"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "continuous_time_lindblad"
-reason = "Absent. The Lindblad engine applies a dense Hamiltonian and a collapse-operator list directly, without a vectorized superoperator form, which is one of the three walls limiting its scale."
+reason = "The algebra is implemented: `flagquantum/operators/superoperator.py` states a superoperator as a sum of `coefficient * left @ state @ right` terms, where a missing side is a one-sided multiplication, with the three CUDA-Q constructors and an accumulating `+=`; `apply` and `dense` are two independent formulas in the repository-wide row-major vectorization `vec(A rho B) = (A (x) B^T) vec(rho)`, and the Lindblad generator assembled that way is the same arithmetic as `Liouvillian.dense()`, so the check that used to read 4.441e-16 now reads exactly 0.0. What is absent is everything beyond construction and the two views: no Choi, PTM, or Kraus representation transform, no partial trace, and no adjoint on the algebra. The factor contract has two implementations, `torch.Tensor` and `PauliSum`, both supplying `__matmul__`, `__rmatmul__` and `dense()`, so a matrix-free Hamiltonian enters a term without being materialized. The row stays partial rather than supported because CUDA-Q's row is about superoperator representations and this is the construction-and-evaluation half."
+evidence = ["flagquantum/operators/superoperator.py", "flagquantum/simulation/lindblad_generator.py", "flagquantum/simulation/matrix_free_hamiltonian.py", "search:no superoperator representation transform (Choi, partial trace, or Kraus) and no per-term coefficient accessor"]
 
 [[domains.capabilities]]
 id = "matrix_and_custom_operator"
@@ -636,8 +637,8 @@ cudaq = "MatrixOperator and custom_op"
 status = "partial"
 priority = "next"
 dependency_class = "none"
-reason = "A stable operator schema and discovery interface exist, but there is no matrix-valued operator type that participates in the algebra."
-evidence = ["flagquantum/operators.py"]
+reason = "A stable operator schema and discovery interface exist, and a matrix can now enter the superoperator algebra as a term factor. What is still missing is a matrix-valued operator type in the operator algebra itself: no `MatrixOperator` or `custom_op` type composes with `Observable` or the fermionic sum through products, sums, scalars, adjoints, or commutators, and the superoperator factor contract is deliberately narrower than that, requiring only `__matmul__`, `__rmatmul__` and `dense()`."
+evidence = ["flagquantum/operators", "search:no matrix-valued operator type joining the observable or fermion algebra"]
 
 [[domains.capabilities]]
 id = "exponential_pauli_operator"

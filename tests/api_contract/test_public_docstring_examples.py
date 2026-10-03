@@ -7,27 +7,70 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.algorithms.chemistry import (
+    coupler_hardware_efficient_ansatz,
+    double_excitation,
+    excitation_operator,
+    single_excitation,
+    uccsd_ansatz,
+    uccsd_excitations,
+    uccsd_factors,
+)
 from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.compiler import Layout
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
     import_openqasm_to_ir,
 )
+from flagquantum.compiler.resource_estimation import estimate_resources
+from flagquantum.compiler.translate import translate
 from flagquantum.ecosystem.cirq import run as run_cirq
+from flagquantum.ecosystem.extensions.target_sdk import target_capability_snapshot
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
+from flagquantum.lindblad import plan as plan_lindblad_evolution
+from flagquantum.observables.boson import BosonOperator
+from flagquantum.observables.boson import position as boson_position
+from flagquantum.observables.fermion import (
+    FermionOperator,
+    jordan_wigner,
+)
+from flagquantum.operators import SuperOperator
 from flagquantum.qec import CssCodeMatrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
+from flagquantum.simulation.lindblad import evolve_density_matrix
+from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit
 
 # Every entry whose docstrings carry examples. `fq.plan` and `planner.plan` are
-# different functions that document different things, so both are listed.
+# different functions that document different things, so both are listed. The
+# Lindblad planner and the density-matrix integrator are two more distinct entry
+# points; translation, unitary access, and static resource counting are three
+# more. The fermionic operator and its Jordan-Wigner mapping are two functions
+# in one module, and both of their docstrings carry an example, while the
+# superoperator class documents its three constructors, its two views, and its
+# accumulation protocol in one example. The bosonic operator class and the
+# bosonic position operator are two more, and the position operator is listed
+# under a module-local name because `fq.position` does not exist. The chemistry
+# module contributes seven: the generator, the excitation census, the two
+# circuit builders, and the UCCSD and hardware-efficient products, each of which
+# documents a different workflow step.
 ENTRIES = (
+    BosonOperator,
     CssCodeMatrices,
+    FermionOperator,
     Layout,
+    SuperOperator,
+    SPSAOptimizer,
+    boson_position,
+    coupler_hardware_efficient_ansatz,
+    double_excitation,
+    estimate_resources,
+    evolve_density_matrix,
+    excitation_operator,
     fq.Circuit,
     fq.Module,
     fq.Observable,
@@ -39,14 +82,22 @@ ENTRIES = (
     fq.run,
     fq.train,
     gather_distributed_statevector,
+    get_unitary,
     import_openqasm,
     import_openqasm_to_ir,
+    jordan_wigner,
+    plan_lindblad_evolution,
     planner.plan,
     recommend_simulator,
     run_cirq,
     run_pennylane,
     run_qiskit,
-    SPSAOptimizer,
+    single_excitation,
+    target_capability_snapshot,
+    translate,
+    uccsd_ansatz,
+    uccsd_excitations,
+    uccsd_factors,
 )
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

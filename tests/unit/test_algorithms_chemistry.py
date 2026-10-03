@@ -21,7 +21,6 @@ reference determinant for an odd electron count.
 
 import itertools
 
-import numpy as np
 import pytest
 import torch
 
@@ -46,6 +45,18 @@ pytestmark = pytest.mark.unit
 
 _ATOL = 1e-12
 _WRONG_CONVENTION = 1e-2
+
+
+def _rounded(coefficient: complex) -> complex:
+    """Return a coefficient with its real and imaginary parts rounded.
+
+    The two generators are built by different fold orders, so their terms are
+    compared on rounded coefficients rather than on the arithmetic that produced
+    them. Python's ``round`` refuses a ``complex``, so the two parts are rounded
+    separately and the check needs no third-party array library.
+    """
+
+    return complex(round(coefficient.real, 12), round(coefficient.imag, 12))
 
 
 def _rounded(coefficient: complex) -> complex:
@@ -163,8 +174,9 @@ _DOUBLE_ORDERINGS = (
     (4, (0, 1), (3, 2), 0.7),
     (4, (1, 0), (3, 2), 0.7),
     (6, (0, 1), (4, 5), -1.1),
-    (4, (0, 2), (1, 3), 0.3),
+    (6, (0, 2), (3, 5), 0.3),
 )
+
 
 def test_the_double_excitation_is_the_exponential_of_its_generator() -> None:
     for n_qubits, occupied, virtual, theta in _DOUBLE_ORDERINGS:
@@ -199,18 +211,14 @@ def test_an_exchanged_index_flips_the_operator_and_the_circuit_together() -> Non
     """
 
     theta = 0.7
-    for occupied, virtual in itertools.product(
-        ((0, 1), (1, 0)), ((2, 3), (3, 2))
-    ):
+    for occupied, virtual in itertools.product(((0, 1), (1, 0)), ((2, 3), (3, 2))):
         operator = excitation_operator(occupied, virtual)
         reference = excitation_operator((0, 1), (2, 3))
         assert operator.terms == reference.terms or operator.terms == tuple(
             type(term)(-term.coefficient, term.creations, term.annihilations)
             for term in reference.terms
         )
-        circuit = double_excitation(
-            4, occupied, virtual, theta, dtype=torch.complex128
-        )
+        circuit = double_excitation(4, occupied, virtual, theta, dtype=torch.complex128)
         target = _exponential(4, occupied, virtual, theta)
         deviation = float((_circuit_unitary(circuit) - target).abs().max())
         assert deviation < _ATOL, (occupied, virtual, deviation)
@@ -219,7 +227,9 @@ def test_an_exchanged_index_flips_the_operator_and_the_circuit_together() -> Non
 def test_the_two_exchange_orders_give_opposite_circuits() -> None:
     forward = double_excitation(4, (0, 1), (2, 3), 0.7, dtype=torch.complex128)
     backward = double_excitation(4, (0, 1), (3, 2), 0.7, dtype=torch.complex128)
-    deviation = float((_circuit_unitary(forward) - _circuit_unitary(backward)).abs().max())
+    deviation = float(
+        (_circuit_unitary(forward) - _circuit_unitary(backward)).abs().max()
+    )
     assert deviation > _WRONG_CONVENTION
 
 
@@ -228,7 +238,7 @@ def test_the_excitation_operator_is_anti_hermitian() -> None:
         ((0,), (1,)),
         ((2,), (5,)),
         ((0, 1), (2, 3)),
-        ((0, 2), (1, 3)),
+        ((0, 2), (3, 5)),
     ):
         generator = excitation_operator(occupied, virtual)
         assert generator.dagger().terms == tuple(
@@ -316,9 +326,7 @@ def test_the_uccsd_product_is_the_excitation_gates_in_the_declared_order() -> No
     n_electrons, n_qubits = 2, 4
     excitations = uccsd_excitations(n_electrons, n_qubits)
     values = _angles([0.4, 0.4, 0.4])
-    product = uccsd_factors(
-        n_electrons, n_qubits, values, dtype=torch.complex128
-    )
+    product = uccsd_factors(n_electrons, n_qubits, values, dtype=torch.complex128)
 
     expected = torch.eye(2**n_qubits, dtype=torch.complex128)
     for factor, angle in zip(excitations.factors, values, strict=True):
@@ -371,14 +379,10 @@ def test_the_uccsd_ansatz_adds_the_reference_occupation_to_the_product() -> None
     n_electrons, n_qubits = 2, 4
     excitations = uccsd_excitations(n_electrons, n_qubits)
     parameters = [0.0] * excitations.parameter_count
-    ansatz = uccsd_ansatz(
-        n_qubits, n_electrons, parameters, dtype=torch.complex128
-    )
+    ansatz = uccsd_ansatz(n_qubits, n_electrons, parameters, dtype=torch.complex128)
     assert ansatz.analysis().n_instructions == (
         fq.Circuit(n_qubits).x(0).x(1).analysis().n_instructions
-        + uccsd_factors(
-            n_electrons, n_qubits, parameters, dtype=torch.complex128
-        )
+        + uccsd_factors(n_electrons, n_qubits, parameters, dtype=torch.complex128)
         .analysis()
         .n_instructions
     )
@@ -437,9 +441,7 @@ def test_the_coupler_ansatz_honours_an_explicit_coupler_list() -> None:
 
 
 def test_the_coupler_ansatz_defaults_to_the_nearest_neighbour_chain() -> None:
-    chain = coupler_hardware_efficient_ansatz(
-        4, 1, [0.0] * 16, dtype=torch.complex128
-    )
+    chain = coupler_hardware_efficient_ansatz(4, 1, [0.0] * 16, dtype=torch.complex128)
     explicit = coupler_hardware_efficient_ansatz(
         4,
         1,
@@ -474,12 +476,15 @@ def test_the_two_hardware_efficient_ansatze_are_different_circuits() -> None:
     assert float((coupler - core).abs().max()) > _WRONG_CONVENTION
 
 
-def test_the_chemistry_module_is_reachable_and_stays_out_of_the_root_namespace() -> None:
+def test_the_chemistry_module_is_reachable_and_stays_out_of_the_root_namespace() -> (
+    None
+):
     assert chemistry.uccsd_ansatz is uccsd_ansatz
     assert chemistry.UCCSDExcitations is UCCSDExcitations
     for name in chemistry.__all__:
         assert hasattr(chemistry, name)
         assert not hasattr(fq, name), name
+
 
 def test_an_excitation_refuses_an_occupied_index_that_is_not_below_its_virtuals() -> (
     None
@@ -572,7 +577,9 @@ def test_a_circuit_refuses_an_index_outside_its_declared_width() -> None:
 def test_the_uccsd_product_refuses_the_wrong_number_of_parameters(
     parameters: list[float],
 ) -> None:
-    with pytest.raises(ValueError, match=f"Expected 3 parameters, got {len(parameters)}"):
+    with pytest.raises(
+        ValueError, match=f"Expected 3 parameters, got {len(parameters)}"
+    ):
         uccsd_factors(2, 4, parameters)
 
 
@@ -706,9 +713,7 @@ def test_the_double_excitation_uses_eight_conditional_blocks() -> None:
 
 
 def test_the_single_excitation_uses_two_conditional_ladders() -> None:
-    analysis = single_excitation(
-        4, 0, 3, 0.7, dtype=torch.complex128
-    ).analysis()
+    analysis = single_excitation(4, 0, 3, 0.7, dtype=torch.complex128).analysis()
     assert analysis.two_qubit_gates == 12
     assert analysis.max_gate_width == 2
 
@@ -719,7 +724,7 @@ def test_a_zero_angle_excitation_is_the_identity() -> None:
         double_excitation(4, (0, 1), (2, 3), 0.0, dtype=torch.complex128),
     ):
         unitary = _circuit_unitary(circuit)
-        identity = torch.eye(2 ** circuit.n_qubits, dtype=torch.complex128)
+        identity = torch.eye(2**circuit.n_qubits, dtype=torch.complex128)
         assert float((unitary - identity).abs().max()) < _ATOL
 
 
@@ -798,7 +803,12 @@ def test_each_same_spin_double_ascends_inside_its_collections() -> None:
     assert excitations.doubles_alpha
     assert excitations.doubles_beta
     for collection in (excitations.doubles_alpha, excitations.doubles_beta):
-        for first_occupied, second_occupied, first_virtual, second_virtual in collection:
+        for (
+            first_occupied,
+            second_occupied,
+            first_virtual,
+            second_virtual,
+        ) in collection:
             assert first_occupied < second_occupied
             assert first_virtual < second_virtual
             assert second_occupied < first_virtual
@@ -807,13 +817,13 @@ def test_each_same_spin_double_ascends_inside_its_collections() -> None:
 def test_the_dense_oracle_agrees_with_the_generator_it_rebuilds() -> None:
     """Guard the oracle itself: the rebuilt and imported generators must agree."""
 
-    for occupied, virtual in (((0,), (1,)), ((0, 1), (2, 3)), ((0, 2), (1, 3))):
+    for occupied, virtual in (((0,), (1,)), ((0, 1), (2, 3)), ((0, 2), (3, 5))):
         rebuilt = _generator(occupied, virtual)
         imported = excitation_operator(occupied, virtual)
         assert [
-            (np.round(term.coefficient, 12), term.creations, term.annihilations)
+            (_rounded(term.coefficient), term.creations, term.annihilations)
             for term in rebuilt.terms
         ] == [
-            (np.round(term.coefficient, 12), term.creations, term.annihilations)
+            (_rounded(term.coefficient), term.creations, term.annihilations)
             for term in imported.terms
         ]

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from ..errors import CompilationError
 from .openqasm import emit_openqasm
 from .qcis import emit_qcis
+from .qir import emit_qir
 from .schedule_legalization import (
     ScheduleLegalizationError,
     schedule_circuit_dependencies,
@@ -62,6 +63,10 @@ def _emit_openqasm3(program: object) -> str:
     )
 
 
+def _emit_qir(program: object) -> str:
+    return emit_qir(program, result_wires=_allocated_result_wires(program))
+
+
 def _allocated_result_wires(program: object) -> tuple[int, ...] | None:
     routing = getattr(program, "metadata", {}).get("routing")
     if not isinstance(routing, dict) or routing.get("schema") != (
@@ -74,7 +79,7 @@ def _allocated_result_wires(program: object) -> tuple[int, ...] | None:
     return wires
 
 
-_PROFILES = {
+EMISSION_PROFILES = {
     "openqasm-2.0": TargetEmissionProfile(
         name="openqasm-2.0",
         backend="qasm",
@@ -92,6 +97,12 @@ _PROFILES = {
         backend="qcis",
         media_type="text/x-qcis;version=1.0;charset=utf-8",
         emitter=emit_qcis,
+    ),
+    "qir-2.0": TargetEmissionProfile(
+        name="qir-2.0",
+        backend="qir",
+        media_type="text/x-llvm-ir;qir-profile=base;qir-version=2.0;charset=utf-8",
+        emitter=_emit_qir,
     ),
 }
 
@@ -165,9 +176,9 @@ def emit_legalized_target(
         raise TypeError("target emission requires a TargetLegalizationResult")
     normalized_profile = str(profile).strip().lower()
     try:
-        selected = _PROFILES[normalized_profile]
+        selected = EMISSION_PROFILES[normalized_profile]
     except KeyError as error:
-        supported = ", ".join(sorted(_PROFILES))
+        supported = ", ".join(sorted(EMISSION_PROFILES))
         raise TargetEmissionError(
             f"unsupported target emission profile {profile!r}; expected {supported}"
         ) from error
@@ -227,6 +238,7 @@ def emit_legalized_target(
 
 
 __all__ = (
+    "EMISSION_PROFILES",
     "TargetEmissionError",
     "TargetEmissionProfile",
     "TargetEmissionResult",

@@ -15,7 +15,7 @@ Numerical agreement of each built-in pass is established by tests.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from importlib import import_module
 from math import isclose
@@ -134,10 +134,6 @@ class PassDeclaration:
                 raise CompilationError(f"pass {name!r} repeats an {attribute} entry")
             object.__setattr__(self, attribute, declared)
 
-    @property
-    def preserves_program_equivalence(self) -> bool:
-        return "program_equivalence" in self.preserved_semantics
-
     def to_dict(self) -> dict[str, Any]:
         return {
             "kind": PASS_CONTRACT_SCHEMA,
@@ -167,7 +163,6 @@ class RegisteredPass:
 
     declaration: PassDeclaration
     transform: Callable[[CircuitIR], CircuitIR]
-    origin: str = "pipeline"
 
     def __post_init__(self) -> None:
         if not isinstance(self.declaration, PassDeclaration):
@@ -282,7 +277,6 @@ class PassManager:
             else RegisteredPass(
                 declaration=pass_.declaration,
                 transform=pass_.transform,
-                origin=getattr(pass_, "origin", "extension"),
             )
         )
         return PassManager(
@@ -374,8 +368,10 @@ def pass_from_extension(
         raise CapabilityError(
             f"compiler pass extension {name!r} exposes no callable transform"
         )
-    resolved = declaration if declaration is not None else getattr(
-        extension, "declaration", None
+    resolved = (
+        declaration
+        if declaration is not None
+        else getattr(extension, "declaration", None)
     )
     if resolved is None:
         resolved = PassDeclaration(
@@ -407,9 +403,7 @@ def pass_from_extension(
         finally:
             handle.close()
 
-    return RegisteredPass(
-        declaration=resolved, transform=transform, origin="extension"
-    )
+    return RegisteredPass(declaration=resolved, transform=transform)
 
 
 def _is_zero(value: Any, atol: float = _ROTATION_ZERO_ATOL) -> bool:
@@ -455,22 +449,77 @@ def _remove_identity_gates(ir: CircuitIR) -> CircuitIR:
     return replace(ir, instructions=tuple(instructions))
 
 
-def _last_touching_instruction(
-    instructions: list[Instruction],
-    wires: tuple[int, ...],
-) -> int | None:
-    target_wires = set(wires)
-    for index in range(len(instructions) - 1, -1, -1):
-        if not target_wires.isdisjoint(instructions[index].wires):
-            return index
-    return None
+class _WireLocalProgram:
+    """Instructions in program order, indexed by the latest writer of each wire.
+
+    Both merge passes need the most recent instruction that touches a wire set,
+    and they need to remove or rewrite it. Scanning the output list for that
+    instruction costs the length of the untouched prefix, which is quadratic on a
+    circuit whose gates share no wire -- the shape a routing pass produces on a
+    wide device. Indexing by wire instead makes a pass linear in the gates times
+    their wires.
+
+    ``position`` is the insertion sequence number. Sequence numbers only
+    increase, so the largest live one touching a wire is also the latest one in
+    program order, and positions do not shift when an earlier instruction is
+    removed.
+    """
+
+    def __init__(self) -> None:
+        self._instructions: dict[int, Instruction] = {}
+        self._last_by_wire: dict[int, list[int]] = {}
+        self._position = 0
+
+    def last_touching(self, wires: tuple[int, ...]) -> int | None:
+        """Return the position of the latest instruction touching any of ``wires``."""
+
+        latest: int | None = None
+        for wire in wires:
+            stack = self._last_by_wire.get(wire)
+            if stack and (latest is None or stack[-1] > latest):
+                latest = stack[-1]
+        return latest
+
+    def append(self, instruction: Instruction) -> None:
+        self._position += 1
+        self._instructions[self._position] = instruction
+        for wire in instruction.wires:
+            self._last_by_wire.setdefault(wire, []).append(self._position)
+
+    def pop(self, position: int) -> None:
+        """Remove the instruction at ``position``, a wire's latest writer.
+
+        Both passes only ever remove the instruction they just looked up, so the
+        removed one is by construction the latest writer of every wire it touches
+        and the per-wire stack needs no repair beyond dropping its top entry.
+        """
+
+        instruction = self._instructions.pop(position)
+        for wire in instruction.wires:
+            stack = self._last_by_wire[wire]
+            assert stack[-1] == position
+            stack.pop()
+
+    def rewrite(self, position: int, instruction: Instruction) -> None:
+        """Replace the instruction at ``position``, keeping the wires it touches."""
+
+        assert instruction.wires == self._instructions[position].wires
+        self._instructions[position] = instruction
+
+    def __getitem__(self, position: int) -> Instruction:
+        return self._instructions[position]
+
+    def __iter__(self) -> Iterator[Instruction]:
+        return iter(self._instructions.values())
 
 
 def _merge_self_inverse(ir: CircuitIR) -> CircuitIR:
-    out: list[Instruction] = []
+    """Remove identical self-inverse gates adjacent on their wires."""
+
+    program = _WireLocalProgram()
     for instruction in ir:
-        previous_index = _last_touching_instruction(out, instruction.wires)
-        previous = out[previous_index] if previous_index is not None else None
+        position = program.last_touching(instruction.wires)
+        previous = None if position is None else program[position]
         if (
             instruction.name in _SELF_INVERSE
             and previous is not None
@@ -479,19 +528,21 @@ def _merge_self_inverse(ir: CircuitIR) -> CircuitIR:
             and not instruction.params
             and not previous.params
         ):
-            assert previous_index is not None
-            out.pop(previous_index)
+            assert position is not None
+            program.pop(position)
         else:
-            out.append(instruction)
-    return replace(ir, instructions=tuple(out))
+            program.append(instruction)
+    return replace(ir, instructions=tuple(program))
 
 
 def _merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
-    out: list[Instruction] = []
+    """Merge rotations adjacent on their wires."""
+
+    program = _WireLocalProgram()
     for instruction in ir:
         param_name = _ROTATION_PARAM.get(instruction.name)
-        previous_index = _last_touching_instruction(out, instruction.wires)
-        previous = out[previous_index] if previous_index is not None else None
+        position = program.last_touching(instruction.wires)
+        previous = None if position is None else program[position]
         if (
             param_name is not None
             and previous is not None
@@ -502,34 +553,33 @@ def _merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
             and param_name in previous.params
             and param_name in instruction.params
         ):
-            assert previous_index is not None
+            assert position is not None
             merged_value = _add_values(
                 previous.params[param_name], instruction.params[param_name]
             )
             if _is_zero(merged_value):
-                out.pop(previous_index)
+                program.pop(position)
             else:
-                out[previous_index] = _replace_param(
-                    previous,
-                    param_name,
-                    merged_value,
+                program.rewrite(
+                    position,
+                    _replace_param(previous, param_name, merged_value),
                 )
-            continue
-        out.append(instruction)
-    return replace(ir, instructions=tuple(out))
+        else:
+            program.append(instruction)
+    return replace(ir, instructions=tuple(program))
 
 
 IDENTITY_REMOVAL = RegisteredPass(
     declaration=PassDeclaration(
         name="identity_removal",
         summary="drops explicit identity gates and zero-angle rotations",
-        preserved_analyses=("def_use", "qubit_lifetime", "liveness_and_memory"),
         preserved_semantics=(
             "program_equivalence",
             "parameter_gradients",
             "wire_ownership",
             "measurement_recording",
         ),
+        deterministic=True,
     ),
     transform=_remove_identity_gates,
 )
@@ -538,18 +588,13 @@ SELF_INVERSE_CANCELLATION = RegisteredPass(
     declaration=PassDeclaration(
         name="self_inverse_cancellation",
         summary="drops identical self-inverse gates adjacent on their wires",
-        preserved_analyses=(
-            "def_use",
-            "qubit_lifetime",
-            "liveness_and_memory",
-            "measurement_dependency",
-        ),
         preserved_semantics=(
             "program_equivalence",
             "parameter_gradients",
             "wire_ownership",
             "measurement_recording",
         ),
+        deterministic=True,
     ),
     transform=_merge_self_inverse,
 )
@@ -558,34 +603,16 @@ ROTATION_MERGE = RegisteredPass(
     declaration=PassDeclaration(
         name="rotation_merge",
         summary="merges rotations adjacent on their wires",
-        preserved_analyses=(
-            "def_use",
-            "qubit_lifetime",
-            "liveness_and_memory",
-            "measurement_dependency",
-            "parameter_dependency",
-        ),
         preserved_semantics=(
             "program_equivalence",
             "parameter_gradients",
             "wire_ownership",
             "measurement_recording",
         ),
+        deterministic=True,
     ),
     transform=_merge_adjacent_rotations,
 )
-
-
-def passes_in_order(*items: RegisteredPass) -> tuple[RegisteredPass, ...]:
-    """Return ``items`` as a pipeline, refusing a repeated pass."""
-
-    names = [item.name for item in items]
-    repeated = sorted({name for name in names if names.count(name) > 1})
-    if repeated:
-        raise CompilationError(
-            "a pipeline cannot run " + ", ".join(repeated) + " twice"
-        )
-    return tuple(items)
 
 
 __all__ = (
@@ -602,5 +629,4 @@ __all__ = (
     "SEMANTIC_PROPERTIES",
     "SELF_INVERSE_CANCELLATION",
     "pass_from_extension",
-    "passes_in_order",
 )

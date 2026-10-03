@@ -13,12 +13,18 @@ from .pipeline import (
     route_to_topology,
     schedule_layers,
 )
+from .resource_estimation import ESTIMATE_BASIS, ResourceEstimate, estimate_resources
+from .translate import TRANSLATION_FORMATS, translate
 
 __all__ = (
     "CouplingMap",
+    "ESTIMATE_BASIS",
     "Layout",
+    "ResourceEstimate",
+    "TRANSLATION_FORMATS",
     "apply_layout",
     "compile",
+    "estimate_resources",
     "final_layout",
     "lower_noise_model",
     "optimize",
@@ -27,4 +33,5 @@ __all__ = (
     "remove_layout_restore",
     "route_to_topology",
     "schedule_layers",
+    "translate",
 )

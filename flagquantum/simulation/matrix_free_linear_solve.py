@@ -48,24 +48,32 @@ def gmres(
     if restart < 1:
         raise ValueError("restart must admit at least one Krylov vector")
     solution = torch.zeros_like(rhs)
-    rhs_norm = float(torch.linalg.vector_norm(rhs))
+    rhs_norm = float(torch.linalg.vector_norm(rhs).detach())
     if rhs_norm == 0.0:
         return solution, 0.0
     residual = rhs
-    residual_norm = rhs_norm
+    # The norm that scales the returned solution stays a tensor. Reading it into
+    # a Python float would detach the magnitude of the right-hand side from the
+    # graph, and a solve whose right-hand side carries a gradient would return a
+    # wrong derivative while still returning the right value. It is recomputed
+    # with every residual, because a later window scales its basis by the norm
+    # of the residual that opened it.
+    residual_norm_tensor = torch.linalg.vector_norm(residual)
+    residual_norm = float(residual_norm_tensor.detach())
     relative = 1.0
     iterations = 0
     while relative > tolerance:
         # One Krylov window: the restart length, clipped by whatever part of the
-        # caller's iteration budget is left. A spent budget ends the solve, and
+        # caller's iteration budget is left. A spent budget ends the solve and
         # the caller decides from the returned residual whether that is enough.
         window = min(restart, max_iterations - iterations)
         if window <= 0:
             break
-        basis = [residual / residual_norm]
+        residual_norm_tensor = torch.linalg.vector_norm(residual)
+        basis = [residual / residual_norm_tensor]
         hessenberg = torch.zeros((restart + 1, restart), dtype=_COEFFICIENT_DTYPE)
         target = torch.zeros(restart + 1, dtype=_COEFFICIENT_DTYPE)
-        target[0] = residual_norm
+        target[0] = residual_norm_tensor
         coefficients = torch.zeros((window, 1), dtype=_COEFFICIENT_DTYPE)
         columns = 0
         for index in range(window):
@@ -74,8 +82,9 @@ def gmres(
                 projection = torch.vdot(basis[row], candidate)
                 hessenberg[row, index] = projection.to(_COEFFICIENT_DTYPE)
                 candidate = candidate - projection * basis[row]
-            next_norm = float(torch.linalg.vector_norm(candidate))
-            hessenberg[index + 1, index] = next_norm
+            next_norm_tensor = torch.linalg.vector_norm(candidate)
+            next_norm = float(next_norm_tensor.detach())
+            hessenberg[index + 1, index] = next_norm_tensor
             columns = index + 1
             iterations += 1
             columns_target = target[: columns + 1].unsqueeze(1)
@@ -85,15 +94,15 @@ def gmres(
             estimate = float(
                 torch.linalg.vector_norm(
                     columns_target - hessenberg[: columns + 1, :columns] @ approximation
-                )
+                ).detach()
             )
             coefficients = approximation
             if estimate <= tolerance * rhs_norm or next_norm == 0.0:
                 break
-            basis.append(candidate / next_norm)
+            basis.append(candidate / next_norm_tensor)
         for index in range(columns):
             solution = solution + basis[index] * coefficients[index, 0].to(rhs.dtype)
         residual = rhs - apply(solution)
-        residual_norm = float(torch.linalg.vector_norm(residual))
+        residual_norm = float(torch.linalg.vector_norm(residual).detach())
         relative = residual_norm / rhs_norm
     return solution, relative

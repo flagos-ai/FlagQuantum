@@ -114,7 +114,7 @@ owns = [
     # the parameter-shift utilities that operate on `core/ir.py` programs.
     "flagquantum/errors.py",
     "flagquantum/gradients.py",
-    "flagquantum/operators.py",
+    "flagquantum/operators/**",
 ]
 
 [teams.compiler]

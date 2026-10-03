@@ -32,7 +32,7 @@ import torch
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import is_parameterized_value, parameter_names_in_value
-from .operator_lowering import validate_lowering
+from .operator_lowering import require_static_gate_program, validate_lowering
 
 ENTRY_POINT_NAME = "FlagQuantumEntryPoint"
 OUTPUT_LABELING_SCHEMA = "labeled"
@@ -165,7 +165,9 @@ def _calls(instruction: Instruction) -> tuple[_QisCall, ...]:
     if opcode in _NATIVE_QIS:
         return (_QisCall(_NATIVE_QIS[opcode], wires),)
     if opcode in _ROTATION_QIS:
-        return (_QisCall(_ROTATION_QIS[opcode], wires, _parameter(instruction, "theta")),)
+        return (
+            _QisCall(_ROTATION_QIS[opcode], wires, _parameter(instruction, "theta")),
+        )
     if opcode in {"phase", "u1"}:
         return (_rz(wires[0], _parameter(instruction, "theta")),)
     if opcode == "sx":
@@ -286,7 +288,9 @@ def _resolved_result_wires(
     if (
         not wires
         or len(set(wires)) != len(wires)
-        or any(type(wire) is not int or wire < 0 or wire >= ir.n_wires for wire in wires)
+        or any(
+            type(wire) is not int or wire < 0 or wire >= ir.n_wires for wire in wires
+        )
     ):
         raise ValueError("QIR result wires must be unique in-range integers.")
     return wires
@@ -363,7 +367,9 @@ def emit_qir(program: Any, *, result_wires: tuple[int, ...] | None = None) -> st
         signatures[name] = _QIS_SIGNATURES[name.removeprefix("__quantum__qis__")]
     if not measured:
         del signatures["__quantum__rt__result_record_output"]
-    lines.extend(f"declare void @{name}{signatures[name]}" for name in sorted(signatures))
+    lines.extend(
+        f"declare void @{name}{signatures[name]}" for name in sorted(signatures)
+    )
     lines.extend(
         [
             "",

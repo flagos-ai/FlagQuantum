@@ -23,6 +23,13 @@ into verified behavior rather than a comment. Trace preservation is
 antiunitary involution ``v -> T conj(v)``, where ``T`` transposes the matrix
 form; commutation with ``T`` alone would be false, since a generator with a real
 Hamiltonian satisfies ``T L T = -L``.
+
+The generator is assembled from the pieces as a
+:class:`flagquantum.operators.SuperOperator`, which is the sum of left and right
+multiplication actions this equation is written in. Both the matrix-free action
+and the dense reference are then one call on that sum, so the two cannot drift
+apart: the Hamiltonian is a superoperator factor instead of a matrix, and only
+:meth:`Liouvillian.dense` asks it for one.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ from collections.abc import Sequence
 
 import torch
 
+from ..operators import SuperOperator
 from .matrix_free_hamiltonian import PauliSum
 
 __all__ = ("DEFAULT_DENSE_GENERATOR_BYTES", "Liouvillian")
@@ -44,37 +52,43 @@ class Liouvillian:
 
     The Hamiltonian may be a matrix-free :class:`~.matrix_free_hamiltonian.PauliSum`
     or a dense matrix. Collapse operators are the already-normalized
-    ``sqrt(rate) * operator`` factors, and their products are derived once so
-    that every application reuses them.
+    ``sqrt(rate) * operator`` factors; the constructor assembles the Hamiltonian
+    commutator and every dissipator term into one
+    :class:`~flagquantum.operators.SuperOperator`, and the derived products
+    ``L^dag L`` appear once as shared factors of the two one-sided terms.
     """
 
-    __slots__ = ("_collapse", "_dimension", "_hamiltonian", "_products")
+    __slots__ = ("_dimension", "_superoperator")
 
     def __init__(
         self,
         hamiltonian: PauliSum | torch.Tensor,
         collapse: Sequence[torch.Tensor],
         *,
-        dimension: int,
+        hilbert_dimension: int,
     ) -> None:
-        self._dimension = int(dimension)
-        self._hamiltonian = hamiltonian
-        self._collapse = tuple(collapse)
-        self._products = tuple(
-            torch.conj(operator).T @ operator for operator in self._collapse
-        )
+        self._dimension = int(hilbert_dimension)
+        generator = SuperOperator.left_multiply(hamiltonian) * (-1j)
+        generator += SuperOperator.right_multiply(hamiltonian) * (1j)
+        for operator in collapse:
+            dagger = torch.conj(operator).T
+            product = dagger @ operator
+            generator += SuperOperator.left_right_multiply(operator, dagger)
+            generator += SuperOperator.left_multiply(product) * (-0.5)
+            generator += SuperOperator.right_multiply(product) * (-0.5)
+        self._superoperator = generator
 
     @property
-    def dimension(self) -> int:
-        """Return the Hilbert-space dimension ``2**n`` of the generator."""
+    def hilbert_dimension(self) -> int:
+        """Return ``2**n``, the side of the state this generator acts on."""
 
         return self._dimension
 
     @property
     def dtype(self) -> torch.dtype:
-        if isinstance(self._hamiltonian, PauliSum):
-            return self._hamiltonian._dtype
-        return self._hamiltonian.dtype
+        """Return the dtype every application and the dense form use."""
+
+        return self._superoperator.dtype
 
     def derivative(self, state: torch.Tensor) -> torch.Tensor:
         """Return ``d rho / dt`` for a density matrix, materializing nothing.
@@ -84,16 +98,7 @@ class Liouvillian:
         exponential never forms the ``16**n`` superoperator.
         """
 
-        if isinstance(self._hamiltonian, PauliSum):
-            value = -1j * self._hamiltonian.commutator(state)
-        else:
-            value = -1j * (self._hamiltonian @ state - state @ self._hamiltonian)
-        for operator, product in zip(
-            self._collapse, self._products, strict=True
-        ):
-            value = value + operator @ state @ torch.conj(operator).T
-            value = value - 0.5 * (product @ state + state @ product)
-        return value
+        return self._superoperator.apply(state)
 
     def dense(self, *, max_bytes: int = DEFAULT_DENSE_GENERATOR_BYTES) -> torch.Tensor:
         """Return the ``4**n x 4**n`` vectorized generator.
@@ -125,23 +130,4 @@ class Liouvillian:
                 f"the {int(max_bytes)}-byte ceiling; apply the generator instead of "
                 "materializing it"
             )
-        dtype = self.dtype
-        device = (
-            self._hamiltonian._device
-            if isinstance(self._hamiltonian, PauliSum)
-            else self._hamiltonian.device
-        )
-        identity = torch.eye(dimension, dtype=dtype, device=device)
-        if isinstance(self._hamiltonian, PauliSum):
-            hamiltonian = self._hamiltonian.dense()
-        else:
-            hamiltonian = self._hamiltonian
-        generator = -1j * (
-            torch.kron(hamiltonian, identity) - torch.kron(identity, hamiltonian.T)
-        )
-        for operator, product in zip(self._collapse, self._products, strict=True):
-            generator = generator + torch.kron(operator, torch.conj(operator))
-            generator = generator - 0.5 * (
-                torch.kron(product, identity) + torch.kron(identity, product.T)
-            )
-        return generator
+        return self._superoperator.dense(max_bytes=int(max_bytes))

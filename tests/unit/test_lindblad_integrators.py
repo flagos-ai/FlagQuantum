@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any, cast
 
 import pytest
 import torch
@@ -72,7 +73,11 @@ def _dense_system(size: int, seed: int = 7) -> tuple[torch.Tensor, torch.Tensor]
 def test_gmres_solves_a_complex_system_and_reports_the_measured_residual() -> None:
     matrix, rhs = _dense_system(6)
     solution, residual = gmres(
-        lambda vector: matrix @ vector, rhs, tolerance=1e-12, max_iterations=200
+        lambda vector: matrix @ vector,
+        rhs,
+        tolerance=1e-12,
+        max_iterations=200,
+        restart=30,
     )
 
     expected = torch.linalg.solve(matrix, rhs)
@@ -88,16 +93,26 @@ def test_gmres_solves_a_complex_system_and_reports_the_measured_residual() -> No
     assert residual <= 1e-12
 
 
-def test_gmres_on_a_zero_right_hand_side_returns_zero() -> None:
+def test_gmres_on_a_zero_right_hand_side_returns_zero_without_applying() -> None:
     matrix, _ = _dense_system(4)
     rhs = torch.zeros(4, dtype=torch.complex128)
+    applies = 0
+
+    def counted(vector: torch.Tensor) -> torch.Tensor:
+        nonlocal applies
+        applies += 1
+        return matrix @ vector
 
     solution, residual = gmres(
-        lambda vector: matrix @ vector, rhs, tolerance=1e-12, max_iterations=10
+        counted, rhs, tolerance=1e-12, max_iterations=10, restart=30
     )
 
     assert torch.equal(solution, rhs)
     assert residual == 0.0
+    # A zero right-hand side is already the solution. Normalizing it would
+    # divide by zero, so the short circuit is not an optimization: without it
+    # the Krylov basis becomes NaN and the operator is applied to garbage.
+    assert applies == 0
 
 
 def test_gmres_refuses_a_non_flat_right_hand_side() -> None:
@@ -105,29 +120,125 @@ def test_gmres_refuses_a_non_flat_right_hand_side() -> None:
     rhs = torch.zeros((2, 2), dtype=torch.complex128)
 
     with pytest.raises(ValueError, match="flat vector"):
-        gmres(lambda vector: matrix @ vector, rhs, tolerance=1e-12, max_iterations=10)
+        gmres(
+            lambda vector: matrix @ vector,
+            rhs,
+            tolerance=1e-12,
+            max_iterations=10,
+            restart=30,
+        )
+
+
+def test_gmres_refuses_a_restart_below_one() -> None:
+    matrix, rhs = _dense_system(4)
+
+    with pytest.raises(ValueError, match="at least one Krylov vector"):
+        gmres(
+            lambda vector: matrix @ vector,
+            rhs,
+            tolerance=1e-12,
+            max_iterations=10,
+            restart=0,
+        )
+
+
+def test_a_spent_iteration_budget_stops_the_solve_without_exceeding_it() -> None:
+    matrix, rhs = _dense_system(12)
+    applies = 0
+
+    def counted(vector: torch.Tensor) -> torch.Tensor:
+        nonlocal applies
+        applies += 1
+        return matrix @ vector
+
+    solution, residual = gmres(
+        counted, rhs, tolerance=1e-14, max_iterations=5, restart=30
+    )
+
+    # Measured 6 applications: five Krylov steps plus the one remeasurement of
+    # the returned residual. A solve that let a window run past the budget would
+    # apply the operator up to twenty-nine times here, and one that dropped the
+    # remeasurement would report a residual it never verified.
+    assert applies == 6
+    assert residual > 1e-14
 
 
 def test_gmres_reports_the_residual_it_actually_achieved_when_it_stops_early() -> None:
     matrix, rhs = _dense_system(6)
+    applies = 0
+
+    def counted(vector: torch.Tensor) -> torch.Tensor:
+        nonlocal applies
+        applies += 1
+        return matrix @ vector
 
     solution, residual = gmres(
-        lambda vector: matrix @ vector, rhs, tolerance=1e-14, max_iterations=1
+        counted, rhs, tolerance=1e-14, max_iterations=1, restart=30
     )
 
     relative = float(torch.linalg.vector_norm(rhs - matrix @ solution)) / float(
         torch.linalg.vector_norm(rhs)
     )
-    assert residual > 1e-14
+    # Measured 5.797089e-01 after the single permitted iteration, reached with
+    # two operator applications: one inside the Krylov step and one to remeasure
+    # the residual. A solve that reported its internal estimate instead would
+    # report a value near zero here, and one that ignored ``max_iterations``
+    # would report the converged residual instead.
+    assert applies == 2
+    assert residual == pytest.approx(5.797089e-01, abs=1e-6)
     assert residual == pytest.approx(relative, abs=1e-14)
 
 
+def test_a_looser_tolerance_costs_fewer_krylov_iterations() -> None:
+    matrix, rhs = _dense_system(12)
+
+    def applies_at(tolerance: float) -> int:
+        applies = 0
+
+        def counted(vector: torch.Tensor) -> torch.Tensor:
+            nonlocal applies
+            applies += 1
+            return matrix @ vector
+
+        solution, residual = gmres(
+            counted,
+            rhs,
+            tolerance=tolerance,
+            max_iterations=400,
+            restart=30,
+        )
+        assert residual <= tolerance
+        if tolerance <= 1e-9:
+            expected = torch.linalg.solve(matrix, rhs)
+            assert torch.allclose(solution, expected, atol=1e-8, rtol=0.0)
+        return applies
+
+    # Measured 8 applications at 1e-3 and 13 at 1e-12. A solve that ignored the
+    # tolerance and always ran to the residual floor would report the same count
+    # at both settings and would contradict the tolerance it promised.
+    loose = applies_at(1e-3)
+    tight = applies_at(1e-12)
+    assert 6 <= loose <= 10
+    assert 11 <= tight <= 16
+    assert loose < tight
+
+
 def test_the_declared_integrator_vocabulary_is_closed() -> None:
-    assert integrators_module.INTEGRATOR_NAMES == ("runge-kutta", "crank-nicolson")
+    assert integrators_module.INTEGRATOR_NAMES == (
+        "runge-kutta",
+        "crank-nicolson",
+        "krylov-exponential",
+    )
     assert integrators_module.DEFAULT_INTEGRATOR == "runge-kutta"
     assert integrators_module.integrator_order("runge-kutta") == 4
     assert integrators_module.integrator_order("crank-nicolson") == 2
+    # The exponential of a time-independent generator is exact on the grid, so
+    # it declares no step-size order instead of claiming a higher one.
+    assert integrators_module.integrator_order("krylov-exponential") is None
     assert integrators_module.SUBSTEPS_PER_INTERVAL == 2
+    assert integrators_module.substeps_per_interval("krylov-exponential") == 1
+    assert integrators_module.SOLVE_RESTART == 30
+    assert integrators_module.KRYLOV_SCHEMES == ("crank-nicolson", "krylov-exponential")
 
 
 def test_runge_kutta_converges_at_fourth_order() -> None:
@@ -252,7 +363,9 @@ def test_the_reported_method_is_the_method_that_ran() -> None:
     assert numerics["order"] == 2
 
 
-@pytest.mark.parametrize("method", ["magnus", "RK4", "", "runge_kutta", "cranknicolson"])
+@pytest.mark.parametrize(
+    "method", ["magnus", "RK4", "", "runge_kutta", "cranknicolson"]
+)
 def test_an_unknown_integration_method_is_refused(method: str) -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
 
@@ -285,22 +398,9 @@ def test_a_solve_tolerance_outside_the_unit_interval_is_refused(
     assert error.value.field == "solve_tolerance"
 
 
-@pytest.mark.parametrize("tolerance", ["1e-9", True, None, [1e-9]])
+@pytest.mark.parametrize("tolerance", ["1e-9", True, [1e-9], {"tolerance": 1e-9}])
 def test_a_non_numeric_solve_tolerance_is_refused(tolerance: object) -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    if tolerance is None:
-        # None is the documented default and must select the precision default.
-        plan = plan_density_matrix_evolution(
-            ZERO_HAMILTONIAN,
-            EXCITED,
-            1,
-            times,
-            None,
-            method="crank-nicolson",
-            solve_tolerance=None,
-        )
-        assert plan.solve_tolerance == 1e-12
-        return
 
     with pytest.raises(EvolutionValidationError) as error:
         plan_density_matrix_evolution(
@@ -310,10 +410,30 @@ def test_a_non_numeric_solve_tolerance_is_refused(tolerance: object) -> None:
             times,
             None,
             method="crank-nicolson",
-            solve_tolerance=tolerance,  # type: ignore[arg-type]
+            solve_tolerance=cast(Any, tolerance),
         )
 
     assert error.value.code == "invalid_solve_tolerance"
+    # A boolean is refused as a type, not because ``True`` happens to be 1.0 and
+    # therefore out of range; the two refusals are different defects and the
+    # message is what distinguishes them.
+    assert "must be a number" in str(error.value)
+
+
+def test_an_omitted_solve_tolerance_selects_the_precision_default() -> None:
+    times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
+
+    plan = plan_density_matrix_evolution(
+        ZERO_HAMILTONIAN,
+        EXCITED,
+        1,
+        times,
+        None,
+        method="crank-nicolson",
+        solve_tolerance=None,
+    )
+
+    assert plan.solve_tolerance == 1e-12
 
 
 @pytest.mark.parametrize("tolerance", [1e-6, 1e-12])
@@ -332,7 +452,10 @@ def test_a_solve_tolerance_on_an_explicit_scheme_is_refused(tolerance: float) ->
         )
 
     assert error.value.code == "invalid_solve_tolerance"
-    assert "implicit" in str(error.value)
+    # The refusal names the schemes that do take a Krylov step, so a caller is
+    # told what to select rather than only that the request was rejected.
+    assert "Krylov" in str(error.value)
+    assert "'runge-kutta'" in str(error.value)
 
 
 def test_the_default_solve_tolerance_follows_the_working_precision() -> None:
@@ -389,9 +512,7 @@ def test_a_tighter_solve_tolerance_produces_a_tighter_trajectory() -> None:
             solve_tolerance=tolerance,
         )
         assert result.density_matrices is not None
-        return float(
-            (result.density_matrices - reference.density_matrices).abs().max()
-        )
+        return float((result.density_matrices - reference.density_matrices).abs().max())
 
     reference = evolve_density_matrix(
         hamiltonian,
@@ -417,7 +538,7 @@ def test_an_unreachable_solve_tolerance_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    monkeypatch.setattr(integrators_module, "_SOLVE_RESTART", 1)
+    monkeypatch.setattr(integrators_module, "SOLVE_RESTART", 1)
     monkeypatch.setattr(lindblad_module, "_solve_max_iterations", lambda dimension: 1)
 
     with pytest.raises(EvolutionValidationError) as error:
@@ -435,14 +556,94 @@ def test_an_unreachable_solve_tolerance_fails_closed(
     assert error.value.field == "solve_tolerance"
 
 
+def test_an_unknown_method_is_refused_by_the_integrator_itself() -> None:
+    state = torch.eye(2, dtype=torch.complex128)
+
+    with pytest.raises(ValueError, match="unknown integration method"):
+        integrators_module.advance_interval(
+            lambda rho: -1j * rho,
+            state,
+            torch.tensor(0.1, dtype=torch.float64),
+            method="magnus",
+            solve_tolerance=1e-12,
+            solve_max_iterations=8,
+        )
+
+
 def test_the_step_size_is_the_substep_of_every_scheme() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
+    # The grid spacing is 0.25. A scheme carrying a step-size error subdivides
+    # it into SUBSTEPS_PER_INTERVAL steps; an exponential step is exact and
+    # takes the interval whole.
+    expected = {
+        "runge-kutta": (0.125, 4),
+        "crank-nicolson": (0.125, 2),
+        "krylov-exponential": (0.25, None),
+    }
+    assert set(expected) == set(integrators_module.INTEGRATOR_NAMES)
 
-    for method in integrators_module.INTEGRATOR_NAMES:
+    for method, (step_size, order) in expected.items():
         plan = plan_density_matrix_evolution(
             ZERO_HAMILTONIAN, EXCITED, 1, times, None, method=method
         )
-        assert plan.step_size == pytest.approx(0.125)
+        assert plan.step_size == pytest.approx(step_size)
+        # The order and the step are one statement about the scheme: an
+        # exponential step is exact on the grid, so it must report no order
+        # rather than borrowing the order of a scheme it is not.
+        assert plan.order == order
+        assert integrators_module.integrator_order(method) == order
+
+
+def test_a_stored_plan_from_an_earlier_version_is_refused_by_version() -> None:
+    times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
+    planned = fq.lindblad.plan(
+        torch.eye(2, dtype=torch.complex128),
+        EXCITED,
+        times,
+        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+    )
+    payload = planned.to_dict()
+    assert payload["version"] == "1.3"
+
+    # Version 1.0 stored no ``numerics.solve_tolerance``, 1.1 could not record a
+    # null ``numerics.order``, and 1.2 recorded no batch axis even though the
+    # reported ``trajectory_bytes`` already had to count one. The decision is
+    # rebuilt from the request and compared key by key, so none of those payloads
+    # is reconstructible here; the version check is what reports that, and it
+    # does so before the misleading decision-mismatch error can appear.
+    for version in ("1.0", "1.1", "1.2"):
+        legacy = dict(payload)
+        legacy["version"] = version
+        legacy["identity"] = plan_module._identity(legacy)
+        with pytest.raises(Exception) as error:
+            LindbladPlan.from_dict(legacy)
+
+        assert "unsupported Lindblad plan version" in str(error.value)
+
+
+def test_a_boolean_sealed_tolerance_is_refused() -> None:
+    times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
+    planned = fq.lindblad.plan(
+        torch.eye(2, dtype=torch.complex128),
+        EXCITED,
+        times,
+        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        method="crank-nicolson",
+    )
+    payload = planned.to_dict()
+    decision = dict(payload["decision"])
+    decision["numerics"] = {**decision["numerics"], "solve_tolerance": True}
+    forged = {**payload, "decision": decision}
+    forged["identity"] = plan_module._identity(forged)
+
+    # ``True`` is an int in Python and would otherwise be accepted as 1.0, which
+    # then fails a range check with a message about the wrong defect. The sealed
+    # payload is the replay surface of a plan, so it is checked as a type.
+    with pytest.raises(Exception) as error:
+        LindbladPlan.from_dict(forged)
+
+    assert type(error.value).__name__ == "SerializationError"
+    assert "must be numeric" in str(error.value)
 
 
 def test_the_plan_round_trips_the_integration_method() -> None:
@@ -502,7 +703,7 @@ def test_running_a_plan_reports_the_planned_integration_method() -> None:
 
     assert result.method == "crank-nicolson"
     assert result.order == 2
-    assert result.plan is not None
+    assert isinstance(result.plan, LindbladPlan)
     assert result.plan.identity == planned.identity
 
 
@@ -515,7 +716,7 @@ def test_running_a_plan_reports_the_planned_integration_method() -> None:
     ],
 )
 def test_a_sealed_plan_is_closed_to_semantic_overrides(
-    override: dict[str, object],
+    override: dict[str, Any],
 ) -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
     planned = fq.lindblad.plan(

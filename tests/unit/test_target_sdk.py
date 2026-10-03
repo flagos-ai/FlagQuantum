@@ -42,9 +42,12 @@ from flagquantum.ecosystem.extensions import (
     CapabilityResponse,
     ExtensionConfig,
     ExtensionManifest,
+)
+from flagquantum.ecosystem.extensions.conformance import (
+    _check_device_description,
+    _device_requirement_set,
     run_device_conformance,
 )
-from flagquantum.ecosystem.extensions.conformance import _device_requirement_set
 from flagquantum.ecosystem.extensions.target_sdk import (
     HOST_OWNED_DESCRIPTION_KEYS,
     TARGET_DESCRIPTION_MEMBER,
@@ -250,19 +253,31 @@ def test_declaration_refuses_facts_it_may_not_state(
         ({"coupling_edges": ((0, 9),)}, "outside the declared 4-qubit device"),
         ({"coupling_edges": ((2, 2),)}, "cannot couple wire 2 to itself"),
         ({"coupling_edges": ((0, "1"),)}, "wires must be integers"),
-        ({"coupling_edges": ((0, 1, 2),)}, "pairs of wires"),
+        ({"coupling_edges": ((0, 1, 2),)}, "must have two wires"),
         ({"n_qubits": 0}, "n_qubits must be a positive integer"),
         ({"device_id": "  "}, "device_id must be a non-empty string"),
         ({"observed_facts": {"limits.maximum_shots": -1}}, "non-negative integer"),
         ({"observed_facts": {"limits.maximum_shots": 1.5}}, "non-negative integer"),
         ({"observed_facts": {"measurements.results": "counts"}}, "must be an array"),
         ({"declared_facts": {"ancillas.policy": 3}}, "must be a string"),
+        # A nested mapping is JSON-safe but is not the string the capability
+        # declares, so the value-shape refusal is the one a provider must read.
         (
             {"declared_facts": {"ancillas.policy": {"nested": "mapping"}}},
-            "JSON-safe",
+            "must be a string",
         ),
         (
             {"observed_facts": {"limits.maximum_shots": {"nested": 1}}},
+            "non-negative integer",
+        ),
+        # The JSON-safety refusal is reached only by a value that cannot be
+        # serialized at all, which is a different defect from a wrong shape.
+        (
+            {"declared_facts": {"ancillas.policy": object()}},
+            "JSON-safe",
+        ),
+        (
+            {"observed_facts": {"limits.maximum_shots": object()}},
             "JSON-safe",
         ),
         ({"evidence_refs": ("acme-calibration",)}, "EvidenceReference values"),
@@ -289,7 +304,7 @@ def test_a_declaration_needs_the_device_protocol_not_merely_the_kind() -> None:
             name="acme", version="1.0.0", kind="device", capabilities=frozenset()
         )
 
-    with pytest.raises(TargetDescriptionError, match="device extension protocol"):
+    with pytest.raises(TargetDescriptionError, match="does not implement devices"):
         check_target_description(_ManifestOnly())
 
 
@@ -349,9 +364,7 @@ def test_observed_facts_require_observable_grade_evidence() -> None:
 
 
 def test_declaration_must_point_at_an_evidence_reference_it_supplies() -> None:
-    device = _DeclaredDevice(
-        [_declaration(observed_source_ref="no-such-evidence")]
-    )
+    device = _DeclaredDevice([_declaration(observed_source_ref="no-such-evidence")])
     (description,) = check_target_description(device)
 
     with pytest.raises(TargetDescriptionError, match="has no evidence reference"):
@@ -414,7 +427,9 @@ def test_snapshot_satisfies_the_floor_a_compiled_circuit_imposes() -> None:
     assert admitted.executable
 
     # And the same device refuses the capacity one qubit beyond what it declared.
-    overstated = match_target_capabilities(_device_requirement_set(description, extra_qubits=1), snapshot)
+    overstated = match_target_capabilities(
+        _device_requirement_set(description, extra_qubits=1), snapshot
+    )
     assert not overstated.executable
     assert {blocker.code for blocker in overstated.blockers} == {"value_mismatch"}
 

@@ -185,13 +185,14 @@ class MemoryCircuit:
                         "detector syndrome measurement must reference a declared "
                         "ancilla wire"
                     )
-        logical_observables = self.code.logical_observables
-        if len(self.observables) != len(logical_observables):
+        readable = _z_type_logical_observables(self.code)
+        if len(self.observables) != len(readable):
             raise ValueError(
-                "observable layout must declare one observable per code logical"
+                "observable layout must declare one observable per readable code "
+                "logical"
             )
         for observable in self.observables.observables:
-            if observable.pauli != logical_observables[observable.index]:
+            if observable.pauli != readable[observable.index]:
                 raise ValueError(
                     "observable operator must match the code's declared logical "
                     "observable"
@@ -203,28 +204,60 @@ class MemoryCircuit:
                     )
 
 
-def _require_z_type_readout(code: StabilizerCode) -> None:
-    """Refuse a code whose logical observable this memory experiment cannot read.
+def _z_type_logical_observables(code: StabilizerCode) -> tuple[Pauli, ...]:
+    """Return the declared logical operators this Z-basis readout can measure.
 
     Both the initial data state and the terminal data readout are in the Z basis,
     because the initial state is all-zero and this module reads out through the
-    runtime's final sample of each data wire, so a logical observable that is not
-    Z-type would be measured under premises that do not hold for it.
+    runtime's final sample of each data wire. A declared logical operator that is
+    pure Z-type is measurable under those premises and becomes one observable of
+    the experiment, in the order the code declares it. A pure X-type operator is
+    not measurable here and is left out of the layout: it is a real operator of
+    the code, and reading it needs the readout rotated into the X basis, which
+    this route does not do. A mixed operator is neither, so it is refused rather
+    than silently dropped.
+
+    A code that declares no Z-type logical operator at all has nothing this
+    experiment can read, so it is refused as well.
+
+    Z-type checks are deterministic in round zero and again at the terminal
+    readout, so each of them contributes a detector in every round and one
+    terminal detector. An X-type check is deterministic in neither place: it is
+    still measured every round, because comparing two consecutive rounds of it is
+    what detects the Z errors the readout is vulnerable to, but it contributes no
+    round-zero and no terminal detector.
     """
 
     observables = code.logical_observables
-    if not observables or any(observable.x_wires for observable in observables):
+    if not observables:
         raise ValueError(
             "memory-circuit source requires a Z-type logical observable, because "
             "both the initial state and the terminal data readout are in the Z "
             "basis"
         )
+    selected: list[Pauli] = []
+    for observable in observables:
+        if observable.x_wires and observable.z_wires:
+            raise ValueError(
+                "memory-circuit source requires pure logical observables, because "
+                "both the initial state and the terminal data readout are in the Z "
+                "basis, which cannot read a mixed operator"
+            )
+        if not observable.x_wires:
+            selected.append(observable)
+    if not selected:
+        raise ValueError(
+            "memory-circuit source requires a Z-type logical observable, because "
+            "both the initial state and the terminal data readout are in the Z "
+            "basis"
+        )
+    return tuple(selected)
 
 
 def _detector_count(code: StabilizerCode, *, rounds: int) -> int:
     """Return how many detectors one configured memory experiment must declare."""
 
-    _require_z_type_readout(code)
+    _z_type_logical_observables(code)
     protected = sum(1 for check in code.checks if not check.stabilizer.x_wires)
     total = len(code.checks)
     return protected * (rounds + 1) + (total - protected) * (rounds - 1)
@@ -251,7 +284,7 @@ def _check_source(code: StabilizerCode) -> str:
 
 
 def _detector_layout(code: StabilizerCode, *, rounds: int) -> DetectorLayout:
-    _require_z_type_readout(code)
+    _z_type_logical_observables(code)
     detectors: list[Detector] = []
     for round_index in range(rounds):
         for check in code.checks:
@@ -280,7 +313,7 @@ def _observable_layout(code: StabilizerCode) -> ObservableLayout:
                     MeasurementRef(None, wire) for wire in pauli.support
                 ),
             )
-            for index, pauli in enumerate(code.logical_observables)
+            for index, pauli in enumerate(_z_type_logical_observables(code))
         )
     )
 
@@ -297,8 +330,9 @@ def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
     An X-type check is deterministic in neither place. It gets one detector for
     every round after the first, comparing two consecutive syndrome rounds, and
     nothing else. Round-zero and terminal detectors require a Z-type readout of
-    the declared logical observable; a code that declares anything else is
-    refused.
+    the declared logical observable: a code that declares none is refused, and a
+    code that declares a pure X-type logical operator alongside a Z-type one
+    keeps only the Z-type operator as an observable of this experiment.
 
     The source itself is a bounded hybrid compiler program; this function neither
     lowers nor executes it.

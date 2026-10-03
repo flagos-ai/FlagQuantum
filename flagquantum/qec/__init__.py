@@ -1,6 +1,10 @@
 """Experimental quantum-error-correction domain."""
 
 from .adapters import MatchingDependencyError, PyMatchingDecoder
+from .bposd import (
+    BeliefPropagationOsdDecoder,
+    BeliefPropagationOsdDecodeResult,
+)
 from .circuit import (
     Detector,
     DetectorLayout,
@@ -59,6 +63,8 @@ from .types import (
 
 __all__ = (
     "AUTHORITY_NAME",
+    "BeliefPropagationOsdDecodeResult",
+    "BeliefPropagationOsdDecoder",
     "CROSS_CHECK_NAME",
     "CodeCheck",
     "CssCodeMatrices",

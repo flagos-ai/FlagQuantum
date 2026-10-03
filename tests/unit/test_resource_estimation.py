@@ -71,6 +71,15 @@ def test_depth_follows_dependencies_and_not_per_wire_operation_counts() -> None:
     assert estimate.depth == 3
 
 
+def test_a_repeated_operation_is_counted_once_per_occurrence() -> None:
+    """A count of distinct opcodes would report one here, not three."""
+
+    estimate = _estimate(fq.Circuit(1).h(0).h(0).h(0))
+
+    assert estimate.operation_counts == {"h": 3}
+    assert estimate.n_operations == 3
+
+
 def test_a_wire_that_no_operation_touches_is_unused_but_still_allocated() -> None:
     """The peak is the declared register, which no operation can raise.
 
@@ -101,16 +110,19 @@ def test_per_wire_depth_records_the_last_layer_that_touches_the_wire() -> None:
 
     Counting the layers in which a wire appears would report two for both wires and
     would overstate how much of the chain that wire is on the critical path of.  The
-    second program separates the two rules further: wire 0 is touched in layers one
-    and three but not two, so its depth is three while a count of its layers is two.
+    second program separates the two rules: wire 0 is idle in the second layer,
+    which only wire 1 uses, and the third layer's ``cx`` cannot start before wire 1
+    is free, so wire 0 comes back in layer three.  Wire 0 is therefore two layers
+    deep by a count of the layers it appears in and three by the last layer that
+    touches it.
     """
 
     idle_last = _estimate(fq.Circuit(2).cx(0, 1).h(1))
-    skipped_layer = _estimate(fq.Circuit(2).cx(0, 1).h(1).h(0))
+    skipped_layer = _estimate(fq.Circuit(2).cx(0, 1).h(1).cx(0, 1))
 
     assert idle_last.per_wire_depth == (1, 2)
     assert idle_last.depth == 2
-    assert skipped_layer.per_wire_depth == (3, 2)
+    assert skipped_layer.per_wire_depth == (3, 3)
     assert skipped_layer.depth == 3
 
 
@@ -252,7 +264,9 @@ def test_the_estimate_agrees_with_the_compilers_own_schedule() -> None:
         assert estimate.depth == len(schedule_layers(ir))
         assert estimate.n_operations == len(ir)
         assert sum(estimate.operation_counts.values()) == estimate.n_operations
-        assert estimate.used_wires == sum(1 for depth in estimate.per_wire_depth if depth)
+        assert estimate.used_wires == sum(
+            1 for depth in estimate.per_wire_depth if depth
+        )
 
 
 def test_a_noise_channel_is_counted_apart_from_algorithmic_operations() -> None:
@@ -291,9 +305,7 @@ def test_a_run_time_dependent_operation_is_refused_rather_than_estimated() -> No
 
     program = CircuitIR(
         n_wires=1,
-        instructions=(
-            Instruction("reset", (0,), metadata={"is_dynamic": True}),
-        ),
+        instructions=(Instruction("reset", (0,), metadata={"is_dynamic": True}),),
     )
 
     with pytest.raises(CapabilityError) as error:

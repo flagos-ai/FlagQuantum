@@ -7,7 +7,12 @@ from collections.abc import Sequence
 
 from .evidence import EVIDENCE
 from .implementations import IMPLEMENTATIONS
-from .schema import KernelEvidence, KernelImplementation, KernelSemantic
+from .schema import (
+    KERNEL_DEVICES,
+    KernelEvidence,
+    KernelImplementation,
+    KernelSemantic,
+)
 from .semantics import SEMANTICS
 
 _CATALOG_ID = re.compile(r"^FQK-(SV|GR|MPS|NUM)-[0-9]{3}$")
@@ -53,6 +58,16 @@ def _require_components(values: Sequence[str], label: str) -> None:
     if not values or any(_COMPONENT.fullmatch(value) is None for value in values):
         raise ValueError(f"invalid or empty {label}")
     _require_unique(values, label)
+
+
+def _require_devices(values: Sequence[str], label: str) -> None:
+    _require_components(values, label)
+    undeclared = sorted(set(values).difference(KERNEL_DEVICES))
+    if undeclared:
+        raise ValueError(
+            f"undeclared {label}: {', '.join(undeclared)}; "
+            f"declared devices are {', '.join(sorted(KERNEL_DEVICES))}"
+        )
 
 
 def validate_catalog(
@@ -138,8 +153,11 @@ def validate_catalog(
             )
         if _COMPONENT.fullmatch(implementation.symbol) is None:
             raise ValueError(f"invalid implementation symbol: {implementation.symbol}")
+        _require_devices(
+            implementation.devices,
+            f"devices for {implementation.implementation_id}",
+        )
         dimensions = (
-            (implementation.devices, "devices"),
             (implementation.dtypes, "dtypes"),
             (implementation.layouts, "layouts"),
             (implementation.directions, "directions"),
