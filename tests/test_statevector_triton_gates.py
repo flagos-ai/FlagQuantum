@@ -76,6 +76,7 @@ def test_local_cx_inplace_matches_index_reference() -> None:
 def test_local_cx_segment_matches_reverse_source_permutation() -> None:
     _require_cuda()
     from flagquantum.kernels.triton.statevector_gates import (
+        _local_cx_segment_positions,
         apply_complex64_local_cx_segment,
     )
 
@@ -87,6 +88,7 @@ def test_local_cx_segment_matches_reverse_source_permutation() -> None:
         source ^= ((source >> control) & 1) << target
     expected = state[:, source]
 
+    _local_cx_segment_positions.cache_clear()
     output = torch.empty_like(state)
     actual = apply_complex64_local_cx_segment(
         state,
@@ -97,6 +99,13 @@ def test_local_cx_segment_matches_reverse_source_permutation() -> None:
 
     assert actual.data_ptr() == output.data_ptr()
     torch.testing.assert_close(actual, expected)
+    apply_complex64_local_cx_segment(
+        state,
+        control_bit_positions=controls,
+        target_bit_positions=targets,
+        output=output,
+    )
+    assert _local_cx_segment_positions.cache_info().hits == 1
 
 
 def test_constant_ry_rz_triton_path_with_cx_matches_cpu(monkeypatch) -> None:

@@ -183,6 +183,29 @@ development evidence, not a multi-rank scalability or release claim. Reproduce
 or validate it with
 [`benchmarks/statevector_local_cx_dispatch.py`](../../benchmarks/statevector_local_cx_dispatch.py).
 
+`FQKI-TRITON-SV-003-A` composes a contiguous local CNOT sequence into one
+out-of-place amplitude permutation. Immutable control and target positions are
+cached per CUDA device and sequence, avoiding repeated device metadata
+allocation. Automatic dispatch additionally requires dependency scheduling to
+have changed the instruction order and is enabled only for a contiguous CUDA
+`complex64` shard with shape `(1, 2**24)`; the fused path itself requires at
+least two adjacent local CNOTs. Set `FQ_STATEVECTOR_TRITON_CX_SEGMENT=0` to
+disable it, or set it to `1` to opt into another supported shape.
+
+The checked-in
+[`statevector_local_cx_segment_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_cx_segment_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations for 2-, 4-, and
+8-CNOT sequences in the default window, plus an excluded four-CNOT `2**20`
+boundary, on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and
+FlagTree 0.7.0. Every case is bitwise exact. The default window reaches
+`1.486x` to `1.772x` the speed of a conservative same-semantic PyTorch gather,
+while the excluded boundary reaches only `0.360x` to `0.506x`. The runner
+rejects any default-eligible case below its `1.0x` floor, so SV-003-A is
+`provisional` inside this exact measured window. This is bounded single-device
+development evidence, not a multi-rank scalability or release claim. Reproduce
+or validate it with
+[`benchmarks/statevector_local_cx_segment_dispatch.py`](../../benchmarks/statevector_local_cx_segment_dispatch.py).
+
 `FQKI-FLAGTREE-SV-006-A` applies the same explicit provider boundary to the
 fused distributed transpose and one-qubit gate. TLE async annotations cover
 both the retained local half-shard and the received remote half-shard; matrix
@@ -723,9 +746,9 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. SV-001-A,
-SV-002-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are provisional
-after their evidenced default-dispatch promotions; the other 23 implementations
-remain experimental.
+SV-002-A, SV-003-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are
+provisional after their evidenced default-dispatch promotions; the other 22
+implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

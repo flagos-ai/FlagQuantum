@@ -75,7 +75,7 @@ def test_flagos_exchange_uses_provider_neutral_wait():
     assert cuda_request.block_current_stream_calls == 1
 
 
-def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypatch):
+def test_cx_segment_default_window_and_override(monkeypatch):
     monkeypatch.setattr(
         "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
         lambda: True,
@@ -90,13 +90,15 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     )
 
     monkeypatch.delenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", raising=False)
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(2, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "0")
-    assert not _triton_local_cx_segment_enabled(scheduled)
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
 
 
 def test_local_cx_default_window_and_override(monkeypatch):
@@ -126,6 +128,7 @@ def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
     decision = _triton_local_cx_segment_decision(
         device_type="cuda",
         dtype="complex64",
+        shape=(1, 1 << 24),
     )
 
     assert decision.accelerated
@@ -147,6 +150,7 @@ def test_local_cx_segment_decision_reports_catalog_mismatch(
     decision = _triton_local_cx_segment_decision(
         device_type=device_type,
         dtype=dtype,
+        shape=(1, 1 << 24),
     )
 
     assert not decision.accelerated
