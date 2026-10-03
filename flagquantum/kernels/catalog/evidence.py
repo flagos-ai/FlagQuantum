@@ -71,6 +71,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-004-A",
         "tests/test_statevector_triton_gates.py::test_constant_ry_rz_triton_path_with_cx_matches_cpu",
+        capability_tests=(
+            "tests/unit/test_ry_rz_catalog_dispatch.py::test_ry_rz_pair_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_ry_rz_pair_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-005-A",
