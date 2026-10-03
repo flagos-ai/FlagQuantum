@@ -182,8 +182,13 @@ def test_statevector_marginal_probabilities_launches_flat_grids(
 
     monkeypatch.setattr(
         statevector_measurement,
-        "_statevector_marginal_probability_partial_kernel",
+        "_statevector_marginal_probability_small_kernel",
         FakeKernel("forward"),
+    )
+    monkeypatch.setattr(
+        statevector_measurement,
+        "_statevector_marginal_probability_partial_kernel",
+        FakeKernel("partial"),
     )
     monkeypatch.setattr(
         statevector_measurement,
@@ -199,7 +204,7 @@ def test_statevector_marginal_probabilities_launches_flat_grids(
         2,
     )
 
-    assert observed == {"forward": (8,), "backward": (16,)}
+    assert observed == {"forward": (2,), "backward": (16,)}
 
 
 @pytest.mark.parametrize(
