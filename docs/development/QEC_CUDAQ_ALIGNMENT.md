@@ -52,7 +52,7 @@ from the matrix's `priority`, the row states why.
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
 | `qec_code_record` | partial | now | `qec_code_library` | Two families declared and both now feed the matrix route, but no named matrix record, no X-type logical readout, no Steane/colour/qLDPC. |
-| `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
+| `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
@@ -67,7 +67,7 @@ from the matrix's `priority`, the row states why.
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
-Everything a `supported` row would need is deliberately *not* claimed here. Two
+Everything a `supported` row would need is deliberately *not* claimed here. Three
 rows are `aligned` and the rest are not, and an `aligned` row is one whose
 upstream surface has no item left unaccounted for, symbol by symbol. The checker
 enforces the floor of that bar rather than the bar itself: an `aligned` row must
@@ -371,6 +371,75 @@ row `dem_canonicalize`, whose negative search names the symbol, with
 `qec_dem_chunking` carrying the seam work that would sit behind it. That absence
 is a fact about a different operation rather than a gap in this row's surface, so
 the row is `aligned` and the absence is named in one place instead of two.
+
+**What `qec_detector_annotations` closed, and what it deliberately did not.**
+The row had two halves and only one of them was about spelling. The first half —
+detector and observable identity derived from the code rather than asserted
+beside it — was already done when the layouts landed: the detector count is the
+code's checks and rounds, every reference is tied to a declared wire and round,
+and the observable readout is refused unless it is terminal and matches the
+declared support. The second half was the one that read `absent`, and it was
+read that way for a good reason. In a CUDA-Q kernel a measurement *handle* is a
+value: `z = mz(q)` names a measurement, `detector(z)` consumes it, and `to_bools`
+or `to_integer` reads the same handle on another line without measuring again.
+This layer had no such value. A recorded bit was a column index inside the
+lowering, and the layouts named references rather than handles, so a caller who
+wanted a bit that no detector names — which is exactly the bit an X-type check
+measures in round zero — had nowhere to ask.
+
+`MemoryCircuit.measurement_refs` and `MeasurementSamples` are that half, and they
+are deliberately not a kernel annotation. The handle vector is read off the code
+and the round count rather than collected from the layouts, so a position in it
+names a recorded bit and not a caller's guess, and the two sets need not agree in
+either direction — which is the point, because the reason this layer is worth
+having is that the layout layer is right to drop some bits. Round zero of a
+surface patch measures an X-type check whose outcome is not deterministic under
+the all-zero preparation, so no detector may name it; the bit is still measured
+and is now still readable. `MeasurementSamples` holds that run's outcomes,
+`outcome` reads one handle, and `vector` and `integer` read a chosen sub-vector
+as booleans or packed into one integer, with the caller's order preserved in both.
+That is `to_bools` and `to_integer`'s job done over the record that holds the
+bits, rather than over a per-measurement conversion call, and the two names stay
+absent for that reason rather than by omission.
+
+The half that stays absent is the annotation *form*, and it stays absent on
+purpose. CUDA-Q sets detector identity in the kernel body, where the compiler has
+to carry it into IR, and the price of that is a handle type, an interception rule
+and a host-scope refusal. This layer sets the same identity in a record beside a
+source string that a bounded hybrid capture would refuse a channel call inside
+anyway, and it pays for that with the refusals the layouts already enforce. The
+three names `detector`, `detectors` and `logical_observable` therefore stay in
+`symbols_absent`, so the row cannot drift into claiming a kernel-level annotation
+surface it does not have, and the same list is what makes the row fail the day
+one of them appears.
+
+What makes the two halves one story rather than two is a test that recomputes
+every detector's parity and every observable's flip from the handles that detector
+and observable name, and requires the two readings of one run to agree shot for
+shot. The readings cannot disagree, but they can be read wrongly, so the tests
+also pin the parts that are easy to get backwards. The packing is checked against
+the bit vector rather than against a second call of the same method, so the two
+readings are not each other's witness; two orders of the same handles state two
+integers, so the order is the caller's and not the record's; a handle the
+experiment does not record raises with the handle named rather than reading a
+neighbouring column; an empty reading raises; and a record whose tensor is not
+two-dimensional or whose column count does not match its handle vector raises
+rather than being truncated to the shorter of the two.
+
+The measured part of the layer is the border between determinism and freedom, and
+it is asserted as a rate rather than as a convention. A noiseless run reads a
+Z-type check's ancilla as 0 in every round — a Z-type check leaves the all-zero
+state alone — an X-type check's ancilla as unbiased, and an individual terminal
+data wire as unbiased, because the X-type gadgets entangle the data with their
+ancillae; and every detector and every observable reads 0, because the layouts
+name parities rather than handles. The two failure modes that pins are symmetric:
+a channel rate read off a single handle would be a rate read off the state, and a
+detector claimed to be a bit would be a parity claimed to be a measurement. Under
+`measurement_flip = 0.25` the pinned handles fire at 0.25 and the free ones stay
+near 0.5, which is the arithmetic of flipping an unbiased bit rather than a
+statement about the channel; the test splits the handles by what they measure for
+exactly that reason, since pooling the two kinds would average the distinction
+away.
 
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 

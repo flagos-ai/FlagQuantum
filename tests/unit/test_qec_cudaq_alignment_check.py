@@ -92,7 +92,7 @@ def set_key(text: str, row_id: str, key: str, value: str | None) -> str:
                 # Rename rather than delete: the checker must notice a missing
                 # key, not a syntactically broken file.
                 indent = lines[i][: len(lines[i]) - len(stripped)]
-                lines[i] = f"{indent}{key}_renamed{stripped[len(key):]}"
+                lines[i] = f"{indent}{key}_renamed{stripped[len(key) :]}"
             else:
                 indent = lines[i][: len(lines[i]) - len(stripped)]
                 lines[i] = f"{indent}{value}\n"
@@ -297,6 +297,43 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         "claim alignment while pointing at nothing",
         "an `aligned` row must name at least one symbols_present entry",
         lambda t: set_key(t, "qec_dem_merge", "symbols_present", None),
+    ),
+    (
+        # Alignment is a claim about a row's own surface, not a licence to stop
+        # pointing at it: the row this is planted in is the one the handle layer
+        # closed, and an aligned row is exactly where a symbol that stopped
+        # resolving would otherwise go unnoticed.
+        "stop a handle symbol resolving in a row that claims alignment",
+        "does not resolve",
+        lambda t: sub_in_key(
+            t,
+            "qec_detector_annotations",
+            "symbols_present",
+            "flagquantum.qec.MeasurementSamples",
+            "flagquantum.qec.MeasurementSamplesGone",
+        ),
+    ),
+    (
+        # An absence is a live claim, so the day the symbol it names exists the
+        # row is stale rather than merely out of date: this is the mutation that
+        # fails if the handle layer is ever deleted while the row keeps saying
+        # the layer is absent.
+        "keep an absence standing after the handle layer closed it",
+        "now resolves -- the gap closed, so this row is stale",
+        lambda t: append_to_list(
+            t,
+            "qec_detector_annotations",
+            "symbols_absent",
+            "flagquantum.qec.MeasurementSamples",
+        ),
+    ),
+    (
+        # `next_action` is required of a partial or absent row and of no other,
+        # so this is the other half of that rule: an aligned row may drop it,
+        # and must still state what it is for.
+        "leave a row that dropped its next_action without a target",
+        "target is empty",
+        lambda t: set_key(t, "qec_detector_annotations", "target", 'target = ""'),
     ),
     (
         # The row this mutation is planted in is `partial` on the other half of

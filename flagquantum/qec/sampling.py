@@ -100,6 +100,117 @@ class _MeasurementPlan:
     terminal_columns: Mapping[int, int]
 
 
+@dataclass(frozen=True, eq=False)
+class MeasurementSamples:
+    """Every recorded bit of a sampled run, addressed by its measurement handle.
+
+    A detection event says what a *parity* of recorded bits came out as; this
+    record says what each bit itself came out as, per handle, which is what host
+    logic over a mid-circuit measurement needs and what the layout objects cannot
+    supply on their own: a handle the layouts drop is readable here, and a
+    detector's parity can be recomputed from the handles it names.
+
+    ``refs`` is the handle vector the experiment declares, in the order
+    :attr:`~flagquantum.qec.MemoryCircuit.measurement_refs` states it, and
+    ``outcomes`` is an ``int8`` tensor of shape ``(shots, len(refs))`` parallel
+    to it. The two readings over a chosen sub-vector are the point of the record:
+    :meth:`vector` gives one boolean per shot per handle, in the order asked for,
+    and :meth:`integer` packs that same order into one integer per shot with the
+    first handle in the least significant bit.
+
+    Equality compares the tensors by content, and instances are deliberately
+    unhashable, for the reason `~flagquantum.qec.DemSample` is.
+    """
+
+    refs: tuple[MeasurementRef, ...]
+    outcomes: torch.Tensor
+
+    def __post_init__(self) -> None:
+        if not self.refs:
+            raise ValueError("a measurement record must address at least one handle")
+        if len(set(self.refs)) != len(self.refs):
+            raise ValueError("a measurement handle vector cannot repeat a handle")
+        if self.outcomes.dim() != 2:
+            raise ValueError(
+                "measurement outcomes must be a two-dimensional (shots, handles) tensor"
+            )
+        if self.outcomes.shape[1] != len(self.refs):
+            raise ValueError(
+                f"measurement outcomes hold {self.outcomes.shape[1]} column(s) for "
+                f"{len(self.refs)} handle(s)"
+            )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MeasurementSamples):
+            return NotImplemented
+        return self.refs == other.refs and torch.equal(self.outcomes, other.outcomes)
+
+    @property
+    def shots(self) -> int:
+        """Number of sampled shots."""
+
+        return int(self.outcomes.shape[0])
+
+    @property
+    def num_handles(self) -> int:
+        """Number of measurement handles this record addresses."""
+
+        return len(self.refs)
+
+    def _columns(self, references: Sequence[MeasurementRef]) -> tuple[int, ...]:
+        if not references:
+            raise ValueError("a measurement reading must name at least one handle")
+        if any(not isinstance(reference, MeasurementRef) for reference in references):
+            raise TypeError("measurement readings are addressed by MeasurementRef")
+        known = {reference: column for column, reference in enumerate(self.refs)}
+        columns: list[int] = []
+        for reference in references:
+            column = known.get(reference)
+            if column is None:
+                raise ValueError(
+                    f"measurement handle (round={reference.round_index}, "
+                    f"wire={reference.wire}) is not one this experiment records"
+                )
+            columns.append(column)
+        return tuple(columns)
+
+    def outcome(self, reference: MeasurementRef) -> torch.Tensor:
+        """One handle's recorded bit, per shot, as an ``int8`` tensor."""
+
+        (column,) = self._columns((reference,))
+        return self.outcomes[:, column]
+
+    def vector(self, references: Sequence[MeasurementRef]) -> torch.Tensor:
+        """The handles' recorded bits as a boolean ``(shots, len(references))``.
+
+        This is the reading a caller uses where logic depends on a value rather
+        than on a parity: the column order is the order asked for, so the same
+        handles read in two orders give two different vectors rather than one.
+        """
+
+        columns = self._columns(references)
+        return self.outcomes[:, list(columns)].to(torch.bool)
+
+    def integer(self, references: Sequence[MeasurementRef]) -> torch.Tensor:
+        """The same handles packed into one integer per shot, as an ``int64``.
+
+        The first handle named is the least significant bit. The packing is
+        stated here rather than inherited, because the order a caller asks in is
+        the only order this record knows: two calls naming the same handles in
+        two orders state two different integers, and both are the reading of the
+        order given.
+        """
+
+        columns = self._columns(references)
+        bits = self.outcomes[:, list(columns)].to(torch.int64)
+        weights = torch.tensor(
+            [1 << position for position in range(len(columns))],
+            dtype=torch.int64,
+            device=bits.device,
+        )
+        return (bits * weights).sum(dim=1)
+
+
 @dataclass(frozen=True)
 class _NoiseLocation:
     """One noise mechanism, the instruction it is placed before, and its rate.
@@ -362,6 +473,100 @@ def _recorded_bits(
     return detectors, observables
 
 
+def _sample_record(
+    circuit: MemoryCircuit,
+    *,
+    noise: PhenomenologicalNoise,
+    shots: int,
+    seed: int | None,
+) -> tuple[_MeasurementPlan, torch.Tensor]:
+    """Lower, place and execute one experiment, returning its engine record."""
+
+    plan = _measurement_plan(circuit)
+    locations = _noise_locations(circuit, plan, noise)
+    program = _noisy_program(plan, locations)
+    data_wires = tuple(circuit.code.data_wires)
+    record = sample_noisy_measurements(
+        program, shots=shots, terminal_wires=data_wires, seed=seed
+    )
+    return plan, record
+
+
+def _measurement_samples(
+    circuit: MemoryCircuit, plan: _MeasurementPlan, record: torch.Tensor
+) -> MeasurementSamples:
+    """Read the record by handle, in the order the circuit declares its handles.
+
+    The handle vector and the record's column order are two statements of the
+    same layout, so the columns are looked up in the plan rather than assumed to
+    be the identity: a lowering whose record disagrees with the handles it was
+    derived from is refused here rather than read one column out.
+    """
+
+    refs = circuit.measurement_refs
+    columns: list[int] = []
+    for reference in refs:
+        if reference.round_index is None:
+            column = plan.terminal_columns.get(reference.wire)
+        else:
+            column = plan.syndrome_columns.get((reference.round_index, reference.wire))
+        if column is None:
+            raise ValueError(
+                f"measurement handle (round={reference.round_index}, "
+                f"wire={reference.wire}) has no recorded column in the lowered "
+                "program"
+            )
+        columns.append(column)
+    return MeasurementSamples(refs=refs, outcomes=record[:, columns].to(torch.int8))
+
+
+def sample_memory_measurements(
+    circuit: MemoryCircuit,
+    *,
+    noise: PhenomenologicalNoise,
+    shots: int,
+    seed: int | None = None,
+) -> MeasurementSamples:
+    """Sample every recorded bit of a memory experiment, addressed by handle.
+
+    The run is the one :func:`sample_memory_circuit` performs, read one level
+    lower: the same lowering, the same noise locations and the same engine
+    record, with the record returned whole rather than folded into detection
+    events and observable flips. The two readings therefore cannot disagree about
+    a shot -- a detector's parity is the parity of the handles it names, and a
+    handle the layouts drop is still readable.
+
+    Args:
+        circuit: The configured memory experiment to sample.
+        noise: The phenomenological noise the experiment runs under.
+        shots: Positive number of sampled shots.
+        seed: Seed for the sampling stream, under the engine's own reproducibility
+            caveat.
+
+    Returns:
+        A `~flagquantum.qec.MeasurementSamples` whose ``outcomes`` is an ``int8``
+        tensor of shape ``(shots, len(circuit.measurement_refs))``.
+
+    Raises:
+        TypeError: ``circuit`` is not a memory circuit, ``noise`` is not a
+            phenomenological noise record, or ``shots`` or ``seed`` is not an
+            integer.
+        ValueError: ``shots`` is not positive, or the program does not lower to
+            identical syndrome rounds that measure each check once.
+        StabilizerDependencyError: The optional stabilizer engine is not
+            installed.
+    """
+
+    if not isinstance(circuit, MemoryCircuit):
+        raise TypeError("circuit must be a MemoryCircuit")
+    if not isinstance(noise, PhenomenologicalNoise):
+        raise TypeError("noise must be a PhenomenologicalNoise")
+    shots = _checked_shots(shots)
+    seed = _checked_seed(seed)
+    plan, record = _sample_record(circuit, noise=noise, shots=shots, seed=seed)
+    return _measurement_samples(circuit, plan, record)
+
+
 def sample_memory_circuit(
     circuit: MemoryCircuit,
     *,
@@ -412,15 +617,9 @@ def sample_memory_circuit(
         raise TypeError("noise must be a PhenomenologicalNoise")
     shots = _checked_shots(shots)
     seed = _checked_seed(seed)
-    plan = _measurement_plan(circuit)
-    locations = _noise_locations(circuit, plan, noise)
-    program = _noisy_program(plan, locations)
-    data_wires = tuple(circuit.code.data_wires)
-    record = sample_noisy_measurements(
-        program, shots=shots, terminal_wires=data_wires, seed=seed
-    )
+    plan, record = _sample_record(circuit, noise=noise, shots=shots, seed=seed)
     detectors, observables = _recorded_bits(circuit, plan, record)
     return DemSample(detectors=detectors, observables=observables)
 
 
-__all__ = ("sample_memory_circuit",)
+__all__ = ("MeasurementSamples", "sample_memory_circuit", "sample_memory_measurements")

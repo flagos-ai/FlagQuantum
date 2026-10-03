@@ -2,7 +2,10 @@
 
 The source is a bounded hybrid-compiler program that runs the configured number
 of syndrome-extraction rounds and returns the final check measurement. Detector
-and observable identity is derived from the code, so a caller never asserts it.
+and observable identity is derived from the code, so a caller never asserts it,
+and the measurement handles the experiment records are derived from the code the
+same way, so a recorded bit is named by a handle rather than by a column index a
+caller has to know.
 """
 
 from __future__ import annotations
@@ -162,6 +165,35 @@ class MemoryCircuit:
                 "the configured rounds"
             )
         self._validate_layout()
+
+    @property
+    def measurement_refs(self) -> tuple[MeasurementRef, ...]:
+        """Every measurement location this configured experiment records.
+
+        The vector is the handles the circuit itself declares rather than the
+        subset its layouts happen to reference, and it is read off the code and
+        the round count, so it needs no lowering: one handle per check per
+        syndrome round -- the source measures every check once every round -- in
+        round-major order, then one handle per data wire for the terminal
+        readout. A position in this vector is what names a recorded bit.
+
+        The two sets need not coincide in either direction, which is why the
+        vector is stated here rather than collected from the layouts. A one-round
+        surface patch measures its X-type checks once and no detector names them,
+        because an X-type check is deterministic neither in round zero nor at the
+        terminal readout, so those bits are recorded and referenced by nothing; a
+        longer experiment does name every handle, because each round after the
+        first compares against the round before it. Reading a handle by name does
+        not depend on which of the two holds.
+        """
+
+        refs = [
+            MeasurementRef(round_index, check.ancilla_wire)
+            for round_index in range(self.rounds)
+            for check in self.code.checks
+        ]
+        refs.extend(MeasurementRef(None, wire) for wire in self.code.data_wires)
+        return tuple(refs)
 
     def _validate_layout(self) -> None:
         """Tie every detector and observable reference to what this code declares."""

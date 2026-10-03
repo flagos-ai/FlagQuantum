@@ -94,7 +94,7 @@ fail_closed = "symbols_absent names the two matrix-level records and the operati
 
 [[rows]]
 id = "qec_detector_annotations"
-status = "partial"
+status = "aligned"
 floor = "now"
 floor_override_reason = "The quantum_error_correction domain has no capability row of its own for detector annotations; the surface items are listed under cudaq_surface and the construction half is folded into qec_code_library, whose priority is now. The floor follows the row this feeds."
 domain_items = [
@@ -103,8 +103,8 @@ domain_items = [
 ]
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
-baseline = "In a CUDA-Q kernel body: detector(m0, ...) declares one detector as a parity constraint over measurement handles, detectors(prev, curr) pairs two equal-length handle vectors element-wise into cross-round detectors, and logical_observable(m0, ...) declares an observable. Handles come from mz/mx/my and are discriminated with to_bools or to_integer; the compiler intercepts the annotations, so calling them at host scope raises."
-target = "Detector and observable identity derived from the code and carried by the circuit record, so a decoder is configured by the detection events it consumes rather than by an asserted count."
+baseline = "In a CUDA-Q kernel body: detector(m0, ...) declares one detector as a parity constraint over measurement handles, detectors(prev, curr) pairs two equal-length handle vectors element-wise into cross-round detectors, and logical_observable(m0, ...) declares an observable, so detector and observable identity is a statement in the kernel rather than in a table beside it. Handles come from mz/mx/my and are values rather than column indices: the same handle is what to_bools turns into a boolean vector on one line and what to_integer packs into one integer on another, and both readings take the measurement that was taken, not a second one. The compiler intercepts the annotations, so calling them at host scope raises."
+target = "Detector and observable identity derived from the code and carried by the circuit record rather than asserted beside it, and every measurement the experiment records addressable by a handle whose outcome a caller reads off as a boolean vector or as an integer, so a decoder is configured by the detection events it consumes and host logic over a mid-circuit measurement does not need a column index."
 symbols_present = [
     "flagquantum.qec.build_memory_circuit",
     "flagquantum.qec.DetectorLayout",
@@ -112,6 +112,14 @@ symbols_present = [
     "flagquantum.qec.Detector",
     "flagquantum.qec.LogicalObservable",
     "flagquantum.qec.MeasurementRef",
+    "flagquantum.qec.MemoryCircuit.measurement_refs",
+    "flagquantum.qec.MeasurementSamples",
+    "flagquantum.qec.MeasurementSamples.outcome",
+    "flagquantum.qec.MeasurementSamples.vector",
+    "flagquantum.qec.MeasurementSamples.integer",
+    "flagquantum.qec.MeasurementSamples.shots",
+    "flagquantum.qec.MeasurementSamples.num_handles",
+    "flagquantum.qec.sample_memory_measurements",
 ]
 symbols_absent = [
     "flagquantum.qec.detector",
@@ -122,11 +130,12 @@ symbols_absent = [
 ]
 evidence = [
     "flagquantum/qec/circuit.py",
+    "flagquantum/qec/sampling.py",
     "tests/qec/test_memory_circuit.py",
     "tests/qec/test_memory_circuit_execution.py",
+    "tests/qec/test_measurement_handles.py",
 ]
-next_action = "Decide the annotation form deliberately. This layer sets detector and observable identity in a layout object beside a source string; CUDA-Q sets it in the kernel body, where the compiler needs the annotation to survive into IR. If the kernel-annotation form is adopted it needs a handle type, an interception rule and a host-scope refusal, and the layout object has to survive as the record of what the annotations meant. The measurement-handle half is the harder one: to_bools and to_integer are what make a mid-circuit measurement usable in host logic, and nothing here has an equivalent."
-fail_closed = "Five named absences, so the row cannot silently drift into claiming a kernel-level annotation surface; the layouts are validated dense and ordered by the records themselves, and the terminal-readout-only rule on LogicalObservable is a construction-time refusal rather than a convention. The three annotation names are checked as dotted paths because `detectors` and `detector` occur here as field and parameter names, where a bare-name search would be noise."
+fail_closed = "The row's own surface is closed and the five absences are what keep it from closing further than it can. Detector and observable identity is derived and validated: the layout count is the code's checks and rounds rather than a caller's number, every reference is tied to a declared wire and round, and the observable readout is refused unless it is terminal and matches the declared support exactly. The handle layer is closed against the layout layer rather than beside it: MemoryCircuit.measurement_refs is read off the code and the round count, so a handle is a name the experiment declares and never a column a caller guessed, and tests/qec/test_measurement_handles.py recomputes every detector's parity and every observable's flip from the handles that detector and observable name and requires the two readings of one run to agree shot for shot, so the record and the events cannot drift into two stories about one shot. A reading is refused rather than clamped when it does not fit: a handle the experiment does not record raises with the handle named, an empty reading raises, a reading addressed by anything but a MeasurementRef raises as a type error, and a record whose tensor is not two-dimensional or whose column count does not match its handle vector raises, so a mis-shaped reading cannot be silently truncated to the shorter of the two. The order a caller asks in is the order it gets -- vector is one boolean per handle per shot in the order named and integer packs that same order with the first handle least significant -- and the tests pin the packing against the bit vector rather than against a second call of the same method, so two orders name two integers and neither can be read as the other's. What the handle layer does not do is decide which handles are deterministic, and the tests say so by measurement rather than by convention: a noiseless run reads a Z-type check's ancilla as 0 in every round, an X-type check's ancilla as unbiased, and an individual terminal data wire as unbiased, while every detector and every observable reads 0 -- so a handle-level rate can never be reported as a channel rate, and the round-zero X-type bits the layouts drop are readable without being mistaken for pinned ones. The three annotation names stay checked as dotted paths because `detectors` and `detector` occur here as field and parameter names, where a bare-name search would be noise, and the two handle-reading names stay absent because this layer reads a handle on the record that holds it rather than through a per-measurement conversion call."
 
 [[rows]]
 id = "qec_syndrome_extraction_owner"
