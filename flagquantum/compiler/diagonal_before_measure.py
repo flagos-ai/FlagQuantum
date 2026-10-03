@@ -159,8 +159,7 @@ def remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
     for index in range(len(instructions) - 1, -1, -1):
         instruction = instructions[index]
         if _is_diagonal(instruction) and all(
-            _is_unconditional_measure(successor.get(wire))
-            for wire in instruction.wires
+            _is_unconditional_measure(successor.get(wire)) for wire in instruction.wires
         ):
             # A removed gate keeps its slot in `successor` unclaimed, so the gate
             # behind it sees the measurement too and the whole run collapses in

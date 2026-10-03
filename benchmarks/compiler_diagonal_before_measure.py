@@ -179,6 +179,23 @@ def _gate(name: str, wires: tuple[int, ...], **params: float) -> Instruction:
     return Instruction(name, wires, params=params)
 
 
+def _avoiding(candidate: str, preferences: tuple[str, ...]) -> str:
+    """The first preferred opcode that is not the candidate's own.
+
+    Every gate a shape program adds besides the candidate is picked through here, and
+    every preference below is non-diagonal. Two facts follow, and both columns of the
+    shape table depend on them: the pass under test can only ever remove the candidate,
+    so a length difference is the candidate's removal and nothing else; and the
+    candidate's opcode occurs exactly once, so an anchor that counts opcodes is
+    answering about the candidate and not about one of its neighbours.
+    """
+
+    for name in preferences:
+        if name != candidate:
+            return name
+    raise AssertionError(f"no opcode avoids {candidate!r}")
+
+
 def _params_for(name: str, point: dict[str, float]) -> dict[str, float]:
     schema = OPERATOR_SCHEMAS[canonical_opcode(name)]
     return {key: point[key] for key in schema.parameters}
@@ -186,6 +203,26 @@ def _params_for(name: str, point: dict[str, float]) -> dict[str, float]:
 
 def _names(ir: CircuitIR) -> list[str]:
     return [instruction.name for instruction in ir.instructions]
+
+
+def _signature(ir: CircuitIR) -> tuple[Any, ...]:
+    """An equality key for a program that never touches a matrix tensor.
+
+    ``Instruction`` is a frozen dataclass holding a ``torch.Tensor``, so comparing two
+    instructions directly would compare tensors and raise. The opcode, the wires and
+    the parameters are what a length-equal comparison needs to distinguish -- notably
+    a fused ``u3`` from a bare ``h``.
+    """
+
+    return tuple(
+        (
+            instruction.name,
+            instruction.wires,
+            tuple(sorted(instruction.params.items())),
+            instruction.matrix is not None,
+        )
+        for instruction in ir.instructions
+    )
 
 
 def _matrix(name: str, wires: tuple[int, ...], params: dict[str, float]) -> torch.Tensor:
@@ -418,12 +455,15 @@ def _worst_distribution_difference(
 
 
 def _measures_are_terminal(ir: CircuitIR) -> bool:
-    """Whether every measurement is in one contiguous block at the end.
+    """Whether at least one measurement is present and all of them close the program.
 
     The exact instrument reads the distribution off the final state, which is the
     distribution a measurement block at the end reports. A program that measures and
     then keeps computing is a different instrument's problem, so the shape table
-    asserts this precondition rather than assuming it.
+    asserts this precondition rather than assuming it. A program with no measurement
+    at all is *not* terminal: every measurement is vacuously terminal there, the
+    instrument would compare two empty distributions, and the row would report a
+    removal as invisible for having measured nothing.
     """
 
     seen = False
@@ -432,7 +472,7 @@ def _measures_are_terminal(ir: CircuitIR) -> bool:
             seen = True
         elif seen:
             return False
-    return True
+    return seen
 
 
 def _terminal_program(
@@ -443,14 +483,23 @@ def _terminal_program(
     A two-wire candidate is placed after a Bell preparation so that its diagonal
     character is observable in principle: on ``|00>`` every two-wire operator reads
     out identically, and a shape table built on ``|00>`` would measure nothing. A
-    third wire carries a ``t`` and is measured too, so "a gate on another qubit" is a
-    shape these programs can express.
+    third wire carries a one-qubit gate and is measured too, so "a gate on another
+    qubit" is a shape these programs can express.
+
+    Every gate here goes through :func:`_avoiding` and is non-diagonal, so the
+    candidate is the only instruction in the program this pass may delete.
     """
 
+    name = instruction.name
+    one = _avoiding(name, ("h", "x"))
     if len(instruction.wires) == 2:
-        preparation = (_gate("h", (0,)), _gate("cx", (0, 1)), _gate("t", (2,)))
+        preparation = (
+            _gate(one, (0,)),
+            _gate(_avoiding(name, ("cx", "cy")), (0, 1)),
+            _gate(one, (2,)),
+        )
     else:
-        preparation = (_gate("h", (0,)),)
+        preparation = (_gate(one, (0,)),)
     measures = (_measure(0, 0), _measure(1, 1), _measure(2, 2))
     program = _circuit((*preparation, instruction, *measures), wire_count)
     return program, preparation, measures
@@ -484,17 +533,26 @@ def _shape_programs() -> list[tuple[str, CircuitIR, str, int]]:
         rows.append(
             (
                 f"{name}|a_gate_on_another_qubit",
-                _circuit((*preparation, candidate, _gate("h", (2,)), *measures)),
+                _circuit(
+                    (
+                        *preparation,
+                        candidate,
+                        _gate(_avoiding(name, ("h", "x")), (2,)),
+                        *measures,
+                    )
+                ),
                 name,
                 index,
             )
         )
 
         # A gate on one of the candidate's own wires, between it and the measurement.
+        # It must be non-diagonal, or the pass would remove it rather than the
+        # candidate and the row's length difference would belong to the blocker.
         if len(wires) == 2:
-            blocker = _gate("cx", (0, 1))
+            blocker = _gate(_avoiding(name, ("cx", "cy")), (0, 1))
         else:
-            blocker = _gate("h", (0,))
+            blocker = _gate(_avoiding(name, ("h", "x")), (0,))
         rows.append(
             (
                 f"{name}|a_gate_on_its_wire",
@@ -507,7 +565,7 @@ def _shape_programs() -> list[tuple[str, CircuitIR, str, int]]:
         rows.append(
             (
                 f"{name}|no_measurement",
-                _circuit((_gate("h", (0,)), candidate)),
+                _circuit((_gate(_avoiding(name, ("h", "x")), (0,)), candidate)),
                 name,
                 1,
             )
@@ -555,7 +613,7 @@ def _shape_programs() -> list[tuple[str, CircuitIR, str, int]]:
                             *preparation,
                             candidate,
                             _measure(0, 0),
-                            _gate("t", (1,)),
+                            _gate(_avoiding(name, ("h", "x")), (1,)),
                             _measure(1, 1),
                             _measure(2, 2),
                         )
@@ -639,7 +697,14 @@ def _to_qiskit(ir: CircuitIR) -> Any:
                 body = QuantumCircuit(qubits, bits)
                 body.measure(targets[0], bits[classical])
                 condition = next(iter(instruction.metadata.get("conditions", ((0, 1),))))
-                circuit.append(IfElseOp((bits[condition[0]], condition[1]), body), targets)
+                # The body is built over this circuit's own registers, so the operation
+                # spans all of them and `append` must be handed all of them; passing the
+                # operand qubits alone is rejected as a width mismatch.
+                circuit.append(
+                    IfElseOp((bits[condition[0]], condition[1]), body),
+                    list(qubits),
+                    list(bits),
+                )
             else:
                 circuit.measure(targets[0], bits[classical])
             continue
@@ -650,11 +715,17 @@ def _to_qiskit(ir: CircuitIR) -> Any:
             body = QuantumCircuit(qubits, bits)
             gate = _qiskit_builder(instruction.name, params)
             if gate is None:
-                getattr(body, instruction.name)(*targets)
+                # The named circuit method takes the same parameters, in the same
+                # order, that the instruction carries.
+                getattr(body, instruction.name)(*params.values(), *targets)
             else:
                 body.append(gate, targets)
             condition = next(iter(instruction.metadata["conditions"]))
-            circuit.append(IfElseOp((bits[condition[0]], condition[1]), body), targets)
+            circuit.append(
+                IfElseOp((bits[condition[0]], condition[1]), body),
+                list(qubits),
+                list(bits),
+            )
             continue
         if instruction.matrix is not None:
             # A caller-supplied matrix has no opcode class; Qiskit's list-based pass
@@ -673,15 +744,34 @@ def _to_qiskit(ir: CircuitIR) -> Any:
     return circuit
 
 
+_QISKIT_DISAGREEMENT_REASONS = {
+    "i": (
+        "Qiskit's diagonal_1q_gates names no IGate, so it keeps an identity that this "
+        "pass removes"
+    ),
+    "phase": (
+        "PhaseGate is not a U1Gate subclass, so Qiskit keeps a `p` where it would "
+        "remove an appended U1Gate of the same operator"
+    ),
+    "cphase": (
+        "CPhaseGate is not a CU1Gate subclass, so Qiskit keeps a `cp` where it would "
+        "remove a CU1Gate of the same operator"
+    ),
+}
+
+
 def _qiskit_shape_anchor(
     programs: dict[str, CircuitIR],
+    verdicts: dict[str, bool],
 ) -> dict[str, Any]:
     """Qiskit's own ``RemoveDiagonalGatesBeforeMeasure`` over the identical programs.
 
     The anchor is a cross-check, not a dependency: this module has to run on a machine
-    with no Qiskit at all. Where the two ports disagree the row is reported with the
-    reason, and the disagreements are the three published in the module docstring --
-    ``i``, ``phase`` (so ``p`` too), and ``cphase``.
+    with no Qiskit at all. A row disagrees when the anchor's answer differs from the
+    pass's own, and every disagreement has to be one of the three class-membership
+    facts published in the module docstring -- ``i``, ``phase`` (so ``p`` too), and
+    ``cphase``. An unlisted disagreement raises rather than being filed under a reason
+    that does not fit it.
     """
 
     try:
@@ -710,18 +800,14 @@ def _qiskit_shape_anchor(
         removed[label] = max(
             0, before.get(candidate, 0) - after_counts.get(candidate, 0)
         )
-        if removed[label] == 0 and candidate in {
-            "i",
-            "phase",
-            "u3",
-            "rx",
-            "ry",
-            "cphase",
-        }:
-            disagreed[label] = (
-                "the anchor tests gate classes, and this operator is not a member of "
-                "the class its list names"
-            )
+        if (removed[label] > 0) != verdicts[label]:
+            reason = _QISKIT_DISAGREEMENT_REASONS.get(candidate)
+            if reason is None:
+                raise AssertionError(
+                    f"{label}: the anchor and the pass disagree, and no published "
+                    f"class-membership reason covers {candidate!r}"
+                )
+            disagreed[label] = reason
     return {
         "available": True,
         "pass_name": "RemoveDiagonalGatesBeforeMeasure",
@@ -744,7 +830,15 @@ def shape_table() -> dict[str, Any]:
 
     rows = _shape_programs()
     programs = {label: program for label, program, _, _ in rows}
-    anchor = _qiskit_shape_anchor(programs)
+    # The pass's own answer is measured first, because the anchor's disagreements are
+    # defined against it: an anchor answer counts as a disagreement only where the two
+    # differ, and a reason has to be produced for each of those before the anchor is
+    # allowed to report.
+    verdicts = {
+        label: len(remove_diagonal_gates_before_measure(program)) < len(program)
+        for label, program in programs.items()
+    }
+    anchor = _qiskit_shape_anchor(programs, verdicts)
 
     recorded: list[dict[str, Any]] = []
     for label, program, candidate, index in rows:
@@ -756,7 +850,15 @@ def shape_table() -> dict[str, Any]:
             1 for item in program.instructions if item.name == candidate
         ) == 1, label
 
-        from_pass = len(remove_diagonal_gates_before_measure(program)) < len(program)
+        # Every other gate in the program is non-diagonal, so the pass can only be
+        # removing the candidate. Without this the length difference would silently
+        # include whatever else the rule deleted and the row would claim a reach the
+        # rule does not have.
+        by_the_pass = remove_diagonal_gates_before_measure(program)
+        removed_here = len(program) - len(by_the_pass)
+        assert removed_here <= 1, (label, removed_here)
+        from_pass = removed_here == 1
+        assert from_pass == verdicts[label], label
         shipped = optimize(program)
         from_pipeline = len(shipped) < len(program)
 
@@ -786,6 +888,9 @@ def shape_table() -> dict[str, Any]:
                 "candidate": candidate,
                 "gap": label.split("|", 1)[1],
                 "candidate_wire_count": len(instruction.wires),
+                "candidate_is_diagonal": _measured_diagonal(
+                    candidate, instruction.wires, instruction.params
+                ),
                 "removed_by_the_pass": from_pass,
                 "removed_in_the_pipeline": from_pipeline,
                 "instrument": instrument,
@@ -807,6 +912,37 @@ def shape_table() -> dict[str, Any]:
             1
             for row in recorded
             if not row["removed_by_the_pass"] and row["removable_in_fact"] is True
+        ),
+        # A declined row whose candidate the matrix calls diagonal is a rule limit: the
+        # gate commutes with the measurement and the rule still declined, for a
+        # structural reason. Two reasons account for every one of them, and they are
+        # counted apart because they are different limits: a condition on the candidate
+        # or on the measurement, and a successor on the candidate's wire that is not a
+        # measurement. A declined row whose candidate the matrix does *not* call
+        # diagonal is invisible only in this program -- ``x`` on ``|+>``, ``swap`` on a
+        # Bell pair -- and the rule is state-independent, so it may not take those.
+        "declined_but_removable_behind_a_condition_count": sum(
+            1
+            for row in recorded
+            if not row["removed_by_the_pass"]
+            and row["removable_in_fact"] is True
+            and row["gap"]
+            in {"the_measurement_is_conditional", "the_candidate_is_conditional"}
+        ),
+        "declined_but_removable_blocked_by_a_later_instruction_count": sum(
+            1
+            for row in recorded
+            if not row["removed_by_the_pass"]
+            and row["removable_in_fact"] is True
+            and row["gap"]
+            not in {"the_measurement_is_conditional", "the_candidate_is_conditional"}
+        ),
+        "declined_but_removable_diagonal_count": sum(
+            1
+            for row in recorded
+            if not row["removed_by_the_pass"]
+            and row["removable_in_fact"] is True
+            and row["candidate_is_diagonal"]
         ),
         "removed_but_not_removable_count": sum(
             1
@@ -929,43 +1065,60 @@ def pipeline_delta() -> list[dict[str, Any]]:
         ("two_wire_diagonal_before_two_measurements", _population_two_wire),
         ("a_gate_blocked_by_a_later_rotation", _population_blocked),
         ("a_mixed_program", _population_mixed),
+        (
+            "a_mixed_program_with_mid_circuit_measurements",
+            _population_mixed_with_mid_circuit_measures,
+        ),
     ]
 
     rows = []
     for label, builder in populations:
-        source_total = 0
-        legacy_removed = 0
-        alone_removed = 0
-        pipeline_removed = 0
-        executed = 0
+        source_count = legacy_count = optimized_count = 0
+        removed_by_the_legacy = removed_by_the_pass_alone = 0
+        removed_by_the_pass_in_the_pipeline = 0
+        changed = executed = 0
         worst = 0.0
         for seed in range(_CIRCUITS_PER_POPULATION):
             program = builder(random.Random(_SWEEP_SEED + seed))
             legacy = _legacy_pipeline(program)
             shipped = optimize(program)
-            if not _measures_are_terminal(program):
-                continue
-            moved = _worst_distribution_difference(
-                _exact_outcome_distribution(program),
-                _exact_outcome_distribution(shipped),
-            )
-            executed += 1
-            worst = max(worst, moved)
-            source_total += len(program)
-            legacy_removed += len(program) - len(legacy)
-            alone_removed += len(program) - len(
+            source_count += len(program)
+            legacy_count += len(legacy)
+            optimized_count += len(shipped)
+            removed_by_the_legacy += len(program) - len(legacy)
+            removed_by_the_pass_alone += len(program) - len(
                 remove_diagonal_gates_before_measure(program)
             )
-            pipeline_removed += len(program) - len(shipped)
+            removed_by_the_pass_in_the_pipeline += len(legacy) - len(shipped)
+            # Not a length comparison. The pass can delete the candidate and leave a bare
+            # preparation where the legacy loop instead folds the two gates into one, and
+            # both programs are then one instruction shorter: the length ties while the
+            # programs differ, and a `0` in the delta column would then read as "no
+            # effect" when the effect is a different program of the same size.
+            changed += int(_signature(shipped) != _signature(legacy))
+            if not _measures_are_terminal(program):
+                continue
+            executed += 1
+            worst = max(
+                worst,
+                _worst_distribution_difference(
+                    _exact_outcome_distribution(program),
+                    _exact_outcome_distribution(shipped),
+                ),
+            )
         rows.append(
             {
                 "label": label,
                 "circuit_count": _CIRCUITS_PER_POPULATION,
-                "source_instruction_count": source_total,
-                "removed_by_the_legacy_pipeline": legacy_removed,
-                "removed_by_the_pass_alone": alone_removed,
-                "removed_by_the_pass_in_the_pipeline": pipeline_removed - legacy_removed,
-                "removed_in_the_pipeline": pipeline_removed,
+                "source_instruction_count": source_count,
+                "legacy_instruction_count": legacy_count,
+                "optimized_instruction_count": optimized_count,
+                "removed_by_the_legacy_pipeline": removed_by_the_legacy,
+                "removed_by_the_pass_alone": removed_by_the_pass_alone,
+                "removed_by_the_pass_in_the_pipeline": (
+                    removed_by_the_pass_in_the_pipeline
+                ),
+                "changed_circuit_count": changed,
                 "executed_circuit_count": executed,
                 "instrument": "exact_outcome_distribution",
                 "max_outcome_distribution_difference": worst,
@@ -1041,6 +1194,28 @@ def _population_blocked(seed: random.Random) -> CircuitIR:
 
 
 def _population_mixed(seed: random.Random) -> CircuitIR:
+    """A general program, measuring only at the end, so every circuit is terminal.
+
+    Terminal by construction: the exact instrument reads the distribution off the final
+    state, so a circuit that measures and then keeps computing is not a row this
+    instrument can witness. The mid-circuit variant below is where that shape lives.
+    """
+
+    return _mixed_instructions(seed, mid_circuit_measures=False)
+
+
+def _population_mixed_with_mid_circuit_measures(seed: random.Random) -> CircuitIR:
+    """The same generator, also free to measure mid-program.
+
+    Those circuits are not terminal, so this population's arithmetic columns cover all
+    of its circuits while only the terminal ones carry an execution witness. The row
+    reports both counts rather than silently dropping the unwitnessed circuits.
+    """
+
+    return _mixed_instructions(seed, mid_circuit_measures=True)
+
+
+def _mixed_instructions(seed: random.Random, *, mid_circuit_measures: bool) -> CircuitIR:
     instructions: list[Instruction] = []
     written: list[int] = []
     for _ in range(seed.randint(2, 14)):
@@ -1065,7 +1240,7 @@ def _population_mixed(seed: random.Random) -> CircuitIR:
             params = {key: seed.choice((0.3, -0.7)) for key in schema.parameters}
             pair = tuple(seed.sample(range(_REGISTER_WIDTH), 2))
             instructions.append(Instruction(opcode, pair, params=params))
-        else:
+        elif mid_circuit_measures:
             bit = len(written)
             instructions.append(_measure(wire, bit))
             written.append(bit)
@@ -1126,7 +1301,11 @@ def main() -> None:
     )
     print(
         f"shapes: {shapes['row_count']} rows, removed {shapes['removed_count']}, "
-        f"declined-but-removable {shapes['declined_but_removable_count']}, "
+        f"declined-but-invisible {shapes['declined_but_removable_count']} "
+        f"({shapes['declined_but_removable_behind_a_condition_count']} behind a "
+        f"condition, "
+        f"{shapes['declined_but_removable_blocked_by_a_later_instruction_count']} "
+        f"blocked by a later instruction), "
         f"removed-but-not-removable {shapes['removed_but_not_removable_count']}"
     )
     print(
@@ -1135,10 +1314,13 @@ def main() -> None:
     )
     for row in payload["pipeline_delta"]:
         print(
-            f"  {row['label']}: source {row['source_instruction_count']}, "
-            f"legacy {row['removed_by_the_legacy_pipeline']}, "
-            f"pass {row['removed_by_the_pass_alone']}, "
-            f"pipeline {row['removed_by_the_pass_in_the_pipeline']}"
+            f"  {row['label']}: {row['source_instruction_count']} -> "
+            f"{row['legacy_instruction_count']} legacy -> "
+            f"{row['optimized_instruction_count']} shipped, pass alone "
+            f"{row['removed_by_the_pass_alone']}, in the pipeline "
+            f"{row['removed_by_the_pass_in_the_pipeline']}, programs changed "
+            f"{row['changed_circuit_count']}, worst distribution difference "
+            f"{row['max_outcome_distribution_difference']:.3e}"
         )
 
     if args.json_output is not None:

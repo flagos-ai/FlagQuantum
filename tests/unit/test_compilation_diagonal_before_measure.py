@@ -45,7 +45,7 @@ from flagquantum.compiler.diagonal_before_measure import (
     remove_diagonal_gates_before_measure,
 )
 from flagquantum.compiler.one_qubit_synthesis import is_diagonal_one_qubit
-from flagquantum.core.ir import CircuitIR, IRValidationError, Instruction
+from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 from flagquantum.core.operator_schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
@@ -91,7 +91,9 @@ def _angles_for(name: str, point: dict[str, float]) -> dict[str, float]:
     return {key: point[key] for key in schema.parameters}
 
 
-def _matrix(name: str, wires: tuple[int, ...], params: dict[str, float]) -> torch.Tensor:
+def _matrix(
+    name: str, wires: tuple[int, ...], params: dict[str, float]
+) -> torch.Tensor:
     width = 2 ** len(wires)
     return gate_matrix(
         Instruction(name, wires, params=params),
@@ -300,7 +302,7 @@ def test_a_two_wire_gate_is_unaffected_by_a_third_wire() -> None:
 
 @pytest.mark.parametrize("opcode", sorted(_DIAGONAL_TWO_WIRE))
 def test_every_declared_two_wire_opcode_reaches_the_removal(opcode: str) -> None:
-    params = {key: 0.3 for key in _angles_for(opcode, _GENERIC)}
+    params = dict.fromkeys(_angles_for(opcode, _GENERIC), 0.3)
     ir = CircuitIR(
         2, (Instruction(opcode, (0, 1), params=params), _measure(0, 0), _measure(1, 1))
     )
@@ -316,7 +318,7 @@ def test_every_declared_two_wire_opcode_reaches_the_removal(opcode: str) -> None
     sorted(set(_TWO_WIRE_UNITARIES) - set(_DIAGONAL_TWO_WIRE)),
 )
 def test_a_non_diagonal_two_wire_opcode_is_never_removed(opcode: str) -> None:
-    params = {key: 0.3 for key in _angles_for(opcode, _GENERIC)}
+    params = dict.fromkeys(_angles_for(opcode, _GENERIC), 0.3)
     ir = CircuitIR(
         2, (Instruction(opcode, (0, 1), params=params), _measure(0, 0), _measure(1, 1))
     )
@@ -331,9 +333,7 @@ def test_a_non_diagonal_two_wire_opcode_is_never_removed(opcode: str) -> None:
 def test_a_conditional_measurement_blocks_the_removal() -> None:
     """A condition is the one event this pass cannot see the whole program across."""
 
-    conditioned = CircuitIR(
-        2, (_gate("z", (0,)), _measure(0, 0, conditions=((0, 1),)))
-    )
+    conditioned = CircuitIR(2, (_gate("z", (0,)), _measure(0, 0, conditions=((0, 1),))))
     clauses = CircuitIR(
         2, (_gate("z", (0,)), _measure(0, 0, condition_clauses=((0, 1),)))
     )
@@ -626,7 +626,9 @@ def test_the_pass_only_deletes_and_never_invents_an_instruction() -> None:
             schema = get_operator_schema(name)
             assert schema is not None
             params = {key: rng.choice((0.0, 0.3)) for key in schema.parameters}
-            instructions.append(Instruction(name, (rng.randrange(width),), params=params))
+            instructions.append(
+                Instruction(name, (rng.randrange(width),), params=params)
+            )
         instructions.append(_measure(0))
         source = CircuitIR(width, tuple(instructions))
         after = remove_diagonal_gates_before_measure(source)
