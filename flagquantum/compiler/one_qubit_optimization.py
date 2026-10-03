@@ -34,7 +34,9 @@ opcodes would therefore come back longer than it started if it were re-spelled
 here. `optimize` is target-independent and cannot see the target's basis, so it
 declines the one case where its own vocabulary is the wrong one. The fold
 targets the runs no single z-rotation/pulse basis can keep, which is where the
-reduction is real.
+reduction is real. A run whose product is the identity is not re-spelled but
+deleted, so this decline does not apply to it even when its opcodes spell one
+pair; `_declines_vocabulary` states why and what that reaches.
 
 **No trainable angle is folded.** Composition reads numeric amplitudes, and a
 trainable angle has no numeric value to read; the same reason
@@ -315,6 +317,10 @@ def _single_basis_pair(instructions: list[Instruction]) -> tuple[str, str] | Non
     spelled in `rz` and `sx`, folding them took the intermediate program from 758
     to 371 gates while the target-legal output grew from 758 to 902 — the fold
     was undone by the lowering, at a 19% cost.
+
+    That reason needs a replacement to re-spell, so this answers only half the
+    question; `_declines_vocabulary` is the rule, and it is what `_fold_run`
+    consults.
     """
 
     opcodes = [canonical_opcode(item.name) for item in instructions]
@@ -331,6 +337,35 @@ def _single_basis_pair(instructions: list[Instruction]) -> tuple[str, str] | Non
     return next(iter(z_rotations), _Z_ROTATION_OPCODE), next(iter(pulses))
 
 
+def _declines_vocabulary(
+    instructions: list[Instruction], replacement: tuple[Instruction, ...]
+) -> bool:
+    """Whether the vocabulary decline applies to this run and this replacement.
+
+    The decline exists because `native_gate_legalization` re-spells a folded `u3`
+    back into the run it came from, so folding a run a target already publishes
+    loses more downstream than it saves here. A replacement with no gates is not a
+    re-spelling of the run but the run's deletion: the run's product *is* the
+    identity, and a lowering has nothing to put back. The decline therefore does
+    not apply, and the run is deleted rather than left standing.
+
+    Deleting is the direction that needs evidence, so it is measured from both
+    sides. Over the declared single-qubit unitary opcodes, sweeping runs of two to
+    four gates, 291 runs have a product that emits nothing and were left standing
+    only because their opcodes spell one z-rotation/pulse pair — `sx sx sx sx`
+    among them, exact to 0.000e+00 — and the worst distance from the identity over
+    those 291 is 7.348e-16, which is the float noise `_emit` already accepts on
+    every run it folds. On the other side, a 60000-run dense sweep over the same
+    opcodes deletes 1376 runs and every one of them is within 7.071e-13 of the
+    identity, while the 331 runs whose product is `-I` are all written back as a
+    rotation instead.
+    """
+
+    if not replacement:
+        return False
+    return _single_basis_pair(instructions) is not None
+
+
 def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None:
     """The exact replacement of one same-wire run, or None to leave it.
 
@@ -339,8 +374,6 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
     Every instruction here is foldable and readable, so there is no third case.
     """
 
-    if _single_basis_pair(instructions) is not None:
-        return None
     product = _run_product(instructions)
     if product is None:
         return None
@@ -349,7 +382,11 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
         qubit=instructions[0].wires[0],
         metadata=instructions[0].metadata,
     )
-    return replacement if len(replacement) < len(instructions) else None
+    if len(replacement) >= len(instructions):
+        return None
+    if _declines_vocabulary(instructions, replacement):
+        return None
+    return replacement
 
 
 def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
@@ -361,9 +398,10 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     the wire and land in the same place in program order.
 
     A run is left untouched when it carries a trainable angle, when a single
-    z-rotation/pulse vocabulary already spells it, or when folding it would not
-    be strictly shorter. A wider gate, a measurement, or a barrier ends the run
-    instead of joining it, so the gates on either side of one still fold.
+    z-rotation/pulse vocabulary already spells it and the replacement has gates
+    in it, or when folding it would not be strictly shorter. A wider gate, a
+    measurement, or a barrier ends the run instead of joining it, so the gates on
+    either side of one still fold.
     """
 
     output: list[Instruction | None] = []
