@@ -62,7 +62,7 @@ version and are never reused for a different semantic.
 ## Current inventory
 
 The catalog describes the code that already exists. It contains 23 semantics,
-25 Triton implementation entry points, and three FlagTree TLE implementation
+25 Triton implementation entry points, and four FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -72,7 +72,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-003 | `statevector.apply.cnot_sequence.local` | `apply_complex64_local_cx_segment`, `cx_sequence` |
 | FQK-SV-004 | `statevector.apply.ry_rz_pair.local` | `ry_rz_pair` |
 | FQK-SV-005 | `statevector.apply.rx_rz_sequence.local` | `repeated_rx_rz` |
-| FQK-SV-006 | `statevector.distributed.transpose_apply_1q` | `apply_complex64_transpose_1q_inplace` |
+| FQK-SV-006 | `statevector.distributed.transpose_apply_1q` | `apply_complex64_transpose_1q_inplace`, `apply_complex64_transpose_1q_tle_inplace` (FlagTree TLE) |
 | FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
@@ -147,6 +147,28 @@ not authorize default dispatch. It is bounded single-device development
 evidence, not a release gate or scalability claim. Reproduce or validate it
 with
 [`benchmarks/flagtree_tle_local_1q.py`](../../benchmarks/flagtree_tle_local_1q.py).
+
+`FQKI-FLAGTREE-SV-006-A` applies the same explicit provider boundary to the
+fused distributed transpose and one-qubit gate. TLE async annotations cover
+both the retained local half-shard and the received remote half-shard; matrix
+scalars retain ordinary `tl.load` for the FlagTree 0.7.0 limitation above. The
+wrapper validates the exact contiguous `[B, 2**n]` state and `[B, 2**(n-1)]`
+received layouts before probing FlagTree, and default distributed dispatch
+continues to select the shared Triton implementation.
+
+The checked-in
+[`flagtree_tle_transpose_1q_a800.json`](../../benchmarks/results/local/flagtree_tle_transpose_1q_a800.json)
+artifact records 30 synchronized groups of 10 invocations for both exchanged
+bit values and four fixed state sizes from `2**10` through `2**24` amplitudes
+on `jp-a800-171` and `jp-a800-172` with FlagTree 0.7.0. TLE reaches `0.875x`
+to `0.968x` the speed of the shared Triton implementation and `1.472x` to
+`12.499x` the speed of the PyTorch reference. Maximum absolute and relative L2
+errors are `4.81e-7` and `3.70e-8`. The canonical decision is
+`retain_explicit`: the provider is correct and directly measurable but lacks a
+cross-matrix performance win, so it does not authorize default dispatch. This
+is single-device development evidence, not distributed scalability or release
+evidence. Reproduce or validate it with
+[`benchmarks/flagtree_tle_transpose_1q.py`](../../benchmarks/flagtree_tle_transpose_1q.py).
 
 `FQKI-FLAGTREE-SV-007-A` and `FQKI-FLAGTREE-SV-008-A` extend the same explicit
 provider boundary to distributed-CX control-subspace pack and unpack. Their TLE

@@ -280,6 +280,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector",),
     ),
     _flagtree(
+        "FQKI-FLAGTREE-SV-006-A",
+        "statevector.distributed.transpose_apply_1q",
+        "flagquantum.kernels.flagtree",
+        "apply_complex64_transpose_1q_tle_inplace",
+        layouts=("sharded_statevector",),
+        addressing=("distributed", "transpose"),
+    ),
+    _flagtree(
         "FQKI-FLAGTREE-SV-007-A",
         "statevector.transport.control_subspace_pack",
         "flagquantum.kernels.flagtree",
