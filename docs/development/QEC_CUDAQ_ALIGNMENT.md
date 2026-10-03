@@ -55,7 +55,7 @@ from the matrix's `priority`, the row states why.
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
-| `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches, the error-id column and the context object landed; no per-mechanism rates vector, no canonicalization. |
+| `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
@@ -67,11 +67,11 @@ from the matrix's `priority`, the row states why.
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
-Everything a `supported` row would need is deliberately *not* claimed here. One
-row is `aligned` and the rest are not, and the single `aligned` row is the one
-whose upstream surface has no item left unaccounted for, symbol by symbol. The
-checker enforces the floor of that bar rather than the bar itself: an `aligned`
-row must name a symbol that resolves and may not sit on a matrix row that says
+Everything a `supported` row would need is deliberately *not* claimed here. Two
+rows are `aligned` and the rest are not, and an `aligned` row is one whose
+upstream surface has no item left unaccounted for, symbol by symbol. The checker
+enforces the floor of that bar rather than the bar itself: an `aligned` row must
+name a symbol that resolves and may not sit on a matrix row that says
 `unsupported`. That a row clears the mechanical bar is therefore not the
 argument for calling it aligned; the argument is in the sections below, where
 each row states what it closed and what it did not, and a row that still has a
@@ -298,13 +298,65 @@ round, which has no band after it, and in every round of a one-round run — and
 relation between the two mechanism sets instead of as a tolerance, so it cannot
 widen unnoticed.
 
-What stays open is the rate record, not the fault family. `hx` and `lx` are read,
-but upstream's `CssNoise` also carries `px`/`py`/`pz`/`pm` per qubit or per check
-and here the record states uniform scalars, so a per-location profile is still
-not expressible. That limit is carried by `dem_code_capacity_noise`, which stays
-`reshaped`. The record set is the other thing the code-row target implies and
-does not yet have: a colour code has no record even though the CSS shape now
-admits one, which is the absence `symbol:flagquantum.qec.color_code` states.
+What stays open is the carrier of the rate record and not the rates. `hx` and
+`lx` are read, and the four families `CssNoise` carries — `px`, `pz`, `py` and
+`pm` — are stated here as `data_flip`, `phase_flip`, `both_flip` and
+`measurement_flip` with the same four per-qubit and per-check override vectors
+and the same override rule, so a per-location profile *is* expressible and a code
+reaches a code-capacity model at one. What is not the same is where the record
+lives: upstream folds it into the argument its matrix entry point takes, while
+here it is a standalone frozen dataclass whose vectors are resolved against a
+count the reader supplies rather than against a noise object that knows it. That
+limit is carried by `dem_code_capacity_noise`, which stays `reshaped`. The record
+set is the other thing the code-row target implies and does not yet have: a
+colour code has no record even though the CSS shape now admits one, which is the
+absence `symbol:flagquantum.qec.color_code` states.
+
+**What `qec_dem_matrices_and_rates` closed.** This row is a data-shape row
+rather than a capability of its own, and it was the one that kept moving because
+the shapes it pins are what the two rows around it consume. Upstream's baseline
+for it names six things, and the row is `aligned` because all six are now
+reachable under one orientation: `detector_error_matrix` and
+`observables_flips_matrix` are the same matrices with rows for detectors and
+observables and columns for mechanisms, `error_rates` is the same one-rate-per-
+column vector, `error_ids` is the same optional column that says which mechanisms
+are alternatives, `num_detectors()` / `num_error_mechanisms()` / `num_observables()`
+are `num_detectors`, `num_errors` and `num_observables`, and
+`measurement_to_detectors()` is `DecoderInputs.measurement_to_detectors` from
+section 3.5. The closed-form half — `detector_rates` and `observable_rates` — is
+this repository's own and is what makes the marginal rates an exact statement
+rather than a simulation.
+
+The rate column was the last of the three additions the row listed, and it is
+worth stating what it is *not*, because the obvious implementation would be
+wrong. `DetectorErrorModel.error_rates` is not a probability distribution over
+the model and it is not `detector_rates()` under a new name: entry `i` is the
+rate mechanism `i` itself states, so a model whose two mechanisms both touch
+detector zero reports `(0.1, 0.2)` there while `detector_rates()` reports
+`0.26`, and a model that states two mechanisms are alternatives reports each
+member's own rate rather than the group's summed mass. Folding a group stays in
+the marginal accessors, where the group is a statement about which mechanisms
+fire together rather than a rewrite of what any one of them is worth. The test
+asserts both readings side by side on one model, so an accessor that returned the
+marginals, composed two mechanisms on one detector by parity, or sorted the rates
+would fail rather than pass.
+
+The one property the vector rests on is that its order is the matrices' column
+order and not the caller's argument order, and that is a fact about the model
+rather than about the accessor: a `DetectorErrorModel` normalizes its mechanisms
+into a single sequence, and every column view — both matrices, both vectors — is
+read from that sequence. Two models stated in opposite orders therefore produce
+the same matrices *and* the same rate vector, which is what lets a matcher take a
+column's support and that column's weight from one index. The test pins each
+entry against the column it weights rather than against the vector alone.
+
+What the row does not own, and therefore does not wait on, is canonicalization.
+The round structure a matcher would read is the operation `canonicalize_for_rounds`
+performs upstream, and here it is recorded where it belongs: as the `absent` field
+row `dem_canonicalize`, whose negative search names the symbol, with
+`qec_dem_chunking` carrying the seam work that would sit behind it. That absence
+is a fact about a different operation rather than a gap in this row's surface, so
+the row is `aligned` and the absence is named in one place instead of two.
 
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
@@ -386,6 +438,18 @@ counts, the sampling function, the memory-circuit entry point, the matrix-level
 entry point, the noise record, the measurement-to-detector map, the kernel
 annotation surface, the decoder registry, the decoder result record and the
 decoder base protocol. The widest of these:
+
+- **Per-error rates.** Upstream keeps one parallel `error_rates` vector beside
+  the matrices; here each mechanism's rate is a field of its own record and
+  `DetectorErrorModel.error_rates` projects the vector back out, so the two views
+  cannot drift the way a stored pair of parallel arrays can. The vector is the
+  same length as a matrix's column count and in the same order — the model's
+  normalized mechanism order, so entry `i` and column `i` are one mechanism —
+  which is what lets a reader take a column's support and its weight from one
+  index. It is deliberately not a distribution: a mechanism reports the rate it
+  states, so a grouped model reports each member's own rate and the folding stays
+  in `detector_rates` and `observable_rates`, which are different quantities
+  again (marginals over detectors and over observables, not per mechanism).
 
 - **Error ids.** Upstream states the correlation in a vector parallel to the
   rates, and documents nothing about the distribution a group of alternatives
@@ -671,7 +735,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_carrier` | reshaped | Upstream is an opaque object with operations and recorded DEM-text provenance; here it is a frozen, validated, immutable record. |
 | `dem_detector_matrix` | equivalent | Same orientation, same entries; `numpy uint8` against `torch int8`. |
 | `dem_observable_matrix` | equivalent | Same, and upstream also documents the consumer idiom (`O @ errors % 2`). |
-| `dem_error_rates` | reshaped | Per-column vector upstream, per-error record here; no vector accessor. |
+| `dem_error_rates` | reshaped | Same quantity and now the same vector; per-mechanism record projected out rather than stored per column. |
 | `dem_error_ids` | reshaped | The correlation is stated, in the mechanism's own record: `DemError.error_id` groups mechanisms that are alternatives, `DetectorErrorModel.error_ids` projects upstream's parallel vector back out, `None` where upstream has `nullopt`, and the marginal rates and the sampler read a group as one fault. Upstream fixes neither the distribution a group implies nor what happens when a group's probabilities overflow a shot; here the members are disjoint pieces of one shot and an overflow is refused rather than renormalized. Stim text cannot carry the statement, so `to_stim_text` refuses an id-carrying model and names the ids. |
 | `dem_counts` | reshaped | Methods upstream against properties here; `num_error_mechanisms` against `num_errors`. |
 | `dem_sampling_function` | reshaped | Free function over matrix + rates returning syndromes *and* mechanisms, against a model method returning detectors + observables. |

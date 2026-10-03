@@ -299,9 +299,14 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_dem_merge", "symbols_present", None),
     ),
     (
+        # The row this mutation is planted in is `partial` on the other half of
+        # its own scope, so the branch it reaches is the partial one. It moved
+        # here when `qec_dem_matrices_and_rates` became `aligned`: a row that
+        # changes status must not quietly move a mutation onto the aligned
+        # branch, where it would still fail but for a different reason.
         "leave a partial row with nothing present",
         "must name the symbols_present entry",
-        lambda t: set_key(t, "qec_dem_matrices_and_rates", "symbols_present", None),
+        lambda t: set_key(t, "qec_dem_construction", "symbols_present", None),
     ),
     (
         "leave a gap row with no proof at all",
@@ -424,17 +429,21 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         ),
     ),
     (
-        # The row's additions are recorded as named absences and one of them has
-        # landed. Leaving it in symbols_absent is how a closed gap keeps being
-        # reported as open, which is what the staleness check reads the tree to
-        # catch.
+        # The column this looks for has landed, so listing it as absent is how a
+        # closed gap keeps being reported as open -- which is what the staleness
+        # check reads the tree to catch. The name is planted in the row that
+        # consumes the column rather than in the row whose surface it closed,
+        # because the check resolves the name against the checkout and does not
+        # care which row is doing the reporting. The item is bare because this
+        # row's list is written one entry per line, and the mutator supplies the
+        # quotes itself for that shape.
         "keep the error-id column listed as absent now that the model states it",
         "symbols_absent 'error_ids' exists as a definition somewhere",
         lambda t: append_to_list(
             t,
-            "qec_dem_matrices_and_rates",
+            "qec_decoder_family",
             "symbols_absent",
-            '"error_ids"',
+            "error_ids",
         ),
     ),
 ]
