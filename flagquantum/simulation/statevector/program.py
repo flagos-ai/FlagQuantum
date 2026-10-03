@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypeAlias
@@ -129,6 +130,14 @@ def _preallocated_batch_assembly_beneficial(
     return not (has_rotation_sequence and has_clifford_matching)
 
 
+def _static_product_state_initialization_enabled() -> bool:
+    """Whether a complete static Clifford layer may initialize ``|0>``."""
+
+    return os.getenv(
+        "FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
 def _native_zero_state_prefix_length(
     program: Sequence[_StatevectorProgramStep], width: int
 ) -> int:
@@ -137,9 +146,9 @@ def _native_zero_state_prefix_length(
     occupied: set[int] = set()
     expected = set(range(width))
     for index, step in enumerate(program):
-        if not (
-            isinstance(step, _StatevectorDisjointDenseStep)
-            and step.native_parameterized
+        if not isinstance(step, _StatevectorDisjointDenseStep) or not (
+            step.native_parameterized
+            or (step.native_clifford and _static_product_state_initialization_enabled())
         ):
             return 0
         step_wires = tuple(
@@ -169,7 +178,10 @@ def _direct_batch_assembly_beneficial(
     """Whether every window can begin in its owned final-result slice."""
 
     return bool(_native_zero_state_prefix_length(program, width)) and all(
-        isinstance(step, _StatevectorDisjointDenseStep)
-        and (step.native_parameterized or step.native_clifford)
+        isinstance(step, _StatevectorCliffordMatchingStep)
+        or (
+            isinstance(step, _StatevectorDisjointDenseStep)
+            and (step.native_parameterized or step.native_clifford)
+        )
         for step in program
     )

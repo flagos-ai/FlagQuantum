@@ -15,6 +15,7 @@ from ..native_cpu.rotation import (
     fused_product_state_initialization_,
     fused_rotation_block_forward_,
     fused_static_clifford_layer_,
+    fused_static_product_state_initialization_,
     native_cpu_one_qubit_layer_available,
 )
 from .program import (
@@ -568,6 +569,20 @@ def initialize_native_product_state(
         or state.requires_grad
     ):
         return False
+    if all(step.native_clifford for step in dense_steps) and all(
+        isinstance(region, _StatevectorGateStep) for region in regions
+    ):
+        gate_codes = tuple(
+            _NATIVE_CLIFFORD_CODES[canonical_opcode(region.instruction.name)]
+            for region in regions
+            if isinstance(region, _StatevectorGateStep)
+        )
+        return fused_static_product_state_initialization_(
+            state,
+            torch.tensor(gate_codes, dtype=torch.int8, device=state.device),
+            torch.tensor(wires, dtype=torch.int64, device=state.device),
+            n_qubits=n_qubits,
+        )
     matrices = tuple(matrix_builder(region, state) for region in regions)
     if any(matrix.ndim not in {2, 3} or matrix.requires_grad for matrix in matrices):
         return False

@@ -29,24 +29,24 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Sixty-three distinct revisions are recorded under the three walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other sixty-two appear below in one
+# Sixty-four distinct revisions are recorded under the three walked roots, and one of
+# them -- a commit on `main` -- is obtainable. The other sixty-three appear below in one
 # of three states.
 #
-# `unreferenced_object` (forty revisions) means no branch and no tag reaches
+# `unreferenced_object` (forty-one revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all forty by name, each confirmed by the counted measurement the method
+# serves all forty-one by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the forty is the head of a closed
-# pull request. No ref of this repository reaches any of the forty, so a
+# policy rather than a promise, and one of the forty-one is the head of a closed
+# pull request. No ref of this repository reaches any of the forty-one, so a
 # complete clone obtains none of them; thirty-two are absent from this checkout's object
-# database as well, and the remaining eight linger here without a ref, which is what an
+# database as well, and the remaining nine linger here without a ref, which is what an
 # answer read from the checkout rather than from the declaration would depend on.
 #
-# Fourteen of the forty entered this table from a direction the first pass could
+# Fourteen of the forty-one entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -67,7 +67,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# Two more of the forty entered from the citation direction. The first is
+# Two more of the forty-one entered from the citation direction. The first is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
@@ -94,6 +94,12 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # answered with the object for this revision on two attempts, and no ref of this
 # repository reaches it, which is `unreferenced_object` for the same reason as the rest
 # of the class.
+#
+# The forty-first, `a28d9e1d0540a92743c9fcf6163578c57400c6d5`, is recorded by
+# `benchmarks/results/local/tn_layout_contraction_a800.json`. The artifact entered on
+# `main` after this table was last updated. Both repository-scoped commit API paths
+# serve the object by its full name, while no branch or tag reaches it, so it is an
+# `unreferenced_object` under the same rule as the preceding revisions.
 #
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -122,7 +128,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # scoped to
 # the repository the revision is declared against --
 # `gh api repos/flagos-ai/FlagQuantum/git/commits/<revision>`, and the same path under
-# `/commits/<revision>` -- which answered with the object for all forty
+# `/commits/<revision>` -- which answered with the object for all forty-one
 # `unreferenced_object` revisions and with `404` for all eighteen
 # `producing_host_history` revisions, two attempts each, and with `404` for the four
 # `external_dependency` revisions, which are commits of other repositories and are
@@ -565,6 +571,10 @@ origin = "unreferenced_object"
 [[artifact.revision]]
 value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
 origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "a28d9e1d0540a92743c9fcf6163578c57400c6d5"
+origin = "unreferenced_object"
 
 [[artifact.revision]]
 value = "c997a21955972f1255aa58ee26ba756aac7d3f7e"
