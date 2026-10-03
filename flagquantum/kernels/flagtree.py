@@ -150,6 +150,61 @@ def apply_complex64_transpose_1q_tle_inplace(
     )
 
 
+def fused_complex64_sharded_1q_vjp_adjoint_tle(
+    local_before: torch.Tensor,
+    remote_before: torch.Tensor,
+    local_adjoint: torch.Tensor,
+    remote_adjoint: torch.Tensor,
+    matrix: torch.Tensor,
+    derivative_matrix: torch.Tensor,
+    *,
+    rank_basis: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Evaluate one rank's sharded 1q VJP with FlagTree TLE vector loads."""
+
+    tensors = (local_before, remote_before, local_adjoint, remote_adjoint)
+    if (
+        local_before.device.type != "cuda"
+        or local_before.dtype != torch.complex64
+        or local_before.ndim != 2
+        or local_before.numel() == 0
+        or any(tensor.device != local_before.device for tensor in tensors)
+        or any(tensor.dtype != local_before.dtype for tensor in tensors)
+        or any(tensor.shape != local_before.shape for tensor in tensors)
+        or any(not tensor.is_contiguous() for tensor in tensors)
+        or rank_basis not in {0, 1}
+    ):
+        raise ValueError(
+            "FlagTree TLE sharded VJP requires matching nonempty contiguous "
+            "CUDA complex64 chunks and a binary rank basis"
+        )
+    if matrix.shape != (2, 2) or derivative_matrix.shape != (2, 2):
+        raise ValueError("FlagTree TLE sharded VJP requires two 2x2 matrices")
+
+    matrix = matrix.to(device=local_before.device, dtype=torch.complex64).contiguous()
+    derivative_matrix = derivative_matrix.to(
+        device=local_before.device,
+        dtype=torch.complex64,
+    ).contiguous()
+    require_flagtree_tle_primitive("load", backend=local_before.device.type)
+    kernel: Any = import_module(
+        ".triton.extensions.tle.statevector_adjoint",
+        package=__package__,
+    )
+    return cast(
+        tuple[torch.Tensor, torch.Tensor],
+        kernel.launch_complex64_sharded_1q_vjp_adjoint_tle(
+            local_before,
+            remote_before,
+            local_adjoint,
+            remote_adjoint,
+            matrix,
+            derivative_matrix,
+            rank_basis=rank_basis,
+        ),
+    )
+
+
 def pack_complex64_control_one_tle(
     state: torch.Tensor,
     *,
@@ -243,6 +298,7 @@ def unpack_complex64_control_one_tle(
 __all__ = (
     "apply_complex64_local_1q_tle",
     "apply_complex64_transpose_1q_tle_inplace",
+    "fused_complex64_sharded_1q_vjp_adjoint_tle",
     "pack_complex64_control_one_tle",
     "require_flagtree_tle_primitive",
     "unpack_complex64_control_one_tle",

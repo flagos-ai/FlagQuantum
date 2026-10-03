@@ -47,8 +47,8 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     validate_catalog()
 
     assert len(SEMANTICS) == 23
-    assert len(IMPLEMENTATIONS) == 29
-    assert len(EVIDENCE) == 29
+    assert len(IMPLEMENTATIONS) == 30
+    assert len(EVIDENCE) == 30
     assert {semantic.domain for semantic in SEMANTICS} == {
         "gradient",
         "mps",
@@ -68,6 +68,7 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     assert maturity_by_id["FQKI-FLAGTREE-SV-006-A"] == "experimental"
     assert maturity_by_id["FQKI-FLAGTREE-SV-007-A"] == "experimental"
     assert maturity_by_id["FQKI-FLAGTREE-SV-008-A"] == "experimental"
+    assert maturity_by_id["FQKI-FLAGTREE-GR-003-A"] == "experimental"
     assert set(maturity_by_id.values()) == {"experimental", "provisional"}
 
 

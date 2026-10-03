@@ -16,6 +16,18 @@
 
 #include "linear_permutation.h"
 
+// GCC 11 rejects OpenMP SIMD directives nested in the ATen dispatch and
+// parallel lambdas below, even though newer GCC and Clang accept them. Keep
+// those loops scalar on GCC 11 and older so the native CPU extension remains
+// buildable on Ubuntu 22.04 without changing their numerical semantics.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 12
+#define FQ_OPENMP_SIMD_PRAGMA(...)
+#else
+#define FQ_OPENMP_PRAGMA_IMPL(value) _Pragma(#value)
+#define FQ_OPENMP_PRAGMA(value) FQ_OPENMP_PRAGMA_IMPL(value)
+#define FQ_OPENMP_SIMD_PRAGMA(...) FQ_OPENMP_PRAGMA(omp simd __VA_ARGS__)
+#endif
+
 namespace {
 
 using flagquantum_native::LinearLookup;
@@ -1762,7 +1774,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                   real_t raw_gradient_x = real_t{0};
                   real_t raw_gradient_y = real_t{0};
                   real_t raw_gradient_z = real_t{0};
-                  _Pragma("omp simd reduction(+:raw_gradient_x,raw_gradient_y,raw_gradient_z)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:raw_gradient_x,raw_gradient_y,raw_gradient_z))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1808,7 +1821,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                           raw_gradient_y -
                       full_sines[gate + 1] * raw_gradient_z;
                 } else {
-                  _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:gradient_rz,gradient_ry,gradient_rx))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1853,7 +1867,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               } else {
                 for (int64_t block = 0; block < local_size;
                      block += local_block) {
-                  _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:gradient_rz,gradient_ry,gradient_rx))
                   for (int64_t offset = 0; offset < local_mask; ++offset) {
                     const int64_t local = block + offset;
                     const int64_t one = local + local_mask;
@@ -1909,7 +1924,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               if (enable_pair_fast_path) {
                 const int64_t local_block = local_mask << 1;
                 if (enable_flat_pair_simd) {
-                  _Pragma("omp simd reduction(+:gate_gradient)")
+                  FQ_OPENMP_SIMD_PRAGMA(reduction(+:gate_gradient))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1932,7 +1947,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                 } else {
                   for (int64_t block = 0; block < local_size;
                        block += local_block) {
-                    _Pragma("omp simd reduction(+:gate_gradient)")
+                    FQ_OPENMP_SIMD_PRAGMA(reduction(+:gate_gradient))
                     for (int64_t offset = 0; offset < local_mask; ++offset) {
                       const int64_t local = block + offset;
                       const int64_t one = local + local_mask;
@@ -2012,7 +2027,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               const int64_t local_mask = int64_t{1} << wire;
               for (int64_t block = 0; block < local_size;
                    block += 2 * local_mask) {
-                _Pragma("omp simd")
+                FQ_OPENMP_SIMD_PRAGMA()
                 for (int64_t offset = 0; offset < local_mask; ++offset) {
                   const int64_t local = block + offset;
                   const int64_t one = local + local_mask;

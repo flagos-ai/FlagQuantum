@@ -153,6 +153,11 @@ governance. It links every authoritative raw artifact, summarizes absolute
 times and cross-framework ratios, provides public example code and reproduction
 commands, and states the conditions required to restart CPU optimization.
 
+[`LINUX_X86_GCC11_NATIVE_CPU_ADJOINT_20261003.md`](LINUX_X86_GCC11_NATIVE_CPU_ADJOINT_20261003.md)
+records the Ubuntu 22.04/GCC 11 native-adjoint build fix, two-node build and
+correctness validation, and pinned single-thread Xeon comparison with
+PennyLane Lightning.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes

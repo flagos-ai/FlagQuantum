@@ -12,7 +12,7 @@ determinant and ``rz`` for the rest — which reproduces the run's matrix exactl
 including the phase, at the cost of at most one extra gate. This module measures
 both sides of that trade and the one place the trade is not worth making.
 
-Four results are recorded here.
+Five results are recorded here.
 
 * **The fold is exact.** Over 1200 entangled two-wire programs the whole
   program's statevector moves by at most ``1.058e-13`` at ``complex128``, which
@@ -37,8 +37,19 @@ Four results are recorded here.
   ``rz`` and ``sx`` is a 17.6% loss: the fold shortens the intermediate program
   from 771 gates to 384 and the legal output grows from 771 to 907, because the
   target's own lowering re-spells every folded ``u3``. The decline is
-  `_single_basis_pair`, and it is the reason the fold does not fire on a program
+  `_declines_vocabulary`, and it is the reason the fold does not fire on a program
   a target would have kept as it stood.
+* **The decline is not owed to a run that deletes itself.** A run spelled in one
+  z-rotation/pulse vocabulary whose product *is* the identity has no replacement
+  for a lowering to re-spell, so declining it only keeps gates that would have
+  gone. On a population built out of exactly those runs the exemption takes the
+  legal gate count from 685 to 511, with no circuit regressing and 34 improving,
+  while on the seeded ``rz``/``sx`` population it moves 771 to 763 -- the same
+  direction, two orders of magnitude smaller, and carried here as the control
+  that shows the exemption is not a general relaxation of the decline. The other
+  side of that edge is `-I`: it is a global phase, `CircuitIR` cannot store one,
+  and over 60000 random runs every one of the 331 products equal to `-I` is
+  written back as a rotation instead of deleted.
 * **Qiskit's pass is shorter per run and is not comparable per gate.** On the
   same runs, Qiskit's ``Optimize1qGates`` reaches a mean of 0.985 to 0.999 gates
   per run against the port's 1.450 to 1.896, because a run it folds to a single
@@ -56,7 +67,9 @@ gate. Re-run it with::
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import math
 import random
 import unittest.mock
 from dataclasses import dataclass
@@ -78,6 +91,8 @@ from flagquantum.compiler.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.compiler.one_qubit_optimization import (
+    _emit,
+    _fold_run,
     _run_product,
 )
 from flagquantum.compiler.pipeline import optimize
@@ -106,6 +121,12 @@ _STATE_SEED = 20261004
 STATE_TRIAL_COUNT = 1200
 _NATIVE_SEED = 20261005
 NATIVE_CIRCUIT_COUNT = 80
+_IDENTITY_SEED = 20261118
+#: Runs in the boundary sweep. It is the instrument that has to find a wrong
+#: deletion rather than the one that proves there is none, so it is the largest
+#: population here and it is asserted to delete something, not merely to be
+#: clean: a sweep that empties nothing proves nothing.
+_IDENTITY_SWEEP_COUNT = 60000
 
 #: Run lengths the fold table is measured on. Two is the shortest run worth
 #: folding; six is where a run is long enough for the output length to be
@@ -114,15 +135,61 @@ RUN_LENGTHS = (2, 3, 4, 5, 6)
 
 
 @dataclass(frozen=True)
-class BasisReach:
-    """One basis's legal gate total with and without the vocabulary decline."""
+class IdentityReach:
+    """One population's totals under the three versions of the decline rule.
+
+    ``strict`` is the pre-change rule and ``shipped`` is the exemption; the
+    difference between them is the exemption's whole reach on this population.
+    ``regressed`` counts circuits whose *legal* gate count grew, so a total that
+    looked like a gain while some programs grew cannot pass. The four
+    ``disabled_`` fields measure the reach the exemption leaves on the table, per
+    circuit and in gates, because the aggregate is exactly what would hide a
+    single program that the further change broke.
+    """
 
     label: str
-    declined_optimized: int
-    declined_legal: int
-    folded_optimized: int
-    folded_legal: int
+    circuit_count: int
+    source_gates: int
+    strict_optimized: int
+    strict_legal: int
+    shipped_optimized: int
+    shipped_legal: int
+    disabled_optimized: int
+    disabled_legal: int
+    circuits_improved: int
+    circuits_regressed: int
+    circuits_disabled_rule_improves: int
+    circuits_disabled_rule_regresses: int
+    gates_disabled_rule_improves: int
+    gates_disabled_rule_regresses: int
+    worst_raw_state_difference: float
+
+
+@dataclass(frozen=True)
+class BasisReach:
+    """One basis's gate totals under the three versions of the decline rule.
+
+    ``strict`` declines every run spelled in one z-rotation/pulse vocabulary;
+    ``shipped`` declines only the ones whose replacement has gates in it; and
+    ``disabled`` never declines. The strict arm is the pre-change rule and it
+    reuses the shipped `_single_basis_pair`, so it cannot drift away from the
+    vocabulary it is supposed to be testing.
+    """
+
+    label: str
+    strict_optimized: int
+    strict_legal: int
+    shipped_optimized: int
+    shipped_legal: int
+    disabled_optimized: int
+    disabled_legal: int
     refused_circuits: int
+
+
+#: The three versions of `one_qubit_optimization._declines_vocabulary` the reach
+#: table is measured under. Each entry is a replacement predicate; the ``shipped``
+#: arm is the module's own, which is why it has no patch here.
+_DECLINE_RULES: tuple[str, ...] = ("strict", "shipped", "disabled")
 
 
 def single_qubit_instruction(opcode: str, rng: random.Random) -> Instruction:
@@ -274,55 +341,440 @@ def _native_circuits() -> list[CircuitIR]:
     return circuits
 
 
-def _legal_gate_count(circuits: list[CircuitIR], basis: Basis) -> tuple[int, int, int]:
-    """Total legal gate count, total optimized gate count, refused circuits."""
+def _decline_patch(rule: str) -> Any:
+    """A patcher putting `_declines_vocabulary` into one of the three versions.
+
+    The ``strict`` version is the rule as it was before the empty-replacement
+    exemption, written in terms of the shipped `_single_basis_pair` so that it
+    tests the same vocabulary the exemption is about.
+    """
+
+    if rule == "shipped":
+        return contextlib.nullcontext()
+    if rule == "disabled":
+        return unittest.mock.patch.object(
+            one_qubit_optimization,
+            "_declines_vocabulary",
+            lambda instructions, replacement: False,
+        )
+    if rule == "strict":
+        return unittest.mock.patch.object(
+            one_qubit_optimization,
+            "_declines_vocabulary",
+            lambda instructions, replacement: (
+                one_qubit_optimization._single_basis_pair(instructions) is not None
+            ),
+        )
+    raise ValueError(f"unknown decline rule {rule!r}")
+
+
+def _legal_gate_count(
+    circuits: list[CircuitIR], basis: Basis, *, rule: str = "shipped"
+) -> tuple[int, int, int]:
+    """Total optimized gates, total legal gates, and refused circuits."""
 
     capability = snapshot(basis)
     optimized_total = 0
     legal_total = 0
     refused = 0
-    for circuit in circuits:
-        rewritten = optimize(circuit)
-        optimized_total += len(rewritten.instructions)
-        try:
-            result = legalize_native_gates(
-                rewritten, snapshot=capability, evaluated_at=_NOW
-            )
-        except NativeGateLegalizationError:
-            refused += 1
-            continue
-        legal_total += len(result.program.instructions)
+    with _decline_patch(rule):
+        for circuit in circuits:
+            rewritten = optimize(circuit)
+            optimized_total += len(rewritten.instructions)
+            try:
+                result = legalize_native_gates(
+                    rewritten, snapshot=capability, evaluated_at=_NOW
+                )
+            except NativeGateLegalizationError:
+                refused += 1
+                continue
+            legal_total += len(result.program.instructions)
     return optimized_total, legal_total, refused
 
 
 def basis_reach() -> list[BasisReach]:
-    """Each basis's totals with the decline rule and with it disabled.
+    """Each basis's totals under all three versions of the decline rule.
 
-    Disabling the rule is how the decline is justified as a rule rather than as
-    taste: with `_single_basis_pair` patched to decline nothing, the fold is
-    strictly shorter on the intermediate program and strictly longer after the
-    target's own lowering.
+    The three arms separate two questions the older two-arm table ran together:
+    what the empty-replacement exemption buys, and what disabling the decline
+    entirely would buy. Disabling it is how the decline is justified as a rule
+    rather than as taste: with `_declines_vocabulary` patched to decline nothing,
+    the fold is strictly shorter on the intermediate program and strictly longer
+    after the target's own lowering. The strict arm is the same comparison run
+    against the rule as it was, and it is the arm that shows the exemption is the
+    only part of the decline that was costing anything.
     """
 
     circuits = _native_circuits()
     rows: list[BasisReach] = []
     for basis in DEFAULT_BASES:
-        declined = _legal_gate_count(circuits, basis)
-        with unittest.mock.patch.object(
-            one_qubit_optimization, "_single_basis_pair", lambda instructions: None
-        ):
-            folded = _legal_gate_count(circuits, basis)
+        measured = {
+            rule: _legal_gate_count(circuits, basis, rule=rule)
+            for rule in _DECLINE_RULES
+        }
         rows.append(
             BasisReach(
                 basis.label,
-                declined[0],
-                declined[1],
-                folded[0],
-                folded[1],
-                max(declined[2], folded[2]),
+                measured["strict"][0],
+                measured["strict"][1],
+                measured["shipped"][0],
+                measured["shipped"][1],
+                measured["disabled"][0],
+                measured["disabled"][1],
+                max(value[2] for value in measured.values()),
             )
         )
     return rows
+
+
+def identity_population(seed: int = _IDENTITY_SEED, count: int = 80) -> list[CircuitIR]:
+    """Programs whose runs are spelled in ``rz``/``sx`` and compose to the identity.
+
+    This population exists because the seeded ``rz``/``sx`` population cannot
+    answer the question the exemption raises: a product of random angles in
+    ``(-3, 3)`` is essentially never the identity, so a zero there would be a
+    vacuous pass. Every shape here is a run of one z-rotation/pulse vocabulary
+    whose product is the identity, including the two shapes that are *not*
+    reachable one gate at a time -- ``sx sx sx sx`` and ``rx(a) rx(-a)`` -- which
+    are the runs the exemption is about rather than the ones ``remove_identity``
+    already deletes.
+    """
+
+    rng = random.Random(seed)
+    circuits: list[CircuitIR] = []
+    for _ in range(count):
+        instructions: list[Instruction] = []
+        for _ in range(rng.randint(2, 8)):
+            wire = rng.randrange(3)
+            shape = rng.randrange(5)
+            if shape == 0:
+                instructions.extend([Instruction("sx", (wire,))] * 4)
+            elif shape == 1:
+                angle = rng.uniform(0.1, 3.0)
+                instructions.append(Instruction("rx", (wire,), params={"theta": angle}))
+                instructions.append(
+                    Instruction("rx", (wire,), params={"theta": -angle})
+                )
+            elif shape == 2:
+                instructions.append(
+                    Instruction("rz", (wire,), params={"theta": 2.0 * math.pi})
+                )
+                instructions.append(Instruction("rx", (wire,), params={"theta": 0.0}))
+            elif shape == 3:
+                angle = rng.uniform(0.1, 3.0)
+                instructions.append(Instruction("rz", (wire,), params={"theta": angle}))
+                instructions.append(
+                    Instruction("rz", (wire,), params={"theta": -angle})
+                )
+            else:
+                instructions.append(Instruction("sx", (wire,)))
+                instructions.append(
+                    Instruction("rx", (wire,), params={"theta": rng.uniform(-3.0, 3.0)})
+                )
+        circuits.append(CircuitIR(3, tuple(instructions)))
+    return circuits
+
+
+def _per_circuit_legal_counts(
+    circuits: list[CircuitIR], basis: Basis, rule: str
+) -> list[int]:
+    """The legal gate count of each circuit under one version of the rule.
+
+    A refused circuit falls back to its own length rather than being dropped: a
+    refusal is not a smaller program, and dropping it would let a rule look better
+    than it is on any population the last basis refuses.
+    """
+
+    capability = snapshot(basis)
+    counts: list[int] = []
+    with _decline_patch(rule):
+        for circuit in circuits:
+            folded = optimize(circuit)
+            try:
+                result = legalize_native_gates(
+                    folded, snapshot=capability, evaluated_at=_NOW
+                )
+            except NativeGateLegalizationError:
+                counts.append(len(circuit.instructions))
+                continue
+            counts.append(len(result.program.instructions))
+    return counts
+
+
+def identity_reach() -> list[IdentityReach]:
+    """The exemption's reach and its cost, on the two populations that differ.
+
+    The seeded ``rz``/``sx`` population is carried as a control. It is the
+    population the decline was justified on, so it is the one that would show a
+    regression if the exemption were the general case rather than the identity
+    case; and its own totals move very little, which is the point: the exemption
+    is not a relaxation of the decline, it is the removal of a refusal that never
+    applied.
+
+    Regressions are counted per circuit, not in a total. A total can hide a
+    program that grew behind programs that shrank, which is the failure the
+    aggregate tables of earlier rounds were caught by.
+
+    The last four counts are what the exemption does *not* fix, and they are why
+    the decline stays. They compare the shipped rule with the decline disabled,
+    per circuit. On the identity population disabling the decline is a further
+    gain with no loss, and on the seeded population it is a large loss -- the two
+    numbers together are the evidence that this change is the part of the decline
+    that was never doing anything, and not the decline itself.
+    """
+
+    basis = DEFAULT_BASES[0]
+    rows: list[IdentityReach] = []
+    for label, circuits in (
+        ("identity_vocabulary", identity_population()),
+        ("random_vocabulary", _native_circuits()),
+    ):
+        measured = {
+            rule: _legal_gate_count(circuits, basis, rule=rule)
+            for rule in _DECLINE_RULES
+        }
+        per_circuit = {
+            rule: _per_circuit_legal_counts(circuits, basis, rule)
+            for rule in _DECLINE_RULES
+        }
+        strict_legal = per_circuit["strict"]
+        shipped_legal = per_circuit["shipped"]
+        disabled_legal = per_circuit["disabled"]
+        improved = sum(
+            1 for old, new in zip(strict_legal, shipped_legal, strict=True) if new < old
+        )
+        regressed = sum(
+            1 for old, new in zip(strict_legal, shipped_legal, strict=True) if new > old
+        )
+        disabled_improves = sum(
+            1
+            for now, off in zip(shipped_legal, disabled_legal, strict=True)
+            if off < now
+        )
+        disabled_regresses = sum(
+            1
+            for now, off in zip(shipped_legal, disabled_legal, strict=True)
+            if off > now
+        )
+        disabled_improved_gates = sum(
+            now - off
+            for now, off in zip(shipped_legal, disabled_legal, strict=True)
+            if off < now
+        )
+        disabled_regressed_gates = sum(
+            off - now
+            for now, off in zip(shipped_legal, disabled_legal, strict=True)
+            if off > now
+        )
+        worst_gap = 0.0
+        with _decline_patch("shipped"):
+            after = [optimize(circuit) for circuit in circuits]
+        for source, folded in zip(circuits, after, strict=True):
+            # The comparison is on the raw statevector of a circuit with no
+            # measurement, so a determinant the fold failed to carry would land
+            # as an amplitude difference instead of cancelling.
+            reference = run_local_statevector(
+                source, batch_size=1, device=torch.device("cpu"), dtype=COMPLEX
+            )
+            rewritten = run_local_statevector(
+                folded, batch_size=1, device=torch.device("cpu"), dtype=COMPLEX
+            )
+            worst_gap = max(
+                worst_gap, float(torch.max(torch.abs(reference - rewritten)).item())
+            )
+        rows.append(
+            IdentityReach(
+                label,
+                len(circuits),
+                sum(len(circuit.instructions) for circuit in circuits),
+                measured["strict"][0],
+                measured["strict"][1],
+                measured["shipped"][0],
+                measured["shipped"][1],
+                measured["disabled"][0],
+                measured["disabled"][1],
+                improved,
+                regressed,
+                disabled_improves,
+                disabled_regresses,
+                disabled_improved_gates,
+                disabled_regressed_gates,
+                worst_gap,
+            )
+        )
+    return rows
+
+
+def _instruction_gap(matrix: Any, target: tuple[tuple[complex, complex], ...]) -> float:
+    """Distance from a 2x2 matrix to a target, entrywise in the complex norm."""
+
+    return max(
+        abs(complex(matrix[row][column]) - target[row][column])
+        for row in range(2)
+        for column in range(2)
+    )
+
+
+#: The identity and its negative. `-I` is the boundary the exemption must not
+#: cross: it is a global phase, `CircuitIR` has no field for one, and `_emit`
+#: writes it back as a rotation rather than deleting the run.
+_PLUS_IDENTITY = ((1 + 0j, 0j), (0j, 1 + 0j))
+_MINUS_IDENTITY = ((-1 + 0j, 0j), (0j, -1 + 0j))
+
+
+def identity_boundary() -> dict[str, Any]:
+    """What "emits nothing" means, and what it must never mean.
+
+    The exemption turns a refusal into a deletion, so the fail-closed question is
+    whether "the replacement has no gates" ever means something other than "the
+    run's product is the identity". Two measurements answer it from opposite
+    sides: the named cases pin the shapes that must not be deleted, and the dense
+    sweep counts how often a deletion would have been wrong. A `-I` product must
+    be written back as a rotation, because dropping it would change the program.
+    """
+
+    rng = random.Random(_RUN_SEED + 4242)
+    opcodes = sorted(
+        name
+        for name, schema in OPERATOR_SCHEMAS.items()
+        if schema.unitary and schema.arity == 1
+    )
+    angles = (
+        0.0,
+        1e-16,
+        1e-12,
+        1e-8,
+        1e-4,
+        1e-3,
+        0.3,
+        math.pi / 2.0,
+        math.pi,
+        2.0 * math.pi,
+        2.0 * math.pi - 1e-9,
+        2.0 * math.pi + 1e-9,
+        4.0 * math.pi,
+        -2.0 * math.pi,
+        6.0 * math.pi,
+    )
+    readable = 0
+    emptied = 0
+    worst_empty_gap = 0.0
+    false_yes = 0
+    minus_identity = 0
+    minus_identity_emptied = 0
+    for _ in range(_IDENTITY_SWEEP_COUNT):
+        run = []
+        for _ in range(rng.randint(2, 5)):
+            name = rng.choice(opcodes)
+            schema = OPERATOR_SCHEMAS[name]
+            params = {key: rng.choice(angles) for key in schema.parameters}
+            run.append(Instruction(name, (0,), params=params))
+        product = _run_product(run)
+        if product is None:
+            continue
+        readable += 1
+        replacement = _emit(product, qubit=0, metadata={})
+        if replacement:
+            if _instruction_gap(product, _MINUS_IDENTITY) < 1e-12:
+                minus_identity += 1
+            continue
+        emptied += 1
+        gap = _instruction_gap(product, _PLUS_IDENTITY)
+        worst_empty_gap = max(worst_empty_gap, gap)
+        if gap > 1e-12:
+            false_yes += 1
+        if _instruction_gap(product, _MINUS_IDENTITY) < 1e-12:
+            minus_identity_emptied += 1
+
+    cases: list[dict[str, Any]] = []
+    for label, run in _boundary_cases():
+        product = _run_product(list(run))
+        assert product is not None
+        replacement = _fold_run(list(run))
+        cases.append(
+            {
+                "case": label,
+                "product_is_identity": _instruction_gap(product, _PLUS_IDENTITY)
+                < 1e-12,
+                "product_is_minus_identity": (
+                    _instruction_gap(product, _MINUS_IDENTITY) < 1e-12
+                ),
+                "emits_nothing": not _emit(product, qubit=0, metadata={}),
+                "replacement_length": (
+                    None if replacement is None else len(replacement)
+                ),
+            }
+        )
+    return {
+        "sweep": {
+            "run_count": _IDENTITY_SWEEP_COUNT,
+            "readable_run_count": readable,
+            "runs_emitting_nothing": emptied,
+            "distance_band_asserted": 1e-12,
+            "worst_identity_distance_over_emptied": worst_empty_gap,
+            "false_yes_count": false_yes,
+            "minus_identity_product_count": minus_identity,
+            "minus_identity_emptied_count": minus_identity_emptied,
+        },
+        "cases": cases,
+    }
+
+
+def _boundary_cases() -> list[tuple[str, tuple[Instruction, ...]]]:
+    """The identity and `-I` shapes the exemption has to tell apart."""
+
+    return [
+        (
+            "i_identity_of_zero_angle_pulses",
+            _repeat(Instruction("rx", (0,), params={"theta": 0.0}), 2),
+        ),
+        ("i_identity_of_four_half_pi_pulses", _repeat(Instruction("sx", (0,)), 4)),
+        ("i_identity_of_opposite_rotations", _opposite("rx", 0.7)),
+        (
+            "i_identity_of_two_full_turns",
+            _repeat(Instruction("rz", (0,), params={"theta": 2.0 * math.pi}), 2),
+        ),
+        (
+            "i_identity_of_two_two_pi_u3s",
+            _repeat(
+                Instruction(
+                    "u3", (0,), params={"theta": 2.0 * math.pi, "phi": 0.0, "lbd": 0.0}
+                ),
+                2,
+            ),
+        ),
+        (
+            "minus_i_of_two_half_turns",
+            _repeat(Instruction("rx", (0,), params={"theta": math.pi}), 2),
+        ),
+        (
+            "minus_i_of_a_two_pi_and_a_four_pi_turn",
+            (
+                Instruction("rz", (0,), params={"theta": 2.0 * math.pi}),
+                Instruction("rz", (0,), params={"theta": 4.0 * math.pi}),
+            ),
+        ),
+        ("i_identity_of_two_x_gates", _repeat(Instruction("x", (0,)), 2)),
+        ("i_x_is_not_the_identity", _repeat(Instruction("sx", (0,)), 2)),
+        (
+            "near_identity_is_not_deleted",
+            (
+                Instruction("rz", (0,), params={"theta": 1e-7}),
+                Instruction("rx", (0,), params={"theta": 0.0}),
+            ),
+        ),
+    ]
+
+
+def _repeat(instruction: Instruction, count: int) -> tuple[Instruction, ...]:
+    return tuple(instruction for _ in range(count))
+
+
+def _opposite(opcode: str, angle: float) -> tuple[Instruction, ...]:
+    return (
+        Instruction(opcode, (0,), params={"theta": angle}),
+        Instruction(opcode, (0,), params={"theta": -angle}),
+    )
 
 
 def phase_split() -> dict[str, Any]:
@@ -372,18 +824,54 @@ def run_benchmark(*, bases: tuple[Basis, ...] = DEFAULT_BASES) -> dict[str, Any]
         "basis_reach": [
             {
                 "label": row.label,
-                "declined_rule": {
-                    "optimized_gates": row.declined_optimized,
-                    "legal_gates": row.declined_legal,
+                "strict_rule": {
+                    "optimized_gates": row.strict_optimized,
+                    "legal_gates": row.strict_legal,
+                },
+                "shipped_rule": {
+                    "optimized_gates": row.shipped_optimized,
+                    "legal_gates": row.shipped_legal,
                 },
                 "no_decline_rule": {
-                    "optimized_gates": row.folded_optimized,
-                    "legal_gates": row.folded_legal,
+                    "optimized_gates": row.disabled_optimized,
+                    "legal_gates": row.disabled_legal,
                 },
                 "refused_circuits": row.refused_circuits,
             }
             for row in basis_reach()
         ],
+        "identity_reach": [
+            {
+                "label": row.label,
+                "circuit_count": row.circuit_count,
+                "source_gates": row.source_gates,
+                "strict_rule": {
+                    "optimized_gates": row.strict_optimized,
+                    "legal_gates": row.strict_legal,
+                },
+                "shipped_rule": {
+                    "optimized_gates": row.shipped_optimized,
+                    "legal_gates": row.shipped_legal,
+                },
+                "no_decline_rule": {
+                    "optimized_gates": row.disabled_optimized,
+                    "legal_gates": row.disabled_legal,
+                },
+                "circuits_improved": row.circuits_improved,
+                "circuits_regressed": row.circuits_regressed,
+                "disabled_rule_improves": {
+                    "circuits": row.circuits_disabled_rule_improves,
+                    "gates": row.gates_disabled_rule_improves,
+                },
+                "disabled_rule_regresses": {
+                    "circuits": row.circuits_disabled_rule_regresses,
+                    "gates": row.gates_disabled_rule_regresses,
+                },
+                "worst_raw_state_difference": row.worst_raw_state_difference,
+            }
+            for row in identity_reach()
+        ],
+        "identity_boundary": identity_boundary(),
         "phase_split": phase_split(),
         "reference_anchor": _qiskit_anchor(),
     }
@@ -552,9 +1040,27 @@ def main() -> None:
     for row in payload["basis_reach"]:
         print(
             f"{row['label']}: legal gates "
-            f"{row['declined_rule']['legal_gates']} (declining) vs "
-            f"{row['no_decline_rule']['legal_gates']} (not declining)"
+            f"{row['strict_rule']['legal_gates']} (declining always), "
+            f"{row['shipped_rule']['legal_gates']} (declining a re-spelling), "
+            f"{row['no_decline_rule']['legal_gates']} (never declining)"
         )
+    for row in payload["identity_reach"]:
+        print(
+            f"{row['label']}: legal gates {row['strict_rule']['legal_gates']} -> "
+            f"{row['shipped_rule']['legal_gates']} with the exemption, "
+            f"{row['circuits_improved']} circuits improved and "
+            f"{row['circuits_regressed']} regressed, worst raw difference "
+            f"{row['worst_raw_state_difference']:.3e}"
+        )
+    sweep = payload["identity_boundary"]["sweep"]
+    print(
+        f"boundary: {sweep['runs_emitting_nothing']} deletions over "
+        f"{sweep['readable_run_count']} readable runs, worst identity distance "
+        f"{sweep['worst_identity_distance_over_emptied']:.3e}, "
+        f"{sweep['false_yes_count']} wrong deletions, "
+        f"{sweep['minus_identity_product_count']} `-I` products of which "
+        f"{sweep['minus_identity_emptied_count']} were deleted"
+    )
     if args.json_output is not None:
         payload["generated_at"] = datetime.now(timezone.utc).isoformat()
         args.json_output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
