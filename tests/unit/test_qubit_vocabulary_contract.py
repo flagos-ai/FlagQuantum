@@ -753,6 +753,171 @@ def test_an_attribute_retirement_with_an_unknown_declaration_kind_is_reported() 
     _some(_errors(contract), "must name the declaration kind")
 
 
+def test_an_attribute_alias_table_without_a_removal_version_is_reported() -> None:
+    """An alias is a promise with an end date.
+
+    A deprecation with no named removal version has no removal condition, so
+    nothing can tell a scheduled migration from compatibility debt that was never
+    retired. The version is a contract field for the same reason.
+    """
+
+    contract = _contract()
+    contract["attribute_aliases"].pop("removal_version")
+    _one(_errors(contract), "removal version")
+
+
+def test_an_attribute_alias_that_is_not_a_rename_is_reported() -> None:
+    contract = _contract()
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [
+            {
+                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "replacement": "width",
+            }
+        ],
+    }
+    _some(_errors(contract), "must forward to")
+
+
+def test_an_attribute_alias_without_a_live_declaration_is_reported(
+    tmp_path: Path,
+) -> None:
+    """An alias must forward from somewhere.
+
+    If the old spelling is neither declared nor reachable, the table claims a
+    deprecation window that does not exist. This is the failure a slice would hit
+    by deleting the forwarder while leaving its ledger row behind.
+    """
+
+    package = _package(
+        tmp_path,
+        {
+            "flagquantum/algorithms/amplitude_estimation.py": (
+                "from dataclasses import dataclass\n"
+                "\n"
+                "\n"
+                "@dataclass\n"
+                "class AmplitudeEstimationResult:\n"
+                "    n_counting_qubits: int = 0\n"
+            )
+        },
+    )
+    contract = _contract()
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [
+            {
+                "site": (
+                    "flagquantum/algorithms/amplitude_estimation.py"
+                    "::AmplitudeEstimationResult::n_counting_wires"
+                ),
+                "replacement": "n_counting_qubits",
+            }
+        ],
+    }
+    contract["other_surfaces"]["public_attribute_aliased"] = 1
+    errors = _GATE.contract_errors(contract, package_root=package)
+    _some(errors, "not a live attribute name")
+
+
+def test_an_attribute_that_is_both_retired_and_aliased_is_reported() -> None:
+    """The two tables answer the same question two ways, so they cannot overlap.
+
+    A retired name is gone; an aliased name is still reachable. Recording both
+    would let a slice read its own row as either fact, whichever the report
+    needed.
+    """
+
+    contract = _contract()
+    row = dict(_attribute_rows(_contract())[0])
+    contract["attribute_retirement"] = {"sites": [row]}
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [{"site": row["site"], "replacement": row["replacement"]}],
+    }
+    _some(_errors(contract), "retired and kept as an alias")
+
+
+def test_an_attribute_alias_outside_the_baseline_is_reported() -> None:
+    contract = _contract()
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [
+            {
+                "site": "flagquantum/nowhere.py::Absent::wires",
+                "replacement": "qubits",
+            }
+        ],
+    }
+    _some(_errors(contract), "outside the baseline")
+
+
+def test_an_attribute_alias_count_that_disagrees_with_the_table_is_reported() -> None:
+    contract = _contract()
+    contract["other_surfaces"]["public_attribute_aliased"] += 1
+    _one(_errors(contract), "public_attribute_aliased")
+
+
+def test_an_attribute_alias_is_reported_as_remaining_work_not_as_progress() -> None:
+    """A rename with a deprecation window is a migration in progress.
+
+    The report is what a reviewer reads to decide whether a slice is finished.
+    If an aliased name counted as retired, a slice could rename every attribute,
+    ship forwarders for all of them, and report the surface as clear while every
+    old spelling still resolves.
+    """
+
+    contract = _contract()
+    marked = min(contract["attribute_ledger"]["canonical"])
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [
+            {
+                "site": marked,
+                "replacement": _CENSUS.replacement_name(marked.rsplit("::", 1)[1]),
+            }
+        ],
+    }
+    contract["other_surfaces"]["public_attribute_aliased"] = 1
+    assert _errors(contract) == ()
+    rows = _GATE.slice_progress(contract, "attribute")
+    assert sum(done for _, done, _ in rows) == 0
+    assert sum(left for _, _, left in rows) == len(
+        contract["attribute_ledger"]["canonical"]
+    )
+
+
+def test_the_report_names_the_aliases_apart_from_retirement(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A reader must be able to tell a shimmed rename from an untouched one.
+
+    "remaining" alone cannot say whether the wire spelling is still on disk
+    because nobody got to it or because a forwarder deliberately answers it. The
+    report prints both numbers, and the parameter line already distinguishes its
+    eleven declared aliases from the canonical sites it has yet to retire.
+    """
+
+    marked = min(_contract()["attribute_ledger"]["canonical"])
+    contract = _contract()
+    contract["attribute_aliases"] = {
+        "removal_version": "0.4.0",
+        "sites": [
+            {
+                "site": marked,
+                "replacement": _CENSUS.replacement_name(marked.rsplit("::", 1)[1]),
+            }
+        ],
+    }
+    contract["other_surfaces"]["public_attribute_aliased"] = 1
+    _GATE._report(contract)
+    lines = capsys.readouterr().out.splitlines()
+    assert "0 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+    assert "0 of 122 attribute sites retired, 1 kept as deprecated aliases" in lines[8]
+    assert "0 of 10 definition names retired" in lines[16]
+
+
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
     contract = _contract()
     contract["slices"][0]["attribute_count"] += 1

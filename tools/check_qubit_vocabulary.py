@@ -17,6 +17,15 @@ rather than a document:
 subset check alone, deleting a baseline line would look like progress, and with
 a superset check alone, a new site would look like the baseline already covered
 it.
+
+The attribute surface repeats the parameter rules with one addition. A public
+attribute name can be retired *and* kept: the rename is real, and a forwarding
+property ships until the removal version so an existing caller keeps working.
+Those two facts are different, so they live in different tables -- a name is
+carried by `[[attribute_retirement.sites]]` when it is gone, and by
+`[[attribute_aliases.sites]]` when it is still reachable and deprecated. A name
+in neither table has to be gone, which is what stops a slice from retiring a
+name it never renamed.
 """
 
 from __future__ import annotations
@@ -47,6 +56,13 @@ CONTRACT = ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 PRE_PUSH = ROOT / "tools" / "pre_push.py"
 SELF_PATH = "tools/check_qubit_vocabulary.py"
+
+# Surface -> (table, key) holding the names that are renamed but still reachable
+# through a deprecated forwarder. The definition surface has no entry.
+ALIAS_TABLES = {
+    "parameter": ("aliases", "declared"),
+    "attribute": ("attribute_aliases", "sites"),
+}
 
 EXPECTED_HEADER = {
     "schema": "flagquantum_qubit_vocabulary_contract_v1",
@@ -377,6 +393,29 @@ def _attribute_errors(
         if isinstance(entry, dict)
     ]
     retirement = [str(row.get("site", "")) for row in retirement_rows]
+    alias_rows = [
+        entry
+        for entry in contract.get("attribute_aliases", {}).get("sites", ())
+        if isinstance(entry, dict)
+    ]
+    aliases = [str(row.get("site", "")) for row in alias_rows]
+    alias_removal_version = contract.get("attribute_aliases", {}).get("removal_version")
+    if not isinstance(alias_removal_version, str) or not alias_removal_version:
+        errors.append(
+            "qubit vocabulary attribute alias table must name a removal version"
+        )
+    for row in alias_rows:
+        for name in ("site", "replacement"):
+            if not isinstance(row.get(name), str) or not row[name]:
+                errors.append(
+                    f"qubit vocabulary attribute alias is missing {name}: {row}"
+                )
+        alias_name = str(row.get("site", "")).rsplit("::", 1)[-1]
+        if not supersedes(alias_name, str(row.get("replacement", ""))):
+            errors.append(
+                f"qubit vocabulary attribute alias {row.get('site')} must forward "
+                f"to {row.get('replacement')!r}"
+            )
     for row in retirement_rows:
         for name in ("site", "replacement", "declaration"):
             if not isinstance(row.get(name), str) or not row[name]:
@@ -421,15 +460,22 @@ def _attribute_errors(
     for label, values in (
         ("attribute ledger", ledger),
         ("attribute retirement", retirement),
+        ("attribute alias", aliases),
     ):
         repeated = _duplicates(values)
         if repeated:
             errors.append(f"qubit vocabulary {label} repeats {repeated[:3]}")
-    unknown = sorted(set(retirement) - baseline)
+    unknown = sorted((set(retirement) | set(aliases)) - baseline)
     if unknown:
         errors.append(
             "qubit vocabulary attribute retirement names sites outside the "
             f"baseline: {unknown[:3]}"
+        )
+    both = sorted(set(retirement) & set(aliases))
+    if both:
+        errors.append(
+            "qubit vocabulary attribute cannot be retired and kept as an alias: "
+            f"{both[:3]}"
         )
 
     measured_ledger = int(
@@ -469,19 +515,37 @@ def _attribute_errors(
     live_persisted = {site.identifier: site for site in scanned.excluded}
     by_site = {str(row.get("site", "")): row for row in rows}
     retired = set(retirement)
+    kept = set(aliases)
 
-    appeared = sorted(live_names - (set(ledger) - retired))
+    measured_aliases = int(surfaces.get("public_attribute_aliased", -1))
+    if measured_aliases != len(aliases):
+        errors.append(
+            "qubit vocabulary other surface public_attribute_aliased must equal the "
+            "alias table it describes"
+        )
+
+    # An aliased name is still declared, so only retirement removes a name from
+    # the live surface. Counting an alias as retired would report a slice clear
+    # while every old spelling still resolves.
+    still_expected = set(ledger) - retired
+    appeared = sorted(live_names - still_expected)
     if appeared:
         errors.append(
             "qubit vocabulary found wire-named attributes outside the ledger: "
             f"{appeared[:3]}"
         )
-    missing = sorted((set(ledger) - retired) - live_names)
+    missing = sorted(still_expected - live_names)
     if missing:
         errors.append(
             "qubit vocabulary attribute ledger entries are neither live nor "
             f"retired: {missing[:3]}"
         )
+    for site in sorted(kept):
+        if site not in live_names:
+            errors.append(
+                f"qubit vocabulary attribute alias {site} is not a live attribute "
+                "name, so the deprecation cannot forward from it"
+            )
 
     for identifier, site in sorted(live_persisted.items()):
         row = by_site.get(identifier)
@@ -665,6 +729,24 @@ def slice_progress(
     return tuple(rows)
 
 
+def aliased_sites(contract: dict[str, Any], surface: str) -> set[str]:
+    """The names a slice renamed but left reachable through a forwarder.
+
+    They are reported apart from retirement rather than added to it: a name that
+    still answers to the old spelling is not finished work, and a reader who saw
+    it counted as retired would conclude the surface was clear.
+    """
+
+    table, key = ALIAS_TABLES.get(surface, ("", ""))
+    if not table:
+        return set()
+    return {
+        str(entry.get("site", ""))
+        for entry in contract.get(table, {}).get(key, ())
+        if isinstance(entry, dict)
+    }
+
+
 def _report(contract: dict[str, Any]) -> None:
     for surface, label in (
         ("parameter", "baseline sites"),
@@ -674,9 +756,16 @@ def _report(contract: dict[str, Any]) -> None:
         rows = slice_progress(contract, surface)
         retired = sum(done for _, done, _ in rows)
         remaining = sum(left for _, _, left in rows)
+        # The definition surface has no alias table: a renamed module-level name
+        # has no forwarder it could stay reachable through.
+        alias_note = ""
+        if surface in ALIAS_TABLES:
+            alias_note = (
+                f", {len(aliased_sites(contract, surface))} kept as deprecated aliases"
+            )
         print(
             f"Qubit vocabulary contract passed: {retired} of {retired + remaining} "
-            f"{label} retired"
+            f"{label} retired{alias_note}"
         )
         for slice_id, done, left in rows:
             print(f"  {slice_id:5s} retired {done:3d}  remaining {left:3d}")

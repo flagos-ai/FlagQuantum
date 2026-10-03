@@ -149,6 +149,47 @@ the forwarding-property pattern this proposal reuses. Removal is at **0.4.0**, t
 same window the eleven shipped parameter aliases publish. One program, one
 deprecation window.
 
+### 5.1 How the gate tells a shimmed rename from an untouched one
+
+A rename that keeps a forwarder is a third state, and the parameter ledger's two
+tables cannot express it: `[ledger] canonical` records names nobody has renamed
+yet, and `[[attribute_retirement.sites]]` records names that are gone. Recording a
+shimmed rename in the retirement table would be false — the old spelling still
+resolves — and recording it only in the ledger would report the rename as
+unfinished when it is done. WQ-2 therefore adds `[[attribute_aliases.sites]]`,
+mirroring the parameter-side `[aliases] declared` table that already records the
+eleven shipped parameter aliases and their `removal_version`.
+
+The three tables partition the surface by one question each:
+
+| Table | The claim it makes | Gate consequence |
+|---|---|---|
+| `[attribute_ledger] canonical` | nobody has renamed this yet | must be live, and must not be in the retirement table |
+| `[[attribute_retirement.sites]]` | the name is gone | must be absent from the scan, and below the baseline |
+| `[[attribute_aliases.sites]]` | renamed, and a deprecated forwarder still answers | must still be a live declaration, must forward to `replacement_name`, and must not also be retired |
+
+An aliased name is **not** counted as retired. It stays in the ledger, so it stays
+in the slice's `remaining` column, and `_report` prints the aliased total apart
+from the retired total:
+
+```text
+Qubit vocabulary contract passed: 0 of 122 attribute sites retired, 0 kept as deprecated aliases
+```
+
+A reader can therefore never mistake "the forwarder is deliberate" for "this site
+is finished". When 0.4.0 deletes the three forwarders, the three rows move from
+`[[attribute_aliases.sites]]` to `[[attribute_retirement.sites]]` and the retired
+count reaches its baseline.
+
+One obligation follows from the mechanism rather than from the ledger. A
+forwarding `@property` is not a dataclass field, so `OutputRequest.wires` changes
+its declaration kind from `field` to `member` when `qubits` becomes the stored
+field. The slice's `attribute_field_count` and `attribute_member_count` are
+therefore re-measured from the scan once, in the same commit that moves the name —
+the census derives the kind, and the frozen count follows the derivation rather
+than the other way round. `fq.Circuit.n_wires` is already a property, so its kind
+does not move.
+
 ## 6. Why `IR_VERSION` does not change
 
 The integral document's section 4 already answers this for parameters, and the
@@ -212,7 +253,10 @@ rename updates all four.
 
 One slice, one PR, cut from `main` after WQ-1 landed. WQ-2 renames its 16
 parameters, 21 attributes, and 7 instance attributes, and keeps the three aliases.
-Later slices retire their own rows.
+Two of those three are WQ-2's own: `fq.Circuit.n_wires` and
+`fq.OutputRequest.wires` stay reachable as deprecated forwarders and are recorded
+in `[[attribute_aliases.sites]]`; `fq.MeasurementResult.wires` belongs to the slice
+that owns `runtime/result.py`. Later slices retire their own rows.
 
 ```python
 # before
@@ -246,21 +290,26 @@ fq.draw(circuit, qubit_order=(1, 0), show_all_qubits=True)
 3. **What removes the 22 exclusions?** Each names its own condition, and the
    removal itself is a separate proposal per payload — this one only promises that
    the debt is visible and cannot grow silently.
+4. **Does an aliased attribute count as retired work?** No. The three aliases ship
+   with the rename, so the rename is real, but the old spelling still resolves and
+   the gate reports it as remaining until 0.4.0 deletes the forwarder. Section 5.1
+   records the tables that make the distinction checkable rather than a matter of
+   how the report is read.
 
 ## Verification
 
 ```bash
 python tools/check_qubit_vocabulary.py
-# Qubit vocabulary contract passed: 0 of 341 baseline sites retired
+# Qubit vocabulary contract passed: 0 of 341 baseline sites retired, 11 kept as deprecated aliases
 #   WQ-2 ... remaining 16
-# Qubit vocabulary contract passed: 0 of 122 attribute sites retired
+# Qubit vocabulary contract passed: 0 of 122 attribute sites retired, 0 kept as deprecated aliases
 #   WQ-2 ... remaining 28
 # Qubit vocabulary contract passed: 0 of 10 definition names retired
 #   WQ-4 4  WQ-6 3  WQ-7 1  WQ-8 2
 
 python -m pytest tests/unit/test_census_wire_vocabulary.py \
     tests/unit/test_qubit_vocabulary_contract.py -q
-# 111 passed
+# 122 passed
 
 python tools/validate_required_checks.py
 # validated 6 externally configured required checks

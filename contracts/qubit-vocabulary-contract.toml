@@ -75,6 +75,8 @@ public_attribute_persisted = 22
 public_attribute_reproduce = "python -c \"from tools.census_wire_vocabulary import attribute_census as f; c = f(); print(len(c.ledgered), len(c.excluded))\""
 public_attribute_owner = "WQ-2"
 public_attribute_condition = "ledgered: [attribute_ledger] and [attribute_exclusions] are reconciled against the census on every run, so the split cannot drift and a name cannot be renamed while it is still a payload key"
+public_attribute_aliased = 0
+public_attribute_alias_condition = "aliases: a name here is renamed and still reachable through a deprecated forwarder until [attribute_aliases] removal_version; it is counted as remaining, so a slice cannot bank an alias as finished work"
 public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
 public_definition_owner = "WQ-2"
@@ -1036,6 +1038,25 @@ witness = "TwinPrediction"
 evidence = "serialization_method"
 reason = "`TwinPrediction` builds its payload from its own field names, so `n_wires` is a key in the `TwinPrediction` payload"
 removal_condition = "the `TwinPrediction` payload schema is versioned and migrated"
+
+
+# Two tables, because they record two different facts. A row here means the
+# name is gone: the rename is complete, and nothing answers to the old spelling.
+# A row in [attribute_aliases] means the rename is real and the old spelling
+# still answers through a deprecated forwarder until removal_version. A name in
+# neither table has to be absent from the scan, which is what stops a slice from
+# banking a rename it did not make. Each row also carries the declaration kind
+# the site had when it was frozen, because the per-slice kind split is a record
+# of what the slice owed and would otherwise collapse to zero.
+[attribute_retirement]
+sites = []
+
+# Names that are renamed and still reachable. They stay in [attribute_ledger],
+# so the slice still counts them as remaining work: a deprecated alias is a
+# migration in progress, not a finished one.
+[attribute_aliases]
+removal_version = "0.4.0"
+sites = []
 
 
 # The third door: a module-level public function or class whose own name says

@@ -174,6 +174,47 @@ version. Removal is at **0.4.0**, the single window the eleven shipped parameter
 aliases publish; opening a second window for attributes would put two deprecation
 schedules in one release.
 
+### A shimmed rename is a third state, and the ledger records it as one
+
+`[attribute_ledger] canonical` records names nobody has renamed yet;
+`[[attribute_retirement.sites]]` records names that are gone. A rename that keeps a
+forwarder is neither, so WQ-2 adds `[[attribute_aliases.sites]]`, structurally the
+same table as the parameter-side `[aliases] declared`:
+
+```toml
+[attribute_aliases]
+removal_version = "0.4.0"
+sites = []
+
+[[attribute_aliases.sites]]
+site = "flagquantum/circuit.py::Circuit::n_wires"
+replacement = "n_qubits"
+```
+
+The gate reads three claims from it, all failing closed:
+
+- the name must be a live declaration in the scan, so a slice cannot publish a
+  removal window for a forwarder it never wrote;
+- `replacement` must be `replacement_name(site)`, the same rule the parameter and
+  retirement tables use;
+- the name must not also appear in `[[attribute_retirement.sites]]`, because "gone"
+  and "still reachable" cannot both be true.
+
+An aliased name is **not** counted as retired: it stays in the ledger, stays in the
+slice's `remaining` column, and the report prints the aliased total separately
+(`... 0 of 122 attribute sites retired, 0 kept as deprecated aliases`). A reviewer
+reading `remaining 28` for WQ-2 therefore learns that the rename is done and that
+two of the old spellings deliberately still answer. When 0.4.0 deletes the three
+forwarders, their rows move from the alias table to the retirement table and the
+count reaches the baseline.
+
+One obligation comes from the mechanism, not the ledger: a forwarding `@property`
+is not a dataclass field. `OutputRequest.wires` is currently the stored field, so
+becoming the forwarder moves it from `field` to `member`, and the slice's
+`attribute_field_count`/`attribute_member_count` are re-measured from the scan once
+in that commit. `fq.Circuit.n_wires` is already a property, so its kind does not
+move.
+
 ## Why a member or an instance attribute can be a payload key at all
 
 The field rule is structural: a class that declares a serialization method, or
@@ -289,7 +330,8 @@ psi = infer_n_qubits_from_dense_state(psi)  # was infer_n_wires_from_dense_state
   attribute surface **per declaration kind**, so a field converted into a property
   moves obligation without changing a total and without going unnoticed.
 - `contracts/qubit-vocabulary-contract.toml` gains `[attribute_ledger]`,
-  `[attribute_exclusions]`, `[definition_ledger]`, `[definition_retirement]`, and
+  `[attribute_exclusions]`, `[attribute_retirement]`, `[attribute_aliases]`,
+  `[definition_ledger]`, `[definition_retirement]`, and
   per-slice `attribute_field_count` / `attribute_member_count` /
   `attribute_instance_count` / `definition_count`.
 - No change to `.github/workflows/ci.yml` or `tools/pre_push.py`: the gate is
@@ -307,8 +349,9 @@ appear above, plus the acceptance tests below.
 ## Acceptance Tests
 
 1. `python tools/check_qubit_vocabulary.py` exits 0 and reports
-   `0 of 122 attribute sites retired` and `0 of 10 definition names retired`
-   alongside the parameter totals, with WQ-2 at 28 attribute sites.
+   `0 of 122 attribute sites retired, 0 kept as deprecated aliases` and
+   `0 of 10 definition names retired` alongside the parameter totals, with WQ-2 at
+   28 attribute sites.
 2. The gate fails when a `wire`-named field, member, instance attribute, or
    module-level definition is added to the package, demonstrated against fixture
    packages that declare one of each.
@@ -325,6 +368,10 @@ appear above, plus the acceptance tests below.
    tests, never a job.
 7. Running the repository's public-API gates after the WQ-2 rename reports no
    Stable Core diff beyond the authorized export-adjacent changes.
+8. An aliased row is rejected unless the old spelling is still a live declaration,
+   forwards to `replacement_name`, and is absent from the retirement table; the
+   report prints the aliased total apart from the retired total, so a shimmed
+   rename is never reported as finished work.
 
 Status: proposed. The measured numbers are the WQ-1 base commit's; the rename is
 WQ-2's, and no other slice may retire a site this ledger assigns to WQ-2.
