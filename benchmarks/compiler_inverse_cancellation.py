@@ -29,11 +29,11 @@ This module measures four things and refuses to measure a fifth.
   most of the shapes that motivated this pass. That fold is part of the baseline
   the delta is measured against rather than a pass this module may quietly omit,
   so what the delta reports is this pass's *marginal* reach and not a comparison
-  against a pipeline that no longer exists. Two of the populations frame a pair
-  inside a half-pi pulse, because that is where the two passes do not subsume each
-  other: folding a framed pair and cancelling the pair first are different answers,
-  and the table reports which is shorter on each shape instead of claiming that one
-  order dominates.
+  against a pipeline that no longer exists: **zero** on the four populations the
+  fold already reaches. Two of the populations frame a pair inside a half-pi pulse,
+  because that is where the two passes do not subsume each other: folding a framed
+  pair and cancelling the pair first are different answers, and the table reports
+  which is shorter on each shape instead of claiming that one order dominates.
 * **Where the pass stops, and why.** A gap that is empty and a gap whose operator
   merely *commutes* with the pair are different problems. This pass solves only the
   first. The shape table drives every pair through ten gaps and measures two things
@@ -58,9 +58,19 @@ This module measures four things and refuses to measure a fifth.
   native gates) without the pass and `sx sx` (2 native gates) with it, which is a
   *longer* compiler program and a shorter native one. Both numbers are reported for
   that reason. A population the declared basis cannot express reports an absent count
-  rather than a zero, and the table also re-runs the pass ahead of the one-qubit fold
-  so the order chosen in `pipeline._optimize_to_fixed_point` is measured rather than
-  assumed.
+  rather than a zero.
+
+* **Which of the two passes should run first.** A third column re-runs each
+  population with the one-qubit fold ahead of this pass, so the order chosen in
+  `pipeline._optimize_to_fixed_point` is measured rather than assumed. It comes out
+  as arithmetic: the fold is the baseline these deltas are measured against, so
+  whichever of the two runs first takes the program and the fold-first order makes
+  this pass's marginal delta zero on every population. The compiler-instruction
+  totals are then equal -- the orders differ by 60 on two populations and in opposite
+  directions -- and the native totals are not: **1320** native gates in the shipped
+  order against **2026** fold first, over the five populations the declared basis can
+  express. That is the whole of the argument for the shipped order, and it is the
+  kind of argument that has to be re-measured rather than assumed.
 
 * **What it does not measure:** a gate-count parity claim against Qiskit. The shape
   table feeds both implementations the identical circuit and reports both counts.
@@ -476,25 +486,29 @@ def _pipeline_without_this_pass(ir: CircuitIR) -> CircuitIR:
     raise AssertionError("the pipeline without this pass did not reach a fixed point")
 
 
-def _pass_first_fixed_point(ir: CircuitIR) -> CircuitIR:
-    """The same pipeline with this pass ahead of `merge_adjacent_rotations`.
+def _fold_first_fixed_point(ir: CircuitIR) -> CircuitIR:
+    """The same pipeline with the one-qubit fold ahead of this pass instead of behind it.
 
-    The alternative order, measured rather than argued about: it is the order in
-    which this pass sees a run before the fold does, so a shape where the two
-    disagree is decided by this pass instead.
+    The alternative order, measured rather than argued about.
+    ``_optimize_to_fixed_point`` runs this pass before ``merge_adjacent_rotations``
+    and the fold after both, so a framed run is decided by this pass and the fold
+    then declines the half-pi vocabulary it leaves standing. Here the fold runs
+    first, so the same run is decided by the fold and this pass never sees it. Both
+    orders still terminate in a fixed point, so the comparison is between two
+    complete pipelines rather than between one that terminates and one that does not.
     """
 
     for _ in range(len(ir) + 1):
         previous = len(ir)
+        ir = collapse_one_qubit_runs(ir)
         ir = remove_identity_gates(ir)
         ir = merge_self_inverse(ir)
         ir = merge_inverse_pairs(ir)
         ir = merge_adjacent_rotations(ir)
         ir = remove_identity_gates(ir)
-        ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous:
             return ir
-    raise AssertionError("the pass-first pipeline did not reach a fixed point")
+    raise AssertionError("the fold-first pipeline did not reach a fixed point")
 
 
 def _executable(ir: CircuitIR) -> bool:
@@ -639,11 +653,20 @@ def pipeline_delta() -> list[dict[str, Any]]:
     without this pass: the marginal instruction count this pass contributes to the
     whole pipeline, not the count it would contribute to a pipeline that lacked the
     one-qubit fold. A negative value is a population where the shipped order reaches
-    a *longer* compiler program than the fold alone; ``native_gate_count_with_pass``
-    and ``native_gate_count_without_pass`` are what say whether that also costs
-    gates once the program is lowered into one declared basis, and
-    ``removed_by_declared_inverse_pass_pass_first`` is the same delta under the
-    opposite order, so the order itself is measured rather than asserted.
+    a *longer* compiler program than the fold alone, and it is reported as it stands.
+
+    ``fold_first_instruction_count`` and its two siblings record the same
+    populations through the opposite order -- the one-qubit fold ahead of this pass
+    -- because the order of two passes that rewrite the same wire is a decision and
+    a decision should be measured. That order makes this pass's marginal delta zero
+    on every population, which is the expected result rather than a finding: the fold
+    is the pipeline this pass is being measured against, so whoever runs first takes
+    the program. The compiler-instruction totals are then equal (the two orders
+    differ by 60 on two populations in opposite directions), and it is the native
+    column that separates them: 1320 native gates shipped against 2026 fold first,
+    over the five populations a declared basis can express. That is why the shipped
+    order is the one in `pipeline._optimize_to_fixed_point`, and it is recorded here
+    so the choice is a measurement and not a preference.
     """
 
     seed = random.Random(_CIRCUIT_SEED)
@@ -679,10 +702,10 @@ def pipeline_delta() -> list[dict[str, Any]]:
 
     rows = []
     for label, circuits in populations:
-        source = without_pass = with_pass = pass_first = 0
+        source = without_pass = with_pass = fold_first = 0
         native_without_pass: int | None = 0
         native_with_pass: int | None = 0
-        native_pass_first: int | None = 0
+        native_fold_first: int | None = 0
         changed = 0
         executed = 0
         worst = 0.0
@@ -690,10 +713,10 @@ def pipeline_delta() -> list[dict[str, Any]]:
             source += len(ir)
             without_pass_ir = _pipeline_without_this_pass(ir)
             with_pass_ir = _optimize_to_fixed_point(ir)
-            pass_first_ir = _pass_first_fixed_point(ir)
+            fold_first_ir = _fold_first_fixed_point(ir)
             without_pass += len(without_pass_ir)
             with_pass += len(with_pass_ir)
-            pass_first += len(pass_first_ir)
+            fold_first += len(fold_first_ir)
             # The native counts are summed only while every circuit in the
             # population has one: a partial sum would be a number for a population
             # the basis cannot express, and None keeps that visible.
@@ -701,7 +724,7 @@ def pipeline_delta() -> list[dict[str, Any]]:
                 native_without_pass, without_pass_ir
             )
             native_with_pass = _add_native_count(native_with_pass, with_pass_ir)
-            native_pass_first = _add_native_count(native_pass_first, pass_first_ir)
+            native_fold_first = _add_native_count(native_fold_first, fold_first_ir)
             # The soundness check runs on every circuit and not only the changed
             # ones: a pass that removed nothing cannot be caught by comparing states.
             # It runs only where the program is gate-only, and the count of those is
@@ -725,12 +748,12 @@ def pipeline_delta() -> list[dict[str, Any]]:
                 "with_pass_instruction_count": with_pass,
                 "removed_by_rest_of_pipeline": source - without_pass,
                 "removed_by_declared_inverse_pass": without_pass - with_pass,
-                "pass_first_instruction_count": pass_first,
-                "removed_by_declared_inverse_pass_pass_first": without_pass
-                - pass_first,
+                "fold_first_instruction_count": fold_first,
+                "removed_by_declared_inverse_pass_fold_first": without_pass
+                - fold_first,
                 "native_gate_count_without_pass": native_without_pass,
                 "native_gate_count_with_pass": native_with_pass,
-                "native_gate_count_with_pass_pass_first": native_pass_first,
+                "native_gate_count_fold_first": native_fold_first,
                 "changed_circuit_count": changed,
                 "executed_circuit_count": executed,
                 "max_state_difference": worst,
@@ -995,9 +1018,44 @@ def shape_table() -> dict[str, Any]:
     }
 
 
+def _order_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Sum the two pass orders over the populations both of them can be counted on.
+
+    Only populations with a native count on both sides are summed: a basis that
+    cannot express a circuit has no native number to add, and a total that quietly
+    skipped such a population would read as a smaller program rather than as a
+    missing measurement. ``covered_population_count`` says how many were summed, so
+    the total is never read as covering more than it does.
+    """
+
+    covered = [
+        row
+        for row in rows
+        if row["native_gate_count_with_pass"] is not None
+        and row["native_gate_count_fold_first"] is not None
+    ]
+    return {
+        "covered_population_count": len(covered),
+        "population_count": len(rows),
+        "native_gate_count_with_pass": sum(
+            row["native_gate_count_with_pass"] for row in covered
+        ),
+        "native_gate_count_fold_first": sum(
+            row["native_gate_count_fold_first"] for row in covered
+        ),
+        "instruction_count_with_pass": sum(
+            row["with_pass_instruction_count"] for row in covered
+        ),
+        "instruction_count_fold_first": sum(
+            row["fold_first_instruction_count"] for row in covered
+        ),
+    }
+
+
 def run_benchmark() -> dict[str, Any]:
     shapes = shape_table()
     anchor = shapes["reference_anchor"]
+    delta = pipeline_delta()
     disagreements = [
         row
         for row in shapes["rows"]
@@ -1014,7 +1072,8 @@ def run_benchmark() -> dict[str, Any]:
         "reference_revision": "qiskit 1.2.4 InverseCancellation",
         "declaration_table": declaration_table(),
         "identity_proof": identity_proof(),
-        "pipeline_delta": pipeline_delta(),
+        "pipeline_delta": delta,
+        "pass_order_totals": _order_totals(delta),
         "shape_table": shapes,
         "anchor_disagreement_count": len(disagreements),
         "anchor_agreement_count": (
@@ -1080,21 +1139,31 @@ def main() -> None:
         )
     print()
     print(
-        "the same pass moved ahead of `merge_adjacent_rotations`, marginal to the "
-        "pipeline without it:"
+        "the same populations with the one-qubit fold moved ahead of this pass. Both "
+        "orders are the whole pipeline; the shipped one is measured against the "
+        "fold-first one:"
     )
     print(
-        f"{'population':32s} {'delta shipped':>13s} {'delta pass first':>17s} "
-        f"{'native shipped':>15s} {'native pass first':>18s}"
+        f"{'population':32s} {'delta shipped':>13s} {'delta fold first':>17s} "
+        f"{'native shipped':>15s} {'native fold first':>18s}"
     )
     for row in payload["pipeline_delta"]:
         print(
             f"{row['label']:32s} "
             f"{row['removed_by_declared_inverse_pass']:>13d} "
-            f"{row['removed_by_declared_inverse_pass_pass_first']:>17d} "
+            f"{row['removed_by_declared_inverse_pass_fold_first']:>17d} "
             f"{_native_column(row['native_gate_count_with_pass']):>15s} "
-            f"{_native_column(row['native_gate_count_with_pass_pass_first']):>18s}"
+            f"{_native_column(row['native_gate_count_fold_first']):>18s}"
         )
+    totals = payload["pass_order_totals"]
+    print(
+        f"  over the {totals['covered_population_count']} of "
+        f"{totals['population_count']} populations the declared basis can express: "
+        f"native gates {totals['native_gate_count_with_pass']} shipped vs "
+        f"{totals['native_gate_count_fold_first']} fold first; compiler instructions "
+        f"{totals['instruction_count_with_pass']} shipped vs "
+        f"{totals['instruction_count_fold_first']} fold first"
+    )
     shapes = payload["shape_table"]
     print()
     print(f"shape table: {shapes['row_count']} rows over {shapes['gap_count']} gaps")

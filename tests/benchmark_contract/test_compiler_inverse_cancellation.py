@@ -67,13 +67,21 @@ _PIPELINE_SELF_INVERSE_GAP = ["i"]
 #: pipeline with this pass removed, so ``removed_by_rest_of_pipeline`` is the
 #: one-qubit fold's own reach and ``removed_by_declared_inverse_pass`` is the
 #: marginal delta this pass contributes on top of it -- zero on the four populations
-#: the fold already reaches, and the only nonzero rows are the two that frame a pair
-#: in the half-pi pulse basis. ``removed_by_declared_inverse_pass_pass_first`` is the
-#: same delta with this pass moved ahead of the fold. The native counts are the two
+#: the fold already reaches, and nonzero only on the two that frame a pair in the
+#: half-pi pulse basis, in opposite directions. The native counts are the two
 #: programs lowered into one declared basis (`rz` plus the half-pi pulse), which is
 #: where the pass is visible even on the rows whose compiler delta is zero; the
 #: barrier population's counts are ``None`` because a `measure` cannot be lowered
 #: into that basis at all.
+#:
+#: The ``fold_first_*`` fields are the same populations through the opposite pass
+#: order, and their shape is the honest result rather than a second copy: with the
+#: fold ahead of this pass the marginal delta is zero everywhere and every count
+#: equals that population's ``without_pass`` count, because the fold-first pipeline
+#: *is* the comparison baseline. What the order changes is the native column, and it
+#: changes it against the fold (690 and 736 against 600 and 540, 360 and 240 against
+#: 60 and 120). Both directions are pinned, so a change to either order has to move a
+#: recorded number instead of passing quietly.
 _DELTA = {
     "adjacent_pair_members": {
         "circuit_count": 60,
@@ -82,11 +90,11 @@ _DELTA = {
         "with_pass_instruction_count": 0,
         "removed_by_rest_of_pipeline": 480,
         "removed_by_declared_inverse_pass": 0,
-        "pass_first_instruction_count": 0,
-        "removed_by_declared_inverse_pass_pass_first": 0,
+        "fold_first_instruction_count": 0,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": 0,
         "native_gate_count_with_pass": 0,
-        "native_gate_count_with_pass_pass_first": 0,
+        "native_gate_count_fold_first": 0,
         "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
@@ -97,11 +105,11 @@ _DELTA = {
         "with_pass_instruction_count": 180,
         "removed_by_rest_of_pipeline": 180,
         "removed_by_declared_inverse_pass": 0,
-        "pass_first_instruction_count": 180,
-        "removed_by_declared_inverse_pass_pass_first": 0,
+        "fold_first_instruction_count": 180,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": 690,
         "native_gate_count_with_pass": 600,
-        "native_gate_count_with_pass_pass_first": 600,
+        "native_gate_count_fold_first": 690,
         "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
@@ -112,11 +120,11 @@ _DELTA = {
         "with_pass_instruction_count": 180,
         "removed_by_rest_of_pipeline": 240,
         "removed_by_declared_inverse_pass": 0,
-        "pass_first_instruction_count": 180,
-        "removed_by_declared_inverse_pass_pass_first": 0,
+        "fold_first_instruction_count": 180,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": 736,
         "native_gate_count_with_pass": 540,
-        "native_gate_count_with_pass_pass_first": 540,
+        "native_gate_count_fold_first": 736,
         "changed_circuit_count": 0,
         "executed_circuit_count": 60,
     },
@@ -127,11 +135,11 @@ _DELTA = {
         "with_pass_instruction_count": 300,
         "removed_by_rest_of_pipeline": 60,
         "removed_by_declared_inverse_pass": 0,
-        "pass_first_instruction_count": 300,
-        "removed_by_declared_inverse_pass_pass_first": 0,
+        "fold_first_instruction_count": 300,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": None,
         "native_gate_count_with_pass": None,
-        "native_gate_count_with_pass_pass_first": None,
+        "native_gate_count_fold_first": None,
         "changed_circuit_count": 0,
         "executed_circuit_count": 0,
     },
@@ -142,11 +150,11 @@ _DELTA = {
         "with_pass_instruction_count": 60,
         "removed_by_rest_of_pipeline": 60,
         "removed_by_declared_inverse_pass": 60,
-        "pass_first_instruction_count": 60,
-        "removed_by_declared_inverse_pass_pass_first": 60,
+        "fold_first_instruction_count": 120,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": 360,
         "native_gate_count_with_pass": 60,
-        "native_gate_count_with_pass_pass_first": 60,
+        "native_gate_count_fold_first": 360,
         "changed_circuit_count": 60,
         "executed_circuit_count": 60,
     },
@@ -157,14 +165,29 @@ _DELTA = {
         "with_pass_instruction_count": 120,
         "removed_by_rest_of_pipeline": 180,
         "removed_by_declared_inverse_pass": -60,
-        "pass_first_instruction_count": 120,
-        "removed_by_declared_inverse_pass_pass_first": -60,
+        "fold_first_instruction_count": 60,
+        "removed_by_declared_inverse_pass_fold_first": 0,
         "native_gate_count_without_pass": 240,
         "native_gate_count_with_pass": 120,
-        "native_gate_count_with_pass_pass_first": 120,
+        "native_gate_count_fold_first": 240,
         "changed_circuit_count": 60,
         "executed_circuit_count": 60,
     },
+}
+
+#: The two pass orders summed over the populations the declared basis can express.
+#: The compiler-instruction totals are equal -- the two orders differ by 60 on two
+#: populations and in opposite directions -- and the native totals are not: 1320
+#: against 2026. The barrier population is outside both sums, and
+#: ``covered_population_count`` says so rather than letting the total read as a
+#: figure for all six.
+_ORDER_TOTALS = {
+    "covered_population_count": 5,
+    "population_count": 6,
+    "native_gate_count_with_pass": 1320,
+    "native_gate_count_fold_first": 2026,
+    "instruction_count_with_pass": 540,
+    "instruction_count_fold_first": 540,
 }
 
 #: The pair/gap census. ``non_commuting_gap_removed_count`` is the correctness gate
@@ -413,33 +436,70 @@ def test_the_native_column_is_attributable_to_this_pass(payload: dict) -> None:
     assert rows["pair_behind_a_half_pi_pulse"]["native_gate_count_with_pass"] == 60
 
 
-def test_the_two_orders_of_the_two_passes_agree_on_every_driven_population(
+def test_the_two_orders_of_the_two_passes_are_measured_and_named(
     payload: dict,
 ) -> None:
-    """The order this branch chose is measured, and here it is not load-bearing.
+    """Both pass orders are run, and the one that ships is the one that lowers cheaper.
 
     ``pipeline._optimize_to_fixed_point`` calls this pass before
-    ``merge_adjacent_rotations`` and the fold last. The delta and the native count of
-    the opposite order -- this pass ahead of the fold -- are recorded as well, and on
-    all six populations they come out equal, because both run to a fixed point and the
-    fold is reached again on the next round either way. This is a measurement of these
-    shapes, not a guarantee: if a later round makes the two orders disagree, this is
-    the row that has to move and say so.
+    ``merge_adjacent_rotations`` and the fold last; the fold-first pipeline is
+    recorded under ``fold_first_*``. The fold-first order makes this pass contribute
+    nothing, which is arithmetic rather than a surprise: the fold alone is the
+    baseline these deltas are measured against, so whichever of the two runs first
+    takes the program and the second finds nothing to do. That is why the equality
+    below is asserted in that direction only -- ``fold_first`` must equal
+    ``without_pass`` -- and the shipped order is *not* asserted to equal it.
+
+    What the order changes is the native count, and the test asserts the direction
+    rather than only the numbers: on every population the declared basis can express,
+    the shipped order lowers to no more native gates than the fold-first one, and on
+    four of the five it lowers to strictly fewer -- every population where the fold
+    would have had to re-spell a declared pair on its own. The two exceptions are
+    named as well: ``adjacent_pair_members`` is already empty in both orders, and the
+    barrier population has no native count in either. So the order in the shipped
+    pipeline is a measured choice; a future change that made fold-first cheaper would
+    have to move these rows and say so.
     """
 
     rows = {row["label"]: row for row in payload["pipeline_delta"]}
     for label, row in rows.items():
-        assert row["removed_by_declared_inverse_pass_pass_first"] == (
-            row["without_pass_instruction_count"] - row["pass_first_instruction_count"]
+        assert row["removed_by_declared_inverse_pass_fold_first"] == (
+            row["without_pass_instruction_count"] - row["fold_first_instruction_count"]
+        ), label
+        # The fold-first pipeline is the comparison baseline, so its marginal delta
+        # is zero by construction, and any nonzero value would mean the two pipelines
+        # this module defines had drifted apart.
+        assert row["removed_by_declared_inverse_pass_fold_first"] == 0, label
+        assert (
+            row["fold_first_instruction_count"] == row["without_pass_instruction_count"]
         ), label
         assert (
-            row["removed_by_declared_inverse_pass_pass_first"]
-            == row["removed_by_declared_inverse_pass"]
+            row["native_gate_count_fold_first"] == row["native_gate_count_without_pass"]
         ), label
+        if row["native_gate_count_with_pass"] is None:
+            continue
         assert (
-            row["native_gate_count_with_pass_pass_first"]
-            == row["native_gate_count_with_pass"]
+            row["native_gate_count_with_pass"] <= row["native_gate_count_fold_first"]
         ), label
+
+    cheaper = [
+        label
+        for label, row in rows.items()
+        if row["native_gate_count_with_pass"] is not None
+        and row["native_gate_count_with_pass"] < row["native_gate_count_fold_first"]
+    ]
+    assert cheaper == [
+        "pair_across_another_qubit",
+        "interleaved_pairs",
+        "pair_behind_a_half_pi_pulse",
+        "pair_between_two_half_pi_pulses",
+    ]
+    assert rows["adjacent_pair_members"]["native_gate_count_fold_first"] == (
+        rows["adjacent_pair_members"]["native_gate_count_with_pass"]
+    )
+    assert payload["pass_order_totals"] == _ORDER_TOTALS
+    # The totals are not a claim about populations the basis cannot express.
+    assert _ORDER_TOTALS["covered_population_count"] < _ORDER_TOTALS["population_count"]
 
 
 def test_removing_every_instruction_preserved_the_program(payload: dict) -> None:
