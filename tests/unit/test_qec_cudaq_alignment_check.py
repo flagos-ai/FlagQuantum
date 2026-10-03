@@ -385,10 +385,21 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "dem_error_ids", "cudaq_symbol", 'cudaq_symbol = ""'),
     ),
     (
+        # The mark is planted rather than borrowed from a row that already
+        # carries it, because the contract ships with none: every upstream
+        # negative in it is now pinned to the revision it was taken at. A
+        # mutation that took the mark off an existing row would have stopped
+        # testing the rule the day the last row was settled, and would have gone
+        # on passing while testing nothing if a row dropped the mark without
+        # saying so.
         "mark a row unverified without saying so in the row",
         "does not say UNVERIFIED",
         lambda t: sub_in_key(
-            t, "dem_to_stim_text", "note", "UNVERIFIED", "unconfirmed"
+            t,
+            "dem_carrier",
+            "verdict",
+            'verdict = "reshaped"',
+            'verdict = "reshaped"\nprovenance_unverified = true',
         ),
     ),
     (

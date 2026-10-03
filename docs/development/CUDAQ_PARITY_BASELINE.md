@@ -116,8 +116,10 @@ Out of scope:
 
 CUDA-Q is one product with more than one release line, and the `0.15.1` /
 `0.16.0.post1` pin reaches only the core. The `quantum_error_correction` domain is
-read against CUDA-Q QEC (`cudaq-qec`, also shipped as `libs/qec` inside
-`NVIDIA/cudaqx`), which releases independently: its release line runs from
+read against CUDA-Q QEC (`cudaq-qec`, the repository `NVIDIA/cudaq-qec`, which
+carries `libs/qec`; the repository was named `NVIDIA/cudaqx` when this document
+was written and the old name now redirects), which releases independently: its
+release line runs from
 `0.1.0` to `0.8.0`, and `0.8.0` is the version every QEC row was read at.
 `contracts/cudaq-parity-matrix.toml` records this under
 `[[baseline.version_provenance]]`, including the release index the line was read

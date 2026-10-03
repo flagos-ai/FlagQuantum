@@ -102,7 +102,7 @@ consequence = "Stim appears on both sides of the product split, so the item need
 [baseline.version_provenance]
 rule = "The top-level cudaq_versions pin describes CUDA-Q core, which is the product both the export contract and this matrix describe. The QEC component ships on its own release line, so a quantum_error_correction row is only as strong as the component version it was read at, and this table records that version separately rather than implying that the pin reaches it. The tool fails closed in both directions: a pin that overlaps the component release line needs a mapping entry, and a mapping entry across two lines that do not overlap is refused as a correspondence nothing supports."
 pinned_component = "CUDA-Q core"
-component = "cudaq-qec, also shipped as libs/qec inside NVIDIA/cudaqx"
+component = "cudaq-qec (NVIDIA/cudaq-qec, named NVIDIA/cudaqx until the repository was renamed; the old path redirects), which carries libs/qec"
 component_release_line = ["0.1.0", "0.2.0", "0.2.1", "0.3.0", "0.4.0", "0.4.0.post1", "0.5.0", "0.5.0.post1", "0.6.0", "0.7.0", "0.8.0"]
 component_version_recorded = "0.8.0"
 component_source = "https://pypi.org/pypi/cudaq-qec/json"

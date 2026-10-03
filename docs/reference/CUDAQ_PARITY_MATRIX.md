@@ -6,7 +6,7 @@ This scoreboard is generated from `contracts/cudaq-parity-matrix.toml`. It compa
 
 - CUDA-Q baseline versions: 0.15.1, 0.16.0.post1
 - Pinned component: CUDA-Q core
-- Baseline component: cudaq-qec, also shipped as libs/qec inside NVIDIA/cudaqx
+- Baseline component: cudaq-qec (NVIDIA/cudaq-qec, named NVIDIA/cudaqx until the repository was renamed; the old path redirects), which carries libs/qec
 - Component release line: 0.1.0, 0.2.0, 0.2.1, 0.3.0, 0.4.0, 0.4.0.post1, 0.5.0, 0.5.0.post1, 0.6.0, 0.7.0, 0.8.0
 - Component version the `quantum_error_correction` rows were read at: 0.8.0
 - Component release index: https://pypi.org/pypi/cudaq-qec/json
