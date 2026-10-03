@@ -227,7 +227,12 @@ selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
 `FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
-and its first-order complex gradient. The checked-in
+and its first-order complex gradient. Runtime dispatch is enabled by default
+only for contiguous CUDA `complex64` statevectors with shape `(1, 2**24)`, no
+conjugate or negative view bits, and the complete canonical wire order. Set
+`FQ_TRITON_STATEVECTOR_PROBABILITIES=0` to use the PyTorch reference path
+explicitly. All other shapes, layouts, devices, dtypes, and wire orders return
+to the existing reference path before importing Triton. The checked-in
 [`statevector_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_probability_kernel_a800.json)
 artifact records 30 synchronized groups of 10 invocations for five fixed
 complex64 shapes from 1,024 through 16,777,216 amplitudes on `jp-a800-171` and
@@ -236,9 +241,26 @@ errors are `9.32e-10` and `3.34e-8`. Triton reaches `0.564x` to `2.999x` the
 PyTorch forward speed and `0.886x` to `3.078x` the PyTorch forward/backward
 speed. The approximately `3x` win is confined to the 16,777,216-amplitude case;
 smaller cases remain at parity or slower, so the canonical decision is
-`retain_experimental` and no default runtime dispatch is authorized. Reproduce
-or validate the evidence with
+`retain_experimental`; this direct evidence alone does not authorize broader
+dispatch. Reproduce or validate the direct kernel evidence with
 [`benchmarks/statevector_probability_kernel.py`](../../benchmarks/statevector_probability_kernel.py).
+
+The checked-in
+[`statevector_probability_dispatch_a800.json`](../../benchmarks/results/local/statevector_probability_dispatch_a800.json)
+artifact measures the complete public full-probability path for the exact
+default window on `jp-a800-171` and `jp-a800-172`, under stock Triton 3.7.1 and
+FlagTree 0.7.0. Across all four host/compiler runs, public forward dispatch is
+`1.732x` to `1.742x` faster than the identical public path with the kernel
+disabled, and forward plus backward is `1.586x` to `1.605x` faster. Maximum
+probability and gradient absolute errors are `1.14e-13` and `5.21e-10`; maximum
+relative L2 errors are `6.65e-8` and `4.82e-8`. The runner rejects any host,
+compiler, or direction below its `1.0x` floor. The canonical aggregate records
+`eligible_for_default`, so MEAS-001 is now a `provisional` implementation with
+default dispatch inside this exact measured window and the explicit kill switch
+above. This is bounded single-device development evidence against the identical
+public PyTorch path, not a release gate, framework-wide comparison, or
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_probability_dispatch.py`](../../benchmarks/statevector_probability_dispatch.py).
 
 `FQKI-TRITON-MEAS-002-A` evaluates exact Pauli-product expectations directly
 from a batched flat statevector. It fuses basis-index permutation, X/Y/Z phase,
@@ -648,8 +670,8 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. MPS-003
-through MPS-007 and MEAS-003 are provisional after their evidenced
-default-dispatch promotions; the other 27 implementations remain experimental.
+through MPS-007, MEAS-001, and MEAS-003 are provisional after their evidenced
+default-dispatch promotions; the other 26 implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

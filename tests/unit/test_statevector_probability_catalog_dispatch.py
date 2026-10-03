@@ -28,6 +28,7 @@ def test_statevector_probability_dispatch_binds_exact_catalog_implementation() -
     assert implementation.implementation_id == "FQKI-TRITON-MEAS-001-A"
     assert implementation.symbol == "statevector_probabilities"
     assert implementation.directions == ("forward", "backward")
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(
