@@ -170,15 +170,19 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     exactly one respect: the reverse list scan that the wire index replaced. If
     the two ever disagree, the index is wrong.
 
-    The two passes outside that traversal are called from both sides in the same
-    position rather than re-derived, because each is a different pass with its
-    own rule and not the subject of this oracle. ``remove_zero_state_resets``
-    reads the register's initial state instead of an opcode table;
-    ``collapse_one_qubit_runs`` has a traversal of its own. Both are in the loop
-    because the loop has to be the one the implementation runs for the
-    round-by-round comparison to mean anything.
+    The three passes outside that traversal are called from both sides in the same
+    position rather than re-derived, because each is a different pass with its own
+    rule and not the subject of this oracle. ``remove_zero_state_resets`` reads the
+    register's initial state instead of an opcode table;
+    ``cancel_commuting_self_inverse`` reads the commutation rule source, which reads
+    the runtime's gate matrices; ``collapse_one_qubit_runs`` has a traversal of its
+    own. All three are in the loop because the loop has to be the one the
+    implementation runs for the round-by-round comparison to mean anything.
     """
 
+    from flagquantum.compiler.commutation_cancellation import (
+        cancel_commuting_self_inverse,
+    )
     from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 
     ir = ensure_circuit_ir(circuit_or_ir)
@@ -188,6 +192,7 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
         ir = _reference_remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
         ir = _reference_merge_adjacent_rotations(ir)
+        ir = cancel_commuting_self_inverse(ir)
         ir = _reference_remove_identity_gates(ir)
         ir = collapse_one_qubit_runs(ir)
         if len(ir) == previous_count:

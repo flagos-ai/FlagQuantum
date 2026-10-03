@@ -28,6 +28,8 @@ Use `optimize(program)` for target-independent optimization and
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
+| Commutation rules and the block partition | [commutation.py](commutation.py) |
+| Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
@@ -77,6 +79,27 @@ A transformation is acceptable when it preserves the relevant state,
 measurement, and gradient references, produces legal output, and has bounded
 code growth. An optimization must not remove a trainable gate solely because
 its present angle is zero.
+
+A reduction is only as strong as the reordering it is allowed to perform, so
+[commutation.py](commutation.py) answers whether two instructions commute and
+partitions a program into commuting blocks, one ordered partition per qubit. It is
+a rule source of proof rather than of record: there is no shipped rule table, and
+no rule reads a parameter value, so a trainable angle and a batch of angles are
+decided exactly like a compile-time constant. Every claimed pair is checked
+against the runtime's gate matrices by `tests/unit/test_compilation_commutation.py`,
+which is why the reach is measured rather than asserted -- over every placement of
+every declared arity-one and arity-two unitary pair it answers 3602 of the 3826
+pairs that really do commute and never answers a pair that does not.
+[commutation_cancellation.py](commutation_cancellation.py) is the only consumer:
+it removes a parameter-free self-inverse pair whose two occurrences share a proven
+commuting block, which is the case `merge_self_inverse` cannot see because a gate
+stands between them. On a chain of six controlled gates interleaved with rotations
+on their controls it removes 495 of the 708 instructions the previous pipeline
+left. Where the residue is declined it is declined on purpose and enumerated, not
+unnoticed.
+[benchmarks/compiler_commutation_cancellation.py](../../benchmarks/compiler_commutation_cancellation.py)
+holds the rule-source sweep, the per-population delta, and a per-opcode comparison
+with Qiskit's `CommutationAnalysis` plus `CommutativeCancellation`.
 
 Canonical optimization removes identities, cancels self-inverse pairs, adds up
 adjacent rotations that share one opcode, and folds a same-wire run that *mixes*
