@@ -163,6 +163,13 @@ records the two-node 32-thread rotation-tile scheduling A/B, the absolute
 PennyLane Lightning comparison, and the single-socket versus dual-socket NUMA
 boundary on 64 physical Xeon cores.
 
+[`LINUX_X86_CPU_SCORECARD_20261003.md`](LINUX_X86_CPU_SCORECARD_20261003.md)
+establishes the formal Linux x86-64 forward and adjoint baseline. It records
+complete 18/22-qubit absolute times for FlagQuantum, Qiskit Aer, and PennyLane
+Lightning at one and 32 threads, socket-local speedups, correctness and
+stability, the unavailable standard-wheel Kokkos boundary, public example,
+reproduction commands, and the measured next optimization targets.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
