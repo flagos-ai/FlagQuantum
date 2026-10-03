@@ -238,6 +238,7 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MEAS-001-A",
         "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_matches_reference",
+        "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_runtime_uses_catalog",
         gradient_tests=(
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_gradient_matches_reference",
         ),
@@ -245,9 +246,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cpu_fallback_preserves_gradient",
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_unsupported_cuda_input_uses_fallback",
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_validates_input",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_probability_kernel_a800.json",
+            "benchmarks/results/local/statevector_probability_dispatch_a800.json",
         ),
     ),
     _evidence(
