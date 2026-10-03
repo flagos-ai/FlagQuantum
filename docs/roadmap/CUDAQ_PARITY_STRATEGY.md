@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 49 |
-| `unsupported` | 36 |
+| `partial` | 50 |
+| `unsupported` | 35 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -104,6 +104,23 @@ straight-line sequence and refuses a data-dependent program, so loops and
 functions stay unestimatable exactly as that row always said. All four were
 registered in `capability-maturity.toml` at `development_evidence` in the same
 change, because a row cannot be closed by evidence that no entry carries.
+
+`commutation_aware_rewrite` moved from `unsupported` to `partial` in the same
+wave, and it is the one move that required no new code at all. Its reason said the
+pass was absent and needed the pass manager first; the tree said otherwise.
+[commutation.py](../../flagquantum/compiler/commutation.py) answers whether two
+instructions commute and which instructions form one commuting block on a wire,
+from the operator schemas rather than from a generated table, and
+[commutation_cancellation.py](../../flagquantum/compiler/commutation_cancellation.py)
+consumes that analysis inside the optimizer's fixed-point loop, so
+`cx(0, 1) rz(0) cx(0, 1)` reduces to a bare `rz(0)` -- a reduction the wire-local
+self-inverse merge cannot reach, because the latest writer of wire 0 is the `rz`.
+The row stays `partial` because it is named for CUDA-Q's pass rather than for the
+reduction: CUDA-Q ships a *driver* that searches backward from an anchor operation
+for the nearest endpoint a consumer will accept, so a second rewrite can cross a
+commuting frontier without its author writing the commutation proof. FlagQuantum
+has one consumer hard-coded against the analysis. Recording that as the gap, rather
+than reading the reduction as the pass, is the whole content of this move.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -340,7 +357,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 36 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 35 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a
