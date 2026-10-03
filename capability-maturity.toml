@@ -799,6 +799,24 @@ focused_tests = "tests/unit/test_local_target_emulation.py"
 integration_tests = "tests/integration/test_local_target_emulation.py"
 development_artifact = "flagquantum/remote/emulation.py"
 
+[capabilities.hardware_provider_roster]
+title = "Third-party hardware provider roster"
+summary = "Read a vendor's own device declaration fail-closed into a backend profile, preflight a sealed package against it locally, and drive submission, status, cancellation, and result decoding through the provider contract."
+category = "deployment_and_extension"
+user_goals = ["List declared devices from a vendor listing", "Turn a vendor declaration into a backend profile the compiler understands", "Preflight a package locally before creating a paid job", "Submit, poll, cancel, and decode results through one provider contract"]
+public_apis = ["flagquantum.remote.qpu"]
+runtime_modes = ["provider"]
+hardware = ["provider_dependent"]
+gradient_support = "not_applicable"
+distribution_semantics = "provider_dependent"
+quick_start = "examples/remote/provider_roster.py"
+documentation = "flagquantum/remote/qpu/README.md"
+level = "experimental"
+owner = "remote maintainers"
+limitations = "No adapter has been exercised against a live provider, so there is no hardware evidence and none of this is release-certified. A device listing is external and untrusted: width, native gate set, and connectivity are the vendor's declared facts, and a listing that omits or mistypes one is refused by name rather than defaulted. Trapped-ion connectivity is all-to-all, so the profile carries no coupling map unless the listing states one and never a fabricated lattice; an IQM lattice is read as declared; a neutral-atom register's connectivity is derived from declared atom coordinates under an explicit caller-supplied interaction radius, because a default radius would invent a device. A preflight is this package's own policy, not a vendor's acceptance, and a real submission additionally needs a vendor account, credentials, and a live control plane. Neutral-atom submission is deliberately not implemented: such a machine executes an analog schedule this package does not emit, and the adapter names that gap instead of translating a circuit into a program the hardware would not run as declared. Photonic and quantum-control-system providers, an analog-schedule path, and a RuntimeEndpoint contract are absent. No adapter claims hardware-identical behaviour."
+focused_tests = "tests/unit/test_hardware_provider_roster.py"
+development_artifact = "flagquantum/remote/qpu"
+
 [capabilities.qpu_digital_twin]
 title = "Evidence-qualified QPU digital twins"
 summary = "Predict calibration-conditioned measurement distributions, prospectively validate fixed and held-out regional suites, and align comparable evidence over time."

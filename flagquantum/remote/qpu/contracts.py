@@ -33,6 +33,71 @@ class DeploymentResult:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ProviderSubmissionPreview:
+    """Validated, non-submitting description of one provider submission."""
+
+    provider: str
+    backend: str
+    shots: int
+    program_format: str
+    program: str
+    compatible: bool
+    blockers: tuple[str, ...] = ()
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "provider": self.provider,
+            "backend": self.backend,
+            "shots": self.shots,
+            "program_format": self.program_format,
+            "compatible": self.compatible,
+            "blockers": self.blockers,
+        }
+
+
+def preflight_submission(
+    package: DeploymentPackage,
+    *,
+    provider: str,
+    backend_name: str | None = None,
+    qasm_versions: tuple[float, ...] | None = (3.0,),
+    dynamic_circuits_supported: bool = False,
+) -> ProviderSubmissionPreview:
+    """Check a sealed package against one adapter's own submission policy.
+
+    The policy is the adapter's, not the vendor's: an adapter that has not
+    implemented a vendor's dynamic-circuit dialect records that as its own
+    limitation here, so the refusal happens before a paid job exists. An adapter
+    that submits no OpenQASM at all declares no QASM policy by passing
+    ``qasm_versions=None``, and no version is then checked.
+    """
+
+    blockers: list[str] = []
+    try:
+        validate_deployment_package(package)
+    except Exception as exc:
+        blockers.append(f"invalid_deployment_package:{exc}")
+    if package.backend.provider != provider:
+        blockers.append(f"backend_provider_is_not_{provider}")
+    if backend_name is not None and package.backend.name != backend_name:
+        blockers.append("deployment_package_targets_a_different_backend")
+    if qasm_versions is not None and package.qasm_version not in qasm_versions:
+        allowed = ", ".join(f"{value:g}" for value in qasm_versions)
+        blockers.append(f"{provider}_provider_requires_openqasm_{allowed}")
+    if package.backend.supports_dynamic_circuits and not dynamic_circuits_supported:
+        blockers.append(f"{provider}_dynamic_circuits_are_not_supported")
+    return ProviderSubmissionPreview(
+        provider=provider,
+        backend=package.backend.name,
+        shots=package.shots,
+        program_format=f"openqasm-{package.qasm_version:g}",
+        program=package.qasm,
+        compatible=not blockers,
+        blockers=tuple(blockers),
+    )
+
+
 def build_submission_receipt(
     package: DeploymentPackage,
     payload: Mapping[str, Any] | None = None,
@@ -139,9 +204,11 @@ class QuantumProvider:
 __all__ = (
     "DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA",
     "DeploymentResult",
+    "ProviderSubmissionPreview",
     "ProviderTaskHandle",
     "QuantumProvider",
     "build_result_metadata",
     "build_submission_receipt",
+    "preflight_submission",
     "validate_deployment_result",
 )

@@ -75,6 +75,55 @@ outputs, physical-qubit mappings, and missing target-width evidence before
 creating a cloud job. Use `AzureQuantumProvider.dry_run()` directly when an
 application needs a non-submitting package preview.
 
+## Reading a vendor device declaration
+
+`IonQProvider`, `QuantinuumProvider`, `IQMProvider` and `NeutralAtomProvider`
+share one reader for a vendor's own device listing. Width, native gate set and
+connectivity are the vendor's declared facts: a listing that omits or mistypes
+one of them is refused with a message naming the vendor and the fact, and the
+adapter never supplies a default width, gate set or topology.
+
+```python
+import flagquantum as fq
+import flagquantum.deployment as fqd
+from flagquantum.remote.qpu import IQMProvider, iqm_backend_profile
+
+profile = iqm_backend_profile(
+    {
+        "name": "IQM Garnet",
+        "qubits": [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]],
+        "connectivity": [[0, 1], [1, 2]],
+        "gates": ["PRX", "CZ"],
+    }
+)
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+package = fqd.create_deployment_package(
+    circuit, backend=profile, shots=100, qasm_version=3.0
+)
+preview = IQMProvider().dry_run(package)  # validates locally, creates no job
+```
+
+What each adapter does with connectivity differs, and the difference is a
+property of the hardware rather than of the adapter. IQM publishes a real
+lattice, so its declared couplings become the profile's `CouplingMap`.
+Trapped-ion devices (IonQ, Quantinuum) are all-to-all, so the profile carries no
+coupling map unless the listing states one; it does not invent a complete graph.
+A neutral-atom register declares atom coordinates, so connectivity is derived
+from the declared geometry with an explicit, documented interaction radius that
+the caller must supply in the register's own length unit — a default radius
+would invent a device.
+
+`NeutralAtomProvider` describes and preflights a register but does not submit:
+a neutral-atom machine executes an analog schedule over its register, and this
+package emits neither that schedule nor a vendor's serialization of it. The
+adapter reports that as its blocker instead of translating a circuit into a
+program the hardware would not run as declared.
+
+No adapter claims hardware-identical behaviour, and no adapter is tested against
+a live provider. The offline provider tests use fake listings and fake
+transports; reaching a real device additionally needs a vendor account, and the
+evidence that a vendor accepted a job can only come from a real submission.
+
 Change high-level remote `fq.run` workflows in `execution.py`; change each
 provider's transport and task lifecycle behavior in its provider module.
 
@@ -87,6 +136,10 @@ Run the offline provider checks from the repository root:
 ```bash
 python -m pytest tests/test_amazon_braket_provider.py \
   tests/test_azure_quantum_provider.py tests/test_cloud_providers.py \
-  tests/test_quafu_calibration.py \
+  tests/test_quafu_calibration.py tests/unit/test_hardware_provider_roster.py \
   tests/team/remote/test_quafu_user_path.py -q
 ```
+
+Run [`examples/remote/provider_roster.py`](../../../examples/remote/provider_roster.py)
+for the shortest end-to-end path through declaration reading and offline
+preflight. It contacts no provider and needs no credentials.

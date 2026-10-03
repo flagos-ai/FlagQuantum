@@ -883,11 +883,11 @@ evidence = ["flagquantum/remote", "flagquantum/deployment", "flagquantum/ecosyst
 [[domains.capabilities]]
 id = "third_party_target_sdk"
 cudaq = "_experimental.CustomTarget letting a third party define and register a target"
-status = "unsupported"
+status = "partial"
 priority = "now"
 dependency_class = "none"
-reason = "Absent, and it is the ecosystem entry point. Without it a provider can only be added by changing FlagQuantum."
-evidence = ["flagquantum/ecosystem/extensions/sdk.py", "flagquantum/remote/qpu"]
+reason = "Partial. A third party declares its target in an extension manifest and FlagQuantum validates the declaration fail-closed and turns it into a capability snapshot (`flagquantum/ecosystem/extensions/target_sdk.py`, restored with 8 tests). What is absent is execution through that target: a registered description is not yet a runnable backend, so a provider still cannot be added end to end without changing FlagQuantum."
+evidence = ["flagquantum/ecosystem/extensions/target_sdk.py", "tests/test_third_party_target.py", "flagquantum/remote/qpu"]
 
 [[domains.capabilities]]
 id = "runtime_endpoint"
@@ -913,8 +913,8 @@ cudaq = "IonQ, Quantinuum, IQM, neutral-atom, photonic, and control-system provi
 status = "partial"
 priority = "now"
 dependency_class = "none"
-maturity_ref = "cloud_deployment"
-reason = "FlagQuantum has fewer providers. The architectural requirement is a registration point a third party can use, which is why third_party_target_sdk is the higher-priority row."
+maturity_ref = "hardware_provider_roster"
+reason = "Partial. IonQ, Quantinuum, IQM, and neutral-atom declarations are read fail-closed into backend profiles, preflighted locally, and driven through the existing `remote/qpu` provider contract, alongside the existing Quafu, Braket, and Azure adapters. Still absent: photonic and quantum-control-system providers, an analog-schedule submission path for neutral atoms, and any hardware evidence, because no adapter has been exercised against a live provider."
 
 [[domains.capabilities]]
 id = "domestic_accelerator_path"

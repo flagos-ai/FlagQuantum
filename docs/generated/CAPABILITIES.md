@@ -108,6 +108,10 @@ This catalog is generated from the machine-validated
 | Read what a target's passes do to a program before submitting | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
 | Execute a target-compiled program locally | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
 | Compare a noiseless run against a caller model or a device calibration | Target-directed local emulation | Experimental | [Run example](../../examples/remote/emulate_local_target.py) |
+| List declared devices from a vendor listing | Third-party hardware provider roster | Experimental | [Run example](../../examples/remote/provider_roster.py) |
+| Turn a vendor declaration into a backend profile the compiler understands | Third-party hardware provider roster | Experimental | [Run example](../../examples/remote/provider_roster.py) |
+| Preflight a package locally before creating a paid job | Third-party hardware provider roster | Experimental | [Run example](../../examples/remote/provider_roster.py) |
+| Submit, poll, cancel, and decode results through one provider contract | Third-party hardware provider roster | Experimental | [Run example](../../examples/remote/provider_roster.py) |
 | Predict a mapped QPU measurement distribution | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
 | Compare a frozen prediction with later QPU counts | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
 | Reject circuits outside validated topology and depth | Evidence-qualified QPU digital twins | Development evidence | [Run example](../../examples/remote/quafu_twin_region_holdout.py) |
@@ -950,6 +954,20 @@ Compile a program for a declared third-party target and execute the compiled pro
 - **Start:** [quick example](../../examples/remote/emulate_local_target.py)
 - **Documentation:** [guide](../../flagquantum/remote/README.md)
 - **Known boundary:** A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade.
+
+### Third-party hardware provider roster
+
+Read a vendor's own device declaration fail-closed into a backend profile, preflight a sealed package against it locally, and drive submission, status, cancellation, and result decoding through the provider contract.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.remote.qpu`
+- **Runtime modes:** `provider`
+- **Hardware:** `provider_dependent`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `provider_dependent`
+- **Start:** [quick example](../../examples/remote/provider_roster.py)
+- **Documentation:** [guide](../../flagquantum/remote/qpu/README.md)
+- **Known boundary:** No adapter has been exercised against a live provider, so there is no hardware evidence and none of this is release-certified. A device listing is external and untrusted: width, native gate set, and connectivity are the vendor's declared facts, and a listing that omits or mistypes one is refused by name rather than defaulted. Trapped-ion connectivity is all-to-all, so the profile carries no coupling map unless the listing states one and never a fabricated lattice; an IQM lattice is read as declared; a neutral-atom register's connectivity is derived from declared atom coordinates under an explicit caller-supplied interaction radius, because a default radius would invent a device. A preflight is this package's own policy, not a vendor's acceptance, and a real submission additionally needs a vendor account, credentials, and a live control plane. Neutral-atom submission is deliberately not implemented: such a machine executes an analog schedule this package does not emit, and the adapter names that gap instead of translating a circuit into a program the hardware would not run as declared. Photonic and quantum-control-system providers, an analog-schedule path, and a RuntimeEndpoint contract are absent. No adapter claims hardware-identical behaviour.
 
 ### Evidence-qualified QPU digital twins
 

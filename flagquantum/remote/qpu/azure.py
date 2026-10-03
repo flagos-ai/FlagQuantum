@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -22,6 +21,7 @@ from .contracts import (
     build_submission_receipt,
     validate_deployment_result,
 )
+from .result_parsing import _outcome_counts, _probability_counts
 
 _BIT = re.compile(r"[01]")
 
@@ -123,44 +123,21 @@ def _bitstring(value: Any) -> str:
 def _probabilities_to_counts(
     probabilities: Mapping[Any, Any], shots: int
 ) -> dict[str, int]:
-    weighted: list[tuple[str, float, int, float]] = []
-    for outcome, raw_probability in probabilities.items():
-        probability = float(raw_probability)
-        if not math.isfinite(probability) or probability < 0:
-            raise RuntimeError("Azure Quantum result contains an invalid probability")
-        exact = probability * shots
-        base = math.floor(exact)
-        weighted.append((_bitstring(outcome), probability, base, exact - base))
-    total_probability = sum(item[1] for item in weighted)
-    if not math.isclose(total_probability, 1.0, rel_tol=1e-6, abs_tol=1e-6):
-        raise RuntimeError("Azure Quantum probabilities do not sum to one")
-    remaining = shots - sum(item[2] for item in weighted)
-    ranked = sorted(
-        range(len(weighted)), key=lambda index: (-weighted[index][3], index)
+    return _probability_counts(
+        probabilities, shots, provider="Azure Quantum", outcome_key=_bitstring
     )
-    increments = set(ranked[:remaining])
-    return {
-        outcome: base + (index in increments)
-        for index, (outcome, _probability, base, _remainder) in enumerate(weighted)
-    }
 
 
 def _azure_counts(payload: Any, *, shots: int) -> dict[str, int]:
-    current = payload
-    if isinstance(current, Mapping):
-        for key in ("counts", "histogram", "probabilities", "results"):
-            candidate = current.get(key)
-            if isinstance(candidate, Mapping):
-                current = candidate
-                break
-    if not isinstance(current, Mapping) or not current:
+    if not isinstance(payload, Mapping):
         raise RuntimeError("Azure Quantum result does not contain outcomes")
-    numeric = {outcome: float(value) for outcome, value in current.items()}
-    if all(value.is_integer() and value >= 0 for value in numeric.values()):
-        counts = {_bitstring(key): int(value) for key, value in numeric.items()}
-        if sum(counts.values()) == shots:
-            return counts
-    return _probabilities_to_counts(numeric, shots)
+    return _outcome_counts(
+        payload,
+        provider="Azure Quantum",
+        keys=("counts", "histogram", "probabilities", "results"),
+        shots=shots,
+        outcome_key=_bitstring,
+    )
 
 
 class AzureQuantumProvider(QuantumProvider):
