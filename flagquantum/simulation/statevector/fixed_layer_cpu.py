@@ -12,6 +12,7 @@ from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix
 from ..native_cpu.rotation import (
+    fused_product_state_initialization_,
     fused_rotation_block_forward_,
     fused_static_clifford_layer_,
     native_cpu_one_qubit_layer_available,
@@ -22,6 +23,7 @@ from .program import (
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
     _StatevectorPreCXStep,
+    _StatevectorProgramStep,
 )
 
 _MAX_NATIVE_FIXED_LAYER_WIRES = 11
@@ -532,3 +534,68 @@ def apply_native_fixed_one_qubit_layer(
             return None
         start = stop
     return output
+
+
+def initialize_native_product_state(
+    steps: Sequence[_StatevectorProgramStep],
+    state: torch.Tensor,
+    *,
+    n_qubits: int,
+    matrix_builder: Callable[
+        [_StatevectorGateStep | _StatevectorFusedGateStep, torch.Tensor],
+        torch.Tensor,
+    ],
+) -> bool:
+    """Write a complete first rotation/CX layer directly from ``|0>``."""
+
+    dense_steps = tuple(
+        step for step in steps if isinstance(step, _StatevectorDisjointDenseStep)
+    )
+    if len(dense_steps) != len(steps):
+        return False
+    regions = tuple(region for step in dense_steps for region in step.regions)
+    wires = tuple(
+        int(
+            region.instruction.wires[0]
+            if isinstance(region, _StatevectorGateStep)
+            else region.wires[0]
+        )
+        for region in regions
+    )
+    if (
+        len(regions) != n_qubits
+        or set(wires) != set(range(n_qubits))
+        or state.requires_grad
+    ):
+        return False
+    matrices = tuple(matrix_builder(region, state) for region in regions)
+    if any(matrix.ndim not in {2, 3} or matrix.requires_grad for matrix in matrices):
+        return False
+    uses_batch_matrices = any(matrix.ndim == 3 for matrix in matrices)
+    if uses_batch_matrices:
+        if any(
+            matrix.ndim == 3 and matrix.shape[0] != state.shape[0]
+            for matrix in matrices
+        ):
+            return False
+        matrix_tensor = torch.stack(
+            tuple(
+                matrix.expand(state.shape[0], -1, -1) if matrix.ndim == 2 else matrix
+                for matrix in matrices
+            ),
+            dim=1,
+        ).contiguous()
+    else:
+        matrix_tensor = torch.stack(matrices).contiguous()
+    controls = tuple(
+        control for step in dense_steps for control in step.fused_cx_controls
+    )
+    targets = tuple(target for step in dense_steps for target in step.fused_cx_targets)
+    return fused_product_state_initialization_(
+        state,
+        matrix_tensor,
+        torch.tensor(wires, dtype=torch.int64, device=state.device),
+        n_qubits=n_qubits,
+        cx_controls=torch.tensor(controls, dtype=torch.int64, device=state.device),
+        cx_targets=torch.tensor(targets, dtype=torch.int64, device=state.device),
+    )

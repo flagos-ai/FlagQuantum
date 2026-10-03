@@ -47,6 +47,12 @@ disjoint CX matching. It includes absolute time, the execution-RSS reduction,
 same-run PennyLane Lightning comparison, public example, boundaries, raw JSON,
 and an exact reproduction command.
 
+[`BATCHED_STATEVECTOR_PRODUCT_STATE_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_PRODUCT_STATE_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md)
+records the direct-from-zero first-layer kernel and final-slice assembly. It
+includes the copy-based rollback A/B, absolute time and RSS, a prominent
+PennyLane Lightning comparison, public example, boundaries, raw JSON, and an
+exact reproduction command.
+
 The differentiable simulator corpus adds matched exact expectation-value and
 full-gradient measurements for FlagQuantum native PyTorch autograd and PennyLane
 default.qubit backprop. Its generated Markdown report contains the workload meaning,

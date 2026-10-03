@@ -11,7 +11,11 @@ import torch
 from ...core.ir import Instruction
 from ..gate_matrix import _parameter_batch_window
 from .operations import _environment_flag, _gate_parameter_tensor
-from .program import _StatevectorFusedGateStep
+from .program import (
+    _direct_batch_assembly_beneficial,
+    _StatevectorFusedGateStep,
+    _StatevectorProgramStep,
+)
 
 if TYPE_CHECKING:
     from ...circuit import Circuit
@@ -50,25 +54,55 @@ def _cpu_statevector_batch_preallocated_assembly_enabled() -> bool:
     )
 
 
+def _cpu_statevector_batch_direct_assembly_enabled() -> bool:
+    """Whether owned final slices may also serve as execution windows."""
+
+    return bool(
+        _environment_flag("FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY", default=True)
+    )
+
+
 def _execute_statevector_batch_windows(
     output: torch.Tensor,
     *,
+    circuit: Circuit,
+    program: Sequence[_StatevectorProgramStep],
     batch_size: int,
     chunk_size: int,
     bounded_zero_state: bool,
     preallocate: bool,
-    execute: Callable[[torch.Tensor], torch.Tensor],
+    execute: Callable[[torch.Tensor, bool], torch.Tensor],
 ) -> tuple[torch.Tensor, str]:
     """Execute bounded windows and avoid retaining them before final assembly."""
 
+    direct = bool(
+        bounded_zero_state
+        and preallocate
+        and _direct_batch_assembly_beneficial(program, circuit.n_wires)
+        and _cpu_statevector_batch_direct_assembly_enabled()
+    )
+    if bounded_zero_state:
+        output = _materialize_bounded_zero_state(
+            circuit,
+            batch_size=batch_size,
+            window_size=chunk_size,
+            direct=direct,
+        )
     chunks: list[torch.Tensor] = []
-    assembled: torch.Tensor | None = None
+    assembled: torch.Tensor | None = output if direct else None
     for start in range(0, batch_size, chunk_size):
         stop = min(start + chunk_size, batch_size)
+        window = (
+            output[start:stop]
+            if direct or not bounded_zero_state
+            else output[: stop - start]
+        )
         with _parameter_batch_window(start, stop, batch_size):
-            chunk = execute(
-                output[: stop - start] if bounded_zero_state else output[start:stop]
-            )
+            chunk = execute(window, direct)
+        if direct:
+            if chunk.data_ptr() != window.data_ptr():
+                window.copy_(chunk)
+            continue
         if assembled is None and not chunks:
             if (
                 preallocate
@@ -86,7 +120,7 @@ def _execute_statevector_batch_windows(
             assembled[start:stop].copy_(chunk)
     if assembled is None:
         return torch.cat(chunks, dim=0), "functional_cat"
-    return assembled, "preallocated_copy"
+    return assembled, "direct_preallocated" if direct else "preallocated_copy"
 
 
 def _cpu_statevector_batch_chunk_size_for(
@@ -156,11 +190,31 @@ def _statevector_batch_input(
         and initial_window_size < batch_size
     )
     output = (
-        _initial_state_batch_window(circuit, initial_window_size)
+        torch.empty(
+            (initial_window_size, 0), dtype=circuit.dtype, device=circuit.device
+        )
         if uses_bounded_zero_state
         else circuit.initial_state()
     )
     return batch_size, initial_window_size, uses_bounded_zero_state, output
+
+
+def _materialize_bounded_zero_state(
+    circuit: Circuit,
+    *,
+    batch_size: int,
+    window_size: int,
+    direct: bool,
+) -> torch.Tensor:
+    """Create either the reusable input window or the owned final result."""
+
+    if not direct:
+        return _initial_state_batch_window(circuit, window_size)
+    return torch.empty(
+        (batch_size, 2**circuit.n_wires),
+        dtype=circuit.dtype,
+        device=circuit.device,
+    )
 
 
 def _initial_state(circuit: Circuit) -> torch.Tensor:

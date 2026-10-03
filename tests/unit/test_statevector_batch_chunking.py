@@ -193,6 +193,60 @@ def test_chunked_bounded_initial_state_has_a_complete_rollback(
     )
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_chunked_native_layer_initializes_final_slices_directly(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    def circuit() -> fq.Circuit:
+        result = fq.Circuit(4, bsz=5, dtype=dtype)
+        for layer in range(2):
+            for wire in reversed(range(4)):
+                result.ry(wire, 0.1 * (layer + 1) * (wire + 1))
+                result.rz(wire, -0.07 * (layer + 1) * (wire + 1))
+            result.cx(3, 2).cx(1, 0)
+        return result
+
+    monkeypatch.setattr(
+        statevector_batching,
+        "_CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES",
+        2 * (2**4) * torch.empty((), dtype=dtype).element_size(),
+    )
+    selected = circuit()
+    actual = selected.state()
+    monkeypatch.setenv("FQ_CPU_NATIVE_PRODUCT_STATE_INITIALIZATION", "0")
+    initializer_rollback = circuit()
+    fallback = initializer_rollback.state()
+    monkeypatch.delenv("FQ_CPU_NATIVE_PRODUCT_STATE_INITIALIZATION")
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY", "0")
+    rollback = circuit()
+    expected = rollback.state()
+
+    tolerance = 1e-6 if dtype == torch.complex64 else 1e-14
+    torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
+    torch.testing.assert_close(fallback, expected, rtol=tolerance, atol=tolerance)
+    assert selected._initial_state_batch_window_workspace is None
+    assert selected._last_statevector_runtime["statevector_batch_assembly"] == (
+        "direct_preallocated"
+    )
+    assert (
+        selected._last_statevector_runtime["native_cpu_product_state_initialization"]
+        == 1
+    )
+    assert (
+        initializer_rollback._last_statevector_runtime["statevector_batch_assembly"]
+        == "direct_preallocated"
+    )
+    assert (
+        initializer_rollback._last_statevector_runtime[
+            "native_cpu_product_state_initialization"
+        ]
+        == 0
+    )
+    assert rollback._last_statevector_runtime["statevector_batch_assembly"] == (
+        "preallocated_copy"
+    )
+
+
 def test_chunked_batch_slices_compiled_module_bindings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -46,6 +46,7 @@ EngineName = Literal[
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_assembly_rollback",
+    "flagquantum_native_direct_assembly_rollback",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -68,6 +69,7 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
     "flagquantum_native_assembly_rollback",
+    "flagquantum_native_direct_assembly_rollback",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -111,6 +113,9 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     ),
     "flagquantum_native_assembly_rollback": (
         "FlagQuantum native batch (functional assembly rollback)"
+    ),
+    "flagquantum_native_direct_assembly_rollback": (
+        "FlagQuantum native batch (copy-based assembly rollback)"
     ),
     "flagquantum_native_functional_windows": (
         "FlagQuantum native batch (legacy functional windows)"
@@ -253,6 +258,7 @@ def _engine_callable(
             with _temporary_environment(
                 FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
                 FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="1",
                 FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
                 FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
                 FQ_CPU_INPLACE_DIAGONAL_GRAPHS="1",
@@ -403,6 +409,20 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_assembly_rollback
+    if engine == "flagquantum_native_direct_assembly_rollback":
+
+        def native_direct_assembly_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY="1",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="0",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_direct_assembly_rollback
     if engine == "flagquantum_native_functional_windows":
 
         def native_functional_windows() -> torch.Tensor:
@@ -473,6 +493,7 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
         "flagquantum_native_dense_width_rollback": ("flagquantum",),
         "flagquantum_native_layout_retention": ("flagquantum",),
         "flagquantum_native_assembly_rollback": ("flagquantum",),
+        "flagquantum_native_direct_assembly_rollback": ("flagquantum",),
         "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
         "flagquantum_native_serial": ("flagquantum",),
@@ -508,6 +529,8 @@ def _execution_strategy(engine: EngineName) -> str:
         return "native_parameter_batch_four_wire_dense_rollback"
     if engine == "pennylane_lightning_native_batch":
         return "framework_native_broadcast_batch"
+    if engine == "flagquantum_native_direct_assembly_rollback":
+        return "native_parameter_batch_copy_assembly_rollback"
     return (
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
