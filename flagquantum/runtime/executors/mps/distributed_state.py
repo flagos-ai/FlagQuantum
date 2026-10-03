@@ -198,7 +198,7 @@ class DistributedMPSState:
         self.shards = (
             tuple(shards)
             if shards is not None
-            else _mps_shards(local_state.n_wires, self.world_size)
+            else _mps_shards(local_state.n_qubits, self.world_size)
         )
         self.context = context
         self.local_shard_tensors = dict(local_shard_tensors or {})
@@ -225,7 +225,7 @@ class DistributedMPSState:
 
     @property
     def n_qubits(self) -> int:
-        return self.local_state.n_wires
+        return self.local_state.n_qubits
 
     @property
     def bsz(self) -> int:
@@ -458,7 +458,7 @@ class DistributedMPSState:
                 ),
                 "boundary_syncs": tuple(
                     {
-                        "left_wire": item.left_qubit,
+                        "left_qubit": item.left_qubit,
                         "right_wire": item.right_qubit,
                         "left_rank": item.left_rank,
                         "right_rank": item.right_rank,
@@ -489,7 +489,7 @@ class DistributedMPSState:
                 "rank_shards": tuple(
                     {
                         "rank": shard.rank,
-                        "wires": shard.qubits,
+                        "qubits": shard.qubits,
                         "left_boundary": shard.left_boundary,
                         "right_boundary": shard.right_boundary,
                     }
@@ -500,7 +500,7 @@ class DistributedMPSState:
         site_ownership = tuple(
             {
                 "rank": int(shard.rank),
-                "wires": tuple(int(qubit) for qubit in shard.qubits),
+                "qubits": tuple(int(qubit) for qubit in shard.qubits),
                 "ownership_semantics": "mps_site_range",
             }
             for shard in self.shards
@@ -509,7 +509,7 @@ class DistributedMPSState:
             {
                 "left_rank": int(shard.rank),
                 "right_rank": int(shard.rank + 1),
-                "left_wire": int(shard.right_boundary),
+                "left_qubit": int(shard.right_boundary),
                 "right_wire": int(shard.right_boundary + 1),
                 "ownership_semantics": "adjacent_rank_boundary_bond",
             }
@@ -773,7 +773,7 @@ class ShardedMPSState:
             "state_mode": "sharded_mps",
             "rank": self.rank,
             "world_size": self.world_size,
-            "n_wires": self.n_qubits,
+            "n_qubits": self.n_qubits,
             "batch_size": self.bsz,
             "local_tensor_wires": tuple(sorted(self.local_tensors)),
             "local_tensor_count": len(self.local_tensors),

@@ -120,12 +120,12 @@ class MPSMonteCarloResult:
         self._require_retained_trajectories()
 
         first = self.trajectories[0]
-        n_qubits = int(first.n_wires)
+        n_qubits = int(first.n_qubits)
         bsz = int(first.bsz)
         device = torch.device(first.device)
         for state in self.trajectories[1:]:
             if (
-                int(state.n_wires) != n_qubits
+                int(state.n_qubits) != n_qubits
                 or int(state.bsz) != bsz
                 or torch.device(state.device) != device
             ):

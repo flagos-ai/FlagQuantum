@@ -95,7 +95,7 @@ def mps_local_observable_adjoint(
 def mps_z_zz_local_scan(
     inputs: Sequence[torch.Tensor],
     tensors: Sequence[torch.Tensor],
-    wires: Sequence[int],
+    qubits: Sequence[int],
     z_terms: Mapping[int, Sequence[int]],
     zz_terms: Mapping[int, Sequence[int]],
     *,
@@ -103,11 +103,11 @@ def mps_z_zz_local_scan(
 ) -> tuple[torch.Tensor, ...]:
     """Advance all Z and adjacent-ZZ channels across one rank-local site block."""
 
-    if len(tensors) != len(wires):
-        raise ValueError("MPS observable tensors and wires must have equal length")
+    if len(tensors) != len(qubits):
+        raise ValueError("MPS observable tensors and qubits must have equal length")
     norm, previous_z, *channel_values = inputs
     channels = torch.stack(channel_values)
-    for wire, tensor in zip(wires, tensors, strict=True):
+    for qubit, tensor in zip(qubits, tensors, strict=True):
         next_norm = environment_transfer(norm, tensor, z=False, compiled=compiled)
         next_z = environment_transfer(norm, tensor, z=True, compiled=compiled)
         channel_list = list(
@@ -117,9 +117,9 @@ def mps_z_zz_local_scan(
                 compiled=compiled,
             ).unbind(0)
         )
-        for index in z_terms.get(int(wire), ()):
+        for index in z_terms.get(int(qubit), ()):
             channel_list[index] = next_z
-        for index in zz_terms.get(int(wire), ()):
+        for index in zz_terms.get(int(qubit), ()):
             channel_list[index] = environment_transfer(
                 previous_z,
                 tensor,
@@ -133,19 +133,19 @@ def mps_z_zz_local_scan(
 def mps_heisenberg_local_scan(
     inputs: Sequence[torch.Tensor],
     tensors: Sequence[torch.Tensor],
-    wires: Sequence[int],
+    qubits: Sequence[int],
     coefficients: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ) -> tuple[torch.Tensor, ...]:
     """Advance the five-channel nearest-neighbor Heisenberg MPO on one rank."""
 
     if len(inputs) != 5:
         raise ValueError("Heisenberg MPS scan requires five input channels")
-    if len(tensors) != len(wires):
-        raise ValueError("Heisenberg MPS tensors and wires must have equal length")
+    if len(tensors) != len(qubits):
+        raise ValueError("Heisenberg MPS tensors and qubits must have equal length")
     field_z, coupling_x, coupling_y, coupling_z = coefficients
     norm, open_x, open_y, open_z, energy = inputs
     operator_cache: dict[tuple[torch.device, torch.dtype], dict[str, torch.Tensor]] = {}
-    for wire, tensor in zip(wires, tensors, strict=True):
+    for qubit, tensor in zip(qubits, tensors, strict=True):
         key = (tensor.device, tensor.dtype)
         operators = operator_cache.get(key)
         if operators is None:
@@ -165,15 +165,15 @@ def mps_heisenberg_local_scan(
             tensor,
             operators["i"],
         )
-        next_energy = next_energy + field_z[wire] * next_z
-        if wire > 0:
+        next_energy = next_energy + field_z[qubit] * next_z
+        if qubit > 0:
             for coupling, opened, axis in (
                 (coupling_x, open_x, "x"),
                 (coupling_y, open_y, "y"),
                 (coupling_z, open_z, "z"),
             ):
                 next_energy = next_energy + coupling[
-                    wire - 1
+                    qubit - 1
                 ] * transfer_mps_operator_environment(
                     opened,
                     tensor,

@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 308
+measured_private = 275
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -667,6 +667,84 @@ sites = [
     "flagquantum/simulation/statevector/split_real_imag.py::apply_gate_pair::wires",
     "flagquantum/simulation/statevector/split_real_imag.py::double_single_pauli_term_expectation::n_wires",
     "flagquantum/simulation/statevector/split_real_imag.py::pauli_term_expectation::n_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::is_zz_z_chain_hamiltonian::n_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_apply_adjacent_chain_scan.spec::wire",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_apply_two_adjacent::left_wire",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_apply_two_remote::wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_initial_open_boundary_tensors::n_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_initial_padded_stack::n_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_z_sum::wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_mps_z_values::wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_sharded_mps_z_sum::n_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::jax_sharded_mps_z_sum::observable_wires",
+    "flagquantum/simulation/jax/mps/kernels.py::parse_zz_z_chain_hamiltonian::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_accumulate_all_to_all_statevector_delta::local_gate_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_accumulate_all_to_all_statevector_delta::local_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_accumulate_all_to_all_statevector_delta::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_accumulate_all_to_all_statevector_delta::touched_sharded_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_accumulate_all_to_all_statevector_delta::wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_apply_local_statevector_gate::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_apply_local_statevector_gate::sharded_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_apply_local_statevector_gate::wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_apply_matrix_to_batched_local_state::n_local_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_apply_matrix_to_batched_local_state::wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_basis_indices_for_wires::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_basis_indices_for_wires::wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_combine_pair_exchanged_statevector::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_combine_pair_exchanged_statevector::wire",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_gate_basis_in_for_delta_and_local_input::local_gate_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_gate_basis_in_for_delta_and_local_input::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_gate_basis_in_for_delta_and_local_input::touched_sharded_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_gate_basis_in_for_delta_and_local_input::wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_local_positions_for_gate_input::local_gate_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_local_positions_for_gate_input::local_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_local_positions_for_gate_input::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_rank_mask_for_touched_delta::sharded_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_rank_mask_for_touched_delta::touched_sharded_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_sharded_statevector_loss::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_sharded_statevector_loss::observable_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_sharded_statevector_rank_loss::n_wires",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_sharded_statevector_rank_loss::observable_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_expectation_product_ops::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_hamiltonian_expectation::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_loss_from_output::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_loss_from_output::observable_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_nodes_from_circuit::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_pauli_string_expectation::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_z_sum::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_z_sum::wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_z_values::n_wires",
+    "flagquantum/simulation/jax/tensor_network/kernels.py::jax_tensor_network_z_values::wires",
+    "flagquantum/simulation/mps/brickwork.py::compiled_local_z_zz::wires",
+    "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan.equal_width::n_wires",
+    "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan.island_for_wire::wire",
+    "flagquantum/simulation/mps/dense_island.py::DenseIslandState.apply_local::wires",
+    "flagquantum/simulation/mps/entrypoints.py::run_mps::dense_observable_wires",
+    "flagquantum/simulation/mps/observables.py::mps_heisenberg_local_scan::wires",
+    "flagquantum/simulation/mps/observables.py::mps_z_zz_local_scan::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_channel_trajectory::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_one::wire",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_parametric_one::wire",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_swap::left_wire",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_two::left_wire",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_two_bucket::left_wires",
+    "flagquantum/simulation/mps/state.py::MPSState.apply_two_remote::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.expectation_z::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.expectation_z_and_nearest_neighbor_zz::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.expectation_z_sum::wires",
+    "flagquantum/simulation/mps/state.py::MPSState.from_statevector::n_wires",
+    "flagquantum/simulation/mps/state.py::MPSState.zero::n_wires",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.apply_cx_mpo_real_imag::left_wire",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.apply_one::wire",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.apply_ry_real_imag::wire",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.apply_rz_real_imag::wire",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.apply_two::left_wire",
+    "flagquantum/simulation/mps/static.py::StaticMPSProgram.compile::n_wires",
+    "flagquantum/simulation/mps/tebd.py::run_tebd::n_wires",
+    "flagquantum/simulation/tensor_network/entrypoints.py::run_tensor_network::dense_observable_wires",
+    "flagquantum/simulation/tensor_network/local.py::run_local_tensor_network::dense_observable_wires",
+    "flagquantum/simulation/tensor_network/state.py::TensorNetworkState.__init__::dense_observable_wires",
+    "flagquantum/simulation/tensor_network/state.py::TensorNetworkState.expectation_z::wires",
 ]
 
 [[slices]]
@@ -1622,6 +1700,78 @@ declaration = "field"
 site = "flagquantum/simulation/lindblad.py::CollapseOperator::wires"
 replacement = "qubits"
 declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan::island_for_wire"
+replacement = "island_for_qubit"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/dense_island.py::DenseIslandPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/models.py::CompiledMPSOperation::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/models.py::MPSBondProfile::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/models.py::MPSConfig::dense_observable_wires"
+replacement = "dense_observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/planning.py::MPSPlanningMixin::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/site_kernels.py::SiteKernelStats::triton_wire_probability_calls"
+replacement = "triton_qubit_probability_calls"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/site_kernels.py::SiteKernelStats::wire_probability_fallback_calls"
+replacement = "qubit_probability_fallback_calls"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/state.py::MPSState::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/mps/static.py::StaticMPSProgram::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::CompiledTNObservableProgram::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::CompiledTNObservableProgram::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::CompiledTNProgram::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::TensorNetworkContractionPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::TensorNetworkExpectationPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/models.py::TensorNetworkExpectationPlan::observable_wires"
+replacement = "observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/state.py::TensorNetworkState::dense_observable_wires"
+replacement = "dense_observable_qubits"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/tensor_network/state.py::TensorNetworkState::n_wires"
+replacement = "n_qubits"
+declaration = "member"
 [definition_ledger]
 measured_canonical = 10
 
@@ -1687,6 +1837,7 @@ sites = [
     "flagquantum/simulation/native_cpu/adjoint.py::native_cpu_rotation_tile_wires",
     "flagquantum/simulation/native_cpu/rotation.py::native_cpu_forward_rotation_tile_wires",
     "flagquantum/simulation/pauli.py::infer_n_wires_from_dense_state",
+    "flagquantum/simulation/jax/statevector/kernels.py::jax_basis_indices_for_wires",
 ]
 
 [verification]
@@ -1700,5 +1851,6 @@ runtime_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-RUNTIME-20261007.m
 executor_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md"
 algorithms_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md"
 simulation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-SIMULATION-CPU-20261009.md"
+accelerator_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ACCELERATORS-20261010.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"
