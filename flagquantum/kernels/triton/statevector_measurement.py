@@ -530,7 +530,7 @@ def _launch_marginal_forward(
             selected_count=selected_count,
             outcome_count=outcome_count,
             block_size=block_size,
-            num_warps=8,
+            num_warps=4,
             num_stages=2,
         )
         return marginal
