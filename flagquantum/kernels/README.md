@@ -224,6 +224,20 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+`FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
+and its first-order complex gradient. The checked-in
+[`statevector_probability_kernel_a800.json`](../../benchmarks/results/local/statevector_probability_kernel_a800.json)
+artifact records 30 synchronized groups of 10 invocations for five fixed
+complex64 shapes from 1,024 through 16,777,216 amplitudes on `jp-a800-171` and
+`jp-a800-172` with stock Triton 3.7.1. Maximum probability and gradient absolute
+errors are `9.32e-10` and `3.34e-8`. Triton reaches `0.564x` to `2.999x` the
+PyTorch forward speed and `0.886x` to `3.078x` the PyTorch forward/backward
+speed. The approximately `3x` win is confined to the 16,777,216-amplitude case;
+smaller cases remain at parity or slower, so the canonical decision is
+`retain_experimental` and no default runtime dispatch is authorized. Reproduce
+or validate the evidence with
+[`benchmarks/statevector_probability_kernel.py`](../../benchmarks/statevector_probability_kernel.py).
+
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
 entry for contiguous CUDA `complex64` tensors outside reverse execution once

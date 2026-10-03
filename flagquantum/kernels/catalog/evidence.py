@@ -246,6 +246,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_unsupported_cuda_input_uses_fallback",
             "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_validates_input",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_probability_kernel_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-NUM-001-A",

@@ -179,7 +179,7 @@ def _case(
         "dtype": "complex64",
         "layout": "contiguous_flat_statevector",
         "maximum_probability_absolute_error": float(
-            torch.max(torch.abs(probability_difference))
+            torch.max(torch.abs(probability_difference)).detach()
         ),
         "probability_relative_l2_error": float(
             torch.linalg.vector_norm(probability_difference)
@@ -188,7 +188,7 @@ def _case(
             )
         ),
         "maximum_gradient_absolute_error": float(
-            torch.max(torch.abs(gradient_difference))
+            torch.max(torch.abs(gradient_difference)).detach()
         ),
         "gradient_relative_l2_error": float(
             torch.linalg.vector_norm(gradient_difference)

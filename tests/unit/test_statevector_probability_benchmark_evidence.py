@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -22,6 +24,10 @@ from benchmarks.statevector_probability_kernel import (
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/statevector_probability_kernel_a800.json"
+)
 
 
 def _run(host: str, *, speedup: float = 1.2) -> dict[str, object]:
@@ -152,3 +158,11 @@ def test_aggregate_is_canonical_and_records_ranges() -> None:
     assert payload["forward_speedup_range"] == [1.3, 1.3]
     assert payload["forward_backward_speedup_range"] == [1.3, 1.3]
     assert payload["implementation_decision"] == "retain_experimental"
+
+
+def test_checked_in_a800_artifact_is_canonical() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["source_revision"] == ("3ca8d23ef910520ac533d470042a0ea5c9afa41f")
