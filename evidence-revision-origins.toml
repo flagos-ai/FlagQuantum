@@ -29,19 +29,19 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Sixty-six distinct revisions are recorded under the three walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other sixty-five appear below in one
+# Sixty-seven distinct revisions are recorded under the three walked roots, and one of
+# them -- a commit on `main` -- is obtainable. The other sixty-six appear below in one
 # of three states.
 #
-# `unreferenced_object` (forty-three revisions) means no branch and no tag reaches
+# `unreferenced_object` (forty-four revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all forty-three by name, each confirmed by the counted measurement the method
+# serves all forty-four by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and three of the forty-three are the heads of closed
-# pull requests. No ref of this repository reaches any of the forty-three, so a
+# policy rather than a promise, and three of the forty-four are the heads of closed
+# pull requests. No ref of this repository reaches any of the forty-four, so a
 # complete clone obtains none of them. How many of them a particular working copy
 # happens to resolve is a reading of that working copy rather than a property of the
 # repository -- a fetch of a since-deleted branch brings objects in and a `gc` takes
@@ -50,7 +50,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # exactly the quantity that moves, and would call a revision obtainable in the one
 # working copy most likely to still hold it.
 #
-# Fourteen of the forty-three entered this table from a direction the first pass could
+# Fourteen of the forty-four entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -71,7 +71,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# Two more of the forty-three entered from the citation direction. The first is
+# Two more of the forty-four entered from the citation direction. The first is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
@@ -128,6 +128,16 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # and the same path under `/commits/<rev>`, and both answered with the object on three
 # attempts each, which places it in `unreferenced_object` rather than in a history this
 # repository does not contain.
+#
+# `26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2` is recorded three times by
+# `benchmarks/results/local/flagtree_tle_transpose_1q_a800.json`, added by `#440` when it
+# merged as `897fc40f` with the FlagTree TLE transpose gate provider. It is the same case
+# again and two merges later: the pull request was squash-merged, so its branch is gone
+# and no branch or tag reaches the revision, and the artifact arrived with the `quality`
+# job failing on exactly this row, which is how it reached `main` with the gate red.
+# Both repository-scoped commit API paths were asked for it by its full name on three
+# attempts each and all six answered with the object, which places it in
+# `unreferenced_object` rather than in a history this repository does not contain.
 
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -156,7 +166,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # scoped to
 # the repository the revision is declared against --
 # `gh api repos/flagos-ai/FlagQuantum/git/commits/<revision>`, and the same path under
-# `/commits/<revision>` -- which answered with the object for all forty-three
+# `/commits/<revision>` -- which answered with the object for all forty-four
 # `unreferenced_object` revisions and with `404` for all eighteen
 # `producing_host_history` revisions, two attempts each, and with `404` for the four
 # `external_dependency` revisions, which are commits of other repositories and are
@@ -204,9 +214,13 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the revision, which is how `benchmarks/results/local` states one origin for the
 # files under it that record one of the revisions declared for it. That number is a
 # reading of this tree and is not pinned here: walking the evidence roots and asking
-# which file under that directory records one of the seven declared for it answers
-# thirty-eight today, and it changes whenever an artifact recording one of those
-# revisions is added. Declaring an origin for a revision a clone obtains fails the
+# which file under that directory records one of the revisions declared for it answers
+# thirty-nine today, and it changes whenever an artifact recording one of those
+# revisions is added. The count of declared revisions is left out of that sentence for
+# the same reason it is left out of this one: it moved to eight when `#437` added a
+# declaration and to nine when this change did, and a sentence carrying it would go
+# stale in a file the declaration edit has no other reason to touch. Declaring an
+# origin for a revision a clone obtains fails the
 # gate, so this table cannot be used to hide a checkable pin behind a claim.
 #
 # An artifact may account for its own revisions instead, by stating
@@ -597,6 +611,10 @@ origin = "unreferenced_object"
 
 [[artifact.revision]]
 value = "24108fc21b96eec85723e02ddc15841ce4138b95"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
