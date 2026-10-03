@@ -33,6 +33,7 @@ SHAPE_MATRIX = (
 COMPILER_LANES = ("stock_triton", "flagtree")
 SELECTED_LOGICAL_BMM_SHAPES = _FUSED_LAYOUT_BMM_SHAPES
 FALLBACK_MINIMUM_SPEEDUP = 0.95
+FALLBACK_MAXIMUM_OVERHEAD_SECONDS = 5e-6
 RESULT_NAMES = (
     "direct_layout_forward",
     "materialized_torch_bmm_forward",
@@ -580,6 +581,15 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         raise ValueError("run does not contain the fixed NUM-002 shape matrix")
 
 
+def _fallback_within_overhead_budget(case: Mapping[str, Any]) -> bool:
+    public_seconds = case["public_catalog_dispatch"]["median_seconds_per_invocation"]
+    native_seconds = case["native_einsum_forward"]["median_seconds_per_invocation"]
+    return (
+        case["public_dispatch_speedup_over_native"] >= FALLBACK_MINIMUM_SPEEDUP
+        or public_seconds - native_seconds <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+    )
+
+
 def merge_runs(
     payloads: Sequence[Mapping[str, Any]], *, required_hosts: Sequence[str]
 ) -> dict[str, object]:
@@ -618,8 +628,8 @@ def merge_runs(
         for case in run["cases"]
         if case["public_dispatch_route"] == "catalog_kernel"
     )
-    fallback_non_regressing = all(
-        case["public_dispatch_speedup_over_native"] >= FALLBACK_MINIMUM_SPEEDUP
+    fallback_within_budget = all(
+        _fallback_within_overhead_budget(case)
         for run in ordered
         for case in run["cases"]
         if case["public_dispatch_route"] == "native_einsum"
@@ -651,12 +661,13 @@ def merge_runs(
         "required_compiler_lanes": list(COMPILER_LANES),
         "direct_forward_win_on_all_cases": direct_forward_wins,
         "selected_kernel_win_on_all_cases": selected_kernel_wins,
-        "fallback_non_regressing_on_all_cases": fallback_non_regressing,
+        "fallback_within_overhead_budget_on_all_cases": fallback_within_budget,
         "fallback_minimum_speedup": FALLBACK_MINIMUM_SPEEDUP,
+        "fallback_maximum_overhead_seconds": FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
         "direct_training_win_on_all_cases": direct_training_wins,
         "dispatch_evidence_decision": (
             "retain_current_policy"
-            if selected_kernel_wins and fallback_non_regressing
+            if selected_kernel_wins and fallback_within_budget
             else "revisit_current_policy"
         ),
         "runs": ordered,

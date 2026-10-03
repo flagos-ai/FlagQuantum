@@ -12,6 +12,7 @@ import pytest
 from benchmarks.tn_layout_contraction import (
     COMPILER_LANES,
     EQUATION,
+    FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
     FALLBACK_MINIMUM_SPEEDUP,
     IMPLEMENTATION_ID,
     RESULT_NAMES,
@@ -20,6 +21,7 @@ from benchmarks.tn_layout_contraction import (
     SELECTED_LOGICAL_BMM_SHAPES,
     SEMANTIC_ID,
     SHAPE_MATRIX,
+    _fallback_within_overhead_budget,
     merge_runs,
     validate_evidence,
     validate_run,
@@ -223,7 +225,7 @@ def test_aggregate_requests_policy_review_without_selected_kernel_win() -> None:
 
     validate_evidence(payload)
     assert not payload["selected_kernel_win_on_all_cases"]
-    assert payload["fallback_non_regressing_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
 
 
@@ -235,7 +237,7 @@ def test_aggregate_retains_policy_with_selected_win_and_safe_fallback() -> None:
 
     validate_evidence(payload)
     assert payload["selected_kernel_win_on_all_cases"]
-    assert payload["fallback_non_regressing_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "retain_current_policy"
 
 
@@ -246,8 +248,25 @@ def test_aggregate_requests_policy_review_for_fallback_regression() -> None:
     )
 
     validate_evidence(payload)
-    assert not payload["fallback_non_regressing_on_all_cases"]
+    assert not payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
+
+
+def test_fallback_budget_accepts_bounded_absolute_wrapper_overhead() -> None:
+    native_seconds = 56e-6
+    public_seconds = native_seconds + FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+    case = {
+        "native_einsum_forward": {
+            "median_seconds_per_invocation": native_seconds,
+        },
+        "public_catalog_dispatch": {
+            "median_seconds_per_invocation": public_seconds,
+        },
+        "public_dispatch_speedup_over_native": native_seconds / public_seconds,
+    }
+
+    assert case["public_dispatch_speedup_over_native"] < FALLBACK_MINIMUM_SPEEDUP
+    assert _fallback_within_overhead_budget(case)
 
 
 def test_evidence_validator_rejects_noncanonical_summary() -> None:
@@ -269,5 +288,5 @@ def test_checked_in_a800_evidence_is_canonical_and_retains_narrow_policy() -> No
     assert not payload["direct_forward_win_on_all_cases"]
     assert not payload["direct_training_win_on_all_cases"]
     assert payload["selected_kernel_win_on_all_cases"]
-    assert payload["fallback_non_regressing_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "retain_current_policy"
