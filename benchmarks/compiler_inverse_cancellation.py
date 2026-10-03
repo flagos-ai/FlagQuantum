@@ -138,6 +138,7 @@ from typing import Any
 
 import torch
 
+from flagquantum.compiler.commutation_cancellation import cancel_commuting_self_inverse
 from flagquantum.compiler.inverse_cancellation import inverse_pairs, merge_inverse_pairs
 from flagquantum.compiler.native_gate_legalization import (
     NativeGateLegalizationError,
@@ -597,6 +598,7 @@ _PIPELINE_PASSES = (
     merge_self_inverse,
     merge_inverse_pairs,
     merge_adjacent_rotations,
+    cancel_commuting_self_inverse,
     remove_identity_gates,
     collapse_one_qubit_runs,
 )
@@ -1242,9 +1244,17 @@ def pipeline_fidelity() -> dict[str, Any]:
     instead of calling it, and a mirror drifts: a pass added to the real pipeline and
     not to the mirror would quietly make the baselines weaker, and this pass would be
     credited with removals another pass now performs. So the mirror is driven here as
-    well and compared against the real pipeline, program by program, on the same
-    seeded populations the delta uses plus a reset program, so that a newly added pass
-    has to be mirrored or this check fails and says so.
+    well and compared against the real pipeline, program by program, so that a newly
+    added pass has to be mirrored or this check fails and says so.
+
+    One program per pass the mirror gained, because a population that exercises this
+    pass alone will not exercise the next one. The reset programs cover
+    `remove_zero_state_resets`; the commuting program covers
+    `cancel_commuting_self_inverse`, which rewrites `cx(0,1) rz(0) cx(0,1)` to a bare
+    `rz` and which nothing else in this list reaches. That second program is not
+    decoration: while the mirror was one pass behind, every other program here agreed
+    with the real pipeline anyway, so the drift was invisible and only the pass-count
+    pin stood between the mirror and the baselines quietly weakening.
     """
 
     seed = random.Random(_CIRCUIT_SEED)
@@ -1257,7 +1267,7 @@ def pipeline_fidelity() -> dict[str, Any]:
         _prepared(_barrier_pair(seed).instructions),
         _pulse_framed_pair(seed),
         _pulse_framed_pair_both_sides(seed),
-        # Reset programs, which is the pass the mirror gained last: a mirror that
+        # Reset programs, which is the pass the mirror gained first: a mirror that
         # omitted it would agree with the real pipeline on every population above and
         # disagree here. The second one needs a second round, because the wire is only
         # emptied of instructions by the self-inverse pass that runs after it.
@@ -1269,6 +1279,41 @@ def pipeline_fidelity() -> dict[str, Any]:
                 Instruction("x", (0,)),
                 Instruction("reset", (0,), metadata=_DYNAMIC),
             ),
+        ),
+        # The commuting program, for the pass the mirror gained second. The pair is
+        # self-inverse and the rotation is diagonal on a wire the pair acts on, which
+        # is the reach `merge_self_inverse` does not have and the one-qubit fold does
+        # not either, because the fold is same-wire.
+        CircuitIR(
+            _REGISTER_WIDTH,
+            (
+                Instruction("cx", (0, 1)),
+                Instruction("rz", (0,), params={"theta": 0.4}),
+                Instruction("cx", (0, 1)),
+            ),
+        ),
+        # One program per pass the mirror has carried all along and the earlier form of
+        # this list did not drive: a bare identity, which only `remove_identity_gates`
+        # removes, and two adjacent rotations of one opcode the fold declines and only
+        # `merge_adjacent_rotations` adds up. Both were found by dropping each pass from
+        # the mirror and seeing which programs stayed silent -- the same experiment
+        # `_undriven_pass_names` now runs on every payload.
+        CircuitIR(_REGISTER_WIDTH, (Instruction("i", (0,)),)),
+        CircuitIR(
+            _REGISTER_WIDTH,
+            (
+                Instruction("rx", (0,), params={"theta": 0.1}),
+                Instruction("rx", (0,), params={"theta": 0.2}),
+            ),
+        ),
+        # An adjacent two-qubit self-inverse pair: the shape `merge_self_inverse` exists
+        # for. It is the program that shows the merge changed something -- without
+        # `cancel_commuting_self_inverse` this pair is removed by `merge_self_inverse`
+        # and by nothing else, and with it the pair is removed either way, so the merged
+        # round is the one place that pass can be dropped from without a difference.
+        CircuitIR(
+            _REGISTER_WIDTH,
+            (Instruction("cx", (0, 1)), Instruction("cx", (0, 1))),
         ),
     ]
     mismatches = [
@@ -1282,7 +1327,38 @@ def pipeline_fidelity() -> dict[str, Any]:
         "mirrored_pass_count": len(_PIPELINE_PASSES),
         "mismatch_count": len(mismatches),
         "mismatch_indices": mismatches,
+        # Which passes this program list cannot tell apart from the shipped round, so a
+        # reader can see how much of the mirror the agreement above actually covers.
+        "undriven_pass_names": _undriven_pass_names(programs),
     }
+
+
+def _undriven_pass_names(programs: list[CircuitIR]) -> list[str]:
+    """Which passes no program above can tell apart from the shipped round.
+
+    A pass is *driven* when dropping every occurrence of it from the mirrored pass list
+    changes at least one program's output. A pass that no program drives is one the
+    fidelity check would not notice going missing from the mirror, and the baselines
+    would quietly weaken for it, so the drifts are measured and reported rather than
+    assumed to be none. Dropping by pass rather than by position, because
+    `remove_identity_gates` legitimately appears twice in the round and one occurrence
+    does not stand in for the other's position.
+    """
+
+    expected = [_pipeline_as_shipped(program).instructions for program in programs]
+    distinct: list[Any] = []
+    for entry in _PIPELINE_PASSES:
+        if not any(entry is seen for seen in distinct):
+            distinct.append(entry)
+    undriven = []
+    for dropped in distinct:
+        shortened = tuple(entry for entry in _PIPELINE_PASSES if entry is not dropped)
+        if all(
+            _run_rounds(program, shortened).instructions == shipped
+            for program, shipped in zip(programs, expected, strict=True)
+        ):
+            undriven.append(dropped.__name__)
+    return undriven
 
 
 def _order_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:

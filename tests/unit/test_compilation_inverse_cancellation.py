@@ -25,6 +25,7 @@ import torch
 import flagquantum.compiler.inverse_cancellation as inverse_cancellation_module
 import flagquantum.compiler.pipeline as pipeline_module
 from flagquantum.compiler import optimize
+from flagquantum.compiler.commutation_cancellation import cancel_commuting_self_inverse
 from flagquantum.compiler.inverse_cancellation import (
     _declared_partner,
     inverse_pairs,
@@ -374,10 +375,14 @@ def test_a_declined_cancellation_is_real_and_the_decline_is_the_passs_scope() ->
     unprovable, and the pass's own benchmark counts how many such rows there are.
 
     The contrast case is one wire wider. `rz` is diagonal and `cx` has a diagonal
-    action on its control, so `cx(0, 1) rz(0) cx(0, 1)` really is a bare `rz` too
-    and is left standing for exactly the same reason -- there is no rule in this
-    pass that could have reached it, and the pair is not even the pair being asked
-    about.
+    action on its control, so `cx(0, 1) rz(0) cx(0, 1)` really is a bare `rz` too.
+    This pass declines it for exactly the same reason -- there is no rule in it that
+    could have reached the rotation, and the pair is not even the pair being asked
+    about. The `cx` pair is self-inverse and the rotation sits on a wire that gate
+    acts on diagonally, though, so `cancel_commuting_self_inverse` reaches it once
+    the two passes run in one pipeline. The two claims are asserted separately: the
+    refusal belongs to this pass and the removal belongs to the commuting pass, so
+    neither statement covers for the other.
     """
 
     declared_pair = CircuitIR(
@@ -409,7 +414,9 @@ def test_a_declined_cancellation_is_real_and_the_decline_is_the_passs_scope() ->
     bare_rotation_on_two_wires = CircuitIR(
         2, (Instruction("rz", (0,), params={"theta": 0.4}),)
     )
-    assert _names(optimize(across_a_control)) == ["cx", "rz", "cx"]
+    assert merge_inverse_pairs(across_a_control) is across_a_control
+    assert _names(cancel_commuting_self_inverse(across_a_control)) == ["rz"]
+    assert _names(optimize(across_a_control)) == ["rz"]
     assert torch.allclose(
         _state(across_a_control), _state(bare_rotation_on_two_wires), atol=_ATOL, rtol=0
     )

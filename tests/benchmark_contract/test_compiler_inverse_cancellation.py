@@ -915,18 +915,40 @@ def test_the_mirrored_pass_list_is_still_the_shipped_pipeline(payload: dict) -> 
     is silent in the direction that matters: a pass added to the real pipeline and not
     to the mirror makes the baselines weaker, and this pass is then credited with
     removals the new pass performs. So the mirror is driven too -- over the same seeded
-    populations the delta uses, plus a reset program, so that the pass this branch's
-    merge added is covered -- and required to agree program for program.
+    populations the delta uses, plus one program per pass the mirror has to be able to
+    lose -- and required to agree program for program.
 
     The count is pinned rather than only the agreement, because a check that compared
-    an empty list of programs would agree with everything.
+    an empty list of programs would agree with everything. It is the length of
+    `pipeline._optimize_to_fixed_point`'s round, so merging `main` moves it: the
+    commuting pass that landed there took it from seven to eight, and the pin moved
+    with the pipeline rather than the pipeline being trimmed to keep the pin. That is
+    the point of the pin -- a mirror that missed the new pass would still have agreed
+    with itself, and the delta below would have credited this pass with the commuting
+    pass's removals.
+
+    The pin alone is not the check, though, and the merge is what showed it. The mirror
+    also has to be *driven* on a program only the new pass reaches, and the benchmark
+    now measures that too rather than asserting it: `undriven_pass_names` drops each
+    pass from the mirrored list in turn and reports the ones no program can tell apart
+    from the shipped round. The three passes the earlier program list left undriven --
+    identities, adjacent equal rotations, and an adjacent two-qubit self-inverse pair --
+    now each have a program, and the list is down to one name, `merge_self_inverse`.
+    That one is a finding about the merged pipeline rather than a hole being papered
+    over, and it is the shape `merge_self_inverse` exists for that establishes it: on
+    the seven-pass round `cx(0,1) cx(0,1)` is removed by `merge_self_inverse` and by
+    nothing else, and on the eight-pass round `cancel_commuting_self_inverse` removes it
+    too, so the pass can be dropped from the mirror without any program noticing. The
+    pin is what stops a *future* pass from becoming undriven unnoticed, which is the
+    failure it was written for.
     """
 
     fidelity = payload["pipeline_fidelity"]
     assert fidelity["mismatch_count"] == 0
     assert fidelity["mismatch_indices"] == []
-    assert fidelity["checked_program_count"] == 15
-    assert fidelity["mirrored_pass_count"] == 7
+    assert fidelity["checked_program_count"] == 19
+    assert fidelity["mirrored_pass_count"] == 8
+    assert fidelity["undriven_pass_names"] == ["merge_self_inverse"]
 
 
 def test_the_qiskit_anchor_compares_only_what_both_passes_attempt(
