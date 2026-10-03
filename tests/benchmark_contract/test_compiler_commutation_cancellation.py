@@ -600,10 +600,19 @@ def test_the_anchor_reports_the_ports_own_column_without_qiskit(payload: dict) -
     # rule source proves about a `cx`, `cy` or `cz` on two wires: both placements of
     # `cz`, and the control of `cx` and of `cy`.
     assert anchor["rotation_port_optimized_gate_count"] == 14
-    assert (
-        sum(merged for opcode in _QISKIT_SCOPE for merged in _MERGED_PLACEMENTS[opcode])
-        == 4
+    # The total above and the per-placement table are two statements of one fact, so
+    # they are tied together by an equation rather than left free to drift apart: the
+    # instructions the port removed are exactly the merged placements.
+    assert anchor["rotation_source_gate_count"] - anchor[
+        "rotation_port_optimized_gate_count"
+    ] == sum(
+        merged for opcode in _QISKIT_SCOPE for merged in _MERGED_PLACEMENTS[opcode]
     )
+    assert {opcode for opcode in _QISKIT_SCOPE if any(_MERGED_PLACEMENTS[opcode])} == {
+        "cx",
+        "cy",
+        "cz",
+    }
 
 
 def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None:
