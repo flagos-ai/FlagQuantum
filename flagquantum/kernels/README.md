@@ -345,21 +345,27 @@ materialization. The checked-in
 [`tn_layout_contraction_a800.json`](../../benchmarks/results/local/tn_layout_contraction_a800.json)
 artifact preserves 30 synchronized groups of 10 invocations for each of four
 fixed contraction shapes on `jp-a800-171` and `jp-a800-172`, under stock
-Triton 3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape
-combinations, the direct forward wrapper ranges from `0.24x` to `1.46x`
-versus native `torch.einsum`, while the public catalog dispatch ranges from
-`0.30x` to `1.84x`. Direct forward plus backward ranges from `0.36x` to
-`0.95x`, so it does not establish a training win. Maximum forward absolute
-and relative L2 error are `2.22e-4` and `8.31e-7`; maximum gradient absolute
-and relative L2 error are `6.10e-5` and `4.27e-7`.
+Triton 3.7.1 and FlagTree 0.7.0. Runtime dispatch selects the catalog kernel
+only for forward-only complex64 CUDA calls with that exact equation, explicit
+input shapes `(64, 16, 64, 16)` by `(64, 16, 64, 16)`, and logical BMM shape
+`(16, 64, 1024, 64)`. Requests outside that measured signature, including all
+gradient-bearing calls, return directly to native `torch.einsum` before layout
+analysis.
 
-The canonical aggregate records `revisit_current_policy`: NUM-002 remains
-`experimental`, and these measurements do not authorize default dispatch,
-maturity promotion, or a performance claim for the current support window.
-The next NUM-002 change should narrow or retune policy from the observed losing
-cases and then regenerate the complete host/compiler matrix. This is bounded
-single-device development hardware evidence, not a release gate or scalability
-claim. Reproduce or validate it with
+Across the four selected host/compiler cases, public dispatch is `1.066x` to
+`1.790x` faster than native einsum. Across the 12 fallback cases it is `0.946x`
+to `1.225x`, with at most `3.24 us` positive wrapper overhead. The evidence
+contract accepts a fallback only when it retains at least `0.95x` relative
+performance or adds no more than `5 us` absolute overhead. Direct forward plus
+backward ranges from `0.289x` to `1.057x` and does not win across the matrix, so
+training remains on the native path. Maximum forward absolute and relative L2
+error are `2.22e-4` and `8.31e-7`; maximum gradient absolute and relative L2
+error are `6.10e-5` and `4.27e-7`.
+
+The canonical aggregate records `retain_current_policy` for this exact narrow
+window. NUM-002 remains `experimental`; the result does not authorize shape
+extrapolation, maturity promotion, a release gate, or a scalability claim.
+Reproduce or validate it with
 [`benchmarks/tn_layout_contraction.py`](../../benchmarks/tn_layout_contraction.py).
 
 ## Capability matching

@@ -12,12 +12,16 @@ import pytest
 from benchmarks.tn_layout_contraction import (
     COMPILER_LANES,
     EQUATION,
+    FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
+    FALLBACK_MINIMUM_SPEEDUP,
     IMPLEMENTATION_ID,
     RESULT_NAMES,
     RUN_SCHEMA,
     RUNNER,
+    SELECTED_LOGICAL_BMM_SHAPES,
     SEMANTIC_ID,
     SHAPE_MATRIX,
+    _fallback_within_overhead_budget,
     merge_runs,
     validate_evidence,
     validate_run,
@@ -49,11 +53,17 @@ def _run(
     host: str,
     lane: str,
     *,
-    public_speedup: float = 0.9,
+    selected_public_speedup: float = 0.9,
+    fallback_public_speedup: float = 1.0,
     revision: str = "0123456789abcdef",
 ) -> dict[str, object]:
     cases = []
     for batch, rows, reduction_left, reduction_right, columns in SHAPE_MATRIX:
+        logical_shape = (batch, rows, reduction_left * reduction_right, columns)
+        selected = logical_shape in SELECTED_LOGICAL_BMM_SHAPES
+        public_speedup = (
+            selected_public_speedup if selected else fallback_public_speedup
+        )
         direct_forward = _measurement()
         materialized_forward = _measurement(1.1)
         native_forward = _measurement(public_speedup)
@@ -78,6 +88,9 @@ def _run(
                 "dtype": "complex64",
                 "layout": "explicit_strided_batch",
                 "equation": EQUATION,
+                "public_dispatch_route": (
+                    "catalog_kernel" if selected else "native_einsum"
+                ),
                 "maximum_absolute_error": 1e-5,
                 "relative_l2_error": 1e-6,
                 "maximum_gradient_absolute_error": 2e-5,
@@ -147,10 +160,19 @@ def _run(
 
 
 def _matrix(
-    *, public_speedup: float = 0.9, revision: str = "0123456789abcdef"
+    *,
+    selected_public_speedup: float = 0.9,
+    fallback_public_speedup: float = 1.0,
+    revision: str = "0123456789abcdef",
 ) -> list[dict[str, object]]:
     return [
-        _run(host, lane, public_speedup=public_speedup, revision=revision)
+        _run(
+            host,
+            lane,
+            selected_public_speedup=selected_public_speedup,
+            fallback_public_speedup=fallback_public_speedup,
+            revision=revision,
+        )
         for host in ("jp-a800-171", "jp-a800-172")
         for lane in COMPILER_LANES
     ]
@@ -198,28 +220,58 @@ def test_merge_requires_one_source_revision() -> None:
         merge_runs(matrix, required_hosts=("jp-a800-171", "jp-a800-172"))
 
 
-def test_aggregate_requests_policy_review_without_public_win() -> None:
+def test_aggregate_requests_policy_review_without_selected_kernel_win() -> None:
     payload = merge_runs(_matrix(), required_hosts=("jp-a800-171", "jp-a800-172"))
 
     validate_evidence(payload)
-    assert not payload["public_dispatch_win_on_all_cases"]
+    assert not payload["selected_kernel_win_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
 
 
-def test_aggregate_retains_policy_only_with_cross_matrix_public_win() -> None:
+def test_aggregate_retains_policy_with_selected_win_and_safe_fallback() -> None:
     payload = merge_runs(
-        _matrix(public_speedup=1.1),
+        _matrix(selected_public_speedup=1.1),
         required_hosts=("jp-a800-171", "jp-a800-172"),
     )
 
     validate_evidence(payload)
-    assert payload["public_dispatch_win_on_all_cases"]
+    assert payload["selected_kernel_win_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
     assert payload["dispatch_evidence_decision"] == "retain_current_policy"
+
+
+def test_aggregate_requests_policy_review_for_fallback_regression() -> None:
+    payload = merge_runs(
+        _matrix(fallback_public_speedup=FALLBACK_MINIMUM_SPEEDUP - 0.01),
+        required_hosts=("jp-a800-171", "jp-a800-172"),
+    )
+
+    validate_evidence(payload)
+    assert not payload["fallback_within_overhead_budget_on_all_cases"]
+    assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
+
+
+def test_fallback_budget_accepts_bounded_absolute_wrapper_overhead() -> None:
+    native_seconds = 56e-6
+    public_seconds = native_seconds + FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+    case = {
+        "native_einsum_forward": {
+            "median_seconds_per_invocation": native_seconds,
+        },
+        "public_catalog_dispatch": {
+            "median_seconds_per_invocation": public_seconds,
+        },
+        "public_dispatch_speedup_over_native": native_seconds / public_seconds,
+    }
+
+    assert case["public_dispatch_speedup_over_native"] < FALLBACK_MINIMUM_SPEEDUP
+    assert _fallback_within_overhead_budget(case)
 
 
 def test_evidence_validator_rejects_noncanonical_summary() -> None:
     payload = merge_runs(
-        _matrix(public_speedup=1.1),
+        _matrix(selected_public_speedup=1.1),
         required_hosts=("jp-a800-171", "jp-a800-172"),
     )
     changed = copy.deepcopy(payload)
@@ -229,11 +281,12 @@ def test_evidence_validator_rejects_noncanonical_summary() -> None:
         validate_evidence(changed)
 
 
-def test_checked_in_a800_evidence_is_canonical_and_requests_policy_review() -> None:
+def test_checked_in_a800_evidence_is_canonical_and_retains_narrow_policy() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
     assert not payload["direct_forward_win_on_all_cases"]
     assert not payload["direct_training_win_on_all_cases"]
-    assert not payload["public_dispatch_win_on_all_cases"]
-    assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
+    assert payload["selected_kernel_win_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
+    assert payload["dispatch_evidence_decision"] == "retain_current_policy"
