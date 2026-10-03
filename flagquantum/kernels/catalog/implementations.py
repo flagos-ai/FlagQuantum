@@ -33,6 +33,32 @@ def _triton(
     )
 
 
+def _flagtree(
+    implementation_id: str,
+    semantic_id: str,
+    module: str,
+    symbol: str,
+    *,
+    layouts: tuple[str, ...],
+    directions: tuple[KernelDirection, ...] = ("forward",),
+    addressing: tuple[str, ...] = ("local",),
+    maturity: KernelMaturity = "experimental",
+) -> KernelImplementation:
+    return KernelImplementation(
+        implementation_id=implementation_id,
+        semantic_id=semantic_id,
+        provider="flagtree",
+        module=module,
+        symbol=symbol,
+        devices=("cuda",),
+        dtypes=("complex64",),
+        layouts=layouts,
+        directions=directions,
+        addressing=addressing,
+        maturity=maturity,
+    )
+
+
 IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
     _triton(
         "FQKI-TRITON-SV-001-A",
@@ -245,6 +271,13 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("explicit_strided_batch",),
         directions=("forward", "backward"),
         internal_fallback=True,
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-SV-001-A",
+        "statevector.apply.matrix_1q.local",
+        "flagquantum.kernels.flagtree",
+        "apply_complex64_local_1q_tle",
+        layouts=("flat_statevector",),
     ),
 )
 
