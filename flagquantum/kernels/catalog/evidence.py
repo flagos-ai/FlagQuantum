@@ -258,6 +258,16 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "benchmarks/results/local/tn_layout_contraction_a800.json",
         ),
     ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-001-A",
+        "tests/gpu/test_flagtree_tle_statevector.py::test_flagtree_tle_local_1q_matches_pytorch",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_capability_maps_cuda_target_to_nvidia_registry",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
+        ),
+    ),
 )
 
 
