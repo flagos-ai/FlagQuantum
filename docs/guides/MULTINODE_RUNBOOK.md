@@ -569,15 +569,41 @@ as the statevector probe already does, takes it to nine.
 rule is a measured one: a device scalar times a Python int, and a stack of
 such products, stage nothing.
 
-Nine is a floor rather than the next defect. What is left is scalar read-back:
-a canonicalization residual, a norm vector, an exchange length and a per-rank
-byte count -- and each of those has to become a Python number before it can be
-reported at all. Nine is not zero, so this is still staging inside the measured
-region and `host_staging_in_measured_region` stands for MPS. The claim is
-therefore a latency claim over a workload whose measured region contains some
-host accounting, and the honest reading of the number is the one the artifact
-already gives: the record is reproducible and the accounting is bounded and
-disclosed, not that the measured region is pure device work.
+Nine is a floor for one configuration, and that configuration is not the one
+this lane profiles. The profiled leg is
+
+```python
+execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
+```
+
+with no `rebalance_threshold`, so it runs at the default `1.5`. Every two-site
+gate then calls `rebalance_mps_if_needed`, which calls
+`global_mps_tensor_bytes`, which ends in `sizes.tolist()` -- one device-to-host
+read per two-site gate, on top of the seven reads that remain in any
+configuration. The floor of nine is the floor of the *compiled* path, where
+`rebalance_threshold=inf` short-circuits that collective because a compiled
+run's buckets must not move between ranks mid-layer. The reverse leg of this
+same lane uses exactly that configuration, which is why the number and the
+compiled path were easy to conflate. The forward leg does not.
+
+A census of the current code therefore finds more reads in the profiled
+configuration than the nine: five of them are the per-two-site-gate footprint
+collective alone, which contributes nothing at all on the compiled path. The
+recorded artifact, whose profiled workload is `sharded_mps_forward`, is
+consistent with reading the floor as configuration-dependent rather than
+absolute. The disposition of the seven configuration-independent reads is
+unchanged, and each has to become a Python number before it can be reported: a
+canonicalization residual, a norm vector, an exchange length, a per-rank byte
+count. The extra reads are the price of the default rebalancing policy and are
+removable only by changing that policy, which is a configuration decision this
+lane does not get to make on the reader's behalf.
+
+Neither number is zero, so this is still staging inside the measured region and
+`host_staging_in_measured_region` stands for MPS. The claim is therefore a
+latency claim over a workload whose measured region contains some host
+accounting, and the honest reading of the number is the one the artifact already
+gives: the record is reproducible and the accounting is bounded and disclosed,
+not that the measured region is pure device work.
 
 The cut width was swept rather than declared, and the sweep is a leg of its own
 rather than part of the declared workload. The declared circuit could not carry
