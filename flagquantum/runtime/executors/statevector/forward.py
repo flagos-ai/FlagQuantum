@@ -38,17 +38,12 @@ from .kernel_dispatch import (
     KernelDispatchEvidence,
     select_cataloged_triton_kernel,
 )
-from .models import (
-    DistributedStatevectorPlan,
-    StatevectorShardState,
-)
+from .models import DistributedStatevectorPlan, StatevectorShardState
 from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
-_TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset(
-    (1, 1 << exponent) for exponent in (10, 16, 20, 24)
-)
+_TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset((1, 1 << e) for e in (10, 16, 20, 24))
 _TRITON_LOCAL_CX_DEFAULT_SHAPES = frozenset({(1, 1 << 24)})
 
 
@@ -140,8 +135,6 @@ def _triton_local_cx_decision(
 
 
 def _triton_local_cx_requested(shape: tuple[int, int]) -> bool:
-    """Select the measured default window, while retaining an explicit override."""
-
     configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_CX")
     if configured is None:
         return shape in _TRITON_LOCAL_CX_DEFAULT_SHAPES
