@@ -167,11 +167,19 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
     arithmetic are imported from the implementation so that this oracle differs
     from the code under test in exactly one respect: the reverse list scan that
     the wire index replaced. If the two ever disagree, the index is wrong.
+
+    `remove_zero_state_resets` is called from both sides in the same position so that
+    property survives. It is a pass of its own with its own tests, and re-deriving its
+    rule here -- which reads the register's initial state rather than an opcode table --
+    would change what this oracle is measuring, not strengthen it.
     """
+
+    from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 
     ir = ensure_circuit_ir(circuit_or_ir)
     for _ in range(len(ir) + 1):
         previous_count = len(ir)
+        ir = remove_zero_state_resets(ir)
         ir = _reference_remove_identity_gates(ir)
         ir = _reference_merge_self_inverse(ir)
         ir = _reference_merge_adjacent_rotations(ir)
@@ -184,6 +192,10 @@ def _reference_optimize(circuit_or_ir: object) -> CircuitIR:
 _SINGLE_WIRE = ("h", "x", "y", "z", "i", "id", "rx", "ry", "rz", "phase", "u1")
 _TWO_WIRE = ("cx", "cz", "swap")
 _THREE_WIRE = ("ccx", "cswap")
+# A reset is not a gate: it carries no parameter, no matrix, and the dynamic flag the
+# IR requires of an opcode the operator schema does not declare. It is in the alphabet
+# so that the differential test below actually drives the pass that removes one.
+_DYNAMIC = ("reset",)
 # Zero sums are reachable: 0.25 + -0.25 and 1e-13 + 0.0 both collapse, which is
 # what exercises the branch that removes a merged rotation instead of rewriting it.
 _ANGLES = (0.0, 0.25, -0.25, 0.5, -0.5, 1.0, 1e-13)
@@ -193,16 +205,22 @@ def _random_circuit(rng: random.Random) -> CircuitIR:
     wire_count = rng.randint(2, 7)
     instructions = []
     for _ in range(rng.randint(1, 40)):
-        name = rng.choice(_SINGLE_WIRE + _TWO_WIRE + _THREE_WIRE)
+        name = rng.choice(_SINGLE_WIRE + _TWO_WIRE + _THREE_WIRE + _DYNAMIC)
         width = 3 if name in _THREE_WIRE else (2 if name in _TWO_WIRE else 1)
         if width > wire_count:
             continue
         params = {}
+        metadata = {}
         if name in _ROTATION_PARAM:
             params = {_ROTATION_PARAM[name]: rng.choice(_ANGLES)}
+        if name in _DYNAMIC:
+            metadata = {"is_dynamic": True}
         instructions.append(
             Instruction(
-                name, tuple(rng.sample(range(wire_count), width)), params=params
+                name,
+                tuple(rng.sample(range(wire_count), width)),
+                params=params,
+                metadata=metadata,
             )
         )
     return CircuitIR(wire_count, tuple(instructions))
