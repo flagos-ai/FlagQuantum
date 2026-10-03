@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Integral
 
-from .codes import StabilizerCode
+from .codes import StabilizerCode, ancilla_bands
 from .pauli import Pauli
 
 _FUNCTION_NAME = "memory_experiment"
@@ -253,6 +253,33 @@ def _require_z_type_readout(code: StabilizerCode) -> None:
         )
 
 
+def _require_ancilla_bands(code: StabilizerCode) -> None:
+    """Refuse a record whose per-basis ancilla counts contradict its checks.
+
+    The two bands are a function of the checks, and
+    :func:`~flagquantum.qec.codes.ancilla_bands` derives them everywhere they are
+    read. A record that also reports the two counts is stating them a second
+    time, so this is where the two statements are compared: a count that does not
+    match the band its own checks define would otherwise be read by whoever asks
+    the record and ignored by whoever reads the checks, and the two readers would
+    disagree silently. A record that declares ancillas measuring neither basis --
+    a flag or an idle ancilla -- keeps them out of both bands and is unaffected,
+    because this compares the counts against the bands and not against the total.
+    """
+
+    x_wires, z_wires = ancilla_bands(code.checks)
+    stated = (code.num_ancilla_x_qubits, code.num_ancilla_z_qubits)
+    derived = (len(x_wires), len(z_wires))
+    if stated != derived:
+        raise ValueError(
+            "code reports "
+            f"{stated[0]} X-type and {stated[1]} Z-type ancilla qubits, but its "
+            f"checks measure {derived[0]} X-type and {derived[1]} Z-type "
+            "stabilizers, so the two bands it states and the two bands its checks "
+            "define disagree"
+        )
+
+
 def _detector_count(code: StabilizerCode, *, rounds: int) -> int:
     """Return how many detectors one configured memory experiment must declare."""
 
@@ -340,6 +367,7 @@ def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
         raise TypeError("code must implement the StabilizerCode protocol")
     if not code.checks:
         raise ValueError("memory experiment requires a code with at least one check")
+    _require_ancilla_bands(code)
     if isinstance(rounds, bool) or not isinstance(rounds, Integral):
         raise TypeError("rounds must be an integer")
     if rounds <= 0:

@@ -39,6 +39,26 @@ memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
 print(len(memory.detectors), len(memory.observables))
 ```
 
+A record can also be reached by name rather than by class, which is the shape
+CUDA-Q QEC's own `get_code(name, options)` has. `get_code` builds the record,
+`code_names` lists the names, and `register_code` puts one there:
+
+```python
+from flagquantum.qec import code_names, get_code
+
+print(code_names())
+patch = get_code("rotated_surface", distance=3)
+patch.num_ancilla_qubits, patch.num_ancilla_x_qubits, patch.num_ancilla_z_qubits
+```
+
+A record reports its ancillas as a total and as two bands, and the bands are
+derived from its checks by `ancilla_bands` rather than declared beside them, so
+the two cannot drift: a check's ancilla measures exactly the basis its
+stabilizer's type fixes. An ancilla measuring neither basis -- a flag, or an idle
+ancilla -- is in neither band, so the bands need not cover the total, and
+`build_memory_circuit` refuses a record whose stated counts disagree with the
+bands its own checks define.
+
 A detector is a measurement parity that is deterministic in the noiseless
 circuit. Because both the initial state and the terminal data readout are in the
 Z basis, a Z-type check declares a detector in every round plus one terminal
