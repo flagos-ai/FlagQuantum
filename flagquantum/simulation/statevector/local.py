@@ -19,8 +19,9 @@ from ..gate_matrix import gate_matrix as _gate_matrix
 from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
 from ..numerics.complex_arithmetic import complex_conj, complex_mul
 from .batching import (
-    _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
+    _cpu_statevector_batch_budget_for_program,
     _cpu_statevector_batch_chunk_size,
+    _cpu_statevector_batch_chunk_size_for,
     _execute_statevector_batch_windows,
     _gate_parameters,
     _rotation_region_angles,
@@ -1051,18 +1052,23 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         circuit._last_statevector_runtime = initial_runtime_metrics(
             program, enable_triton_loop=enable_triton_loop
         )
-        batch_chunk_size = (
-            initial_window_size
-            if uses_bounded_zero_state
-            else _cpu_statevector_batch_chunk_size(output)
+        batch_chunk_budget = _cpu_statevector_batch_budget_for_program(program)
+        batch_chunk_size = _cpu_statevector_batch_chunk_size_for(
+            batch_size=batch_size,
+            amplitudes=2**circuit.n_wires,
+            element_size=output.element_size(),
+            device_type=output.device.type,
+            budget_bytes=batch_chunk_budget,
         )
+        if not uses_bounded_zero_state:
+            batch_chunk_size = min(
+                batch_chunk_size, _cpu_statevector_batch_chunk_size(output)
+            )
         batch_chunk_count = (batch_size + batch_chunk_size - 1) // batch_chunk_size
         runtime = circuit._last_statevector_runtime
         runtime["statevector_batch_chunk_size"] = batch_chunk_size
         runtime["statevector_batch_chunk_count"] = batch_chunk_count
-        runtime["statevector_batch_chunk_budget_bytes"] = (
-            _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
-        )
+        runtime["statevector_batch_chunk_budget_bytes"] = batch_chunk_budget
         if batch_chunk_count == 1:
             runtime["statevector_batch_assembly"] = "single_window"
             output = _execute_statevector_program(

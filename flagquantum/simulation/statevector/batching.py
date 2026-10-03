@@ -13,6 +13,10 @@ from ..gate_matrix import _parameter_batch_window
 from .operations import _environment_flag, _gate_parameter_tensor
 from .program import (
     _direct_batch_assembly_beneficial,
+    _preallocated_batch_assembly_beneficial,
+    _StatevectorCrossWireDiagonalStep,
+    _StatevectorCXSequenceStep,
+    _StatevectorCZGraphStep,
     _StatevectorFusedGateStep,
     _StatevectorProgramStep,
 )
@@ -26,6 +30,12 @@ if TYPE_CHECKING:
 # logical state budget, not a process-RSS promise; individual kernels still own
 # their temporary storage.
 _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES = 64 * 1024 * 1024
+
+# The 18-wire/batch-32 complex128 memory corpus measured 32 MiB windows as a
+# lower-RSS win for preallocated CX-sequence and cross-wire-diagonal programs.
+# Graph-heavy QFT and direct-assembly programs retain the general budget because
+# smaller windows regressed their end-to-end timing in the same A/B screen.
+_CPU_STATEVECTOR_BATCH_REDUCED_CHUNK_BUDGET_BYTES = 32 * 1024 * 1024
 
 
 def _cpu_statevector_batch_chunking_enabled() -> bool:
@@ -60,6 +70,38 @@ def _cpu_statevector_batch_direct_assembly_enabled() -> bool:
     return bool(
         _environment_flag("FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY", default=True)
     )
+
+
+def _cpu_statevector_batch_adaptive_budget_enabled() -> bool:
+    """Whether measured program classes may use the smaller memory budget."""
+
+    return bool(
+        _environment_flag("FQ_CPU_STATEVECTOR_BATCH_ADAPTIVE_BUDGET", default=True)
+    )
+
+
+def _cpu_statevector_batch_budget_for_program(
+    program: Sequence[_StatevectorProgramStep],
+) -> int:
+    """Return the measured logical-state budget for one compiled program."""
+
+    reduced_candidate = _preallocated_batch_assembly_beneficial(program) and any(
+        isinstance(
+            step,
+            (
+                _StatevectorCXSequenceStep,
+                _StatevectorCrossWireDiagonalStep,
+                _StatevectorCZGraphStep,
+            ),
+        )
+        for step in program
+    )
+    if reduced_candidate and _cpu_statevector_batch_adaptive_budget_enabled():
+        return min(
+            _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES,
+            _CPU_STATEVECTOR_BATCH_REDUCED_CHUNK_BUDGET_BYTES,
+        )
+    return _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
 
 
 def _execute_statevector_batch_windows(
@@ -124,7 +166,12 @@ def _execute_statevector_batch_windows(
 
 
 def _cpu_statevector_batch_chunk_size_for(
-    *, batch_size: int, amplitudes: int, element_size: int, device_type: str
+    *,
+    batch_size: int,
+    amplitudes: int,
+    element_size: int,
+    device_type: str,
+    budget_bytes: int | None = None,
 ) -> int:
     """Return the rows whose logical state fits the measured working-set budget."""
 
@@ -135,9 +182,14 @@ def _cpu_statevector_batch_chunk_size_for(
     ):
         return batch_size
     row_bytes = int(amplitudes) * int(element_size)
+    budget = (
+        _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES
+        if budget_bytes is None
+        else int(budget_bytes)
+    )
     return min(
         batch_size,
-        max(1, _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES // row_bytes),
+        max(1, budget // row_bytes),
     )
 
 

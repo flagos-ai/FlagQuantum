@@ -24,11 +24,24 @@ pytestmark = pytest.mark.benchmark_contract
 #: Mean optimized length per source run length. Pinned so that a change which
 #: stops emitting the determinant -- and therefore stops being exact -- cannot
 #: pass as an improvement.
+#:
+#: These were re-measured when the declared-inverse pass landed in the same
+#: pipeline, and only two of the five moved. ``optimize`` is the shipped pipeline,
+#: so the population this table measures is the one that pass also runs on: on a
+#: run like ``sx tdg t`` the pair cancels to ``sx`` before the fold can reach
+#: ``u3 rz``, which is one gate shorter. Three of the 800 length-3 runs and one of
+#: the 800 length-5 runs move, so 1.5625 becomes 1.5588 and 1.8413 becomes 1.8400.
+#: Both directions of that interaction are recorded rather than only this one:
+#: ``benchmarks/compiler_inverse_cancellation.py`` measures the two orders of the
+#: two passes on its own populations and reports where cancelling first is the
+#: *longer* program instead. Nothing here is loosened by the re-measurement -- the
+#: determinant, the matrix gap, and the ordering of the ratios are all still
+#: asserted exactly as before, and a fold that regressed would raise the means.
 _MEAN_OPTIMIZED_LENGTH = {
     2: 1.3325,
-    3: 1.5625,
+    3: 1.5588,
     4: 1.7237,
-    5: 1.8413,
+    5: 1.8400,
     6: 1.8838,
 }
 

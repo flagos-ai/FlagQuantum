@@ -21,6 +21,12 @@ from .codes import (
     StabilizerCode,
     SteaneCode,
 )
+from .context import (
+    DecoderContext,
+    DecoderInputs,
+    MeasurementMap,
+    decoder_context_from_memory_circuit,
+)
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -71,6 +77,8 @@ __all__ = (
     "Correction",
     "DecodeResult",
     "Decoder",
+    "DecoderContext",
+    "DecoderInputs",
     "DecodingGraph",
     "DecodingGraphEdge",
     "DemError",
@@ -86,6 +94,7 @@ __all__ = (
     "LogicalObservable",
     "MatchingDecodeResult",
     "MatchingDependencyError",
+    "MeasurementMap",
     "MeasurementRef",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
@@ -108,6 +117,7 @@ __all__ = (
     "SyndromeRound",
     "StreamingDecoder",
     "build_memory_circuit",
+    "decoder_context_from_memory_circuit",
     "css_code_matrices",
     "decoder_names",
     "get_decoder",

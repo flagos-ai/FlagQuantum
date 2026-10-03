@@ -227,30 +227,29 @@ def _wire_is_in_the_zero_state_after(
 
 
 def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
-    """The pipeline with this pass taken out of it, and nothing else.
+    """The shipped pipeline with this one pass replaced by the identity.
 
-    The four passes and their order are imported from the implementation rather than
-    restated, so the only difference between the two sides is the call this round adds.
-    A pipeline that also differed in its pass list would make every delta below a
-    comparison of two changes instead of one.
+    This used to restate the pass list by hand. That restatement was correct when it
+    was written and stopped being correct the moment another pass was added to the
+    loop: the hand-written side then also lacked that pass, so every removal the new
+    pass earned was reported as a removal *this* pass earned.
+
+    The substitution is therefore made against the binding the implementation
+    actually reads -- ``pipeline`` holds ``remove_zero_state_resets`` at module scope,
+    so that name is the switch -- and the loop, its order, and every other pass are
+    the shipped ones. A pass added to ``pipeline`` is now in both sides by
+    construction, and ``removed_by_the_pass_in_the_pipeline`` keeps meaning what its
+    name says.
     """
 
-    from flagquantum.compiler.passes import (
-        _merge_adjacent_rotations,
-        _merge_self_inverse,
-        _remove_identity_gates,
-    )
+    from flagquantum.compiler import pipeline
 
-    current = ir
-    for _ in range(len(ir) + 1):
-        previous_count = len(current)
-        current = _remove_identity_gates(current)
-        current = _merge_self_inverse(current)
-        current = _merge_adjacent_rotations(current)
-        current = _remove_identity_gates(current)
-        if len(current) == previous_count:
-            return current
-    raise AssertionError("the legacy optimizer did not reach a fixed point")
+    original = pipeline.remove_zero_state_resets
+    pipeline.remove_zero_state_resets = lambda program: program
+    try:
+        return optimize(ir)
+    finally:
+        pipeline.remove_zero_state_resets = original
 
 
 def rule_contract() -> dict[str, Any]:

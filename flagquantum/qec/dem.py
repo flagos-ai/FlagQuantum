@@ -1072,8 +1072,9 @@ class DetectorErrorModel:
         readout. The matrix route carries all three Pauli data faults where the
         circuit route carries the bit flip alone, because a circuit's detectors
         are laid out for the basis it measures in and matrices have no such
-        layout. Upstream's per-qubit and per-check rates are not reachable here,
-        which the alignment contract records against this entry point.
+        layout. A per-element rate vector is read against these matrices, so the
+        per-qubit vectors are indexed by column -- the code's own ``data_wires``
+        order -- and the per-check vector by row, Z-type checks first.
         """
 
         num_detectors, num_observables, entries = _code_matrix_entries(

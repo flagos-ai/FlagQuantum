@@ -202,9 +202,50 @@ the band of round `r + 1`, and the final round has no band after it, so the
 detector count is `num_rounds * num_checks` with no terminal readout — where a
 memory circuit gains a terminal detector per Z-type check because it measures its
 data qubits. Both geometries are pinned to their own route and neither stands for
-the other. The rate record is what still limits the fault family: it states
-uniform scalars, so a per-qubit or per-check `px`/`py`/`pz`/`pm` profile is not
-expressible.
+the other. The rates are read against these matrices: the per-qubit vectors are
+indexed by column, in the code's own `data_wires` order, and the per-check vector
+by row, with the Z-type checks first.
+
+## Give one location its own rate
+
+`PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
+element. The four scalars are `data_flip` (an X fault), `phase_flip` (a Z fault),
+`both_flip` (a Y fault) and `measurement_flip`, which are upstream `CssNoise`'s
+`px`, `pz`, `py` and `pm`. The four vectors are `data_flip_per_qubit`,
+`phase_flip_per_qubit`, `both_flip_per_qubit` and `measurement_flip_per_check`,
+which are upstream's `px_per_qubit`, `pz_per_qubit`, `py_per_qubit` and
+`pm_per_check`:
+
+```python
+from flagquantum.qec import DetectorErrorModel, PhenomenologicalNoise, RepetitionCode
+
+noise = PhenomenologicalNoise(
+    data_flip=0.02,
+    data_flip_per_qubit=(0.0, 0.05, 0.02),
+)
+model = DetectorErrorModel.from_code(
+    RepetitionCode(distance=3), noise=noise, num_rounds=2
+)
+print(sorted({error.probability for error in model.errors}))
+```
+
+The override is wholesale: a stated vector replaces its scalar for **every**
+element rather than mixing with it, which is why a vector has to name every data
+qubit (or every check) and a short one is refused naming both counts instead of
+being partially applied. An element whose effective rate is zero states a
+location that cannot fire, so it enumerates no mechanism at all: in the example
+above the first data qubit contributes nothing while its neighbours contribute
+their own rates, and the sampler places no channel for it. A per-check vector is
+indexed by matrix row — Z-type checks first, then X-type checks — while a code is
+free to declare its checks in any order, so the declaration order and the vector's
+order are related by one named translation rather than by a convention each route
+re-states.
+
+This is a description of noise locations, not a `NoiseModel`, and the sampler
+places only the two families the engine has a channel for: a data flip at a round
+boundary and a measurement flip at a check's readout. The phase and Y data rates
+are read by the construction routes, which read matrices and supports rather than
+executing a program.
 
 ## Say that two mechanisms are alternatives
 
@@ -291,6 +332,55 @@ reason rather than sampled under an attribution that may be wrong.
 Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
 two to each other rather than letting either stand for the other.
+
+## Hand a decoder both halves
+
+A model says which mechanisms a decoder can see. It does not say where in a shot
+each detector's parity is read, and a matcher is handed a syndrome over raw
+measurements, so it needs both. `decoder_context_from_memory_circuit` builds the
+model once and returns a context whose components pair it with the maps:
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+    decoder_context_from_memory_circuit,
+)
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+context = decoder_context_from_memory_circuit(
+    memory, noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+)
+inputs = context.z_component()
+print(context.num_measurements(), inputs.measurement_to_detectors.rows[0])
+print(inputs.measurement_to_detectors.dense().shape)
+```
+
+`full_component`, `x_component` and `z_component` each return a `DecoderInputs`:
+the model read over the detectors of one basis, plus the measurement-to-detector
+and measurement-to-observable maps for it. A `MeasurementMap` is one row per
+detector or observable holding the measurements whose parity it is, and it
+projects to both forms a caller may want — `dense()` for the
+`(rows, measurements)` orientation upstream stores, and `flattened()` for the
+`-1`-terminated sparse vector a realtime decoder configuration takes, where the
+terminator is what keeps a row that reads nothing visible.
+
+Two things are refused rather than approximated. A row may not name one
+measurement twice, because two reads of one measurement cancel rather than add. A
+component of a model that states error ids is refused, because projecting a group
+of alternatives onto one basis would either drop the correlation or merge two of
+its members. A basis the experiment declares no detector for is refused rather
+than returned empty.
+
+The split is a reading of the model, not a second construction: every detector is
+carried by the check whose ancilla it reads, so the Z component carries the
+terminal detectors and the union of the two components is the model as built.
+That is also why the numbering the maps use is pinned to the sampler's by a test
+rather than by a shared constant — the sampler derives its record columns from the
+lowered program, this module derives them from the circuit's own declaration, and
+a decoder fed a sampled syndrome has to be matching detectors against the
+measurements that actually compose them.
 
 ## Change and verify
 

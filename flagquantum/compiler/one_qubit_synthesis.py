@@ -42,7 +42,7 @@ from typing import Any
 
 from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
-from .passes import _is_zero
+from .pipeline import _is_zero
 
 #: A 2x2 matrix of Python complex numbers, rows first.
 Matrix = list[list[complex]]
@@ -133,7 +133,7 @@ def _polar_angle(value: Any) -> float | None:
     """Return `value` as a float for branch selection, or None when it has none.
 
     A trainable value never selects a branch, for the same reason
-    `passes._is_zero` refuses to call a trainable angle zero: the short forms
+    `pipeline._is_zero` refuses to call a trainable angle zero: the short forms
     omit `theta` entirely, which would silently detach a rotation initialized at
     zero from the autograd graph.
     """
@@ -338,6 +338,65 @@ def _emit_leaves(
     return tuple(replacement)
 
 
+def canonical_euler_angles(instruction: Instruction) -> tuple[Any, Any, Any] | None:
+    """Return the `(theta, phi, lam)` triple this module tabulates for a gate.
+
+    The triple is read from `_FIXED_EULER_ANGLES` or `_PARAMETERIZED_EULER_ANGLES`
+    for the instruction's canonical opcode, so `instruction` equals
+    `exp(1j * phase) * U3(theta, phi, lam)` for some phase. None means the
+    instruction is not a declared single-qubit unitary opcode at all, which is
+    the same refusal `synthesize_one_qubit` gives for an unknown opcode, a
+    non-unitary one, or one of another arity.
+    """
+
+    opcode = canonical_opcode(instruction.name)
+    schema = get_operator_schema(opcode)
+    if schema is None or not schema.unitary or schema.arity != 1:
+        return None
+    fixed = _FIXED_EULER_ANGLES.get(opcode)
+    if fixed is not None:
+        return fixed
+    source = _PARAMETERIZED_EULER_ANGLES.get(opcode)
+    if source is None:
+        return None
+    return source(instruction)
+
+
+def is_diagonal_one_qubit(instruction: Instruction) -> bool:
+    """Report whether one instruction is diagonal in the computational basis.
+
+    `U3(theta, phi, lam)` is
+    `[[cos(t/2), -exp(1j*lam) sin(t/2)], [exp(1j*phi) sin(t/2),
+    exp(1j*(phi+lam)) cos(t/2)]]`, so both off-diagonal entries carry the same
+    factor `sin(theta / 2)`: the matrix is diagonal exactly when that factor
+    vanishes, whatever `phi` and `lam` are, and it is then
+    `diag(1, exp(1j * (phi + lam)))`. The polar angle alone decides it, and the
+    tabulated triple is the only place this module states that angle, so no
+    second opcode table is introduced here.
+
+    The test is exact `== 0.0` on the polar angle, matching `_leaves`, which
+    selects its short forms the same way: `U3` is only diagonal for a polar
+    angle of `2*pi*k`, this module has no exactness contract for angle
+    arithmetic, and a tolerance would call `rx(1e-13)` diagonal on the strength
+    of a rounding.
+
+    A trainable value is handled by `_polar_angle`, which answers None rather
+    than a float, and the answer differs by opcode for the right reason. For
+    `rx`, `ry` and `u3` the polar angle *is* the parameter, so a trainable one
+    never selects the zero branch and a rotation initialized at zero is not
+    reported diagonal -- the same refusal `_leaves` makes, for the same reason.
+    For `rz`, `phase` and `u1` the tabulated triple's polar angle is the literal
+    `0.0` because those opcodes are diagonal for *every* value of their
+    parameter, so a trainable one is reported diagonal and that is not a
+    detachment: the phase it carries is what a measurement cannot see.
+    """
+
+    angles = canonical_euler_angles(instruction)
+    if angles is None:
+        return False
+    return _polar_angle(angles[0]) == 0.0
+
+
 def synthesize_one_qubit(
     instruction: Instruction,
     *,
@@ -356,18 +415,11 @@ def synthesize_one_qubit(
     """
     if not _is_supported_basis(z_rotation=z_rotation, pulse_opcode=pulse_opcode):
         return None
-    opcode = canonical_opcode(instruction.name)
-    if opcode == z_rotation:
+    if canonical_opcode(instruction.name) == z_rotation:
         return None
-    schema = get_operator_schema(opcode)
-    if schema is None or not schema.unitary or schema.arity != 1:
-        return None
-    angles = _FIXED_EULER_ANGLES.get(opcode)
+    angles = canonical_euler_angles(instruction)
     if angles is None:
-        source = _PARAMETERIZED_EULER_ANGLES.get(opcode)
-        if source is None:
-            return None
-        angles = source(instruction)
+        return None
     return _emit_leaves(
         _leaves(*angles, z_rotation=z_rotation, pulse_opcode=pulse_opcode),
         wires=instruction.wires,
@@ -417,4 +469,9 @@ def synthesize_one_qubit_matrix(
     )
 
 
-__all__ = ("synthesize_one_qubit", "synthesize_one_qubit_matrix")
+__all__ = (
+    "canonical_euler_angles",
+    "is_diagonal_one_qubit",
+    "synthesize_one_qubit",
+    "synthesize_one_qubit_matrix",
+)
