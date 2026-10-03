@@ -2,7 +2,7 @@
   "schema_version": "flagquantum.tensor_network.release_manifest.v1",
   "capability": "distributed_tensor_network",
   "frozen_before_release_run": true,
-  "freeze_note": "This manifest freezes the tensor-network release protocol and records that its capacity premise is not yet established. Two earlier capacity candidates were falsified by measurement rather than by argument. First, flagquantum_18q_13l_expectation was frozen as the premise of an earlier campaign and then completed on a single A800 in 14.296 s at a 0.70 GiB peak, so it cannot be the workload one device fails to train. Second, the 24-qubit and 28-qubit grid ladder that replaced it does not separate the two cases either: the reverse-mode peak is not slice-owned above four sliced labels, so every measured shape that exhausts one device also exhausts both devices at the same peak. The ladder is recorded under capacity_workload.measured_ladder and capacity_workload.premise_established is false, because a premise declared rather than measured is not evidence. The gate therefore reports capacity_premise_not_established rather than passing on an assumed premise, and the capability stays at production_supported until a measured shape separates a single-device failure from a sharded completion. The speed protocol is frozen here so that the part of the release that does not depend on the premise can still be measured at one revision.",
+  "freeze_note": "This manifest freezes the tensor-network release protocol and records that its capacity premise is not yet established. Three capacity candidates were falsified by measurement rather than by argument. First, flagquantum_18q_13l_expectation was frozen as the premise of an earlier campaign and then completed on a single A800 in 14.296 s at a 0.70 GiB peak, so it cannot be the workload one device fails to train. Second, the 24-qubit and 28-qubit grid ladder that replaced it does not separate the two cases either: the reverse-mode peak is not slice-owned above four sliced labels, so every measured shape that exhausts one device also exhausts both devices at the same peak. Third, the pair does not halve the peak for any measured shape, including the ones that exhaust a single device, so a pair run of a failing shape fails in the same place and at the same number of bytes. The ladder is recorded under capacity_workload.measured_ladder and capacity_workload.premise_established is false, because a premise declared rather than measured is not evidence. The gate therefore reports capacity_premise_not_established rather than passing on an assumed premise, and the capability stays at production_supported until a measured shape separates a single-device failure from a sharded completion. The speed protocol is frozen here so that the part of the release that does not depend on the premise can still be measured at one revision.",
   "runtime": {
     "backend": "pytorch_native",
     "collective_backend": "nccl",
@@ -44,7 +44,7 @@
     "steps": 2,
     "learning_rate": 0.05,
     "slice_batch_size": 1,
-    "premise_established_note": "A capacity premise requires one measured shape that exhausts a single device and that a sharded run completes. No such shape was measured on this pair. The reverse-mode peak fell from 80.93 GiB at two sliced labels to 51.19 GiB at four and then stopped responding to slicing, so the four-sliced-label 4x6x2 run completes on one device at 51.19 GiB and the same run completes across the pair at the same peak: the pair demonstrates a sharded training update, not capacity expansion.",
+    "premise_established_note": "A capacity premise requires one measured shape that exhausts a single device and that a sharded run completes at the same frozen slicing. No such shape was measured on this pair, and the reason is recorded rather than assumed: for every shape measured so far the per-rank peak is identical at world size 1 and at world size 2 to within a few megabytes. The reverse-mode peak fell from 80.93 GiB at two sliced labels to 51.19 GiB at four and then stopped responding to slicing, and the pair reproduces that same number rather than halving it. A pair run therefore demonstrates that the training update is sharded -- each rank owns half the slice tasks and writes back only its own parameters -- but not that the pair trains a workload one device cannot, because the allocation that exhausts the device is not owned by any single slice.",
     "measured_ladder": [
       {
         "shape": [4, 6, 2],
@@ -117,6 +117,33 @@
         "status": "oom",
         "peak_memory_bytes": 65148394496,
         "seconds": 11.901
+      },
+      {
+        "shape": [4, 6, 2],
+        "qubits": 24,
+        "world_size": 2,
+        "sliced_labels": 2,
+        "status": "oom",
+        "peak_memory_bytes": 80930380288,
+        "seconds": 8.247
+      },
+      {
+        "shape": [4, 7, 2],
+        "qubits": 28,
+        "world_size": 1,
+        "sliced_labels": 8,
+        "status": "oom",
+        "peak_memory_bytes": 67089695744,
+        "seconds": 11.52
+      },
+      {
+        "shape": [4, 7, 2],
+        "qubits": 28,
+        "world_size": 1,
+        "sliced_labels": 16,
+        "status": "oom",
+        "peak_memory_bytes": 73963469824,
+        "seconds": 16.627
       },
       {
         "shape": [4, 7, 2],
