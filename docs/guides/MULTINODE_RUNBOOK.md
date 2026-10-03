@@ -859,6 +859,29 @@ statevector capability and `tools/promote_release_candidates.py` promotes into
 the gate's own `RESULTS` unless told otherwise. Two capabilities do not share a
 release directory.
 
+#### The tensor-network lane has no sealed payload, in this tree or outside it
+
+The candidates the lane runs are sealed outside the checkout, under
+`/nfs/fq-scratch/campaign`, and the directory holds only per-rank measurement
+records rather than the release envelopes a promotion would move. A per-rank
+record's keys are `commit`, `device_name`, `hostname`, `iterations`,
+`local_rank`, `local_world_size`, `measured_peak_memory_bytes`,
+`measured_peak_memory_bytes_by_rank`, `measurements`, `node_count`, `rank`,
+`ranks`, `role`, `schema`, `software`, `timings`, `warmup`, `workload_sha256`,
+and `world_size` -- there is no `artifact_class`, no `integrity`, and no
+`provenance` block, so a file in that directory is a measurement input rather
+than a runtime-evidence envelope. The tensor-network producer's speed role runs
+the frozen ladder and writes those records; the sealing step that would turn them
+into a candidate was never reached, because the ladder's acceptance rung does not
+complete on either configuration.
+
+That is the empirically checkable form of
+`missing_statistically_significant_speedup_artifact`: it is not that the lane
+failed to satisfy the frozen protocol, it is that no run of the frozen protocol
+produced a file the gate could evaluate. `artifact_count` is `0` for that
+candidate directory, and the gate reports five blockers rather than naming a
+rejected payload, which is the right fail-closed reading.
+
 ### Repeatability of the measured leg
 
 The artifacts as first recorded were produced by two independent invocations of
