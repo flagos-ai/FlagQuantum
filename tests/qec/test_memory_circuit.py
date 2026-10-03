@@ -25,6 +25,8 @@ class _TwoQubitParityCode:
     distance = 2
     num_data_qubits = 2
     num_ancilla_qubits = 1
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 1
     data_wires = (0, 1)
     ancilla_wires = (2,)
     checks = (
@@ -45,6 +47,8 @@ class _ThreeCheckParityCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 3
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 3
     data_wires = (0, 1, 2)
     ancilla_wires = (3, 4, 5)
     checks = (
@@ -305,6 +309,8 @@ class _ChecklessCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 2
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 0
     data_wires = (0, 1, 2)
     ancilla_wires = (3, 4)
     checks: tuple[CodeCheck, ...] = ()
@@ -325,6 +331,8 @@ class _RogueLogicalCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 2
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 2
     data_wires = (0, 1, 2)
     ancilla_wires = (3, 4)
     checks = RepetitionCode(3).checks

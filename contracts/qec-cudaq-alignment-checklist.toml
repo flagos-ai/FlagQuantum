@@ -69,7 +69,7 @@ domain_items = ["cudaq-qec codes expressed as kernels, with numerical experiment
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
 baseline = "Code classes registered by a decorator, each exposing kernels through operation_encodings (notably qec.operation.stabilizer_round), with get_parity_z/x() and get_observables_z/x() bridged to CssCodes(hz, hx, lz, lx) by css_matrices_from_code(code)."
-target = "A declared code record that yields distance, data and ancilla wires, checks, stabilizers and logical observables, so that a memory circuit and its detector and observable layouts are derived from the code rather than asserted beside it."
+target = "A declared code record that yields distance, data wires, the ancilla total and its X-type and Z-type bands, checks, stabilizers and logical observables, reachable by name, so that a memory circuit and its detector and observable layouts are derived from the code rather than asserted beside it."
 symbols_present = [
     "flagquantum.qec.StabilizerCode",
     "flagquantum.qec.RepetitionCode",
@@ -79,18 +79,28 @@ symbols_present = [
     "flagquantum.qec.SteaneCode",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
+    "flagquantum.qec.ancilla_bands",
+    "flagquantum.qec.get_code",
+    "flagquantum.qec.code_names",
+    "flagquantum.qec.register_code",
 ]
-symbols_absent = ["CssCodes", "CssNoise", "stabilizer_round"]
+symbols_absent = [
+    "CssCodes",
+    "CssNoise",
+    "stabilizer_round",
+    "operation_encodings",
+]
 negative_search = ["symbol:flagquantum.qec.color_code"]
 evidence = [
     "flagquantum/qec/codes.py",
+    "flagquantum/qec/circuit.py",
     "flagquantum/qec/dem_construction.py",
     "tests/qec/test_codes.py",
+    "tests/qec/test_code_registry.py",
     "tests/qec/test_surface_code.py",
-    "tests/qec/test_dem_rate_overrides.py",
 ]
-next_action = "The X half the previous revision of this row recorded as dropped is now read. flagquantum.qec.css_code_matrices lifts a code record into flagquantum.qec.CssCodeMatrices, which carries hz, hx, lz and lx together instead of a Z-type pair, so a code with both bases reaches both detector bands and both observable blocks, and flagquantum.qec.SteaneCode is the first record that exercises them. The drop was silent, so it is replaced by a refusal: a logical observable that is neither pure X nor pure Z stops the read with the offending index named rather than being read as one of the two. One gap remains and it is not a declaration limit: the record set is one code per family, so a colour code has no record even though the CSS shape now admits one; symbol:flagquantum.qec.color_code states that absence. The rate side of the code-capacity input is no longer a gap either: the noise record carries a per-qubit and per-check override for every fault family, read against the vectors the noise accessors take a count for, so a code reaches a per-location noise profile and not only a uniform one. Note in the same pass that upstream encodes a code as a set of kernels, so aligning to that shape is a decision about this repository's circuit model, not a small addition."
-fail_closed = "symbols_absent names the two matrix-level records and the operation-registration name, so the row stops claiming a matrix-level gap the day one appears; the negative search names the colour code, which is the family the record set still does not carry. The surface patch is exercised by tests/qec/test_surface_code.py, and tests/qec/test_dem_code_matrices.py holds the matrix record to reading every declared block rather than a Z-type subset: a code declaring both readouts produces both observable blocks, an X-only code still produces a model, a mixed-type observable is refused with its index named, and a check acting outside the declared data wires is refused rather than silently widened."
+next_action = "The per-basis split and the name-keyed record set are both read now. flagquantum.qec.StabilizerCode declares num_ancilla_x_qubits and num_ancilla_z_qubits beside num_ancilla_qubits, which is the three-accessor shape upstream's own code record carries, and the two bands are derived from the checks by flagquantum.qec.ancilla_bands rather than declared beside them, so a record cannot report a split its checks contradict: the builder compares the stated counts against the derived bands and refuses a record where they disagree, while a flag or idle ancilla stays in neither band and is unaffected. flagquantum.qec.get_code builds a record by name, flagquantum.qec.code_names lists the names, and flagquantum.qec.register_code puts one there with the members checked at registration, so the factory half of upstream's get_code and get_available_codes pair is reached the way the decoder registry already was. The colour code is withdrawn from this row rather than left as its gap: upstream's headers declare no colour code and no concrete code type at all, only the abstract cudaq::qec::code, the css_code_matrices and css_noise_params records, and the three families its own factory names -- Steane, repetition and surface -- of which this repository now carries one of each. Two gaps remain and neither is a declaration limit. An arbitrary stabilizer list still has no route in, which is upstream's second get_code overload and the qLDPC, Reichardt and Floquet families with it: a check states one ancilla and one CNOT direction fixed by its type, so a mixed X-and-Z stabilizer is refused, and a logical observable that is neither pure X nor pure Z is refused rather than half-read. And a code here is a record that builds one source, where upstream's code is a map from an operation to the kernel that performs it, so a code carrying its own preparation, measurement or logical-operation kernels would need a second shape; symbol:flagquantum.qec.operation_encodings states that absence. Note that the second gap is a decision about this repository's circuit model rather than a small addition."
+fail_closed = "symbols_absent names the two matrix-level upstream records, upstream's stabilizer-round kernel type and the per-operation kernel map, so the row stops claiming a kernel-set gap the day one of those names appears; the negative search names the colour code, which neither this record set nor upstream's factory carries. The bands are held by tests/qec/test_code_registry.py, which reads the derived split against the stated counts for every shipped record, refuses an ancilla that measures both bases, and exercises the registry's duplicate, unknown-name, unknown-option and missing-member refusals; tests/qec/test_dem_code_matrices.py holds the matrix record to reading every declared block rather than a Z-type subset: a code declaring both readouts produces both observable blocks, an X-only code still produces a model, a mixed-type observable is refused with its index named, and a check acting outside the declared data wires is refused rather than silently widened."
 
 [[rows]]
 id = "qec_detector_annotations"
