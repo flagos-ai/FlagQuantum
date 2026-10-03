@@ -95,11 +95,14 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # repository reaches it, which is `unreferenced_object` for the same reason as the rest
 # of the class.
 #
-# The forty-first, `a28d9e1d0540a92743c9fcf6163578c57400c6d5`, is recorded by
-# `benchmarks/results/local/tn_layout_contraction_a800.json`. The artifact entered on
-# `main` after this table was last updated. Both repository-scoped commit API paths
-# serve the object by its full name, while no branch or tag reaches it, so it is an
-# `unreferenced_object` under the same rule as the preceding revisions.
+# The forty-first, `c0243cfdb7d8e1409a2fb655acada5528d2bb5a0`, is recorded by
+# `benchmarks/results/local/tn_layout_contraction_a800.json`. The artifact replaced
+# its earlier `a28d9e1d0540a92743c9fcf6163578c57400c6d5` measurement when `#425`
+# narrowed the dispatch window, so that displaced revision is no longer declared.
+# Both repository-scoped commit API paths serve the replacement object by its full
+# name, while the two merged source branches that once reached it have been deleted
+# and no current branch or tag reaches it. It is therefore an `unreferenced_object`
+# under the same rule as the preceding revisions.
 #
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -573,7 +576,7 @@ value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
 origin = "producing_host_history"
 
 [[artifact.revision]]
-value = "a28d9e1d0540a92743c9fcf6163578c57400c6d5"
+value = "c0243cfdb7d8e1409a2fb655acada5528d2bb5a0"
 origin = "unreferenced_object"
 
 [[artifact.revision]]

@@ -128,6 +128,12 @@ records checkpoint-policy v5 selecting fused gather, compact cycles, or
 zero-auxiliary CNOT pairs from explicit modeled memory requirements. It includes
 absolute timing, peak RSS, correctness, usage, and reproduction commands.
 
+[`BATCHED_STATEVECTOR_CPU_PHASE_CLOSEOUT_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_CPU_PHASE_CLOSEOUT_CPU_ARM64_20261003_SCORECARD.md)
+closes the measured single-thread CPU parameter-batch forward phase across five
+18-qubit, batch-32 workloads. It records absolute FlagQuantum and PennyLane
+Lightning times, speedups, execution RSS growth, public usage, rejected
+copy-elimination candidates, limits, and the exact reproduction command.
+
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,
 shared-RZZ phase lookup, and terminal RX-to-RZZ reverse fusion. It includes
