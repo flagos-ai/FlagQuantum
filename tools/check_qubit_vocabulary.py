@@ -239,6 +239,7 @@ def contract_errors(
     ]
     attribute_rows = list(contract.get("attribute_exclusions", {}).get("sites", ()))
     definition_rows = list(contract.get("definition_ledger", {}).get("sites", ()))
+    retired_kinds = _retired_attribute_kinds(contract)
     attribute_paths = {
         identifier.split("::", 1)[0] for identifier in attribute_ledger
     } | {str(row.get("site", "")).split("::", 1)[0] for row in attribute_rows}
@@ -294,7 +295,8 @@ def contract_errors(
                 1
                 for identifier in attribute_ledger
                 if identifier.split("::", 1)[0] in owned_files
-                and declarations.get(identifier) == label
+                and (declarations.get(identifier) or retired_kinds.get(identifier))
+                == label
             )
             if int(entry.get(f"attribute_{label}_count", -1)) != expected_declared:
                 errors.append(
@@ -369,10 +371,29 @@ def _attribute_errors(
         for entry in contract.get("attribute_ledger", {}).get("canonical", ())
     ]
     rows = list(contract.get("attribute_exclusions", {}).get("sites", ()))
-    retirement = [
-        str(entry)
+    retirement_rows = [
+        entry
         for entry in contract.get("attribute_retirement", {}).get("sites", ())
+        if isinstance(entry, dict)
     ]
+    retirement = [str(row.get("site", "")) for row in retirement_rows]
+    for row in retirement_rows:
+        for name in ("site", "replacement", "declaration"):
+            if not isinstance(row.get(name), str) or not row[name]:
+                errors.append(
+                    f"qubit vocabulary attribute retirement is missing {name}: {row}"
+                )
+        if row.get("declaration") not in DECLARATION_KINDS:
+            errors.append(
+                "qubit vocabulary attribute retirement must name the declaration "
+                f"kind it discharged: {row}"
+            )
+        name = str(row.get("site", "")).rsplit("::", 1)[-1]
+        if not supersedes(name, str(row.get("replacement", ""))):
+            errors.append(
+                f"qubit vocabulary attribute retirement {row.get('site')} must be "
+                f"replaced by {row.get('replacement')!r}"
+            )
 
     if not ledger:
         errors.append("qubit vocabulary contract must ledger the attribute surface")
@@ -506,6 +527,22 @@ def _attribute_errors(
     return errors
 
 
+def _retired_attribute_kinds(contract: dict[str, Any]) -> dict[str, str]:
+    """The declaration kind each retired attribute site carried when it was frozen.
+
+    The per-slice counts split the work by declaration kind, and a retired site is
+    no longer in the live scan. Reading the kind from the retirement row keeps the
+    slice table stable across slices, so `12 + 9 + 7` stays the record of what WQ-2
+    owed instead of silently collapsing to zero rows of nothing.
+    """
+
+    return {
+        str(row.get("site", "")): str(row.get("declaration", ""))
+        for row in contract.get("attribute_retirement", {}).get("sites", ())
+        if isinstance(row, dict)
+    }
+
+
 def _definition_errors(
     contract: dict[str, Any],
     package_root: Path | None,
@@ -608,9 +645,11 @@ def slice_progress(
         "definition": ("definition_retirement", "definition_ledger", "sites"),
     }
     retirement_section, ledger_section, key = surface_sections[surface]
-    retired = {
-        str(entry) for entry in contract.get(retirement_section, {}).get("sites", ())
-    }
+    retired = set()
+    for entry in contract.get(retirement_section, {}).get("sites", ()):
+        retired.add(
+            str(entry.get("site", "")) if isinstance(entry, dict) else str(entry)
+        )
     ledger: list[str] = []
     for entry in contract.get(ledger_section, {}).get(key, ()):
         if isinstance(entry, dict):

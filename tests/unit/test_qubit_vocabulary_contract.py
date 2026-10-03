@@ -676,18 +676,81 @@ def test_an_attribute_rename_without_a_retirement_entry_is_reported(
 
 
 def test_a_retired_attribute_is_reported_when_it_still_reaches_a_payload() -> None:
+    """Retiring an exclusion does not make the payload key go away.
+
+    The fixture retires a name the census still measures as reaching a payload,
+    so the checked-in exclusion and the retirement list contradict each other.
+    The retirement row carries the declaration kind because a retired site is no
+    longer in the live scan, and the per-slice counts still have to know what it
+    was.
+    """
+
     contract = _contract()
     row = _attribute_rows(_contract())[0]
-    contract["attribute_retirement"] = {"sites": [row["site"]]}
+    contract["attribute_retirement"] = {"sites": [dict(row)]}
     _some(_errors(contract), "still reaches a payload")
 
 
 def test_an_attribute_retirement_outside_the_baseline_is_reported() -> None:
     contract = _contract()
     contract["attribute_retirement"] = {
-        "sites": ["flagquantum/nowhere.py::Absent::wires"]
+        "sites": [
+            {
+                "site": "flagquantum/nowhere.py::Absent::wires",
+                "replacement": "qubits",
+                "declaration": "field",
+            }
+        ]
     }
     _one(_errors(contract), "outside the baseline")
+
+
+def test_an_attribute_retirement_without_a_declaration_kind_is_reported() -> None:
+    """The kind is what keeps the per-slice field/member/instance split stable.
+
+    A retirement row that omits it would move its site out of the ledger without
+    leaving behind which kind of declaration the slice discharged, so the counts
+    would silently drift from the record of what the slice owed.
+    """
+
+    contract = _contract()
+    contract["attribute_retirement"] = {
+        "sites": [
+            {
+                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "replacement": "n_qubits",
+            }
+        ]
+    }
+    _some(_errors(contract), "missing declaration")
+
+
+def test_an_attribute_retirement_that_is_not_a_rename_is_reported() -> None:
+    contract = _contract()
+    contract["attribute_retirement"] = {
+        "sites": [
+            {
+                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "replacement": "width",
+                "declaration": "field",
+            }
+        ]
+    }
+    _some(_errors(contract), "must be replaced by")
+
+
+def test_an_attribute_retirement_with_an_unknown_declaration_kind_is_reported() -> None:
+    contract = _contract()
+    contract["attribute_retirement"] = {
+        "sites": [
+            {
+                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "replacement": "n_qubits",
+                "declaration": "attribute",
+            }
+        ]
+    }
+    _some(_errors(contract), "must name the declaration kind")
 
 
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:

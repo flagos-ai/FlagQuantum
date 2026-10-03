@@ -99,7 +99,7 @@ phrases reach this surface:
   witness and a removal condition.
 
 The remaining 122 names are on this surface but are not exported from `fq.*`
-(`fq.core.GateInfo`, `qec/**`, `drawer/**`, `simulation/**`). Rule 9, "stable API
+(`flagquantum.core.GateInfo`, `qec/**`, `drawer/**`, `simulation/**`). Rule 9, "stable API
 names must state their domain meaning directly", is the rule that reaches them: a
 name that says `wire` in a package whose every parameter says `qubit` is exactly
 the avoidable ambiguity rule 9 was written against.
@@ -140,7 +140,7 @@ exactly seven, of which four are excluded payload keys:
 | `fq.Circuit` | `n_wires` → `n_qubits` | yes, forwarding property with `DeprecationWarning` |
 | `fq.MeasurementResult` | `wires` → `qubits` | yes |
 | `fq.OutputRequest` | `wires` → `qubits` | yes |
-| `fq.core.GateInfo` | `n_wires` → `n_qubits` | no — not reachable from `fq.*`, and frozen in no baseline |
+| `flagquantum.core.GateInfo` | `n_wires` → `n_qubits` | no — not reachable from `fq.*` (`hasattr(fq, "GateInfo")` is `False`), and frozen in no baseline |
 | `fq.CircuitIR`, `fq.Instruction` | `n_wires`, `wires` → `n_qubits`, `qubits` | no — excluded payload keys |
 
 The mechanism already exists: `flagquantum/core/_qubit_aliases.py` provides
@@ -234,7 +234,7 @@ fq.draw(circuit, qubit_order=(1, 0), show_all_qubits=True)
 
 ## 10. Open questions
 
-1. **Should `fq.core.GateInfo.n_wires` be renamed outright rather than aliased?**
+1. **Should `flagquantum.core.GateInfo.n_wires` be renamed outright rather than aliased?**
    It is not reachable from `fq.*` and is frozen in no checked-in baseline, so no
    compatibility obligation exists. The proposal's answer is yes, rename it — but
    the answer is recorded here rather than assumed, because `GateInfo` is a
