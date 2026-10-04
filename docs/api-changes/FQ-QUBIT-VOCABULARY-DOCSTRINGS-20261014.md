@@ -14,9 +14,17 @@ Every wire-named token in a docstring or a comment inside `flagquantum/` is eith
 reworded into the qubit vocabulary or recorded in `[docstring]` with a reason, and
 the gate reconciles the recorded multiset against a live scan on every run.
 
-339 tokens in 148 containers across 66 files became 44 tokens in 32 containers across
-22 files. 295 tokens were reworded, on 260 lines. The 44 that remain are listed, one row per
-container, with the reason each one keeps its spelling.
+337 prose tokens in 146 containers across 66 files became 43 tokens in 31 containers
+across 22 files. 294 tokens were reworded, on 259 lines across 54 files. The 43 that
+remain are listed, one row per container, with the reason each one keeps its spelling.
+
+Two further tokens live inside `>>>` blocks, which are code rather than prose and are
+counted by `[docstring_example]`. They did not move, and they must not: see
+[The example that had no legal spelling](#the-example-that-had-no-legal-spelling).
+The first three commits of this slice reported the surface as 339 tokens becoming 44,
+because the scan could not tell those two lines from a sentence about them. The fourth
+commit is the correction, and it is also the repair of the one line those first three
+commits broke.
 
 This is the last user-facing surface the migration had left inside the package. A
 docstring is what `help()` prints and what an editor shows on hover; a comment is
@@ -153,7 +161,7 @@ print(f"union      {len(doc_files | com_files)} files")
 
 ```console
 $ python the-snippet-above.py
-docstrings 35 over 25 docstrings in 17 files
+docstrings 36 over 26 docstrings in 17 files
 comments   9 over 8 comments in 7 files
 union      22 files
 ```
@@ -161,9 +169,12 @@ union      22 files
 The snippet counts *substring* occurrences, which is the metric the baseline above
 was measured with, and it counts every `.py` under `flagquantum/`. It also counts the
 two executable example lines, because a substring walk cannot tell a `>>>` line from a
-sentence about it. The census below counts *tokens*, splits the prose from the
-examples, and is what the gate reconciles; the two agree at 43 prose tokens here
-because every remaining prose occurrence is identifier-shaped.
+sentence about it. Its docstring figures are one higher here than the three-commit tree
+read — 36 over 26, against 35 over 25 — because restoring `.wires` on the
+`Circuit.compose` example is what makes that docstring match `wire` again. The census
+below counts *tokens*, splits the prose from the examples, and is what the gate
+reconciles; the two agree at 43 prose tokens here because every remaining prose
+occurrence is identifier-shaped.
 
 The census:
 
@@ -192,6 +203,22 @@ files and `2` executable tokens over `2` containers in `2` files. The figure thi
 record carried before the split — 339 prose tokens — was those 337 plus the 2 example
 lines, and the 295 tokens it reported as reworded were 294 reworded prose tokens plus
 the one example line this slice rewrote by mistake.
+
+The line and file figures move with it. The first commit's own `--shortstat` is 55
+files and 260 replaced lines in each direction; one of those lines is the executable
+example, which the fourth commit puts back, so the slice's net effect on
+`flagquantum/` is **54 files and 259 replaced lines**. Measured on the finished tree:
+
+```console
+$ git diff -U0 d24a1b0e HEAD -- flagquantum/ | grep -cE '^[-+][^-+]'
+518
+$ git diff --name-only d24a1b0e HEAD -- flagquantum/ | wc -l
+54
+```
+
+518 is 259 lines on each side, and `flagquantum/circuit.py` is not in the file list at
+all: the only thing this slice ever changed in it was the example line, and the fourth
+commit undoes that.
 
 The gate:
 
@@ -266,6 +293,18 @@ the 44 was never prose. The one kept token that the restore put back —
 `flagquantum/_api.py::compile::n_wires`, the other executable example, which was
 already written in the deprecated spelling before this slice and which the old reading
 had mis-filed under "a frozen payload key" — moved to the example surface with it.
+`flagquantum/circuit.py` leaves the diff entirely, because the example was the only
+thing this slice ever changed in it.
+
+**The rule the first commit stated, and the hole in it.** That commit's message says
+"nothing inside a backticked code span was touched, because a backticked token names a
+code entity and every code entity that still exists keeps its spelling." The rule is
+right and it was applied correctly — ` ``n_wires - 1 - wire`` ` in
+`simulation/statevector/local.py` survives a sentence that moved to qubits around it.
+The hole is that the rule enumerated *one* class of code entity, the backticked span,
+and a `>>>` line is a second class it never considered. A rewriter that carries a rule
+listing the cases it must not touch will still touch every case the list forgot, and
+this one forgot the only class that a tool actually executes.
 
 The honest generalisation: **a vocabulary census cannot audit a doctest, and a doctest
 allow-list that no CI lane selects cannot audit itself.** The gate now knows the
