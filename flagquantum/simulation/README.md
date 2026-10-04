@@ -103,8 +103,8 @@ needed. Otherwise it is omitted from the returned result.
 
 `flagquantum.simulation.stabilizer.sample_stabilizer` samples
 computational-basis outcomes from a Clifford circuit through Pauli stabilizer
-tracking, whose storage grows with the wire count squared instead of
-exponentially. A thousand-wire GHZ chain is a normal input for it and an
+tracking, whose storage grows with the qubit count squared instead of
+exponentially. A thousand-qubit GHZ chain is a normal input for it and an
 unrepresentable one for every engine in this directory.
 
 ```bash

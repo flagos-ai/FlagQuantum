@@ -39,7 +39,7 @@ executed by `tests/test_algorithm_examples.py`.
   found by a Grover-style minimum search over a centroid index register, and the
   centroid positions are then moved to classical coordinate-wise medians.
   Demonstration scale: the distance table is classical and the search is bound
-  at three register wires.
+  at three register qubits.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
   These take a PyTorch optimizer or one of the staged methods below; `spsa.py` is
   the gradient-free member of the same surface and takes a plain callable instead.

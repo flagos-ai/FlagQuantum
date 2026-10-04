@@ -26,6 +26,16 @@ carried by `[[attribute_retirement.sites]]` when it is gone, and by
 `[[attribute_aliases.sites]]` when it is still reachable and deprecated. A name
 in neither table has to be gone, which is what stops a slice from retiring a
 name it never renamed.
+
+One surface is checked here that no ledger in the contract holds, and it is the one
+the migration is most likely to fail on. Every other check reads a *declaration*, so
+whether `observable_wire` is still in a signature is a question the contract can
+answer. Whether the caller thirty files away still writes `observable_wire=` is not:
+a keyword argument at a call site is not a name the package declares, so no ledger
+row can cover it, and Python raises nothing until that branch runs. The gate
+therefore also resolves every wire- or qubit-named keyword against its callee and
+requires the set to be empty. See `qubit_keyword_mismatches` in the census module
+for why an undecidable call site is skipped rather than reported.
 """
 
 from __future__ import annotations
@@ -48,7 +58,9 @@ from census_wire_vocabulary import (  # noqa: E402
     attribute_census,
     census,
     definition_census,
+    documentation_census,
     public_parameter_names,
+    qubit_keyword_mismatches,
     supersedes,
 )
 
@@ -243,6 +255,8 @@ def contract_errors(
 
     errors.extend(_attribute_errors(contract, scanned_attributes))
     errors.extend(_definition_errors(contract, package_root))
+    errors.extend(_documentation_errors(contract))
+    errors.extend(_call_site_errors(contract))
 
     slices = list(contract.get("slices", ()))
     if not slices:
@@ -607,6 +621,87 @@ def _retired_attribute_kinds(contract: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _documentation_errors(contract: dict[str, Any]) -> list[str]:
+    """Reconcile the keywords the documentation tells a reader to write.
+
+    A documented keyword argument is an instruction: a reader copies it into a
+    script and expects it to run. Nothing else in this gate can see one. The
+    Python-side ledgers read signatures, so a guide that shows `n_wires=` after the
+    parameter was renamed to `n_qubits` is invisible to all of them, and the
+    documentation's own generated pages cannot see it either -- they render from
+    the code, so they never quote an example by hand.
+
+    The check is the same shape as the other three surfaces: a live scan, a frozen
+    measurement, and a list of exemptions that has to stay exactly as small as the
+    reason for it. The exemptions are per *file* and pin the whole multiset of
+    spellings that file is allowed to show, so a fourth example cannot appear
+    inside an already-exempt plan without someone recording it. Two documents are
+    exempt and for opposite reasons: the hybrid plan quotes the source language a
+    captured program is written in, and the API reference documents a deprecated
+    alias that still works. A spelling is therefore never exempt on its own -- only
+    a file is, and only up to a count.
+
+    Only keyword arguments are counted. The bare noun cannot be: the documentation
+    has to be able to say "CUDA-Q orders wire zero as the least-significant bit"
+    and to describe a `--n-wires` flag, and both of those are correct as written.
+    """
+
+    errors: list[str] = []
+    section = contract.get("documentation", {})
+    for name in ("owner", "condition"):
+        if not isinstance(section.get(name), str) or not section[name]:
+            errors.append(f"qubit vocabulary documentation {name} is unowned")
+
+    exempt: dict[str, list[str]] = {}
+    for row in section.get("exempt", ()):
+        relative = str(row.get("file", ""))
+        if not relative:
+            errors.append("qubit vocabulary documentation exemption is missing a file")
+            continue
+        if relative in exempt:
+            errors.append(f"qubit vocabulary documentation exempts {relative} twice")
+        if not (ROOT / relative).is_file():
+            errors.append(f"qubit vocabulary documentation exempts missing {relative}")
+        if not isinstance(row.get("reason"), str) or not row["reason"]:
+            errors.append(
+                f"qubit vocabulary documentation exemption {relative} states no reason"
+            )
+        keywords = sorted(str(keyword) for keyword in row.get("keywords", ()))
+        if not keywords:
+            errors.append(
+                f"qubit vocabulary documentation exemption {relative} allows nothing"
+            )
+        exempt[relative] = keywords
+
+    scanned = documentation_census()
+    reported: dict[str, list[str]] = {}
+    for site in scanned.sites:
+        relative, _, keyword = site.partition("::")
+        reported.setdefault(relative, []).append(keyword)
+
+    for relative, keywords in sorted(reported.items()):
+        allowed = exempt.get(relative)
+        if allowed is None:
+            errors.append(
+                "qubit vocabulary documentation tells users to write a wire-named "
+                f"keyword: {relative} {sorted(set(keywords))}"
+            )
+        elif sorted(keywords) != allowed:
+            errors.append(
+                f"qubit vocabulary documentation in {relative} shows "
+                f"{sorted(keywords)}, but only {allowed} is exempt"
+            )
+    for relative in sorted(set(exempt) - set(reported)):
+        errors.append(f"qubit vocabulary documentation exemption {relative} is stale")
+
+    measured = int(section.get("measured_keywords", -1))
+    if measured != len(scanned.sites):
+        errors.append(
+            "qubit vocabulary documentation measured_keywords must equal the live scan"
+        )
+    return errors
+
+
 def _definition_errors(
     contract: dict[str, Any],
     package_root: Path | None,
@@ -747,6 +842,37 @@ def aliased_sites(contract: dict[str, Any], surface: str) -> set[str]:
     }
 
 
+def _call_site_errors(contract: dict[str, Any]) -> list[str]:
+    """Refuse a call site that passes a wire- or qubit-named keyword its callee rejects.
+
+    The one surface with no baseline to reconcile against. Every other ledger here
+    answers "how much is left"; this one answers "does the defect exist", and the
+    answer has to be zero, so the contract's own allowance is checked first. A slice
+    that lowered the standard to make its own change pass would otherwise be
+    indistinguishable from one that met it.
+    """
+
+    errors: list[str] = []
+    surfaces = contract.get("other_surfaces", {})
+    expected = surfaces.get("call_site_mismatches")
+    if expected != 0:
+        errors.append(
+            "qubit vocabulary other_surfaces.call_site_mismatches is an invariant and "
+            f"must be 0, not {expected!r}: a call site passing a retired keyword is "
+            "broken code, not a budget to spend"
+        )
+    surface = surfaces.get("call_site_surface")
+    if not isinstance(surface, str) or not surface:
+        errors.append("qubit vocabulary contract must name the call-site surface")
+    for finding in qubit_keyword_mismatches():
+        relative, _, rest = finding.partition("::")
+        errors.append(
+            f"qubit vocabulary call site passes a keyword its callee rejects: {relative} "
+            f"({rest.replace('::', ' -> ')})"
+        )
+    return errors
+
+
 def _report(contract: dict[str, Any]) -> None:
     for surface, label in (
         ("parameter", "baseline sites"),
@@ -769,6 +895,27 @@ def _report(contract: dict[str, Any]) -> None:
         )
         for slice_id, done, left in rows:
             print(f"  {slice_id:5s} retired {done:3d}  remaining {left:3d}")
+
+    scanned = documentation_census()
+    exempted = sum(
+        1
+        for row in contract.get("documentation", {}).get("exempt", ())
+        for _ in row.get("keywords", ())
+    )
+    print(
+        "Qubit vocabulary documentation: "
+        f"{exempted} of {len(scanned.sites)} documented wire-named keywords "
+        f"exempt as recorded ({len(scanned.sites) - exempted} to reword)"
+    )
+
+    # The only line that reports an invariant rather than progress. It is printed
+    # even at zero, so that a reader can see the surface is scanned rather than
+    # assume a silent gate means an absent one.
+    print(
+        "Qubit vocabulary call sites: "
+        f"{len(qubit_keyword_mismatches())} keywords passed that their callee rejects "
+        "(invariant: 0)"
+    )
 
 
 def main() -> int:

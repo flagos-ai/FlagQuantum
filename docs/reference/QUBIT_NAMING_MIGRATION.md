@@ -288,7 +288,7 @@ benchmark suite with two spellings of one switch.
 
 ## Scope of the rename
 
-The migration covers four surfaces, all measured by
+The migration covers four ledgers plus a report, all measured by
 `tools/census_wire_vocabulary.py` and reconciled against
 `contracts/qubit-vocabulary-contract.toml` on every run:
 
@@ -297,6 +297,7 @@ The migration covers four surfaces, all measured by
 | parameters on the public function surface | 341 | renamed; 11 are kept as deprecated forwarders and are deleted at 0.4.0 |
 | public attribute and property names | 144 | 122 renamed, 22 excluded as payload keys; 5 of the 122 keep a forwarder until 0.4.0 |
 | module-level public definition names | 10 | renamed |
+| documented keyword arguments | 17 | 13 reworded; 4 kept, in two documents, each with a recorded reason |
 | string literals | 634 | reported only, never ledgered |
 
 An attribute is renamed whether it is a field, a property or method
@@ -317,29 +318,94 @@ builds the object and already takes `n_qubits`, so the class is given no
 constructor alias and `n_wires` remains readable only because the OpenQASM import
 proposal documents it that way.
 
+## The documentation surface
+
+The documentation is measured as its own surface rather than folded into the
+parameter one, and the reason is that the two boundaries are drawn differently. The
+parameter boundary is decided by which module a name is declared in, so it is
+reproducible; deciding which prose *describes the package* is not. Matching module
+names in `docs/**` turns `flagquantum.compiler` into its entire subtree and yields a
+number that looks precise but is decided by prefix matching. So this surface asks a
+smaller, answerable question instead: **which keyword arguments do the documents
+tell a reader to write?**
+
+That is an instruction. A reader copies it into a script and expects it to run, and
+after a rename a document that still shows the old spelling is the one place a
+copy-paste is the discovery mechanism — nothing else in the gate can see it, because
+the Python-side ledgers read signatures, and the generated pages render *from* the
+code so they never quote an example by hand.
+
+| Rule | Effect |
+|---|---|
+| a `name=value` keyword argument whose name contains `wire`, in any tracked Markdown file that is not a dated record | counted; it is an instruction to a reader |
+| a keyword written inside a code span, as in a parenthesised `` (`wires=`) `` | counted. A reader reads a code span the same way. The matcher used to require that the name not follow a backtick, and that blind spot hid a contract row until this slice |
+| `docs/api-changes/**`, `docs/development/**`, `benchmarks/results/**`, and this file | skipped; their job is to quote what the tree said on their date, and the gate must not punish them for it |
+| the bare noun `wire` | not counted, and not forbidden. The documentation has to be able to say that CUDA-Q orders wire zero as the least-significant bit and to describe a `--n-wires` flag, and a rule that forbade those would be switched off rather than obeyed |
+| a CLI flag, an attribute read, a comparison | not counted; a flag is neither a parameter nor a keyword, `info.wires = 1` reads a caller's object, and `n_wires == 2` is not an argument |
+
+Two documents are exempt, for opposite reasons, and each exemption names the file,
+the reason, and the whole multiset of spellings that file may show — so a fourth
+example cannot appear inside either without its own record.
+
+[The hybrid compilation plan](../roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md)
+quotes the source language a captured program is written in.
+`flagquantum/compiler/_hybrid/capture.py` rejects every keyword but `wires`, so
+rewording the example would make it unparseable and the plan wrong. The plan's
+`wire=` occurrences were a different case: the capture layer rejects `wire=` too, so
+they were corrected to `wires=` rather than exempted.
+
+[The API reference](../reference/API.md) documents `fq.Circuit(n_wires=2)`, which
+still constructs and still warns, and which `[aliases].removal_version` says will be
+deleted at 0.4.0. Rewording that occurrence would delete the compatibility promise
+rather than complete the migration, so the promise keeps its spelling until it
+expires.
+
 ## Spellings the census cannot see
 
 The scanner reads names — parameters, attributes, definitions — and reports
-string literals without judging them. Further user-visible spellings are
-reachable exactly the way a parameter is, and none is on a ledger. They are
-listed here so that "the ledger is clean" is not read as "no user-visible `wire`
-is left":
+string literals without judging them. Documented keyword arguments are a fourth
+ledgered surface, listed above. Ten further user-visible spellings reach a user
+and reach no ledger, because each is a value rather than a name, or a name
+declared outside the boundary. They are listed here so that "the ledger is clean" is
+not read as "no user-visible `wire` is left":
 
 | Spelling | Where a user meets it | Disposition |
 |---|---|---|
-| `wire_options`, `show_wire_labels`, `active_wire_notches` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | **migrated**: the canonical spellings are `qubit_options`, `show_qubit_labels`, and `active_qubit_notches`; the old three are translated by `flagquantum.drawer.mpl_drawer.resolve_legacy_options` and warn, exactly as a parameter alias does |
+| `wire_options`, `show_wire_labels`, `active_wire_notches` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | **migrated**: the canonical spellings are `qubit_options`, `show_qubit_labels` and `active_qubit_notches`; the drawer translates the old three through `flagquantum.drawer.mpl_drawer.resolve_legacy_options` and warns, exactly as a parameter alias does |
 | `n_wires`, `wires` on a *legacy* device object | the two spellings a third-party qdev reports, read by `flagquantum.drawer.ir_adapter.to_drawable_circuit` | **accepted, not published**: read at one boundary and immediately re-expressed as `n_qubits`/`qubits`, so no renderer ever meets them |
 | `wires` | the keyword a captured hybrid program must use — `qp.H(wires=...)`, `qp.measure(wires=...)`, `qp.reset(wires=...)` — required by the capture layer, which rejects any other keyword | open; renaming it changes the source language, not a signature |
 | `wire_start`, `wire_end`, `owned_wires` | dictionary keys returned by `runtime.planner.topology.rank_ownership` | kept; no reader in the package builds them into a qubit-named contract, and the parameter the caller passes is already `n_qubits` |
 | `max_marginal_wires` | a measurement-metadata key: written by `observables` into a request and read by `runtime.measurements` out of it | kept; it crosses a request boundary, so it moves only with a request-schema version |
 | `per_sharded_wire_gate` | the value of `communication_frequency` in a candidate-plan scoring payload | kept; no reader anywhere in the package, so renaming it would change evidence without a consumer to migrate |
 | `n_wires` | the metric key in `ExecutionResult(metrics={"n_wires": …})` built by the backend adapters | kept; a metric key is part of a comparison payload |
+| `--n-wires`, `--wires`, `--wire-layout`, `--marginal-wires`, `--capacity-wires`, `--start-wires`, `--step-wires`, `--stop-wires`, `--worker-wire`, `--max-reference-wires`, `--fq-dense-observable-wires` | command-line flags, declared by 66 `argparse` calls over 11 distinct names in 59 files across `benchmarks/`, `tools/` and `flagquantum/` | open; a flag is a typed interface, so it migrates the way keyword arguments did — publish the qubit spelling, keep the old one as a hidden deprecated alias. 51 of the 66 declarations are `--n-wires` |
+| `n_wires`, `wires`, `wire`, `wire0`, `wire1`, `capacity_wires`, `dense_observable_wires` | parameters of helper functions in `benchmarks/` (141 sites in 60 files), `tools/` and `examples/` | open; `[boundary]` is the package, so the parameter ledger does not read these files at all |
+| `wire`, `wires` | Python docstrings and comments inside the package (280 occurrences over 129 docstrings, plus 49 in 39 comment lines) | open; this is what `help()` prints, so it is user-facing, but it is a code surface rather than a documentation one |
 
 The capture keyword is the remaining open work. Renaming it would break every
 hybrid program the capture layer can read, so it is a decision for the
-hybrid-language owner rather than for this migration. The last rows are payload
-keys the census reports as literals, and they move only when the payload that
-carries them is versioned.
+hybrid-language owner rather than for this migration. The four rows after it are
+payload keys the census reports as literals, and they move only when the payload
+that carries them is versioned.
+
+The last two rows are the ones that were invisible until the documentation slice
+went looking for stale examples, and they are the reason the next slice is a CLI
+surface rather than another name ledger. A flag and a helper parameter in
+`benchmarks/` are both reachable by a user, and neither is a declaration the census
+reads, because `[boundary]` stops at the package. The docstring row is the same
+problem one level in: `help()` prints it, but it is prose attached to a name rather
+than a name.
+
+The three tiers are therefore: **ledgered** — parameters, attributes, definitions
+and documented keywords, reconciled on every run and fail-closed; **reported** — the
+632 string literals, which the gate prints and never judges; and **listed** — the ten
+rows above, which are measured here by hand and are the honest answer to "what is
+left". A reader who wants to know whether the migration is finished should read all
+three, not the first one alone.
+
+Documented keyword arguments are no longer invisible: they are the fourth ledgered
+surface, reconciled on every run. See
+[the documentation surface](#the-documentation-surface) above.
 
 ### Reading a legacy spelling is not the same as publishing one
 

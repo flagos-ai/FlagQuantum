@@ -81,10 +81,72 @@ public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
 public_definition_owner = "WQ-2"
 public_definition_condition = "ledgered: every module-level public name is reconciled against [definition_ledger] on every run"
-message_strings = 634
+message_strings = 632
 message_strings_reproduce = "python -c \"from tools.census_wire_vocabulary import message_strings as f; print(len(f()))\""
 message_strings_owner = "WQ-8"
-message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording"
+message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording. The number is a reading and not a reconciliation -- the check above only requires it to be positive and owned -- so it can drift without failing anything, and it had twice over. `WQ-8` recorded 634 and the command beside it yields 632 on the commit that recorded it, so the record was 2 stale from the moment it was written. The drawer compatibility fix on the sibling branch yields 641, because it adds 9 literals that name the retired option spellings in order to warn about them; that is growth the migration wants, and a ledger reconciled to a number would have blocked it. A reader who needs the figure must run the command; the recorded one is a starting point, and this condition is why it is not a target"
+
+# The sixth surface, and the only one whose expected count is not a measurement but
+# an invariant. Every other section here records how much of the migration is done;
+# this one records that a specific defect must not exist at all.
+#
+# A ledger holds declarations, so it can see `observable_wire` leaving a signature.
+# It cannot see the caller thirty files away that still writes `observable_wire=`,
+# because a call site is an argument and not a name the package declares. Nothing
+# fails until that branch runs, and every slice so far has been able to rename a
+# parameter while leaving such a caller behind -- `WQ-4` did exactly that to
+# `flagquantum/runtime/module.py`, which stayed a live `TypeError` on the
+# distributed-statevector path until the documentation slice's own keyword sweep
+# found it. So the allowance is pinned at zero and the gate refuses to let a later
+# slice raise it, because a budget for dead call sites is a budget for broken code.
+call_site_mismatches = 0
+call_site_surface = "wire_and_qubit_named_keywords_passed_to_a_callee_that_rejects_them"
+call_site_reproduce = "python -c \"from tools.census_wire_vocabulary import qubit_keyword_mismatches as f; print(len(f()))\""
+call_site_owner = "WD-1"
+call_site_condition = "invariant: a call site may pass a wire- or qubit-named keyword only if the resolved callee accepts it; the scan resolves the callee through the module's own imports, skips any callee that cannot be decided (an absent optional dependency, or a `**kwargs` signature), and reports the site as `path:line::callee::keyword`"
+
+# The fifth surface, and the only one outside [boundary]. The boundary is decided
+# by which module a name is declared in, which is reproducible; deciding which
+# prose *describes the package* is not, because matching module names in docs/**
+# turns `flagquantum.compiler` into its whole subtree. So the documentation is
+# measured as a separate, smaller question instead: which keyword arguments the
+# documentation tells a reader to write. That is an instruction, a reader copies it
+# into a script, and it must name a parameter the package accepts.
+#
+# Only keyword arguments are counted. The bare noun cannot be: the documentation
+# has to be able to say that CUDA-Q orders wire zero as the least-significant bit
+# and to describe a `--n-wires` flag, and a rule that forbade those would be
+# switched off rather than obeyed. A count of keyword spellings has no such
+# problem, and the ~225 lines of prose that use the noun for a foreign framework or
+# for the English verb are left alone.
+[documentation]
+measured_keywords = 4
+measured_reproduce = "python -c \"from tools.census_wire_vocabulary import documentation_census as f; print(len(f().sites))\""
+owner = "WD-1"
+condition = "exempt: each entry names one file, one reason, and the whole multiset of spellings that file may show, so a fourth example inside an exempt plan needs its own record; every other file must show none, and the gate compares the multisets rather than a total, so moving a keyword from an exempt file to a live one cannot balance out"
+
+# The first exemption. What it quotes is not a FlagQuantum signature: it is the
+# source language a captured hybrid program is written in, and
+# `flagquantum/compiler/_hybrid/capture.py` rejects every keyword but `wires`. The
+# golden scenario is a program the capture layer must be able to read, so rewording
+# it would make the example unparseable and the plan wrong.
+[[documentation.exempt]]
+file = "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md"
+owner = "hybrid"
+reason = "quotes the captured hybrid source language, whose `wires=` keyword the capture layer requires and rejects every alternative for; renaming it is a decision about the source language, not about a FlagQuantum signature, and is recorded as open in [naming_reference]"
+keywords = ["wires=", "wires=", "wires="]
+
+# The second exemption, and a different reason entirely: this one is a *live*
+# spelling. `Circuit(n_wires=2)` still works and warns, and the alias is removed at
+# the version [aliases].removal_version names, so a page that documents the
+# compatibility promise has to be able to say the name. Rewording it would delete
+# the promise rather than complete the migration. The multiset is one spelling, so
+# a second `n_wires=` anywhere in the file still fails.
+[[documentation.exempt]]
+file = "docs/reference/API.md"
+owner = "WD-1"
+reason = "documents a live deprecated alias: `fq.Circuit(n_wires=2)` still constructs and warns, and [aliases].removal_version is the version that deletes it, so the page must name the spelling until then"
+keywords = ["n_wires="]
 # Canonical sites still spelled `wire`, one per line, keyed by module,
 # qualified name, and parameter. The list is the frozen baseline and keeps
 # every line after a rename lands: a slice adds the identifiers it retired to
@@ -1977,5 +2039,6 @@ algorithms_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ALGORITHMS-2026
 simulation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-SIMULATION-CPU-20261009.md"
 accelerator_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ACCELERATORS-20261010.md"
 compiler_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md"
+documentation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-DOCUMENTATION-20261013.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

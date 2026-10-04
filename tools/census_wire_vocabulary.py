@@ -1,6 +1,6 @@
 """Count the wire-named vocabulary the package exposes to its users.
 
-Four surfaces are scanned, and the reason each needs its own walk is stated once
+Six surfaces are scanned, and the reason each needs its own walk is stated once
 here rather than rediscovered per slice:
 
 - **Parameters** (`census`) are the migration ledger: every `wire`-named
@@ -18,6 +18,21 @@ here rather than rediscovered per slice:
   `flagquantum/simulation/pauli.py::infer_n_wires_from_dense_state`. Renaming the
   parameter and leaving the name would not finish the migration.
 - **Message strings** (`message_strings`) are reported and never ledgered.
+- **Documentation** (`documentation_census`) is the fifth door that reaches the
+  user without passing through Python at all. It is not the same question as
+  `message_strings`: a literal in a refusal sentence is a runtime string, while a
+  keyword argument written into a Markdown file is an instruction to the reader,
+  and only the second one can be wrong in a way the reader discovers by copying
+  it. The matcher is therefore narrow on purpose -- it counts *keyword arguments*
+  (`n_wires=22`) and not the bare word, because a paragraph that says
+  "CUDA-Q's wire zero is least-significant" is quoting someone else's vocabulary
+  and rewording it would make the comparison false.
+- **Call sites** (`qubit_keyword_mismatches`) are the door the other five cannot
+  see, because they all read declarations. A ledger can record that
+  `observable_wire` left a signature; it cannot record the caller somewhere else in
+  the package that still writes `observable_wire=`, and Python raises nothing until
+  that branch runs. So this surface asks a different kind of question -- not "how
+  much is left" but "does the defect exist" -- and its answer has to be nothing.
 
 Both decisions that make the parameter count reproducible were measured wrong
 first, so they are stated here once:
@@ -91,7 +106,10 @@ and `simulation/native_cpu/__init__.py` and `simulation/pauli.py` list it in
 from __future__ import annotations
 
 import ast
+import importlib
+import inspect
 import re
+import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -806,13 +824,312 @@ def attribute_census(package_root: Path | None = None) -> AttributeCensus:
     return AttributeCensus(tuple(ledgered), tuple(excluded))
 
 
-def message_strings(package_root: Path | None = None) -> tuple[str, ...]:
-    """String literals on the public surface that say wire.
+DOCUMENTATION_EXCLUDED_PREFIXES = (
+    "benchmarks/results/",
+    "docs/api-changes/",
+    "docs/development/",
+)
+DOCUMENTATION_EXCLUDED_FILES = ("docs/reference/QUBIT_NAMING_MIGRATION.md",)
 
-    Reported, never ledgered. A literal scan cannot tell a serialized key from a
-    refusal sentence, so a ledger built on it would fail on legitimate rewording
-    while still missing a key built by concatenation.
+# Reported as its own bucket by `prose_noun_census`, and *not* excluded from the
+# keyword scan. An architecture decision record states what was true when it was
+# accepted, so its prose is left alone like the other dated records; but it is not
+# an instruction to a reader, so it stays inside the census's file list and a future
+# ADR that writes out a `wires=` example still fails the gate. Counting the two
+# separately is what makes both facts visible at once instead of forcing one choice.
+PROSE_SCANNED_ONLY_PREFIXES = ("docs/architecture/decisions/",)
+
+# A keyword argument, with the lookbehind that keeps an attribute read
+# (`info.wires=`) and the text of a CLI flag (`--n-wires 12`) out. The name is
+# filtered after the match rather than encoded in the pattern, because a wire-named
+# keyword can carry `wire` anywhere in the identifier -- `wires`, `n_wires`,
+# `terminal_wires`, `show_wire_labels` -- and a pattern that required the literal
+# substring to start the name missed `wires=(0,)` entirely.
+#
+# A backtick is deliberately *not* in the lookbehind. It was, and the exclusion hid
+# the case the surface exists to find: a document that writes `` (`wires=`) `` in a
+# code span is naming the keyword it tells the reader to pass, exactly as a code
+# block is, and the one occurrence the backtick rule hid was the one that had gone
+# stale. A doc that writes `` `n_wires=2` `` while describing a live deprecated alias
+# is the other side of that coin, and it is recorded as an exemption rather than
+# silenced by the pattern.
+KEYWORD_ARGUMENT = re.compile(r"(?<![\w.-])(?P<name>[A-Za-z_]\w*)\s*=(?!=)")
+
+
+@dataclass(frozen=True)
+class DocumentationCensus:
+    """Wire-named keyword arguments written into current documentation.
+
+    ``sites`` holds one entry per *occurrence* so that a count is preserved
+    without pinning a line number: reflowing a paragraph moves every line in it,
+    and a ledger keyed on lines would report a failure for an edit that changed no
+    vocabulary at all.
     """
+
+    sites: tuple[str, ...]
+
+    def counts(self) -> Counter[str]:
+        return Counter(self.sites)
+
+
+def documentation_files(repository_root: Path | None = None) -> tuple[str, ...]:
+    """Tracked Markdown that documents the current tree, as repository paths.
+
+    The exclusion is by *kind of document*, not by whether a file happens to be
+    free of the word today. A dated record under ``docs/api-changes`` or
+    ``docs/development`` states what the tree said on its date, so it must be able
+    to quote the retired spelling; rewriting those would destroy the evidence the
+    migration rests on. The naming reference is the same case: naming both
+    spellings is its entire job. ``benchmarks/results`` is raw recorded evidence --
+    the source of a run that produced a number -- and ``AGENTS.md`` forbids
+    rewriting recorded evidence, so a stale spelling there is a fact about a past
+    measurement rather than an instruction to a reader.
+    """
+
+    root = REPOSITORY_ROOT if repository_root is None else repository_root
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=root,
+        capture_output=True,
+        check=True,
+        timeout=60,
+    ).stdout
+    return tuple(
+        name
+        for name in sorted(set(listed.decode("utf-8").split("\0")))
+        if name.endswith(".md")
+        and name not in DOCUMENTATION_EXCLUDED_FILES
+        and not name.startswith(DOCUMENTATION_EXCLUDED_PREFIXES)
+    )
+
+
+def documentation_keywords(text: str) -> tuple[str, ...]:
+    """The wire-named keyword arguments one document tells a reader to write.
+
+    Separated from the walk so the matcher can be pinned on its own: the rule that
+    matters is *which* spellings count, and that rule is about a line of Markdown,
+    not about which files exist.
+    """
+
+    return tuple(
+        match.group("name") + "="
+        for match in KEYWORD_ARGUMENT.finditer(text)
+        if "wire" in match.group("name")
+    )
+
+
+def documentation_census(
+    repository_root: Path | None = None,
+) -> DocumentationCensus:
+    """Count the wire-named keyword arguments the documentation tells users to write."""
+
+    root = REPOSITORY_ROOT if repository_root is None else repository_root
+    sites: list[str] = []
+    for relative in documentation_files(root):
+        text = (root / relative).read_text(encoding="utf-8")
+        sites.extend(
+            f"{relative}::{keyword}" for keyword in documentation_keywords(text)
+        )
+    return DocumentationCensus(sites=tuple(sorted(sites)))
+
+
+def prose_noun_census(
+    repository_root: Path | None = None,
+) -> tuple[tuple[str, int, int], ...]:
+    """Occurrences of the bare noun in every tracked Markdown file, by bucket.
+
+    The companion to `documentation_census`, and it exists because the two numbers
+    get confused with each other. That one counts *keyword arguments* -- the only
+    spelling a reader can copy into a script and have raise -- and is therefore the
+    one a gate can enforce. This one counts the bare noun, which no gate can
+    enforce, because the documentation has to be able to say that CUDA-Q orders wire
+    zero as least-significant and to describe a `--n-wires` flag.
+
+    So a number from here is a *reading*, reported and never asserted, and it is
+    reported over **every** tracked Markdown file rather than the census's in-scope
+    subset. That is deliberate: the excluded buckets are the bulk of the count and a
+    reader comparing this figure against the keyword count needs both halves visible
+    in one output rather than one of them silently subtracted.
+
+    Each row is ``(bucket, occurrences, files containing at least one)``, because the
+    two together are what let a reader tell "this bucket is untouched" from "this
+    bucket has fewer occurrences in more files".
+
+    This replaces a shell loop over directories that reported a plausible number and
+    was wrong, because a loop reading `git ls-files` inside a process substitution
+    keeps only its final iteration. It was wrong by a factor of two and nothing about
+    the output said so, which is the whole argument for measuring it here instead.
+    """
+
+    root = REPOSITORY_ROOT if repository_root is None else repository_root
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=root,
+        capture_output=True,
+        check=True,
+        timeout=60,
+    ).stdout
+    totals: Counter[str] = Counter()
+    files: Counter[str] = Counter()
+    for name in sorted(set(listed.decode("utf-8").split("\0"))):
+        if not name.endswith(".md"):
+            continue
+        text = (root / name).read_text(encoding="utf-8", errors="replace")
+        count = text.lower().count("wire")
+        bucket = "everything else"
+        for prefix in (
+            *DOCUMENTATION_EXCLUDED_PREFIXES,
+            *PROSE_SCANNED_ONLY_PREFIXES,
+        ):
+            if name.startswith(prefix):
+                bucket = prefix
+                break
+        else:
+            if name in DOCUMENTATION_EXCLUDED_FILES:
+                bucket = name
+        totals[bucket] += count
+        if count:
+            files[bucket] += 1
+    order = (
+        *DOCUMENTATION_EXCLUDED_PREFIXES,
+        *DOCUMENTATION_EXCLUDED_FILES,
+        *PROSE_SCANNED_ONLY_PREFIXES,
+        "everything else",
+    )
+    return tuple((bucket, totals[bucket], files[bucket]) for bucket in order)
+
+
+def _import_aliases(tree: ast.Module, package: str) -> dict[str, str]:
+    """Map a local name to a resolvable dotted path, over *every* import in a file.
+
+    Function-local imports are the normal style for a heavy or optional dependency,
+    so walking only the module body would miss exactly the call sites that matter
+    most -- a distributed executor imported inside a branch, for instance.
+    """
+
+    resolved: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            base = package
+            for _ in range(max(node.level - 1, 0)):
+                base = base.rpartition(".")[0]
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                resolved[alias.asname or alias.name] = (
+                    f"{base}.{node.module}.{alias.name}"
+                )
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                resolved[alias.asname or alias.name.split(".")[0]] = alias.name
+    return resolved
+
+
+def _callee_path(node: ast.expr, aliases: dict[str, str]) -> str | None:
+    """Resolve a call target, or `None` when the callee cannot be named statically."""
+
+    if isinstance(node, ast.Name):
+        return aliases.get(node.id)
+    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+        base = aliases.get(node.value.id)
+        if base is None:
+            return None
+        return f"{base}.{node.attr}"
+    return None
+
+
+def _accepted_keywords(target_path: str) -> tuple[str, ...] | None:
+    """The keyword names a callee accepts, or `None` when it cannot be decided.
+
+    `None` covers three honest refusals: the module will not import (an optional
+    accelerator is absent), the attribute is not a function, or the function takes
+    `**kwargs`, in which case *any* keyword has to be assumed accepted. A gate must
+    skip an undecidable site rather than guess, so that a reported mismatch is
+    always a real one.
+    """
+
+    module_path, _, attribute = target_path.rpartition(".")
+    if not module_path:
+        return None
+    try:
+        module = importlib.import_module(module_path)
+        target = getattr(module, attribute, None)
+    except Exception:
+        return None
+    if target is None or not callable(target):
+        return None
+    try:
+        signature = inspect.signature(target)
+    except (TypeError, ValueError):
+        return None
+    if any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    ):
+        return None
+    return tuple(signature.parameters)
+
+
+def qubit_keyword_mismatches(package_root: Path | None = None) -> tuple[str, ...]:
+    """Call sites that pass a wire- or qubit-named keyword the callee rejects.
+
+    This is the defect class the other five surfaces are structurally blind to. A
+    ledger records *declarations*, so `observable_wire` leaving a signature is a
+    retirement the gate can see; the caller thirty files away that still writes
+    `observable_wire=` is not a site any ledger holds, and nothing in the package's
+    own imports fails until that branch actually runs. Rewording the declaration is
+    therefore not the last step of a rename -- finding every caller is.
+
+    Both spellings are checked, because the same edit can lag in either direction:
+    a caller can be left on the retired `wire` spelling, or written against a
+    `qubit` spelling that has not landed. Only keywords carrying the vocabulary are
+    reported, so this stays the migration's own question and does not become a
+    general unused-keyword audit.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    findings: list[str] = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parent).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        # A relative import resolves against the *containing* package. For a
+        # regular module that is its dotted name minus the last component; for an
+        # `__init__.py` the module's dotted name already *is* the package, so the
+        # extra rpartition there would resolve `flagquantum.a.__init__`'s `from .b`
+        # as `flagquantum.b` instead of `flagquantum.a.b`.
+        dotted = relative.removesuffix(".py").replace("/", ".")
+        if dotted.endswith(".__init__"):
+            package = dotted[: -len(".__init__")]
+        else:
+            package = dotted.rpartition(".")[0]
+        aliases = _import_aliases(tree, package)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            target_path = _callee_path(node.func, aliases)
+            if target_path is None:
+                continue
+            candidates = [
+                keyword.arg
+                for keyword in node.keywords
+                if keyword.arg is not None
+                and ("wire" in keyword.arg or "qubit" in keyword.arg)
+            ]
+            if not candidates:
+                continue
+            accepted = _accepted_keywords(target_path)
+            if accepted is None:
+                continue
+            for name in candidates:
+                if name not in accepted:
+                    findings.append(
+                        f"{relative}:{node.lineno}::{target_path}::{name}"
+                        f" -- callee accepts {', '.join(accepted)}"
+                    )
+    return tuple(sorted(findings))
+
+
+def message_strings(package_root: Path | None = None) -> tuple[str, ...]:
 
     root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
     found: list[str] = []
@@ -862,8 +1179,33 @@ def main() -> int:
     )
     for site in definitions.ledgered:
         print(f"  {site.kind:8} {site.identifier} -> {site.replacement}")
+    documentation = documentation_census()
+    print(
+        "documentation surface: "
+        f"{len(documentation.sites)} wire-named keyword arguments written into "
+        f"{len(documentation_files())} tracked Markdown files"
+    )
+    for site, count in sorted(documentation.counts().items()):
+        print(f"  {count:4d}  {site}")
     print("reported but not ledgered:")
     print(f"  {len(message_strings()):4d}  string literals")
+    # Printed after the enforced surfaces, and labelled as a reading rather than a
+    # count, so the two numbers about prose cannot be mistaken for each other. The
+    # keyword line above is what a gate can enforce; this one is what a reader can
+    # see, over every tracked Markdown file rather than the census's subset.
+    rows = prose_noun_census()
+    print("prose noun, reported only (occurrences over every tracked Markdown file):")
+    for bucket, occurrences, files in rows:
+        print(f"  {occurrences:5d}  {files:4d} files  {bucket}")
+    print(f"  {sum(row[1] for row in rows):5d}           total")
+    mismatches = qubit_keyword_mismatches()
+    print(
+        "call sites: "
+        f"{len(mismatches)} wire- or qubit-named keywords passed to a callee that "
+        "rejects them (invariant: 0)"
+    )
+    for finding in mismatches:
+        print(f"  {finding}")
     return 0
 
 

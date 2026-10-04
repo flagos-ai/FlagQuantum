@@ -60,7 +60,7 @@ report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
 path = "benchmarks/cudaq_backend_compare.py"
 status = "measured"
 measures = "Wall-clock and precision comparison of one FlagQuantum JAX kernel against one CUDA-Q target on a matched circuit, observable, dtype, gradient method, warmup, and iteration count."
-first_capture = "On 2026-09-30 on jp-a800-172 and jp-a800-171, one A800-SXM4-80GB per host and CUDA-Q 0.16.0.post1 on both, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured on both hosts: the largest loss deviation was 1.2e-05 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance, and every FlagQuantum timing agreed across hosts to within 10 percent. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.4x at 8 wires to 89x at 22 wires, and that conclusion was insensitive to the warmup count. The FlagQuantum fused value-and-gradient program was faster per call, but its 18-wire ratio moved monotonically from 13.6x to 16.3x between one and five warmups, so an earlier 7.9x reading of the same configuration is withdrawn as under-warmed rather than reproduced."
+first_capture = "On 2026-09-30 on jp-a800-172 and jp-a800-171, one A800-SXM4-80GB per host and CUDA-Q 0.16.0.post1 on both, the FlagQuantum JAX kernel matched CUDA-Q numerically on every configuration measured on both hosts: the largest loss deviation was 1.2e-05 and the largest gradient deviation 1.8e-05 against a 1e-4 tolerance, and every FlagQuantum timing agreed across hosts to within 10 percent. CUDA-Q's nvidia target was faster for forward-only execution at every width, widening from 1.4x at 8 qubits to 89x at 22 qubits, and that conclusion was insensitive to the warmup count. The FlagQuantum fused value-and-gradient program was faster per call, but its 18-qubit ratio moved monotonically from 13.6x to 16.3x between one and five warmups, so an earlier 7.9x reading of the same configuration is withdrawn as under-warmed rather than reproduced."
 payload = "benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json"
 report = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
 
@@ -181,7 +181,7 @@ status = "unsupported"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "ir"
-reason = "Wire count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented."
+reason = "Qubit count is fixed at circuit construction. Runtime allocation is designed in the QuantumIR level and is not implemented."
 
 [[domains.capabilities]]
 id = "control_adjoint_modifiers"
@@ -485,8 +485,8 @@ status = "partial"
 priority = "now"
 dependency_class = "B_open_neutral"
 maturity_ref = "stabilizer_sampling"
-reason = "Both halves of the row now exist in a narrower form. The representation half is closed: a Stim-backed Clifford sampling engine samples a thousand-wire GHZ chain, so the wire counts a dense amplitude store cannot hold are reachable, and Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. The execution half landed as an execution mode: `plan` and `run` reach the engine through `state_mode='stabilizer'` and report a plan, a result, and execution evidence, which `tests/integration/test_stabilizer_execution_mode.py` pins. What remains is narrower than the baseline in three ways: no expectation values over the representation, no noise, and no detector error model connected to it."
-baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values, detector error models, and noisy circuits over the same representation. FlagQuantum reaches its engine through `fq.run` with `state_mode='stabilizer'` and returns samples, but it offers no expectation values over the representation, refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it, and does not connect its detector error model module to the engine."
+reason = "Both halves of the row now exist in a narrower form. The representation half is closed: a Stim-backed Clifford sampling engine samples a thousand-qubit GHZ chain, so the qubit counts a dense amplitude store cannot hold are reachable, and Stim is Apache-2.0 licensed and independent of every NVIDIA component, which is why this was integration rather than research. The execution half landed as an execution mode: `plan` and `run` reach the engine through `options=fq.ExecutionOptions(mode='stabilizer')` and report a plan, a result, and execution evidence, which `tests/integration/test_stabilizer_execution_mode.py` pins. What remains is narrower than the baseline in three ways: no expectation values over the representation, no noise, and no detector error model connected to it."
+baseline_gap = "CUDA-Q reaches its stabilizer backend through the `stim` target and returns the samples as ordinary run output, and it also exposes expectation values, detector error models, and noisy circuits over the same representation. FlagQuantum reaches its engine through `fq.run` with `options=fq.ExecutionOptions(mode='stabilizer')` and returns samples, but it offers no expectation values over the representation, refuses a circuit carrying any noise instruction rather than tracking a Pauli frame through it, and does not connect its detector error model module to the engine."
 evidence = ["flagquantum/simulation/stabilizer/engine.py", "flagquantum/runtime/executors/stabilizer/sampling.py", "tests/team/simulation/test_stabilizer_sampling.py", "tests/integration/test_stabilizer_execution_mode.py", "examples/stabilizer_sampling.py"]
 
 [[domains.capabilities]]
@@ -549,7 +549,7 @@ status = "partial"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
-reason = "Per-gate (`NoiseModel.add(gate_names, channel)`) and per-qubit (`wires=`) static injection both exist, and lowering now refuses a rule that cannot apply. The callback form is absent, and `NoiseRule` carries a `KrausChannel` fixed at construction. A callback cannot be added to `NoiseRule` as it stands: `NoiseModel.identity` is a SHA-256 digest of `to_dict()`, and checkpoint resume and execution-plan identity both bind to it, so a channel chosen by an arbitrary callable would make identity unreproducible. Any such rule must be registered under a declared name and parameterization before it can participate in a model identity."
+reason = "Per-gate (`NoiseModel.add(gate_names, channel)`) and per-qubit (`qubits=`) static injection both exist, and lowering now refuses a rule that cannot apply. The callback form is absent, and `NoiseRule` carries a `KrausChannel` fixed at construction. A callback cannot be added to `NoiseRule` as it stands: `NoiseModel.identity` is a SHA-256 digest of `to_dict()`, and checkpoint resume and execution-plan identity both bind to it, so a channel chosen by an arbitrary callable would make identity unreproducible. Any such rule must be registered under a declared name and parameterization before it can participate in a model identity."
 
 [[domains.capabilities]]
 id = "batched_trajectory"

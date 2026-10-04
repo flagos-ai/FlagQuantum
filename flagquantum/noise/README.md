@@ -22,7 +22,7 @@ from flagquantum.noise import NoiseModel, ReadoutError
 readout = ReadoutError(((0.9, 0.1), (0.2, 0.8)))
 model = NoiseModel().add_readout(0, readout)
 observed = model.apply_readout_probabilities(
-    torch.tensor([1.0, 0.0]), n_wires=1
+    torch.tensor([1.0, 0.0]), n_qubits=1
 )
 torch.testing.assert_close(observed, torch.tensor([0.9, 0.1]))
 
@@ -33,7 +33,7 @@ assert restored.identity == model.identity
 For a channel change, edit `channels.py` and verify an analytic state or expectation
 in `tests/test_noise.py`. For serialization changes, exercise both a valid round
 trip and malformed inputs in `tests/unit/test_noise_deserialization.py`. Restoring
-a model must enforce the same wire-count and probability constraints as direct
+a model must enforce the same qubit-count and probability constraints as direct
 construction. Changes to serialized schemas or identity semantics require the
 repository's contract review process.
 

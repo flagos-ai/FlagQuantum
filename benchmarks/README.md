@@ -249,10 +249,10 @@ On this measured task, FlagQuantum is 1.468x faster than the same-run PennyLane
 Lightning bridge; the inapplicable local-brickwork control remains explicit.
 The adaptive dense-width follow-up is documented in
 [`BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md).
-It selects six-wire dense groups for complex128 batches at 18–19 qubits,
+It selects six-qubit dense groups for complex128 batches at 18–19 qubits,
 records a 1.379x focused rollback speedup on local brickwork, and measures
 FlagQuantum 1.241x faster than the same-run PennyLane Lightning bridge while
-retaining the explicit four-wire rollback and applicability boundary.
+retaining the explicit four-qubit rollback and applicability boundary.
 The terminal fused-rotation follow-up is documented in
 [`BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md).
 It records a 1.128x focused rollback speedup on the 18-qubit, batch-32 Dense
@@ -371,17 +371,17 @@ flagquantum-benchmark run statevector_cpu_paths \
   --json-output benchmarks/results/local/statevector_cpu_paths.json
 ```
 
-It measures a rotation chain, a diagonal chain, a fused two-wire diagonal chain,
+It measures a rotation chain, a diagonal chain, a fused two-qubit diagonal chain,
 a CX ladder, a mixed chain, and joint marginal probabilities separately, records
 the engine's own runtime statistics per case, and exits non-zero when a case
 stops matching its reference. Restrict a run with `--cases`, control the
 intra-op thread count with `--threads`, and lower `--n-wires`/`--layers` for a
 smoke run.
 
-The two-wire diagonal chain repeats one `cz` pair per layer rather than walking
+The two-qubit diagonal chain repeats one `cz` pair per layer rather than walking
 a ladder, because two-qubit regions only fuse when consecutive gates share the
-identical wire tuple. It is the case that separates the diagonal kernel from the
-dense one where the single-wire kernel cannot reach: a two-wire region is
+identical qubit tuple. It is the case that separates the diagonal kernel from the
+dense one where the single-qubit kernel cannot reach: a two-qubit region is
 outside that kernel's domain.
 
 Ratios computed from that payload share one host, one input, and one warmup
@@ -406,7 +406,7 @@ only when that block agrees, and a switch that is off by default reads as
 # Default state: the pre-existing kernels.
 flagquantum-benchmark run statevector_cpu_paths \
   --cases rotation_chain --json-output /tmp/off.json
-# The same case with the opt-in elementwise single-wire kernel.
+# The same case with the opt-in elementwise single-qubit kernel.
 FQ_CPU_SINGLE_WIRE_ELEMENTWISE=1 flagquantum-benchmark run statevector_cpu_paths \
   --cases rotation_chain --json-output /tmp/on.json
 ```

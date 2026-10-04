@@ -36,7 +36,7 @@ performed positive communication, reported `sharded_across_ranks`, and kept
 | 4 | `3.00e-8` | `5.72e-17` | `2.22e-16` | `0.00` |
 | 8 | `6.01e-8` | `1.67e-16` | `3.33e-16` | `0.00` |
 
-The 24-wire capacity invariant retained 16,777,216 total amplitudes without a
+The 24-qubit capacity invariant retained 16,777,216 total amplitudes without a
 CPU reference or full-state gather. For complex128, local owned state decreased
 from 128 MiB at two ranks to 64 MiB at four ranks and 32 MiB at eight ranks.
 The corresponding per-rank runtime-accounted state/scratch/workspace values

@@ -63,8 +63,8 @@ import flagquantum.noise as fqn
 
 n_qubits = 24
 circuit = fq.Circuit(n_qubits).h(0)
-for wire in range(n_qubits - 1):
-    circuit.cx(wire, wire + 1)
+for qubit in range(n_qubits - 1):
+    circuit.cx(qubit, qubit + 1)
 
 noise = (
     fqn.NoiseModel()
@@ -111,7 +111,7 @@ threshold, bond dimension, or cutoff must be controlled directly.
 Users keep the same circuit API, but circuit structure matters after the
 planner selects MPS:
 
-- Put qubits that interact frequently next to each other in logical-wire order.
+- Put qubits that interact frequently next to each other in logical-qubit order.
   Nearest-neighbour two-qubit gates are the most MPS-friendly; distant gates
   require internal swaps and increase work.
 - Prefer shallow, local-entangling layers. One-dimensional hardware-efficient
@@ -120,7 +120,7 @@ planner selects MPS:
   patterns as high-risk. They can create volume-law entanglement and make the
   required bond dimension exponential.
 - Do not infer difficulty from gate count alone. The important quantity is the
-  entanglement crossing every cut in the chosen wire ordering; reordering
+  entanglement crossing every cut in the chosen qubit ordering; reordering
   logical qubits can change MPS cost substantially without changing the
   algorithm.
 - `shots` only reduces final measurement noise. It does not reduce trajectory
@@ -188,9 +188,9 @@ gate routing, trajectory count, and shots. The stable route uses one CPU process
 and 32 trajectories; public distributed noisy-MPS reduction is not implemented.
 
 For a managed `quafu:<device>-sim` target, the usable qubit count is additionally
-bounded by the logical wires covered by the selected physical-device
+bounded by the logical qubits covered by the selected physical-device
 calibration and by the service's admission policy. FlagQuantum rejects a
-profile that does not cover every logical wire. Consequently the honest
+profile that does not cover every logical qubit. Consequently the honest
 capacity statement is: up to 1,000 qubits are timed for this low-bond noisy GHZ
 workload; every other circuit must be admitted by memory and calibration checks
 and judged from its reported bond dimension and truncation evidence.
@@ -231,12 +231,12 @@ print(sampled_sv.standard_error)
 ```
 
 The state layout is
-`[trajectory_batch, circuit_batch, 2**n_wires]`. Seeded random streams belong
+`[trajectory_batch, circuit_batch, 2**n_qubits]`. Seeded random streams belong
 to global trajectory IDs, so changing `trajectory_batch_size` preserves every
 sampled trajectory. Pauli channels use a state-independent branch fast path;
 amplitude damping uses a branch-state-free specialized kernel, and other Kraus
 channels use batched probability, sampling, application, and normalization.
-Multi-wire Kraus channels are supported by the generic path.
+Multi-qubit Kraus channels are supported by the generic path.
 
 With `mode="auto"`, specifying `trajectories` selects this path when its
 trajectory block satisfies the supplied memory budget. `max_bond` or `cutoff`
@@ -297,7 +297,7 @@ selection = plan_noise_execution_selection(
 )
 ```
 
-A timing is used only when the circuit digest, noise-model identity, wire and
+A timing is used only when the circuit digest, noise-model identity, qubit and
 lowered-channel counts, backend mode, trajectory batch size, and world size
 match. If both eligible trajectory backends match, the measured-time estimate decides; an
 incomplete or mismatched calibration falls back to the analytic policy. The
@@ -548,7 +548,7 @@ square, equal-sized, act on a power-of-two Hilbert space, and satisfy
 Invalid channels fail before compilation or execution.
 
 A rule that cannot apply is refused rather than ignored. Compiler lowering rejects
-a rule naming a wire outside the program width, and it rejects a model whose rules
+a rule naming a qubit outside the program width, and it rejects a model whose rules
 match no instruction in the program at all, naming the gate names the model
 declares and the opcodes the program contains. Partial application stays legal: a
 device model carries the gate vocabulary of the whole device and is routinely
@@ -577,13 +577,13 @@ a collective statistics reduction is available.
 
 `ReadoutError` is a classical true-to-observed confusion matrix. It is kept
 separate from quantum Kraus evolution. `run_noisy_mps` applies configured
-readout rules to its per-wire Z statistics, while
+readout rules to its per-qubit Z statistics, while
 `NoiseModel.apply_readout_probabilities` can transform an explicit ideal
 probability distribution.
 
 ## Calibration-driven timing and idle noise
 
-`DeviceNoiseProfile` stores timestamped per-wire T1/T2/readout calibration and
+`DeviceNoiseProfile` stores timestamped per-qubit T1/T2/readout calibration and
 gate durations in one declared time unit:
 
 ```python
@@ -608,7 +608,7 @@ profile = fqn.DeviceNoiseProfile(
 noise = fqn.NoiseModel.from_device_profile(profile)
 ```
 
-Lowering uses an ASAP wire-clock schedule. It inserts per-wire thermal
+Lowering uses an ASAP qubit-clock schedule. It inserts per-qubit thermal
 relaxation for gate duration, idle gaps before synchronization gates, and
 terminal idle time. Every generated channel records its placement, duration,
 time unit, source gate, and `device_profile_identity`. Missing gate duration or
@@ -703,9 +703,9 @@ definitions rather than introducing a second notion of “accuracy.”
 
 - Density-matrix evolution is exact but requires exponential memory.
 - Batched statevector trajectories support arbitrary gates and single- or
-  multi-wire Kraus channels; large target arity remains exponentially costly.
-- Single-wire MPS channels sample Kraus branches directly in MPS form.
-- Multi-wire MPS channels sample the correct Kraus branch but currently use an
+  multi-qubit Kraus channels; large target arity remains exponentially costly.
+- Single-qubit MPS channels sample Kraus branches directly in MPS form.
+- Multi-qubit MPS channels sample the correct Kraus branch but currently use an
   explicitly dense statevector correctness fallback before rebuilding the MPS.
 - Rank-local trajectory partitioning is semantic parallel ownership, not
   evidence of production multi-GPU scalability.
