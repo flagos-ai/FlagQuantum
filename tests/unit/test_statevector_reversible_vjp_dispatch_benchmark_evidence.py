@@ -162,7 +162,9 @@ def test_run_validator_enforces_each_default_window_floor(
     ]
     payload["cases"][0][baseline]["median_seconds_per_invocation"] = 1.98e-4
     payload["cases"][0][speedup_field] = 1.98e-4 / 2e-4
-    with pytest.raises(ValueError, match=f"misses the {speedup_field} performance floor"):
+    with pytest.raises(
+        ValueError, match=f"misses the {speedup_field} performance floor"
+    ):
         validate_run(payload)
 
 
@@ -177,12 +179,12 @@ def test_aggregate_selects_the_default_window() -> None:
         required_hosts=("jp-a800-171", "jp-a800-172"),
     )
     validate_evidence(payload)
-    assert payload["minimum_default_window_speedup_over_pytorch_eager"] == pytest.approx(
-        1.3
-    )
-    assert payload["minimum_default_window_speedup_over_torch_compile"] == pytest.approx(
-        1.3
-    )
+    assert payload[
+        "minimum_default_window_speedup_over_pytorch_eager"
+    ] == pytest.approx(1.3)
+    assert payload[
+        "minimum_default_window_speedup_over_torch_compile"
+    ] == pytest.approx(1.3)
     assert payload["default_window_passed"]
     assert payload["dispatch_decision"] == "eligible_for_default"
 
@@ -190,9 +192,7 @@ def test_aggregate_selects_the_default_window() -> None:
 def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
     validate_evidence(payload)
-    assert payload["source_revision"] == (
-        "e0638c00870740d9808c64107c3e701252e6e6ce"
-    )
+    assert payload["source_revision"] == ("e0638c00870740d9808c64107c3e701252e6e6ce")
     assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
     assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
     assert payload["minimum_default_window_speedup_over_pytorch_eager"] > 1.0
