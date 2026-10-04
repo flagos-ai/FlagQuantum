@@ -236,7 +236,7 @@ def _compose_noise_model(
             )
         model.add(gate_name, channels[0])
     for (gate_name, wires), channel in sorted(scoped.items()):
-        model.add(gate_name, channel, wires=wires)
+        model.add(gate_name, channel, qubits=wires)
     for wires in sorted(readout):
         error = readout[wires]
         if isinstance(error, CorrelatedReadoutError):

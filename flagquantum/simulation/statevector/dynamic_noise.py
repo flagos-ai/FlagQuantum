@@ -18,7 +18,7 @@ def apply_dynamic_bit_flip(
 ) -> tuple[torch.Tensor, int]:
     """Sample one bit-flip channel independently for each trajectory row."""
 
-    if channel.name != "bit_flip" or channel.n_wires != 1:
+    if channel.name != "bit_flip" or channel.n_qubits != 1:
         raise ValueError("dynamic noise kernel supports one-qubit bit-flip channels")
     if state.ndim != 2:
         raise ValueError("dynamic noise state must have trajectory and amplitude axes")

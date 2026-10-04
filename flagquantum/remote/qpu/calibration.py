@@ -158,7 +158,7 @@ def quafu_noise_model_from_chip_info(
             model.add(
                 one_qubit_gates,
                 depolarizing_channel(probability),
-                wires=(logical_wire,),
+                qubits=(logical_wire,),
             )
     for logical_pair, fidelity in selected_couplers:
         probability = min(1.0, 1.25 * (1.0 - fidelity))
@@ -166,7 +166,7 @@ def quafu_noise_model_from_chip_info(
             model.add(
                 "cz",
                 two_qubit_depolarizing_channel(probability),
-                wires=logical_pair,
+                qubits=logical_pair,
             )
     return model
 

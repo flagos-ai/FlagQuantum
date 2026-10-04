@@ -37,8 +37,8 @@ def _physical_evidence_v1(result: ArtifactCompilationResult) -> PhysicalPlanEvid
         )
     coupling = (
         None
-        if plan.coupling_n_wires is None
-        else CouplingEvidence(plan.coupling_n_wires, plan.coupling_edges)
+        if plan.coupling_n_qubits is None
+        else CouplingEvidence(plan.coupling_n_qubits, plan.coupling_edges)
     )
     return PhysicalPlanEvidence(
         source_circuit_hash=plan.source_circuit_hash,
@@ -54,7 +54,7 @@ def _physical_evidence_v1(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 routed_instruction_index=item.routed_instruction_index,
                 source_instruction_index=item.source_instruction_index,
                 phase=item.phase,
-                physical_wires=item.physical_wires,
+                physical_wires=item.physical_qubits,
                 layout_before=item.layout_before,
                 layout_after=item.layout_after,
             )
@@ -68,8 +68,8 @@ def _physical_evidence_v1(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 native_replacement_ordinal=item.native_replacement_ordinal,
                 origin=item.origin,
                 opcode=item.opcode,
-                logical_wires=item.logical_wires,
-                physical_wires=item.physical_wires,
+                logical_wires=item.logical_qubits,
+                physical_wires=item.physical_qubits,
                 layer=item.layer,
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
@@ -90,7 +90,7 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
     plan = result.physical_plan
     if (
         plan.coupling_direction_semantics != "directed_cx"
-        or plan.coupling_n_wires is None
+        or plan.coupling_n_qubits is None
         or plan.topology_identity is None
         or plan.topology_legalization_identity is None
         or plan.direction_legalization_identity is None
@@ -104,7 +104,7 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
         target_snapshot_id=plan.target_snapshot_id,
         topology_identity=plan.topology_identity,
         coupling=DirectedCouplingEvidence(
-            plan.coupling_n_wires,
+            plan.coupling_n_qubits,
             plan.coupling_edges,
         ),
         initial_logical_to_physical=plan.initial_logical_to_physical,
@@ -115,7 +115,7 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 routed_instruction_index=item.routed_instruction_index,
                 source_instruction_index=item.source_instruction_index,
                 phase=item.phase,
-                physical_wires=item.physical_wires,
+                physical_wires=item.physical_qubits,
                 layout_before=item.layout_before,
                 layout_after=item.layout_after,
             )
@@ -132,8 +132,8 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 direction_rewrite=item.direction_rewrite,
                 origin=item.origin,
                 opcode=item.opcode,
-                logical_wires=item.logical_wires,
-                physical_wires=item.physical_wires,
+                logical_wires=item.logical_qubits,
+                physical_wires=item.physical_qubits,
                 layer=item.layer,
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
@@ -157,7 +157,7 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
     if (
         plan.version != "3.0"
         or plan.coupling_direction_semantics != "directed_cx"
-        or plan.coupling_n_wires is None
+        or plan.coupling_n_qubits is None
         or plan.topology_identity is None
         or plan.topology_legalization_identity is None
         or plan.direction_legalization_identity is None
@@ -171,7 +171,7 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
         physical_circuit_hash=plan.program.content_hash,
         target_snapshot_id=plan.target_snapshot_id,
         topology_identity=plan.topology_identity,
-        coupling=DirectedCouplingEvidence(plan.coupling_n_wires, plan.coupling_edges),
+        coupling=DirectedCouplingEvidence(plan.coupling_n_qubits, plan.coupling_edges),
         initial_logical_to_physical=plan.initial_logical_to_physical,
         pre_restore_logical_to_physical=plan.pre_restore_logical_to_physical,
         final_logical_to_physical=plan.final_logical_to_physical,
@@ -180,7 +180,7 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 routed_instruction_index=item.routed_instruction_index,
                 source_instruction_index=item.source_instruction_index,
                 phase=item.phase,
-                physical_wires=item.physical_wires,
+                physical_wires=item.physical_qubits,
                 layout_before=item.layout_before,
                 layout_after=item.layout_after,
                 physical_to_logical_before=item.physical_to_logical_before,
@@ -199,8 +199,8 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 direction_rewrite=item.direction_rewrite,
                 origin=item.origin,
                 opcode=item.opcode,
-                logical_wires=item.logical_wires,
-                physical_wires=item.physical_wires,
+                logical_wires=item.logical_qubits,
+                physical_wires=item.physical_qubits,
                 layer=item.layer,
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
@@ -215,7 +215,7 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
         schedule_depth=plan.schedule_depth,
         maximum_parallel_width=plan.maximum_parallel_width,
         critical_path=plan.critical_path,
-        logical_wire_count=plan.logical_wire_count,
+        logical_wire_count=plan.logical_qubit_count,
         physical_slot_count=plan.physical_slot_count,
         initial_physical_to_logical=plan.initial_physical_to_logical,
         pre_restore_physical_to_logical=plan.pre_restore_physical_to_logical,

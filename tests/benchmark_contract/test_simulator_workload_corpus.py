@@ -53,11 +53,11 @@ def test_feature_extraction_reports_depth_connectivity_and_fingerprint() -> None
 
 def test_workload_corpus_is_deterministic_and_structurally_distinct() -> None:
     first_hashes = {
-        name: build_workload(name, n_wires=6).to_ir().content_hash
+        name: build_workload(name, n_qubits=6).to_ir().content_hash
         for name in WORKLOAD_NAMES
     }
     second_hashes = {
-        name: build_workload(name, n_wires=6).to_ir().content_hash
+        name: build_workload(name, n_qubits=6).to_ir().content_hash
         for name in WORKLOAD_NAMES
     }
 
@@ -66,7 +66,7 @@ def test_workload_corpus_is_deterministic_and_structurally_distinct() -> None:
 
 
 def test_swap_routing_workload_has_declared_structure() -> None:
-    ir = build_workload("swap_routing_statevector", n_wires=22).to_ir()
+    ir = build_workload("swap_routing_statevector", n_qubits=22).to_ir()
 
     histogram: dict[str, int] = {}
     for instruction in ir.instructions:
@@ -79,7 +79,7 @@ def test_swap_routing_workload_has_declared_structure() -> None:
 def test_native_only_corpus_smoke_records_real_timings() -> None:
     payload = run_benchmark(
         workloads=WORKLOAD_NAMES,
-        n_wires=(4,),
+        n_qubits=(4,),
         engines=("flagquantum_native",),
         threads=1,
         warmup=0,
@@ -104,7 +104,7 @@ def test_native_only_corpus_smoke_records_real_timings() -> None:
 def _comparison_baseline() -> tuple[dict[str, Any], dict[str, Any]]:
     measured = run_benchmark(
         workloads=("random_clifford_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         engines=("flagquantum_native",),
         threads=1,
         warmup=0,

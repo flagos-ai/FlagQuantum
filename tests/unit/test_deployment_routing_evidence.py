@@ -44,7 +44,7 @@ def test_valid_deployment_routing_plan_round_trips() -> None:
     assert (
         validate_deployment_routing_plan(
             plan,
-            n_wires=5,
+            n_qubits=5,
             coupling_map=coupling,
         )
         == plan
@@ -82,7 +82,7 @@ def test_deployment_routing_plan_rejects_tampering(mutation, message: str) -> No
     with pytest.raises(DeploymentRoutingEvidenceError, match=message):
         validate_deployment_routing_plan(
             tampered,
-            n_wires=5,
+            n_qubits=5,
             coupling_map=coupling,
         )
 

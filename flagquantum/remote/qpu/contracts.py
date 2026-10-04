@@ -108,7 +108,7 @@ class QuantumProvider:
         raise NotImplementedError(f"{self.provider} list_devices is not implemented")
 
     def discover_backends(
-        self, n_wires: int | None = None
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
         """Deprecated compatibility alias for :meth:`list_devices`."""
 
@@ -118,7 +118,7 @@ class QuantumProvider:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.list_devices(n_qubits=n_wires)
+        return self.list_devices(n_qubits=n_qubits)
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         raise NotImplementedError(f"{self.provider} submit is not implemented")

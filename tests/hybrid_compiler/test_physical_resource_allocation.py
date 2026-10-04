@@ -156,7 +156,7 @@ def test_idle_slot_routes_interaction_and_restores_logical_result_slots() -> Non
 
     assert result.program.n_wires == 3
     assert result.program.measurements[0].wires == (0, 2)
-    assert topology.logical_wire_count == 2
+    assert topology.logical_qubit_count == 2
     assert topology.physical_slot_count == 3
     assert topology.initial_logical_to_physical == (0, 2)
     assert topology.logical_result_physical_slots == (0, 2)
@@ -221,7 +221,7 @@ def test_allocation_validation_and_unimplemented_contracts_fail_closed() -> None
 
     plan = build_physical_circuit_plan(result, coupling_map=graph)
     assert plan.version == "3.0"
-    assert plan.logical_wire_count == 2
+    assert plan.logical_qubit_count == 2
     assert plan.physical_slot_count == 3
     assert plan.initial_logical_to_physical == (0, 2)
     assert plan.pre_restore_logical_to_physical == (1, 2)
@@ -255,7 +255,7 @@ def test_allocation_validation_and_unimplemented_contracts_fail_closed() -> None
         )
     with pytest.raises(PhysicalPlanError, match="allocation evidence"):
         replace(plan, final_physical_to_logical=(None, 0, 1), plan_identity="")
-    with pytest.raises(TargetLegalizationError, match="inject every logical wire"):
+    with pytest.raises(TargetLegalizationError, match="inject every logical qubit"):
         legalize_circuit_for_target(
             source,
             backend="pytorch",

@@ -58,14 +58,14 @@ def test_an_arbitrary_operator_count_is_accepted() -> None:
     channel = _pauli_channel(0.4)
 
     assert len(channel.kraus) == 4
-    assert channel.n_wires == 1
+    assert channel.n_qubits == 1
 
 
 def test_the_completeness_error_is_compared_at_the_documented_tolerance() -> None:
     """1.9e-6 is accepted and 2.1e-6 is refused, which brackets 2e-6."""
 
     accepted = KrausChannel("near", (_scaled_identity(1.9e-6),))
-    assert accepted.n_wires == 1
+    assert accepted.n_qubits == 1
 
     with pytest.raises(ValueError, match="trace-preserving"):
         KrausChannel("far", (_scaled_identity(2.1e-6),))
@@ -89,12 +89,12 @@ def test_a_two_qubit_dimension_is_accepted() -> None:
 
     channel = KrausChannel("identity", (torch.eye(4, dtype=_COMPLEX),))
 
-    assert channel.n_wires == 2
+    assert channel.n_qubits == 2
 
 
 def test_a_zero_width_operator_is_refused() -> None:
     """A 0x0 tensor passes the square and finiteness checks, so only the size
-    check refuses it; accepting it would give a channel of ``n_wires == -1``."""
+    check refuses it; accepting it would give a channel of ``n_qubits == -1``."""
 
     with pytest.raises(ValueError, match="positive power of two"):
         KrausChannel("zero", (torch.empty((0, 0), dtype=_COMPLEX),))

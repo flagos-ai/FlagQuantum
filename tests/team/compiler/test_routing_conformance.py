@@ -664,7 +664,7 @@ def _replacement_router(
     metadata["routing"] = {
         "schema": "flagquantum_routing_plan_v1",
         "strategy": strategy,
-        "coupling_n_wires": device.n_wires,
+        "coupling_n_wires": device.n_qubits,
         "coupling_edges": device.edges,
         "initial_logical_to_physical": tuple(range(ir.n_wires)),
         "pre_restore_logical_to_physical": tuple(range(ir.n_wires)),

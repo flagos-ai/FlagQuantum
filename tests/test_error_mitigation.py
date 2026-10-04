@@ -325,7 +325,7 @@ def _overrotation_scaling(model: NoiseModel, factor: float) -> NoiseModel:
                 axis=str(declared["axis"]),
                 dtype=rule.channel.kraus[0].dtype,
             ),
-            wires=rule.wires,
+            qubits=rule.wires,
         )
     return scaled
 

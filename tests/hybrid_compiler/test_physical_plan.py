@@ -148,7 +148,7 @@ def test_plan_replays_mapping_and_links_every_physical_instruction() -> None:
         for transition in plan.mapping_transitions
     )
     assert all(
-        len(item.physical_wires) != 2 or coupling.has_edge(*item.physical_wires)
+        len(item.physical_qubits) != 2 or coupling.has_edge(*item.physical_qubits)
         for item in plan.instructions
     )
     assert tuple(item.source_instruction_index for item in plan.instructions) == (

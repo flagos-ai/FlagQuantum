@@ -21,7 +21,7 @@ def _validate_gate_noise_rules(
             raise ValueError(
                 "dynamic measurement noise must use independent readout rules"
             )
-        if rule.channel.name != "bit_flip" or rule.channel.n_wires != 1:
+        if rule.channel.name != "bit_flip" or rule.channel.n_qubits != 1:
             raise ValueError(
                 "dynamic execution currently supports one-wire bit-flip channels only"
             )
