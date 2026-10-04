@@ -171,7 +171,8 @@ label are **not** renamed, because the module that writes them is outside this
 slice's reach: `runtime/executors/statevector/reverse.py` and
 `runtime/executors/jax/kernel.py` both still emit `"observable_wires"`, and the
 tests that read those summaries are unchanged. Renaming one and not the other is
-the honest outcome of 谁声明谁改名 — a slice may rename what it declares, not what
+the honest outcome of the rule that whoever declares a name renames it — a slice
+may rename what it declares, not what
 it reads.
 
 ## Renamed refusal messages
