@@ -173,6 +173,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("sharded_statevector",),
         directions=("vjp",),
         addressing=("distributed",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-004-A",
