@@ -127,6 +127,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         gradient_tests=(
             "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         ),
+        capability_tests=(
+            "tests/unit/test_statevector_reverse.py::test_local_adjoint_vjp_decision_binds_catalog_identity",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_adjoint_vjp_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-GR-002-A",
