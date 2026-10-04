@@ -24,7 +24,7 @@ supporting standards, and they are not interchangeable:
 
 | Layer | Aligned to | Why not the others |
 | --- | --- | --- |
-| Product surface — objects, entry points, code families, decoders | **CUDA-Q QEC** (`cudaq-qec`, now `NVIDIA/cudaqx` `libs/qec`) | It is the only live framework with a QEC library of this shape, and `contracts/cudaq-parity-matrix.toml` already names it as the baseline. |
+| Product surface — objects, entry points, code families, decoders | **CUDA-Q QEC** (`cudaq-qec`, the `NVIDIA/cudaq-qec` repository and its `libs/qec`) | It is the only live framework with a QEC library of this shape, and `contracts/cudaq-parity-matrix.toml` already names it as the baseline. |
 | Detector error model bytes | **Stim** DEM text, stim 1.16.0 | The format is stim's. Aligning it to CUDA-Q would mean inventing a second format nobody else reads. |
 | Decoder correctness | **PyMatching** as cross-check, never as authority | Correctness evidence has to be independent of the implementation under test; the self-implemented matcher is the authority. |
 | Logical operations (`logical.*`) | **Qualtran**, as an adaptation | CUDA-Q's `logical.*` is a preview namespace of patch/gadget/protocol records. The semantic core is the target; the preview records are not. |
@@ -53,7 +53,7 @@ from the matrix's `priority`, the row states why.
 | --- | --- | --- | --- | --- |
 | `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name and each reporting its X-type and Z-type ancilla bands, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
-| `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
+| `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
@@ -67,7 +67,7 @@ from the matrix's `priority`, the row states why.
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
-Everything a `supported` row would need is deliberately *not* claimed here. Three
+Everything a `supported` row would need is deliberately *not* claimed here. Four
 rows are `aligned` and the rest are not, and an `aligned` row is one whose
 upstream surface has no item left unaccounted for, symbol by symbol. The checker
 enforces the floor of that bar rather than the bar itself: an `aligned` row must
@@ -810,6 +810,25 @@ refuses.
    both carry it, and the baseline document lists the component release line
    moving as a refresh trigger.
 
+6. **The upstream tree the field rows were read from was renamed, and its
+   negatives were unpinned.** The contract recorded the source read as
+   "NVIDIA/cudaqx main libs/qec". That name now redirects: the API answers 301
+   and the git remote resolves it to `NVIDIA/cudaq-qec`, which is where the tree
+   lives, and `libs/qec` is still its path inside. **Landed as** a corrected
+   baseline name plus the revision the read was taken at,
+   `8df583e6` (the tree the checkout resolved to), and the same correction in
+   the parity contract's `component` string, so the two contracts name the
+   repository that serves them rather than one that forwards to it. The
+   revision is what made the three `UNVERIFIED` marks in this contract
+   reviewable rather than permanent: each was a negative taken over a moving
+   source — no `extract_syndrome` in the cudaq-qec tree, no `for-stim-users`
+   page in its documentation, no stim-text writer in its headers, library,
+   bindings or examples — and each is now stated against a revision a reader can
+   take, so the marks come off and `qec_syndrome_extraction_owner` closes.
+   The rule the mark encoded is kept: it is held by a mutation that plants it
+   rather than by a row that happens to carry it, so settling the last negative
+   could not quietly retire the check.
+
 The surface attributions are machine-checked: an attributed item must appear
 verbatim in exactly one domain surface list, must name a declared owner, and
 must state its consequence, so the table cannot drift from the inventory it
@@ -837,7 +856,10 @@ distribution. Per row it checks:
   `domain_items` string is a CUDA-Q surface item the matrix actually records;
 - `partial` and `absent` rows state a `next_action`; `absent` and `out_of_scope`
   rows prove the gap; every row states a `fail_closed`; a row marked
-  `provenance_unverified` says `UNVERIFIED` in its own note;
+  `provenance_unverified` says `UNVERIFIED` in its own note, and no row carries
+  that mark because every upstream negative here is pinned to the revision it
+  was taken at, so the rule is held by a mutation that plants the mark rather
+  than by an example;
 - the header's component version and release index are the ones
   `contracts/cudaq-parity-matrix.toml` records, and a contract that records no
   provenance fails the header rather than passing it, so the `provenance_limit`

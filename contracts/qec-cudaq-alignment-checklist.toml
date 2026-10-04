@@ -15,8 +15,10 @@ checked_by = "tools/check_qec_cudaq_alignment.py"
 # are two different artifacts and the parity matrix records them as one.
 # ---------------------------------------------------------------------------
 
-# Product surface: the cudaq-qec library (NVIDIA/cudaqx libs/qec).
-baseline = "CUDA-Q QEC (the cudaq-qec library, NVIDIA/cudaqx libs/qec)"
+# Product surface: the cudaq-qec library (NVIDIA/cudaq-qec, which is where
+# libs/qec lives; the repository was named NVIDIA/cudaqx when this checklist was
+# written and the old name now redirects to the new one).
+baseline = "CUDA-Q QEC (the cudaq-qec library, NVIDIA/cudaq-qec libs/qec)"
 baseline_versions = ["0.15.1", "0.16.0.post1"]
 baseline_versions_source = "contracts/cudaq-parity-matrix.toml:cudaq_versions"
 baseline_docs = "https://nvidia.github.io/cudaq-qec/ (documented as v0.8.0)"
@@ -46,11 +48,19 @@ format_standards = [
 
 # Provenance, and the limit of it. Row baselines quote the recorded CUDA-Q
 # surface of the quantum_error_correction domain, measured from a live CUDA-Q
-# 0.16.0 install. Field baselines were re-read from NVIDIA/cudaqx main
+# 0.16.0 install. Field baselines were re-read from the cudaq-qec source tree
 # (libs/qec/python, libs/qec/lib, docs/sphinx) and from the CUDA-Q core API docs
 # when this checklist was written.
-provenance = "rows: contracts/cudaq-parity-matrix.toml (live 0.16.0 install reading); fields: NVIDIA/cudaqx main libs/qec + CUDA-Q core API docs (source re-read)"
-provenance_limit = "No cudaq-qec release maps to the pinned CUDA-Q versions in this repository (the component's release line runs 0.1.0 to 0.8.0, the repository pins 0.15.1 and 0.16.0.post1, and the two lines are disjoint), so a field row proves the upstream surface exists today, not that it exists at the pinned baseline. The same limit is recorded as provenance_limit in contracts/cudaq-parity-matrix.toml, and the component version and release index above are checked against that contract rather than asserted here. Rows are marked provenance_unverified where the pinned-baseline form is not the form that was read."
+#
+# The tree that source read names has been renamed since: the API answers 301
+# for NVIDIA/cudaqx and the git remote resolves it to NVIDIA/cudaq-qec, which is
+# where libs/qec lives now, so the source read is recorded against the name that
+# serves it. The revision read is
+# 8df583e621ed39c3af08e0373aa3d51a6c0b9d21, the tree the checkout resolved to
+# when the negatives below were settled; a later reader reproduces the reading
+# by taking that revision rather than a branch name that moves.
+provenance = "rows: contracts/cudaq-parity-matrix.toml (live 0.16.0 install reading); fields: cudaq-qec source tree (NVIDIA/cudaq-qec, formerly NVIDIA/cudaqx) at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 + CUDA-Q core API docs (source re-read)"
+provenance_limit = "No cudaq-qec release maps to the pinned CUDA-Q versions in this repository (the component's release line runs 0.1.0 to 0.8.0, the repository pins 0.15.1 and 0.16.0.post1, and the two lines are disjoint), so a field row proves the upstream surface exists today, not that it exists at the pinned baseline. The same limit is recorded as provenance_limit in contracts/cudaq-parity-matrix.toml, and the component version and release index above are checked against that contract rather than asserted here. A row carries provenance_unverified when its upstream side is a search result the row does not pin to a revision, because such a negative cannot be repeated from what the row states; naming the revision the search was taken at is what removes the mark, so no row carries it at this revision of the contract and the rule stays enforced by the tool rather than by an example."
 
 status_values = ["aligned", "partial", "absent", "out_of_scope"]
 verdict_values = ["equivalent", "renamed", "reshaped", "absent", "extra"]
@@ -149,13 +159,13 @@ fail_closed = "The row's own surface is closed and the five absences are what ke
 
 [[rows]]
 id = "qec_syndrome_extraction_owner"
-status = "partial"
+status = "aligned"
 floor = "now"
 floor_override_reason = "Inventory correction rather than a capability: the matrix lists extract_syndrome as cudaq-qec surface, the confirmed owner is the CUDA-Q Logical preview, and CUDA-Q QEC's own extraction route is sample_memory_circuit. The floor is now because a wrong baseline sends work in the wrong direction, not because anything has to be built."
 domain_items = ["extract_syndrome"]
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
-baseline = "The quantum_error_correction domain's recorded CUDA-Q surface lists extract_syndrome. The confirmed owner of that name is cudaq.logical.extract_syndrome in the CUDA-Q Logical preview, which states it does not simulate, sample or decode and emits no detector error models. CUDA-Q QEC's own extraction routes are sample_memory_circuit / x_sample_memory_circuit / z_sample_memory_circuit and the decoder_context_from_memory_circuit helper; a cudaq-qec function named extract_syndrome was not found. UNVERIFIED at the pinned 0.16.0.post1 install."
+baseline = "The quantum_error_correction domain's recorded CUDA-Q surface lists extract_syndrome. The confirmed owner of that name is cudaq.logical.extract_syndrome in the CUDA-Q Logical preview, which states it does not simulate, sample or decode and emits no detector error models. The name is absent from the cudaq-qec tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 -- a whole-tree search returns no occurrence in its headers, its library sources, its Python bindings, its unittests or its documentation -- and the extraction routes that tree does carry are sample_memory_circuit with its x_ and z_ variants and the decoder_context_from_memory_circuit helper, declared in libs/qec/include/cudaq/qec/experiments.h."
 target = "A syndrome-extraction route named for what it does, and a parity matrix whose surface item names the right owner."
 symbols_present = [
     "flagquantum.qec.sample_memory_circuit",
@@ -175,9 +185,8 @@ evidence = [
     "flagquantum/qec/context.py",
     "contracts/cudaq-parity-matrix.toml",
 ]
-provenance_unverified = true
-next_action = "Both halves of the cudaq-qec extraction route are here now, and the row records the choice that put it on that route. `sample_memory_circuit` is cudaq-qec's name for the sampler, which is why this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`; and `decoder_context_from_memory_circuit` is the helper that hands a decoder the model together with the maps that say where each detector's parity is read, so a caller no longer assembles the pieces beside the sampler. What remains is one inventory edit this row does not own: the matrix's surface item still reads `extract_syndrome`, which is correct as a record of what a live CUDA-Q install lists and is explained by the `extract_syndrome` entry in `baseline.surface_ownership` rather than repaired here. The two per-basis sampler names stay absent on purpose: a basis is a component of the context here rather than a second entry point, so adopting them would be a second way to ask for one thing."
-fail_closed = "The row asserts the correction in prose and marks itself UNVERIFIED; the row turns red if either remaining name appears in the tree, so a future implementation under one of them has to revisit the claim instead of inheriting it. `sample_memory_circuit` and `decoder_context_from_memory_circuit` each left that list the day it was implemented, which is the row working as intended rather than a claim that drifted."
+next_action = "Both halves of the cudaq-qec extraction route are here now, and the row records the choice that put it on that route. `sample_memory_circuit` is cudaq-qec's name for the sampler, which is why this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`; and `decoder_context_from_memory_circuit` is the helper that hands a decoder the model together with the maps that say where each detector's parity is read, so a caller no longer assembles the pieces beside the sampler. Nothing remains on either half. The matrix's surface item still reads `extract_syndrome`, and that is the right text for it: the item is a record of what a live CUDA-Q install lists, and the `extract_syndrome` entry in `baseline.surface_ownership` names its owner as the logical preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec surface to migrate to. Renaming it would make the inventory disagree with the install it records. The two per-basis sampler names stay absent on purpose: a basis is a component of the context here rather than a second entry point, so adopting them would be a second way to ask for one thing. The negative that held this row at `partial` was the provenance of the absence, not the absence itself, and the tree read above is what settles it."
+fail_closed = "The row turns red if either remaining name appears in the tree, so a future implementation under one of them has to revisit the claim instead of inheriting it. `sample_memory_circuit` and `decoder_context_from_memory_circuit` each left that list the day it was implemented, which is the row working as intended rather than a claim that drifted. The upstream negative is held to the named revision rather than to prose: the baseline names the revision it was read at, and the two names the row keeps absent are the two the tree reaches by other means."
 
 [[rows]]
 id = "qec_dem_construction"
@@ -515,7 +524,7 @@ domain_row = "qec_stim_user_migration"
 domain_items = ["for-stim-users migration"]
 dependency_class = "none"
 maturity_ref = "detector_error_model"
-baseline = "The quantum_error_correction domain records a for-stim-users migration surface item, and it now records what that item is not: cudaq-qec ships no for-stim-users page, and the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, with a companion Stim emission page. Both of those state that the layer does no detector annotations, no detector error models and no sampling, and that the trimmed product has no shot-level target to emit toward. The cudaq-qec documentation index and its Python API page were read and carry no for-stim-users page, so the counterpart is cudaq-qec's own Stim surface rather than a page to translate: dem_from_stim_text for reading stim text, dem_sampling for sampling a model, and the decoder framework's Stim DEM entry point. UNVERIFIED whether a cudaq-qec migration page exists that was not reachable."
+baseline = "The quantum_error_correction domain records a for-stim-users migration surface item, and it now records what that item is not: cudaq-qec ships no for-stim-users page, and the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, with a companion Stim emission page. Both of those state that the layer does no detector annotations, no detector error models and no sampling, and that the trimmed product has no shot-level target to emit toward. The question of whether a cudaq-qec migration page exists was settled by reading the whole documentation tree rather than its index: the tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 has no page with that title, and its docs/sphinx directory is the complete document set, because a page that is not in the tree is not published from it. The counterpart is therefore cudaq-qec's own Stim surface rather than a page to translate: dem_from_stim_text for reading stim text, dem_sampling for sampling a model, and the decoder framework's Stim DEM entry point."
 target = "A documented statement of what a stim user finds here, what they do not, and which of their habits transfer."
 symbols_absent = ["stim_migration_guide"]
 negative_search = [
@@ -523,9 +532,8 @@ negative_search = [
     "docs/roadmap/QEC_PARITY.md",
 ]
 evidence = ["flagquantum/qec/README.md", "flagquantum/qec/IMPLEMENTATION.md"]
-provenance_unverified = true
 next_action = "Documentation and conformance work that only becomes meaningful once the DEM surface stops moving. The matrix half of this finding has landed: the surface item's owner is now recorded in the parity contract's `baseline.surface_ownership`, which attributes it to the preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec Surface to migrate to. What remains is the document itself. The material for it already exists: IMPLEMENTATION.md records the stim sweeps, the refusals and the lossy-digit caveat, so a migration document would be that rewritten in a stim user's terms plus an explicit list of stim habits that do not transfer (repeat blocks, comments, skipped indices, ^ separators, error-id correlation)."
-fail_closed = "An absent guide path and an absent roadmap path, so the row turns red when the document is written; the row is marked UNVERIFIED because the negative was a documentation search, not a source read."
+fail_closed = "An absent guide path and an absent roadmap path, so the row turns red when the document is written. The upstream negative is held the same way: the baseline names the revision whose tree was listed, so the absence of a for-stim-users page is a statement about a revision a reader can take rather than about what a documentation index happened to show."
 
 # ---------------------------------------------------------------------------
 # Field rows: the same discipline one level down, over the detector error model
@@ -605,8 +613,7 @@ id = "dem_to_stim_text"
 cudaq_symbol = "no writer found in the cudaq-qec bindings or libraries; stim text in the CUDA-Q stack is produced by cudaq.DEMResult.dem (core, a string property) and by the Logical preview CLI"
 flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.to_stim_text"
 verdict = "extra"
-note = "A negative result on the upstream side, not a mismatch: the format standard is stim, and this repository emits it directly from a model. The row is extra rather than aligned because there is nothing to align to at this layer. UNVERIFIED as a true absence, since it is a search result over fetched sources rather than a documented statement, and the produced-text path upstream lives one layer up in CUDA-Q core."
-provenance_unverified = true
+note = "A negative result on the upstream side, not a mismatch: the format standard is stim, and this repository emits it directly from a model. The row is extra rather than aligned because there is nothing to align to at this layer. The absence is a search over the whole tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 -- no writer of stim detector error model text in libs/qec, its Python bindings, its unittests or its documentation -- where the examples that do produce such text hold a stim object and write str() of it, and the produced-text path in the CUDA-Q stack lives one layer up in CUDA-Q core's DEMResult.dem. The search is a negative rather than a documented statement, which is why the verdict is extra rather than aligned, but it is a negative a reader can repeat at the named revision."
 
 [[fields]]
 id = "dem_from_css_matrices"
