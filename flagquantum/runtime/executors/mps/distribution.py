@@ -67,7 +67,7 @@ def apply_rank_boundary_gate(
 def global_mps_tensor_bytes(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current per-site tensor footprint on every rank."""
     reference = next(iter(state.local_tensors.values()))
-    sizes = torch.zeros(state.n_wires, dtype=torch.int64, device=reference.device)
+    sizes = torch.zeros(state.n_qubits, dtype=torch.int64, device=reference.device)
     for wire, tensor in state.local_tensors.items():
         sizes[wire] = _tensor_nbytes(tensor)
     dist.all_reduce(sizes)
@@ -78,10 +78,10 @@ def global_mps_bond_dimensions(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current internal bond dimensions on every rank."""
     reference = next(iter(state.local_tensors.values()))
     dimensions = torch.zeros(
-        max(0, state.n_wires - 1), dtype=torch.int64, device=reference.device
+        max(0, state.n_qubits - 1), dtype=torch.int64, device=reference.device
     )
     for wire, tensor in state.local_tensors.items():
-        if wire < state.n_wires - 1:
+        if wire < state.n_qubits - 1:
             dimensions[wire] = int(tensor.shape[3])
     dist.all_reduce(dimensions)
     return tuple(int(value) for value in dimensions.tolist())
@@ -94,7 +94,7 @@ def migrate_mps_partitions(
     old = state.ownership
     reference = next(iter(state.local_tensors.values()))
     messages = byte_count = 0
-    for wire in range(state.n_wires):
+    for wire in range(state.n_qubits):
         source = _owner(old, wire)
         target = _owner(ownership, wire)
         if source == target:

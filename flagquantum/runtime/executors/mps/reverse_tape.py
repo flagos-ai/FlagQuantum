@@ -76,42 +76,42 @@ def _prepare_reverse_one_site_layer(
     device: torch.device,
     dtype: torch.dtype,
 ) -> dict[int, tuple[torch.Tensor, torch.Tensor]]:
-    for _, _, wires in layer:
-        wire = wires[0]
-        owner = state.owner(wire)
+    for _, _, qubits in layer:
+        qubit = qubits[0]
+        owner = state.owner(qubit)
         checkpoint_budget.reserve(
-            tensor_nbytes(state.local_tensors[wire]) if state.rank == owner else 0
+            tensor_nbytes(state.local_tensors[qubit]) if state.rank == owner else 0
         )
     buckets: dict[
         tuple[tuple[int, ...], tuple[int, ...]],
         list[tuple[int, Instruction, int]],
     ] = {}
-    for index, instruction, wires in layer:
-        wire = wires[0]
-        if state.owner(wire) != state.rank:
+    for index, instruction, qubits in layer:
+        qubit = qubits[0]
+        if state.owner(qubit) != state.rank:
             continue
         matrix = instruction_matrix_for_mps(
             instruction, bsz=bsz, device=device, dtype=dtype
         )
         if matrix.ndim == 2:
             matrix = matrix.expand(bsz, -1, -1)
-        key = tuple(state.local_tensors[wire].shape), tuple(matrix.shape)
-        buckets.setdefault(key, []).append((index, instruction, wire))
+        key = tuple(state.local_tensors[qubit].shape), tuple(matrix.shape)
+        buckets.setdefault(key, []).append((index, instruction, qubit))
     prepared: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
     for bucket in buckets.values():
-        _, sample, sample_wire = bucket[0]
+        _, sample, sample_qubit = bucket[0]
         sample_matrix = instruction_matrix_for_mps(
             sample, bsz=bsz, device=device, dtype=dtype
         )
         if sample_matrix.ndim == 2:
             sample_matrix = sample_matrix.expand(bsz, -1, -1)
         capacity = site_kernel_bucket_capacity(
-            state.local_tensors[sample_wire], sample_matrix
+            state.local_tensors[sample_qubit], sample_matrix
         )
         for start in range(0, len(bucket), capacity):
             chunk = bucket[start : start + capacity]
             inputs = tuple(
-                state.local_tensors[wire].detach().clone() for _, _, wire in chunk
+                state.local_tensors[qubit].detach().clone() for _, _, qubit in chunk
             )
             with torch.no_grad():
                 outputs = apply_compiled_mps_one_site_bucket(
@@ -121,9 +121,9 @@ def _prepare_reverse_one_site_layer(
                     device=device,
                     dtype=dtype,
                 )
-            for position, (index, _, wire) in enumerate(chunk):
+            for position, (index, _, qubit) in enumerate(chunk):
                 output = outputs[position].detach()
-                state.local_tensors[wire] = output
+                state.local_tensors[qubit] = output
                 prepared[index] = inputs[position], output
     return prepared
 
@@ -139,17 +139,18 @@ def _reserve_reverse_two_site_layer(
     save_exact_factorizations: bool,
 ) -> set[int]:
     reservations = []
-    for index, _, left_wire in layer:
-        left_owner = state.owner(left_wire)
+    for index, _, left_qubit in layer:
+        left_owner = state.owner(left_qubit)
         required = 0
         optional = 0
         if state.rank == left_owner:
             element_size = torch.empty((), dtype=dtype).element_size()
             required = element_size * sum(
-                math.prod(global_shapes[wire]) for wire in (left_wire, left_wire + 1)
+                math.prod(global_shapes[qubit])
+                for qubit in (left_qubit, left_qubit + 1)
             )
-            left_shape = global_shapes[left_wire]
-            right_shape = global_shapes[left_wire + 1]
+            left_shape = global_shapes[left_qubit]
+            right_shape = global_shapes[left_qubit + 1]
             pair_bytes = (
                 bsz * int(left_shape[1]) * 4 * int(right_shape[3]) * element_size
             )
@@ -190,10 +191,10 @@ def _prepare_local_reverse_two_site_layer(
         list[tuple[int, Instruction, int]],
     ] = {}
     for item in layer:
-        _, instruction, left_wire = item
+        _, instruction, left_qubit = item
         if (
-            state.owner(left_wire) != state.rank
-            or state.owner(left_wire + 1) != state.rank
+            state.owner(left_qubit) != state.rank
+            or state.owner(left_qubit + 1) != state.rank
         ):
             continue
         matrix = instruction_matrix_for_mps(
@@ -202,32 +203,32 @@ def _prepare_local_reverse_two_site_layer(
         if matrix.ndim == 2:
             matrix = matrix.expand(bsz, -1, -1)
         shapes = (
-            tuple(state.local_tensors[left_wire].shape),
-            tuple(state.local_tensors[left_wire + 1].shape),
+            tuple(state.local_tensors[left_qubit].shape),
+            tuple(state.local_tensors[left_qubit + 1].shape),
             tuple(matrix.shape),
         )
         buckets.setdefault(shapes, []).append(item)
     prepared: dict[int, _PreparedTwoSite] = {}
     saved: dict[int, _SavedFactorization] = {}
     for bucket in buckets.values():
-        _, sample, sample_wire = bucket[0]
+        _, sample, sample_qubit = bucket[0]
         sample_matrix = instruction_matrix_for_mps(
             sample, bsz=bsz, device=device, dtype=dtype
         )
         if sample_matrix.ndim == 2:
             sample_matrix = sample_matrix.expand(bsz, -1, -1)
         capacity = site_kernel_bucket_capacity(
-            state.local_tensors[sample_wire],
-            state.local_tensors[sample_wire + 1],
+            state.local_tensors[sample_qubit],
+            state.local_tensors[sample_qubit + 1],
             sample_matrix,
         )
         for start in range(0, len(bucket), capacity):
             chunk = bucket[start : start + capacity]
             left_inputs = tuple(
-                state.local_tensors[wire].detach().clone() for _, _, wire in chunk
+                state.local_tensors[qubit].detach().clone() for _, _, qubit in chunk
             )
             right_inputs = tuple(
-                state.local_tensors[wire + 1].detach().clone() for _, _, wire in chunk
+                state.local_tensors[qubit + 1].detach().clone() for _, _, qubit in chunk
             )
             with torch.no_grad():
                 pair_matrices = contract_mps_two_site_bucket(
@@ -252,14 +253,14 @@ def _prepare_local_reverse_two_site_layer(
                 config=state.config,
                 batched_truncated_split=batched_truncation,
             )
-            for (index, _, wire), factorization, left, right in zip(
+            for (index, _, qubit), factorization, left, right in zip(
                 chunk, factorizations, left_inputs, right_inputs, strict=True
             ):
                 pair_leaf, after_left, after_right, info = factorization
                 detached_left = after_left.detach()
                 detached_right = after_right.detach()
-                state.local_tensors[wire] = detached_left
-                state.local_tensors[wire + 1] = detached_right
+                state.local_tensors[qubit] = detached_left
+                state.local_tensors[qubit + 1] = detached_right
                 prepared[index] = left, right, detached_left, detached_right, info
                 if index in selected_factorizations:
                     saved[index] = pair_leaf, after_left, after_right
@@ -279,16 +280,16 @@ def _prepare_prefetched_reverse_two_site_layer(
     prepared: dict[int, _PreparedTwoSite] = {}
     saved: dict[int, _SavedFactorization] = {}
     info: Mapping[str, Any] | None
-    for index, instruction, left_wire in layer:
-        left_owner = state.owner(left_wire)
-        right_owner = state.owner(left_wire + 1)
+    for index, instruction, left_qubit in layer:
+        left_owner = state.owner(left_qubit)
+        right_owner = state.owner(left_qubit + 1)
         if (
             state.rank != left_owner
             or left_owner == right_owner
             or index not in prefetch.received
         ):
             continue
-        before_left = state.local_tensors[left_wire].detach().clone()
+        before_left = state.local_tensors[left_qubit].detach().clone()
         before_right = prefetch.received[index].detach().clone()
         if index in selected_factorizations:
             with torch.no_grad():
@@ -344,9 +345,9 @@ def _collect_reverse_layer_metadata(
     template: torch.Tensor,
 ) -> tuple[dict[int, _ReverseRecordMetadata], int]:
     entries = tuple(
-        (index, state.owner(left_wire))
-        for index, _, left_wire in layer
-        if state.owner(left_wire) != state.owner(left_wire + 1)
+        (index, state.owner(left_qubit))
+        for index, _, left_qubit in layer
+        if state.owner(left_qubit) != state.owner(left_qubit + 1)
     )
     indices = {index for index, _ in entries}
     local_metadata: dict[int, _ReverseRecordMetadata] = {
@@ -470,17 +471,17 @@ class ReverseTapeBuilder:
         """Replay one instruction forward and append the entry it needs."""
 
         self._capture_compiled_layer(instruction_index, instruction)
-        wires = tuple(int(wire) for wire in instruction.wires)
-        if len(wires) not in {1, 2} or (
-            len(wires) == 2 and abs(wires[0] - wires[1]) != 1
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
+        if len(qubits) not in {1, 2} or (
+            len(qubits) == 2 and abs(qubits[0] - qubits[1]) != 1
         ):
             raise NonlocalMPSCompilationError(
                 f"instruction {instruction_index}:{instruction.name} requires MPS routing"
             )
-        if len(wires) == 1:
-            self._record_one_site(instruction_index, instruction, wires)
+        if len(qubits) == 1:
+            self._record_one_site(instruction_index, instruction, qubits)
             return
-        self._record_two_site(instruction_index, instruction, wires)
+        self._record_two_site(instruction_index, instruction, qubits)
 
     def _capture_compiled_layer(
         self,
@@ -512,8 +513,8 @@ class ReverseTapeBuilder:
             and instruction_index not in self.reserved_rxx
         ):
             two_site_layer = tuple(
-                (index, candidate, min(wires))
-                for index, candidate, wires in collect_compiled_mps_layer(
+                (index, candidate, min(qubits))
+                for index, candidate, qubits in collect_compiled_mps_layer(
                     self.ir.instructions, instruction_index
                 )
             )
@@ -584,15 +585,15 @@ class ReverseTapeBuilder:
         self,
         instruction_index: int,
         instruction: Instruction,
-        wires: tuple[int, ...],
+        qubits: tuple[int, ...],
     ) -> None:
         """Record one rank-local one-site gate."""
 
-        if len(wires) == 1:
-            owner = self.state.owner(wires[0])
-            shape = self.global_shapes[wires[0]]
+        if len(qubits) == 1:
+            owner = self.state.owner(qubits[0])
+            shape = self.global_shapes[qubits[0]]
             prospective = (
-                tensor_nbytes(self.state.local_tensors[wires[0]])
+                tensor_nbytes(self.state.local_tensors[qubits[0]])
                 if self.rank == owner
                 else 0
             )
@@ -602,7 +603,7 @@ class ReverseTapeBuilder:
                 if instruction_index in self.precomputed_ry:
                     before, after = self.precomputed_ry.pop(instruction_index)
                 else:
-                    before = self.state.local_tensors[wires[0]].detach().clone()
+                    before = self.state.local_tensors[qubits[0]].detach().clone()
                     matrix = instruction_matrix_for_mps(
                         instruction,
                         bsz=self.bsz,
@@ -611,7 +612,7 @@ class ReverseTapeBuilder:
                     )
                     with torch.no_grad():
                         after = apply_one_mps_tensor(before, matrix)
-                    self.state.local_tensors[wires[0]] = after
+                    self.state.local_tensors[qubits[0]] = after
                 self.payloads[len(self.records)] = _ReversePayload(
                     "one_site", (before,), instruction
                 )
@@ -619,7 +620,7 @@ class ReverseTapeBuilder:
                 build_mps_reverse_tape_record(
                     index=len(self.records),
                     kind="one_site",
-                    wires=wires,
+                    qubits=qubits,
                     compute_owner=owner,
                     owner_ranks=(owner,),
                     parameter_indices=self.instruction_parameter_indices[
@@ -635,15 +636,15 @@ class ReverseTapeBuilder:
         self,
         instruction_index: int,
         instruction: Instruction,
-        wires: tuple[int, ...],
+        qubits: tuple[int, ...],
     ) -> None:
         """Record one nearest-neighbour two-site gate and its metadata."""
 
         info: Mapping[str, Any] | None
         metadata: _ReverseRecordMetadata | None
-        left_wire = min(wires)
-        left_owner, right_owner = self.state.owner(left_wire), self.state.owner(
-            left_wire + 1
+        left_qubit = min(qubits)
+        left_owner, right_owner = self.state.owner(left_qubit), self.state.owner(
+            left_qubit + 1
         )
         sequence = 10_000 + len(self.records) * 2
         if instruction_index in self.prefetched_rxx_indices:
@@ -653,39 +654,39 @@ class ReverseTapeBuilder:
         elif left_owner != right_owner:
             if self.rank == right_owner:
                 send_static_reverse_tensor(
-                    self.state.local_tensors[left_wire + 1],
+                    self.state.local_tensors[left_qubit + 1],
                     destination=left_owner,
                     sequence=sequence,
-                    shape=self.global_shapes[left_wire + 1],
+                    shape=self.global_shapes[left_qubit + 1],
                 )
             elif self.rank == left_owner:
                 halo = receive_static_reverse_tensor(
                     next(iter(self.local_tensors.values())),
                     source=right_owner,
                     sequence=sequence,
-                    shape=self.global_shapes[left_wire + 1],
+                    shape=self.global_shapes[left_qubit + 1],
                 )
         elif self.rank == left_owner:
-            halo = self.state.local_tensors[left_wire + 1]
+            halo = self.state.local_tensors[left_qubit + 1]
         metadata = None
         prospective = 0
         optional = 0
         if self.rank == left_owner:
             prospective = tensor_nbytes(
-                self.state.local_tensors[left_wire]
+                self.state.local_tensors[left_qubit]
             ) + tensor_nbytes(halo)
             if (
                 self.save_exact_factorizations
                 and instruction_index not in self.reserved_rxx
-                and wires == tuple(sorted(wires))
+                and qubits == tuple(sorted(qubits))
             ):
                 pair_bytes = (
                     self.bsz
-                    * int(self.state.local_tensors[left_wire].shape[1])
+                    * int(self.state.local_tensors[left_qubit].shape[1])
                     * 2
                     * 2
                     * int(halo.shape[-1])
-                    * self.state.local_tensors[left_wire].element_size()
+                    * self.state.local_tensors[left_qubit].element_size()
                 )
                 optional = 4 * pair_bytes
         if instruction_index not in self.reserved_rxx:
@@ -704,11 +705,11 @@ class ReverseTapeBuilder:
                     self.precomputed_rxx.pop(instruction_index)
                 )
             else:
-                before_left = self.state.local_tensors[left_wire].detach().clone()
+                before_left = self.state.local_tensors[left_qubit].detach().clone()
                 before_right = halo.detach().clone()
                 if (
                     instruction_index in self.selected_factorizations
-                    and wires == tuple(sorted(wires))
+                    and qubits == tuple(sorted(qubits))
                 ):
                     with torch.no_grad():
                         contracted = contract_mps_two_site_bucket(
@@ -743,9 +744,9 @@ class ReverseTapeBuilder:
                         after_left, after_right = outputs
                 after_left = after_left.detach()
                 after_right = after_right.detach()
-            self.state.local_tensors[left_wire] = after_left
+            self.state.local_tensors[left_qubit] = after_left
             if left_owner == right_owner:
-                self.state.local_tensors[left_wire + 1] = after_right
+                self.state.local_tensors[left_qubit + 1] = after_right
             self.payloads[len(self.records)] = _ReversePayload(
                 "two_site",
                 (before_left, before_right),
@@ -771,14 +772,14 @@ class ReverseTapeBuilder:
                     after_right, destination=right_owner, sequence=sequence + 1
                 )
             elif self.rank == right_owner:
-                self.state.local_tensors[left_wire + 1] = receive_reverse_tensor(
-                    self.state.local_tensors[left_wire + 1],
+                self.state.local_tensors[left_qubit + 1] = receive_reverse_tensor(
+                    self.state.local_tensors[left_qubit + 1],
                     source=left_owner,
                     sequence=sequence + 1,
                 )
         static_metadata = _static_exact_qr_record(
-            self.global_shapes[left_wire],
-            self.global_shapes[left_wire + 1],
+            self.global_shapes[left_qubit],
+            self.global_shapes[left_qubit + 1],
             max_bond=self.max_bond,
             cutoff=self.cutoff,
         )
@@ -813,19 +814,19 @@ class ReverseTapeBuilder:
             and (self.max_bond is None or int(self.max_bond) >= full_rank)
             else "svd"
         )
-        for wire, output_shape in zip(
-            (left_wire, left_wire + 1), metadata["output_shapes"], strict=True
+        for qubit, output_shape in zip(
+            (left_qubit, left_qubit + 1), metadata["output_shapes"], strict=True
         ):
             batch, left_bond, physical, right_bond = output_shape
-            self.global_shapes[wire] = (batch, left_bond, physical, right_bond)
-        self.dirty_bonds.discard(left_wire)
-        if left_wire + 1 < self.ir.n_wires - 1:
-            self.dirty_bonds.add(left_wire + 1)
+            self.global_shapes[qubit] = (batch, left_bond, physical, right_bond)
+        self.dirty_bonds.discard(left_qubit)
+        if left_qubit + 1 < self.ir.n_wires - 1:
+            self.dirty_bonds.add(left_qubit + 1)
         self.records.append(
             build_mps_reverse_tape_record(
                 index=len(self.records),
                 kind="two_site",
-                wires=wires,
+                qubits=qubits,
                 compute_owner=left_owner,
                 owner_ranks=tuple(sorted({left_owner, right_owner})),
                 parameter_indices=self.instruction_parameter_indices[instruction_index],
@@ -833,46 +834,46 @@ class ReverseTapeBuilder:
             )
         )
 
-    def canonicalize_bond(self, left_wire: int) -> None:
+    def canonicalize_bond(self, left_qubit: int) -> None:
         """Sweep one planned bond, leaving the pair left-canonical."""
 
         metadata: _ReverseRecordMetadata | None
-        left_owner, right_owner = self.state.owner(left_wire), self.state.owner(
-            left_wire + 1
+        left_owner, right_owner = self.state.owner(left_qubit), self.state.owner(
+            left_qubit + 1
         )
         sequence = 1_000_000 + len(self.records) * 2
         if left_owner != right_owner:
             if self.rank == right_owner:
                 send_static_reverse_tensor(
-                    self.state.local_tensors[left_wire + 1],
+                    self.state.local_tensors[left_qubit + 1],
                     destination=left_owner,
                     sequence=sequence,
-                    shape=self.global_shapes[left_wire + 1],
+                    shape=self.global_shapes[left_qubit + 1],
                 )
             elif self.rank == left_owner:
                 halo = receive_static_reverse_tensor(
                     next(iter(self.local_tensors.values())),
                     source=right_owner,
                     sequence=sequence,
-                    shape=self.global_shapes[left_wire + 1],
+                    shape=self.global_shapes[left_qubit + 1],
                 )
         elif self.rank == left_owner:
-            halo = self.state.local_tensors[left_wire + 1]
+            halo = self.state.local_tensors[left_qubit + 1]
         metadata = None
         prospective = 0
         if self.rank == left_owner:
             prospective = tensor_nbytes(
-                self.state.local_tensors[left_wire]
+                self.state.local_tensors[left_qubit]
             ) + tensor_nbytes(halo)
         self.checkpoint_budget.reserve(prospective)
         if self.rank == left_owner:
-            before_left = self.state.local_tensors[left_wire].detach().clone()
+            before_left = self.state.local_tensors[left_qubit].detach().clone()
             before_right = halo.detach().clone()
             with torch.no_grad():
                 after_left, after_right = mps_qr_forward(before_left, before_right)
-            self.state.local_tensors[left_wire] = after_left
+            self.state.local_tensors[left_qubit] = after_left
             if left_owner == right_owner:
-                self.state.local_tensors[left_wire + 1] = after_right
+                self.state.local_tensors[left_qubit + 1] = after_right
             self.payloads[len(self.records)] = _ReversePayload(
                 "canonicalize_left", (before_left, before_right), None
             )
@@ -887,8 +888,8 @@ class ReverseTapeBuilder:
                     after_right, destination=right_owner, sequence=sequence + 1
                 )
             elif self.rank == right_owner:
-                self.state.local_tensors[left_wire + 1] = receive_reverse_tensor(
-                    self.state.local_tensors[left_wire + 1],
+                self.state.local_tensors[left_qubit + 1] = receive_reverse_tensor(
+                    self.state.local_tensors[left_qubit + 1],
                     source=left_owner,
                     sequence=sequence + 1,
                 )
@@ -896,16 +897,16 @@ class ReverseTapeBuilder:
             metadata, left_owner, next(iter(self.local_tensors.values()))
         )
         metadata["split_info"]["method"] = "qr"
-        for wire, output_shape in zip(
-            (left_wire, left_wire + 1), metadata["output_shapes"], strict=True
+        for qubit, output_shape in zip(
+            (left_qubit, left_qubit + 1), metadata["output_shapes"], strict=True
         ):
             batch, left_bond, physical, right_bond = output_shape
-            self.global_shapes[wire] = (batch, left_bond, physical, right_bond)
+            self.global_shapes[qubit] = (batch, left_bond, physical, right_bond)
         self.records.append(
             build_mps_reverse_tape_record(
                 index=len(self.records),
                 kind="canonicalize_left",
-                wires=(left_wire, left_wire + 1),
+                qubits=(left_qubit, left_qubit + 1),
                 compute_owner=left_owner,
                 owner_ranks=tuple(sorted({left_owner, right_owner})),
                 **metadata,

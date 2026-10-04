@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import re
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -62,6 +63,41 @@ def _package(tmp_path: Path, files: dict[str, str]) -> Path:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(source, encoding="utf-8")
     return tmp_path / "flagquantum"
+
+
+def _unretired_parameters() -> list[str]:
+    """The parameters the contract has not retired yet, alphabetically."""
+
+    contract = _contract()
+    retired = {str(entry) for entry in contract["retirement"]["sites"]}
+    return sorted(set(map(str, contract["ledger"]["canonical"])) - retired)
+
+
+def _unretired_attributes() -> list[str]:
+    """The attributes the contract has not retired yet, alphabetically."""
+
+    contract = _contract()
+    retired = {str(row["site"]) for row in contract["attribute_retirement"]["sites"]}
+    return sorted(set(map(str, contract["attribute_ledger"]["canonical"])) - retired)
+
+
+def _renamed_package(tmp_path: Path, identifier: str) -> Path:
+    """A one-file package in which `identifier` already carries its qubit name.
+
+    The exemplar is read out of the contract and the file is copied out of the
+    real tree rather than stubbed, because a hard-coded exemplar stops being a
+    live site the moment the slice that owns it lands -- and the test then fails
+    for the very reason it exists to detect.
+    """
+
+    relative = identifier.split("::", 1)[0]
+    name = identifier.rsplit("::", 1)[1]
+    source = (_ROOT / relative).read_text(encoding="utf-8")
+    replacement = _CENSUS.replacement_name(name)
+    return _package(
+        tmp_path,
+        {relative: re.sub(rf"\b{re.escape(name)}\b", replacement, source)},
+    )
 
 
 def _one(error_fragments: tuple[str, ...], needle: str) -> None:
@@ -125,7 +161,7 @@ def test_the_gate_reports_definition_progress_per_slice() -> None:
 
     rows = _GATE.slice_progress(_contract(), "definition")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert all(retired == 0 for _, retired, _ in rows)
+    assert sum(retired for _, retired, _ in rows) == 4
     assert sum(retired + remaining for _, retired, remaining in rows) == 10
 
 
@@ -282,11 +318,7 @@ def test_a_fabricated_retirement_entry_is_reported() -> None:
     """
 
     contract = _contract()
-    claimed = next(
-        identifier
-        for identifier in contract["ledger"]["canonical"]
-        if identifier.startswith("flagquantum/algorithms/")
-    )
+    claimed = _unretired_parameters()[0]
     assert claimed not in contract["retirement"]["sites"]
     contract["retirement"]["sites"].append(claimed)
     errors = _errors(contract)
@@ -298,21 +330,14 @@ def test_a_rename_without_a_retirement_entry_is_reported(tmp_path: Path) -> None
     """Renaming a site is not enough; the ledger has to record it as retired.
 
     The report truncates its list of sites, so the fixture renames the
-    alphabetically first baseline identifier -- the one the truncation is
-    guaranteed to name -- and asserts on it by name rather than trusting the
-    count.
+    alphabetically first identifier the ledger has not yet retired -- the one the
+    truncation is guaranteed to name -- and asserts on it by name rather than
+    trusting the count. `WQ-5` landed the site this fixture used to hard-code, so
+    it reads the live exemplar out of the contract instead.
     """
 
-    first = min(_contract()["ledger"]["canonical"])
-    package = _package(
-        tmp_path,
-        {
-            "flagquantum/algorithms/amplitude_estimation.py": (
-                "def amplitude_estimation_circuit(n_counting_qubits):\n"
-                "    return n_counting_qubits\n"
-            )
-        },
-    )
+    first = _unretired_parameters()[0]
+    package = _renamed_package(tmp_path, first)
     errors = _GATE.contract_errors(_contract(), package_root=package)
     _some(errors, "neither live nor retired")
     _some(errors, first)
@@ -672,28 +697,14 @@ def test_an_attribute_rename_without_a_retirement_entry_is_reported(
     """A rename is not done until the ledger records it.
 
     The report truncates its list of sites, so the fixture renames the
-    alphabetically first ledgered attribute -- the one the truncation is
-    guaranteed to name -- and asserts on it by name.
+    alphabetically first attribute the ledger has not yet retired -- the one the
+    truncation is guaranteed to name -- and asserts on it by name. `WQ-5` landed
+    the site this fixture used to hard-code, so the exemplar comes out of the
+    contract rather than out of a literal.
     """
 
-    first = min(_contract()["attribute_ledger"]["canonical"])
-    assert first == (
-        "flagquantum/algorithms/amplitude_estimation.py"
-        "::AmplitudeEstimationResult::n_counting_wires"
-    )
-    package = _package(
-        tmp_path,
-        {
-            "flagquantum/algorithms/amplitude_estimation.py": (
-                "from dataclasses import dataclass\n"
-                "\n"
-                "\n"
-                "@dataclass\n"
-                "class AmplitudeEstimationResult:\n"
-                "    n_counting_qubits: int = 0\n"
-            )
-        },
-    )
+    first = _unretired_attributes()[0]
+    package = _renamed_package(tmp_path, first)
     errors = _GATE.contract_errors(_contract(), package_root=package)
     _some(errors, "neither live nor retired")
     _some(errors, first)
@@ -893,7 +904,7 @@ def test_an_attribute_alias_is_reported_as_remaining_work_not_as_progress() -> N
     """
 
     contract = _contract()
-    marked = min(contract["attribute_ledger"]["canonical"])
+    marked = _unretired_attributes()[0]
     contract["attribute_aliases"] = {
         "removal_version": "0.4.0",
         "sites": [
@@ -928,18 +939,27 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     """
 
     contract = _contract()
+    retired = {str(row["site"]) for row in contract["attribute_retirement"]["sites"]}
+    aliased = {str(row["site"]) for row in contract["attribute_aliases"]["sites"]}
+    candidate = next(
+        identifier
+        for identifier in sorted(map(str, contract["attribute_ledger"]["canonical"]))
+        if identifier not in retired and identifier not in aliased
+    )
     contract["attribute_aliases"]["sites"].append(
         {
-            "site": "flagquantum/algorithms/core.py::Hamiltonian::n_wires",
-            "replacement": "qubits",
+            "site": candidate,
+            "replacement": _CENSUS.replacement_name(candidate.rsplit("::", 1)[1]),
         }
     )
     contract["other_surfaces"]["public_attribute_aliased"] = 3
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
-    assert "30 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
-    assert "27 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
-    assert "0 of 10 definition names retired" in lines[16]
+    assert (
+        "131 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+    )
+    assert "83 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
+    assert "4 of 10 definition names retired" in lines[16]
 
 
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
@@ -1143,9 +1163,9 @@ def test_a_definition_rename_that_disagrees_with_the_rule_is_reported() -> None:
     row = next(
         entry
         for entry in _definition_rows(contract)
-        if entry["site"].endswith("::rank_for_wire")
+        if entry["site"].endswith("::infer_n_wires_from_dense_state")
     )
-    row["replacement"] = "rank_for_qubit_indices"
+    row["replacement"] = "infer_n_qubit_indices"
     _some(_errors(contract), "must be replaced by")
 
 
@@ -1156,11 +1176,22 @@ def test_a_definition_without_a_kind_is_reported() -> None:
 
 
 def test_the_definition_ledger_is_the_scanner_output_at_the_baseline() -> None:
+    """The same measurement claim as the parameter ledger, one surface over.
+
+    A definition name may only leave the live surface through a retirement row,
+    so the ledger minus the retirements has to equal the scanner exactly and no
+    retired name may still be found.
+    """
+
     contract = _contract()
     scanned = _CENSUS.definition_census(_ROOT / "flagquantum")
-    assert {
+    declared = {
         str(row["site"]): str(row["replacement"]) for row in _definition_rows(contract)
-    } == {site.identifier: site.replacement for site in scanned.ledgered}
+    }
+    retired = {str(site) for site in contract["definition_retirement"]["sites"]}
+    live = {site.identifier: site.replacement for site in scanned.ledgered}
+    assert {site: declared[site] for site in set(declared) - retired} == live
+    assert not retired & set(live)
 
 
 # --------------------------------------------------------------------- live facts

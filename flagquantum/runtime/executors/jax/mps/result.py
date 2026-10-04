@@ -24,7 +24,7 @@ class JAXShardedMPSResult:
     shard_plans: tuple[Any, ...]
     jax_plan: JAXDistributedQuantumPlan
     backend_policy: DistributedBackendPolicy
-    n_wires: int
+    n_qubits: int
     bsz: int
     complex_bytes: int
     max_bond: int | None
@@ -50,7 +50,7 @@ class JAXShardedMPSResult:
             return self._torch_mps_cache
         self._torch_mps_cache = _reconstruct_torch_mps_from_jax_rank_shards(
             self.rank_shards,
-            n_wires=self.n_wires,
+            n_wires=self.n_qubits,
             max_bond=self.max_bond,
             cutoff=self.cutoff,
             complex_bytes=self.complex_bytes,
@@ -75,8 +75,8 @@ class JAXShardedMPSResult:
 
     probability = probabilities
 
-    def expectation_z(self, wire: int | None = None) -> Any:
-        return self.to_mps().expectation_z(wire)
+    def expectation_z(self, qubit: int | None = None) -> Any:
+        return self.to_mps().expectation_z(qubit)
 
     def summary(self) -> dict[str, Any]:
         """Flatten this result into the payload the scalability audit reads.
@@ -206,7 +206,7 @@ class JAXShardedMPSResult:
             "world_size": len(self.rank_shards),
             "local_world_size": self.jax_plan.local_world_size,
             "node_count": self.jax_plan.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "max_bond": self.max_bond,
             "cutoff": self.cutoff,

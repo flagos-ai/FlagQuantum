@@ -260,7 +260,7 @@ def _validation_state(result: Any) -> torch.Tensor:
     )
     for rank, shard in enumerate(gathered):
         internal[rank :: result.plan.world_size] = shard
-    mapping = result.logical_to_physical_wires
+    mapping = result.logical_to_physical_qubits
     canonical = torch.empty_like(internal)
     for logical_basis in range(internal.numel()):
         physical_basis = 0

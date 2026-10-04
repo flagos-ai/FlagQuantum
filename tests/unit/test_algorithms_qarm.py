@@ -16,7 +16,7 @@ threshold, which is where the inclusive comparison is pinned rather than describ
 The measured instance of the brief -- two transactions over two items, threshold two --
 is carried below with the values this repository's runs produce for it, and every expected
 value in this file was measured by running the construction it checks. One measurement --
-the one-wire support register -- was taken with the builder's width refusal lifted, which
+the one-qubit support register -- was taken with the builder's width refusal lifted, which
 the test that carries it says.
 """
 
@@ -56,7 +56,7 @@ _HALF = [[1, 1, 0, 0], [1, 1, 0, 0]]
 _MIXED = [[1, 1, 0, 0], [1, 1, 0, 0], [1, 0, 1, 0], [0, 0, 1, 1]]
 
 # The unit's bound on both registers at once: eight items held by between one and seven of
-# seven transactions, so the item register takes three wires, the support register takes
+# seven transactions, so the item register takes three qubits, the support register takes
 # three, and the multi-controlled X ladders borrow from a pool instead of folding onto the
 # controls alone.
 _LADDER = [
@@ -108,45 +108,45 @@ def _prepared_states(
     register's value and the ancillas-and-flag suffix -- and the values are the state's
     probabilities, so a state the preparation does not reach is absent.
     """
-    circuit = Circuit(operator.n_wires)
-    operator.apply_plain(circuit, list(range(operator.n_wires)))
+    circuit = Circuit(operator.n_qubits)
+    operator.apply_plain(circuit, list(range(operator.n_qubits)))
     probabilities = circuit.probabilities().reshape(-1)
-    n_item = operator.n_item_wires
-    n_support = operator.n_support_wires
+    n_item = operator.n_item_qubits
+    n_support = operator.n_support_qubits
     return {
         (
             int(bits[:n_item], 2),
             int(bits[n_item : n_item + n_support], 2),
             bits[n_item + n_support :],
         ): float(probabilities[index])
-        for index, bits in _reached(probabilities, operator.n_wires)
+        for index, bits in _reached(probabilities, operator.n_qubits)
     }
 
 
 def _marked_signs(operator: FrequentItemsetOperator) -> dict[int, float]:
     """Return the sign each item's amplitude carries after the marking operator.
 
-    The marking operator is applied with its control wire set, so the phase flip is the
+    The marking operator is applied with its control qubit set, so the phase flip is the
     marking operator's own and not the control's; a marked item's amplitude is negated and
     an unmarked one's is not.
     """
-    wires = list(range(operator.n_wires))
-    control = operator.n_wires
-    circuit = Circuit(operator.n_wires + 1)
-    operator.apply_plain(circuit, wires)
+    qubits = list(range(operator.n_qubits))
+    control = operator.n_qubits
+    circuit = Circuit(operator.n_qubits + 1)
+    operator.apply_plain(circuit, qubits)
     circuit.gate("x", control)
-    operator.apply_mark(circuit, control, wires)
+    operator.apply_mark(circuit, control, qubits)
     state = circuit.state().reshape(-1)
     return {
-        int(bits[: operator.n_item_wires], 2): float(state[index].real)
-        for index, bits in _reached(state.abs(), operator.n_wires + 1)
+        int(bits[: operator.n_item_qubits], 2): float(state[index].real)
+        for index, bits in _reached(state.abs(), operator.n_qubits + 1)
     }
 
 
-def _reached(weights: torch.Tensor, n_wires: int) -> list[tuple[int, str]]:
+def _reached(weights: torch.Tensor, n_qubits: int) -> list[tuple[int, str]]:
     """Return the index and big-endian bit string of every state carrying weight."""
     return [
-        (int(index), format(int(index), f"0{n_wires}b"))
+        (int(index), format(int(index), f"0{n_qubits}b"))
         for index in torch.nonzero(weights > 1e-6).reshape(-1).tolist()
     ]
 
@@ -195,7 +195,7 @@ def test_the_preparation_pairs_every_item_with_its_own_support(
     """
     operator = _operator(rows, 1)
     clean_suffix = "0" * (
-        operator.n_wires - operator.n_item_wires - operator.n_support_wires
+        operator.n_qubits - operator.n_item_qubits - operator.n_support_qubits
     )
     expected = {
         (item, support, clean_suffix): 1.0 / operator.n_items
@@ -248,7 +248,7 @@ def test_the_threshold_is_inclusive_at_the_boundary() -> None:
     assert _marked_signs(_operator(_MEASURED, 2))[0] < 0.0
     assert _frequent_fraction(_MEASURED, 2) == 0.5
     assert run_frequent_itemset(
-        torch.tensor(_MEASURED), threshold=2, n_counting_wires=4, shots=8000, seed=17
+        torch.tensor(_MEASURED), threshold=2, n_counting_qubits=4, shots=8000, seed=17
     ).estimate == pytest.approx(0.5, abs=1e-9)
 
 
@@ -270,7 +270,7 @@ def test_the_readout_is_the_frequent_fraction(
     result = run_frequent_itemset(
         torch.tensor(rows, dtype=torch.int64),
         threshold=threshold,
-        n_counting_wires=4,
+        n_counting_qubits=4,
         shots=8000,
         seed=17,
     )
@@ -284,7 +284,7 @@ def test_the_measured_instance_reads_the_measured_fraction() -> None:
     result = run_frequent_itemset(
         torch.tensor(_MEASURED),
         threshold=_MEASURED_THRESHOLD,
-        n_counting_wires=4,
+        n_counting_qubits=4,
         shots=8000,
         seed=17,
     )
@@ -292,8 +292,8 @@ def test_the_measured_instance_reads_the_measured_fraction() -> None:
     assert result.estimate == pytest.approx(0.5, abs=1e-9)
     assert result.resolution == pytest.approx(amplitude_resolution(4), abs=1e-12)
     assert result.resolution == pytest.approx(0.097545, abs=1e-6)
-    assert result.n_counting_wires == 4
-    assert result.n_evaluation_wires == operator.n_wires
+    assert result.n_counting_qubits == 4
+    assert result.n_evaluation_qubits == operator.n_qubits
 
 
 def test_the_run_is_the_amplitude_estimation_result_of_the_operator() -> None:
@@ -302,34 +302,34 @@ def test_the_run_is_the_amplitude_estimation_result_of_the_operator() -> None:
     assert run_frequent_itemset(
         torch.tensor(_MEASURED),
         threshold=_MEASURED_THRESHOLD,
-        n_counting_wires=4,
+        n_counting_qubits=4,
         shots=8000,
         seed=17,
-    ) == run_amplitude_estimation(operator, n_counting_wires=4, shots=8000, seed=17)
+    ) == run_amplitude_estimation(operator, n_counting_qubits=4, shots=8000, seed=17)
 
 
 def test_the_default_width_is_the_fewest_that_holds_every_support() -> None:
     """The default width is the bits the transaction count needs, and it is not one more."""
     for rows in (_MEASURED, [[1, 1, 0, 1]] * 3, [[1, 1, 0, 1]] * 7):
         operator = _operator(rows, 1)
-        assert operator.n_support_wires == operator.n_transactions.bit_length()
+        assert operator.n_support_qubits == operator.n_transactions.bit_length()
 
 
 def test_a_support_register_that_cannot_hold_the_largest_support_is_refused() -> None:
     """A register too narrow to hold every support is refused, not left to wrap.
 
-    Two transactions can produce a support of 2, and one wire holds 0 and 1 only. Measured
-    on that instance with a register of one wire, and with the width refusal lifted for the
+    Two transactions can produce a support of 2, and one qubit holds 0 and 1 only. Measured
+    on that instance with a register of one qubit, and with the width refusal lifted for the
     measurement: the increment wraps the support of 2 back to 0, the mark then sees no
     support at the threshold, the estimate reads 0.0 against an exact fraction of 0.5, and
     nothing is raised -- which is why the width is checked here instead.
     """
-    with pytest.raises(ValueError, match="at least 2 wires"):
+    with pytest.raises(ValueError, match="at least 2 qubits"):
         frequent_itemset_operator(
-            torch.tensor(_MEASURED), threshold=2, n_support_wires=1
+            torch.tensor(_MEASURED), threshold=2, n_support_qubits=1
         )
 
-    assert _operator(_MEASURED, 2).n_support_wires == 2
+    assert _operator(_MEASURED, 2).n_support_qubits == 2
 
 
 def test_the_evaluation_register_carries_no_transaction_index() -> None:
@@ -337,18 +337,18 @@ def test_the_evaluation_register_carries_no_transaction_index() -> None:
 
     A transaction index held in a register would widen the evaluation register as soon as
     the transaction count crossed a power of two. Two databases of two items with a support
-    register of three wires, one of two transactions and one of seven, have the same width,
+    register of three qubits, one of two transactions and one of seven, have the same width,
     and that width is the item register, the support register, the ladder ancillas the
     widest multi-controlled X borrows and the marking flag.
     """
     two = frequent_itemset_operator(
-        torch.tensor([[1, 0], [1, 1]]), threshold=2, n_support_wires=3
+        torch.tensor([[1, 0], [1, 1]]), threshold=2, n_support_qubits=3
     )
     seven = frequent_itemset_operator(
-        torch.tensor([[1, 0]] * 7), threshold=2, n_support_wires=3
+        torch.tensor([[1, 0]] * 7), threshold=2, n_support_qubits=3
     )
 
-    assert two.n_wires == seven.n_wires == 7
+    assert two.n_qubits == seven.n_qubits == 7
     assert two.support == (2, 1)
     assert seven.support == (7, 0)
 
@@ -403,7 +403,7 @@ def test_a_support_register_width_the_unit_cannot_use_is_refused(width: object) 
         frequent_itemset_operator(
             torch.tensor(_MEASURED),
             threshold=2,
-            n_support_wires=width,  # type: ignore[arg-type]
+            n_support_qubits=width,  # type: ignore[arg-type]
         )
 
 
@@ -417,7 +417,7 @@ def test_the_row_diagnostic_names_the_row() -> None:
         FrequentItemsetOperator(
             incidence=((1, 0), 1),  # type: ignore[arg-type]
             threshold=1,
-            n_support_wires=3,
+            n_support_qubits=3,
         )
 
 
@@ -440,5 +440,5 @@ def test_a_directly_constructed_operator_with_unreadable_fields_is_refused(
         FrequentItemsetOperator(
             incidence=rows,  # type: ignore[arg-type]
             threshold=1,
-            n_support_wires=3,
+            n_support_qubits=3,
         )

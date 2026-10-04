@@ -125,7 +125,7 @@ def _evaluate_reverse_objective(
         value, adjoints = mps_expectation_and_adjoints(
             state,
             observable or {0: "z"},
-            adjoint_wires=tuple(adjoint_wires),
+            adjoint_qubits=tuple(adjoint_wires),
         )
         return value, adjoints, "single_observable_scan"
     fused = parse_mps_z_zz_terms(state, observable_terms) is not None

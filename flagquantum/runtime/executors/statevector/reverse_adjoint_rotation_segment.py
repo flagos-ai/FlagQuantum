@@ -42,7 +42,7 @@ def _materialize_pending_cpu_cx(sweep: Any) -> None:
             images,
             sweep.pending_cpu_cx_controls,
             sweep.pending_cpu_cx_targets,
-            sweep.plan.n_wires,
+            sweep.plan.n_qubits,
         )
     else:
         assert index is not None
@@ -242,7 +242,7 @@ def _apply_local_rotation_segment(
             angle_tensor,
             kind_tensor,
             wire_tensor,
-            n_wires=sweep.plan.n_wires,
+            n_wires=sweep.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter,
             observable_weights=sweep.pending_observable_weights,
             cx_images=pending_cx_images,
@@ -267,7 +267,7 @@ def _apply_local_rotation_segment(
             angle_tensor,
             kind_tensor,
             wire_tensor,
-            n_wires=sweep.plan.n_wires,
+            n_wires=sweep.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter,
             rzz_angles=None if rzz_layer is None else rzz_layer[2],
             rzz_first_wires=None if rzz_layer is None else rzz_layer[3],

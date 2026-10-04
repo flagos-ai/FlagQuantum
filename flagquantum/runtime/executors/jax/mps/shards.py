@@ -26,7 +26,7 @@ def _initialize_jax_mps_rank_tensors(
     rank_tensors: dict[int, dict[int, Any]] = {}
     for shard in shard_plans:
         local: dict[int, Any] = {}
-        for wire in shard.wires:
+        for wire in shard.qubits:
             tensor = jnp.zeros((int(bsz), 1, 2, 1), dtype=dtype)
             tensor = tensor.at[:, 0, 0, 0].set(jnp.asarray(1.0 + 0.0j, dtype=dtype))
             local[int(wire)] = _jnp_device_put(tensor, device)
@@ -41,7 +41,7 @@ def _rank_shards_from_jax_mps_tensors(
     return tuple(
         JAXMPSRankShardState(
             rank=int(shard.rank),
-            wires=tuple(int(wire) for wire in shard.wires),
+            qubits=tuple(int(wire) for wire in shard.qubits),
             local_tensors=dict(rank_tensors.get(int(shard.rank), {})),
         )
         for shard in shard_plans

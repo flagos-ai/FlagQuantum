@@ -161,7 +161,7 @@ def _global_indices(torch: Any, result: Any) -> Any:
 
 def _physical_to_logical_indices(torch: Any, result: Any) -> Any:
     physical_indices = _global_indices(torch, result)
-    mapping = tuple(int(item) for item in result.logical_to_physical_wires)
+    mapping = tuple(int(item) for item in result.logical_to_physical_qubits)
     if mapping == tuple(range(result.plan.n_wires)):
         return physical_indices
     logical_indices = torch.zeros_like(physical_indices)

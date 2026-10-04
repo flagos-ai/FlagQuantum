@@ -28,7 +28,7 @@ class JAXShardedMPSTrainingPlan:
     world_size: int
     local_world_size: int
     node_count: int
-    n_wires: int
+    n_qubits: int
     batch_size: int
     max_bond: int | None
     cutoff: float
@@ -72,8 +72,8 @@ class JAXShardedMPSTrainingPlan:
             {
                 "rank": rank,
                 "wires": tuple(
-                    int(wire)
-                    for wire in (
+                    int(qubit)
+                    for qubit in (
                         site_ownership[rank].get("wires", ())
                         if rank < len(site_ownership)
                         else ()
@@ -190,7 +190,7 @@ class JAXShardedMPSTrainingPlan:
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.batch_size,
             "max_bond": self.max_bond,
             "cutoff": self.cutoff,
@@ -223,7 +223,7 @@ class JAXShardedMPSParameterGateAssignment:
 
     instruction_index: int
     name: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     parameter_names: tuple[str, ...]
     owner_rank: int | None
     touched_ranks: tuple[int, ...]
@@ -236,7 +236,7 @@ class JAXShardedMPSParameterGateAssignment:
         return {
             "instruction_index": self.instruction_index,
             "name": self.name,
-            "wires": self.wires,
+            "wires": self.qubits,
             "parameter_names": self.parameter_names,
             "owner_rank": self.owner_rank,
             "touched_ranks": self.touched_ranks,
@@ -254,7 +254,7 @@ class JAXShardedMPSParameterFlowPlan:
     world_size: int
     local_world_size: int
     node_count: int
-    n_wires: int
+    n_qubits: int
     site_shard_ownership: tuple[Mapping[str, Any], ...]
     bond_shard_ownership: tuple[Mapping[str, Any], ...]
     assignments: tuple[JAXShardedMPSParameterGateAssignment, ...]
@@ -310,7 +310,7 @@ class JAXShardedMPSParameterFlowPlan:
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "parameter_gate_count": self.parameter_gate_count,
             "rank_local_parameter_gate_count": self.rank_local_parameter_gate_count,
             "boundary_parameter_gate_count": self.boundary_parameter_gate_count,
@@ -379,7 +379,7 @@ class JAXMPSRankShardState:
     """Rank-local JAX MPS site tensors owned by one shard."""
 
     rank: int
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     local_tensors: Mapping[int, Any]
 
     def summary(self) -> dict[str, Any]:
@@ -388,19 +388,19 @@ class JAXMPSRankShardState:
         )
         return {
             "rank": self.rank,
-            "wires": self.wires,
+            "wires": self.qubits,
             "local_tensor_wires": tuple(
-                sorted(int(wire) for wire in self.local_tensors)
+                sorted(int(qubit) for qubit in self.local_tensors)
             ),
             "local_tensor_count": len(self.local_tensors),
             "local_tensor_bytes": int(tensor_bytes),
             "tensor_bytes_by_wire": {
-                int(wire): _jax_array_nbytes(tensor)
-                for wire, tensor in sorted(self.local_tensors.items())
+                int(qubit): _jax_array_nbytes(tensor)
+                for qubit, tensor in sorted(self.local_tensors.items())
             },
             "tensor_shapes": {
-                int(wire): tuple(int(dim) for dim in tensor.shape)
-                for wire, tensor in sorted(self.local_tensors.items())
+                int(qubit): tuple(int(dim) for dim in tensor.shape)
+                for qubit, tensor in sorted(self.local_tensors.items())
             },
             "dtype": (
                 str(next(iter(self.local_tensors.values())).dtype)

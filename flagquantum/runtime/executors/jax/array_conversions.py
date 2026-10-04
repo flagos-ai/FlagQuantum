@@ -121,7 +121,7 @@ def _apply_gate_to_jax_shards(
         for shard in shards:
             basis_indices = _jax_basis_indices_for_wires(
                 shard.global_indices,
-                n_wires=plan.n_wires,
+                n_wires=plan.n_qubits,
                 wires=wires,
             )
             factors = diagonal_values[basis_indices].reshape(1, -1)
@@ -136,9 +136,9 @@ def _apply_gate_to_jax_shards(
             )
         return tuple(updated_shards)
 
-    masks = tuple(_wire_mask(plan.n_wires, wire) for wire in wires)
+    masks = tuple(_wire_mask(plan.n_qubits, wire) for wire in wires)
     offsets = tuple(
-        _basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)
+        _basis_offset(plan.n_qubits, wires, basis) for basis in range(gate_dim)
     )
     positions_by_global: dict[int, tuple[int, int]] = {}
     for shard_index, shard in enumerate(shards):

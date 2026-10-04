@@ -45,7 +45,7 @@ class FlagOSTrainingCase:
         if self.dtype not in FLAGOS_TRAINING_DTYPES:
             raise ValueError(f"unsupported FlagOS training dtype {self.dtype!r}")
         if self.n_wires < 2 or self.steps < 1:
-            raise ValueError("training cases require at least two wires and one step")
+            raise ValueError("training cases require at least two qubits and one step")
         if not 0 < self.local_amplitudes < self.total_amplitudes:
             raise ValueError("training cases must retain a strict rank-local shard")
         measurements = (

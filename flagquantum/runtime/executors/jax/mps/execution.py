@@ -176,32 +176,32 @@ def run_jax_sharded_mps(
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
             boundary = _boundary_sync_record(instruction, shard_plans)
             tensor_bytes = _jax_array_nbytes(
-                rank_tensors[boundary.left_rank][boundary.left_wire]
+                rank_tensors[boundary.left_rank][boundary.left_qubit]
             )
             tensor_bytes += _jax_array_nbytes(
-                rank_tensors[boundary.right_rank][boundary.right_wire]
+                rank_tensors[boundary.right_rank][boundary.right_qubit]
             )
             left, right, split_info = _apply_two_jax_mps_tensors(
-                rank_tensors[boundary.left_rank][boundary.left_wire],
-                rank_tensors[boundary.right_rank][boundary.right_wire],
+                rank_tensors[boundary.left_rank][boundary.left_qubit],
+                rank_tensors[boundary.right_rank][boundary.right_qubit],
                 matrix,
                 max_bond=max_bond,
                 cutoff=cutoff,
                 reverse=first > second,
             )
-            rank_tensors[boundary.left_rank][boundary.left_wire] = left
-            rank_tensors[boundary.right_rank][boundary.right_wire] = right
+            rank_tensors[boundary.left_rank][boundary.left_qubit] = left
+            rank_tensors[boundary.right_rank][boundary.right_qubit] = right
             step_error = float(split_info["discarded_weight"])
             truncation_error += step_error
             max_truncation_error = max(max_truncation_error, step_error)
             record = _jax_split_record(
-                split_info, bond=boundary.left_wire, max_bond=max_bond, cutoff=cutoff
+                split_info, bond=boundary.left_qubit, max_bond=max_bond, cutoff=cutoff
             )
             if record is not None:
                 truncation_records.append(record)
             protocol = _jax_mps_boundary_protocol(
-                left_wire=boundary.left_wire,
-                right_wire=boundary.right_wire,
+                left_wire=boundary.left_qubit,
+                right_wire=boundary.right_qubit,
                 left_rank=boundary.left_rank,
                 right_rank=boundary.right_rank,
                 local_world_size=resolved_local_world_size,
@@ -230,7 +230,7 @@ def run_jax_sharded_mps(
         shard_plans=tuple(shard_plans),
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         complex_bytes=complex_bytes,
         max_bond=max_bond,
@@ -342,29 +342,29 @@ def _jax_parameterized_mps_rank_tensors(
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
             boundary = _boundary_sync_record(instruction, shard_plans)
             tensor_bytes = _jax_array_nbytes(
-                rank_tensors[boundary.left_rank][boundary.left_wire]
+                rank_tensors[boundary.left_rank][boundary.left_qubit]
             )
             tensor_bytes += _jax_array_nbytes(
-                rank_tensors[boundary.right_rank][boundary.right_wire]
+                rank_tensors[boundary.right_rank][boundary.right_qubit]
             )
             left, right, split_info = _apply_two_jax_mps_tensors(
-                rank_tensors[boundary.left_rank][boundary.left_wire],
-                rank_tensors[boundary.right_rank][boundary.right_wire],
+                rank_tensors[boundary.left_rank][boundary.left_qubit],
+                rank_tensors[boundary.right_rank][boundary.right_qubit],
                 matrix,
                 max_bond=max_bond,
                 cutoff=cutoff,
                 reverse=first > second,
             )
-            rank_tensors[boundary.left_rank][boundary.left_wire] = left
-            rank_tensors[boundary.right_rank][boundary.right_wire] = right
+            rank_tensors[boundary.left_rank][boundary.left_qubit] = left
+            rank_tensors[boundary.right_rank][boundary.right_qubit] = right
             record = _jax_split_record(
-                split_info, bond=boundary.left_wire, max_bond=max_bond, cutoff=cutoff
+                split_info, bond=boundary.left_qubit, max_bond=max_bond, cutoff=cutoff
             )
             if record is not None:
                 truncation_records.append(record)
             protocol = _jax_mps_boundary_protocol(
-                left_wire=boundary.left_wire,
-                right_wire=boundary.right_wire,
+                left_wire=boundary.left_qubit,
+                right_wire=boundary.right_qubit,
                 left_rank=boundary.left_rank,
                 right_rank=boundary.right_rank,
                 local_world_size=local_world_size,

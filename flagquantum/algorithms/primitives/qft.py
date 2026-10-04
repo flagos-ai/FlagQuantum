@@ -23,7 +23,7 @@ __all__ = ["append_qft", "qft"]
 class _Hadamard:
     """One Hadamard gate in a transform sequence."""
 
-    wire: int
+    qubit: int
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class _ControlledPhase:
 
 @dataclass(frozen=True)
 class _Swap:
-    """One wire exchange in a transform sequence."""
+    """One qubit exchange in a transform sequence."""
 
     left: int
     right: int
@@ -47,9 +47,9 @@ _Step = _Hadamard | _ControlledPhase | _Swap
 
 
 def append_qft(
-    circuit: Circuit, wires: Sequence[int], *, inverse: bool = False
+    circuit: Circuit, qubits: Sequence[int], *, inverse: bool = False
 ) -> None:
-    """Append the quantum Fourier transform on ``wires`` to ``circuit`` in place.
+    """Append the quantum Fourier transform on ``qubits`` to ``circuit`` in place.
 
     The sequence is the Hadamard and controlled-phase ladder followed by the bit-reversal
     swaps. With ``inverse`` set, the same gates are emitted in reverse order and every
@@ -57,23 +57,23 @@ def append_qft(
 
     Args:
         circuit: The circuit to extend.
-        wires: The wires carrying the transform, most significant first.
+        qubits: The qubits carrying the transform, most significant first.
         inverse: Append the inverse transform instead of the forward one.
 
     Raises:
-        ValueError: If ``wires`` contains a repeated wire.
+        ValueError: If ``qubits`` contains a repeated qubit.
     """
-    ordered = list(wires)
-    n_wires = len(ordered)
-    if n_wires == 0:
+    ordered = list(qubits)
+    n_qubits = len(ordered)
+    if n_qubits == 0:
         return
-    if len(set(ordered)) != n_wires:
-        raise ValueError("qft wires must be distinct")
+    if len(set(ordered)) != n_qubits:
+        raise ValueError("qft qubits must be distinct")
 
     sequence: list[_Step] = []
-    for position in range(n_wires):
+    for position in range(n_qubits):
         sequence.append(_Hadamard(ordered[position]))
-        for offset in range(position + 1, n_wires):
+        for offset in range(position + 1, n_qubits):
             sequence.append(
                 _ControlledPhase(
                     control=ordered[offset],
@@ -81,15 +81,15 @@ def append_qft(
                     angle=math.pi / 2 ** (offset - position),
                 )
             )
-    for position in range(n_wires // 2):
-        sequence.append(_Swap(ordered[position], ordered[n_wires - 1 - position]))
+    for position in range(n_qubits // 2):
+        sequence.append(_Swap(ordered[position], ordered[n_qubits - 1 - position]))
 
     if inverse:
         sequence.reverse()
 
     for step in sequence:
         if isinstance(step, _Hadamard):
-            circuit.gate("h", step.wire)
+            circuit.gate("h", step.qubit)
         elif isinstance(step, _ControlledPhase):
             angle = -step.angle if inverse else step.angle
             circuit.gate("cphase", (step.control, step.target), theta=angle)
@@ -97,11 +97,11 @@ def append_qft(
             circuit.gate("swap", (step.left, step.right))
 
 
-def qft(n_wires: int, *, inverse: bool = False) -> Circuit:
-    """Build a standalone quantum Fourier transform circuit on ``n_wires`` wires.
+def qft(n_qubits: int, *, inverse: bool = False) -> Circuit:
+    """Build a standalone quantum Fourier transform circuit on ``n_qubits`` qubits.
 
     Args:
-        n_wires: The number of wires; must be at least one.
+        n_qubits: The number of qubits; must be at least one.
         inverse: Build the inverse transform instead of the forward one.
 
     Returns:
@@ -109,10 +109,10 @@ def qft(n_wires: int, *, inverse: bool = False) -> Circuit:
         swaps.
 
     Raises:
-        ValueError: If ``n_wires`` is not positive.
+        ValueError: If ``n_qubits`` is not positive.
     """
-    if n_wires < 1:
-        raise ValueError(f"qft needs at least one wire, got {n_wires}")
-    circuit = Circuit(n_wires)
-    append_qft(circuit, list(range(n_wires)), inverse=inverse)
+    if n_qubits < 1:
+        raise ValueError(f"qft needs at least one qubit, got {n_qubits}")
+    circuit = Circuit(n_qubits)
+    append_qft(circuit, list(range(n_qubits)), inverse=inverse)
     return circuit

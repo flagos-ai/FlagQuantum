@@ -37,13 +37,13 @@ def _following_rotation_block(
         ):
             break
         wire = sweep.persistent_mapping[int(candidate.wires[0])]
-        if wire in sweep.plan.sharded_wires:
+        if wire in sweep.plan.sharded_qubits:
             break
         if wire == active_wire:
             block_matrices[-1] = sweep.matrices[cursor] @ block_matrices[-1]
         else:
             if wire in block_wires or len(block_wires) == (
-                native_cpu_forward_rotation_tile_wires(sweep.plan.n_wires)
+                native_cpu_forward_rotation_tile_wires(sweep.plan.n_qubits)
             ):
                 break
             block_wires.append(wire)
@@ -94,7 +94,7 @@ def apply_native_rzz_segment(
         first, second = (
             sweep.persistent_mapping[int(wire)] for wire in candidate.wires
         )
-        if first in sweep.plan.sharded_wires or second in sweep.plan.sharded_wires:
+        if first in sweep.plan.sharded_qubits or second in sweep.plan.sharded_qubits:
             break
         indices.append(cursor)
         first_wires.append(first)
@@ -123,7 +123,7 @@ def apply_native_rzz_segment(
             sweep.shard_state.amplitudes,
             matrices,
             wires,
-            n_wires=sweep.plan.n_wires,
+            n_wires=sweep.plan.n_qubits,
             rzz_angles=angles,
             rzz_first_wires=first,
             rzz_second_wires=second,
@@ -143,7 +143,7 @@ def apply_native_rzz_segment(
         angles,
         first,
         second,
-        n_wires=sweep.plan.n_wires,
+        n_wires=sweep.plan.n_qubits,
     ):
         return None
     sweep.local_count += len(indices)
