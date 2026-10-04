@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, ClassVar, Optional
 
-from .ir_adapter import to_drawable_circuit
+from .ir_adapter import _detected_qubit_count, to_drawable_circuit
 
 
 @dataclass
@@ -125,16 +125,14 @@ class TextDrawer:
         self.num_op_layers = len(self.layers)
 
     def _detect_n_qubits(self) -> int:
-        """Automatically detect the number of qubits"""
-        max_qubit = -1
-        for op in self.op_history:
-            qubits = op.get("qubits", [])
-            if isinstance(qubits, int):
-                qubits = [qubits]
-            for w in qubits:
-                if isinstance(w, int) and w > max_qubit:
-                    max_qubit = w
-        return max_qubit + 1 if max_qubit >= 0 else 0
+        """The width implied by the entries this drawer holds.
+
+        The entries are already qubit-named: they came through
+        ``to_drawable_circuit``, which is the one place that reads a legacy
+        spelling. Reached only for an input the adapter could not adapt at all,
+        whose history is empty.
+        """
+        return _detected_qubit_count(self.op_history)
 
     def _create_qubit_order(
         self, wire_order: Sequence[int | str] | None

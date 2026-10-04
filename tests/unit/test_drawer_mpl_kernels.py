@@ -26,7 +26,11 @@ if importlib.util.find_spec("matplotlib") is None:  # pragma: no cover
         allow_module_level=True,
     )
 
-from flagquantum.drawer.mpl_drawer import MPLDrawer, draw_mpl  # noqa: E402
+from flagquantum.drawer.mpl_drawer import (  # noqa: E402
+    MPLDrawer,
+    draw_mpl,
+    resolve_legacy_options,
+)
 
 
 def _pyplot() -> Any:
@@ -63,7 +67,7 @@ def test_single_qubit_gates_render_one_box_per_gate() -> None:
     circuit = fq.Circuit(3)
     circuit.h(0).x(1).y(2).s(0).t(1).z(2)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["H", "X", "Y", "S", "T", "Z"]
         assert len(ax.patches) == 6
@@ -76,7 +80,7 @@ def test_parameterized_gates_render_symbol_and_formatted_angle() -> None:
     circuit = fq.Circuit(2)
     circuit.ry(0, theta=0.25).crx(0, 1, 0.5)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["RY\n0.25", "CRX\n0.5"]
     finally:
@@ -88,7 +92,7 @@ def test_decimals_none_hides_gate_parameters() -> None:
     circuit = fq.Circuit(1)
     circuit.ry(0, theta=0.25)
 
-    fig, ax = _render(circuit, decimals=None, show_wire_labels=False)
+    fig, ax = _render(circuit, decimals=None, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["RY"]
     finally:
@@ -100,7 +104,7 @@ def test_parameterized_and_phase_gates_use_their_own_colours() -> None:
     circuit = fq.Circuit(2)
     circuit.ry(0, theta=0.25).p(1, 0.5)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         colours = [patch.get_facecolor() for patch in ax.patches]
         assert len(colours) == 2
@@ -114,7 +118,7 @@ def test_controlled_gates_draw_a_control_point_and_marker() -> None:
     circuit = fq.Circuit(2)
     circuit.cz(0, 1)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["Z"]
         assert len(ax.patches) == 2
@@ -127,7 +131,7 @@ def test_cx_renders_without_a_lettered_target_box() -> None:
     circuit = fq.Circuit(2)
     circuit.cx(0, 1)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == []
         assert len(ax.patches) == 2
@@ -140,7 +144,7 @@ def test_controlled_phase_gate_renders_its_parameter() -> None:
     circuit = fq.Circuit(2)
     circuit.cphase(0, 1, 0.5)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["CP\n0.5"]
     finally:
@@ -152,7 +156,7 @@ def test_ising_gates_render_a_label_spanning_their_wires() -> None:
     circuit = fq.Circuit(3)
     circuit.rxx(0, 1, 0.3).ryy(1, 2, 0.3).rzz(0, 2, 0.3)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert [text.split("\n")[0] for text in _texts(ax)] == ["RXX", "RYY", "RZZ"]
         assert len(ax.patches) == 3
@@ -167,8 +171,8 @@ def test_toffoli_and_cswap_render_three_wire_gates() -> None:
     cswap = fq.Circuit(3)
     cswap.cswap(0, 1, 2)
 
-    fig, ax = _render(toffoli, show_wire_labels=False)
-    fig2, ax2 = _render(cswap, show_wire_labels=False)
+    fig, ax = _render(toffoli, show_qubit_labels=False)
+    fig2, ax2 = _render(cswap, show_qubit_labels=False)
     try:
         assert _texts(ax) == []
         assert len(ax.patches) == 3
@@ -184,7 +188,7 @@ def test_swap_gate_draws_swap_markers_without_a_box() -> None:
     circuit = fq.Circuit(2)
     circuit.swap(0, 1)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert _texts(ax) == []
         assert len(ax.patches) == 0
@@ -196,7 +200,7 @@ def test_unknown_multi_wire_gate_falls_back_to_a_labelled_box() -> None:
     plt = _pyplot()
     device = _LegacyDevice([{"name_or_mat": "qft", "wires": [0, 1, 2], "params": []}])
 
-    fig, ax = _render(device, show_wire_labels=False)
+    fig, ax = _render(device, show_qubit_labels=False)
     try:
         assert _texts(ax) == ["QFT"]
         assert len(ax.patches) == 1
@@ -213,7 +217,7 @@ def test_measure_allz_adds_one_marker_per_wire() -> None:
         ]
     )
 
-    fig, ax = _render(device, show_wire_labels=False)
+    fig, ax = _render(device, show_qubit_labels=False)
     try:
         assert _texts(ax).count("MZ") == device.n_wires
     finally:
@@ -240,7 +244,7 @@ def test_wire_labels_can_be_cropped_out_of_the_view() -> None:
     circuit = fq.Circuit(2)
     circuit.h(0)
 
-    fig, ax = _render(circuit, show_wire_labels=False)
+    fig, ax = _render(circuit, show_qubit_labels=False)
     try:
         assert ax.get_xlim()[0] == pytest.approx(-1.0)
         assert all("|0⟩" not in text for text in _texts(ax))
@@ -253,7 +257,7 @@ def test_wire_labels_keep_the_uncropped_view_by_default() -> None:
     circuit = fq.Circuit(2)
     circuit.h(0)
 
-    fig, ax = _render(circuit, show_wire_labels=True)
+    fig, ax = _render(circuit, show_qubit_labels=True)
     try:
         assert ax.get_xlim()[0] == pytest.approx(-2.0)
     finally:
@@ -326,7 +330,7 @@ def test_wire_count_is_detected_from_history_when_absent() -> None:
     drawer = MPLDrawer(device)
     plt.close(drawer.fig)
 
-    assert drawer.n_wires == 3
+    assert drawer.n_qubits == 3
 
 
 def test_supplied_figure_is_reused_instead_of_created() -> None:
@@ -362,7 +366,7 @@ def test_figure_size_follows_layer_and_wire_counts_by_default() -> None:
     circuit = fq.Circuit(3)
     circuit.h(0).x(1).y(2)
 
-    fig, _ax = _render(circuit, show_wire_labels=False)
+    fig, _ax = _render(circuit, show_qubit_labels=False)
     try:
         assert tuple(fig.get_size_inches()) == (4.0, 4.0)
     finally:
@@ -376,8 +380,10 @@ def test_draw_entry_points_route_the_mpl_format() -> None:
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    fig, ax = draw(circuit, format="mpl", show_wire_labels=False)
-    fig_from_method, ax_from_method = circuit.draw(format="mpl", show_wire_labels=False)
+    fig, ax = draw(circuit, format="mpl", show_qubit_labels=False)
+    fig_from_method, ax_from_method = circuit.draw(
+        format="mpl", show_qubit_labels=False
+    )
     try:
         assert "H" in _texts(ax)
         assert "H" in _texts(ax_from_method)
@@ -392,9 +398,79 @@ def test_wire_options_style_the_wire_lines() -> None:
     circuit.h(0)
 
     fig, ax = _render(
-        circuit, wire_options={"color": "#123456"}, show_wire_labels=False
+        circuit, qubit_options={"color": "#123456"}, show_qubit_labels=False
     )
     try:
         assert {line.get_color() for line in ax.lines} == {"#123456"}
     finally:
         plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    ("legacy", "canonical", "value"),
+    [
+        ("show_wire_labels", "show_qubit_labels", False),
+        ("wire_options", "qubit_options", {"color": "#123456"}),
+        ("active_wire_notches", "active_qubit_notches", False),
+    ],
+)
+def test_legacy_option_spellings_move_onto_their_canonical_name(
+    legacy: str, canonical: str, value: Any
+) -> None:
+    """A pre-qubit option name is translated, not dropped.
+
+    These three options live in ``**kwargs``, so nothing counts them and nothing
+    reads them back. Dropping the legacy spelling would be silent: the caller
+    would get the opposite of what was asked for and no diagnostic at all.
+    """
+
+    with pytest.warns(DeprecationWarning, match=f"{legacy} is deprecated"):
+        resolved = resolve_legacy_options({legacy: value})
+
+    assert resolved == {canonical: value}
+
+
+def test_legacy_option_spelling_warns_and_still_takes_effect() -> None:
+    """The caller who still writes the old name is warned and obeyed."""
+
+    plt = _pyplot()
+    circuit = fq.Circuit(3)
+    circuit.h(0)
+
+    with pytest.warns(DeprecationWarning, match="show_wire_labels is deprecated"):
+        fig, ax = draw_mpl(circuit, show_wire_labels=False)
+    try:
+        # The three qubit labels are gone; the H box is not a qubit label.
+        assert _texts(ax) == ["H"]
+    finally:
+        plt.close(fig)
+
+
+def test_canonical_option_wins_when_both_spellings_are_passed() -> None:
+    """Passing both is a caller error, and the migrated name is the answer."""
+
+    plt = _pyplot()
+    circuit = fq.Circuit(1)
+    circuit.h(0)
+
+    with pytest.warns(DeprecationWarning):
+        fig, ax = draw_mpl(circuit, show_wire_labels=False, show_qubit_labels=True)
+    try:
+        assert "0" in _texts(ax)
+    finally:
+        plt.close(fig)
+
+
+def test_direct_drawer_construction_also_translates_legacy_options() -> None:
+    """``MPLDrawer`` is an entry point too, and translates on its own."""
+
+    plt = _pyplot()
+    circuit = fq.Circuit(3)
+    circuit.h(0)
+
+    with pytest.warns(DeprecationWarning, match="active_wire_notches is deprecated"):
+        drawer = MPLDrawer(circuit, active_wire_notches=False)
+    try:
+        assert drawer.active_notches is False
+    finally:
+        plt.close(drawer.fig)
