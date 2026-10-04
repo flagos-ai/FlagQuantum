@@ -92,7 +92,7 @@ def set_key(text: str, row_id: str, key: str, value: str | None) -> str:
                 # Rename rather than delete: the checker must notice a missing
                 # key, not a syntactically broken file.
                 indent = lines[i][: len(lines[i]) - len(stripped)]
-                lines[i] = f"{indent}{key}_renamed{stripped[len(key):]}"
+                lines[i] = f"{indent}{key}_renamed{stripped[len(key) :]}"
             else:
                 indent = lines[i][: len(lines[i]) - len(stripped)]
                 lines[i] = f"{indent}{value}\n"
@@ -299,9 +299,51 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_dem_merge", "symbols_present", None),
     ),
     (
+        # Alignment is a claim about a row's own surface, not a licence to stop
+        # pointing at it: the row this is planted in is the one the handle layer
+        # closed, and an aligned row is exactly where a symbol that stopped
+        # resolving would otherwise go unnoticed.
+        "stop a handle symbol resolving in a row that claims alignment",
+        "does not resolve",
+        lambda t: sub_in_key(
+            t,
+            "qec_detector_annotations",
+            "symbols_present",
+            "flagquantum.qec.MeasurementSamples",
+            "flagquantum.qec.MeasurementSamplesGone",
+        ),
+    ),
+    (
+        # An absence is a live claim, so the day the symbol it names exists the
+        # row is stale rather than merely out of date: this is the mutation that
+        # fails if the handle layer is ever deleted while the row keeps saying
+        # the layer is absent.
+        "keep an absence standing after the handle layer closed it",
+        "now resolves -- the gap closed, so this row is stale",
+        lambda t: append_to_list(
+            t,
+            "qec_detector_annotations",
+            "symbols_absent",
+            "flagquantum.qec.MeasurementSamples",
+        ),
+    ),
+    (
+        # `next_action` is required of a partial or absent row and of no other,
+        # so this is the other half of that rule: an aligned row may drop it,
+        # and must still state what it is for.
+        "leave a row that dropped its next_action without a target",
+        "target is empty",
+        lambda t: set_key(t, "qec_detector_annotations", "target", 'target = ""'),
+    ),
+    (
+        # The row this mutation is planted in is `partial` on the other half of
+        # its own scope, so the branch it reaches is the partial one. It moved
+        # here when `qec_dem_matrices_and_rates` became `aligned`: a row that
+        # changes status must not quietly move a mutation onto the aligned
+        # branch, where it would still fail but for a different reason.
         "leave a partial row with nothing present",
         "must name the symbols_present entry",
-        lambda t: set_key(t, "qec_dem_matrices_and_rates", "symbols_present", None),
+        lambda t: set_key(t, "qec_dem_construction", "symbols_present", None),
     ),
     (
         "leave a gap row with no proof at all",
@@ -388,6 +430,57 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
             "dem_merge_operation",
             "negative_search",
             "symbol:flagquantum.qec.DetectorErrorModel.merge_duplicate_mechanisms",
+        ),
+    ),
+    (
+        # The registry is the newest diff row to gain a symbol, so the wrong-owner
+        # mistake has to be caught here too: `get_decoder` is a real name in the
+        # tree, and only following the dotted path separates the registry's
+        # factory from a method of the model.
+        "point the registry diff row at a real name under the wrong owner",
+        "'get_decoder' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "decoder_registry",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.get_decoder"',
+        ),
+    ),
+    (
+        "keep the registry diff row absent now that the tree has it",
+        "verdict `absent` but",
+        lambda t: set_key(t, "decoder_registry", "verdict", 'verdict = "absent"'),
+    ),
+    (
+        # `error_id` is a field of the mechanism record, not of the model that
+        # holds the records, and the two names sit in one module. Only following
+        # the dotted path separates the mechanism's own id from a model-level
+        # one.
+        "point the error-id diff row at a real name under the wrong owner",
+        "'error_id' exists in the tree but not at",
+        lambda t: set_key(
+            t,
+            "dem_error_ids",
+            "flagquantum_symbol",
+            'flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.error_id"',
+        ),
+    ),
+    (
+        # The column this looks for has landed, so listing it as absent is how a
+        # closed gap keeps being reported as open -- which is what the staleness
+        # check reads the tree to catch. The name is planted in the row that
+        # consumes the column rather than in the row whose surface it closed,
+        # because the check resolves the name against the checkout and does not
+        # care which row is doing the reporting. The item is bare because this
+        # row's list is written one entry per line, and the mutator supplies the
+        # quotes itself for that shape.
+        "keep the error-id column listed as absent now that the model states it",
+        "symbols_absent 'error_ids' exists as a definition somewhere",
+        lambda t: append_to_list(
+            t,
+            "qec_decoder_family",
+            "symbols_absent",
+            "error_ids",
         ),
     ),
 ]

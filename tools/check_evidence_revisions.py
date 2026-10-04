@@ -106,6 +106,19 @@ declared tuple is asserted against the walked artifacts so that widening the sur
 is a reviewed change rather than an unremarked one. An origin stated beside one field
 accounts for every field holding the same value, because the origin belongs to the
 revision and not to a repetition of it.
+
+A revision is also read where a file writes one in prose. The walk opened ``*.json``
+and nothing else, so a comparison record that named the revision its runner ran at in
+a sentence was read by no check at all, even under a root the walk already covered:
+``benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md``
+recorded such a revision and the gate never asked about it, which is the same defect
+as an artifact no validator named, one file type over. So the walk now reads every
+file type that can carry a citation under :data:`EVIDENCE_ROOTS`, and a full-length
+revision in one of them counts exactly as a full-length revision in a JSON field does.
+A file that is not JSON records no fields and states no ``<field>_origin``, so the
+table is the only place it can account for a revision; the roots are unchanged, which
+keeps this a widening of what is read rather than a widening of where, and a revision
+written in prose outside :data:`EVIDENCE_ROOTS` is still read by no check.
 """
 
 from __future__ import annotations
@@ -146,8 +159,8 @@ except ModuleNotFoundError:  # direct script execution
 DECLARATIONS = ROOT / "evidence-revision-origins.toml"
 SCHEMA = "flagquantum.evidence_revision_origins.v1"
 
-#: Directories whose JSON artifacts are walked. A directory is listed when its
-#: JSON files are evidence for a checked-in claim rather than a tool's output or a
+#: Directories whose artifacts are walked. A directory is listed when its
+#: files are evidence for a checked-in claim rather than a tool's output or a
 #: tool's input. ``docs/development/evidence/`` is listed because the Jiuding
 #: hardware records there are what ``docs/guides/JIUDING.md``,
 #: ``docs/reference/KNOWN_LIMITATIONS.md`` and the release notes cite as their
@@ -175,10 +188,18 @@ CITATION_ROOTS = (
     ROOT / "docs" / "roadmap",
 )
 
-#: File types that can carry a citation of a revision.
+#: File types that can carry a citation of a revision. The same types are what the
+#: walk reads a recorded revision out of, because a file that can cite a revision is
+#: a file that can record one: ``.json`` is decoded as a document, and every other
+#: type is read as text and searched for a full-length revision.
 CITATION_SUFFIXES = frozenset(
     {".json", ".md", ".markdown", ".rst", ".toml", ".txt", ".yaml", ".yml"}
 )
+
+#: The walked file type decoded as a document rather than read as text. A document
+#: records its revisions in named fields, so it can state ``<field>_origin`` beside
+#: one; a file of any other walked type writes a revision in prose and holds no field.
+DOCUMENT_SUFFIX = ".json"
 
 #: Directories never descended into while looking for the revisions a repository
 #: cites. A full-length revision under one of these is not a citation a reader
@@ -621,10 +642,25 @@ def _artifact_errors(
             f"the object by name, {ORIGIN_PRODUCING_HOST_HISTORY!r} when the run "
             f"happened in a history this repository does not contain, or "
             f"{ORIGIN_EXTERNAL_DEPENDENCY!r} when the revision is a commit of a "
-            f"dependency -- or state {paths[0]}_origin beside the field that records "
-            "it"
+            f"dependency{_disclosure_clause(artifact, paths[0])}"
         )
     return tuple(errors)
+
+
+def _disclosure_clause(artifact: str, path: str) -> str:
+    """Return how an artifact can account for a revision without the table.
+
+    A document can state an origin in a field beside the value, and a file that is
+    not a document cannot: it writes the revision in prose, so the table is the only
+    place the origin can be recorded.
+    """
+
+    if artifact.endswith(DOCUMENT_SUFFIX):
+        return f" -- or state {path}_origin beside the field that records it"
+    return (
+        ", and state it there rather than beside the value: this file writes the "
+        "revision in prose and holds no field an origin can be stated in"
+    )
 
 
 def _accounted_at(
@@ -797,6 +833,33 @@ def _abbreviation_errors(artifact: str, strings: Mapping[str, str]) -> tuple[str
     return tuple(errors)
 
 
+def _recorded_in_prose(text: str) -> dict[str, tuple[str, ...]]:
+    """Return the revisions ``text`` records, mapped to the lines that record them.
+
+    A file that is not JSON holds no fields, so the value stands on its own and the
+    length is the whole of what separates a revision from the other hexadecimal text
+    such a file carries -- a digest, a task identifier, a date. Only a full-length run
+    is read, and it is read through the same test :func:`_recorded` applies to a JSON
+    leaf, so one string is a revision in prose exactly when it is one in a field and
+    the two readers cannot disagree about a value they both hold.
+
+    Args:
+        text: Decoded contents of a walked file that is not JSON.
+
+    Returns:
+        One entry per distinct revision, holding the one-based lines that record it in
+        document order, so an error can name every place a revision appears.
+    """
+
+    recorded: dict[str, list[str]] = {}
+    for number, line in enumerate(text.splitlines(), start=1):
+        for match in _FULL_REVISION_PATTERN.finditer(line):
+            value = match.group(1)
+            if is_full_revision(value):
+                recorded.setdefault(value, []).append(f"line {number}")
+    return {revision: tuple(lines) for revision, lines in recorded.items()}
+
+
 def _read_artifacts(evidence_roots: Sequence[Path], root: Path) -> tuple[
     dict[str, dict[str, tuple[str, ...]]],
     dict[str, dict[str, str]],
@@ -804,20 +867,40 @@ def _read_artifacts(evidence_roots: Sequence[Path], root: Path) -> tuple[
 ]:
     """Decode every walked artifact once, keyed by repository-relative path.
 
+    A file is read as JSON when it is JSON and searched as text otherwise, and both
+    readers answer the same question, so the walk's verdict does not depend on which
+    of the two file types a revision happens to be written in.
+
     Returns:
         The revisions each artifact records, every string the artifact holds keyed by
         the JSON path that carries it, and the artifacts that could not be decoded.
         The strings are returned rather than the origins derived from them, because
         two readers need them: the origin stated beside a full-length revision, and
-        the abbreviated value of a revision-named field.
+        the abbreviated value of a revision-named field. A text file states no field,
+        so it contributes no strings.
     """
 
     records: dict[str, dict[str, tuple[str, ...]]] = {}
     stated: dict[str, dict[str, str]] = {}
     errors: list[str] = []
     for evidence_root in evidence_roots:
-        for path in sorted(evidence_root.rglob("*.json")):
+        for path in sorted(evidence_root.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in CITATION_SUFFIXES:
+                continue
+            if any(part in CITATION_SKIP_DIRECTORIES for part in path.parts):
+                continue
             artifact = _relative(path, root)
+            if path.suffix.lower() != DOCUMENT_SUFFIX:
+                try:
+                    prose = path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as error:
+                    errors.append(f"{artifact} could not be read as text: {error}")
+                    continue
+                revisions = _recorded_in_prose(prose)
+                if revisions:
+                    records[artifact] = revisions
+                    stated[artifact] = {}
+                continue
             try:
                 payload = _load_json(path)
             except (OSError, json.JSONDecodeError) as error:

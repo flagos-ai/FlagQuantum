@@ -5,6 +5,7 @@ import math
 import pytest
 import torch
 
+import flagquantum.simulation.statevector.fixed_layer_cpu as fixed_layer_cpu
 import flagquantum.simulation.statevector.operations as statevector_ops
 import flagquantum.simulation.statevector.product_state as product_state
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
@@ -93,6 +94,29 @@ def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
 
     assert inputs.grad is not None
     assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
+
+
+def test_native_scalar_fused_rotation_has_a_wide_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        fixed_layer_cpu, "native_cpu_one_qubit_layer_available", lambda: True
+    )
+    instructions = (Instruction("ry", (0,), params={"theta": 0.2}),)
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, narrow, batch_size=1
+    )
+    assert fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -278,6 +302,143 @@ def test_native_fused_rotation_layer_only_promotes_terminal_regions(
     assert all(
         tuple(instruction.name for instruction in region.instructions) == ("ry", "rz")
         for region in native_regions[0].regions
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_rotation_clifford_tiles_match_rollback_and_preserve_input(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9127)
+    inputs = (
+        torch.randn((3, 256), generator=generator)
+        + 1j * torch.randn((3, 256), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(8, bsz=3, dtype=dtype, inputs=inputs)
+    for wire in range(8):
+        circuit.ry(wire, 0.07 * (wire + 1)).rz(wire, -0.03 * (wire + 1))
+    for wire in range(0, 8, 2):
+        circuit.cx(wire, wire + 1)
+    for wire in range(8):
+        circuit.ry(wire, 0.02 * (wire + 1))
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        selected_program = next(
+            value
+            for key, value in circuit._backend_programs.items()
+            if "cpu_native_rotation_clifford_fusion" in key
+            and key[key.index("cpu_native_rotation_clifford_fusion") + 1]
+        )
+        fused_tiles = tuple(
+            step for step in selected_program if getattr(step, "fused_cx_controls", ())
+        )
+        assert tuple(step.fused_cx_controls for step in fused_tiles) == (
+            (0, 2, 4),
+            (6,),
+        )
+        assert tuple(step.fused_cx_targets for step in fused_tiles) == (
+            (1, 3, 5),
+            (7,),
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_rotation_clifford_matches_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9151)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.ry(wire, 0.03 * (wire + 1)).rz(wire, -0.02 * (wire + 1))
+    for wire in range(0, 16, 2):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_fused_rotation_matches_chain_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9157)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.rx(wire, 0.01 * (wire + 1))
+        circuit.ry(wire, 0.02 * (wire + 1))
+        circuit.rz(wire, -0.03 * (wire + 1))
+    for wire in range(15):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
+        )
+
+
+def test_native_rotation_clifford_tiles_do_not_bypass_autograd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inputs = torch.randn((3, 64), dtype=torch.complex128, requires_grad=True)
+    angles = torch.linspace(-0.2, 0.3, 3, dtype=torch.float64, requires_grad=True)
+    circuit = _fused_rotation_batch_circuit(inputs, angles)
+    circuit.cx(0, 1).cx(2, 3).cx(4, 5)
+    monkeypatch.setenv("FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION", "1")
+
+    circuit.state(refresh=True).real.sum().backward()
+
+    assert inputs.grad is not None
+    assert angles.grad is not None
+    assert all(
+        not getattr(step, "fused_cx_controls", ())
+        for program in circuit._backend_programs.values()
+        for step in program
     )
 
 

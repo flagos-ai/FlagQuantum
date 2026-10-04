@@ -26,6 +26,13 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-001-A",
         "tests/unit/test_statevector_triton.py::test_generic_local_1q_matches_pytorch",
+        "tests/unit/test_statevector_forward.py::test_local_1q_triton_execution_records_catalog_identity",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_local_1q_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-001-B",
@@ -37,10 +44,22 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-002-A",
         "tests/test_statevector_triton_gates.py::test_local_cx_inplace_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_local_cx_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_cx_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-003-A",
         "tests/test_statevector_triton_gates.py::test_local_cx_segment_matches_reverse_source_permutation",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_cx_segment_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_cx_segment_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-003-B",
@@ -52,6 +71,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-004-A",
         "tests/test_statevector_triton_gates.py::test_constant_ry_rz_triton_path_with_cx_matches_cpu",
+        capability_tests=(
+            "tests/unit/test_ry_rz_catalog_dispatch.py::test_ry_rz_pair_default_window_and_override",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_ry_rz_pair_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-005-A",
@@ -221,13 +246,83 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-007-A",
         "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_cuda_matches_reference",
+        "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_runtime_uses_catalog",
         capability_tests=(
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_cpu_fallback_matches_reference",
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_unsupported_input_uses_fallback",
             "tests/unit/test_mps_wire_probabilities_triton.py::test_fused_mps_wire_probabilities_validates_input",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_reference_path_reports_fallback",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_route_enforces_evidenced_window",
+            "tests/unit/test_mps_wire_probability_catalog_dispatch.py::test_mps_wire_probability_kill_switch_uses_reference",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_wire_probability_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-MEAS-001-A",
+        "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_matches_reference",
+        "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_runtime_uses_catalog",
+        gradient_tests=(
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_gradient_matches_reference",
+        ),
+        capability_tests=(
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cpu_fallback_preserves_gradient",
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_unsupported_cuda_input_uses_fallback",
+            "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_validates_input",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_kill_switch_uses_reference",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_probability_kernel_a800.json",
+            "benchmarks/results/local/statevector_probability_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-MEAS-002-A",
+        "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cuda_matches_reference",
+        "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_public_path_uses_catalog",
+        gradient_tests=(
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cuda_gradient_matches_reference",
+        ),
+        capability_tests=(
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_cpu_fallback_preserves_gradient",
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_unsupported_cuda_input_uses_fallback",
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_launches_flat_grids",
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_input",
+            "tests/unit/test_statevector_pauli_expectation_triton.py::test_statevector_pauli_expectation_validates_factor_types",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_rollout_defaults_on_and_has_kill_switch",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py::test_statevector_pauli_expectation_kill_switch_uses_reference",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json",
+            "benchmarks/results/local/statevector_pauli_expectation_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-MEAS-003-A",
+        "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cuda_matches_reference",
+        "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_runtime_uses_catalog",
+        gradient_tests=(
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cuda_gradient_matches_reference",
+        ),
+        capability_tests=(
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_cpu_fallback_preserves_gradient",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_unsupported_cuda_input_uses_fallback",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_wide_selection_uses_fallback",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_small_workload_uses_fallback",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_launches_flat_grids",
+            "tests/unit/test_statevector_marginal_probabilities_triton.py::test_statevector_marginal_probabilities_validates_input",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_route_enforces_evidenced_window",
+            "tests/unit/test_statevector_marginal_probability_catalog_dispatch.py::test_statevector_marginal_kill_switch_uses_reference",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_marginal_probability_kernel_a800.json",
+            "benchmarks/results/local/statevector_marginal_probability_dispatch_a800.json",
         ),
     ),
     _evidence(
@@ -248,6 +343,62 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
         capability_tests=(
             "tests/unit/test_triton_complex_bmm.py::test_fused_complex_layout_bmm_cpu_fallback_matches_torch",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/tn_layout_contraction_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-001-A",
+        "tests/gpu/test_flagtree_tle_statevector.py::test_flagtree_tle_local_1q_matches_pytorch",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_capability_maps_cuda_target_to_nvidia_registry",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_local_1q_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-006-A",
+        "tests/gpu/test_flagtree_tle_statevector.py::test_flagtree_tle_transpose_1q_matches_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_transpose_1q_rejects_cpu_before_capability_probe",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_transpose_1q_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-007-A",
+        "tests/gpu/test_flagtree_tle_transport.py::test_flagtree_tle_control_pack_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_control_pack_rejects_cpu_before_capability_probe",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_control_transport_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-SV-008-A",
+        "tests/gpu/test_flagtree_tle_transport.py::test_flagtree_tle_control_unpack_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_control_unpack_rejects_cpu_before_capability_probe",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_control_transport_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-FLAGTREE-GR-003-A",
+        "tests/gpu/test_flagtree_tle_adjoint.py::test_flagtree_tle_sharded_vjp_matches_global_reference",
+        gradient_tests=(
+            "tests/gpu/test_flagtree_tle_adjoint.py::test_flagtree_tle_sharded_vjp_matches_global_reference",
+        ),
+        capability_tests=(
+            "tests/unit/test_flagtree_tle_provider.py::test_tle_sharded_vjp_rejects_cpu_before_capability_probe",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/flagtree_tle_sharded_adjoint_a800.json",
         ),
     ),
 )

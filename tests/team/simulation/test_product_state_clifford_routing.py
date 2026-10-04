@@ -192,6 +192,51 @@ def test_batched_fixed_clifford_layer_matches_sequential_kernels(
     assert torch.equal(actual, expected)
 
 
+def test_wide_product_component_uses_native_static_clifford_with_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = torch.randn(1, 2**16, dtype=torch.complex128)
+    component = product_state._ProductComponent(tuple(range(16)), state)
+    gates = tuple(("h" if wire % 3 == 0 else "s", wire) for wire in range(16))
+    observed: list[tuple[torch.dtype, torch.dtype, int]] = []
+
+    def record_native(
+        output: torch.Tensor,
+        gate_codes: torch.Tensor,
+        wires: torch.Tensor,
+        *,
+        n_wires: int,
+    ) -> bool:
+        observed.append((gate_codes.dtype, wires.dtype, n_wires))
+        return False
+
+    monkeypatch.setattr(product_state, "fused_static_clifford_layer_", record_native)
+    product_state._apply_fixed_clifford_layer(component, gates)
+
+    assert observed == [(torch.int8, torch.int64, 16)]
+
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_NATIVE_STATIC_CLIFFORD", "0")
+    observed.clear()
+    product_state._apply_fixed_clifford_layer(component, gates)
+
+    assert observed == []
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_product_static_clifford_matches_exact_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    circuit = _random_clifford(18, dtype)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_NATIVE_STATIC_CLIFFORD", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_NATIVE_STATIC_CLIFFORD", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-6 if dtype == torch.complex64 else 2e-14
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+
+
 def test_clifford_matching_rollback_disables_layer_batching(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

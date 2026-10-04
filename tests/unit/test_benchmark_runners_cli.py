@@ -101,6 +101,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "simulator_compare_pennylane",
         "simulator_comparison_report",
         "simulator_workload_corpus",
+        "socket_local_throughput",
         "statevector_cpu_paths",
         "statevector_local",
         "statevector_strong_scaling",

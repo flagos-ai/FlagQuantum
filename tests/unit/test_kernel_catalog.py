@@ -46,12 +46,13 @@ def _literal_all(tree: ast.Module) -> set[str]:
 def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     validate_catalog()
 
-    assert len(SEMANTICS) == 23
-    assert len(IMPLEMENTATIONS) == 25
-    assert len(EVIDENCE) == 25
+    assert len(SEMANTICS) == 26
+    assert len(IMPLEMENTATIONS) == 33
+    assert len(EVIDENCE) == 33
     assert {semantic.domain for semantic in SEMANTICS} == {
         "gradient",
         "mps",
+        "measurement",
         "numerics",
         "statevector",
     }
@@ -59,10 +60,22 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
         implementation.implementation_id: implementation.maturity
         for implementation in IMPLEMENTATIONS
     }
+    assert maturity_by_id["FQKI-TRITON-SV-001-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-SV-002-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-SV-003-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-003-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-004-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-005-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-MPS-006-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MPS-007-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MEAS-001-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MEAS-002-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-MEAS-003-A"] == "provisional"
+    assert maturity_by_id["FQKI-FLAGTREE-SV-001-A"] == "experimental"
+    assert maturity_by_id["FQKI-FLAGTREE-SV-006-A"] == "experimental"
+    assert maturity_by_id["FQKI-FLAGTREE-SV-007-A"] == "experimental"
+    assert maturity_by_id["FQKI-FLAGTREE-SV-008-A"] == "experimental"
+    assert maturity_by_id["FQKI-FLAGTREE-GR-003-A"] == "experimental"
     assert set(maturity_by_id.values()) == {"experimental", "provisional"}
 
 

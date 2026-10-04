@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import lru_cache
 from typing import TYPE_CHECKING, Protocol
 
 import torch
@@ -469,6 +470,21 @@ def _complex64_local_cx_segment_kernel(
     tl.store(output_parts + 2 * linear + 1, value_imag, mask=valid)
 
 
+@lru_cache(maxsize=256)
+def _local_cx_segment_positions(
+    device_index: int,
+    control_bit_positions: tuple[int, ...],
+    target_bit_positions: tuple[int, ...],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Cache immutable device metadata for a compiled CNOT sequence."""
+
+    device = torch.device("cuda", device_index)
+    return (
+        torch.tensor(control_bit_positions, dtype=torch.int32, device=device),
+        torch.tensor(target_bit_positions, dtype=torch.int32, device=device),
+    )
+
+
 def apply_complex64_local_cx_segment(
     state: torch.Tensor,
     *,
@@ -494,10 +510,24 @@ def apply_complex64_local_cx_segment(
         target_bit_positions
     ):
         raise ValueError("compiled CX segment requires paired control/target bits")
-    controls = torch.tensor(
-        control_bit_positions, dtype=torch.int32, device=state.device
+    local_bits = state.shape[1].bit_length() - 1
+    if any(
+        control == target
+        or not 0 <= control < local_bits
+        or not 0 <= target < local_bits
+        for control, target in zip(
+            control_bit_positions, target_bit_positions, strict=True
+        )
+    ):
+        raise ValueError("compiled CX segment requires distinct local address bits")
+    device_index = state.device.index
+    if device_index is None:
+        raise ValueError("compiled CX segment requires an indexed CUDA device")
+    controls, targets = _local_cx_segment_positions(
+        device_index,
+        control_bit_positions,
+        target_bit_positions,
     )
-    targets = torch.tensor(target_bit_positions, dtype=torch.int32, device=state.device)
     total_count = state.numel()
     block = 256
     _complex64_local_cx_segment_kernel[(triton.cdiv(total_count, block),)](

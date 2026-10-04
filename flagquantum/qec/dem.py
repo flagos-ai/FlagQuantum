@@ -22,6 +22,18 @@ shape never depends on how many mechanisms a signature has, and the decoder is
 what refuses to read an unmerged duplicate rather than quietly weighting a fault
 by the cheaper of its parts.
 
+A mechanism may also carry an error *id*, and mechanisms sharing an id are
+mutually exclusive rather than independent: at most one of them fires in a shot.
+That is how a correlated or decomposed mechanism is stated, and it is the one
+thing about a model the parity matrices cannot express, because two columns of a
+parity matrix are independent by construction. The id is a field of a mechanism's
+own record, so the model carries it through every entry point unchanged and
+refuses the statements that would drop it. ``dem_alternatives`` owns the reading
+-- what a group means for a rate and for a draw, and what a group that does not
+fit one shot earns -- and this module holds the field the reading is stated on.
+A model with no ids is what every construction route here produces and what
+stim's text states, and it behaves exactly as it did before the field existed.
+
 The model is defined for Pauli noise only. It is built on the memory circuit
 *without* in-circuit feedback, because the model describes the physical
 noise-to-detection mapping that a decoder inverts; the compiled feedback layer
@@ -46,6 +58,14 @@ import torch
 
 from .circuit import MemoryCircuit
 from .codes import StabilizerCode
+from .dem_alternatives import (
+    alternative_groups,
+    fold_marginals,
+    projected_ids,
+    require_groups_fit,
+    sample_groups,
+    stated_ids,
+)
 from .dem_construction import (
     CssCodeMatrices,
     _code_matrix_entries,
@@ -121,6 +141,19 @@ def _count(value: int, *, name: str) -> int:
     return int(value)
 
 
+def _error_id(value: int | None) -> int | None:
+    """Normalize an error id, which is an opaque non-negative label.
+
+    Two mechanisms are alternatives exactly when their ids are equal, so the
+    value of an id is a label and not a quantity: ids are compared and never
+    ordered or counted, and a caller may renumber a model without changing it.
+    """
+
+    if value is None:
+        return None
+    return _count(value, name="error id")
+
+
 def _normalized_indices(values: Iterable[int], *, name: str) -> tuple[int, ...]:
     indices: list[int] = []
     for value in values:
@@ -191,20 +224,34 @@ def _toggle(targets: set[int], index: int) -> None:
         targets.add(index)
 
 
-def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
-    """Parse one ``error(<p>) <targets...>`` line into its symptom.
+def _parse_error_line(
+    line: str, *, detector_shift: int, decomposed: bool = False
+) -> tuple[DemError, ...]:
+    """Parse one ``error(<p>) <targets...>`` line into its mechanisms.
 
     A detector target is relative to the shifts in force at that line, which is
     what makes a ``shift_detectors`` instruction meaningful; an observable
     target is absolute, because the format has no observable shift.
 
-    The signature is the symmetric difference of the line's targets, so a target
-    that appears twice cancels. Stim's ``^`` separators mark how a composite
-    mechanism decomposes into simpler ones; they partition the targets and do
-    not change which detectors and observables a shot of this mechanism flips,
-    which is the whole of what a signature records. The groups are therefore
-    not retained, and a decomposed line contributes the same signature its
-    targets state in any order.
+    Stim's ``^`` separators mark how a composite mechanism decomposes into
+    simpler ones; they partition the targets and do not change which detectors
+    and observables a shot of this mechanism flips. Read one way, the line is a
+    single mechanism whose signature is the symmetric difference of all its
+    targets, and the groups are not retained. Read the other way, each group
+    becomes a mechanism of its own at the parent probability, which is the
+    decomposition suggestion the separators carry and is a lossy reading of the
+    line rather than an equivalent one: two components that can each fire
+    independently at probability ``p`` do not reproduce a single mechanism at
+    probability ``p``. ``decomposed`` selects between the two, and the combined
+    reading is the default because it is the one that preserves the model.
+
+    A target that appears twice cancels, within a group and across groups alike,
+    which is the symmetric difference the combined reading states. Two
+    components with no targets at all are also possible -- ``error(0.1) D0 ^
+    D0`` states one twice -- and neither reading drops what it cannot state: the
+    combined reading refuses a line whose whole signature is empty, and the
+    decomposed reading refuses a component whose own signature is empty, because
+    a mechanism that flips nothing is not a mechanism this model can hold.
     """
 
     body = line[len("error") :]
@@ -218,13 +265,14 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
         probability = float(body[:closing])
     except ValueError as error:
         raise ValueError("an error line must state a numeric probability") from error
-    detectors: set[int] = set()
-    observables: set[int] = set()
     tokens = body[closing + 1 :].split()
     if not tokens:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
         )
+    groups: list[tuple[set[int], set[int]]] = []
+    detectors: set[int] = set()
+    observables: set[int] = set()
     group_is_empty = True
     for token in tokens:
         if token == _SEPARATOR:
@@ -232,6 +280,8 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
                 raise ValueError(
                     "an error separator must sit between two groups of targets"
                 )
+            groups.append((detectors, observables))
+            detectors, observables = set(), set()
             group_is_empty = True
             continue
         group_is_empty = False
@@ -248,18 +298,48 @@ def _parse_error_line(line: str, *, detector_shift: int) -> DemError:
         raise ValueError(f"error targets must be D or L indices, not {token!r}")
     if group_is_empty:
         raise ValueError("an error separator must sit between two groups of targets")
+    groups.append((detectors, observables))
+
+    if decomposed and len(groups) > 1:
+        # Upstream's `use_decomp_suggestions`: one column per component, each
+        # inheriting the parent instruction's probability. A component that
+        # flips nothing has no column to become, and dropping it silently would
+        # report a model with a mechanism removed, so the line is refused and
+        # the combined reading is named as the route that states it.
+        mechanisms: list[DemError] = []
+        for group_detectors, group_observables in groups:
+            if not group_detectors and not group_observables:
+                raise ValueError(
+                    "a decomposition component that flips nothing cannot be a "
+                    "mechanism of its own; read the line without "
+                    "use_decomp_suggestions to state its combined signature"
+                )
+            mechanisms.append(
+                DemError(
+                    probability=probability,
+                    detectors=tuple(group_detectors),
+                    observables=tuple(group_observables),
+                )
+            )
+        return tuple(mechanisms)
+
+    combined_detectors: set[int] = set()
+    combined_observables: set[int] = set()
+    for group_detectors, group_observables in groups:
+        combined_detectors ^= group_detectors
+        combined_observables ^= group_observables
     # ``DemError`` re-checks this in its own constructor; refusing here as well
-    # fails at the parse site, where the offending line is still in hand. A
-    # decomposed line whose groups cancel reaches this as well, because the
-    # signature it states is empty.
-    if not detectors and not observables:
+    # fails at the parse site, where the offending line is still in hand.
+    if not combined_detectors and not combined_observables:
         raise ValueError(
             "an error mechanism must flip at least one detector or observable"
         )
-    return DemError(
-        probability=probability,
-        detectors=tuple(detectors),
-        observables=tuple(observables),
+    return (
+        DemError(
+            probability=probability,
+            detectors=tuple(combined_detectors),
+            observables=tuple(combined_observables),
+        ),
     )
 
 
@@ -314,12 +394,17 @@ def _declared_count(declared: set[int], *, name: str, prefix: str) -> int:
     return count
 
 
-def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
+def _parse_stim_text(
+    text: str, *, use_decomp_suggestions: bool = False
+) -> tuple[int, int, tuple[DemError, ...]]:
     """Parse stim text into a model shape and its error mechanisms.
 
     Only the instructions this model represents are accepted; every other
     construct is refused with a stated reason, so a text that carries
     information the model cannot hold fails closed instead of losing it.
+    ``use_decomp_suggestions`` decides whether a line's ``^`` groups are read as
+    one mechanism or as one mechanism each, which ``_parse_error_line`` states
+    in full.
     """
 
     declared_detectors: set[int] = set()
@@ -336,9 +421,14 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
         head = stripped.split("(", 1)[0].split()
         keyword = head[0] if head else ""
         if keyword == "error":
-            error = _parse_error_line(stripped, detector_shift=detector_shift)
-            errors.append(error)
-            referenced_observables.update(error.observables)
+            parsed = _parse_error_line(
+                stripped,
+                detector_shift=detector_shift,
+                decomposed=use_decomp_suggestions,
+            )
+            errors.extend(parsed)
+            for error in parsed:
+                referenced_observables.update(error.observables)
         elif keyword == "detector":
             declared_detectors.add(
                 _parse_declaration_line(
@@ -387,11 +477,23 @@ def _parse_stim_text(text: str) -> tuple[int, int, tuple[DemError, ...]]:
 
 @dataclass(frozen=True)
 class DemError:
-    """One independent error mechanism and the signature it flips."""
+    """One error mechanism, the signature it flips, and what it excludes.
+
+    A mechanism is an independent fault by default. Setting ``error_id`` states
+    the opposite about a group of them: every mechanism carrying the same id is
+    an alternative to the others, so at most one of them fires in a shot. An id
+    says nothing about the signature, so a group may hold mechanisms with
+    different signatures -- which is how a fault with several possible effects
+    is stated -- and mechanisms with the same signature -- which is how one
+    fault with several possible causes is stated. Both are correlations the
+    parity matrices cannot carry, because two columns of a parity matrix are
+    independent by construction.
+    """
 
     probability: float
     detectors: tuple[int, ...] = ()
     observables: tuple[int, ...] = ()
+    error_id: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -409,6 +511,7 @@ class DemError:
             "observables",
             _normalized_indices(self.observables, name="error observables"),
         )
+        object.__setattr__(self, "error_id", _error_id(self.error_id))
         if not self.detectors and not self.observables:
             raise ValueError(
                 "an error mechanism must flip at least one detector or observable"
@@ -470,6 +573,7 @@ class DetectorErrorModel:
                         error.detectors,
                         error.observables,
                         error.probability,
+                        error.error_id if error.error_id is not None else -1,
                     ),
                 )
             ),
@@ -485,6 +589,54 @@ class DetectorErrorModel:
                     raise ValueError(
                         f"observable index {index} is outside the model shape"
                     )
+        self._require_exclusive_groups_fit()
+
+    def _require_exclusive_groups_fit(self) -> None:
+        """Refuse a model whose alternatives cannot exclude one another.
+
+        The reading of a group, and why a group that does not fit one shot is
+        refused rather than renormalized, is
+        :func:`flagquantum.qec.dem_alternatives.require_groups_fit`.
+        """
+
+        require_groups_fit(self.errors)
+
+    @property
+    def error_ids(self) -> tuple[int, ...] | None:
+        """Return one error id per mechanism, or ``None`` if the model has none.
+
+        This is the model's parallel id column in the sense upstream gives
+        ``error_ids``: entry ``i`` is the id of mechanism ``i``, mechanisms
+        sharing an id are alternatives rather than independent faults, and
+        ``None`` -- upstream's ``nullopt`` -- is the state every construction
+        route here produces and the state stim's text always describes. The
+        values are opaque labels and the vector is a numbering of them, so what
+        is a fact about the model is the partition the vector induces;
+        :func:`flagquantum.qec.dem_alternatives.projected_ids` states the rule.
+        """
+
+        return projected_ids(self.errors)
+
+    def stated_error_ids(self) -> tuple[int, ...]:
+        """Return the distinct error ids the mechanisms state, ascending.
+
+        Empty exactly when the model is independent, which is the premise each
+        refusal checks before it names the ids it would otherwise lose.
+        """
+
+        return stated_ids(self.errors)
+
+    def exclusive_groups(self) -> tuple[tuple[int, ...], ...]:
+        """Return the index groups of mechanisms that exclude one another.
+
+        Only groups of more than one mechanism are returned, because a lone
+        mechanism excludes nothing and grouping it would say otherwise, and a
+        model that states no ids has no groups -- which is what makes the
+        independent arithmetic the empty case of the exclusive arithmetic rather
+        than a second path through it.
+        """
+
+        return alternative_groups(self.errors)
 
     def mechanisms_are_unique(self) -> bool:
         """Return whether no two mechanisms share a detector and observable pair.
@@ -555,6 +707,16 @@ class DetectorErrorModel:
         this one. What changes under either rule is the number of mechanisms
         and, for a caller that reads one weight per signature, those weights.
 
+        The premise of both rules is that the mechanisms they combine are
+        independent, so neither may be applied to a model that states otherwise.
+        A model with error ids says at most one of a group fires, and combining
+        two members of one group by either rule would invent a shot in which both
+        did; the result would carry the same signatures, a plausible number of
+        mechanisms and a different distribution, which is the one failure a
+        caller cannot see from the shape. Such a model is refused rather than
+        merged, and what such a model needs is an operation that folds a group
+        under exclusivity, which this method is not.
+
         Args:
             rule: The rule that gives one prior to a shared signature. The
                 default, :attr:`DemMergeRule.INDEPENDENT_PARITY`, is the exact
@@ -564,10 +726,20 @@ class DetectorErrorModel:
             A model over the same shape with unique signatures.
 
         Raises:
-            ValueError: ``rule`` is not one of the two stated rules.
+            ValueError: ``rule`` is not one of the two stated rules, or a
+                mechanism carries an error id.
         """
 
         selected = DemMergeRule(rule)
+        stated = self.stated_error_ids()
+        if stated:
+            listed = ", ".join(str(value) for value in stated)
+            raise ValueError(
+                "merging states one prior for a shared signature by combining the "
+                "mechanisms that hold it, which assumes they are independent, and "
+                f"this model states the error ids {listed} and so states the "
+                "opposite; a model with alternatives has no merge under either rule"
+            )
         accumulated: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
         for error in self.errors:
             signature = (error.detectors, error.observables)
@@ -611,19 +783,43 @@ class DetectorErrorModel:
                 matrix[index, column] = 1
         return matrix
 
+    @property
+    def error_rates(self) -> tuple[float, ...]:
+        """Return one rate per mechanism, in the order of the matrices' columns.
+
+        This is the model's parallel rate column in the sense upstream gives
+        ``error_rates``: entry ``i`` is the rate mechanism ``i`` states, and the
+        vector's length is :attr:`num_errors`, which is the column count of both
+        :meth:`detector_error_matrix` and :meth:`observables_flips_matrix`, so a
+        reader takes a column's support and that column's weight from one index
+        rather than pairing a matrix with a list built separately.
+
+        The rate reported is the mechanism's own and not the marginal rate of the
+        detectors it touches: :meth:`detector_rates` and :meth:`observable_rates`
+        are those, and the two quantities differ as soon as one target is touched
+        by two mechanisms. A grouped model reports each member's own rate here for
+        the same reason -- a group states which mechanisms are alternatives
+        rather than rewriting what any one of them is worth -- so the vector is a
+        column view and never a probability distribution over the model.
+
+        With :attr:`error_ids` this is the whole column view: the rates say what
+        each column is worth and the ids say which columns are alternatives
+        rather than independent faults.
+        """
+
+        return tuple(error.probability for error in self.errors)
+
     def _marginal_rates(
         self, count: int, select: Callable[[DemError], tuple[int, ...]]
     ) -> torch.Tensor:
-        rates = torch.zeros((count,), dtype=torch.float64)
-        if count == 0:
-            # Reachable only for ``num_observables == 0``; detectors are never zero.
-            return rates
-        complements = torch.ones((count,), dtype=torch.float64)
-        for error in self.errors:
-            factor = 1.0 - 2.0 * error.probability
-            for index in select(error):
-                complements[index] *= factor
-        return (1.0 - complements) / 2.0
+        """Return the exact marginal flip probability of ``count`` targets.
+
+        :func:`flagquantum.qec.dem_alternatives.fold_marginals` states the
+        arithmetic and why a group of alternatives is summed rather than composed
+        by parity; this method only supplies the model's own fields.
+        """
+
+        return fold_marginals(self.errors, count, select)
 
     def detector_rates(self) -> torch.Tensor:
         """Return the exact marginal flip probability of every detector."""
@@ -663,6 +859,13 @@ class DetectorErrorModel:
         if not self.errors:
             return DemSample(detectors=detector_bits, observables=observable_bits)
 
+        if self.exclusive_groups():
+            return self._sample_exclusive_groups(
+                generator=generator,
+                detector_bits=detector_bits,
+                observable_bits=observable_bits,
+            )
+
         probabilities = torch.tensor(
             [error.probability for error in self.errors], dtype=torch.float64
         )
@@ -678,8 +881,35 @@ class DetectorErrorModel:
                 observable_bits[:, index] ^= active.to(torch.int8)
         return DemSample(detectors=detector_bits, observables=observable_bits)
 
+    def _sample_exclusive_groups(
+        self,
+        *,
+        generator: torch.Generator,
+        detector_bits: torch.Tensor,
+        observable_bits: torch.Tensor,
+    ) -> DemSample:
+        """Sample one fault per group of alternatives.
+
+        :func:`flagquantum.qec.dem_alternatives.sample_groups` draws a group once
+        and lands the shot in one member's interval or in the left-over mass; this
+        method only wraps the two bit tensors the caller owns. The id-free path
+        stays in :meth:`dem_sampling`, because a model with no ids is the state
+        every construction route here produces and its draws are pinned against
+        the circuit simulator.
+        """
+
+        sample_groups(
+            self.errors,
+            generator=generator,
+            detector_bits=detector_bits,
+            observable_bits=observable_bits,
+        )
+        return DemSample(detectors=detector_bits, observables=observable_bits)
+
     @classmethod
-    def from_stim_text(cls, text: str) -> DetectorErrorModel:
+    def from_stim_text(
+        cls, text: str, *, use_decomp_suggestions: bool = False
+    ) -> DetectorErrorModel:
         """Build a model from stim's text representation of a detector error model.
 
         The shape comes from the ``detector`` and ``logical_observable``
@@ -700,10 +930,24 @@ class DetectorErrorModel:
 
         An error line's signature is the symmetric difference of its targets, so
         a repeated target cancels. Stim writes ``^`` between the groups a
-        composite mechanism decomposes into. Those groups are a decoder's
-        business: they partition the targets without changing which detectors
-        and observables a shot of the mechanism flips. The groups are therefore
-        not retained.
+        composite mechanism decomposes into, and those groups are what
+        ``use_decomp_suggestions`` decides about. Read the default way, the line
+        is one mechanism flipping the symmetric difference of every target it
+        names, and the groups are not retained, because a shot of the mechanism
+        flips exactly that difference however the line groups it. Read the other
+        way, each group becomes a mechanism of its own at the line's
+        probability, which is the decomposition a matching decoder can use.
+
+        The second reading is not an equivalent statement of the same model and
+        is not offered as one: two components that each fire independently at
+        probability ``p`` do not reproduce one mechanism at probability ``p``,
+        and the caller that wants the components has asked for a graphlike
+        approximation rather than for the distribution. It is also the reading
+        under which the components can be weighted at all, which is why it
+        exists. A line with no separator is the same model under either reading,
+        and a component that flips nothing has no mechanism to become, so that
+        line is refused with the combined reading named as the route that states
+        it.
 
         A ``repeat`` block is refused. Expanding one means interpreting a nested
         instruction stream, and ``str(model.flattened())`` already states the
@@ -723,13 +967,31 @@ class DetectorErrorModel:
         ``repetition_code:memory`` at five rounds or more. Every one of the same
         240 models parsed when ``flattened()`` supplied the text.
 
-        The printed text is lossy in the last digit: stim prints 17 significant
-        digits, and over that sweep the largest relative difference between an
-        in-memory probability and the printed one was 4.9e-16. The text is the
-        interchange format, so the printed value is the one this reader states.
+        The printed text is the interchange format, so the printed value is the
+        one this reader states. What that costs depends on which side wrote the
+        text. This package's ``to_stim_text`` writes a probability with
+        ``repr``, the shortest decimal that reads back as the identical double,
+        and it lost none of the twenty thousand draws in the pinned sweep.
+        Stim's own printer writes at its stream precision, which follows the
+        platform's ``long double``: nineteen significant digits where that type
+        is the x86 80-bit extended one, so the Linux CI runners, and sixteen
+        where it is a double, so arm64 macOS. Seventeen digits name a double
+        uniquely, which makes the width the whole of the difference. At nineteen
+        digits a reprint returned every one of the same draws unchanged; at
+        sixteen about a quarter of them came back changed, by at most 5.4e-16
+        relative, and that format bounds the drift at one part in 10**15. A
+        caller comparing a model against text stim wrote therefore compares
+        within that bound where the width is the narrower one, and needs no
+        allowance where it is not; one comparing against this package's own text
+        needs no allowance on either platform.
+        ``tests/qec/test_dem_stim_text_precision.py`` reads the width off stim's
+        own output and pins the digit count, the direction of the loss and the
+        bound against it.
         """
 
-        num_detectors, num_observables, errors = _parse_stim_text(text)
+        num_detectors, num_observables, errors = _parse_stim_text(
+            text, use_decomp_suggestions=use_decomp_suggestions
+        )
         return cls(
             num_detectors=num_detectors,
             num_observables=num_observables,
@@ -798,9 +1060,18 @@ class DetectorErrorModel:
         Each location the circuit's round structure and ``noise`` imply is forced
         through the circuit on its own and its signature is read off the layouts,
         so the model is derived from the program rather than asserted about it.
-        The refusals of the injection engine reach the caller unchanged: a
-        hand-built circuit whose source does not match its layouts fails closed
-        with a stated reason instead of building a model that misdescribes it.
+        The three Pauli data families are locations here as they are on the matrix
+        route: the record's own fields name them, an X fault is the forced ``X``,
+        and the Z and Y faults are that Pauli conjugated by the ``h`` and ``sdg``
+        the circuit's source language carries, so they are forced as one fault at
+        one rate rather than as two independent draws. A Z fault on the Z-memory
+        layout this route requires reaches no detector in round zero and never
+        flips the logical observable, so it is enumerated only where it is a
+        mechanism -- and where that is nowhere, it is no mechanism rather than a
+        mechanism at a rate the model would have to invent. The refusals of the
+        injection engine reach the caller unchanged: a hand-built circuit whose
+        source does not match its layouts fails closed with a stated reason
+        instead of building a model that misdescribes it.
         """
 
         num_detectors, num_observables, entries = _memory_circuit_entries(
@@ -833,11 +1104,16 @@ class DetectorErrorModel:
 
         The rates come from ``noise`` as they do on the circuit route: a data
         fault at a round boundary, and a syndrome bit flipped at a check's
-        readout. The matrix route carries all three Pauli data faults where the
-        circuit route carries the bit flip alone, because a circuit's detectors
-        are laid out for the basis it measures in and matrices have no such
-        layout. Upstream's per-qubit and per-check rates are not reachable here,
-        which the alignment contract records against this entry point.
+        readout. Both routes carry all three Pauli data faults; the difference is
+        what a fault's signature is read from. A circuit's detectors are laid out
+        for the basis it measures in, so the circuit route reads a fault's
+        signature off the program it forces and a Z fault is enumerated only in
+        the rounds and at the wires where it reaches a detector. Matrices have no
+        such layout, so here a fault's signature is its support read against the
+        matrices and every family is enumerated with the rate the record states
+        for it. A per-element rate vector is read against these matrices, so the
+        per-qubit vectors are indexed by column -- the code's own ``data_wires``
+        order -- and the per-check vector by row, Z-type checks first.
         """
 
         num_detectors, num_observables, entries = _code_matrix_entries(
@@ -879,7 +1155,28 @@ class DetectorErrorModel:
         follow, one per detector and one per observable, so a model whose
         trailing detectors no error touches keeps its shape through a round
         trip. Every line, including the last, ends with a newline.
+
+        The format has no way to say that two mechanisms exclude each other, and
+        stim's reader has no field to put it in: upstream states that the ids a
+        text is read into are always empty. A model that states an id therefore
+        has no transcription here, and printing one would turn a correlated model
+        into an independent one under the same probabilities, which is a
+        different model rather than a rounded one. It is refused instead, and the
+        refusal names the ids.
+
+        Raises:
+            ValueError: A mechanism carries an error id.
         """
+
+        stated = self.stated_error_ids()
+        if stated:
+            listed = ", ".join(str(value) for value in stated)
+            raise ValueError(
+                "stim's detector error model text cannot state that mechanisms are "
+                f"alternatives, and this model states the error ids {listed}; the "
+                "format reads every error instruction as an independent mechanism, "
+                "so printing this model would state a different one"
+            )
 
         lines: list[str] = []
         for error in self.errors:
@@ -898,7 +1195,12 @@ class DetectorErrorModel:
 
     @property
     def num_errors(self) -> int:
-        """Number of independent error mechanisms in the model."""
+        """Number of error mechanisms in the model.
+
+        The count is of mechanisms and not of faults a decoder distinguishes: two
+        mechanisms that share a signature are two here, and two that share an
+        error id are two here, because both are two records.
+        """
 
         return len(self.errors)
 

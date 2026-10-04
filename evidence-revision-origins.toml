@@ -5,18 +5,17 @@ schema = "flagquantum.evidence_revision_origins.v1"
 #
 # `tools/check_evidence_revisions.py` walks `artifacts/`, `benchmarks/results/` and
 # `docs/development/evidence/`, and requires each of these revisions to be listed
-# here. It asks two questions
-# about every full-length revision a walked artifact records, at any depth and
-# under any field name: whether this repository holds the commit, and whether a ref
-# of this repository reaches it. A reader obtains a revision only when both answers
-# are yes, because a clone and a plain fetch obtain exactly the commits the refs
-# they fetch reach. A revision a walked artifact records in fewer than forty
-# characters is asked a third question instead, on the field name rather than on the
-# value: whether the artifact states the revision in full beside the value, or states
-# the origin that accounts for it. A value that answers neither appears below as a
-# reported diagnostic rather than as a silent omission, and the paragraph on
-# revision-named fields near the end of this comment states the rule. Before this
-# table existed, six checked-in validators asked the
+# here. It asks two questions about every full-length revision a walked artifact
+# records, at any depth and under any field name or in prose: whether this repository
+# holds the commit, and whether a ref of this repository reaches it. A reader obtains
+# a revision only when both answers are yes, because a clone and a plain fetch obtain
+# exactly the commits the refs they fetch reach. A revision a walked artifact records
+# in fewer than forty characters is asked a third question instead, on the field name
+# rather than on the value: whether the artifact states the revision in full beside
+# the value, or states the origin that accounts for it. A value that answers neither
+# appears below as a reported diagnostic rather than as a silent omission, and the
+# paragraph on revision-named fields near the end of this comment states the rule.
+# Before this table existed, six checked-in validators asked the
 # first question and each had its artifact path written into it, so an artifact no
 # validator named was never asked: nineteen artifacts under `artifacts/` recorded a
 # revision this repository does not contain, and thirteen of them said nothing
@@ -30,24 +29,30 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# Sixty-two distinct revisions are recorded under the three walked roots, and one of
-# them -- a commit on `main` -- is obtainable. The other sixty-one appear below in one
-# of three states.
+# Seventy-three distinct revisions are recorded under the three walked roots, and four
+# of them are obtainable because the `main` history contains them. The other
+# sixty-nine appear below in one of three states.
 #
-# `unreferenced_object` (thirty-nine revisions) means no branch and no tag reaches
+# `unreferenced_object` (forty-seven revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all thirty-nine by name, each confirmed by the counted measurement the method
+# serves all forty-seven by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the thirty-nine is the head of a closed
-# pull request. No ref of this repository reaches any of the thirty-nine, so a
-# complete clone obtains none of them; thirty are absent from this checkout's object
-# database as well, and the remaining nine linger here without a ref, which is what an
-# answer read from the checkout rather than from the declaration would depend on.
+# policy rather than a promise, and one of the forty-seven is the head a pull request
+# was opened from: `4d976abe5c415414846c857616ffce6cbadeeefc` headed #201, which merged as
+# `4e52d18d`, and the head commit survives only as an object the remote retains. No ref
+# of this repository reaches any of the forty-seven, so a complete clone obtains none of
+# them. How many of them a particular working copy happens to resolve is a reading of
+# that working copy rather than a property of the repository -- a fetch of a since-deleted
+# branch brings objects in and a `gc` takes them out again -- so the number is not written
+# here. A check that answered the
+# question from the checkout instead of from this table would be answering from
+# exactly the quantity that moves, and would call a revision obtainable in the one
+# working copy most likely to still hold it.
 #
-# Fourteen of the thirty-nine entered this table from a direction the first pass could
+# Fourteen of the forty-seven entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -68,7 +73,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# Two more of the thirty-nine entered from the citation direction. The first is
+# Two more of the forty-seven entered from the citation direction. The first is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
@@ -79,6 +84,115 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # object is exactly as unobtainable as the rest of the class: three counted `git fetch`
 # attempts served it by name, and no ref of this repository reaches it.
 #
+# The fortieth, `aaa3a70c698dc629c37baa2719607444aa3b6381`, entered from a third
+# direction, and it is the reason the walk now reads a revision written in prose. The
+# walk opened `*.json` and nothing else, so a comparison record that named the
+# revision its runner ran at in a sentence was read by no check at all even though it
+# sat under a root the walk already covered:
+# `benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` records
+# this revision on line 29 and `4d976abe5c415414846c857616ffce6cbadeeefc` on lines 24
+# and 30, the shorter-form sibling that this table already declared against the
+# record's own JSON, and neither was asked about. A file that can cite a revision is a
+# file that can record one, so the walk now reads every walked file type: a full-length
+# revision in prose is asked the same two questions as one in a field. The roots are
+# unchanged, so this widens what is read rather than where, and the three revisions are
+# declared below against the files that record them. The request for the commit object
+# answered with the object for this revision on two attempts, and no ref of this
+# repository reaches it, which is `unreferenced_object` for the same reason as the rest
+# of the class.
+#
+# `c0243cfdb7d8e1409a2fb655acada5528d2bb5a0` is recorded by
+# `benchmarks/results/local/tn_layout_contraction_a800.json`. The artifact replaced
+# its earlier `a28d9e1d0540a92743c9fcf6163578c57400c6d5` measurement when `#425`
+# narrowed the dispatch window, so that displaced revision is no longer declared.
+# Both repository-scoped commit API paths serve the replacement object by its full
+# name, while the two merged source branches that once reached it have been deleted
+# and no current branch or tag reaches it. It is therefore an `unreferenced_object`
+# under the same rule as the preceding revisions.
+#
+# `184c9686e49e472a97988d931b6a7469710165ba` is recorded three times by
+# `benchmarks/results/local/flagtree_tle_local_1q_a800.json`, added by `#430` when it
+# merged as `3ff46f31` with the FlagTree TLE local gate provider. That pull request
+# was squash-merged, so its branch is gone, no branch or tag reaches the revision, and
+# it entered this table from the ordinary direction rather than from either direction
+# the paragraphs above describe. Both repository-scoped commit API paths were asked
+# for it by its full name and both answered with the object, which is what places it
+# in `unreferenced_object` rather than in `producing_host_history`.
+#
+# `57f40ee6bfd1318ac98ab2d801216c958c168efe` is recorded three times by
+# `benchmarks/results/local/flagtree_tle_control_transport_a800.json`, added by `#434`
+# when it merged as `81e519ce` with the FlagTree TLE control transport provider. It is
+# the same case as the revision above and one merge later: the pull request was
+# squash-merged, so its branch is gone and no branch or tag reaches the revision, and
+# the artifact arrived with the `quality` job failing on exactly this row, which is how
+# it reached `main` with the gate red. Both repository-scoped commit API paths were
+# asked for it by its full name, `gh api repos/flagos-ai/FlagQuantum/git/commits/<rev>`
+# and the same path under `/commits/<rev>`, and both answered with the object on three
+# attempts each, which places it in `unreferenced_object` rather than in a history this
+# repository does not contain.
+#
+# `26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2` is recorded three times by
+# `benchmarks/results/local/flagtree_tle_transpose_1q_a800.json`, added by `#440`
+# with the FlagTree TLE transpose-gate provider. The merged `main` history does not
+# contain the benchmark revision, but both repository-scoped commit API paths serve
+# the object by its full name. This is therefore another `unreferenced_object`, not
+# evidence produced from an unavailable external history.
+#
+# `be1f315390fcbb017384bb0cc271f927c96f6f83` is recorded three times by
+# `benchmarks/results/local/flagtree_tle_sharded_adjoint_a800.json`, added by
+# `#446` with the FlagTree TLE sharded adjoint provider. It is the same case as the
+# revision above and one merge later, so the declaration was missed for the same
+# reason: the pull request was squash-merged, no branch or tag reaches the revision,
+# and the artifact arrived with the `quality` job failing on exactly this row. Both
+# repository-scoped commit API paths, `gh api repos/flagos-ai/FlagQuantum/commits/<rev>`
+# and `repos/flagos-ai/FlagQuantum/git/commits/<rev>`, answered with the object by its
+# full name, which places it in `unreferenced_object` rather than in a history this
+# repository does not contain.
+#
+# `3ca8d23ef910520ac533d470042a0ea5c9afa41f` is recorded three times by
+# `benchmarks/results/local/statevector_probability_kernel_a800.json`, added by
+# `#448` with the statevector probability semantic. It is the same case once more, and
+# it is the plainest instance of it in this table: the revision the artifact records is
+# the **head of the pull request that carried it**. `3ca8d23e` is
+# `feat(kernels): add statevector probability semantic` with parent `e09fd25c`, and
+# each of the two runs records it in its own `--source-revision`, so the runs were taken
+# on the pull request's branch rather than on a merged `main`. `#448` merged as
+# `831088a1` by squash, so the recorded revision is the pre-squash head of that branch.
+# No branch and no tag reaches it: `git for-each-ref --contains` answers with no ref at
+# all, and the revision is not an ancestor of `main`. Both repository-scoped commit API
+# paths, `gh api repos/flagos-ai/FlagQuantum/commits/<rev>` and
+# `repos/flagos-ai/FlagQuantum/git/commits/<rev>`, answered `200` with the object by
+# its full name, so the origin is `unreferenced_object` rather than a history this
+# repository does not contain and rather than a commit of a dependency.
+#
+# What makes this instance worth a paragraph of its own is not the origin, which is the
+# same one, but where the pin came from: an artifact the pull request itself carries,
+# naming the branch it was written on. The earlier revisions of this kind name a
+# revision the branch was **built on**, which a later squash leaves behind silently;
+# this one names the branch's own head, which the squash is guaranteed to leave behind.
+# Any artifact whose producer pins it to the revision it is being developed at will
+# record a revision its own merge destroys, and no reader of the artifact can tell the
+# two apart. The gate is right to stop at the declaration rather than guess an origin,
+# and the durable fix is at the producer -- recording the merged revision, or an
+# origin, at write time -- rather than in this table.
+#
+# `f8e4df19a474b370d5825fbc49442e2a29d150a6` is recorded three times by
+# `benchmarks/results/local/statevector_pauli_expectation_kernel_a800.json`, added by
+# `#454` when it merged as `e57899e5`. It is the same case as the revision above and one
+# merge later, and the paragraph above applies to it without a word changed: `f8e4df19`
+# names the branch that pull request was developed on, it is
+# `fix(kernels): flatten Pauli expectation launch grids` with parent `ced0f254`, and
+# each of the two runs records it in its own `--source-revision`, so the runs were taken
+# on the branch and not on a merged `main`. The squash merge destroyed that name, as it
+# destroys every name of this kind: after the remote served the object by its full name,
+# `git for-each-ref --contains` answered with no ref at all, and the revision is not an
+# ancestor of `main`. Both repository-scoped commit API paths answered `200` with the
+# object, so this is an `unreferenced_object` under the same rule as the revisions
+# above, and the row reached `main` with the `quality` job failing on exactly it. Two
+# consecutive benchmark providers recorded the revision they were developed at, which
+# is why the paragraph above names the producer as the place this class of pin has to
+# be fixed: declaring the revision here repairs the table and not the producer.
+
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
 # a transient error, and these probes run from a host that loses connectivity to
@@ -106,7 +220,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # scoped to
 # the repository the revision is declared against --
 # `gh api repos/flagos-ai/FlagQuantum/git/commits/<revision>`, and the same path under
-# `/commits/<revision>` -- which answered with the object for all thirty-nine
+# `/commits/<revision>` -- which answered with the object for all forty-seven
 # `unreferenced_object` revisions and with `404` for all eighteen
 # `producing_host_history` revisions, two attempts each, and with `404` for the four
 # `external_dependency` revisions, which are commits of other repositories and are
@@ -152,8 +266,14 @@ schema = "flagquantum.evidence_revision_origins.v1"
 #
 # A `path` names an artifact, or a directory that contains the artifacts recording
 # the revision, which is how `benchmarks/results/local` states one origin for the
-# thirty-one files that record the same run state. Declaring an origin for a
-# revision a clone obtains fails the gate, so this table cannot be used to hide a
+# files under it that record one of the revisions declared for it. That number is a
+# reading of this tree and is not pinned here: walking the evidence roots and asking
+# which file under that directory records one of the revisions declared for it answers
+# forty today, and it changes whenever an artifact recording one of those revisions is
+# added. The number of declarations is left out of that sentence on purpose: it counts
+# declarations rather than readings, so it moves whenever one is added, and a declaration
+# edit has no other reason to touch prose two hundred lines above it. Declaring an origin
+# for a revision a clone obtains fails the gate, so this table cannot be used to hide a
 # checkable pin behind a claim.
 #
 # An artifact may account for its own revisions instead, by stating
@@ -169,7 +289,8 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # one of two records of the same fact rather than a replacement for the other.
 #
 # The walk reads a revision only when the artifact writes all forty characters of it,
-# so a shortened citation is invisible to it however large the roots become. The same
+# so a shortened citation is invisible to it however large the roots -- and however
+# many file types -- become. The same
 # run therefore asks, of the roots that cite a revision as the grounds for a claim,
 # whether a shortened hexadecimal run names exactly one revision this repository gives
 # in full and whether the file citing it gives that revision in full too. Eighteen
@@ -205,6 +326,13 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # `tools/check_evidence_revisions.py` for a reader. One origin accounts for every
 # field holding the value it sits beside, because the origin belongs to the revision
 # rather than to a repetition of it.
+#
+# A file that is not JSON holds no field, so it can account for a revision only by
+# being named below. The two walked files of that kind that record a revision -- three
+# revisions between them -- are each declared against the file itself, which is why the
+# two markdown comparison records appear beside the JSON records they report on: the
+# JSON records a run under a field name, and the prose reports the runner revision the
+# run was produced with.
 
 
 [[artifact]]
@@ -480,6 +608,14 @@ origin = "producing_host_history"
 
 
 [[artifact]]
+path = "benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md"
+
+[[artifact.revision]]
+value = "6cfc4c3708227a4bb2c6e35c9f71e502239a2e63"
+origin = "producing_host_history"
+
+
+[[artifact]]
 path = "benchmarks/results/comparison/cudaq_backend_compare_a800_20260930.json"
 
 [[artifact.revision]]
@@ -493,6 +629,18 @@ path = "benchmarks/results/comparison/cudaq_gradient_capability_a800_20260930.js
 [[artifact.revision]]
 value = "6cfc4c3708227a4bb2c6e35c9f71e502239a2e63"
 origin = "producing_host_history"
+
+
+[[artifact]]
+path = "benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md"
+
+[[artifact.revision]]
+value = "4d976abe5c415414846c857616ffce6cbadeeefc"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "aaa3a70c698dc629c37baa2719607444aa3b6381"
+origin = "unreferenced_object"
 
 
 [[artifact]]
@@ -511,7 +659,23 @@ value = "155c8c4ad686287d29caaecce275ad0f55373c6b"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "184c9686e49e472a97988d931b6a7469710165ba"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "24108fc21b96eec85723e02ddc15841ce4138b95"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "3ca8d23ef910520ac533d470042a0ea5c9afa41f"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "57f40ee6bfd1318ac98ab2d801216c958c168efe"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
@@ -519,11 +683,23 @@ value = "8f77d0c044076dc5e25eb5128d64699ebfd69d92"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "be1f315390fcbb017384bb0cc271f927c96f6f83"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
 origin = "producing_host_history"
 
 [[artifact.revision]]
+value = "c0243cfdb7d8e1409a2fb655acada5528d2bb5a0"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "c997a21955972f1255aa58ee26ba756aac7d3f7e"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "f8e4df19a474b370d5825fbc49442e2a29d150a6"
 origin = "unreferenced_object"
 
 
@@ -547,7 +723,7 @@ origin = "unreferenced_object"
 path = "benchmarks/results/local/mps_wire_probability_dispatch_a800.json"
 
 [[artifact.revision]]
-value = "e153e5370b1b9f5568a4fd7242a482a06d6a261e"
+value = "1e01fd975c7d7554769db1a543c65f0129f9945a"
 origin = "unreferenced_object"
 
 

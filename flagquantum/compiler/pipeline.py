@@ -16,6 +16,7 @@ from .routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from .zero_state_reset import remove_zero_state_resets
 
 _SELF_INVERSE = {"x", "y", "z", "h", "cx", "cy", "cz", "swap", "ccx", "cswap"}
 _ROTATION_PARAM = {
@@ -70,11 +71,32 @@ def _replace_param(instruction: Instruction, key: str, value: Any) -> Instructio
 
 
 def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
-    """Remove explicit identity gates and zero-angle rotations."""
+    """Remove every gate that is exactly the identity operator.
+
+    A single-wire instruction is decided by `is_identity_one_qubit`, which reads
+    the angle triple the operator schema declares rather than a table of opcode
+    names kept here: that deletes the explicit `i`/`id` set this pass used to
+    carry and admits `u3(0, phi, lam)` when `phi + lam` vanishes, a zero-angle
+    `rx`, `ry`, `rz`, `phase` or `u1`, and every full turn that returns to `+I`.
+    See that function for why a trainable angle refuses, why only exact multiples
+    are considered, and why the fold is modulo `4*pi` rather than `2*pi` -- the
+    shorter fold would remove `rz(2*pi)`, which is `-I`, and the IR has nowhere
+    to record the sign. The import is local because `one_qubit_synthesis` reads
+    `_is_zero` from this module.
+
+    A multi-wire instruction keeps the older rule, which reads the angle
+    parameter `_ROTATION_PARAM` names for its opcode, because
+    `canonical_euler_angles` describes the single-qubit group only. That leaves
+    the `crz(0)`, `rxx(0)`, `cphase(0)` and `rzz(0)` removals this pass already
+    performed untouched, and it declines a two-wire half turn for the same reason
+    the single-wire branch does: `rzz(2*pi)` is `-I`.
+    """
+
+    from .one_qubit_synthesis import is_identity_one_qubit
 
     instructions = []
     for instruction in ir:
-        if instruction.name in {"i", "id"}:
+        if is_identity_one_qubit(instruction):
             continue
         param_name = _ROTATION_PARAM.get(instruction.name)
         if param_name is not None and _is_zero(instruction.params.get(param_name)):
@@ -223,14 +245,52 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
 
 
 def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
+    # Imported here rather than at module scope: these passes read this layer, so a
+    # module-level import in this direction would be circular.
+    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
+    # parameter arithmetic below, `inverse_cancellation` reads
+    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
+    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
+    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
+    from .commutation_cancellation import (
+        cancel_commuting_self_inverse,
+        merge_commuting_rotations,
+    )
+    from .diagonal_before_measure import remove_diagonal_gates_before_measure
+    from .inverse_cancellation import merge_inverse_pairs
+    from .one_qubit_optimization import collapse_one_qubit_runs
+    from .two_qubit_optimization import collapse_two_qubit_blocks
+
     ir = _as_ir(circuit_or_ir)
     max_rounds = len(ir) + 1
     for _ in range(max_rounds):
         previous_count = len(ir)
+        # First, because a reset this pass can remove is removable whatever the passes
+        # below do, and removing it hands them a shorter program. The loop, not this
+        # ordering, is what earns the reach on a wire the passes below only empty out
+        # later: `x(0) x(0) reset(0)` needs a second round.
+        ir = remove_zero_state_resets(ir)
+        # Second, for the same reason: a diagonal gate read out only by measurements is
+        # unobservable whatever the passes below do to the rest of the program, and
+        # dropping it hands them a shorter one. Its own reach is what needs the loop --
+        # `x(0) x(0) z(0) measure(0)` only exposes `z` once the pair cancels.
+        ir = remove_diagonal_gates_before_measure(ir)
         ir = remove_identity_gates(ir)
         ir = merge_self_inverse(ir)
+        ir = merge_inverse_pairs(ir)
         ir = merge_adjacent_rotations(ir)
+        # Straight after the adjacent merge, because it is the same arithmetic on
+        # the same parameter and differs only in how far apart the halves may sit.
+        ir = merge_commuting_rotations(ir)
+        ir = cancel_commuting_self_inverse(ir)
         ir = remove_identity_gates(ir)
+        ir = collapse_one_qubit_runs(ir)
+        # Last, so that a block this pass composes is one the single-qubit passes have
+        # already had: `collapse_one_qubit_runs` folds the single-qubit gates it draws
+        # in as members, and running it first keeps those members the smallest spelling
+        # of themselves. Its own reach needs the loop: the `cz` that replaces
+        # `swap cz swap` is a gate the next round can then cancel against a neighbour.
+        ir = collapse_two_qubit_blocks(ir)
         if len(ir) == previous_count:
             return ir
     raise CompilationError("compiler optimization passes did not reach a fixed point")

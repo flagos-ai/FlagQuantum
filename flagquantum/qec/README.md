@@ -202,9 +202,106 @@ the band of round `r + 1`, and the final round has no band after it, so the
 detector count is `num_rounds * num_checks` with no terminal readout — where a
 memory circuit gains a terminal detector per Z-type check because it measures its
 data qubits. Both geometries are pinned to their own route and neither stands for
-the other. The rate record is what still limits the fault family: it states
-uniform scalars, so a per-qubit or per-check `px`/`py`/`pz`/`pm` profile is not
-expressible.
+the other. The rates are read against these matrices: the per-qubit vectors are
+indexed by column, in the code's own `data_wires` order, and the per-check vector
+by row, with the Z-type checks first.
+
+## Give one location its own rate
+
+`PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
+element. The four scalars are `data_flip` (an X fault), `phase_flip` (a Z fault),
+`both_flip` (a Y fault) and `measurement_flip`, which are upstream `CssNoise`'s
+`px`, `pz`, `py` and `pm`. The four vectors are `data_flip_per_qubit`,
+`phase_flip_per_qubit`, `both_flip_per_qubit` and `measurement_flip_per_check`,
+which are upstream's `px_per_qubit`, `pz_per_qubit`, `py_per_qubit` and
+`pm_per_check`:
+
+```python
+from flagquantum.qec import DetectorErrorModel, PhenomenologicalNoise, RepetitionCode
+
+noise = PhenomenologicalNoise(
+    data_flip=0.02,
+    data_flip_per_qubit=(0.0, 0.05, 0.02),
+)
+model = DetectorErrorModel.from_code(
+    RepetitionCode(distance=3), noise=noise, num_rounds=2
+)
+print(sorted({error.probability for error in model.errors}))
+```
+
+The override is wholesale: a stated vector replaces its scalar for **every**
+element rather than mixing with it, which is why a vector has to name every data
+qubit (or every check) and a short one is refused naming both counts instead of
+being partially applied. An element whose effective rate is zero states a
+location that cannot fire, so it enumerates no mechanism at all: in the example
+above the first data qubit contributes nothing while its neighbours contribute
+their own rates, and the sampler places no channel for it. A per-check vector is
+indexed by matrix row — Z-type checks first, then X-type checks — while a code is
+free to declare its checks in any order, so the declaration order and the vector's
+order are related by one named translation rather than by a convention each route
+re-states.
+
+This is a description of noise locations, not a `NoiseModel`, and every family it
+states is a location on **both** routes. The sampler executes one channel — the
+engine's single-wire bit flip — so a Z or Y location is that channel conjugated by
+the Clifford that turns a bit flip into the Pauli the family names: `h` around it
+for `phase_flip`, `sdg`/`s` around it for `both_flip`. That is one draw at that
+family's rate, not a pair of independent bit flips, and the noiseless circuit is
+untouched because the pair cancels when the channel does not fire. A measurement
+flip is the bit flip itself, since a readout is flipped in the basis it is read
+in.
+
+## Say that two mechanisms are alternatives
+
+Every mechanism in a model is an independent fault unless it carries an
+`error_id`, and mechanisms sharing one are mutually exclusive: at most one of
+them fires in a shot. This is the one statement the parity matrices cannot carry,
+because two columns of a parity matrix are independent by construction.
+`dem_alternatives.py` owns its arithmetic:
+
+```python
+from flagquantum.qec import DemError, DetectorErrorModel
+
+model = DetectorErrorModel(
+    num_detectors=3,
+    num_observables=1,
+    errors=(
+        DemError(probability=0.1, detectors=(0, 1), error_id=0),
+        DemError(probability=0.2, detectors=(0, 1), error_id=0),
+    ),
+)
+print(model.detector_rates()[0])  # 0.30000000000000004, not the 0.26 of two
+                                  # independent mechanisms
+print(model.error_ids)            # (0, 0): upstream's parallel id vector
+print(model.error_rates)          # (0.1, 0.2): one entry per column, each
+                                  # mechanism's own rate, not the 0.3 marginal
+```
+
+The members of a group are disjoint pieces of one shot. Each keeps the
+probability it states, the left-over mass is the group firing none of them, a
+target's rate over the group is the sum of the members touching it rather than
+their parity, and `dem_sampling` draws once per group and lets at most one member
+fire. A group summing to exactly one is admitted — it fires every shot — and a
+lone id excludes nothing, so a model with no ids is this arithmetic's empty case
+and behaves exactly as it did before the field existed. A group whose
+probabilities sum *above* one is refused rather than renormalized, because
+renormalizing would change every rate the caller read. `error_rates` is the
+column view beside the matrices rather than the folded one: entry `i` and column
+`i` of `detector_error_matrix` are one mechanism because both are read from the
+model's own normalized mechanism order, and each entry is the rate its own
+mechanism states, so the folding stays in `detector_rates()` and
+`observable_rates()`.
+
+The statement is about the distribution and not about the signature, so the three
+operations that assume independence refuse such a model and name the ids instead
+of dropping the structure: `to_stim_text()` (the format reads every error
+instruction as independent), `merge_duplicate_mechanisms()` (both rules combine a
+group by assuming independence), and `MinimumWeightMatchingDecoder` (one weight
+per mechanism is the weight of a fault that fires alone, while a group is one
+fault whose weight is the group's own negative log-likelihood). Folding a group
+under its exclusivity into the single mechanism a matcher can weigh is not
+implemented here; that gap is recorded against the `canonicalize_for_rounds`
+family in `contracts/qec-cudaq-alignment-checklist.toml`.
 
 ## Sample the circuit itself, not the model
 
@@ -235,17 +332,119 @@ print(sample.detectors.shape, sample.observables.shape)
 
 A data flip is placed at the round boundary *before* the round's first gate, so it
 opens the frame that round's detectors compare against, and a measurement flip is
-placed immediately *before* the readout of the check it corrupts. Neither position
-exists in the source program, whose bounded hybrid capture refuses a channel call
-outright, so both are derived from the lowered program — and the program must
-lower to `rounds` identical blocks measuring each check once in the code's
-declared order. A program that lowers to anything else, a channel that is not the
-bit-flip pair, and a lowered measurement node are each refused with a stated
-reason rather than sampled under an attribution that may be wrong.
+placed immediately *before* the readout of the check it corrupts. A Z or Y data
+fault is placed at that same boundary, as the one channel the engine has wrapped
+in the conjugation that names the Pauli. Neither position exists in the source
+program, whose bounded hybrid capture refuses a channel call outright, so both are
+derived from the lowered program — and the program must lower to `rounds` identical
+blocks measuring each check once in the code's declared order. A program that
+lowers to anything else, a channel that is not the bit-flip pair, and a lowered
+measurement node are each refused with a stated reason rather than sampled under an
+attribution that may be wrong.
 
 Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
 two to each other rather than letting either stand for the other.
+
+## Read a recorded bit, not just a parity
+
+A detection event is a parity of recorded bits. Sometimes the bit itself is what a
+caller wants, and there is exactly one kind of bit that no layout names: round zero
+of a patch measures an X-type check whose outcome is not deterministic under the
+all-zero preparation, so no detector may name it, and it is still measured and
+still recorded. `measurement_refs` names every recorded bit and
+`sample_memory_measurements` returns them:
+
+```python
+from flagquantum.qec import (
+    MeasurementRef,
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+    sample_memory_measurements,
+)
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=2)
+samples = sample_memory_measurements(
+    memory,
+    noise=PhenomenologicalNoise(measurement_flip=0.02),
+    shots=1000,
+    seed=0,
+)
+Z_ANC = 9  # the code's first Z-type check; see RotatedSurfaceCode(...).checks
+print(samples.outcome(MeasurementRef(1, Z_ANC)).shape)
+print(samples.vector([MeasurementRef(0, Z_ANC), MeasurementRef(1, Z_ANC)]).shape)
+print(samples.integer([MeasurementRef(0, Z_ANC), MeasurementRef(1, Z_ANC)]).max())
+```
+
+A handle is a value in the same sense CUDA-Q's is: `outcome` reads one handle,
+`vector` reads a chosen sub-vector as booleans in the order asked for, and
+`integer` packs that same order into one integer per shot with the first handle
+least significant. Reading a gap in a bit stream does not need a parity and does
+not need a column index, and a detector's parity recomputed from the handles it
+names is the detector's parity — a test asserts that per detector and per
+observable, so the two readings cannot drift apart.
+
+What this layer is not is a statement about which handles are deterministic. A
+noiseless run reads a Z-type check's ancilla as 0 in every round, an X-type
+check's ancilla as unbiased, and an individual terminal data wire as unbiased, while
+every detector and every observable reads 0. So a rate read off a single handle is
+a rate read off the state and not a channel rate, and a detector is a parity and not
+a measurement. The absence this leaves standing is the kernel annotation form
+itself: `detector`, `detectors` and `logical_observable` as kernel calls are not
+implemented here, and identity is set in a layout record beside the source rather
+than in the kernel body.
+
+## Hand a decoder both halves
+
+A model says which mechanisms a decoder can see. It does not say where in a shot
+each detector's parity is read, and a matcher is handed a syndrome over raw
+measurements, so it needs both. `decoder_context_from_memory_circuit` builds the
+model once and returns a context whose components pair it with the maps:
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+    decoder_context_from_memory_circuit,
+)
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+context = decoder_context_from_memory_circuit(
+    memory, noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+)
+inputs = context.z_component()
+print(context.num_measurements(), inputs.measurement_to_detectors.rows[0])
+print(inputs.measurement_to_detectors.dense().shape)
+```
+
+`full_component`, `x_component` and `z_component` each return a `DecoderInputs`:
+the model read over the detectors of one basis, plus the measurement-to-detector
+and measurement-to-observable maps for it. A `MeasurementMap` is one row per
+detector or observable holding the measurements whose parity it is, and it
+projects to both forms a caller may want — `dense()` for the
+`(rows, measurements)` orientation upstream stores, and `flattened()` for the
+`-1`-terminated sparse vector a realtime decoder configuration takes, where the
+terminator is what keeps a row that reads nothing visible.
+
+Two things are refused rather than approximated. A row may not name one
+measurement twice, because two reads of one measurement cancel rather than add. A
+component of a model that states error ids is refused, because projecting a group
+of alternatives onto one basis would either drop the correlation or merge two of
+its members. A basis the experiment declares no detector for is refused rather
+than returned empty.
+
+The split is a reading of the model, not a second construction: every detector is
+carried by the check whose ancilla it reads, so the Z component carries the
+terminal detectors and the union of the two components is the model as built.
+That is also why the numbering the maps use is checked against the sampler's
+rather than shared with it — the sampler derives its record columns from the
+lowered program, this module derives them from the circuit's own declaration, and
+`measurement_refs` states the same layout a third time so that a handle names a bit
+whichever of the two a caller came from. A decoder fed a sampled syndrome has to be
+matching detectors against the measurements that actually compose them, and that is
+now something a test can recompute from handles rather than only assume.
 
 ## Change and verify
 

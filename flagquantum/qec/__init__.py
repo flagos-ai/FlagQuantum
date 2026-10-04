@@ -17,6 +17,12 @@ from .codes import (
     StabilizerCode,
     SteaneCode,
 )
+from .context import (
+    DecoderContext,
+    DecoderInputs,
+    MeasurementMap,
+    decoder_context_from_memory_circuit,
+)
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -34,8 +40,20 @@ from .noise import (
     run_repetition_memory_noise_sweep,
 )
 from .pauli import Pauli
+from .registry import (
+    AUTHORITY_NAME,
+    CROSS_CHECK_NAME,
+    DetectorErrorModelDecoder,
+    decoder_names,
+    get_decoder,
+    register_decoder,
+)
 from .repetition import run_repetition_memory_experiment
-from .sampling import sample_memory_circuit
+from .sampling import (
+    MeasurementSamples,
+    sample_memory_circuit,
+    sample_memory_measurements,
+)
 from .types import (
     Correction,
     DecodeResult,
@@ -50,11 +68,15 @@ from .types import (
 )
 
 __all__ = (
+    "AUTHORITY_NAME",
+    "CROSS_CHECK_NAME",
     "CodeCheck",
     "CssCodeMatrices",
     "Correction",
     "DecodeResult",
     "Decoder",
+    "DecoderContext",
+    "DecoderInputs",
     "DecodingGraph",
     "DecodingGraphEdge",
     "DemError",
@@ -63,12 +85,15 @@ __all__ = (
     "DetectionEvent",
     "Detector",
     "DetectorErrorModel",
+    "DetectorErrorModelDecoder",
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
     "LogicalObservable",
     "MatchingDecodeResult",
     "MatchingDependencyError",
+    "MeasurementMap",
+    "MeasurementSamples",
     "MeasurementRef",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
@@ -91,8 +116,13 @@ __all__ = (
     "SyndromeRound",
     "StreamingDecoder",
     "build_memory_circuit",
+    "decoder_context_from_memory_circuit",
     "css_code_matrices",
+    "decoder_names",
+    "get_decoder",
+    "register_decoder",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",
+    "sample_memory_measurements",
 )

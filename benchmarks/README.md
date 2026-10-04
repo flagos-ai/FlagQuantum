@@ -44,6 +44,13 @@ python benchmarks/flagship_mps_training.py \
 
 Compare equivalent exact-statevector execution from the same FlagQuantum IR:
 
+For independent jobs sharing one Linux x86 socket, use the maintained
+`socket_local_throughput` runner. The checked 22-qubit comparison, complete
+worker/thread matrix, optimization boundaries, and reproduction command are in
+[`SOCKET_LOCAL_MULTITASK_THROUGHPUT_LINUX_X86_20261003.md`](results/comparison/SOCKET_LOCAL_MULTITASK_THROUGHPUT_LINUX_X86_20261003.md).
+It is a replicated multitask-throughput result, not single-circuit or
+distributed-statevector scaling evidence.
+
 The executable implementations are
 [`simulator_compare.py`](../flagquantum/benchmarking/simulator_compare.py) for
 FlagQuantum/Qiskit Aer and

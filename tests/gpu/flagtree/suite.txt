@@ -3,6 +3,7 @@
 -p
 no:cacheprovider
 tests/gpu/test_flagtree_kernel_provider.py
+tests/gpu/test_flagtree_tle_statevector.py
 tests/test_statevector_triton_gates.py
 tests/unit/test_hva_forward_tangent_triton.py
 tests/unit/test_mps_environment_catalog_dispatch.py
@@ -17,8 +18,16 @@ tests/unit/test_mps_observable_adjoint_catalog_dispatch.py
 tests/unit/test_mps_one_site_catalog_dispatch.py
 tests/unit/test_mps_one_site_triton.py
 tests/unit/test_real_imag_kernels.py
+tests/unit/test_ry_rz_catalog_dispatch.py
 tests/unit/test_single_qubit_loop_triton.py
 tests/unit/test_statevector_gate_autograd_boundary.py
+tests/unit/test_statevector_marginal_probabilities_triton.py
+tests/unit/test_statevector_marginal_probability_catalog_dispatch.py
+tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py
+tests/unit/test_statevector_pauli_expectation_triton.py
+tests/unit/test_statevector_probability_catalog_dispatch.py
+tests/unit/test_statevector_forward.py
+tests/unit/test_statevector_probabilities_triton.py
 tests/unit/test_statevector_triton.py
 tests/unit/test_triton_complex_bmm.py
 tests/unit/test_two_qubit_pauli_tangent_triton.py

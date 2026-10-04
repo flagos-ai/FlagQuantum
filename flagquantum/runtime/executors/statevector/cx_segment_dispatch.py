@@ -10,13 +10,19 @@ from ....core.ir import CircuitIR
 from ....kernels.catalog import KernelRequest
 from .kernel_dispatch import KernelDecision, select_cataloged_triton_kernel
 
+_TRITON_LOCAL_CX_SEGMENT_DEFAULT_SHAPES = ((1, 1 << 24),)
 
-def _triton_local_cx_segment_requested(ir: CircuitIR | None = None) -> bool:
+
+def _triton_local_cx_segment_requested(
+    ir: CircuitIR | None,
+    shape: tuple[int, int],
+) -> bool:
     raw = os.getenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
     if not raw:
         return bool(
             ir is not None
             and ir.metadata.get("statevector_dependency_schedule_changed", False)
+            and shape in _TRITON_LOCAL_CX_SEGMENT_DEFAULT_SHAPES
         )
     return raw.strip().lower() in {"1", "true", "on", "yes"}
 
@@ -27,6 +33,7 @@ def _triton_local_cx_segment_decision(
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    shape: tuple[int, int],
 ) -> KernelDecision:
     """Select the exact evidenced implementation wired into the runtime."""
 
@@ -42,7 +49,7 @@ def _triton_local_cx_segment_decision(
             providers=("triton",),
         ),
         implementation_id="FQKI-TRITON-SV-003-A",
-        requested=_triton_local_cx_segment_requested(ir),
+        requested=_triton_local_cx_segment_requested(ir, shape),
         runtime_supported=runtime_supported,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
@@ -61,6 +68,7 @@ def _triton_local_cx_segment_tensor_decision(
         runtime_supported=runtime_supported and amplitudes.is_contiguous(),
         device_type=amplitudes.device.type,
         dtype=str(amplitudes.dtype).removeprefix("torch."),
+        shape=(amplitudes.shape[0], amplitudes.shape[1]),
     )
 
 
@@ -69,11 +77,13 @@ def _triton_local_cx_segment_enabled(
     *,
     device_type: str = "cuda",
     dtype: str = "complex64",
+    shape: tuple[int, int],
 ) -> bool:
     return _triton_local_cx_segment_decision(
         ir,
         device_type=device_type,
         dtype=dtype,
+        shape=shape,
     ).accelerated
 
 

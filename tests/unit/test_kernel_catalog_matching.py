@@ -42,6 +42,7 @@ def test_forward_request_returns_all_compatible_implementations_in_catalog_order
     assert _candidate_ids(_request()) == (
         "FQKI-TRITON-SV-001-A",
         "FQKI-TRITON-SV-001-B",
+        "FQKI-FLAGTREE-SV-001-A",
     )
     assert not result.rejections
     assert all(
@@ -82,8 +83,12 @@ def test_provider_filter_is_capability_filter_not_priority_policy() -> None:
     flagtree = match_kernel_implementations(_request(providers=("flagtree",)))
 
     assert len(triton.candidates) == 2
-    assert not triton.rejections
-    assert not flagtree.candidates
+    assert tuple(
+        rejection.implementation.implementation_id for rejection in triton.rejections
+    ) == ("FQKI-FLAGTREE-SV-001-A",)
+    assert tuple(
+        candidate.implementation.implementation_id for candidate in flagtree.candidates
+    ) == ("FQKI-FLAGTREE-SV-001-A",)
     assert len(flagtree.rejections) == 2
     assert all(
         tuple(item.code for item in rejection.mismatches) == ("provider",)
@@ -106,7 +111,7 @@ def test_declared_capability_mismatches_are_explained(
     result = match_kernel_implementations(_request(**overrides))
 
     assert not result.candidates
-    assert len(result.rejections) == 2
+    assert len(result.rejections) == 3
     assert all(
         code in {item.code for item in rejection.mismatches}
         for rejection in result.rejections
@@ -129,7 +134,10 @@ def test_missing_evidence_rejects_only_the_affected_implementation() -> None:
 
     assert tuple(
         candidate.implementation.implementation_id for candidate in result.candidates
-    ) == ("FQKI-TRITON-SV-001-B",)
+    ) == (
+        "FQKI-TRITON-SV-001-B",
+        "FQKI-FLAGTREE-SV-001-A",
+    )
     assert tuple(item.code for item in result.rejections[0].mismatches) == ("evidence",)
 
 
