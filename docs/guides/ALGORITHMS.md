@@ -24,6 +24,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
+| `nelder_mead.py` — Nelder-Mead simplex search | Available. Minimizes a scalar objective with no gradient and no random draw, by reflecting, expanding, contracting, and shrinking a simplex of ``n + 1`` vertices, and stops when the objective values across the simplex and the vertex positions across the simplex both fall under the caller's thresholds. | Nelder & Mead 1965; Lagarias, Reeds, Wright & Wright 1998 | **The premise is that the objective is deterministic, and it is a local method.** Every step is a ranking of two objective values against each other, so a stochastic objective turns those decisions into noise and this unit is not a substitute for `spsa.py` beside it; `converged` reports a collapsed simplex rather than a global minimum, and the published counterexample's collinear start is refused rather than reproduced, so a local minimum is what remains reachable. No end-to-end advantage follows. |
 | `trotter.py` — time evolution by a product formula | Available. Turns a weighted Pauli sum into the circuit a product formula applies, as a basis change and a CX ladder per term, so a time-evolution workload is an ordinary circuit; the primitive underneath it is the exact circuit for ``exp(-i * theta * P)`` of one Pauli word. | Trotter 1959; Suzuki 1990; Suzuki 1991; Lloyd 1996 | **The premise is commutativity, and it fails by exactly the amount nothing here bounds.** A product formula is exact only when the terms commute; otherwise the defect falls off with the step length at the composition's own rate and no bound is reported, because a bound needs a commutator norm that belongs to the caller. The term count is the caller's Hamiltonian's, so no end-to-end advantage follows. |
 | `logical_resources.py` — logical-layer resource estimation | Available. Reads a Clifford+T program's operation counts, T family, and schedule depth out of the compiler's own static estimate and costs them on a rotated surface code at a distance the caller names: logical layers, physical qubits, surface-code cycles, and their product. | Fowler et al. 2012 | **None, and it is a count rather than a measurement.** Nothing runs, and no wall-clock time, memory, or allocation is read; the input has to already be Clifford+T, so a parametric rotation is refused rather than synthesised; no distillation factory, magic-state budget, routing overhead, placement, or device model is included; and no logical error rate is reported, because that number needs a device's threshold fit. |
 
@@ -173,6 +174,14 @@ units carries a root-level `fq.` name.
   available should use autograd or parameter shift instead. The claim this unit
   supports is a cost claim on a stochastic objective, not an accuracy claim and
   not an end-to-end advantage. See the section below.
+- **Nelder-Mead carries no advantage premise either, and its premise is the one
+  SPSA cannot meet.** `nelder_mead.py` is the second optimizer here and it decides
+  every step by comparing two objective values, so it needs the objective to be
+  deterministic and it is defeated rather than merely degraded by a sampled one.
+  It is also a local method whose `converged` flag reports that a simplex collapsed,
+  not that the point it collapsed onto is a minimum. The claim it supports is a cost
+  claim on a deterministic objective with no available derivative. See the section
+  below.
 - **The time-evolution unit carries no advantage premise, and the quantity that
   would bound it is not computed.** `trotter.py` is a compiler-facing
   construction: it turns a Pauli sum into the circuit that approximates
@@ -1370,9 +1379,11 @@ is the one the caller declared.
 
 ## SPSA optimization
 
-`spsa.py` is the first optimizer unit in this guide's programme, and the only unit
-here that is not an algorithm: it decides where to move a parameter vector rather
-than what to compute from one. `SPSAOptimizer(maxiter=..., stability=...,
+`spsa.py` is the first of this guide's two optimizer units, and like
+`nelder_mead.py` in the section after this one it is not an algorithm: both
+decide where to move a parameter vector rather than what to compute from one,
+and they are the two halves of the same choice, one for a stochastic objective
+and one for a deterministic one. `SPSAOptimizer(maxiter=..., stability=...,
 parameter_gain=..., perturbation=..., parameter_gain_exponent=...,
 perturbation_exponent=..., generator=...)` takes exactly one of `maxiter` and
 `stability` and drives a scalar objective through `step(objective, parameters)`,
@@ -1459,6 +1470,214 @@ The recursion as published updates from one estimate. Variance reduction, a
 per-coordinate perturbation scale, and resuming an optimizer from serialized
 state are all absent, and each is a second algorithm with its own conditions
 rather than a knob on this one.
+
+## Nelder-Mead simplex search
+
+`nelder_mead.py` is the second optimizer unit, and it is the deliberate opposite of
+`spsa.py` in the section above. `NelderMeadOptimizer(maxiter=..., initial_step=...,
+reflection=..., expansion=..., contraction=..., shrink=..., tolerance=..., atol=...)`
+drives a scalar objective through `minimize(objective, parameters, simplex=None)`,
+which returns a `NelderMeadResult` carrying the best vertex, the final `(n + 1, n)`
+simplex ordered by value, the two spreads the run stopped on, the iteration and
+evaluation counts, and a `converged` flag. `initial_simplex(parameters)` returns
+the simplex a run would build from a starting point, so the starting point can be
+inspected before it is spent on a run, and the caller can build their own and pass
+it as `simplex`.
+
+**The method reads only the order of objective values, and that is what it costs
+and what it buys.** Each iteration ranks the vertices and replaces the worst one:
+reflect it through the centroid of the rest, expand the reflection when it beat
+every vertex, contract it when it did not, and shrink the whole simplex toward the
+best vertex when even the contraction failed. Nothing differences the objective,
+so there is no perturbation size to choose and no step size, learning rate, or
+momentum either, and — unlike `spsa.py` — there is no random draw anywhere in
+it. The consequence is measured rather than asserted: two runs of the same
+objective from the same start return bit-identical parameters and a bit-identical
+simplex, because every arithmetic decision is a comparison of two stored values.
+
+**The premise is determinism, and a sampled objective defeats the method rather
+than degrading it.** A ranking of two objective values is only as meaningful as
+the values themselves, so an objective whose value moves between two evaluations
+of the same point turns each decision into a coin toss and the trajectory into a
+walk. That objective is what `spsa.py` beside this unit is for, and the comparison
+below runs both units on one objective at one evaluation budget.
+`NELDER_MEAD_ASSUMPTIONS` states the three conditions a run rests on — determinism
+at the resolution the simplex resolves, local continuity with the region the
+simplex reaches, and the caller's own ordering being what they mean by better —
+and the result carries them, so a caller who knows their objective is sampled
+finds that out from the result rather than from a paragraph here.
+
+**`converged` does not mean the vertex is a minimum, and the gap is measured.**
+The run stops when both measured spreads fall under the caller's thresholds: the
+objective values across the simplex under `atol`, and the vertex positions across
+the simplex under `tolerance`. Both are needed, because a flat objective collapses
+the values without moving the vertices and a stalled simplex collapses the vertices
+without agreeing on a value. Neither says anything about the objective's slope,
+and a simplex can collapse onto a point that is not a minimum. The classic
+two-well quartic ``(x**2 - 1)**2 + 0.1 x`` started at ``0.5`` reports
+`converged=True` on a value ``0.199984362162`` above the other well's, and the
+quoted run below is that measurement rather than a description of it. Tightening
+the thresholds does not repair it: the simplex is inside one basin, and this unit
+applies no restart, no multi-start, and no basin hopping. `NELDER_MEAD_LIMITATIONS`
+records the consequence, which is that the published convergence theory for this
+widely used variant is incomplete in more than one dimension.
+
+**The published counterexample is refused rather than reproduced, and that is a
+boundary rather than a fix.** McKinnon's function is the standard demonstration
+that the method's convergence theory is incomplete, and its construction needs a
+simplex that stays flat in one parameter direction. This unit refuses a starting
+simplex that does not span all ``n`` parameter directions, naming the number of
+directions it does span, so a degenerate simplex is refused instead of being run
+on: what remains reachable through this entry point is a local minimum, and the
+incompleteness of the convergence theory is carried on the result rather than
+claimed away.
+
+**The cost is a count of objective calls, and it is bracketed rather than merely
+printed.** A run spends one evaluation per vertex it orders, so the count lies
+between ``(n + 1) + iterations`` and ``(n + 1) + (n + 1) * iterations``: the lower
+bound is a run whose every iteration evaluated one new vertex, and the upper bound
+is one whose every iteration evaluated all ``n + 1``. `NelderMeadResult.evaluations`
+reports the actual count, which is the number a caller comparing this unit against
+a gradient method has to use; it is a count and not a latency, a device cost, or a
+parallel schedule, because vertices are evaluated one at a time and no
+vectorization of the simplex is attempted.
+
+**What it refuses, and when.** A coefficient that is not what its name promises --
+an `expansion` that does not exceed 1 or falls below `reflection`, a `contraction`
+or `shrink` outside the open unit interval, a non-positive `maxiter` or
+`initial_step`, a non-finite `tolerance` or `atol` -- raises `ValidationError` at
+construction. A non-callable objective, non-floating or empty or non-finite
+parameters, a simplex of the wrong shape or dtype or one whose first vertex is not
+the starting point or one that does not span the parameter directions, and an
+objective that writes into the tensor it is handed all raise before a vertex is
+stored beside a value, so a refused run leaves no half-described simplex behind.
+The in-place refusal is the same reasoning as `spsa.py`'s and it matters for the
+same reason: this unit stores a vertex and its value together, and an objective
+that rewrites its argument makes that stored pair describe different parameters,
+which is a wrong answer rather than an exception.
+
+**There is no bounds handling, no constraint handling, no restart, no checkpoint
+protocol, and no parallel evaluation.** A constrained problem is only as well posed
+as the caller's own transformation of it, and the four coefficients, the simplex
+construction, both thresholds, and the budget are the caller's. Each of the absent
+mechanisms is a second algorithm with its own conditions rather than a knob on this
+one.
+
+```python
+import torch
+
+from flagquantum.algorithms import NelderMeadOptimizer, SPSAOptimizer
+
+
+def quadratic(parameters):
+    return ((parameters - torch.tensor([1.5, -2.0], dtype=torch.float64)) ** 2).sum()
+
+
+search = NelderMeadOptimizer(maxiter=400, atol=1e-14)
+first = search.minimize(quadratic, torch.zeros(2, dtype=torch.float64))
+print(first.value, first.iterations, first.evaluations, first.converged)
+# 1.586728257135276e-17 74 143 True  -- the value, the replacements, and the calls
+print([round(float(value), 12) for value in first.parameters])
+# [1.500000003819, -2.000000001132]  -- the target, to the resolution it stopped at
+print(f"{first.value_spread:.3e} {first.simplex_spread:.3e}")
+# 1.791e-17 9.173e-09  -- the value spread and the vertex spread, against 1e-14 and 1e-8
+second = search.minimize(quadratic, torch.zeros(2, dtype=torch.float64))
+print(
+    torch.equal(first.parameters, second.parameters),
+    torch.equal(first.simplex, second.simplex),
+)
+# True True  -- no draw anywhere, so the run replays bit for bit
+
+
+def rosenbrock(parameters):
+    return (
+        (1 - parameters[0]) ** 2 + 100 * (parameters[1] - parameters[0] ** 2) ** 2
+    ).reshape(())
+
+
+for start in ([1.2, 1.0], [-1.2, 1.0], [0.0, 0.0], [2.0, 2.0], [-2.0, 2.0]):
+    run = NelderMeadOptimizer(maxiter=2000, atol=1e-14).minimize(
+        rosenbrock, torch.tensor(start, dtype=torch.float64)
+    )
+    print(start, run.iterations, run.evaluations, f"{run.value:.3e}")
+# [1.2, 1.0] 73 140 3.188e-18
+# [-1.2, 1.0] 147 281 4.308e-18
+# [0.0, 0.0] 96 179 4.540e-18
+# [2.0, 2.0] 91 176 3.793e-18
+# [-2.0, 2.0] 150 280 1.140e-17
+#   -- every start reaches the valley, and the counts vary by a factor of two
+
+
+def two_well(parameters):
+    return ((parameters[0] ** 2 - 1.0) ** 2 + 0.1 * parameters[0]).reshape(())
+
+
+shallow = NelderMeadOptimizer(maxiter=400).minimize(
+    two_well, torch.tensor([0.5], dtype=torch.float64)
+)
+deep = NelderMeadOptimizer(maxiter=400).minimize(
+    two_well, torch.tensor([-0.5], dtype=torch.float64)
+)
+print(f"{shallow.value:.12f}", shallow.converged, f"{deep.value:.12f}")
+# 0.099366985524 True -0.100617376638  -- both wells report that they converged
+print(f"{float(shallow.value - deep.value):.12f}")
+# 0.199984362162  -- and that is how far the worse one is from the better one
+
+budget = first.evaluations
+for seed in (13, 5, 11):
+    draw = SPSAOptimizer(
+        maxiter=budget // 2,
+        perturbation=0.25,
+        generator=torch.Generator().manual_seed(seed),
+    )
+    parameters = torch.zeros(2, dtype=torch.float64)
+    for _ in range(budget // 2):
+        parameters = draw.step(quadratic, parameters)
+    print(seed, draw.evaluations, f"{float(quadratic(parameters)):.6f}")
+# 13 142 0.019539
+# 5 142 0.005164
+# 11 142 0.005407
+#   -- SPSA at the same 142-call budget, on the objective Nelder-Mead solved
+
+for label, build in (
+    ("expansion=1.0", lambda: NelderMeadOptimizer(expansion=1.0)),
+    ("shrink=1.0", lambda: NelderMeadOptimizer(shrink=1.0)),
+):
+    try:
+        build()
+    except Exception as error:
+        print(label, type(error).__name__, error)
+# expansion=1.0 ValidationError expansion must exceed 1, because an expansion that
+# does not reach past the reflection is not an expansion
+# shrink=1.0 ValidationError shrink must lie strictly between 0 and 1, because it
+# moves every vertex toward the best one without passing it
+
+collinear = torch.tensor(
+    [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]], dtype=torch.float64
+)
+try:
+    NelderMeadOptimizer().minimize(
+        quadratic, torch.zeros(2, dtype=torch.float64), simplex=collinear
+    )
+except Exception as error:
+    print("collinear", type(error).__name__, error)
+# collinear ValidationError the vertices must span all 2 parameter directions, and
+# they span only 1; a simplex flat in one direction cannot move in it
+
+
+def in_place(parameters):
+    parameters[0] = 0.0
+    return (parameters**2).sum()
+
+
+try:
+    NelderMeadOptimizer().minimize(in_place, torch.zeros(2, dtype=torch.float64))
+except Exception as error:
+    print("in-place", type(error).__name__, error)
+# in-place ValidationError the objective modified the tensor it was given;
+# Nelder-Mead stores a vertex and its objective value together, so an in-place
+# objective makes the stored pair describe different parameters
+```
 
 ## Time evolution by a product formula
 
@@ -2077,6 +2296,30 @@ executes it.
   APL Technical Digest* **19**(4), 482-492 (1998). The second is a technical
   digest rather than a peer-reviewed article and is cited for the practical
   defaults only, not for the convergence result, which is the 1992 paper's.
+- Nelder-Mead simplex search is attributed to J. A. Nelder & R. Mead, "A Simplex
+  Method for Function Minimization", *The Computer Journal* **7**(4), 308-313
+  (1965), DOI 10.1093/comjnl/7.4.308 — the reflection, expansion, contraction and
+  shrink coefficients this unit names, and the simplex of ``n + 1`` vertices it
+  moves. The convergence record is a separate and later one, and it is the record
+  this unit's boundary rests on rather than the 1965 paper: J. C. Lagarias, J. A.
+  Reeds, M. H. Wright & P. E. Wright, "Convergence Properties of the Nelder--Mead
+  Simplex Method in Low Dimensions", *SIAM Journal on Optimization* **9**(1),
+  112-147 (1998), DOI 10.1137/S1052623496303470, which is also where the statement
+  that essentially no theoretical results had been proved for this algorithm
+  before it is written down. **What that record contains is exactly what this
+  unit reports**: convergence to a minimizer in one dimension, limited results in
+  two, and two counterexamples in two dimensions — a nonconvergence example and an
+  example of convergence to a nonminimizer. The guide says the theory is
+  incomplete in more than one dimension because that is what the record says, and
+  the unit computes no rate, bound or interval of its own. The family of
+  examples that converges to a nonstationary point is K. I. M. McKinnon,
+  "Convergence of the Nelder--Mead Simplex Method to a Nonstationary Point",
+  *SIAM Journal on Optimization* **9**(1), 148-158 (1998), DOI
+  10.1137/S1052623496303482, and it is cited for the shape of the failure rather
+  than for anything built here: no construction from it is implemented, which is
+  why the collinear starting simplex its demonstration needs is refused by name
+  instead of reproduced.
+
 - The product formula is attributed to H. F. Trotter, "On the product of
   semi-groups of operators", *Proceedings of the American Mathematical Society*
   **10**(4), 545-551 (1959), DOI 10.1090/S0002-9939-1959-0108732-6 — the
@@ -2244,8 +2487,10 @@ unit in this guide makes a performance claim, a capacity claim, or a
 quantum-advantage claim, and none of them certifies solver behavior,
 convergence, or hardware behavior. The one exception is a cost claim and it is
 stated as one: `spsa.py` spends a measured two objective evaluations per step at
-every parameter count it was tested at, which is a count of a unit's own calls
-and not a performance result. The trajectories its section reports are runs of one
+every parameter count it was tested at, and `nelder_mead.py` reports the
+objective calls a run spent beside the bracket those calls lie in. Both are
+counts of a unit's own calls and not performance results, and neither is a
+convergence result. The trajectories its section reports are runs of one
 two-parameter objective, and they certify nothing about convergence in general —
 the unit's own `capability-maturity.toml` entry states the boundary, and the
 spread across seeds that the section reports is the estimator's variance rather

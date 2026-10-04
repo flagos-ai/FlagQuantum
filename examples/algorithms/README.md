@@ -18,6 +18,7 @@ python -m examples.algorithms.svd
 python -m examples.algorithms.error_mitigation
 python -m examples.algorithms.pec
 python -m examples.algorithms.spsa_optimizer
+python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
 python -m examples.algorithms.logical_resources
@@ -56,6 +57,11 @@ What they show:
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
+- [`nelder_mead_optimizer.py`](nelder_mead_optimizer.py): the same Pauli energy
+  minimized with no gradient, no parameter-shift rule and no random draw, with
+  SPSA run beside it at the *same evaluation budget* so the two optimizer units
+  are compared on one objective rather than each being merely present, and the
+  two-well quartic printed to measure what a converged flag does not mean.
 - [`trotter.py`](trotter.py): a transverse-field Ising Hamiltonian turned into the
   circuit a product formula applies, with the defect at two step counts per order
   measured against `torch.matrix_exp`, the primitive's own emitted gates printed
@@ -87,7 +93,11 @@ root-level `fq.` name, with one exception. The algorithm scripts import from the
 subpackage -- `from flagquantum.algorithms.pca import principal_components` --
 rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both:
 the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
-and `fq.run` calls its objective makes. `trotter.py` needs no root alias either:
+and `fq.run` calls its objective makes. `nelder_mead_optimizer.py` imports both as
+well, for one more reason: it imports `SPSAOptimizer` beside
+`NelderMeadOptimizer` from the subpackage, so the comparison it prints is run
+through the two shipped units rather than reimplemented in the script.
+`trotter.py` needs no root alias either:
 the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
 is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
 either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
@@ -111,7 +121,10 @@ that is not checkable from the measurements it fits, probabilistic error
 cancellation rests on the noise being exactly the channel the model declares at
 the location it declares it and pays for the inversion in programs rather than
 shots, the SPSA update is built from a finite-difference estimate that is an
-estimate rather than a gradient, and the product formula approximates the
+estimate rather than a gradient, the Nelder-Mead search decides every step by
+ranking two objective values against each other, so a stochastic objective turns
+those decisions into a coin toss and the flag it ends on reports a collapsed
+simplex rather than a global minimum, and the product formula approximates the
 evolution with a defect that is measured rather than bounded, because a bound
 needs a commutator norm the caller has to supply, and the block encoding is
 built from a dense exact eigendecomposition whose cost is diagonalising the

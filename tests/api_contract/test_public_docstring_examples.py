@@ -28,6 +28,7 @@ from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
+from flagquantum.algorithms.nelder_mead import NelderMeadOptimizer
 from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.algorithms.trotter import (
     pauli_exponential_circuit,
@@ -86,7 +87,10 @@ pytestmark = pytest.mark.unit
 # product state of two zero rotations. The arithmetic module contributes two: the
 # adder's constructor, whose example is that circuit's wire count and its gate
 # census at three bits, and the register map, whose example is the four wire
-# groups that census is read through.
+# groups that census is read through. The Nelder-Mead optimizer contributes
+# one: its example is the same two-qubit Pauli energy the SPSA entry beside it
+# minimizes, so the two optimizer units are compared on one objective rather
+# than each being merely present.
 ENTRIES = (
     adder_circuit,
     adder_wires,
@@ -96,6 +100,7 @@ ENTRIES = (
     CssCodeMatrices,
     FermionOperator,
     Layout,
+    NelderMeadOptimizer,
     SuperOperator,
     SPSAOptimizer,
     boson_position,

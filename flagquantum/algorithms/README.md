@@ -88,6 +88,15 @@ executed by `tests/test_algorithm_examples.py`.
   gradient is served more cheaply and exactly by autograd or parameter shift, and
   the reason to use this unit is its evaluation cost. Demonstration scale: the
   perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
+- `nelder_mead.py`: Nelder-Mead simplex search — a gradient-free optimizer that
+  compares objective values instead of differencing them, so it needs no
+  perturbation size, no step size, and no random draw at all. **It requires a
+  deterministic objective and it is a local method**: every step is a ranking of
+  two values against each other, and `converged` reports that two measured
+  spreads fell under the caller's thresholds rather than that the vertex is a
+  global minimum. Demonstration scale: the starting simplex is the caller's or a
+  coordinate-offset default, the run is single-threaded and unbatched, and the
+  reported cost is a count of objective calls rather than a latency.
 - `trotter.py`: time evolution by a product formula — a weighted Pauli sum
   becomes an ordinary `Circuit` whose unitary approximates `exp(-i * time * H)`,
   with the exact circuit for one Pauli word's exponential underneath it, as a

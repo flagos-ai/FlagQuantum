@@ -1449,6 +1449,24 @@ limitations = "The estimate this optimizer builds is biased for every finite per
 focused_tests = "tests/unit/test_algorithms_spsa.py"
 development_artifact = "flagquantum/algorithms/README.md"
 
+[capabilities.algorithms_nelder_mead_optimizer]
+title = "Nelder-Mead simplex search"
+summary = "Minimize a scalar objective with no derivative and no random draw, by reflecting, expanding, contracting and shrinking a simplex of n + 1 vertices until two measured spreads fall under the caller's thresholds."
+category = "simulation_and_training"
+user_goals = ["Optimize a deterministic objective whose derivative is unavailable", "Replay a run bit for bit without seeding anything", "Place the starting simplex, because a local method's basin is the caller's choice", "Read the two spreads a run stopped on instead of trusting a flag"]
+public_apis = ["flagquantum.algorithms.nelder_mead"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "not_applicable"
+quick_start = "examples/algorithms/nelder_mead_optimizer.py"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "development_evidence"
+owner = "Algorithms maintainers"
+limitations = "This is a local method and its converged flag is not a statement about a minimum. A run stops when the objective values across the simplex fall under atol and the vertex positions across the simplex fall under tolerance, and a simplex can collapse onto a point that is neither a local nor a global minimum; the widely used variant this unit implements has no complete convergence theory in more than one dimension, which the returned result carries in its own limitations rather than leaving to this field. The failure is measured and not merely described: on the two-well quartic (x**2 - 1)**2 + 0.1x started at 0.5 the run reports converged=True on a value 0.199984362162 above the value it reaches from -0.5, and tightening the thresholds does not repair it because the simplex is inside one basin. There is no restart, no multi-start, no basin hopping and no simulated annealing, so the basin the starting simplex is placed in is the only one a run can reach, which is why initial_simplex is public and why the (n + 1, n) simplex is the caller's to build. The premise is a deterministic objective: every decision the method makes is a comparison of two objective values, so an objective whose value moves between two evaluations of the same point turns each decision into noise and the trajectory into a walk, and a stochastic objective is the subject of the spsa unit beside this one rather than something this unit tolerates. A starting simplex that does not span all n parameter directions is refused by name, which is deliberate and is also a boundary: the collinear construction the published counterexample uses cannot be expressed through this entry point, so the counterexample is refused rather than reproduced, and what remains reachable is a local minimum. The cost is a count of objective evaluations and not a latency, a device cost or a parallel schedule: vertices are evaluated one at a time, one evaluation per call, with no vectorization of the simplex, and the count is bracketed by (n + 1) + iterations at the lower end and (n + 1) + (n + 1) * iterations at the upper end rather than being a function of the parameter count alone. No derivative, curvature or uncertainty is estimated or reported, because the method reads only the order of objective values and two objectives with the same ordering produce the same trajectory. Bounds, constraint handling, feasibility and penalty notions are absent, so a constrained problem is only as well posed as the caller's own transformation of it. The optimizer executes nothing itself: it calls a callable the caller supplies and never inspects it, so no runtime mode is selected, no circuit is built and no observable is measured. The four coefficients, the initial step, both thresholds and the iteration budget are the caller's, no checkpoint or resume protocol exists, and the one arithmetic deviation the unit does make is that a simplex not carrying the parameters' own dtype is refused rather than silently promoted. It adds no root-level fq name and leaves the Stable Core surface untouched."
+focused_tests = "tests/unit/test_algorithms_nelder_mead.py"
+development_artifact = "flagquantum/algorithms/README.md"
+
 [capabilities.stabilizer_sampling]
 title = "Clifford circuit sampling by Pauli stabilizer tracking"
 summary = "Sample computational-basis outcomes from a Clifford circuit whose wire count puts a dense amplitude store out of reach."

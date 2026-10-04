@@ -47,6 +47,7 @@ SCRIPTS = (
     "error_mitigation",
     "pec",
     "spsa_optimizer",
+    "nelder_mead_optimizer",
     "trotter",
     "block_encoding",
     "logical_resources",
@@ -124,6 +125,16 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "spsa_optimizer": (
         "an estimate rather than a gradient",
         "cheaper and exact without it",
+    ),
+    # Two halves, and they are halves of one premise rather than two
+    # concessions: "the objective has to be deterministic" is the input the
+    # method needs, and "a local minimum rather than the global one" is what
+    # a converged run therefore reports. Pinning only the first would leave
+    # the flag's meaning deletable, and a run whose flag reads as a global
+    # claim is exactly the misreading the second half prevents.
+    "nelder_mead_optimizer": (
+        "has to be deterministic",
+        "a local minimum rather than the global one",
     ),
     # Two halves. "the product approximates exp(-i t H) and nothing here bounds how
     # far apart they are" is the approximation's own concession, and "a commutator
@@ -455,6 +466,37 @@ def test_spsa_example_measures_its_cost_and_converges() -> None:
         "the objective modified the tensor it was given"
     )
     _assert_premise("spsa_optimizer", output)
+    assert "take away" in output
+
+
+def test_nelder_mead_example_is_exact_and_shows_what_converged_means() -> None:
+    output = _run("nelder_mead_optimizer")
+
+    assert "Nelder-Mead simplex search -- flagquantum.algorithms.nelder_mead" in output
+    assert _labelled(output, "iterations") == "67"
+    assert _labelled(output, "objective calls") == "132"
+    assert _labelled(output, "final energy") == "-2.0"
+    assert _labelled(output, "converged") == "True"
+    assert _labelled(output, "Nelder-Mead") == "-2.0"
+    assert _labelled(output, "SPSA, seed 13") == "-1.996896 in 132 calls"
+    assert _labelled(output, "SPSA, seed 5") == "-1.993104 in 132 calls"
+    assert _labelled(output, "SPSA, seed 11") == "-1.99134 in 132 calls"
+    assert _labelled(output, "spread across seeds") == "0.005556"
+    assert _labelled(output, "reported value") == "0.099366985524"
+    assert _labelled(output, "reported converged") == "True"
+    assert _labelled(output, "global minimum") == "-0.100617376638"
+    assert _labelled(output, "distance from the global") == "0.199984362162"
+    assert _labelled(output, "collinear simplex") == (
+        "the vertices must span all 2 parameter directions"
+    )
+    assert _labelled(output, "in-place objective").startswith(
+        "the objective modified the tensor it was given"
+    )
+    assert _labelled(output, "budget") == "maxiter must be a positive integer"
+    assert _labelled(output, "non-finite value") == (
+        "the objective returned a non-finite value"
+    )
+    _assert_premise("nelder_mead_optimizer", output)
     assert "take away" in output
 
 

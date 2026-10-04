@@ -9,6 +9,7 @@ from . import feature_selection as feature_selection
 from . import grover as grover
 from . import kmedians as kmedians
 from . import logical_resources as logical_resources
+from . import nelder_mead as nelder_mead
 from . import pca as pca
 from . import pec as pec
 from . import qarm as qarm
@@ -67,6 +68,12 @@ from .logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
+from .nelder_mead import (
+    NELDER_MEAD_ASSUMPTIONS,
+    NELDER_MEAD_LIMITATIONS,
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationRecord,
@@ -98,6 +105,10 @@ __all__ = [
     "LayerwiseVQEResult",
     "LOGICAL_RESOURCE_BASIS",
     "LogicalResourceReport",
+    "NELDER_MEAD_ASSUMPTIONS",
+    "NELDER_MEAD_LIMITATIONS",
+    "NelderMeadOptimizer",
+    "NelderMeadResult",
     "OptimizerFactory",
     "OptimizationRecord",
     "OptimizationStage",
@@ -130,6 +141,7 @@ __all__ = [
     "heisenberg_hva",
     "heisenberg_hva_parameter_count",
     "kmedians",
+    "nelder_mead",
     "logical_resources",
     "optimize_hybrid",
     "pauli_exponential_circuit",
