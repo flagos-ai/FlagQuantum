@@ -122,6 +122,25 @@ carrying a trainable angle is folded at all -- composition reads numbers, and
 holds the per-length reduction, the statevector exactness, the decline, and the
 count difference from Qiskit's pass.
 
+Re-spelling a run **into a declared target basis** is the one part of that
+counterpart that is not here, and it is blocked by arithmetic rather than by a
+missing routine. The determinant of a word over a target's arity-1 gates is the
+product of its factors' determinants, so a word over `{rz, sx, x}` -- the three
+arity-1 gates of the `ibm-rz-sx-cx` snapshot -- carries a determinant whose
+argument lies in `{0, pi/2, pi, 3*pi/2}` degrees, and a run containing `t`,
+`tdg`, `phase`, `u1`, or `u3` carries one outside that set. No word over that
+basis reproduces such a run at any length. Qiskit's `Optimize1qGatesDecomposition`
+takes that population anyway and pays the difference into `dag.global_phase`,
+which its DAG has and `CircuitIR` does not; measured over 4000 seeded mixed runs,
+a word that agrees only up to a global phase exists for all 4000 and is three
+gates shorter on mean, while one that agrees entry for entry exists for 230 to
+425 of them. The gap is the missing field, not missing synthesis.
+[benchmarks/compiler_one_qubit_decomposition.py](../../benchmarks/compiler_one_qubit_decomposition.py)
+measures the determinant subgroup per basis, the two columns per declared pair,
+and the phase `native_gate_legalization` already drops on 76 to 78 of 80 seeded
+entangled programs; [FQ-IR-GLOBAL-PHASE-20261006.md](../../docs/api-changes/FQ-IR-GLOBAL-PHASE-20261006.md)
+is the proposal for the field.
+
 Two-qubit block folding is the same idea one arity up, with one difference that
 matters. `collapse_one_qubit_runs` composes a maximal run over one *wire*; the fold
 composes a maximal **block** over one *ordered wire pair*, whose members are the
