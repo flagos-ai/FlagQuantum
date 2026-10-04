@@ -63,6 +63,17 @@ measures that floor as its `runs_only` arm and asserts it circuit by circuit.
 has none; the same reason `one_qubit_synthesis` refuses to select a branch on one.
 A block carrying a trainable angle is left to `merge_adjacent_rotations`, which adds
 angles with the caller's own objects and keeps them in the autograd graph.
+
+The module also owns the fold's inverse, `split_two_qubit_blocks`, which is the
+parity counterpart of Qiskit's `Split2QUnitaries`. It rewrites one two-wire
+instruction that carries a matrix *and* whose opcode no operator schema declares --
+an opaque unitary a caller or an adapter produced, which is exactly the shape Qiskit's
+pass targets, because a declared two-qubit opcode is a name whose meaning the schema
+already fixes and whose arity the two one-wire halves would contradict -- into its two
+single-qubit factors. The split is a strict lengthening and is therefore not a
+simplification in itself; it is what makes an entangling-free two-qubit operator
+visible to the single-qubit passes beside this one, which cannot read a two-wire
+matrix at all. See the function for the two properties that make it admissible.
 """
 
 from __future__ import annotations
@@ -705,4 +716,158 @@ def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
     )
 
 
-__all__ = ["collapse_two_qubit_blocks"]
+def _product_factors(matrix: Matrix) -> tuple[Matrix, Matrix] | None:
+    """Return ``(left, right)`` with ``matrix == left (x) right``, or None.
+
+    The four 2x2 blocks of a Kronecker product are each a scalar multiple of the
+    same factor, so the block of largest norm names `right` up to one positive real
+    scale, and four Frobenius inner products against it name `left`. The candidate
+    is then multiplied back out and compared entry for entry, which is the decision:
+    a matrix that is not a product is refused rather than rewritten approximately.
+
+    That scale is real and positive, which is why this route records no phase. A
+    decomposition that normalizes its two factors -- dividing each by a square root
+    of its own determinant, as `two_qubit_synthesis` does -- leaves one global phase
+    over, and FlagQuantum IR has no field in which to record it. Reading the phase
+    off the block instead puts it inside `left` and `right`, so the two emitted
+    matrices multiply back to exactly the matrix this pass was handed.
+    """
+
+    blocks = [
+        [
+            [
+                [matrix[2 * row + inner][2 * column + other] for other in range(2)]
+                for inner in range(2)
+            ]
+            for column in range(2)
+        ]
+        for row in range(2)
+    ]
+    norms = [
+        [
+            math.sqrt(sum(abs(entry) ** 2 for inner in block for entry in inner))
+            for block in pair
+        ]
+        for pair in blocks
+    ]
+    row_index, column_index = max(
+        ((row, column) for row in range(2) for column in range(2)),
+        key=lambda index: norms[index[0]][index[1]],
+    )
+    largest = norms[row_index][column_index]
+    # A zero matrix has no block to normalize and cannot be a product of two
+    # unitaries. The floor is the tolerance this module already compares candidates
+    # at, so a "product" indistinguishable from the zero matrix there is refused
+    # rather than read as noise scaled up.
+    if largest <= _MATCH_EPS:
+        return None
+    right = [
+        [entry / (largest / math.sqrt(2.0)) for entry in inner]
+        for inner in blocks[row_index][column_index]
+    ]
+    left = [
+        [
+            sum(
+                blocks[row][column][inner][other] * right[inner][other].conjugate()
+                for inner in range(2)
+                for other in range(2)
+            )
+            / 2.0
+            for column in range(2)
+        ]
+        for row in range(2)
+    ]
+    if not _same(matrix, _kron(left, right)):
+        return None
+    return left, right
+
+
+def _split_instruction(
+    instruction: Instruction,
+) -> tuple[Instruction, Instruction] | None:
+    """One instruction re-spelled as its two single-qubit factors, or None.
+
+    None means the instruction is not two-wire, carries no matrix, is declared by an
+    operator schema, or is not a product of two single-qubit unitaries at all.
+    """
+
+    if len(instruction.wires) != 2 or instruction.matrix is None:
+        return None
+    # A declared opcode is never split. Its name and parameter contract already say
+    # what it computes, `collapse_two_qubit_blocks` is the pass that re-spells those,
+    # and two one-wire instructions carrying the same opcode would contradict the
+    # arity the schema declares.
+    if get_operator_schema(canonical_opcode(instruction.name)) is not None:
+        return None
+    matrix = _instruction_matrix(instruction)
+    if matrix is None:
+        return None
+    factors = _product_factors(matrix)
+    if factors is None:
+        return None
+    left, right = factors
+    # Both halves descend from the one instruction that carried the matrix, so both
+    # carry its metadata: a provenance record a consumer reads is about where the
+    # operator came from, and that is the same for either factor.
+    return (
+        Instruction(
+            instruction.name,
+            (instruction.wires[0],),
+            matrix=left,
+            metadata=instruction.metadata,
+        ),
+        Instruction(
+            instruction.name,
+            (instruction.wires[1],),
+            matrix=right,
+            metadata=instruction.metadata,
+        ),
+    )
+
+
+def split_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
+    """Re-spell each local two-qubit unitary as its two single-qubit factors.
+
+    This is the inverse direction of `collapse_two_qubit_blocks` and the counterpart
+    of Qiskit's `Split2QUnitaries`. An operator that is exactly ``left (x) right``
+    acts on the two wires independently, so one instruction that carries it computes
+    what two one-wire instructions compute, and this pass writes those two.
+
+    It is a lengthening pass -- one instruction becomes two -- so it is not an
+    optimization by itself, and it is admissible for two different reasons.
+
+    **It is the only route by which a two-wire matrix reaches the single-qubit
+    passes.** `collapse_one_qubit_runs` reads a matrix-carrying instruction as a run
+    member, but only on one wire: a two-wire matrix spans two and is not readable
+    there, so an entangling-free two-qubit operator blocks every single-qubit
+    simplification around it. After this split each factor joins the run on its own
+    wire, and the run fold re-spells the sum. That is also what lets
+    `native_gate_legalization` reach such an instruction at all on a target that
+    publishes no entangler, where the two-qubit route fails closed.
+
+    **The replacement is verified by equality, not by tolerance.** The factors are
+    rebuilt from the block of largest norm and the candidate is multiplied back out
+    and compared entry for entry against the matrix the pass was handed, so a matrix
+    that is not a product is left alone. Nothing is approximated, no phase is
+    dropped, and the emitted program computes the same statevector exactly.
+
+    Two properties keep the pass out of the fixed-point loop. It lengthens, so it is
+    not part of a converging shrink; and a block the fold had already collapsed to a
+    declared opcode cannot be re-split, because a declared opcode is never a
+    candidate here, so running the two passes alternately reaches a fixed point
+    instead of oscillating.
+    """
+
+    output: list[Instruction] = []
+    for instruction in ir:
+        halves = _split_instruction(instruction)
+        if halves is None:
+            output.append(instruction)
+            continue
+        output.extend(halves)
+    if len(output) == len(ir.instructions):
+        return ir
+    return replace(ir, instructions=tuple(output))
+
+
+__all__ = ["collapse_two_qubit_blocks", "split_two_qubit_blocks"]

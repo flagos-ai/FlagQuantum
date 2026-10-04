@@ -49,6 +49,7 @@ from .one_qubit_synthesis import (
     Z_ROTATION_OPCODES,
     synthesize_one_qubit_matrix,
 )
+from .two_qubit_optimization import _split_instruction
 from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubit
 
 
@@ -234,6 +235,13 @@ def _matrix_replacement(
 
     One wire goes through Euler synthesis, two through KAK synthesis, and
     anything wider is refused because the entangler basis reaches exactly two.
+
+    A two-wire matrix that is a product of two single-qubit unitaries is answered
+    from the single-qubit route instead, and it is asked first. That route needs a
+    z-rotation and a pulse and no entangler at all, so it reaches an operator the
+    KAK route has to refuse on a target that publishes no entangler, and
+    `benchmarks/compiler_two_qubit_synthesis.py` measures that it is never longer
+    than KAK's answer on the same input and strictly shorter on some of it.
     """
 
     if z_rotation is None or pulse_opcode is None:
@@ -246,7 +254,14 @@ def _matrix_replacement(
             pulse_opcode=pulse_opcode,
             metadata=instruction.metadata,
         )
-    if len(instruction.wires) == 2 and entangler is not None:
+    if len(instruction.wires) != 2:
+        return None
+    local = _local_replacement(
+        instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode
+    )
+    if local is not None:
+        return local
+    if entangler is not None:
         return synthesize_two_qubit(
             instruction.matrix,
             wires=instruction.wires,
@@ -256,6 +271,40 @@ def _matrix_replacement(
             metadata=instruction.metadata,
         )
     return None
+
+
+def _local_replacement(
+    instruction: Instruction,
+    *,
+    z_rotation: str,
+    pulse_opcode: str,
+) -> tuple[Instruction, ...] | None:
+    """Synthesize a two-wire matrix that acts on its two wires independently.
+
+    None when the matrix is not such a product, which is the case the KAK route
+    owns. The two factors are each one single-qubit unitary, so each is served by
+    the one-qubit route and the result carries no entangler.
+    """
+
+    halves = _split_instruction(instruction)
+    if halves is None:
+        return None
+    replacement: list[Instruction] = []
+    for half in halves:
+        leaves = synthesize_one_qubit_matrix(
+            half.matrix,
+            wire=half.wires[0],
+            z_rotation=z_rotation,
+            pulse_opcode=pulse_opcode,
+            metadata=half.metadata,
+        )
+        # `_matrix_replacement` only reaches here with a published z-rotation and
+        # pulse opcode, so a factor of a unitary always has a word. Refusing the
+        # whole instruction rather than half of it keeps the record honest.
+        if leaves is None:
+            return None
+        replacement.extend(leaves)
+    return tuple(replacement)
 
 
 def _identity(

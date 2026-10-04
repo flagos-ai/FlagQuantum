@@ -40,6 +40,7 @@ Use `optimize(program)` for target-independent optimization and
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
 | Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
+| Two-qubit block splitting | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
@@ -176,6 +177,43 @@ population's 120 circuits, and 2 instructions shorter with it.
 holds the membership table, the reach and its decline, the boundary sweep with
 `false_yes` required to be zero, and a Qiskit anchor that reports what
 `OptimizeCliffords` and `CollectCliffords` actually do to a gate-level circuit.
+
+The fold has an inverse, and it is the one form of "take a two-qubit unitary apart"
+this IR can state exactly. `split_two_qubit_blocks` reads one two-wire instruction
+that carries a matrix and whose opcode no operator schema declares, and emits the two
+single-qubit instructions whose Kronecker product it is. It is the counterpart of
+Qiskit's `Split2QUnitaries`, with one difference worth stating: that pass sets
+`new_dag.global_phase` on the branch it acts on because its factors are normalized,
+while the factors here are scaled by the positive real Frobenius norm of the
+product's largest 2x2 block and so need no phase field -- which is the field
+`CircuitIR` does not have. Measured over the benchmark's 96 seeded products: the
+emitted pair reproduces the source statevector to 2.5e-16 and the source matrix to
+2.5e-16 entry for entry, with the phase column at 5.6e-17, and nothing is divided
+out. A declared opcode is never a candidate, because its name is what the schema
+fixes and its declared arity is what two one-wire halves would contradict, and a
+Haar-random SU(4) is declined by the same arithmetic -- 0 of 300 accepted.
+The input class is narrow because the pass is exact rather than because it is
+prudent, and the class is not drawn by a tolerance: a product is recognized by
+multiplication and rejected by multiplication. `clifford-t` in
+[benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
+publishes neither a z-rotation nor a pulse, so it serves no arm of that measurement
+and reports a zero comparable count rather than an agreement it cannot make.
+The payoff is reach rather than length, and it is measured as such. A two-wire matrix
+instruction is the one shape the single-qubit passes cannot read, so before this pass
+it had exactly one route out of `native_gate_legalization`: `synthesize_two_qubit`,
+which needs an entangler. A target that publishes a z-rotation and a pulse and no
+entangler at all reached none of that population and now reaches all of it. Where an
+entangler does exist both routes serve the input and the split is the shorter one on
+16 cases of 96, equal on 79, and longer on exactly one -- the identity factor, where
+the entangler route's ten leaves are not padded but genuinely paid. The `shipped` and
+`hand_split` arms of that benchmark are deliberately not compared by length: the
+hand-written route names `x` where the shipped one holds an opaque matrix, and a
+basis that publishes `x` keeps the name, so a length comparison would report name
+preservation as a property of the pass.
+`tests/unit/test_compilation_split_two_qubit_blocks.py` holds the exactness on raw
+amplitudes, the refusal directions, and the falsifiability control: the phase-blind
+route over the same input has an overlap magnitude of 1 and a raw difference above
+0.1, so nothing in that file compares overlaps.
 
 A gate that is its own inverse is one thing; a gate whose inverse is a *different*
 opcode is another, and `merge_self_inverse` only saw the first kind, so it left
