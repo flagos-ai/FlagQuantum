@@ -46,6 +46,7 @@ SCRIPTS = (
     "svd",
     "error_mitigation",
     "pec",
+    "cdr",
     "spsa_optimizer",
     "nelder_mead_optimizer",
     "trotter",
@@ -117,6 +118,17 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "pec": (
         "exactly the channel the model declares",
         "consumes no shots",
+    ),
+    # Two halves. "the ideal expectation is affine in the noisy one over the
+    # region the training circuits span" is the relation the fit rests on, and
+    # "Clifford membership is enforced here and never exploited" is what the unit
+    # gives up to reach it: the training circuits are Clifford, and this path
+    # still pays to simulate them. Pinning only the first would leave the
+    # second deletable, and a Clifford training set read as a cheaper one is
+    # exactly the misreading the second half prevents.
+    "cdr": (
+        "affine in the noisy one",
+        "never exploited",
     ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
@@ -397,6 +409,70 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
         "the noise model declares a readout rule"
     )
     _assert_premise("error_mitigation", output)
+    assert "take away" in output
+
+
+def test_cdr_example_fits_the_noise_and_reads_the_residual() -> None:
+    output = _run("cdr")
+
+    assert "clifford data regression -- flagquantum.algorithms.cdr" in output
+    # Every labelled line, in order, because six labels repeat across the four
+    # training runs and the last-wins helper below would read the wrong one.
+    rows: dict[str, list[str]] = {}
+    for line in output.splitlines():
+        name, separator, value = line.partition(":")
+        if separator and name.strip() and not line.startswith(" " * 4):
+            rows.setdefault(name.strip(), []).append(value.strip())
+    # The training set is a rewrite of the target. Both rotations of the
+    # three-point target sit under the first quarter turn, so the nearest variant
+    # drops them -- residue zero is the empty word -- and the ladder puts each
+    # back as its own named word.
+    assert rows["snappable rotations"] == ["['phase', 'rx', 'ry', 'rz', 'u1']"]
+    assert rows["variants"] == [
+        "['nearest', 'ry-at-instruction-1', 'ry-at-instruction-2']"
+    ]
+    assert rows["angle shifts"] == ["['0.700000', '0.870796', '1.170796']"]
+    assert rows["nearest variant"] == ["['h', 'cx']"]
+    # The two-point fit: the residual is absent rather than zero, and the slope is
+    # the reciprocal of the shrinkage the model applied to the second point. The
+    # first point's ideal is 0.0 and its noisy read is the arithmetic's own floor
+    # rather than exactly zero, which is why the intercept is not exactly zero and
+    # rounds to it at three digits.
+    assert rows["observable"] == ["1.0 * z(0)", "1.0 * z(0) + 1.0 * x(1)"]
+    assert rows["training points"] == [
+        "[(0.0, -5.551115123125783e-17), (-0.9999999999999998, -0.9360000014305114)]",
+        "[(0.0, 0.0), (-0.9999999999999998, -0.8985600022101402), "
+        "(0.9999999999999998, 0.9360000014305113)]",
+    ]
+    assert rows["slope"] == ["1.068376066743", "1.090028329682"]
+    assert rows["intercept"] == ["0.000e+00", "-1.360e-02"]
+    assert rows["residual"] == ["None", "1.360355e-02", "1.110e-16"]
+    assert rows["degrees of freedom"] == ["0", "1"]
+    assert rows["unmitigated"] == ["-0.528505355905480", "-0.214372677510147"]
+    assert rows["mitigated"] == ["-0.564642473395035", "-0.247275844867047"]
+    assert rows["unmitigated error"] == ["3.614e-02", "4.043e-02"]
+    assert rows["mitigated error"] == ["4.441e-16", "7.524e-03", "1.665e-16"]
+    assert rows["distinct noisy values"] == ["3"]
+    assert rows["exact value"] == ["-0.564642473395035", "-0.254799344929041"]
+    # The residual separates a premise that held from one that did not, on the
+    # same three training circuits: the two-noise-source run leaves one that is
+    # 1.2e14 times the one-noise-source run's, and only the latter's mitigated
+    # value is on the exact value.
+    assert abs(float(rows["residual"][1]) / float(rows["residual"][2])) > 1e13
+    # And the two-point run's closeness is an identity rather than a check: its
+    # mitigated error is at the arithmetic's own floor, 1.7e13 times smaller than
+    # the three-point run's, which is the run whose premise was actually tested.
+    assert float(rows["mitigated error"][0]) < float(rows["mitigated error"][1]) / 1e13
+    # Two refusals, each by name: the readout rule, and a program with no
+    # snappable rotation at all -- refused by the stabilizer engine because the
+    # rewrite cannot reach the operation, not by a second gate list here.
+    assert rows["readout rule refused"][0].startswith(
+        "the noise model declares a readout rule"
+    )
+    assert rows["ccx refused"][0].startswith(
+        "CapabilityError -- instruction 1 'ccx' is not a Clifford gate"
+    )
+    _assert_premise("cdr", output)
     assert "take away" in output
 
 

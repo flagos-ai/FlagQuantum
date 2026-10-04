@@ -39,10 +39,13 @@ A spectrum that comes within the same tolerance of zero is refused for the same
 reason: the weights would exceed ``1e6`` and the exact combination's own rounding
 would dominate the answer it reported.
 
-**What is not here.** Clifford data regression and readout-error mitigation are
-absent. The estimate is a point value with no confidence interval, because this
-slice combines exact state expectations rather than samples; ``sampling_overhead``
-is the cost a sampled implementation would pay rather than a measured one.
+**What is not here.** Readout-error mitigation is absent, and Clifford data
+regression is a separate unit beside this one --
+:func:`flagquantum.algorithms.run_cdr` fits the noise's effect on near-Clifford
+circuits rather than inverting a channel. The estimate is a point value with no
+confidence interval, because this slice combines exact state expectations rather
+than samples; ``sampling_overhead`` is the cost a sampled implementation would pay
+rather than a measured one.
 
 Dense Pauli-product mathematics lives in :mod:`flagquantum.simulation.pauli` and
 is reused here rather than restated. What this module owns is the quasi-probability
@@ -145,10 +148,11 @@ PEC_LIMITATIONS: tuple[str, ...] = (
     "The program is re-executed once per term from its IR, and an IR begins at the "
     "all-zero state, so a circuit that declares its own input state is refused "
     "rather than measured from a different state than the one it declares.",
-    "Clifford data regression and readout-error mitigation are absent, and no "
-    "gate-folding scale factor is offered: the inverse is built from the channel's "
-    "Pauli transfer matrix rather than by folding gates, so the cost is reported "
-    "as a term count rather than as a fold count.",
+    "Readout-error mitigation is absent, and Clifford data regression is a "
+    "separate unit beside this one rather than a mode of it, so no gate-folding "
+    "scale factor is offered either: the inverse is built from the channel's Pauli "
+    "transfer matrix rather than by folding gates, so the cost is reported as a "
+    "term count rather than as a fold count.",
 )
 
 

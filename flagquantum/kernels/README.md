@@ -540,14 +540,16 @@ evidence. Until then it remains a planning item in this README.
 
 The error-mitigation row is the one family carrying workloads that already run
 without a fused kernel of its own: zero-noise extrapolation is a sequence of
-exact expectation reads at scaled noise strengths, and probabilistic error
+exact expectation reads at scaled noise strengths, probabilistic error
 cancellation is a sequence of exact programs with one Pauli conjugation inserted
-per inverted channel, so the foundation measurement and expectation kernels serve
-both and the units live in `flagquantum.algorithms` rather than here. Neither
-adds a numerical kernel this package owns: the Pauli transfer matrix is a dense
-matrix product over the channel's own operators, and its inverse is applied
-through the existing Kraus path. Readout-error mitigation and Clifford data
-regression remain planning items with no implementation.
+per inverted channel, and Clifford data regression measures exact expectations of
+Clifford training circuits and of the target they were snapped from, so the
+foundation measurement and expectation kernels serve all three and the units live
+in `flagquantum.algorithms` rather than here. None adds a numerical kernel this
+package owns: the Pauli transfer matrix is a dense matrix product over the
+channel's own operators, its inverse is applied through the existing Kraus path,
+and the regression is one two-column least-squares solve over the point count.
+Readout-error mitigation remains a planning item with no implementation.
 
 ## Status and maturity
 

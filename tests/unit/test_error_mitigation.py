@@ -332,7 +332,14 @@ def test_the_declared_limitations_name_what_the_unit_does_not_do() -> None:
         "Probabilistic error cancellation is provided beside it by "
         "flagquantum.algorithms.run_pec" in text
     )
-    assert "Clifford data regression is absent" in text
+    assert (
+        "Probabilistic error cancellation is provided beside it by "
+        "flagquantum.algorithms.run_pec" in text
+    )
+    assert (
+        "Clifford data regression is provided beside it by "
+        "flagquantum.algorithms.run_cdr" in text
+    )
     assert "no gate-folding scale factor is offered" in text
     assert "max_residual is the diagnostic that exposes it" in text
     assert (

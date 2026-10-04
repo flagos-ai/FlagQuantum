@@ -32,13 +32,15 @@ this path cannot represent it. A model that declares a readout rule is refused
 rather than measured without it, because the alternative is a state-preparation
 estimate reported under the name of a measured one.
 
-**What is not here.** Clifford data regression, circuit folding, shot-based
-execution, and readout-error mitigation are all absent. The estimate is a point
-value with no confidence interval, because this slice extrapolates exact state
-expectations rather than samples. Probabilistic error cancellation is a separate
-unit beside this one -- :func:`flagquantum.algorithms.run_pec` inverts a declared
-Pauli channel instead of scaling it -- so this module's name is not a claim to
-cover it.
+**What is not here.** Circuit folding, shot-based execution, and readout-error
+mitigation are all absent. The estimate is a point value with no confidence
+interval, because this slice extrapolates exact state expectations rather than
+samples. Probabilistic error cancellation and Clifford data regression are
+separate units beside this one -- :func:`flagquantum.algorithms.run_pec` inverts a
+declared Pauli channel instead of scaling it, and
+:func:`flagquantum.algorithms.run_cdr` fits the noise's effect on near-Clifford
+circuits instead of scaling it -- so this module's name is not a claim to cover
+them.
 """
 
 from __future__ import annotations
@@ -117,7 +119,9 @@ _ZERO_ARGUMENT_LIMITATIONS: tuple[str, ...] = (
     "This unit extrapolates a curve in a scale factor. Probabilistic error "
     "cancellation is provided beside it by flagquantum.algorithms.run_pec, which "
     "inverts a declared Pauli channel exactly rather than measuring it at several "
-    "error strengths; Clifford data regression is absent.",
+    "error strengths, and Clifford data regression is provided beside it by "
+    "flagquantum.algorithms.run_cdr, which fits the affine relation the noise "
+    "induces between near-Clifford training circuits and their exact values.",
     "Noise is scaled through a channel parameter rather than by folding the "
     "circuit, so no gate-folding scale factor is offered.",
     "Zero-noise extrapolation removes no bias from a family that is not "

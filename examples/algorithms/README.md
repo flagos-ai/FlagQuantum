@@ -55,6 +55,11 @@ What they show:
   over locations printed beside the estimate, and the four channel families whose
   transfer matrix is not diagonal refused by name together with a channel whose
   transfer eigenvalue reaches zero.
+- [`cdr.py`](cdr.py): the noise's effect on a target fitted as an affine
+  relation over Clifford training circuits built by snapping each rotation to its
+  nearest quarter turn, with the residual that exposes a premise which did not
+  hold printed beside a two-point fit's residual reported as absent and a
+  three-point fit's reported as a measurement.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.

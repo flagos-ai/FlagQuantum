@@ -14,8 +14,8 @@ These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py`,
-  `error_mitigation.py`, `pec.py`, `trotter.py`, `block_encoding.py` and
-  `linear_combination.py`, which
+  `error_mitigation.py`, `pec.py`, `cdr.py`, `trotter.py`, `block_encoding.py`
+  and `linear_combination.py`, which
   import the unit they demonstrate from the subpackage surface because
   `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
   [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside

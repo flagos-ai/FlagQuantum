@@ -34,6 +34,21 @@ executed by `tests/test_algorithm_examples.py`.
   supplies the Hamiltonian and this unit supplies the state preparation. Every
   excitation requires its occupied indices below its virtual ones rather than
   emitting the empty ladders the opposite order would produce.
+- `cdr.py`: Clifford data regression — the affine relation between what a
+  program should give and what the noise makes it give, fitted on Clifford
+  training circuits built by snapping each `rx`/`ry`/`rz`/`phase`/`u1` rotation
+  of the target to its nearest quarter turn and rewriting it into named Clifford
+  gates, then applied to the target's own noisy expectation. Every training
+  circuit is accepted by the stabilizer engine, so the premise that makes the
+  method cheap on hardware is enforced; the ideal values are read from exact
+  density simulation rather than from the stabilizer representation, so no
+  simulation cost is saved here and no capacity claim follows. A model that
+  names an operation the rewrite removes is refused rather than fitted on
+  circuits that receive less noise than the target, and a model that declares a
+  readout rule is refused for the same reason `error_mitigation.py` refuses one.
+  The estimate carries no error bound: the fit's residual is the only diagnostic
+  that exposes an affine premise that does not hold, and it is reported as absent
+  for a two-point fit rather than as an arithmetic zero.
 - `error_mitigation.py`: zero-noise extrapolation — one observable measured at
   several error strengths by scaling the single error-probability parameter each
   noise channel declares, then continued to zero by polynomial least squares or
@@ -42,16 +57,16 @@ executed by `tests/test_algorithm_examples.py`.
   parameters are not error probabilities is refused by name, and a model that
   declares a readout rule is refused rather than measured without it, because the
   estimate is `Tr(O rho)` and classical readout confusion is applied after
-  measurement. Clifford data regression and readout-error mitigation are absent,
-  and probabilistic error cancellation is a separate unit beside it.
+  measurement. Readout-error mitigation is absent, and Clifford data regression
+  and probabilistic error cancellation are separate units beside it.
 - `pec.py`: probabilistic error cancellation — each declared Pauli channel is
   inverted from its Pauli transfer matrix into an exact signed combination of
   Pauli words, which is inserted after the channel it inverts and summed
   exactly. A channel whose transfer matrix is not diagonal, and one whose
   transfer spectrum reaches zero, are refused by name; `gamma` and the `gamma**2`
   shot cost a sampled implementation would pay are reported beside the estimate,
-  together with the term count the run actually spends. Clifford data regression
-  and readout-error mitigation are absent.
+  together with the term count the run actually spends. Readout-error mitigation
+  is absent, and Clifford data regression is a separate unit beside it.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has

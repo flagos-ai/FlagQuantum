@@ -2,6 +2,7 @@
 
 from . import amplitude_estimation as amplitude_estimation
 from . import arithmetic as arithmetic
+from . import cdr as cdr
 from . import core as core
 from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
@@ -22,6 +23,17 @@ from .arithmetic import (
     AdderWires,
     adder_circuit,
     adder_wires,
+)
+from .cdr import (
+    CDR_ASSUMPTIONS,
+    CDR_LIMITATIONS,
+    CDR_SNAP_OPCODES,
+    CdrResult,
+    CliffordFit,
+    CliffordTrainingPoint,
+    CliffordVariant,
+    clifford_variants,
+    run_cdr,
 )
 from .core import (
     AdaptVQEIteration,
@@ -98,6 +110,13 @@ __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
     "AdderWires",
+    "CDR_ASSUMPTIONS",
+    "CDR_LIMITATIONS",
+    "CDR_SNAP_OPCODES",
+    "CdrResult",
+    "CliffordFit",
+    "CliffordTrainingPoint",
+    "CliffordVariant",
     "ExtrapolationFit",
     "Hamiltonian",
     "HamiltonianTerm",
@@ -128,6 +147,8 @@ __all__ = [
     "angular_encode",
     "append_angular_encode",
     "arithmetic",
+    "cdr",
+    "clifford_variants",
     "data_encoding",
     "error_mitigation",
     "extrapolate_polynomial",
@@ -158,6 +179,7 @@ __all__ = [
     "run_layerwise_vqe",
     "run_vqe",
     "run_adapt_vqe",
+    "run_cdr",
     "run_pec",
     "run_zne",
     "scale_noise_model",

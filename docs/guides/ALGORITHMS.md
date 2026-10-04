@@ -202,18 +202,22 @@ units carries a root-level `fq.` name.
   model declares it, so it removes exactly the noise the model carries and
   leaves untouched every error the model does not: a miscalibrated gate, a
   leakage process, or a drift between the declaration and the run survives the
-  combination. Both units return a point value with no confidence interval, and
-  neither claims a variance reduction: `variance_amplification` and
+  combination. `cdr.py` fits the affine relation between what a training circuit
+  should give and what the noise makes it give, so it is unbiased exactly when
+  that relation holds over the region the training circuits span — again an
+  assumption nothing checks, and one whose only diagnostic is the residual the
+  fit left. All three units return a point value with no confidence interval, and
+  none claims a variance reduction: `variance_amplification` and
   `sampling_overhead` are factors a **sampled** implementation of the same
   quantity would pay, computed from the weights rather than measured, and the
   paths here consume no shot at all. A mitigated value closer to the ideal is
   therefore evidence about the model before it is evidence about a device, and
-  both units say so where the number is. **Neither unit is given a row in the
-  index above or a source under Sources**: this programme has verified no
-  citation record for either method, and a `—` in that column already means
+  all three units say so where the number is. **None of the three is given a row
+  in the index above or a source under Sources**: this programme has verified no
+  citation record for any of the methods, and a `—` in that column already means
   "standard construction with no single paper to cite" rather than "sought and
   not yet found", so the absence is stated here instead of being spelled as
-  something it is not. See the two sections below.
+  something it is not. See the three sections below.
 - **The adder carries no advantage premise either, and it is not a speed-up to
   state: it is a construction.** `arithmetic.py` builds Cuccaro's in-place
   ripple-carry addition, which is `2 n` Toffolis and `6 n + 1` `cx` for `8 n + 1`
@@ -1188,10 +1192,11 @@ bounded by the channel it scales. A caller who needs one of the refused families
 in noise strength; the result records which of the two claims it rests on, and the refusal
 is all-or-nothing over the model rather than leaving it partly scaled.
 
-**Not here:** Clifford data regression, circuit folding, gate-folding scale factors,
-shot-based execution, and readout-error mitigation. Probabilistic error cancellation is a
-unit beside this one rather than a mode of it — see the section below — because it inverts
-a channel that is declared rather than scaling one.
+**Not here:** circuit folding, gate-folding scale factors, shot-based execution, and
+readout-error mitigation. Probabilistic error cancellation and Clifford data regression are
+units beside this one rather than modes of it — see the two sections below — because one
+inverts a channel that is declared rather than scaling it, and the other fits the noise's
+effect on near-Clifford circuits rather than scaling anything.
 
 **Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose value is
 analytically `1.0` and whose exactly simulated noiseless read is `0.9999999999999998` in
@@ -1371,12 +1376,128 @@ state. And a program whose combination would need more than `1024` exact program
 with the count it needed, because four terms per single-qubit noise location and sixteen per
 two-qubit one is a real ceiling rather than a large number.
 
-**Not here:** Clifford data regression and readout-error mitigation. Noise is inverted at the
+**Not here:** readout-error mitigation, and Clifford data regression, which is a separate
+unit rather than a mode of this one. Noise is inverted at the
 locations the noise model declares and nowhere else; no gate-folding scale factor is offered,
 because folding is a way to *measure* an error strength rather than a way to invert one. No
 demonstration here is a performance, scaling, hardware or fault-tolerance claim: the whole
 path is single-process CPU density-matrix work on a two-wire circuit, and the noise it inverts
 is the one the caller declared.
+
+## Clifford data regression
+
+`cdr.py` is the third error-mitigation unit, and it neither scales a channel nor inverts one:
+it fits the noise's effect on a set of circuits whose exact values are known. `run_cdr(circuit,
+hamiltonian, noise_model=..., variants=..., dtype=...)` returns a `CdrResult`: the mitigated
+estimate, the unmitigated read, the `CliffordFit` the estimate came from, and the training
+points. `clifford_variants(circuit)` is the circuit-level operation the unit is built on, and
+it is public because building the training set is the whole of the method: given a program it
+returns one `CliffordVariant` per candidate, each with the rewritten `CircuitIR`, the name of
+the site it moved and the `angle_shift` that says how far that site travelled.
+
+**The training set is a rewrite, not a device run.** Each `phase`, `rx`, `ry`, `rz` and `u1`
+rotation is snapped to its nearest quarter turn and replaced by the named Clifford word for
+that turn: `rz k` is `s`, `z`, `sdg` for `k = 1, 2, 3` and nothing at all for `k = 0`; `rx k`
+is `sx`, `x`, `sxdg`; `ry k` is `s sxdg sdg`, `y`, `s sx sdg`; `phase` and `u1` follow `rz`.
+Residue zero is the **empty word** — the rotation is dropped rather than emitted as an
+identity — and `ry`'s odd residues need three gates because the half-turn about `y` is not a
+single named gate here. Over all twenty entries of the table the rewritten word reproduces the
+rotation's unitary to `1.837e-16` in `complex128`, which is that precision's floor, up to a
+single global phase that leaves the program's density matrix unchanged; `phase` and `u1` are
+exact with no phase at all. Each variant is then accepted by
+`flagquantum.simulation.stabilizer.require_clifford_program` before it is measured, so a
+program the rewrite cannot reach is refused by the engine rather than snapped approximately:
+`cphase`, `crx`, `cry`, `crz`, `rxx`, `ryy`, `rzz`, `u2` and `u3` have no named-Clifford word
+at all, and `ccx`, `cswap` and every non-Clifford operation are outside the engine's
+vocabulary.
+
+**Clifford membership is enforced and never exploited.** The ideal value of each training
+circuit is read from exact density simulation of that circuit, not from the stabilizer
+representation. Every training circuit is a Clifford circuit and this path makes no use of
+that fact: it costs exactly what simulating the target costs, and no simulation-cost, capacity
+or scaling claim follows from it. What the rewrite buys is a training set whose ideal values
+are knowable and whose circuits differ from the target one site at a time, which is the
+premise the fit needs rather than a shortcut.
+
+**The premise is one relation and the residual is its only diagnostic.** The method is
+unbiased exactly when the ideal expectation is affine in the noisy one over the region the
+training circuits span. Nothing checks that and nothing can check it from the measurements
+alone. The largest absolute residual the fit left is what exposes a premise that did not hold,
+and a fit with no degree of freedom left reports it as absent rather than as an arithmetic
+zero: two points determine a line, so a two-point zero is an identity presented as a check.
+The estimate carries no error bound and no confidence interval, and no improvement over the
+unmitigated value is guaranteed — the residual is the warning, and it can be read only as a
+relative magnitude.
+
+**Measured.** On `h(0); ry(0, 0.7); ry(1, 0.4); cx(0, 1)` observed as `z(0) + x(1)`, with
+`two_qubit_depolarizing` at `0.06` on the `cx` and `depolarizing` at `0.03` on the `h`, the
+three training points read ideal `0.0`, `-1.0`, `1.0` against noisy `0.0`, `-0.898560`,
+`0.936000`, and the fit reads slope `1.090028330`, intercept `-1.360e-02` and a residual of
+`1.360355e-02` over one degree of freedom. The target's exact value `-0.254799345` is read
+`-0.214372678` unmitigated and `-0.247275845` mitigated, so the correction closes `4.043e-02`
+of `4.043e-02` down to `7.524e-03` — and the residual is what says the closure is incomplete
+rather than complete. Under the `cx` noise alone the same three training circuits fall on a
+line to `1.110e-16` and the mitigated value is on the exact one to `1.665e-16`, so the
+residual separates a premise that held from one that did not rather than being decorative.
+The two-point case is the arithmetic identity the design admits to:
+
+```python
+import torch
+
+import flagquantum as fq
+
+from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_cdr
+from flagquantum.algorithms.cdr import clifford_variants
+from flagquantum.noise import NoiseModel, two_qubit_depolarizing_channel
+
+circuit = fq.Circuit(2, dtype=torch.complex128).h(0).ry(0, 0.6).cx(0, 1)
+observable = Hamiltonian([HamiltonianTerm(1.0, "z", (0,))])
+model = NoiseModel().add(
+    "cx", two_qubit_depolarizing_channel(0.05, dtype=torch.complex128)
+)
+
+result = run_cdr(circuit, observable, noise_model=model, dtype=torch.complex128)
+print([variant.name for variant in clifford_variants(circuit)])
+# ['nearest', 'ry-at-instruction-1']
+
+print([(point.ideal, point.noisy) for point in result.fit.points])
+# [(0.0, 0.0), (-0.9999999999999998, -0.9466666658719378)]
+
+print(f"{result.fit.slope:.12f}", result.fit.max_residual, result.fit.degrees_of_freedom)
+# 1.056338029056 None 0
+
+print(f"{result.unmitigated:.15f}", f"{result.estimate:.15f}")
+# -0.534528207698562 -0.564642473395035
+```
+
+The slope there is the reciprocal of the shrinkage the model applied to the second training
+point — a reading of the declared model rather than of a device — and the mitigated error of
+`2.220e-16` against a target whose exact value is `-0.564642473395035` is the least-squares
+solution reproducing its own constraints, not an independent check.
+
+**Refusals, each by name.** A program with no operation from `phase`, `rx`, `ry`, `rz` or
+`u1` is refused, because there is nothing to snap and a training set built by snapping nothing
+would be the target measured twice. A rotation that carries its own matrix is refused, because
+it is whatever that matrix is rather than the declared rotation the quarter-turn grid is
+defined on, and a rotation whose angle is an unbound parameter is refused, because it has no
+nearest turn. A program that declares a measurement or an observable request is refused,
+because this unit reads `Tr(O rho)` from the state and consumes no request, so returning an
+estimate while a declared request stayed unused would report a measurement that never
+happened. A noise model that declares a readout rule is refused, for the reason the other two
+mitigation units refuse one. A model that names an operation the rewrite removes is refused
+too: the model keys its channels on gate names, so every training point would be measured
+under less noise than the target and the line would fit a difference the rewrite created; a
+caller who needs such a model supplies the training circuits explicitly and owns that claim.
+A training set whose noisy values do not separate is refused at a declared floor of `1e-9` of
+the span rather than fitted on rounding, and the training set is capped at `64` circuits,
+which is `128` exact simulations.
+
+**Not here:** readout-error mitigation, and any error bound, confidence interval or guarantee
+of improvement over the unmitigated value. Nothing here is cheaper than the target it
+corrects, and no claim is made that the training circuits being Clifford saved this path any
+simulation. No demonstration here is a performance, scaling, hardware or fault-tolerance
+claim: the whole path is single-process CPU density-matrix work on two-wire circuits, and the
+noise it fits is the one the caller declared.
 
 ## SPSA optimization
 
