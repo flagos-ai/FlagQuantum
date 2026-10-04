@@ -627,3 +627,314 @@ def test_the_attribute_namespace_is_broader_than_the_wire_named_attributes() -> 
     assert set(wire_named) <= set(every)
     # `qubit_indices` contains no `wire`, so only the whole namespace can see it.
     assert all("wire" in name.rsplit("::", 1)[1] for name in wire_named)
+
+
+def test_a_documented_keyword_counts_wherever_wire_sits_in_its_name() -> None:
+    """`wires`, `n_wires` and `terminal_wires` are one question, not three.
+
+    The first matcher required the literal `wire` to *start* the identifier, which
+    reported zero sites for `wires=(0,)` -- the single most common spelling in the
+    documentation -- and every later count inherited the omission.
+    """
+
+    for name in ("wire", "wires", "n_wires", "terminal_wires", "show_wire_labels"):
+        assert _CENSUS.documentation_keywords(f"{name}=1") == (f"{name}=",)
+
+
+def test_the_documentation_matcher_ignores_every_other_way_wire_appears() -> None:
+    """A keyword argument is an instruction to a reader; nothing else is.
+
+    Counting the bare word would forbid the sentences that have to keep it: a
+    comparison against CUDA-Q's wire order, a CLI flag, and the English verb are
+    all correct as written, so a matcher that flagged them would be turned off
+    rather than satisfied.
+    """
+
+    for text in (
+        "info.wires=1",  # an attribute read on a caller's object
+        "--n-wires 12",  # a command-line flag
+        "n_wires == 2",  # a comparison
+        "n_wires >= 2",
+        "wire count",  # the bare noun
+        "a five-wire circuit",  # a compound noun
+        "wired into the selector",  # the English verb
+        "n_qubits=2",  # the replacement vocabulary
+        "qubits=(0,)",
+    ):
+        assert _CENSUS.documentation_keywords(text) == ()
+
+
+def test_the_documentation_matcher_reports_each_occurrence_not_each_name() -> None:
+    """A count, not a set: dropping one of two sites must move the number."""
+
+    text = "build_workload(n_wires=22, layers=2)\nrecommend(n_wires=22)\n"
+    assert _CENSUS.documentation_keywords(text) == ("n_wires=", "n_wires=")
+
+
+def test_the_documentation_walk_skips_dated_records_and_keeps_the_live_docs() -> None:
+    """The boundary is which documents speak about *now*, not which are clean."""
+
+    files = _CENSUS.documentation_files(_ROOT)
+    assert "docs/reference/API.md" in files
+    assert "docs/guides/SIMULATOR_ADVISOR.md" in files
+    assert "README.md" in files
+    # A record states what the tree said on its date, so it must be able to quote
+    # the retired spelling without the gate calling that a regression.
+    for excluded in _CENSUS.DOCUMENTATION_EXCLUDED_PREFIXES:
+        assert not [name for name in files if name.startswith(excluded)]
+    for excluded in _CENSUS.DOCUMENTATION_EXCLUDED_FILES:
+        assert excluded not in files
+    # The naming reference is excluded by name rather than by directory, so the
+    # exclusion has to be exact: its directory stays in scope.
+    assert "docs/reference/KNOWN_LIMITATIONS.md" in files
+
+
+def test_every_documented_wire_keyword_names_a_file_that_exists() -> None:
+    scanned = _CENSUS.documentation_census(_ROOT)
+    assert scanned.sites
+    for site in scanned.sites:
+        relative = site.split("::", 1)[0]
+        assert (_ROOT / relative).is_file()
+        assert "wire" in site.rsplit("::", 1)[1]
+
+
+def test_a_backtick_quoted_keyword_is_still_an_instruction_to_a_reader() -> None:
+    """The exclusion that hid the one occurrence which had actually gone stale.
+
+    A document that writes ``(`wires=`)`` in a code span is naming the keyword it
+    tells the reader to pass, exactly as a code block is. The matcher used to
+    require that the name not follow a backtick, and the single occurrence that rule
+    hid was a stale keyword in a contract whose scoreboard is generated from it.
+    """
+
+    assert _CENSUS.documentation_keywords("per-qubit (`wires=`) injection") == (
+        "wires=",
+    )
+    assert _CENSUS.documentation_keywords("`n_wires=2` remains compatible") == (
+        "n_wires=",
+    )
+
+
+def test_the_documentation_exemptions_cover_exactly_the_live_sites() -> None:
+    """The live reading, compared against the record rather than a hard-coded list.
+
+    Two documents may show a wire-named keyword and each for a reason recorded in
+    the contract: the hybrid plan quotes the capture layer's source language, and
+    the API reference documents a deprecated alias that still works. Everything else
+    is a FlagQuantum instruction and must use the qubit vocabulary. Comparing
+    against the contract means a new site cannot be absorbed by editing the test.
+    """
+
+    contract = _contract()
+    exempt = {
+        str(row["file"]): sorted(str(keyword) for keyword in row.get("keywords", ()))
+        for row in contract["documentation"]["exempt"]
+    }
+    observed: dict[str, list[str]] = {}
+    for site in _CENSUS.documentation_census(_ROOT).sites:
+        relative, _, keyword = site.partition("::")
+        observed.setdefault(relative, []).append(keyword)
+    assert observed, "the documentation census found nothing to reconcile"
+    assert {name: sorted(values) for name, values in observed.items()} == exempt
+    assert int(contract["documentation"]["measured_keywords"]) == sum(
+        len(values) for values in exempt.values()
+    )
+
+
+def test_the_generated_scoreboard_no_longer_teaches_a_retired_keyword() -> None:
+    """`NoiseModel.add` takes `qubits=`, so the page rendered from its contract must say so."""
+
+    page = (_ROOT / "docs/reference/CUDAQ_PARITY_MATRIX.md").read_text(encoding="utf-8")
+    assert "per-qubit (`qubits=`) static injection" in page
+    assert "(`wires=`) static injection" not in page
+    parity = (_ROOT / "contracts/cudaq-parity-matrix.toml").read_text(encoding="utf-8")
+    assert "(`wires=`)" not in parity
+
+
+def _importable_package(tmp_path: Path, name: str, files: dict[str, str]) -> Path:
+    """Write a package that the scan can actually import, and return its root.
+
+    The call-site scan resolves a keyword against the callee's real signature, so a
+    fixture has to be importable rather than merely parseable. The name is a
+    parameter because every fixture has to be distinct in `sys.modules`: two tests
+    writing `flagquantum` would make the second one resolve the first one's callee.
+    """
+
+    root = tmp_path / name
+    for relative, source in files.items():
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(source, encoding="utf-8")
+    sys.path.insert(0, str(tmp_path))
+    importlib.invalidate_caches()
+    return root
+
+
+def test_a_call_site_that_passes_a_retired_keyword_is_reported(tmp_path: Path) -> None:
+    """The defect class no ledger can hold: the declaration moved, the caller did not.
+
+    `WQ-4` renamed `execute_torch_distributed_statevector_reverse`'s `observable_wire`
+    to `observable_qubit` and left `flagquantum/runtime/module.py` writing the old
+    keyword. Every other surface here reads a *declaration*, so all of them passed
+    while that call was a live `TypeError` on the distributed-statevector path.
+    """
+
+    root = _importable_package(
+        tmp_path,
+        "fqpkg_retired_caller",
+        {
+            "__init__.py": "",
+            "callee.py": "def run(*, observable_qubit=0):\n    return observable_qubit\n",
+            "caller.py": "from .callee import run\n\n\ndef go():\n    return run(observable_wire=0)\n",
+        },
+    )
+    found = _CENSUS.qubit_keyword_mismatches(root)
+    assert len(found) == 1
+    assert "caller.py" in found[0]
+    assert "observable_wire" in found[0]
+
+
+def test_a_callee_that_takes_kwargs_is_skipped_rather_than_guessed(
+    tmp_path: Path,
+) -> None:
+    """A `**kwargs` callee accepts any keyword, so the question is undecidable.
+
+    Reporting it would make the gate fire on correct code, and a gate that fires on
+    correct code is a gate that gets an exemption added to it.
+    """
+
+    root = _importable_package(
+        tmp_path,
+        "fqpkg_kwargs_callee",
+        {
+            "__init__.py": "",
+            "callee.py": "def run(**kwargs):\n    return kwargs\n",
+            "caller.py": "from .callee import run\n\n\ndef go():\n    return run(observable_wire=0)\n",
+        },
+    )
+    assert _CENSUS.qubit_keyword_mismatches(root) == ()
+
+
+def test_the_opposite_lag_is_reported_too(tmp_path: Path) -> None:
+    """A caller written against a spelling that has not landed is the same defect.
+
+    Checking only `wire`-named keywords would make the scan blind to the direction
+    the package is moving in, which is the direction its own new code is written.
+    """
+
+    root = _importable_package(
+        tmp_path,
+        "fqpkg_qubit_caller",
+        {
+            "__init__.py": "",
+            "callee.py": "def run(*, observable_wire=0):\n    return observable_wire\n",
+            "caller.py": "from .callee import run\n\n\ndef go():\n    return run(observable_qubit=0)\n",
+        },
+    )
+    found = _CENSUS.qubit_keyword_mismatches(root)
+    assert len(found) == 1
+    assert "observable_qubit" in found[0]
+
+
+def test_a_relative_import_inside_a_package_namespace_resolves_to_its_own_package(
+    tmp_path: Path,
+) -> None:
+    """`from .x import f` in an `__init__.py` means *this* package's `x`.
+
+    An `__init__.py`'s module name already is its package, so resolving it the way a
+    regular module resolves (`rpartition` the last component) would look one level
+    too high and silently skip the call rather than misreport it -- the failure mode
+    that makes a gate look green.
+    """
+
+    root = _importable_package(
+        tmp_path,
+        "fqpkg_namespace",
+        {
+            "__init__.py": (
+                "from .sub import run\n\n\ndef go():\n    return run(observable_wire=0)\n"
+            ),
+            "sub.py": "def run(*, observable_qubit=0):\n    return observable_qubit\n",
+        },
+    )
+    found = _CENSUS.qubit_keyword_mismatches(root)
+    assert len(found) == 1
+    assert "observable_wire" in found[0]
+
+
+def test_the_live_package_passes_no_rejected_keyword_to_any_callee() -> None:
+    """The gate's own assertion, read from the tree rather than from the contract."""
+
+    assert _CENSUS.qubit_keyword_mismatches(_ROOT / "flagquantum") == ()
+
+
+def test_the_call_site_invariant_is_pinned_at_zero() -> None:
+    """The allowance is not a measurement, so a slice may not raise it to pass."""
+
+    surfaces = _contract()["other_surfaces"]
+    assert surfaces["call_site_mismatches"] == 0
+    assert surfaces["call_site_surface"]
+    assert surfaces["call_site_owner"]
+    assert surfaces["call_site_condition"]
+
+
+def test_the_prose_noun_reading_separates_the_adr_bucket() -> None:
+    """An ADR is scanned but left alone, and the reading has to show both facts.
+
+    Treating the decisions directory as either excluded or ordinary would hide one of
+    them: as excluded, a future ADR that writes out a `wires=` example would be
+    invisible to the gate; as ordinary, its 34 occurrences of the noun would read as
+    unmigrated work in a document whose job is to record what was decided.
+    """
+
+    rows = dict(
+        (bucket, (occurrences, files))
+        for bucket, occurrences, files in _CENSUS.prose_noun_census(_ROOT)
+    )
+    assert "docs/architecture/decisions/" in rows
+    assert "everything else" in rows
+    for bucket in _CENSUS.DOCUMENTATION_EXCLUDED_PREFIXES:
+        assert bucket in rows
+    occurrences, files = rows["everything else"]
+    assert occurrences > 0
+    assert 0 < files <= occurrences
+
+
+def test_the_prose_noun_reading_agrees_with_a_file_by_file_recount() -> None:
+    """The bucket totals are a partition, so an independent recount must match.
+
+    The figures this reports are quoted in prose about the migration, and the first
+    attempt at them came from a shell loop that kept only its last iteration and was
+    wrong by a factor of two. So the reading is re-derived here from the file list
+    rather than trusted, and the two must agree exactly.
+    """
+
+    import subprocess
+
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=_ROOT,
+        capture_output=True,
+        check=True,
+    ).stdout.decode("utf-8")
+    occurrences = 0
+    files = 0
+    for name in sorted(set(listed.split("\0"))):
+        if not name.endswith(".md"):
+            continue
+        if name.startswith(
+            _CENSUS.DOCUMENTATION_EXCLUDED_PREFIXES
+            + _CENSUS.PROSE_SCANNED_ONLY_PREFIXES
+        ):
+            continue
+        if name in _CENSUS.DOCUMENTATION_EXCLUDED_FILES:
+            continue
+        text = (_ROOT / name).read_text(encoding="utf-8", errors="replace")
+        count = text.lower().count("wire")
+        occurrences += count
+        files += 1 if count else 0
+    rows = {
+        bucket: (found, seen)
+        for bucket, found, seen in _CENSUS.prose_noun_census(_ROOT)
+    }
+    assert rows["everything else"] == (occurrences, files)

@@ -28,7 +28,7 @@ Use `optimize(program)` for target-independent optimization and
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
 | Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
-| Wire layouts and the layout restore | [layout.py](layout.py) |
+| Qubit layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
@@ -90,7 +90,7 @@ has no field to record. The table stores the shortest statement of each identity
 rather than its closure, so the search expands each rule's leaves through the
 table again: a `cz` basis plus a z-rotation reaches all eleven declared two-qubit
 opcodes by name, where the four hand-written rules this replaced reached two of
-them. The two three-wire entries cover the whole of this IR's multi-controlled
+them. The two three-qubit entries cover the whole of this IR's multi-controlled
 surface -- `ccx` as its fifteen-gate standard form and `cswap` as a `ccx` around
 two `cx` -- and they reach the three bases that publish a `cx` or a `cz` sink.
 Qiskit splits the same operation into a Gray-code, a recursive and a V-chain
@@ -117,7 +117,7 @@ instead of measurement statistics has to know that; flag records of it belong in
 the capability registry, which `capability-maturity.toml` owns.
 
 Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
-wires, over any supercontrolled entangler the basis publishes. Six declared
+qubits, over any supercontrolled entangler the basis publishes. Six declared
 arity-2 opcodes reach a supercontrolled Weyl point: `cx`, `cz` and `cy` as they
 stand, and `rzz`, `ryy` and `rxx` at an angle of `pi/2`. `cphase` is excluded on
 purpose -- its only supercontrolled angle is `pi`, where it is `cz`, so it would
@@ -153,7 +153,7 @@ holds the measurement and the commands that reproduce it.
 
 The randomized layer-permutation search Qiskit shipped as `StochasticSwap` was
 measured the same way, and rejected on cost as well. Its plan is sound: the
-placements it records are the replay of its own SWAPs, and every two-wire
+placements it records are the replay of its own SWAPs, and every two-qubit
 operation it places sits on a device edge. It still retains 1.617 times the SWAPs
 `sabre_layout` retains and beats that strategy on none of the 140 measured
 programs, and Qiskit's own compiled implementation of the same algorithm retains
@@ -163,21 +163,21 @@ holds the measurement and the commands that reproduce it. The checked-in port is
 also the only runnable form of the algorithm left to this repository, because
 Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
 
-Routing moves two-wire operations onto device edges by inserting SWAPs. No
-strategy here synthesizes an operation that touches three or more wires, so such
+Routing moves two-qubit operations onto device edges by inserting SWAPs. No
+strategy here synthesizes an operation that touches three or more qubits, so such
 an operation is carried through unchanged, and only when the device already
 carries the couplings its operands interact over; it is refused otherwise.
 Decomposing it is a caller or native-gate step.
 [test_multi_wire_routing_locality.py](../../tests/team/compiler/test_multi_wire_routing_locality.py)
 holds that boundary, including the case where a chosen layout would move a
-legal multi-wire operation onto non-adjacent physical wires.
+legal multi-qubit operation onto non-adjacent physical qubits.
 
-A placement is a tuple of physical wires, one per logical wire: the argument
+A placement is a tuple of physical qubits, one per logical qubit: the argument
 `route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a
 device wider than the program leaves slots idle, `Layout` takes a
 `physical_slot_count` and reports `None` for an idle slot. Routing on a plain
-`CouplingMap` may only use wires the program owns and so refuses `initial_layout`
+`CouplingMap` may only use qubits the program owns and so refuses `initial_layout`
 outright; a non-identity placement therefore requires a `DirectedCouplingMap`,
 where the idle slots are a workspace that the inverse routing SWAPs clean.
 

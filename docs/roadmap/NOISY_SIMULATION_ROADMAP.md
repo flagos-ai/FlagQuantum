@@ -87,12 +87,14 @@ Noise placements include:
 
 ### 2.2 Unified Channel IR
 
-Channel instructions retain origin and timing alongside Kraus matrices:
+Channel instructions retain origin and timing alongside Kraus matrices. The class
+does not exist yet, so this sketch is where its field names are decided, and they
+follow the package's vocabulary: a channel's operand list is a qubit list.
 
 ```python
 ChannelInstruction(
     channel_type="kraus",
-    wires=(0,),
+    qubits=(0,),
     parameters={...},
     placement="after_gate",
     source_gate_id="gate-17",
@@ -130,7 +132,7 @@ Estimate: 3–5 working days.
 Work:
 
 - Define channel/gate application order.
-- Define batch, wire, dtype, and device propagation.
+- Define batch, qubit, dtype, and device propagation.
 - Fix random-number and cross-world-size reproducibility semantics.
 - Separate physical channel noise from measurement sampling fluctuations.
 - Define versioned result schemas and model identity.
@@ -176,7 +178,7 @@ Initial channels:
 - Coherent over-rotation.
 
 Strengthen density execution for arbitrary one-/two-qubit Kraus operators,
-batches, arbitrary wires, observables, sampling, complex64/complex128, and required
+batches, arbitrary qubits, observables, sampling, complex64/complex128, and required
 autograd behavior.
 
 Verify:

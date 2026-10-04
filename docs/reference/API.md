@@ -47,15 +47,17 @@ print(result.state)
 ```
 
 `n_qubits` is the preferred public name for circuit size. Positional
-`Circuit(2)`, `n_wires=2`, and the legacy `nqubits=2` remain compatible;
-conflicting aliases fail during construction. Runtime, compiler, and IR
-internals continue to use *wire* for logical mappings.
+`Circuit(2)` and the legacy `nqubits=2` remain compatible; `n_wires=2` still
+works as a deprecated alias that is removed in 0.4.0. Conflicting aliases fail
+during construction.
 
 Generated gate methods keep their concise positional form and also accept
 semantic qubit keywords. For example, `h(0)` and `h(qubit=0)` are equivalent;
 `cx(0, 1)` and `cx(control=0, target=1)` are equivalent. Symmetric two-qubit
-gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
-FlagQuantum IR continue to use `wires=`.
+gates use `qubit1=` and `qubit2=`, and the generic `Circuit.gate(name, qubits)`
+names its operand list `qubits` like every other gate method. A FlagQuantum IR
+payload keeps its key spelling because `IR_VERSION` is an exact-match pin: the
+instruction operand list is still read and written as `Instruction.wires`.
 
 `Circuit.compose(other, *, qubits=None, qubit_map=None)` continues a circuit with a
 program that was built on its own qubits, rewriting every instruction onto the qubits
@@ -150,7 +152,7 @@ provided name is trimmed and must not be empty. The provider-assigned task ID
 remains independent of this display name.
 
 `target_qubits` is also optional. When omitted, the selected compiler chooses a
-physical subgraph. When provided, its order maps logical wires to physical
+physical subgraph. When provided, its order maps logical qubits to physical
 qubits and compilation fails unless the current target snapshot proves that
 the selection is valid and connected. An explicit mapping is never silently
 replaced.
@@ -470,7 +472,7 @@ bit_samples = result.require_samples()
 ```
 
 The public output factories are `expectation`, `probabilities`, `samples`, and
-`counts`. Sampling and counts accept computational-basis wires or one
+`counts`. Sampling and counts accept computational-basis qubits or one
 unweighted Pauli product, such as `fq.samples(fq.X(0) @ fq.Y(1))`, and require a
 positive shot count. Use `result.expectation()`, `result.expectations`,
 `result.probabilities`, `result.samples`, and `result.counts` for the ordinary
@@ -519,18 +521,19 @@ the plan. The first public alpha candidate supports stable noisy planning for
 `mode="auto"` and `mode="density_matrix"`; unsupported mode combinations fail
 during planning.
 
-`probabilities` computes an exact joint marginal over the requested wires.
+`probabilities` computes an exact joint marginal over the requested qubits.
 A statevector or density-matrix result reduces the distribution it already
 carries — the squared amplitudes or the diagonal — over the complement of those
-wires, which is one sum over `2**n_wires` values, and the surviving axes are
+qubits, which is one sum over `2**n_qubits` values, and the surviving axes are
 returned in the order the request named them. A marginal whose total is not one
 is normalised, so a dense result that was handed in unnormalised still returns a
 distribution. An MPS or tensor-network result keeps the parity route, because
 reading a distribution out of one means materialising a dense state it exists to
 avoid; so does a target that exposes only `expectation_ps`, which recovers the
-marginal from `2**len(wires)` Pauli-Z contractions. The default limit of eight
-wires bounds the marginal width itself; callers must set `max_marginal_wires`
-explicitly to request a wider one.
+marginal from `2**len(qubits)` Pauli-Z contractions. The default limit of eight
+qubits bounds the marginal width itself; the `max_marginal_wires` key on a
+measurement request raises it, and it keeps its spelling because it crosses a
+request boundary that moves only with a request-schema version.
 
 Core IR measurement nodes remain available to Runtime implementers for advanced
 capabilities such as bounded postselection, but are intentionally absent from
@@ -713,7 +716,7 @@ environment:
 from flagquantum.benchmarking.simulator_compare import build_workload
 from flagquantum.ecosystem.simulators import recommend
 
-decision = recommend(build_workload(n_wires=22, layers=2))
+decision = recommend(build_workload(n_qubits=22, layers=2))
 if decision.status == "recommended":
     print(decision.recommended_engine)
 ```
@@ -727,7 +730,7 @@ or CPU environment, or an ineligible dependency set returns a structured
 `insufficient_evidence` decision. Applications can explicitly set
 `calibration_budget_seconds` to run the exact unknown circuit on installed
 bridges, verify statevector equality, rank stable live medians, and cache that
-decision for the current process. Profile-only `recommend(n_wires=22)` queries
+decision for the current process. Profile-only `recommend(n_qubits=22)` queries
 remain available for table inspection but are explicitly not circuit-bound. See
 [Evidence-based simulator advisor](../guides/SIMULATOR_ADVISOR.md) for the
 initial ARM64 evidence scope and conservative native tie policy.
@@ -748,9 +751,9 @@ round_trip = to_pennylane(ir)
 
 The v1 conversion adapter is intentionally static and complex128-first. It
 supports the gate map recorded in `contracts/pennylane-interop-contract.toml`,
-bound real scalar parameters, and contiguous integer wires. QNodes, embedded
+bound real scalar parameters, and contiguous integer qubits. QNodes, embedded
 shots and measurement processes, autograd bridges, and symbolic parameters
-remain out of scope and fail closed. Nonstandard wire labels can only be
+remain out of scope and fail closed. Nonstandard qubit labels can only be
 flattened with an explicit `allow_lossy=True` report. PennyLane objects do not
 cross into the compiler, PyTorch runtime, Torch-FL, CUDA, vendor accelerator,
 or QPU layers.
@@ -837,7 +840,7 @@ Reverse conversion, symbolic or non-finite parameters, measurements, noise,
 control flow, kernel arguments, unsupported gates, and lossy export fail closed
 with machine-readable diagnostics. CUDA-Q objects remain inside
 `flagquantum.ecosystem.cudaq`. Statevector conformance explicitly reverses bit
-axes because CUDA-Q wire zero is least-significant while FlagQuantum wire zero
+axes because CUDA-Q wire zero is least-significant while FlagQuantum qubit zero
 is most-significant.
 
 ### Qiskit IR interoperability
@@ -873,7 +876,7 @@ does not import Qiskit.
 Custom unitary matrices on one to three qubits are supported in both
 directions. The adapter reverses the local input and output bit axes because
 Qiskit treats the first qarg as the least-significant local bit while
-FlagQuantum treats the first instruction wire as the most-significant local
+FlagQuantum treats the first instruction qubit as the most-significant local
 bit. Shape, finite-value, unitarity, and width checks fail closed with
 machine-readable issue codes before a matrix crosses the adapter boundary.
 

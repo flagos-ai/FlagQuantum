@@ -87,7 +87,7 @@ as an empty machine record.
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
-| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
+| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_qubit_probabilities` |
 | FQK-NUM-001 | `numerics.matmul.complex_batched` | `fused_complex_bmm` |
 | FQK-NUM-002 | `numerics.matmul.complex_batched_layout` | `fused_complex_layout_bmm` |
 
@@ -327,7 +327,7 @@ artifact preserves 30 synchronized groups of 100 invocations for each case on
 Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
 `2.22x` to `3.40x` faster than the equivalent PyTorch reduction, with maximum
 absolute error `8.94e-8`. The complete public dispatch path is instead `4.8%`
-to `9.6%` slower because its per-wire safety checks synchronize the device.
+to `9.6%` slower because its per-qubit safety checks synchronize the device.
 The canonical aggregate therefore records `retain_opt_in`; this is bounded
 development-hardware evidence, not a release gate or scalability claim.
 Reproduce or validate it with

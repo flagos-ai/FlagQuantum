@@ -882,7 +882,7 @@ class Module(torch.nn.Module):
                 )
             reverse = execute_torch_distributed_statevector_reverse(
                 ir,
-                observable_wire=qubits[0],
+                observable_qubit=qubits[0],
                 device=self._parameter_tensors()[0].device,
                 process_group=self._state_process_group,
             )

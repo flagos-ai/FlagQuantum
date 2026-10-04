@@ -55,7 +55,7 @@ dialects without explicit complex-predicate support fail closed.
 
 Scalar, index, and bool values may leave a measurement-dependent branch as
 bounded condition-partitioned SSA cases. Later arithmetic and comparisons are
-evaluated per case; quantum parameters and wires lower to mutually exclusive
+evaluated per case; quantum parameters and qubits lower to mutually exclusive
 conditioned instructions. Static bounded loops may carry these values.
 Conditional measurement, measurement-derived loop bounds or program returns,
 case expansion beyond the configured ceiling, and stochastic gradients fail

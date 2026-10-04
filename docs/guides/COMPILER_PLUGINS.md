@@ -52,7 +52,7 @@ result = fq.run(
 
 The plugin receives the current Quafu chip snapshot, selects a physical
 subgraph, and returns logical `CircuitIR` with an ordered physical mapping. The
-circuit still uses logical wires `0..N-1`; FlagQuantum carries that mapping
+circuit still uses logical qubits `0..N-1`; FlagQuantum carries that mapping
 through packaging and submission without another user parameter or compilation
 pass. The result remains `fq.ExecutionResult`; access counts with
 `result.measurement("counts")` and provider-specific details with
