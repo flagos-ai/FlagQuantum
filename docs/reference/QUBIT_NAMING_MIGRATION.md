@@ -44,7 +44,7 @@ forward-reading.
 IR and backend-native payload fields are unchanged. The deprecated
 `observable_wires` property remains available on RuntimePolicy, while
 `CloudBackendProfile.n_wires` and its constructor keyword remain compatibility
-aliases during the same migration window. `discover_backends(n_wires=...)`
+aliases during the same migration window, as does `OpenQASMImport.n_wires`. `discover_backends(n_wires=...)`
 likewise delegates to `list_devices(n_qubits=...)` with a deprecation warning.
 The affected candidate signatures
 are updated for this explicitly requested migration; the historical baseline
@@ -212,6 +212,80 @@ why `boundary.measured_private` drops from 308 to 275. Two of those helpers,
 declarations renamed in `jax/mps/{shards,canonicalization}.py` and their call sites
 had to move with them.
 
+## The compiler, tooling, and measurement surface
+
+The compiler, benchmarking, kernel, noise, remote-provider, deployment and twin
+modules are the last slice, and the widest: thirty-one files, fifty-five public
+parameters, seventeen public attribute names, two module-level definitions, and
+forty-nine private parameters. `boundary.measured_private` falls from 275 to 226,
+which is the largest single drop of the migration and the reason this slice could
+not be split further without leaving a file half-renamed.
+
+The user-visible names it settles are the ones a compiler-facing user types:
+
+| Old | New |
+|---|---|
+| `fq.CloudBackendProfile(n_wires=...)` | `fq.CloudBackendProfile(n_qubits=...)` |
+| `discover_backends(n_wires=...)` | `discover_backends(n_qubits=...)` |
+| `CouplingMap.line(n_wires=...)`, `CouplingMap.ring(n_wires=...)` | `... (n_qubits=...)` |
+| `DirectedCouplingMap(n_wires, edges)` | `DirectedCouplingMap(n_qubits, edges)` |
+| `NoiseModel.add(gate, channel, wires=...)` | `... qubits=...` |
+| `NoiseModel.apply_readout_probabilities(..., n_wires=...)` | `... n_qubits=...` |
+| `KrausChannel.n_wires` | `KrausChannel.n_qubits` |
+| `Layout.n_wires` | `Layout.n_qubits` |
+| `PhysicalCircuitPlan.logical_wire_count` / `.physical_wires` | `.logical_qubit_count` / `.physical_qubits` |
+| `TwinPrediction.n_wires` | `TwinPrediction.n_qubits` |
+| `synthesize_one_qubit(..., wire=...)`, `synthesize_two_qubit(..., wires=...)` | `... qubit=...`, `... qubits=...` |
+| `expectation_z_from_counts(..., wires=...)` | `... qubits=...` |
+| `validate_deployment_routing_plan(..., n_wires=...)` | `... n_qubits=...` |
+
+Two of these are not mistakes a caller can catch at import time; both are
+`TypeError` at the call, which is why the slice also moved the keywords its own
+twenty-two followers pass. `flagquantum/runtime/measurements.py` is the one that
+matters most: it is the sole caller of
+`NoiseModel.apply_readout_probabilities`, it is outside this slice's file set, and
+`mypy --strict` did not report it because the two sites pass through an
+`Any`-typed `noise_model`. The AST walk in the slice's follower pass found it.
+
+The compiler's *reported* refusal messages moved with the parameters, because a
+`pytest.raises(match=...)` pins the text: "layout must place at least one logical
+qubit", "physical qubit {p} is outside the layout", "physical qubit {p} holds no
+logical qubit", "to_logical_order needs one value per physical qubit", "SWAP qubit
+pair {pair} is outside a {n}-qubit layout", "routing metadata reports
+logical_qubit_count as {n}, which does not fit a {m}-qubit program", "No coupling
+path between qubits {a} and {b}", "Directed coupling map requires a positive qubit
+count", "Coupling qubit count must be an integer", "correlated readout matrix size
+must match qubits", and "routed CircuitIR retains nonlocal two-qubit
+instructions". 634 string literals still carry a wire spelling; they are reported
+by the census and not judged by it.
+
+### The names this slice keeps
+
+Five payload keys, and only these, still spell a wire. Each is a serialized field
+whose reader is the IR or the vendor, not a caller:
+
+| Key | Owner | Why it stays |
+|---|---|---|
+| `CircuitIR.n_wires` | `flagquantum/core/ir.py`, `IR_VERSION` | the accepted IR schema; a rename is a version bump, not a slice |
+| `Instruction.wires`, `MeasurementNode.wires`, `ObservableNode.wires` | same | same |
+| `TwinPrediction.n_wires` | `flagquantum/twin/prediction.py` | the persisted twin payload a saved model is read back through |
+| `routing["logical_wire_count"]` | the routing metadata a route writes into `CircuitIR.metadata` | read by `final_layout`, which validates it as recorded candidate evidence |
+| `n_wires` | the Quafu vendor request body | the provider's spelling, not ours |
+| `FQ_CPU_SINGLE_WIRE_ELEMENTWISE` | `benchmarking/statevector_cpu_paths.py` | a kernel-switch environment variable already published to benchmarking users |
+
+The `wire_probabilities` *catalog kind*, its semantic id
+`mps.measurement.wire_probabilities.local`, the implementation id
+`FQKI-TRITON-MPS-007-A` and the module name `mps_wire_probabilities` also stay:
+they are catalog identity, not an API, and the private delegate
+`_mps_wire_probabilities` is declared in a module no slice owns. The *implementation*
+identity `fused_mps_wire_probabilities` did move, because it names a Python symbol
+that `flagquantum.kernels.catalog.implementations` is imported to resolve.
+
+The benchmark CLI keeps `--n-wires` and `--marginal-wires`. A flag is neither a
+parameter nor a keyword, so no ledger counts it, and the same flag family is
+emitted by modules this slice does not own; renaming it here would leave the
+benchmark suite with two spellings of one switch.
+
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by
@@ -220,10 +294,10 @@ The migration covers four surfaces, all measured by
 
 | Surface | Count | Disposition |
 |---|---:|---|
-| parameters on the public function surface | 341 | renamed; 11 are already deprecated aliases and are deleted at 0.4.0 |
-| public attribute and property names | 144 | 122 renamed, 22 excluded as payload keys |
+| parameters on the public function surface | 341 | renamed; 11 are kept as deprecated forwarders and are deleted at 0.4.0 |
+| public attribute and property names | 144 | 122 renamed, 22 excluded as payload keys; 5 of the 122 keep a forwarder until 0.4.0 |
 | module-level public definition names | 10 | renamed |
-| string literals | 1291 | reported only, never ledgered |
+| string literals | 634 | reported only, never ledgered |
 
 An attribute is renamed whether it is a field, a property or method
 (`Circuit.n_wires`), or an instance attribute assigned in a method
@@ -235,8 +309,13 @@ schema's own version bump. See
 and [its decision record](../development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_ATTRIBUTES.md).
 
 Aliases are owed only where the name is reachable from `fq.*`. On the attribute
-surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`, and
-`fq.OutputRequest.wires`; everything else is renamed in place in the same release.
+surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`,
+`fq.OutputRequest.wires`, `fq.CloudBackendProfile.n_wires` and
+`fq.OpenQASMImport.n_wires`; everything else is renamed in place in the same
+release. `OpenQASMImport.n_wires` is the odd one of the five: `fq.from_openqasm`
+builds the object and already takes `n_qubits`, so the class is given no
+constructor alias and `n_wires` remains readable only because the OpenQASM import
+proposal documents it that way.
 
 ## Spellings the census cannot see
 
