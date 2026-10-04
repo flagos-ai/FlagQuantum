@@ -2169,6 +2169,35 @@ def _with_production_mps_resource_evidence(payload):
     return payload
 
 
+def _mps_release_claim_payload(*, fallback_semantics):
+    """An MPS payload that satisfies every release requirement but the fallback.
+
+    Its only variable is the fallback declaration, so a test built on it says
+    what the audit does with one declaration rather than with the requirements
+    around it.
+    """
+
+    payload = _with_sharded_optimizer_evidence(
+        _with_production_mps_resource_evidence(_mps_backward_preflight_payload()),
+        training_step_count=1,
+    )
+    payload["boundary_adjoint_exchange"]["status"] = "executed"
+    payload.update(
+        {
+            "backend": "pytorch_native",
+            "claim_evidence_type": "production_training_benchmark",
+            "scalability_claim_allowed": True,
+            "backward_execution": "executed_sharded_reverse_pass",
+            "gradient_distribution_semantics": "sharded_across_ranks",
+            "single_gpu_expected_oom": True,
+            "capacity_baseline_device": "cuda:0 on NVIDIA A800-SXM4-80GB",
+            "capacity_failure_reason": "single_gpu_memory_budget_exceeded",
+            "fallback_semantics": fallback_semantics,
+        }
+    )
+    return payload
+
+
 @pytest.mark.release_gate
 @pytest.mark.benchmark_contract
 def test_mps_backward_gate_accepts_static_preflight_but_not_release_claim():
@@ -2449,6 +2478,45 @@ def test_mps_backward_gate_rejects_fallback_semantics(
     assert gate.status == "blocked"
     assert gate.production_training_claimable is False
     assert expected_blocker in gate.blockers
+
+
+@pytest.mark.release_gate
+@pytest.mark.benchmark_contract
+def test_mps_release_audit_reads_the_frozen_no_fallback_declaration_as_a_negation():
+    """The audit and the release gate must not demand two words for one statement.
+
+    The frozen release contract requires a payload to declare
+    ``native_matrix_product_state_path_only``, which asserts the same thing as
+    the generic negations the audit lists: no other route was taken. A payload
+    that differs only in that declaration has to fare exactly as one that
+    declares ``none``, or no payload can satisfy both contracts at once.
+    """
+
+    accepted = validate_distributed_claim_evidence(
+        _mps_release_claim_payload(
+            fallback_semantics="native_matrix_product_state_path_only"
+        )
+    )
+    generic = validate_distributed_claim_evidence(
+        _mps_release_claim_payload(fallback_semantics="none")
+    )
+
+    assert accepted.errors == generic.errors == ()
+    assert accepted.release_gate_allowed is True
+
+
+@pytest.mark.release_gate
+@pytest.mark.benchmark_contract
+def test_mps_release_audit_still_rejects_unevaluated_fallback_vocabulary():
+    payload = _mps_release_claim_payload(fallback_semantics="replicated_mps_autograd")
+
+    audit = validate_distributed_claim_evidence(payload)
+
+    assert audit.release_gate_allowed is False
+    assert (
+        "MPS release gate rejects local replay, replicated autograd, "
+        "and statevector fallback" in audit.errors
+    )
 
 
 @pytest.mark.release_gate
