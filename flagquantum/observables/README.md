@@ -25,10 +25,18 @@ relation by hand.
 the Fermi level, the canonical order is the one the anticommutation relations
 impose, and `create`, `annihilate`, and `number` build the operators a chemistry
 workload needs. Operators are normal-ordered against the vacuum, so equality is
-structural and `is_hermitian` is exact rather than a tolerance test.
-`jordan_wigner` is the one fermion-to-qubit transform: it maps a Hermitian
-operator to the `Observable` the existing statevector path already measures,
-which is how a fermionic observable acquires an expectation value.
+structural and `is_hermitian` is exact rather than a tolerance.
+
+Two fermion-to-qubit transforms map a Hermitian operator to the `Observable` the
+existing statevector path already measures, which is how a fermionic observable
+acquires an expectation value. `jordan_wigner` writes mode `k` as
+`Z[0] ... Z[k-1] sigma[k]`, so the string runs over the modes below the factor;
+`parity_encoding` writes the same operator with an `X` string over the modes above
+it, which is the Jordan-Wigner image conjugated by the change of basis from
+occupation to parity. The two are the same observable in two bases and differ in
+where the image is local, not in how wide its widest term is: the reduction in
+Pauli weight that motivates the Bravyi-Kitaev and ternary-tree encodings follows
+from neither, and both of those remain absent.
 
 `boson.py` owns `BosonOperator` over modes whose occupation is unbounded. The
 same canonical order is the Poincare-Birkhoff-Witt basis, position and momentum

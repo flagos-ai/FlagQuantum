@@ -52,6 +52,7 @@ from flagquantum.observables.boson import position as boson_position
 from flagquantum.observables.fermion import (
     FermionOperator,
     jordan_wigner,
+    parity_encoding,
 )
 from flagquantum.operators import SuperOperator
 from flagquantum.qec import CssCodeMatrices
@@ -127,6 +128,7 @@ ENTRIES = (
     import_openqasm_to_ir,
     jordan_wigner,
     pauli_exponential_circuit,
+    parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
     recommend_simulator,

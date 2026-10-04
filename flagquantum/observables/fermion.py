@@ -1,18 +1,23 @@
-"""Fermionic operator algebra and its Jordan-Wigner image as a Pauli observable.
+"""Fermionic operator algebra and its Pauli images as observable values.
 
 An operator here is stored normal-ordered with respect to the vacuum, so the canonical
 anticommutation relations are applied at construction and every operator this module
 returns is a canonical sum: ``c[p] c†[q]`` is rewritten as ``delta(p, q) - c†[q] c[p]``
 before any caller sees it.  Two consequences are load-bearing.  Equality is structural,
-so a symbolic Hermiticity test is exact rather than a tolerance.  And the Jordan-Wigner
-image of a Hermitian operator is an `Observable`, which the existing execution path
-already measures, so no runtime needs a fermionic special case.
+so a symbolic Hermiticity test is exact rather than a tolerance.  And a fermion-to-qubit
+transform's image of a Hermitian operator is an `Observable`, which the existing execution
+path already measures, so no runtime needs a fermionic special case.
+
+Two transforms ship, `jordan_wigner` and `parity_encoding`, which are the same operator
+written in two qubit bases.  They share one assembly path and differ only in the string a
+ladder operator's image sits on, which is what makes a transform a value the boundary
+takes rather than a copy of the boundary.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from numbers import Complex
 
@@ -192,12 +197,32 @@ def _multiply_pauli(left: _PauliSum, right: _PauliSum) -> _PauliSum:
     return {factors: value for factors, value in product.items() if value != 0.0j}
 
 
-def _factor_image(degree: int, is_creation: bool) -> _PauliSum:
-    """Return the Pauli sum one Jordan-Wigner factor image expands to."""
+def _jordan_wigner_factor(degree: int, is_creation: bool) -> _PauliSum:
+    """Return the Pauli sum one factor's Jordan-Wigner image expands to."""
 
     string = tuple((mode, "z") for mode in range(degree))
     image = _CREATION_IMAGE if is_creation else _ANNIHILATION_IMAGE
     return {(*string, (degree, axis)): coefficient for coefficient, axis in image}
+
+
+def _parity_factor(degree: int, is_creation: bool, modes: int) -> _PauliSum:
+    """Return the Pauli sum one factor's parity-encoding image expands to.
+
+    The two branches are the same ``sigma_minus`` and ``sigma_plus`` expansion the
+    Jordan-Wigner image uses; what differs is the string they sit on.  On the X branch a
+    single Z sits on wire ``degree - 1`` and an X runs over every mode above the factor; on
+    the Y branch there is no Z at all.  The X string therefore runs over the modes strictly
+    above the factor where Jordan-Wigner's Z string runs over the modes strictly below it,
+    which is what makes the two encodings mirror images on the mode list.
+    """
+
+    above = tuple((mode, "x") for mode in range(degree + 1, modes))
+    lower = () if degree == 0 else ((degree - 1, "z"),)
+    image = _CREATION_IMAGE if is_creation else _ANNIHILATION_IMAGE
+    return {
+        (*lower, (degree, "x"), *above): image[0][0],
+        ((degree, "y"), *above): image[1][0],
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -411,6 +436,67 @@ def number(degree: int) -> FermionOperator:
     return FermionOperator((FermionTerm(1.0, (mode,), (mode,)),))
 
 
+def _image_of(
+    operator: FermionOperator,
+    *,
+    modes: int,
+    transform: str,
+    factor: Callable[[int, bool], _PauliSum],
+) -> Observable:
+    """Map a Hermitian operator onto a Pauli `Observable` through a factor image.
+
+    Everything here is the same for every fermion-to-qubit transform: the mode count and
+    Hermiticity are checked, each monomial's factor images are multiplied in the order the
+    monomial states them, terms that share a Pauli string are collected, and a coefficient
+    with an imaginary part outside the fail-closed bound is reported.  Only ``factor``
+    differs between transforms, which is what lets a second transform be a second
+    implementation behind the one boundary callers already read.
+
+    Only a Hermitian operator has a Pauli image with real coefficients, which is what an
+    `Observable` stores.  A non-Hermitian operator is refused rather than quietly given a
+    complex-coefficient representation this package does not have.
+    """
+
+    if modes < 1:
+        raise ValueError(f"{transform} requires at least one mode")
+    if not operator.is_hermitian():
+        raise CapabilityError(
+            f"{transform} maps a Hermitian fermionic operator onto a "
+            "real-coefficient Pauli observable; this operator is not Hermitian, and a "
+            "complex-coefficient Pauli sum is not a representation FlagQuantum has"
+        )
+    image: _PauliSum = {}
+    for term in operator.terms:
+        for degree in term.degrees:
+            if degree >= modes:
+                raise ValueError(
+                    f"fermionic degree {degree} is outside the {modes} mode(s) requested"
+                )
+        monomial: _PauliSum = {(): 1.0 + 0.0j}
+        for degree, is_creation in _factor_sequence(term):
+            monomial = _multiply_pauli(monomial, factor(degree, is_creation))
+        for factors, coefficient in monomial.items():
+            image[factors] = image.get(factors, 0.0j) + term.coefficient * coefficient
+    magnitude = max((abs(coefficient) for coefficient in image.values()), default=0.0)
+    tolerance = _IMAGINARY_TOLERANCE * max(1.0, magnitude)
+    terms: list[_PauliTerm] = []
+    for factors, coefficient in sorted(image.items()):
+        if abs(coefficient.imag) > tolerance:
+            raise CapabilityError(
+                f"the {transform} image of this operator carries an imaginary "
+                f"coefficient {coefficient!r}; a Hermitian fermionic operator has a "
+                "real-coefficient Pauli image"
+            )
+        if coefficient.real == 0.0:
+            continue
+        terms.append(_PauliTerm(float(coefficient.real), factors))
+    if not terms:
+        # The zero fermionic operator is a valid input and its image is the zero
+        # observable, which an Observable states as one identity term of weight zero.
+        return Observable((_PauliTerm(0.0, ()),))
+    return Observable(tuple(terms))
+
+
 def jordan_wigner(operator: FermionOperator, *, n_modes: int) -> Observable:
     """Map a Hermitian fermionic operator onto a Pauli `Observable`.
 
@@ -432,45 +518,49 @@ def jordan_wigner(operator: FermionOperator, *, n_modes: int) -> Observable:
         [(0.5, ((0, 'x'), (1, 'x'))), (0.5, ((0, 'y'), (1, 'y')))]
     """
 
+    return _image_of(
+        operator,
+        modes=_qubit("fermionic operator", n_modes, noun="mode"),
+        transform="jordan_wigner",
+        factor=_jordan_wigner_factor,
+    )
+
+
+def parity_encoding(operator: FermionOperator, *, n_modes: int) -> Observable:
+    """Map a Hermitian fermionic operator onto a Pauli `Observable` in the parity basis.
+
+    Wire ``k`` holds the parity of modes ``0`` through ``k`` instead of the occupation of
+    mode ``k``, so ``c[k]`` maps to
+    ``(Z[k-1] X[k] ... X[n-1] + i Y[k] X[k+1] ... X[n-1]) / 2``: the X string runs over the
+    modes strictly above the factor, where `jordan_wigner`'s Z string runs over the modes
+    strictly below it.  The two transforms are the same operator written in two bases, so a
+    consumer written against `Observable` reads either one without being told which it
+    holds; the images differ as matrices by the basis change between them.
+
+    This is a second encoding, not a smaller one.  The widest factor image still spans one
+    wire per mode and is reached at the opposite end of the mode list, so the reduction in
+    worst-case Pauli weight that motivates the Bravyi-Kitaev and ternary-tree encodings
+    does not follow from it.
+
+    Only a Hermitian operator has a Pauli image with real coefficients, which is what an
+    `Observable` stores.  A non-Hermitian operator is refused rather than quietly given a
+    complex-coefficient representation this package does not have.
+
+    Examples:
+        >>> from flagquantum.observables import annihilate, create, parity_encoding
+        >>> hopping = create(0) * annihilate(1) + create(1) * annihilate(0)
+        >>> observable = parity_encoding(hopping, n_modes=2)
+        >>> [(term.coefficient, term.factors) for term in observable.terms]
+        [(0.5, ((0, 'x'),)), (-0.5, ((0, 'x'), (1, 'z')))]
+    """
+
     modes = _qubit("fermionic operator", n_modes, noun="mode")
-    if modes < 1:
-        raise ValueError("jordan_wigner requires at least one mode")
-    if not operator.is_hermitian():
-        raise CapabilityError(
-            "jordan_wigner maps a Hermitian fermionic operator onto a "
-            "real-coefficient Pauli observable; this operator is not Hermitian, and a "
-            "complex-coefficient Pauli sum is not a representation FlagQuantum has"
-        )
-    image: _PauliSum = {}
-    for term in operator.terms:
-        for degree in term.degrees:
-            if degree >= modes:
-                raise ValueError(
-                    f"fermionic degree {degree} is outside the {modes} mode(s) requested"
-                )
-        monomial: _PauliSum = {(): 1.0 + 0.0j}
-        for degree, is_creation in _factor_sequence(term):
-            monomial = _multiply_pauli(monomial, _factor_image(degree, is_creation))
-        for factors, coefficient in monomial.items():
-            image[factors] = image.get(factors, 0.0j) + term.coefficient * coefficient
-    magnitude = max((abs(coefficient) for coefficient in image.values()), default=0.0)
-    tolerance = _IMAGINARY_TOLERANCE * max(1.0, magnitude)
-    terms: list[_PauliTerm] = []
-    for factors, coefficient in sorted(image.items()):
-        if abs(coefficient.imag) > tolerance:
-            raise CapabilityError(
-                "the Jordan-Wigner image of this operator carries an imaginary "
-                f"coefficient {coefficient!r}; a Hermitian fermionic operator has a "
-                "real-coefficient Pauli image"
-            )
-        if coefficient.real == 0.0:
-            continue
-        terms.append(_PauliTerm(float(coefficient.real), factors))
-    if not terms:
-        # The zero fermionic operator is a valid input and its image is the zero
-        # observable, which an Observable states as one identity term of weight zero.
-        return Observable((_PauliTerm(0.0, ()),))
-    return Observable(tuple(terms))
+    return _image_of(
+        operator,
+        modes=modes,
+        transform="parity_encoding",
+        factor=lambda degree, is_creation: _parity_factor(degree, is_creation, modes),
+    )
 
 
 __all__ = (
@@ -480,4 +570,5 @@ __all__ = (
     "create",
     "jordan_wigner",
     "number",
+    "parity_encoding",
 )

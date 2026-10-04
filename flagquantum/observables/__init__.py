@@ -442,6 +442,7 @@ _FERMION_EXPORTS = (
     "create",
     "jordan_wigner",
     "number",
+    "parity_encoding",
 )
 
 # The bosonic algebra cannot be flattened into this namespace: `create`, `annihilate` and

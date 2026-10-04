@@ -22,6 +22,7 @@ from flagquantum.observables import (
     create,
     jordan_wigner,
     number,
+    parity_encoding,
 )
 from flagquantum.observables.fermion import FermionOperator, FermionTerm
 
@@ -318,6 +319,21 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_every_short_monomial(
     assert checked == len(factors) ** 3
 
 
+def _prepared(n_modes: int, *occupied: int) -> fq.Circuit:
+    """Return a fresh circuit whose named wires start in ``|1>``.
+
+    ``Circuit`` gate builders and :meth:`Circuit.compose` mutate the circuit they are
+    called on and return it, so a preparation has to be built per use: a circuit held in a
+    loop and rotated again on each pass accumulates every rotation, which would leave the
+    named states untested while still comparing the runtime against its own statevector.
+    """
+
+    circuit = fq.Circuit(n_modes)
+    for wire in occupied:
+        circuit.x(wire)
+    return circuit
+
+
 def test_the_jordan_wigner_image_measures_the_dense_fock_expectation() -> None:
     """The image is measured end to end by the runtime that already measures observables.
 
@@ -338,12 +354,8 @@ def test_the_jordan_wigner_image_measures_the_dense_fock_expectation() -> None:
     dense = _fock_matrix(hamiltonian, 2)
 
     for theta in (0.0, 0.3, 0.6, 1.1, 2.4):
-        for preparation in (
-            fq.Circuit(2).x(1),
-            fq.Circuit(2),
-            fq.Circuit(2).x(0).x(1),
-        ):
-            circuit = preparation.ry(0, theta)
+        for occupied in ((1,), (), (0, 1)):
+            circuit = _prepared(2, *occupied).ry(0, theta)
             result = fq.run(circuit, outputs=[fq.expectation(observable)])
             measured = float(np.asarray(result.expectation()).reshape(-1)[0].real)
             state = np.asarray(result.to_statevector(), dtype=complex).reshape(-1)
@@ -351,12 +363,258 @@ def test_the_jordan_wigner_image_measures_the_dense_fock_expectation() -> None:
             assert abs(measured - expected) < 1e-6
 
 
+def _parity_permutation(n_modes: int) -> np.ndarray:
+    """Build the change of basis from occupation to parity, wire 0 most significant.
+
+    Column ``j`` is the basis state whose mode occupations are the bits of ``j``; row ``i``
+    is the state whose mode ``k`` reads the parity of modes ``0`` through ``k``.  The result
+    is a permutation matrix, hence orthogonal, so conjugating an operator by it is a change
+    of basis and the two transforms below are two readings of one operator.
+    """
+
+    dimension = 1 << n_modes
+    permutation = np.zeros((dimension, dimension), dtype=complex)
+    for column in range(dimension):
+        occupations = [(column >> (n_modes - 1 - mode)) & 1 for mode in range(n_modes)]
+        parities: list[int] = []
+        running = 0
+        for occupation in occupations:
+            running ^= occupation
+            parities.append(running)
+        row = sum(bit << (n_modes - 1 - mode) for mode, bit in enumerate(parities))
+        permutation[row, column] = 1.0
+    return permutation
+
+
+def test_parity_encoding_maps_known_operators_to_their_closed_form_images() -> None:
+    """The image table is the closed form the docstring states, written out by hand."""
+
+    cases = (
+        (
+            create(0) * annihilate(1) + create(1) * annihilate(0),
+            2,
+            [(0.5, ((0, "x"),)), (-0.5, ((0, "x"), (1, "z")))],
+        ),
+        (number(1), 2, [(0.5, ()), (-0.5, ((0, "z"), (1, "z")))]),
+        (number(2), 3, [(0.5, ()), (-0.5, ((1, "z"), (2, "z")))]),
+        (create(0) + annihilate(0), 3, [(1.0, ((0, "x"), (1, "x"), (2, "x")))]),
+        (create(2) + annihilate(2), 3, [(1.0, ((1, "z"), (2, "x")))]),
+        (number(0), 4, [(0.5, ()), (-0.5, ((0, "z"),))]),
+        (number(3), 4, [(0.5, ()), (-0.5, ((2, "z"), (3, "z")))]),
+    )
+    for operator, n_modes, expected in cases:
+        image = parity_encoding(operator, n_modes=n_modes)
+        assert [(term.coefficient, term.factors) for term in image.terms] == expected
+
+
+def test_the_parity_image_is_the_jordan_wigner_image_in_the_parity_basis() -> None:
+    """The second encoding is a basis change, so conjugating one image yields the other.
+
+    The permutation is built here from the definition ``wire k holds the parity of modes 0
+    through k``, so this compares the module's two transforms against a matrix the module
+    does not compute.  Reading the parity image as a second, independently derived operator
+    is the mistake this test is written to catch: the two images are equal as operators only
+    after the conjugation, and they are different matrices before it.
+    """
+
+    rng = np.random.default_rng(20261123)
+    cases = [number(0), number(0) * number(1), number(0) * number(1) * number(2)]
+    factors = [create(0), annihilate(0), create(1), annihilate(1)]
+    for first in factors:
+        for second in factors:
+            for third in factors:
+                product = first * second * third
+                cases.append(product + product.dagger())
+    for n_modes in (2, 3, 4):
+        cases.extend(_random_hermitian_operator(n_modes, rng) for _ in range(20))
+
+    checked = 0
+    for n_modes in (2, 3, 4):
+        permutation = _parity_permutation(n_modes)
+        for operator in cases:
+            if any(
+                term.degrees and max(term.degrees) >= n_modes for term in operator.terms
+            ):
+                continue
+            if not operator.terms or not operator.is_hermitian():
+                continue
+            jordan = _observable_matrix(
+                jordan_wigner(operator, n_modes=n_modes), n_modes
+            )
+            parity = _observable_matrix(
+                parity_encoding(operator, n_modes=n_modes), n_modes
+            )
+            assert np.allclose(
+                parity, permutation @ jordan @ permutation.T, atol=1e-12
+            ), operator.terms
+            assert np.allclose(
+                parity,
+                permutation @ _fock_matrix(operator, n_modes) @ permutation.T,
+                atol=1e-12,
+            ), operator.terms
+            checked += 1
+    assert checked > 200
+
+
+def test_every_short_monomial_agrees_under_both_encodings() -> None:
+    """Both transforms are images of the same operator, so both reproduce the Fock matrix.
+
+    Jordan-Wigner in the occupation basis and the parity encoding in the parity basis are
+    the same statement about the same physical operator, which is the property a consumer
+    relies on when it reads whichever image it was handed.
+    """
+
+    factors = [create(0), annihilate(0), create(1), annihilate(1)]
+    checked = 0
+    for first in factors:
+        for second in factors:
+            for third in factors:
+                product = first * second * third
+                operator = product + product.dagger()
+                parity = _observable_matrix(parity_encoding(operator, n_modes=2), 2)
+                assert np.allclose(
+                    _parity_permutation(2) @ parity @ _parity_permutation(2).T,
+                    _fock_matrix(operator, 2),
+                    atol=1e-12,
+                )
+                checked += 1
+    assert checked == len(factors) ** 3
+
+
+def _parity_basis_circuit(n_modes: int) -> fq.Circuit:
+    """Build the CNOT cascade that relabels wire ``k`` with the parity of modes ``0..k``."""
+
+    circuit = fq.Circuit(n_modes)
+    for mode in range(1, n_modes):
+        circuit.cx(mode - 1, mode)
+    return circuit
+
+
+def test_the_parity_image_measures_the_physical_value_in_the_parity_basis() -> None:
+    """End to end through the runtime, with the state prepared in the encoding's basis.
+
+    A fermion-to-qubit encoding is a pair: an operator image and the basis its wires are
+    read in.  Jordan-Wigner's basis is the occupation basis, which is the wire basis this
+    package computes in, so its image is measured directly.  The parity encoding writes its
+    wires as parities, so the state has to be relabelled by the same change of basis before
+    the image means the physical operator; measuring it against an occupation-basis state
+    would return ``<psi| P M P^T |psi>``, which is a different number for every state that
+    is not a parity eigenstate.  This test builds that relabelling as a real circuit and
+    checks both that it realises the permutation built above and that the measured value is
+    the physical expectation.
+    """
+
+    t, interaction_strength = 0.7, 1.3
+    hopping = t * (create(0) * annihilate(1) + create(1) * annihilate(0))
+    hamiltonian = hopping + interaction_strength * (number(0) * number(1))
+    parity_observable = parity_encoding(hamiltonian, n_modes=2)
+    dense = _fock_matrix(hamiltonian, 2)
+    permutation = _parity_permutation(2)
+
+    for theta in (0.0, 0.3, 0.6, 1.1, 2.4):
+        for occupied in ((1,), (), (0, 1)):
+            prepared = np.asarray(
+                fq.run(_prepared(2, *occupied).ry(0, theta)).to_statevector(),
+                dtype=complex,
+            ).reshape(-1)
+            expected = float(np.real(prepared.conj() @ (dense @ prepared)))
+
+            relabelled_circuit = _prepared(2, *occupied).ry(0, theta)
+            relabelled_circuit.compose(_parity_basis_circuit(2))
+            relabelled = np.asarray(
+                fq.run(relabelled_circuit).to_statevector(), dtype=complex
+            ).reshape(-1)
+            assert np.allclose(relabelled, permutation @ prepared, atol=1e-6)
+
+            measured_circuit = _prepared(2, *occupied).ry(0, theta)
+            measured_circuit.compose(_parity_basis_circuit(2))
+            measured = float(
+                np.asarray(
+                    fq.run(
+                        measured_circuit,
+                        outputs=[fq.expectation(parity_observable)],
+                    ).expectation(),
+                    dtype=complex,
+                )
+                .reshape(-1)[0]
+                .real
+            )
+            assert abs(measured - expected) < 1e-6
+
+
+def test_the_parity_image_is_widest_at_the_opposite_end_of_the_mode_list() -> None:
+    """The second encoding trades locality, not width, and this pins which end is wide.
+
+    Jordan-Wigner's widest factor image is the last mode's, whose Z string spans every mode
+    below it; the parity encoding's widest is the first mode's, whose X string spans every
+    mode above it.  Neither encoding reduces the worst case, so a claim that the parity
+    encoding is cheaper would be false, and a claim that it is wide at the same end would
+    mean the two images had been conflated.
+    """
+
+    for n_modes in (2, 3, 4, 5):
+        jordan_widths = [
+            max(
+                len(term.factors)
+                for term in jordan_wigner(
+                    create(k) + annihilate(k), n_modes=n_modes
+                ).terms
+            )
+            for k in range(n_modes)
+        ]
+        parity_widths = [
+            max(
+                len(term.factors)
+                for term in parity_encoding(
+                    create(k) + annihilate(k), n_modes=n_modes
+                ).terms
+            )
+            for k in range(n_modes)
+        ]
+        assert jordan_widths == list(range(1, n_modes + 1))
+        assert parity_widths == [n_modes, *range(n_modes, 1, -1)]
+        assert max(jordan_widths) == max(parity_widths) == n_modes
+
+
+def test_parity_encoding_returns_the_zero_observable_for_the_zero_operator() -> None:
+    image = parity_encoding(FermionOperator(), n_modes=2)
+    assert [(term.coefficient, term.factors) for term in image.terms] == [(0.0, ())]
+    assert [(term.coefficient, term.factors) for term in image.terms] == [
+        (term.coefficient, term.factors)
+        for term in jordan_wigner(FermionOperator(), n_modes=2).terms
+    ]
+
+
+def test_parity_encoding_refuses_a_non_hermitian_operator() -> None:
+    with pytest.raises(CapabilityError, match="not Hermitian"):
+        parity_encoding(create(0), n_modes=1)
+
+
+def test_parity_encoding_refuses_a_degree_outside_the_requested_modes() -> None:
+    with pytest.raises(ValueError, match="degree 2 is outside the 2 mode"):
+        parity_encoding(number(2), n_modes=2)
+
+
+def test_parity_encoding_refuses_a_zero_mode_request() -> None:
+    with pytest.raises(ValueError, match="parity_encoding requires at least one mode"):
+        parity_encoding(FermionOperator(), n_modes=0)
+
+
 def test_the_observables_namespace_exposes_the_fermionic_algebra() -> None:
     from flagquantum import observables
 
     assert observables.jordan_wigner is jordan_wigner
+    assert observables.parity_encoding is parity_encoding
     assert observables.FermionOperator is FermionOperator
-    for name in ("FermionOperator", "FermionTerm", "annihilate", "create", "number"):
+    for name in (
+        "FermionOperator",
+        "FermionTerm",
+        "annihilate",
+        "create",
+        "jordan_wigner",
+        "number",
+        "parity_encoding",
+    ):
         assert name in observables.__all__
     with pytest.raises(AttributeError, match="has no attribute 'no_such_name'"):
         _ = observables.no_such_name
