@@ -88,7 +88,7 @@ def main() -> None:
             DistributedShardPlan(
                 rank=owner,
                 world_size=world,
-                wires=tuple(result.shard_state.ownership[owner]),
+                qubits=tuple(result.shard_state.ownership[owner]),
                 left_boundary=None,
                 right_boundary=None,
             )

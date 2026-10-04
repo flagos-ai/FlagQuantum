@@ -1447,12 +1447,12 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         initial_ket,
         controls=(5, 4, 3, 2, 1, 0),
         targets=(6, 5, 4, 3, 2, 1),
-        n_wires=7,
+        n_qubits=7,
     )
     images = cpu_cx_permutation_images(
         controls=(5, 4, 3, 2, 1, 0),
         targets=(6, 5, 4, 3, 2, 1),
-        n_wires=7,
+        n_qubits=7,
     )
 
     reference_ket, reference_adjoint = apply_cpu_cx_adjoint_index(

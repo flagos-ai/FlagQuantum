@@ -820,9 +820,9 @@ class Module(torch.nn.Module):
                         backend="jax",
                         interface="torch",
                         mode=self.policy.mode,
-                        n_wires=circuit.n_qubits,
+                        n_qubits=circuit.n_qubits,
                         observable=self.policy.observable,
-                        observable_wires=wires,
+                        observable_qubits=wires,
                         hamiltonian=self.hamiltonian,
                         compute_dtype=self.precision.complex_dtype,
                         accepts_inputs=accepts_inputs,
@@ -882,7 +882,7 @@ class Module(torch.nn.Module):
                 )
             reverse = execute_torch_distributed_statevector_reverse(
                 ir,
-                observable_wire=wires[0],
+                observable_qubit=wires[0],
                 device=self._parameter_tensors()[0].device,
                 process_group=self._state_process_group,
             )

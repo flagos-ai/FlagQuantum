@@ -91,7 +91,7 @@ def main() -> None:
     try:
         result = execute_torch_distributed_statevector_reverse(
             circuit,
-            observable_wire=args.n_wires // 2,
+            observable_qubit=args.n_wires // 2,
             checkpoint_policy=StatevectorCheckpointPolicy(
                 strategy="reversible_adjoint"
             ),

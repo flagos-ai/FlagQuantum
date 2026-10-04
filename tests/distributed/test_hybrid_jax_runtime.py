@@ -69,7 +69,7 @@ def test_rank_local_jax_kernel_gradients_allreduce_match_reference():
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=3,
+        n_qubits=3,
         hamiltonian=_hamiltonian(),
     )
 

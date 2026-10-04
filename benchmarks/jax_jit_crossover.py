@@ -124,7 +124,7 @@ def _worker(
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=n_wires,
+        n_qubits=n_wires,
         observable="z_sum",
         hamiltonian=hamiltonian,
         jit=True,
@@ -306,7 +306,7 @@ def main() -> None:
                     cache_dir.mkdir(parents=True)
                     repetitions.append(
                         _run_fresh_worker(
-                            n_wires=n_wires,
+                            n_qubits=n_wires,
                             layers=layers,
                             steady_repetitions=args.steady_repetitions,
                             cache_dir=cache_dir,

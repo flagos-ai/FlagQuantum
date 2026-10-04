@@ -581,7 +581,7 @@ def _training_observations(
     first = train_distributed_statevector(
         interrupted,
         steps=CHECKPOINT_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory,
@@ -593,7 +593,7 @@ def _training_observations(
     fresh = train_distributed_statevector(
         uninterrupted,
         steps=RESUMED_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory / "uninterrupted",
@@ -605,7 +605,7 @@ def _training_observations(
     resumed = train_distributed_statevector(
         resuming,
         steps=RESUMED_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory,
@@ -944,7 +944,7 @@ def probe(
         trainable, parameters = _trainable_circuit(device=device)
         gradient_probe = execute_torch_distributed_statevector_reverse(
             trainable,
-            observable_wire=_observable_wire(),
+            observable_qubit=_observable_wire(),
             checkpoint_policy=StatevectorCheckpointPolicy(
                 strategy="interval", interval=2
             ),

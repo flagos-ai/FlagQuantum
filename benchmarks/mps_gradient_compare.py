@@ -273,7 +273,7 @@ def _time_flagquantum_jax_torch_bridge(
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=int(params_seed.shape[1]),
+        n_qubits=int(params_seed.shape[1]),
         observable="z_sum",
         jit=True,
     )
@@ -620,7 +620,7 @@ def main() -> None:
         try:
             tc_result = _tensorcircuit_value_and_grad(
                 params_seed.detach().cpu().numpy(),
-                n_wires=args.n_wires,
+                n_qubits=args.n_wires,
                 layers=args.layers,
                 max_bond=args.max_bond,
                 backend=tc_backend,
@@ -635,7 +635,7 @@ def main() -> None:
                 try:
                     tc_result = _tensorcircuit_value_and_grad(
                         params_seed.detach().cpu().numpy(),
-                        n_wires=args.n_wires,
+                        n_qubits=args.n_wires,
                         layers=args.layers,
                         max_bond=args.max_bond,
                         backend=tc_backend,
@@ -725,7 +725,7 @@ def main() -> None:
                 try:
                     jax_result = _tensorcircuit_value_and_grad(
                         params_seed.detach().cpu().numpy(),
-                        n_wires=args.n_wires,
+                        n_qubits=args.n_wires,
                         layers=args.layers,
                         max_bond=args.max_bond,
                         backend="jax",
