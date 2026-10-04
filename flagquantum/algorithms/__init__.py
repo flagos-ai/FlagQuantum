@@ -1,6 +1,7 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
 from . import amplitude_estimation as amplitude_estimation
+from . import arithmetic as arithmetic
 from . import core as core
 from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
@@ -16,6 +17,11 @@ from . import qubo as qubo
 from . import spsa as spsa
 from . import svd as svd
 from . import trotter as trotter
+from .arithmetic import (
+    AdderWires,
+    adder_circuit,
+    adder_wires,
+)
 from .core import (
     AdaptVQEIteration,
     AdaptVQEResult,
@@ -84,6 +90,7 @@ from .trotter import (
 __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
+    "AdderWires",
     "ExtrapolationFit",
     "Hamiltonian",
     "HamiltonianTerm",
@@ -103,10 +110,13 @@ __all__ = [
     "VQEResult",
     "ZneMeasurement",
     "ZneResult",
+    "adder_circuit",
+    "adder_wires",
     "amplitude_encode",
     "amplitude_estimation",
     "angular_encode",
     "append_angular_encode",
+    "arithmetic",
     "data_encoding",
     "error_mitigation",
     "extrapolate_polynomial",

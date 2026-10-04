@@ -116,6 +116,27 @@ executed by `tests/test_algorithm_examples.py`.
   overhead, placement, scheduling, or device model is included, so the physical
   figure is a floor for a circuit of these layers rather than a compiled
   estimate.
+- `arithmetic.py`: reversible integer addition — `adder_circuit` builds Cuccaro's
+  in-place ripple, writing the sum of two `n`-bit registers into the second of
+  them on one working carry wire, and `adder_wires` returns the register map so a
+  caller knows which wire carries what. `2 n` Toffolis and `6 n + 1` `cx`, `8 n + 1`
+  operations on `2 n + 2` wires. **A construction, and not a cost**: the T-count is
+  the compiler's own Toffoli rule — `ccx` lowers to the fifteen-gate `h`, `t`,
+  `tdg`, `cx` identity in `compiler/basis_translation.py`, reached through
+  `convert_basis` and priced by `compiler/resource_estimation.py` — so no seven-T
+  expansion is written here, because a second Toffoli cost would be a second
+  source of truth for the one number the two must agree on. Two wires must enter
+  holding `|0>`: the working carry wire, restored by the circuit, and the carry-out
+  wire, left holding the carry out of the most significant position. Only inputs
+  meeting that contract are promised a sum; the circuit is a permutation of the
+  whole space, so an off-contract input is reversible rather than added. Both
+  addends are quantum registers, so there is no classical addend, no
+  `add_constant`, and no modular, controlled, or comparison variant. **This is not
+  the Gidney-Ekera construction**: that one is smaller because it uncomputes its
+  ancillas by measuring them and feeding the outcomes forward, which needs a
+  mid-circuit measurement and a classical feedforward path this repository does
+  not have in a circuit it can cost statically. No circuit is executed, no runtime
+  is selected, and no simulator object is carried.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

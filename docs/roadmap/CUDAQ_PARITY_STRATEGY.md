@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 59 |
-| `unsupported` | 26 |
+| `partial` | 60 |
+| `unsupported` | 25 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -335,6 +335,38 @@ than filled with a number that would license the very claim the row refuses. The
 roster is the two targets `submit` accepts rather than a backend-agnostic option,
 and because the remaining options are shared they must suit every target named, so
 the Quafu-only and Jiuding-only options cannot be combined in one call.
+
+`arithmetic_bloqs` moved from `unsupported` to `partial` in the same wave, on a
+distinction the row's own `cudaq` column makes necessary to state rather than
+assume. [arithmetic.py](../../flagquantum/algorithms/arithmetic.py) builds a
+reversible in-place ripple-carry adder: two `n`-bit registers, the sum written
+into the second of them, one working carry wire that the circuit restores, and a
+carry-out wire left holding the carry out of the most significant position. The
+construction is Cuccaro's, and the row is named for Gidney-Ekera. **The row is
+`partial` because those are not the same construction**, and stating that plainly
+is more useful than either claiming the CUDA-Q surface is matched or leaving a
+delivered module with no row at all. Gidney-Ekera is smaller precisely because it
+uncomputes its ancillas by measuring them and feeding the outcomes forward, which
+needs a mid-circuit measurement and a classical feedforward path this repository
+has no costable circuit for: the gap is a missing execution capability rather than
+a missing formula, so it belongs in the row's reason instead of behind an
+interface that would make the two look interchangeable.
+
+The construction is deliberately not costed twice. Its T-count is the compiler's
+own Toffoli rule -- `ccx` lowering to the fifteen-gate `h`, `t`, `tdg`, `cx`
+identity in [basis_translation.py](../../flagquantum/compiler/basis_translation.py),
+reached through `convert_basis` and priced by `estimate_resources`, with
+[logical_resources.py](../../flagquantum/algorithms/logical_resources.py) passing
+that tally through -- so the adder carries no seven-T expansion of its own. That
+is the same rule `logical_resource_estimation` is held to above, and it is what
+keeps the two rows' numbers from being able to disagree. Both addends are quantum
+registers, so there is no classical addend, no `add_constant`, no modular,
+controlled, comparison, multiplier, or modular-exponentiation variant, and no
+carry-in parameter; two wires must enter holding zero, and only inputs meeting
+that contract are promised a sum, because the map is a permutation of the whole
+space and an off-contract input is reversible rather than added. Those absences
+are what a later row extension would close, and they are recorded here rather than
+left to be rediscovered.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and

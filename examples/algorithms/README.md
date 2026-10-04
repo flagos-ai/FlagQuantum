@@ -21,6 +21,7 @@ python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
 python -m examples.algorithms.logical_resources
+python -m examples.algorithms.arithmetic
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -73,6 +74,11 @@ What they show:
   against the model's closed form, the one-layer charge for a measurement record
   shown against the same program without one, and the two refused opcode families,
   a lowered channel, and six refused arguments each printed by name.
+- [`arithmetic.py`](arithmetic.py): a reversible adder built at seven widths and
+  then run on the statevector path, with the sum decoded back out of the runtime's
+  own state vector, the two ancillas' behaviour off the contract measured over
+  every input rather than described, the T-cost read from the compiler's own
+  Toffoli rule, and the conversion bound shown to be a bound the caller can raise.
 
 ## These scripts use the subpackage surface
 
@@ -87,7 +93,10 @@ is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
 either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
 the package's own `get_unitary`. `logical_resources.py` imports both: the estimator
 and the patch-size helper from the subpackage, and `flagquantum` itself for the
-`fq.Circuit` programs it costs. `examples/README.md` records that boundary.
+`fq.Circuit` programs it costs. `arithmetic.py` imports both as well: the
+constructor and the register map from the subpackage, and `flagquantum` itself for
+the `fq.Circuit` register the adder is run on. `examples/README.md` records that
+boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the
@@ -110,4 +119,9 @@ matrix with nothing here bounding the error of an approximate one, and the logic
 resource report counts rather than measures -- no circuit runs, no wall-clock time
 or memory is read, and the failure rate is absent because a logical error rate
 needs a device's threshold fit, so that number belongs to the device rather than to
-the unit. The guide holds the full boundary for each.
+the unit. The adder is a construction and its T-cost is the compiler's own Toffoli
+rule rather than a second expansion of it written beside the circuit, and it is
+Cuccaro's ripple rather than the smaller Gidney-Ekera construction, because
+uncomputing by measurement and feedforward needs a mid-circuit measurement path
+this repository does not have in a circuit it can cost. The guide holds the full
+boundary for each.

@@ -27,6 +27,8 @@ tested, and reproducible still does not carry an advantage of its own.
 | `trotter.py` — time evolution by a product formula | Available. Turns a weighted Pauli sum into the circuit a product formula applies, as a basis change and a CX ladder per term, so a time-evolution workload is an ordinary circuit; the primitive underneath it is the exact circuit for ``exp(-i * theta * P)`` of one Pauli word. | Trotter 1959; Suzuki 1990; Suzuki 1991; Lloyd 1996 | **The premise is commutativity, and it fails by exactly the amount nothing here bounds.** A product formula is exact only when the terms commute; otherwise the defect falls off with the step length at the composition's own rate and no bound is reported, because a bound needs a commutator norm that belongs to the caller. The term count is the caller's Hamiltonian's, so no end-to-end advantage follows. |
 | `logical_resources.py` — logical-layer resource estimation | Available. Reads a Clifford+T program's operation counts, T family, and schedule depth out of the compiler's own static estimate and costs them on a rotated surface code at a distance the caller names: logical layers, physical qubits, surface-code cycles, and their product. | Fowler et al. 2012 | **None, and it is a count rather than a measurement.** Nothing runs, and no wall-clock time, memory, or allocation is read; the input has to already be Clifford+T, so a parametric rotation is refused rather than synthesised; no distillation factory, magic-state budget, routing overhead, placement, or device model is included; and no logical error rate is reported, because that number needs a device's threshold fit. |
 
+| `arithmetic.py` — reversible integer addition | Available. Builds Cuccaro's in-place ripple-carry adder: two `n`-bit registers added into the second of them, on one working carry wire, with the carry out of the most significant position left on a wire of its own. | Cuccaro et al. 2004 | **None, and the cost is the compiler's rather than this unit's.** No seven-T expansion is written here, because the T-count is the compiler's own Toffoli identity reached through `convert_basis` and `estimate_resources`, and a second expansion would be a second source of truth for the one number the two must agree on; the construction is Cuccaro's and not the smaller Gidney-Ekera one, which uncomputes its ancillas by measurement and feedforward and needs a mid-circuit measurement path this repository has no costable circuit for; two wires must enter holding `|0>` and only those inputs are promised a sum; and no distillation factory, magic-state budget, routing, or layout is included, so a surface-code figure derived from it is a floor. |
+
 Two rows carry `—` in the Citation column rather than a source, and that is a
 statement rather than a placeholder: the Fourier transform and oracle synthesis
 are standard constructions with no single paper to cite, and the one cited
@@ -202,6 +204,27 @@ units carries a root-level `fq.` name.
   "standard construction with no single paper to cite" rather than "sought and
   not yet found", so the absence is stated here instead of being spelled as
   something it is not. See the two sections below.
+- **The adder carries no advantage premise either, and it is not a speed-up to
+  state: it is a construction.** `arithmetic.py` builds Cuccaro's in-place
+  ripple-carry addition, which is `2 n` Toffolis and `6 n + 1` `cx` for `8 n + 1`
+  operations on `2 n + 2` wires, and it is *linear* in the width — the same
+  asymptotics as every ripple-carry adder, and the same operation count whichever
+  pair of addends is loaded, because the circuit is a permutation rather than a
+  data-dependent schedule. What the unit is honest about is its price and its
+  domain: **the T-count is not its own**, since `ccx` lowers through the
+  compiler's fifteen-gate identity so the adder is priced at `14 n` T by
+  [basis_translation.py](../../flagquantum/compiler/basis_translation.py) and
+  [resource_estimation.py](../../flagquantum/compiler/resource_estimation.py)
+  rather than by a seven-T expansion written beside it, and **two wires must
+  enter holding `|0>`** — the working carry, which is restored, and the carry-out,
+  which is left holding the top carry — so only inputs meeting that contract are
+  promised a sum. Off that domain the circuit is still a permutation and never
+  loses information, which is exactly why the map can be reversible without being
+  addition there. The construction is Cuccaro's and not the smaller Gidney-Ekera
+  one this repository's parity matrix names on the same row: Gidney-Ekera
+  uncomputes its ancillas by measuring them and feeding the outcomes forward, so
+  reaching it needs a mid-circuit measurement and a classical feedforward path
+  that no costable circuit here provides. See the section below.
 
 ## A runnable example
 
@@ -1843,6 +1866,199 @@ grows as `d` cubed for a fixed program. What that volume *buys* in logical error
 the device's threshold fit and not this report's, so the cost of a distance is
 printed here and the benefit never is.
 
+## Reversible integer addition
+
+`arithmetic.py` builds one construction and nothing else: an in-place ripple-carry
+adder that writes the sum of two `n`-bit registers into the second of them, using
+one working carry wire and leaving the carry out of the most significant position
+on a wire of its own.
+
+**What it is, in one line.** `adder_circuit(n_bits)` returns a
+`flagquantum.circuit.Circuit` of `2 n + 2` wires applying `2 n` Toffolis and
+`6 n + 1` `cx` — `8 n + 1` operations, linear in the width and independent of the
+values added, so the cost of an addition is known before the addends are.
+`adder_wires(n_bits)` returns the register map as an `AdderWires` record, so a
+caller assembling a larger computation knows which wire holds which bit rather
+than reconstructing the layout from the constructor's source.
+
+```python
+from flagquantum.algorithms import adder_circuit, adder_wires
+
+circuit = adder_circuit(3)
+names = [instruction.name for instruction in circuit.to_ir().instructions]
+print(circuit.n_wires, len(names), names.count("ccx"), names.count("cx"))
+# 8 25 6 19  -- 2 n + 2 wires, 8 n + 1 operations, 2 n Toffolis, 6 n + 1 cx
+print(sorted(set(names)))
+# ['ccx', 'cx']  -- every gate is a Toffoli or a controlled X, and no rotation
+wires = adder_wires(3)
+print(wires)
+# AdderWires(a=(0, 1, 2), b=(3, 4, 5), carry=6, carry_out=7)  -- the register map
+print(wires.n_bits, wires.n_wires)
+# 3 8  -- the width and the wire count the map describes
+print([len(adder_circuit(n).to_ir().instructions) for n in (1, 2, 3, 4, 5)])
+# [9, 17, 25, 33, 41]  -- 8 n + 1, one operation per bit plus the final cx
+print(
+    [
+        sum(1 for i in adder_circuit(n).to_ir().instructions if i.name == "ccx")
+        for n in (1, 2, 3, 4, 5)
+    ]
+)
+# [2, 4, 6, 8, 10]  -- 2 n Toffolis, and the whole ripple rides one ancilla
+```
+
+**The construction is Cuccaro's, and the guide says so because the alternative is
+the one a reader is likely to have in mind.** A majority gate folds the running
+carry into a third wire, so the wire that leaves a majority holding the carry out
+of one position is the wire that feeds the carry into the next; an unmajority gate
+walks the ripple back down and gives the third wire back clean. That is why one
+ancilla suffices where a naive ripple would put a carry wire under every bit, and
+why the two data wires are their original selves by the time the carry into a
+position is available — which is exactly when the sum bit can be written into the
+second register. **The Gidney-Ekera construction is smaller and is not what this
+unit builds.** It uncomputes its ancillas by measuring them and feeding the
+outcomes forward, which needs a mid-circuit measurement and a classical
+feedforward path, and this repository has none in a circuit it can cost
+statically. The absent construction is recorded as an owned gap rather than
+implied away by a name.
+
+**The circuit is shown running, and the sum is read rather than asserted.** The
+script prepares a computational basis state holding the two addends, runs the
+adder on the ordinary statevector path, and decodes the wire labels back into
+integers, so the number printed as the sum is read out of a state vector the
+runtime produced. The register map is what makes the decoding possible, which is
+the second reason it is public.
+
+```python
+import torch
+
+from flagquantum.algorithms import adder_circuit, adder_wires
+from flagquantum.circuit import Circuit
+
+
+def add(n_bits, a, b, *, carry=0, carry_out=0):
+    """Run the adder on one input and read the result out of the state vector."""
+    wires = adder_wires(n_bits)
+    width = wires.n_wires
+    label = 0
+    for value in (a, b):
+        for index in range(n_bits):
+            label = (label << 1) | ((value >> (n_bits - 1 - index)) & 1)
+    label = (((label << 1) | carry) << 1) | carry_out
+    vector = torch.zeros(2**width, dtype=torch.complex128)
+    vector[label] = 1.0
+    register = Circuit(width, inputs=vector.reshape(1, -1), dtype=torch.complex128)
+    for instruction in adder_circuit(n_bits).to_ir().instructions:
+        register.gate(instruction.name, instruction.wires)
+    state = register.state().reshape(-1).abs()
+    reached = int(state.argmax())
+    bits = [(reached >> (width - 1 - index)) & 1 for index in range(width)]
+
+    def read(offset):
+        value = 0
+        for index in range(n_bits):
+            value = (value << 1) | bits[offset + index]
+        return value
+
+    return (
+        read(0),
+        read(n_bits),
+        bits[2 * n_bits],
+        bits[2 * n_bits + 1],
+        float(state[reached]),
+    )
+
+
+for a, b in ((1, 1), (7, 1), (7, 7), (3, 5)):
+    print(a, b, add(3, a, b))
+# 1 1 (1, 2, 0, 0, 1.0)  -- a comes back unchanged, b holds the sum, both ancillas are clean
+# 7 1 (7, 0, 0, 1, 1.0)  -- 8 does not fit in three bits, and the top wire holds the carry
+# 7 7 (7, 6, 0, 1, 1.0)  -- 14 keeps its top bit above the register, not inside it
+# 3 5 (3, 0, 0, 1, 1.0)  -- and the working carry wire is zero again, as promised
+print(add(3, 1, 1, carry=1))
+# (1, 3, 1, 0, 1.0)  -- off the contract: a dirty carry wire changes the answer
+print(add(3, 1, 1, carry_out=1))
+# (1, 2, 0, 1, 1.0)  -- but a dirty carry-out wire only flips the wire it entered on
+```
+
+**Two wires must enter holding `|0>`, and the two are not one rule.** The working
+carry wire is restored by the circuit, so a caller that meets the contract gets it
+back clean. The carry-out wire is where the top bit of the exact integer sum
+lands, so it is an output rather than scratch, and the adder writes it as an XOR
+of whatever it entered holding. The difference between the two wires is measured
+over every input rather than described: a dirty carry-out wire cannot change the
+sum at all, because the adder only ever writes that wire at the end and as an XOR,
+while a dirty carry wire is read by every majority gate in the forward sweep and
+therefore produces a different ripple. Only ancilla-clean inputs are promised a
+sum. **The map is still a permutation of the whole space**, so an off-contract
+input is reversible rather than added — nothing is silently lost, and a
+permutation is not an addition. That is a restriction the unit states rather than
+one it hides, and it is pinned by a phrase in the runnable example's premise
+paragraph.
+
+**The T-count is not written here, and that is the unit's first property rather
+than an implementation note.** One Toffoli is seven T through the compiler's own
+identity in `flagquantum/compiler/basis_translation.py`, which expands `ccx` into
+fifteen gates — two `h`, four `t`, three `tdg`, six `cx`. A seven-T expansion
+written beside the adder would be a second source of truth for the one number the
+two must agree on, so the circuit is handed to
+`flagquantum.compiler.basis_conversion.convert_basis` and priced by
+`flagquantum.compiler.resource_estimation.estimate_resources` and
+`flagquantum.algorithms.logical_resources.estimate_logical_resources` instead.
+
+```python
+from flagquantum.algorithms import adder_circuit, estimate_logical_resources
+from flagquantum.circuit import Circuit
+from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
+from flagquantum.compiler.resource_estimation import estimate_resources
+
+basis = ("cx", "h", "s", "sdg", "t", "tdg")
+one = estimate_resources(convert_basis(Circuit(3).ccx(0, 1, 2), gates=basis).program)
+print(one.n_operations, dict(one.operation_counts), one.t_count)
+# 15 {'h': 2, 'cx': 6, 'tdg': 3, 't': 4} 7  -- one Toffoli is seven T through the compiler
+lowered = {n: convert_basis(adder_circuit(n), gates=basis) for n in (1, 2, 3, 4)}
+tally = {n: estimate_resources(lowered[n].program) for n in (1, 2, 3, 4)}
+print([tally[n].t_count for n in (1, 2, 3, 4)])
+# [14, 28, 42, 56]  -- 14 n T, because the adder holds 2 n Toffolis and nothing else
+print([tally[n].n_operations for n in (1, 2, 3, 4)])
+# [37, 73, 109, 145]  -- one operation becomes fifteen, so the count grows by 28 per bit
+print([tally[n].depth for n in (1, 2, 3, 4)])
+# [28, 55, 82, 109]  -- 27 n + 1 layers, the schedule of the identity rather than of the adder
+report = estimate_logical_resources(lowered[4].program, distance=5)
+print(
+    report.t_count,
+    report.physical_qubits,
+    report.surface_code_cycles,
+    report.spacetime_volume,
+)
+# 56 490 545 267050  -- and the patch count is a floor, not a compiled estimate
+try:
+    convert_basis(adder_circuit(10), gates=basis)
+except BasisConversionError as exc:
+    print(type(exc).__name__, exc)
+# BasisConversionError named-basis decomposition exceeds max_added_operations
+print(
+    estimate_resources(
+        convert_basis(
+            adder_circuit(10), gates=basis, max_added_operations=1024
+        ).program
+    ).t_count
+)
+# 140  -- the same circuit lowers once the caller says how much expansion is acceptable
+```
+
+**What is absent beside it, named rather than left to be discovered.** Both addends
+are quantum registers, so there is no classical addend and no `add_constant`; there
+is no modular adder, no controlled adder, no comparison, no multiplier, and no
+modular exponentiation. There is no carry-in parameter, so a caller chaining two
+additions through the carry wire is doing something the constructor does not
+describe. And the conversion's own default bound — `max_added_operations=256` — is
+reached at ten bits, which is a bound on one conversion rather than a limit of the
+construction, and the block above shows it yielding to the caller's own number. The
+runnable example under `examples/algorithms/arithmetic.py` runs the same
+construction and prints the same refusals, and
+[`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py)
+executes it.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
@@ -2006,6 +2222,20 @@ printed here and the benefit never is.
   covers the code model and not the resource estimate**: the operation counts, the T
   family, and the schedule depth are this repository's own compiler record, and the
   estimator cites it there rather than here.
+
+- The single-ancilla ripple-carry adder is recorded to Cuccaro, Draper, Kutin &
+  Moulton, "A new quantum ripple-carry addition circuit", arXiv:quant-ph/0410184
+  (2004) — the majority/unmajority pair, the single ancillary qubit, and the
+  linear depth that `flagquantum/algorithms/arithmetic.py` builds, whose abstract
+  states the two properties this unit's construction is named for: one ancillary
+  qubit rather than linearly many, and lower depth and fewer gates than the
+  ripple-carry adders before it. **The citation covers the construction and not
+  the cost**: the Toffoli identity the T-count comes from is this repository's own
+  compiler expansion in `flagquantum/compiler/basis_translation.py`, cited there
+  rather than here. The Gidney-Ekera construction the parity matrix names on the
+  same row is **not implemented and is not cited here**: it is an owned gap, and a
+  bibliographic entry for a construction this repository does not build would
+  read as a second implementation.
 
 ## Scope
 

@@ -1487,6 +1487,25 @@ focused_tests = "tests/unit/test_trotter.py"
 integration_tests = "tests/test_algorithm_examples.py"
 development_artifact = "flagquantum/algorithms/README.md"
 
+[capabilities.algorithms_arithmetic]
+title = "Reversible integer addition"
+summary = "Build the in-place ripple-carry adder that writes the sum of two n-bit registers into the second of them on one working carry wire, and read its register map so a caller knows which wire carries what."
+category = "simulation_and_training"
+user_goals = ["Add two n-bit quantum registers in place, restoring the first addend", "Read the carry out of the most significant position from a named wire", "Know which wire of the returned circuit carries which register", "Cost the adder's Toffoli count through the compiler's own lowering"]
+public_apis = ["flagquantum.algorithms.arithmetic", "flagquantum.algorithms.arithmetic.adder_circuit", "flagquantum.algorithms.arithmetic.adder_wires", "flagquantum.algorithms.arithmetic.AdderWires"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/algorithms/arithmetic.py"
+documentation = "docs/guides/ALGORITHMS.md"
+level = "development_evidence"
+owner = "Algorithms maintainers"
+limitations = "A circuit constructor, and no arithmetic beyond it. Both addends are quantum registers, so there is no classical addend and no add_constant entry point, no modular adder, no controlled adder, no comparison, no multiplier, and no modular exponentiation, and the adder is not a reversible-arithmetic library. This is Cuccaro's ripple, not the Gidney-Ekera construction: it is 2 n Toffolis and 6 n + 1 cx for 8 n + 1 operations on 2 n + 2 wires, and Gidney-Ekera is smaller because it uncomputes its ancillas by measuring them and feeding the outcomes forward, which needs a mid-circuit measurement and a classical feedforward path this repository does not have in a circuit it can cost statically. Two wires must enter holding |0>: the working carry wire, which the circuit restores, and the carry-out wire, which it leaves holding the carry out of the most significant position; only inputs meeting that contract are promised a sum, and the circuit is a permutation of the whole space rather than only of those inputs, so an off-contract input is reversible and is not the sum. The carry-in is not a parameter: the ripple reads no incoming carry, so a caller wanting one has to add it before or after rather than inside. This module builds the construction and does not cost it. The T-count is the compiler's: ccx lowers to the fifteen-gate h, t, tdg, cx identity in flagquantum.compiler.basis_translation, so the adder is priced by convert_basis plus flagquantum.compiler.resource_estimation.estimate_resources, and flagquantum.algorithms.logical_resources passes that tally through. No seven-T expansion is written here, because a second Toffoli cost would be a second source of truth for the one number the two must agree on. No distillation factory, magic-state budget, routing overhead, or layout is included, so any surface-code figure a caller derives from this circuit is a floor rather than a compiled estimate. The circuit is not executed, selects no runtime, and carries no simulator; it adds no target, runtime option, result field, or execution mode, and no Stable Core export follows from this entry."
+development_artifact = "flagquantum/algorithms/README.md"
+focused_tests = "tests/unit/test_algorithms_arithmetic.py"
+integration_tests = "tests/test_algorithm_examples.py"
+
 [capabilities.algorithms_block_encoding]
 title = "Block encoding of a Hermitian matrix, and its qubitization walk step"
 summary = "Encode a Hermitian matrix into the flagged block of a unitary at a subnormalisation the caller chooses, and append one qubitization walk step whose eigenphases are the arccosines of the encoded eigenvalues."

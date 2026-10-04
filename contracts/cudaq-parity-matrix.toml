@@ -860,7 +860,7 @@ evidence = ["docs/guides/STIM_USER_MIGRATION.md", "examples/qec/stim_user_migrat
 id = "logical_and_ftqc_layer"
 title = "Logical and fault-tolerant layer"
 cudaq_surface = ["preview/logical", "logical resource estimation", "Gidney-Ekera adder", "carbon code", "Fermi-Hubbard", "distillation factories", "gadget verification", "physical placement, schedule, and routing", "Stim output", "device and constraint modeling"]
-evidence = ["search:one Clifford+T tally times surface-code distance estimator at flagquantum/algorithms/logical_resources.py, and no Clifford+T or angle synthesis, no arithmetic construction, no physical placement, no device model, and no distillation factory around it"]
+evidence = ["search:one Clifford+T tally times surface-code distance estimator at flagquantum/algorithms/logical_resources.py and one Cuccaro adder at flagquantum/algorithms/arithmetic.py, and an unlowered parametric rotation still carries no T-count, and no physical placement, no device model, and no distillation factory sits around either"]
 
 [[domains.capabilities]]
 id = "logical_resource_estimation"
@@ -875,10 +875,12 @@ evidence = ["flagquantum/algorithms/logical_resources.py", "tests/unit/test_logi
 [[domains.capabilities]]
 id = "arithmetic_bloqs"
 cudaq = "Gidney-Ekera adder and related arithmetic constructions"
-status = "unsupported"
-priority = "later"
+status = "partial"
+priority = "next"
 dependency_class = "B_open_neutral"
-reason = "Absent. The Gidney-Ekera construction is a Clifford+T circuit, so once it is written it can be costed by the logical_resource_estimation unit that now exists, but writing the adder is an implementation of its own and no arithmetic construction exists here. The Qualtran adaptation that was the planned route to both rows is not the route that was taken: the logical estimator reuses the in-repository compiler estimate instead, and it carries no Qualtran dependency for an adder to reuse."
+maturity_ref = "algorithms_arithmetic"
+reason = "A reversible in-place ripple-carry adder, and it is Cuccaro's construction rather than the Gidney-Ekera one this row is named for. flagquantum.algorithms.arithmetic builds it for a width the caller names: 2 n Toffolis and 6 n + 1 cx, 8 n + 1 operations on 2 n + 2 wires, linear in the width and independent of the addends, with one working carry wire that the circuit restores and a carry-out wire left holding the carry out of the most significant position. Those two wires must enter holding zero, and only inputs meeting that contract are promised a sum: the map is a permutation of the whole space, so an off-contract input is reversible and is not the sum, and the row is partial rather than supported partly because that restriction is real rather than incidental. The row is also partial because the construction is narrower than the surface it is measured against. Both addends are quantum registers, so there is no classical addend, no add_constant, no modular adder, no controlled adder, no comparison, no multiplier, and no modular exponentiation, and there is no carry-in parameter. No seven-T expansion is written beside the circuit: the T-count is the compiler's own Toffoli rule, ccx lowering to the fifteen-gate h, t, tdg, cx identity in flagquantum.compiler.basis_translation and reaching the report through convert_basis plus flagquantum.compiler.resource_estimation.estimate_resources and flagquantum.algorithms.logical_resources, so the two numbers cannot disagree but the arithmetic is not cheaper than the compiler makes it. What is absent is owned rather than implied: the Gidney-Ekera construction is smaller precisely because it uncomputes its ancillas by measuring them and feeding the outcomes forward, which needs a mid-circuit measurement and a classical feedforward path this repository has no costable circuit for, so writing it is the move that would complete this row rather than a variant of what landed. The Qualtran adaptation that was once the planned route is not the route that was taken, and no Qualtran dependency was added for an adder to reuse."
+evidence = ["flagquantum/algorithms/arithmetic.py", "flagquantum/algorithms/README.md", "tests/unit/test_algorithms_arithmetic.py", "examples/algorithms/arithmetic.py"]
 
 [[domains.capabilities]]
 id = "physical_placement_and_scheduling"

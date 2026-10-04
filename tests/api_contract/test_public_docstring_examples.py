@@ -7,6 +7,10 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.algorithms.arithmetic import (
+    adder_circuit,
+    adder_wires,
+)
 from flagquantum.algorithms.chemistry import (
     coupler_hardware_efficient_ansatz,
     double_excitation,
@@ -79,8 +83,13 @@ pytestmark = pytest.mark.unit
 # size helper, whose example is that figure at three distances without a program.
 # The data-encoding module contributes two: the amplitude encoder, whose example is
 # the prepared two-amplitude state, and the angle encoder, whose example is the
-# product state of two zero rotations.
+# product state of two zero rotations. The arithmetic module contributes two: the
+# adder's constructor, whose example is that circuit's wire count and its gate
+# census at three bits, and the register map, whose example is the four wire
+# groups that census is read through.
 ENTRIES = (
+    adder_circuit,
+    adder_wires,
     amplitude_encode,
     angular_encode,
     BosonOperator,

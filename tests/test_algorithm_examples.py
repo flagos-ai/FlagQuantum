@@ -50,6 +50,7 @@ SCRIPTS = (
     "trotter",
     "block_encoding",
     "logical_resources",
+    "arithmetic",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -154,6 +155,19 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "logical_resources": (
         "counts rather than measures",
         "belongs to the device",
+    ),
+    # Two halves. "belongs to the compiler's own Toffoli rule rather than to this
+    # construction ... no seven-T expansion is written here, because a second
+    # Toffoli cost would be a second source of truth for the one number the two
+    # must agree on" is who owns the cost the module declines to compute, and
+    # "Only the inputs the ancilla contract names are promised a sum" is the
+    # domain restriction that keeps an off-contract input from being read as an
+    # addition. Pinning only the first would leave the restriction deletable, and a
+    # reversible map read as an adder on every input is exactly the misreading the
+    # second half prevents.
+    "arithmetic": (
+        "compiler's own Toffoli rule",
+        "Only the inputs the ancilla contract names",
     ),
 }
 
@@ -732,6 +746,100 @@ def test_logical_resources_example_costs_one_program_and_refuses_the_rest() -> N
     assert _labelled(output, "charged for the register") == "147"
     assert _labelled(output, "charged for eight") == "392"
     _assert_premise("logical_resources", output)
+    assert "take away" in output
+
+
+def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
+    output = _run("arithmetic")
+
+    assert "Reversible addition -- flagquantum.algorithms.arithmetic" in output
+    # The construction's own shape, at the default width and across the sweep: the
+    # per-width row is printed against the closed form the module documents, so a
+    # construction that changed would print two different rows rather than one
+    # agreeing pair.
+    assert _labelled(output, "wires") == "8"
+    assert _labelled(output, "operations") == "25"
+    assert _labelled(output, "ccx") == "6"
+    assert _labelled(output, "cx") == "19"
+    assert _labelled(output, "opcodes present") == "['ccx', 'cx']"
+    assert _labelled(output, "register a") == "wires (0, 1, 2) (most significant first)"
+    assert _labelled(output, "working carry wire") == "6"
+    assert _labelled(output, "carry-out wire") == "7"
+    # The sweep's labels repeat, so the last one printed wins: the per-width table
+    # and the lowered table below it both use `n_bits`.
+    assert (
+        _labelled(output, "operations, measured")
+        == "9     17     25     33     41     65     73"
+    )
+    assert (
+        _labelled(output, "working ancillas")
+        == "1      1      1      1      1      1      1"
+    )
+    # The sum, read out of the runtime's state vector rather than asserted: the
+    # first addend is unchanged, the second holds the sum modulo 2**n, both
+    # ancillas are clean, and the weight is one because the map is a permutation.
+    assert _labelled(output, "1 + 1") == "a=1 b=2 carry=0 carry_out=0 weight=1.000000"
+    assert _labelled(output, "7 + 1") == "a=7 b=0 carry=0 carry_out=1 weight=1.000000"
+    assert _labelled(output, "7 + 7") == "a=7 b=6 carry=0 carry_out=1 weight=1.000000"
+    # Off the ancilla contract the two wires do not behave alike, and both facts
+    # are measured over every input rather than described: a dirty carry-out wire
+    # cannot change the sum, and a dirty carry wire is neither the sum nor the
+    # sum-with-carry-in.
+    assert _labelled(output, "a=1 b=1, carry wire dirty") == "reached (1, 3, 1, 0)"
+    assert (
+        _labelled(output, "a dirty carry-out wire, over every input")
+        == "0 of 64 do not sum, and the top wire is XORed"
+    )
+    assert (
+        _labelled(output, "a dirty carry wire, over every input")
+        == "64 of 64 are neither the sum nor the sum-with-carry-in"
+    )
+    # The Toffoli rule read from the compiler, and the linear cost that follows: an
+    # expansion written into the arithmetic module would print a different
+    # `operation counts` here.
+    assert _labelled(output, "one ccx, operations") == "15"
+    assert (
+        _labelled(output, "one ccx, operation counts")
+        == "{'h': 2, 'cx': 6, 'tdg': 3, 't': 4}"
+    )
+    assert _labelled(output, "one ccx, t_count") == "7"
+    assert (
+        _labelled(output, "t_count") == "14     28     42     56     70    112    126"
+    )
+    assert _labelled(output, "14 n") == _labelled(output, "t_count")
+    assert (
+        _labelled(output, "operations, lowered")
+        == "37     73    109    145    181    289    325"
+    )
+    # The logical figure is a floor, and the surface-code model's own product is
+    # what the rows have to agree with.
+    assert _labelled(output, "distance") == "5"
+    assert _labelled(output, "n_bits=2") == (
+        "t_count=28 physical_qubits=294 cycles=275"
+    )
+    assert _labelled(output, "n_bits=4") == (
+        "t_count=56 physical_qubits=490 cycles=545"
+    )
+    # The conversion bound refuses by name and then yields to the caller's own
+    # bound, so the refusal is a bound rather than a limit of the construction.
+    assert (
+        _labelled(output, "n_bits=10 at the default")
+        == "refused -- BasisConversionError: named-basis decomposition exceeds "
+        "max_added_operations"
+    )
+    assert _labelled(output, "n_bits=10, bound raised to 1024") == "t_count=140"
+    # Both entry points refuse the same widths, and for the same two reasons.
+    for label in ("zero bits", "a negative width"):
+        for entry in ("adder_circuit", "adder_wires"):
+            assert "ValueError" in _labelled(output, f"{label}, {entry}"), label
+    for label in (
+        "a float width",
+        "a width given as text",
+        "a width given as a truth value",
+    ):
+        for entry in ("adder_circuit", "adder_wires"):
+            assert "TypeError" in _labelled(output, f"{label}, {entry}"), label
+    _assert_premise("arithmetic", output)
     assert "take away" in output
 
 
