@@ -65,7 +65,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | partial | later | `qec_logical_operations` | Product rotation landed as a code-declaration operation: a candidate logical product is certified against the code's own checks and one observable's partner is derived over GF(2); lattice surgery and distillation are still absent. |
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
-| `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
+| `qec_stim_user_migration` | partial | next | `qec_stim_user_migration` | The guide landed and is executed by its own test; its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate, and the two halves it documents — the `^` reading and the registry's missing belief-propagation entry — are what keep it short of aligned. |
 
 Everything a `supported` row would need is deliberately *not* claimed here. One
 row is `aligned` and the rest are not, and the single `aligned` row is the one
@@ -424,11 +424,19 @@ than by preference. On a distance-five, two-round rotated surface code at 200000
 shots, the default reading's worst missed observable marginal is 0.0016 against a
 tolerance of 0.004, while expanding the components misses by 0.048 — twelve times
 the tolerance, and sixty times the standard error at that shot count. The flag is
-therefore offered as a documented approximation of the line, not as an alternative
-statement of it, and
+therefore offered as a documented departure from the line rather than as an
+alternative statement of it, and
 `test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not`
 asserts the separation, so a tolerance that both readings passed would not be
-evidence about either.
+evidence about either. The same separation is measured a second time, at a smaller
+code and expressed in the reference's own standard error, by the migration guide a
+Stim user meets first: on a distance-three, three-round rotated surface code at
+200000 shots the default reading sits **2.1 standard errors** from Stim's sampler
+and the expanded reading **56**. Both numbers are compared against the transcript
+quoted in
+[`docs/guides/STIM_USER_MIGRATION.md`](../guides/STIM_USER_MIGRATION.md) on every
+run of `tests/qec/test_stim_user_migration.py`, and the runnable form of the same
+comparison is [`examples/qec/stim_user_migration.py`](../../examples/qec/stim_user_migration.py).
 
 What remains of upstream's two stated losses is the error-id one, and that is a
 property of the record on both sides rather than of this reader. The rest of the
@@ -632,7 +640,25 @@ refuses.
    DEM entry point) as the counterpart, and the row carries a `search:` evidence
    item recording that no such page and no Stim-text writer exist in cudaq-qec.
    The Stim surface item is attributed too, because both components appear in
-   it and only the cudaq-qec half decodes.
+   it and only the cudaq-qec half decodes. **Also landed, later and in the other
+   direction:** the row's own `negative_search` named
+   `docs/guides/STIM_USER_MIGRATION.md`, so the row was red while the guide was
+   absent and turned red in the same direction when it was written — the path
+   moved from `negative_search` to the row's evidence, and the row's status moved
+   with it because a `partial` checkbox row is refused outright when it names no
+   `symbols_present` entry. The guide is
+   [`docs/guides/STIM_USER_MIGRATION.md`](../guides/STIM_USER_MIGRATION.md), and
+   what makes it a row rather than a page is that
+   `tests/qec/test_stim_user_migration.py` executes every fence of it in one
+   namespace and compares each `print` against the transcript quoted under it, so
+   a drifting number fails the suite instead of the reader. The row stays
+   `partial` for the reason the guide states in the place a reader meets it: the
+   Stim integration the route lands on is itself `partial`, so this row cannot
+   be `aligned` while the thing it documents is not. What that costs is measured
+   rather than asserted — the default reading of a decomposed mechanism gives an
+   observable marginal 2.1 standard errors from stim's own sampler at 200000
+   shots and both registered decoders refuse the model because it is not
+   graphlike, while the graphlike reading is accepted and misses by 56.
 
 4. **`qec_stim_integration` named one maturity entry for two capabilities.** The
    row pointed at `stabilizer_sampling`, which is the sampling half, while the

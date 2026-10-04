@@ -382,6 +382,39 @@ lowered program, this module derives them from the circuit's own declaration, an
 a decoder fed a sampled syndrome has to be matching detectors against the
 measurements that actually compose them.
 
+## Come from Stim
+
+A Stim user already has the circuit layer. What this package offers is the half
+that sits after it, and the interface between the two is the detector error model
+text: nothing under `flagquantum/` imports `stim`, so the `stim` extra is needed
+only by the code that generates circuits.
+
+```python
+import stim
+from flagquantum.qec import DetectorErrorModel, get_decoder
+
+circuit = stim.Circuit.generated(
+    "repetition_code:memory",
+    distance=3,
+    rounds=3,
+    before_round_data_depolarization=0.05,
+)
+text = str(circuit.detector_error_model().flattened())
+model = DetectorErrorModel.from_stim_text(text)
+decoder = get_decoder("minimum_weight_matching", model.merge_duplicate_mechanisms())
+print(model.num_detectors, len(model.errors), decoder is not None)
+```
+
+`str(circuit.detector_error_model())` on a multi-round circuit carries a `repeat`
+block that `from_stim_text` refuses by name instead of expanding, so
+`.flattened()` is the whole repair. The other refusals, the two readings of the
+`^` separator and the observable marginal each one implies, and what this route
+does not cover are in
+[Migrating a Stim workflow](../../docs/guides/STIM_USER_MIGRATION.md); that guide
+is executed fence by fence by `tests/qec/test_stim_user_migration.py`, and
+[`examples/qec/stim_user_migration.py`](../../examples/qec/stim_user_migration.py)
+is the runnable form of the same route.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,

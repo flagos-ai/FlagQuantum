@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 57 |
-| `unsupported` | 28 |
+| `partial` | 58 |
+| `unsupported` | 27 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -266,6 +266,44 @@ fallback word, so a target that publishes `t` but not `tdg` still reaches
 same class of silent hole the row was written to record. Trainable angles are
 refused by the same check that refuses non-quarter turns, so a rotation never
 leaves the autograd graph by being answered with a constant word.
+
+`qec_stim_user_migration` is the first row in this document closed by a document
+rather than by code, and writing it is what showed that the row's capability is
+not the page it is named after. The route a Stim user takes into this package runs
+from `stim.Circuit.generated` through the detector error model text to
+[the guide](../guides/STIM_USER_MIGRATION.md), and every step of it already
+existed; what was missing was the statement, in one place, of which steps this
+package owns and which stay Stim's. The guide names the boundary rather than
+crossing it -- nothing under `flagquantum/` imports `stim`, so the extra is needed
+only by the half that generates circuits -- and then says what a migrating script
+actually meets. A multi-round circuit's model text carries a `repeat` block that
+[the reader](../../flagquantum/qec/dem.py) refuses by name instead of expanding,
+`stim.DetectorErrorModel.flattened()` is the whole repair, and the three other
+refusals are tabled with theirs. The row stays `partial` for the reason the
+document exists, and the guide states it in the place a reader will hit it: the
+Stim integration this route lands on is itself `partial`, so
+`qec_stim_user_migration` cannot be `supported` while the thing it documents is
+not. The `^` separator is the first half. The default reading states the line as
+written and is not graphlike, so both registered decoders refuse it -- 113 of the
+219 mechanisms of a distance-3, two-round rotated surface code flip more than two
+detectors -- while the reading a matcher accepts,
+`use_decomp_suggestions=True` followed by `merge_duplicate_mechanisms()`, is
+measurably a different distribution: against stim's own sampler at 200000 shots
+the default reading's observable marginal sits 2.1 standard errors away and the
+graphlike reading's sits 56. Both numbers are in the guide, with the default
+reading named as the model for a threshold or a marginal and the graphlike one as
+the model for a matcher, because a decoded logical error rate at this distance
+does not separate the two routes while the per-shot agreement does -- the in-tree
+matcher and the PyMatching cross-check agree on every shot and belief propagation
+with ordered statistics differs on 1.7 percent of them. The second half is the
+registry: belief propagation with ordered statistics decodes a hyperedge model and
+is reachable from the package, but `register_decoder` requires a
+`from_detector_error_model` classmethod that class does not carry, so
+`decoder_names()` holds the matcher and the cross-check alone. Naming only the
+graphlike reading as the migration route would have been a silent numerical
+downgrade of the model the caller handed over, so the guide states the tradeoff
+instead, and the test that keeps it true executes every fence in one namespace and
+compares each print against the transcript quoted under it.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -502,7 +540,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 28 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 27 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

@@ -45,6 +45,9 @@ These examples do not use that alias:
   a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
+- [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
+  subpackage surface, where the detector error model reader and the decoder
+  registry live, and `stim`, because the circuit layer stays Stim's.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -150,6 +153,7 @@ boundaries are listed in the capability catalog.
 | Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
 | Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |
 | Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
+| Decode a Stim detector error model here | [`qec/stim_user_migration.py`](qec/stim_user_migration.py) | Experimental QEC surface |
 
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.
@@ -169,6 +173,24 @@ executes the compiled program locally. It contacts no provider and needs no
 credentials. The local device, the precision, and the result are the machine's;
 the qubit capacity, native gate set, and program limits are the profile's
 declaration, and the record keeps those two sources apart.
+
+## Decode a Stim circuit's error model without Stim's decoder
+
+Replace the decoding half of a Stim QEC workflow while keeping Stim for the
+circuit layer (requires the `stim` extra, and the `pymatching` extra for the
+cross-check section):
+
+```bash
+python -m examples.qec.stim_user_migration
+```
+
+The example reads the detector error model Stim wrote, samples it, decodes it
+with this package's matcher, and prints the two readings of Stim's decomposed
+`^` separator side by side with the observable marginal each one implies. It
+runs locally in one process, contacts nothing, and establishes no threshold. The
+route it follows, the four reader refusals, and the tradeoff between the two
+readings are documented in
+[Migrating a Stim workflow](../docs/guides/STIM_USER_MIGRATION.md).
 
 ## Run on remote resources
 

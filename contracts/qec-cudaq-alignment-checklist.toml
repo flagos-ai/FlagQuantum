@@ -503,23 +503,27 @@ fail_closed = "Named absence plus an absent module path."
 
 [[rows]]
 id = "qec_stim_user_migration"
-status = "absent"
+status = "partial"
 floor = "next"
 domain_row = "qec_stim_user_migration"
 domain_items = ["for-stim-users migration"]
 dependency_class = "none"
 maturity_ref = "detector_error_model"
 baseline = "The quantum_error_correction domain records a for-stim-users migration surface item, and it now records what that item is not: cudaq-qec ships no for-stim-users page, and the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, with a companion Stim emission page. Both of those state that the layer does no detector annotations, no detector error models and no sampling, and that the trimmed product has no shot-level target to emit toward. The cudaq-qec documentation index and its Python API page were read and carry no for-stim-users page, so the counterpart is cudaq-qec's own Stim surface rather than a page to translate: dem_from_stim_text for reading stim text, dem_sampling for sampling a model, and the decoder framework's Stim DEM entry point. UNVERIFIED whether a cudaq-qec migration page exists that was not reachable."
-target = "A documented statement of what a stim user finds here, what they do not, and which of their habits transfer."
-symbols_absent = ["stim_migration_guide"]
+target = "A documented statement of what a stim user finds here, what they do not, and which of their habits transfer -- and a route behind the statement that does not stop at the join, so the document can be written without also writing where it stops."
+symbols_present = [
+    "flagquantum.qec.DetectorErrorModel.from_stim_text",
+    "flagquantum.qec.DetectorErrorModel.dem_sampling",
+    "flagquantum.qec.get_decoder",
+    "flagquantum.qec.PyMatchingDecoder",
+]
 negative_search = [
-    "docs/guides/STIM_USER_MIGRATION.md",
     "docs/roadmap/QEC_PARITY.md",
 ]
-evidence = ["flagquantum/qec/README.md", "flagquantum/qec/IMPLEMENTATION.md"]
+evidence = ["contracts/cudaq-parity-matrix.toml", "docs/guides/STIM_USER_MIGRATION.md", "examples/qec/stim_user_migration.py", "tests/qec/test_stim_user_migration.py", "flagquantum/qec/README.md", "flagquantum/qec/IMPLEMENTATION.md", "flagquantum/qec/dem.py", "flagquantum/qec/registry.py"]
 provenance_unverified = true
-next_action = "Documentation and conformance work that only becomes meaningful once the DEM surface stops moving. The matrix half of this finding has landed: the surface item's owner is now recorded in the parity contract's `baseline.surface_ownership`, which attributes it to the preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec Surface to migrate to. What remains is the document itself. The material for it already exists: IMPLEMENTATION.md records the stim sweeps, the refusals and the lossy-digit caveat, so a migration document would be that rewritten in a stim user's terms plus an explicit list of stim habits that do not transfer (repeat blocks, comments, skipped indices, ^ separators, error-id correlation)."
-fail_closed = "An absent guide path and an absent roadmap path, so the row turns red when the document is written; the row is marked UNVERIFIED because the negative was a documentation search, not a source read."
+next_action = "The document landed and two halves of the row it documents did not, so this row stops short of `aligned` for the reasons the guide itself states rather than for work left undone here. The first is the `^` separator: the default reading of a decomposed mechanism states the line as written and is not graphlike, so both registered decoders refuse it -- 113 of the 219 mechanisms of a distance-3, two-round rotated surface code flip more than two detectors -- while the reading a matcher accepts, `use_decomp_suggestions=True` followed by `merge_duplicate_mechanisms()`, is measurably a different distribution (2.1 standard errors from stim's own sampler at 200000 shots for the default reading, 56 for the graphlike one). The guide reports both and names which reading is for a threshold or a marginal and which is for a matcher; what remains is upstream, in the Stim integration row, which is `partial` and which this document cannot raise. The second is the registry: `register_decoder` requires a `from_detector_error_model` classmethod that `BeliefPropagationOsdDecoder` does not carry, so a hyperedge model has no name to ask `decoder_names()` for even though the class decodes one from the package. Both belong to `qec_decoder_family` and the Stim integration row rather than here."
+fail_closed = "The row turns red in both directions. It was red while the guide was absent because the negative search named its path, and it stays red now if any of the four symbols_present entries stops resolving or if the parity matrix row changes status without this row following, since a checklist row claiming alignment against a matrix row that says unsupported is refused by construction. A `partial` row is also refused outright when it names no symbols_present entry, so the row cannot be closed by prose. The parity contract's `baseline.surface_ownership` keeps the surface item attributed to the preview layer, so the row still records that the counterpart is cudaq-qec's own Stim surface rather than a page to translate."
 
 # ---------------------------------------------------------------------------
 # Field rows: the same discipline one level down, over the detector error model

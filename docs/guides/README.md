@@ -12,6 +12,10 @@ studies.
 - [Simulator workload corpus](SIMULATOR_WORKLOAD_CORPUS.md)
 - [Quantum algorithms (demonstration scale)](ALGORITHMS.md)
 
+## Quantum error correction
+
+- [Migrating a Stim workflow](STIM_USER_MIGRATION.md)
+
 ## Performance engineering
 
 - [Continuous performance and memory engineering](PERFORMANCE_ENGINEERING.md)
