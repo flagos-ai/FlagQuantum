@@ -25,6 +25,12 @@ measured complex128 dense-fusion width policy.
 records the exact-statevector Random Clifford comparison, product-state
 Clifford-layer rollback A/B, public example, and reproduction command.
 
+[`NATIVE_CPU_PRODUCT_MIXED_CLIFFORD_LINUX_X86_20261004.md`](NATIVE_CPU_PRODUCT_MIXED_CLIFFORD_LINUX_X86_20261004.md)
+records the 22-qubit Linux x86 follow-up that routes wide product-state mixed
+`CX`/`CZ` matchings through the native CPU kernel. It includes exact rollback,
+Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
+public usage, boundaries, stop conditions, and reproduction commands.
+
 [`SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md`](SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md)
 records the exact Truncated QFT comparison and the deferred product-state SWAP
 materialization rollback A/B.
