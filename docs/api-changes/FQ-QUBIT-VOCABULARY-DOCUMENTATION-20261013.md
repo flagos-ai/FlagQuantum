@@ -523,6 +523,18 @@ so the parameter ledger cannot see them and neither can any of the others:
  66 argparse declarations spelling a wire-named flag, 11 distinct flag names in 59 files
 ```
 
+**The two lines above are scoped differently, and the difference is not visible unless it
+is written down.** The parameter count covers `benchmarks/`, `tools/` and `examples/`; the
+flag count covers `benchmarks/`, `tools/` and `flagquantum/` — the loop in the snippet
+below is what decides it. Re-measured later over the whole repository, the flag reading is
+`69 declarations / 12 flags / 62 files`, and the arithmetic closes exactly:
+`66 − 9 (flagquantum) + 1 (examples/single_machine_quantum_ai/03_mps_training.py, which
+declares --small-exact-max-wires) + 2 (tests/distributed/) = 69`. A reader who re-measures
+the flag line over the *parameter* line's scope gets `58 / 11 / 52` and may conclude, as a
+later slice briefly did, that `66` never reproduced. It does — from this snippet, verbatim.
+**Write the scope into the number, or the next reader will measure a different number and
+call this one an error.**
+
 The flag family is the sharper half, because a flag is an interface a caller types.
 The counts come from the `add_argument` calls rather than from a text search, because
 a flag's name is also written where a subprocess is built:

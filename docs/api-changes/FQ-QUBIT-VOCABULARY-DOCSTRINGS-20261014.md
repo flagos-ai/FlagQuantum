@@ -257,11 +257,61 @@ and the record booked it as a successful migration. It is not a successful migra
 AttributeError: 'Instruction' object has no attribute 'qubits'
 ```
 
-and `tests/api_contract/test_public_docstring_examples.py` fails. That test is marked
-`api_contract`, and the PR lane's marker expression is
-`(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and
-not triton`, which does not select it — so the broken example passed CI green. It was
-found by running that file by hand, not by any gate in the repository.
+and `tests/api_contract/test_public_docstring_examples.py` fails.
+
+**That test is wired into the pull-request lane, and this record said it was not.** The
+first three commits of this slice carried the claim that the file is marked
+`api_contract`, that the lane's marker expression does not select that marker, and that
+the broken example therefore "passed CI green". All three clauses are false, and the
+correction is worth more than the original claim:
+
+* the file carries `pytestmark = pytest.mark.unit` (`tests/api_contract/
+  test_public_docstring_examples.py:24`), not an `api_contract` marker — no test file in
+  this repository contains the string `api_contract`, and `pytest.ini` does not declare
+  it;
+* the pull-request lane's tier command is `python -m pytest -m "smoke or unit" -q`
+  (`tools/ci_tier.py:52`), run with `testpaths = tests` (`pytest.ini:2`), so it collects
+  this module. Verified rather than reasoned:
+  ```console
+  $ python -m pytest -m "smoke or unit" --collect-only -p no:cacheprovider \
+      | grep test_public_docstring_examples
+        <Module test_public_docstring_examples.py>
+          <Function test_primary_public_docstring_examples>
+          <Function test_every_module_with_examples_is_covered>
+  $ python -m pytest -m "smoke or unit" tests/api_contract/test_public_docstring_examples.py -q
+  2 passed in 2.70s
+  ```
+* the expression this record quoted,
+  `(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and
+  not triton`, is not the tier command at all.
+
+So the gate exists and is wired, and the real reason the defect would have reached the
+base branch is a different one:
+
+```yaml
+on:
+  pull_request:
+    branches: [main]
+```
+
+`ci.yml` fires for pull requests **targeted at `main`**. Every slice of this stack
+targets another feature branch — this one's base is
+`feat/qubit-vocabulary-algorithms` — so **no CI ran on it at all**:
+
+```console
+$ gh pr checks 493
+no checks reported on the 'feat/qubit-vocabulary-docstrings' branch
+$ gh pr checks 492      # a pull request whose base is main
+coverage  fail  34m16s  ...  cpu-core (3.10)  fail  22m17s  ...
+```
+
+The defect was found by running that file by hand, and the reason it had to be is
+narrower and more embarrassing than "no lane runs it": **the broad sweep this slice ran
+to call itself verified was `pytest tests/unit -m "smoke or unit"`, and a command that
+names a path is not a lane.** The tier command names no path; restricting it to
+`tests/unit` excluded `tests/api_contract/` entirely, which is precisely the directory
+this file lives in. A green sweep proves something about the selection it ran, and
+nothing about the selection CI runs.
 
 Two things are true at once here, and the second one is the design lesson:
 
@@ -306,10 +356,13 @@ and a `>>>` line is a second class it never considered. A rewriter that carries 
 listing the cases it must not touch will still touch every case the list forgot, and
 this one forgot the only class that a tool actually executes.
 
-The honest generalisation: **a vocabulary census cannot audit a doctest, and a doctest
-allow-list that no CI lane selects cannot audit itself.** The gate now knows the
-difference between the two; the repository still does not run the doctests in CI, and
-that remains open (the migration reference's open-work table says so).
+The honest generalisation, after the correction above: **a vocabulary census cannot audit
+a doctest, and a sweep that names a path cannot audit the lane CI runs.** The first half
+is why this slice needed a new surface. The second half is why a defect the lane would
+have caught still reached the record: the repository does run these doctests in the
+pull-request lane, and the lane does not run on a pull request whose base is a feature
+branch. Both remaining questions are recorded in the migration reference's open-work
+table rather than resolved here.
 
 ## Negative tests
 
@@ -439,11 +492,15 @@ right work.
   package. Their docstrings and comments are not scanned here.
 * A docstring in a *test* is not scanned either: the census walks `flagquantum/`, and
   a test's prose is not what `help()` prints.
-* The executable-example surface is now reconciled, but the test that would *catch* a
-  broken example — `tests/api_contract/test_public_docstring_examples.py` — is still
-  outside every CI lane. The gate can now see the token that broke; it cannot see the
-  `AttributeError`. Adding that lane is the follow-up this incident argues for and does
-  not perform.
+* The executable-example surface is now reconciled, and the test that would *catch* a
+  broken example — `tests/api_contract/test_public_docstring_examples.py` — **is** in the
+  pull-request lane (see "the correction" above; the earlier claim in this record that it
+  is not was wrong). It did not run here because `ci.yml` triggers `pull_request` only for
+  `branches: [main]`, and this pull request's base is a feature branch. So the repository's
+  coverage of this file is real but unreached from this stack, and the gap is the trigger
+  rather than the marker expression. Whether this stack should reach `main` as one pull
+  request, and whether the stack's slices should be checked before then, are the two open
+  questions; neither is answered here.
 * The command-line flag surface, the `benchmarks/` helper parameters, the capture
   keyword and the payload keys in the migration reference's table are untouched and
   remain the open work.

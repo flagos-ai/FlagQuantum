@@ -385,7 +385,7 @@ not read as "no user-visible `wire` is left":
 | `max_marginal_wires` | a measurement-metadata key: written by `observables` into a request and read by `runtime.measurements` out of it | kept; it crosses a request boundary, so it moves only with a request-schema version |
 | `per_sharded_wire_gate` | the value of `communication_frequency` in a candidate-plan scoring payload | kept; no reader anywhere in the package, so renaming it would change evidence without a consumer to migrate |
 | `n_wires` | the metric key in `ExecutionResult(metrics={"n_wires": …})` built by the backend adapters | kept; a metric key is part of a comparison payload |
-| `--n-wires`, `--wires`, `--wire-layout`, `--marginal-wires`, `--capacity-wires`, `--start-wires`, `--step-wires`, `--stop-wires`, `--worker-wire`, `--max-reference-wires`, `--fq-dense-observable-wires` | command-line flags, declared by 66 `argparse` calls over 11 distinct names in 59 files across `benchmarks/`, `tools/` and `flagquantum/` | open; a flag is a typed interface, so it migrates the way keyword arguments did — publish the qubit spelling, keep the old one as a hidden deprecated alias. 51 of the 66 declarations are `--n-wires` |
+| `--n-wires` (53), `--wires` (6), `--start-wires`, `--stop-wires`, `--step-wires`, `--worker-wire`, `--fq-dense-observable-wires`, `--max-reference-wires`, `--wire-layout`, `--small-exact-max-wires`, `--marginal-wires`, `--capacity-wires` | command-line flags — **69 `argparse` declarations of 12 distinct flags, in 62 files**, over the whole repository. **Nine of them are inside `flagquantum/` itself**, across seven modules under `flagquantum/benchmarking/` | open; a flag is a typed interface, so it migrates the way keyword arguments did — publish the qubit spelling, keep the old one as a hidden deprecated alias. The flag family was first measured by the documentation slice over `benchmarks/`, `tools/` and `flagquantum/` and recorded as **66 declarations of 11 flags in 59 files** — a figure that reproduces verbatim from that slice's own printed snippet. This row widens the scope to the whole repository, which adds `--small-exact-max-wires` (`examples/single_machine_quantum_ai/03_mps_training.py`) and two `--n-wires` declarations under `tests/distributed/`; the arithmetic closes exactly, `66 − 9 + 1 + 2 = 69`. **The nine in-package declarations are the part that matters most**, because `[boundary]` is the package: `python -m flagquantum.benchmarking.statevector_cpu_paths --n-wires 20` is a command line the package publishes, and no surface of the census reads an `add_argument` call |
 | `n_wires`, `wires`, `wire`, `wire0`, `wire1`, `capacity_wires`, `dense_observable_wires` | parameters of helper functions in `benchmarks/` (141 sites in 60 files), `tools/` and `examples/` | open; `[boundary]` is the package, so the parameter ledger does not read these files at all |
 | `wire`, `wires`, `n_wires` | Python docstrings and comments inside the package — what `help()` prints and what an editor shows on hover | **migrated**: 337 prose tokens in 146 containers across 66 files became 43 in 31 containers across 22 files; 294 were reworded on 259 lines across 54 files. The 43 that remain keep their spelling for one of nine recorded reasons — a private parameter (21), a frozen payload key (7), a retired spelling the package still accepts (4), the field or parameter of the definition the docstring explains (3), a live public attribute (2), a third-party object's own spelling (2), the word itself quoted (2), one live private switch, and the file name of a shipped test. Each is recorded in `[docstring]` and reconciled per container on every run, so a new wire-named token anywhere in a docstring or a comment fails the gate. A `>>>` line inside a docstring is not prose but a program the doctest runner executes, so the two executable wire-named tokens the package carries are reconciled separately in `[docstring_example]`: they are pinned rather than owed, because rewording one is a rename |
 The capture keyword is the remaining open work. Renaming it would break every
@@ -403,6 +403,43 @@ docstring row was the same problem one level in: `help()` prints it, but it is
 prose attached to a name rather than a name — until the docstring slice gave it a
 ledger of its own, which is why it now reads **migrated** above rather than
 **open**.
+
+**How the flag count above was nearly corrupted, which is the more useful record.** The
+documentation slice measured it over `benchmarks/`, `tools/` and `flagquantum/` and wrote
+`66` declarations of `11` flags in `59` files. This row was then re-measured over
+`benchmarks/`, `tools/` and **`examples/`** — a scope chosen freely, because the reader
+did not notice that the number's scope was already written next to it in the same row —
+producing `58 / 11 / 52`, and `66` was briefly recorded here as *not reproducing under
+any definition*. It reproduces exactly, from that slice's own snippet, unchanged:
+
+```console
+$ python - <<'PY'   # the documentation slice's scan, verbatim
+for d in ("benchmarks", "tools", "flagquantum"): ...
+PY
+66 declarations over 11 names in 59 files
+ 51  --n-wires
+  6  --wires
+  1  --capacity-wires
+  ...
+```
+
+The reading that had actually changed was the *scope*, and the three scopes are mutually
+consistent: `benchmarks`+`tools`+`flagquantum` is `66 / 11 / 59`;
+`benchmarks`+`tools`+`examples` is `58 / 11 / 52`; the whole repository is
+`69 / 12 / 62`, and `66 − 9 + 1 + 2 = 69`. **A re-measurement that uses a different scope
+from the number's own declared scope manufactures a false correction, and a false
+correction is worse than no correction, because it arrives with a console transcript
+attached.** The rule this row now follows is the one the earlier paragraph states in the
+other direction: the scope belongs in the sentence, and a re-measurement must be taken
+over the scope the sentence names — not over the scope the re-measurer finds natural.
+
+What the original scope genuinely omitted is `examples/`, which holds
+`--small-exact-max-wires`, and `tests/distributed/`, which holds two `--n-wires`
+declarations. That is a coverage gap in this table rather than an arithmetic error, and
+the widened numbers above close it. **The nine in-package declarations were inside the
+original scope all along** — they are the finding worth acting on, not because the count
+missed them but because `[boundary]` is the package and the migration has been reading it
+as though a flag were a name it already covers.
 
 The tiers are therefore: **ledgered** — parameters, attributes, definitions,
 documented keywords and package docstrings and comments, reconciled on every run
