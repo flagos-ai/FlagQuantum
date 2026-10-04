@@ -108,9 +108,11 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import io
 import re
 import subprocess
 import sys
+import tokenize
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -1143,6 +1145,89 @@ def message_strings(package_root: Path | None = None) -> tuple[str, ...]:
                 if "wire" in node.value:
                     found.append(f"{relative}:{node.lineno}")
     return tuple(found)
+
+
+WIRE_TOKEN = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
+
+
+def _wire_tokens(text: str) -> tuple[str, ...]:
+    """The wire-bearing identifier-shaped tokens in one line of prose."""
+
+    return tuple(word for word in WIRE_TOKEN.findall(text) if "wire" in word.lower())
+
+
+def _scope_names(tree: ast.Module) -> tuple[tuple[int, int, str], ...]:
+    """Every definition's line span and dotted qualname, innermost last."""
+
+    spans: list[tuple[int, int, str]] = []
+
+    def walk(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                name = f"{prefix}{child.name}"
+                end = getattr(child, "end_lineno", child.lineno)
+                spans.append((child.lineno, end, name))
+                walk(child, f"{name}.")
+            else:
+                walk(child, prefix)
+
+    walk(tree, "")
+    return tuple(spans)
+
+
+def _enclosing(spans: tuple[tuple[int, int, str], ...], line: int) -> str:
+    """The innermost definition containing a line, or `<module>` at file scope."""
+
+    best: tuple[int, str] | None = None
+    for start, end, name in spans:
+        if start <= line <= end and (best is None or start >= best[0]):
+            best = (start, name)
+    return "<module>" if best is None else best[1]
+
+
+def docstring_census(
+    package_root: Path | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """Every wire-bearing token a package docstring or comment publishes.
+
+    A docstring is what ``help()`` prints and what an editor shows on hover, and a
+    comment is what the next reader of the module is taught, so this surface reaches
+    a user exactly as a signature does -- while being invisible to every ledger that
+    reads an AST signature. It is the only surface here that is neither a name the
+    package declares nor a keyword it documents; it is the package *talking*.
+
+    A site is ``relative::Qualname::token``, and the gate reconciles the whole
+    multiset per container, so a second occurrence cannot hide behind the first. The
+    scope a comment belongs to is the innermost definition containing it, which keeps
+    the key stable when lines move inside that definition.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    found: list[tuple[str, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parent).as_posix()
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=relative)
+        spans = _scope_names(tree)
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                continue
+            doc = ast.get_docstring(node, clean=False)
+            if not doc or "wire" not in doc.lower():
+                continue
+            qualname = "<module>" if isinstance(node, ast.Module) else node.name
+            for line in doc.splitlines():
+                for token in _wire_tokens(line):
+                    found.append((f"{relative}::{qualname}", token))
+        for comment in tokenize.generate_tokens(io.StringIO(source).readline):
+            if comment.type != tokenize.COMMENT or "wire" not in comment.string.lower():
+                continue
+            scope = _enclosing(spans, comment.start[0])
+            for word in _wire_tokens(comment.string):
+                found.append((f"{relative}::{scope}", word))
+    return tuple(sorted(found))
 
 
 def main() -> int:

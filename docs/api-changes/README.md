@@ -28,6 +28,7 @@ process.
 - [The compiler, tooling, and measurement slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md)
 - [The drawer reads a legacy device's spelling without publishing it](FQ-DRAWER-LEGACY-QDEV-20261012.md)
 - [The documentation slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-DOCUMENTATION-20261013.md)
+- [The docstring and comment slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-DOCSTRINGS-20261014.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)

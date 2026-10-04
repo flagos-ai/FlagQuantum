@@ -181,6 +181,122 @@ def test_the_checked_in_contract_passes() -> None:
     assert _errors(_contract()) == ()
 
 
+def test_the_gate_reports_docstring_progress() -> None:
+    """A docstring is what `help()` prints, and no other ledger reads it.
+
+    The four keyword ledgers read an AST signature or a documented keyword. A
+    docstring is neither, so without this surface a package whose every parameter
+    was renamed could still explain those parameters in the old vocabulary and the
+    gate would report a finished migration.
+    """
+
+    contract = _contract()
+    kept = sum(len(row.get("identifier", ())) for row in contract["docstring"]["keep"])
+    scanned = _CENSUS.docstring_census(_ROOT / "flagquantum")
+    assert scanned, "the docstring census found nothing to reconcile"
+    assert kept == len(scanned) == int(contract["docstring"]["measured_tokens"])
+
+
+def test_an_unrecorded_docstring_token_is_reported() -> None:
+    """The default: a wire-named token in a docstring and no row for it.
+
+    Dropping a row is the only way to reach this branch from the real contract --
+    the gate reads the live package, so a fixture package cannot be substituted
+    without leaving every other ledger reporting at once. The branch is what a
+    docstring that was never migrated meets, and the census test above proves the
+    reading it is compared against.
+    """
+
+    contract = _contract()
+    dropped = contract["docstring"]["keep"].pop(0)
+    container = dropped["identifier"][0].rsplit("::", 1)[0]
+    errors = _errors(contract)
+    _some(errors, "docstring publishes a wire-named token")
+    assert any(container in message for message in errors), (container, errors)
+
+
+def test_a_docstring_exemption_permitting_more_than_the_tree_shows_is_reported() -> (
+    None
+):
+    """The row pins the whole multiset, so it cannot be widened to absorb a site."""
+
+    contract = _contract()
+    row = contract["docstring"]["keep"][0]
+    container = row["identifier"][0].rsplit("::", 1)[0]
+    row["identifier"] = [*row["identifier"], f"{container}::phantom_wire"]
+    _some(_errors(contract), "is exempt")
+
+
+def test_a_stale_docstring_exemption_is_reported() -> None:
+    """A row whose container no longer shows the token is dead weight, not insurance."""
+
+    contract = _contract()
+    row = contract["docstring"]["keep"][0]
+    row["identifier"] = [
+        row["identifier"][0].rsplit("::", 1)[0] + "::a_token_that_is_not_there"
+    ]
+    _some(_errors(contract), "is exempt")
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = [
+        "flagquantum/_api.py::a_definition_that_does_not_exist::n_wires"
+    ]
+    _some(_errors(contract), "is stale")
+
+
+def test_a_docstring_exemption_without_a_reason_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["keep"][0]["reason"] = ""
+    _some(_errors(contract), "states no reason")
+
+
+def test_a_docstring_exemption_without_an_identifier_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = []
+    _some(_errors(contract), "missing an identifier")
+
+
+def test_a_docstring_identifier_that_is_not_a_container_token_key_is_reported() -> None:
+    """The key has to name a container, so a bare token cannot be an exemption."""
+
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = ["just_a_token"]
+    _some(_errors(contract), "container::token")
+
+
+def test_a_docstring_measurement_that_disagrees_with_the_scan_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["measured_tokens"] = (
+        int(contract["docstring"]["measured_tokens"]) + 1
+    )
+    _some(_errors(contract), "measured_tokens must equal the live scan")
+
+
+@pytest.mark.parametrize("field", ["owner", "condition"])
+def test_an_unowned_docstring_surface_is_reported(field: str) -> None:
+    contract = _contract()
+    contract["docstring"][field] = ""
+    _some(_errors(contract), f"docstring {field} is unowned")
+
+
+def test_the_docstring_surface_is_not_the_documentation_surface() -> None:
+    """The two are separate ledgers, because the two reach a user differently.
+
+    `[documentation]` reconciles a keyword argument a reader copies into a script;
+    a documented keyword is a signature under another spelling, which is why an
+    exemption there names a *file* and the whole multiset of spellings it may show.
+    `[docstring]` reconciles prose attached to code that already exists, which is
+    why an exemption here names a *container* and one token. Merging them would let
+    a reworded docstring pay for a stale example.
+    """
+
+    contract = _contract()
+    assert "docstring" in contract and "documentation" in contract
+    assert "measured_tokens" in contract["docstring"]
+    assert "measured_keywords" in contract["documentation"]
+    assert "keep" in contract["docstring"]
+    assert "exempt" in contract["documentation"]
+
+
 def test_the_gate_reports_progress_per_slice() -> None:
     """Retirement moves a site from `remaining` to `retired`, never off the books.
 

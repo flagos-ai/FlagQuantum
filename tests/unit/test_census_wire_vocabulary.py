@@ -751,6 +751,132 @@ def test_the_generated_scoreboard_no_longer_teaches_a_retired_keyword() -> None:
     assert "(`wires=`)" not in parity
 
 
+def test_a_docstring_token_is_an_identifier_not_a_line() -> None:
+    """`help()` prints a sentence, but the unit is the name inside it.
+
+    A line-based count would let one reworded name hide behind another on the same
+    line. Splitting into identifier-shaped tokens means `n_wires - 1 - wire` is two
+    sites that have to be accounted for separately, and nothing inside a code span
+    can be reworded on the strength of the prose around it.
+    """
+
+    assert _CENSUS._wire_tokens("bit ``n_wires - 1 - wire``") == ("n_wires", "wire")
+    assert _CENSUS._wire_tokens("a five-wire circuit") == ("wire",)
+    assert _CENSUS._wire_tokens("no spelling here") == ()
+    # The hyphen does not start an identifier, so the compound adjective is one
+    # token rather than two.
+    assert _CENSUS._wire_tokens("single-wire term") == ("wire",)
+
+
+def test_a_comment_is_attributed_to_its_innermost_definition(tmp_path: Path) -> None:
+    """The key has to survive a line moving, so it names the scope and not the line."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/alpha.py": (
+                '"""Module prose about qubits."""\n'
+                "\n"
+                "\n"
+                "# a module-level note about a wire\n"
+                "def outer(n_wires: int) -> int:\n"
+                '    """Outer."""\n'
+                "    # a note inside outer about a wire\n"
+                "    def inner() -> int:\n"
+                '        """Inner."""\n'
+                "        # a note inside inner about a wire\n"
+                "        return n_wires\n"
+                "    return inner()\n"
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/alpha.py::<module>", "wire"),
+        ("flagquantum/alpha.py::outer", "wire"),
+        ("flagquantum/alpha.py::outer.inner", "wire"),
+    )
+
+
+def test_a_docstring_is_scanned_even_in_a_private_module(tmp_path: Path) -> None:
+    """`[boundary]` stops at the public surface; `help()` does not.
+
+    A docstring reaches whoever imports the module that holds it, so the scan reads
+    the whole package rather than the modules the keyword ledgers call public. A
+    private module's prose is still published.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/_helper.py": '"""A helper that talks about a wire."""\n',
+            "flagquantum/deep/_also.py": '"""Nested, and also about wires."""\n',
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/_helper.py::<module>", "wire"),
+        ("flagquantum/deep/_also.py::<module>", "wires"),
+    )
+
+
+def test_a_wire_token_is_reported_each_time_it_occurs(tmp_path: Path) -> None:
+    """A multiset, not a set: dropping one of two sites must move the reading."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/twice.py": (
+                '"""One wire here."""\n'
+                "\n"
+                "\n"
+                "def f() -> None:\n"
+                '    """And another wire here."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/twice.py::<module>", "wire"),
+        ("flagquantum/twice.py::f", "wire"),
+    )
+
+
+def test_the_docstring_matcher_finds_wire_anywhere_in_the_name() -> None:
+    """`terminal_wires` is the same question as `wires`, as the keyword matcher is."""
+
+    assert _CENSUS._wire_tokens("terminal_wires and shardable_wires") == (
+        "terminal_wires",
+        "shardable_wires",
+    )
+    assert _CENSUS._wire_tokens("qubits only") == ()
+
+
+def test_the_docstring_exemptions_cover_exactly_the_live_tokens() -> None:
+    """The live reading, compared against the record rather than a hard-coded list.
+
+    Every wire-named token a docstring or comment still publishes is either gone or
+    named in `[docstring]` with a reason, and the comparison is per container: a
+    second occurrence inside an already-exempt docstring needs its own row rather
+    than being absorbed by the first. Comparing against the contract means a new site
+    cannot be absorbed by editing the test.
+    """
+
+    contract = _contract()
+    exempt: dict[str, list[str]] = {}
+    for row in contract["docstring"]["keep"]:
+        for identifier in row["identifier"]:
+            container, _, token = str(identifier).rpartition("::")
+            exempt.setdefault(container, []).append(token)
+    observed: dict[str, list[str]] = {}
+    for container, token in _CENSUS.docstring_census(_ROOT / "flagquantum"):
+        observed.setdefault(container, []).append(token)
+    assert observed, "the docstring census found nothing to reconcile"
+    assert {name: sorted(tokens) for name, tokens in observed.items()} == {
+        name: sorted(tokens) for name, tokens in exempt.items()
+    }
+    assert int(contract["docstring"]["measured_tokens"]) == sum(
+        len(tokens) for tokens in exempt.values()
+    )
+
+
 def _importable_package(tmp_path: Path, name: str, files: dict[str, str]) -> Path:
     """Write a package that the scan can actually import, and return its root.
 
