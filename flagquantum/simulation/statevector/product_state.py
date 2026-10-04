@@ -10,6 +10,7 @@ import torch
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix as _gate_matrix
+from ..native_cpu.rotation import fused_static_clifford_layer_
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
@@ -51,6 +52,8 @@ _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO = 0.45
 _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
 _FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})
 _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH = 5
+_PRODUCT_STATE_NATIVE_STATIC_CLIFFORD_MIN_WIRES = 16
+_NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "x": 4}
 
 
 def _cpu_product_state_execution_enabled() -> bool:
@@ -75,6 +78,14 @@ def _cpu_product_state_clifford_matching_enabled() -> bool:
     """Whether product-state Clifford matchings may share permutation passes."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_CLIFFORD_MATCHING", default=True)
+
+
+def _cpu_product_state_native_static_clifford_enabled() -> bool:
+    """Whether wide product components may use the native Clifford kernel."""
+
+    return _environment_flag(
+        "FQ_CPU_PRODUCT_STATE_NATIVE_STATIC_CLIFFORD", default=True
+    )
 
 
 def _cpu_product_state_deferred_swap_enabled() -> bool:
@@ -136,6 +147,30 @@ def _apply_fixed_clifford_layer(
         if name == "x":
             return _apply_fixed_permutation(component.state, name, (wire,), n_wires)
         return _apply_fixed_clifford_gate(component.state, name, wire, n_wires)
+
+    if (
+        n_wires >= _PRODUCT_STATE_NATIVE_STATIC_CLIFFORD_MIN_WIRES
+        and not component.state.requires_grad
+        and _cpu_product_state_native_static_clifford_enabled()
+    ):
+        output = component.state.clone()
+        gate_codes = torch.tensor(
+            tuple(_NATIVE_CLIFFORD_CODES[name] for name, _ in local_gates),
+            dtype=torch.int8,
+            device=output.device,
+        )
+        wires = torch.tensor(
+            tuple(wire for _, wire in local_gates),
+            dtype=torch.int64,
+            device=output.device,
+        )
+        if fused_static_clifford_layer_(
+            output,
+            gate_codes,
+            wires,
+            n_wires=n_wires,
+        ):
+            return output
 
     state = component.state
     for name, wire in local_gates:
