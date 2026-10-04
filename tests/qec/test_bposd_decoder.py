@@ -726,3 +726,41 @@ def test_the_module_is_reachable_from_a_fresh_interpreter() -> None:
         timeout=180,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_the_decoder_is_outside_the_registry_by_contract_not_by_omission() -> None:
+    """The registry's protocol promises a graph this decoder cannot produce.
+
+    Three contracts state that this decoder is constructed directly rather than
+    reached through ``decoder_names()``, and the reason given is a protocol
+    promise rather than a missing method. That is a claim about the tree, so it
+    is measured here against a model both decoders accept: the matcher carries
+    the constructor the protocol requires and its instance carries the graph,
+    this decoder's does neither, and the registry's own admission check refuses
+    it for the reason its refusal message names.
+    """
+
+    from flagquantum.qec.decoding_graph import DecodingGraph
+    from flagquantum.qec.registry import (
+        DetectorErrorModelDecoder,
+        decoder_names,
+        register_decoder,
+    )
+
+    model = _memory_model(RepetitionCode(distance=3), rounds=2)
+    matcher = MinimumWeightMatchingDecoder.from_detector_error_model(model)
+    assert isinstance(matcher.graph, DecodingGraph)
+    assert isinstance(matcher, DetectorErrorModelDecoder)
+
+    instance = BeliefPropagationOsdDecoder(model)
+    assert not hasattr(BeliefPropagationOsdDecoder, "from_detector_error_model")
+    assert not hasattr(instance, "graph")
+    assert not isinstance(instance, DetectorErrorModelDecoder)
+
+    with pytest.raises(TypeError, match="from_detector_error_model"):
+        register_decoder("belief_propagation_osd")(BeliefPropagationOsdDecoder)
+
+    # The refusal is not enough on its own: the name has to stay free, or a
+    # later registration would silently take a name this one was refused.
+    assert "belief_propagation_osd" not in decoder_names()
+    assert decoder_names() == ("minimum_weight_matching", "pymatching")

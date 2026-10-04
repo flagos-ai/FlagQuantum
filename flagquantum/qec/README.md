@@ -159,6 +159,53 @@ infers its detector count from its edges, so the syndrome vector would be
 renumbered. Both graphs are ones the matcher itself answers, so the cross-check's
 domain is narrower than the authority's and never the reverse.
 
+## Decode a model the matcher refuses
+
+A code whose mechanisms flip three detectors has no pair-graph, so the matcher
+declines it with a stated reason rather than projecting it onto an edge.
+`BeliefPropagationOsdDecoder` answers that model instead of declining it:
+
+```python
+from flagquantum.errors import CapabilityError
+from flagquantum.qec import (
+    BeliefPropagationOsdDecoder,
+    DetectorErrorModel,
+    MinimumWeightMatchingDecoder,
+    PhenomenologicalNoise,
+    SteaneCode,
+    build_memory_circuit,
+)
+
+memory = build_memory_circuit(SteaneCode(), rounds=1)
+model = DetectorErrorModel.from_memory_circuit(
+    memory, noise=PhenomenologicalNoise(data_flip=0.05, measurement_flip=0.05)
+)
+print(model.num_detectors, model.num_errors)
+try:
+    MinimumWeightMatchingDecoder.from_detector_error_model(model)
+except CapabilityError as error:
+    print(str(error).split(",", 1)[0])
+
+decoder = BeliefPropagationOsdDecoder(model)
+result = decoder.decode([0, 1, 2])
+print(result.observables, round(result.weight, 6), result.converged, result.iterations)
+```
+
+The decoder iterates min-sum messages between detectors and mechanisms, then
+solves the syndrome exactly over the mechanisms that estimate favours most, and
+the result says whether the iteration converged and how many passes it spent.
+`result.mechanisms` names the mechanisms it selected, so the correction can be
+read rather than only applied, and `result.observables` is the prediction.
+
+It is a decoder and not an optimal one, and the boundary is measured rather than
+implied. On the one-round Steane model it reaches the least weight and the most
+likely observable for all 64 syndromes; on the one-round rotated surface code it
+carries more weight than the least-weight explanation on five syndromes of 256
+and differs from the most likely observable on three of them. A syndrome outside
+the span of the model's mechanisms is refused rather than answered, and this
+decoder is deliberately not in `decoder_names()`: the registry's protocol
+promises the decoding graph it built, and such a model has none.
+
 ## Build a model from matrices, without a circuit
 
 A code whose checks and logical operators are known as matrices needs no gadget

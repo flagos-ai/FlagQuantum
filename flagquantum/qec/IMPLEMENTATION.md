@@ -663,6 +663,86 @@ than here: the two decoders agree on the cheapest weight of every syndrome and o
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
 
+## A decoder for the hyperedge
+
+`bposd.py` is the second decoder in this layer and the first one that answers a
+model the matcher refuses. The refusal it exists for is structural rather than
+numerical: a mechanism that flips three or more detectors has no pair-graph, so
+`from_detector_error_model` raises a `CapabilityError` naming the detectors, and
+before this module a caller holding such a model had nothing to hand the syndrome
+to. The two halves are belief propagation and ordered statistics, and they are
+separate on purpose. Belief propagation estimates one log-likelihood ratio per
+mechanism by passing min-sum messages between detectors and mechanisms until the
+hard decision reproduces the syndrome or the pass budget runs out; ordered
+statistics then solves the syndrome exactly over the mechanisms that estimate
+favours most, which is what turns an estimate into an answer with a stated
+guarantee.
+
+The iteration is min-sum with a damping factor rather than sum-product. A
+detector sends each mechanism the magnitude of the smallest opposing message on
+that check, signed by the parity of the check's other messages, and the caller's
+`scaling` weights what it sends. A check with a single mechanism has no opposing
+message, so its magnitude would be the message limit and the mechanism is forced,
+which is the correct reading of a detector only one mechanism can flip; the
+magnitude is capped rather than left infinite so that the forced message stays a
+finite number a caller can inspect. A probability of one or zero would make the
+prior a log-odds ratio of infinity in one direction, so `__post_init__` floors it
+by `_MINIMUM_PROBABILITY` instead of letting the arithmetic diverge. The result
+states whether the passes converged and how many were spent, because a
+non-converged estimate is still a usable ranking for the second half while a
+caller who is told nothing would read it as a converged one.
+
+Ordered statistics ranks the mechanisms by the estimate and elects an information
+set by Gaussian elimination over GF(2) in that rank order: the earliest
+mechanisms that are linearly independent. Every mechanism outside the set is held
+at zero, which reproduces the syndrome exactly by construction and need not be
+its most likely explanation. That is the whole of the claim, and it is why this
+decoder is not described as optimal. Where the syndrome is not in the span of the
+model's mechanisms at all, the elimination leaves a row with no pivot and the
+decoder raises `CapabilityError` rather than returning a correction that only
+looks like one.
+
+What the decoder reaches is measured rather than asserted. On the one-round
+Steane model it returns the least weight and the most likely observable for all
+64 syndromes. On the one-round rotated surface code it carries more weight than
+the least-weight explanation on five syndromes of 256 — by 0.6904 on two and
+2.9444 on three — and differs from the most likely observable on three of those
+five, so its entire gap to an optimal decoder on that model is those five
+syndromes and not a property of the code. Against the matcher on the model both
+accept, a two-round repetition code, the two reach the least weight on every one
+of the 32 syndromes and disagree on six, and every one of those six is a tie the
+model itself does not resolve, so the disagreement is two readings of one optimum
+rather than a mistake on either side. `tests/qec/test_bposd_decoder.py` pins each
+of those numbers, checks the syndrome-consistency invariant on every result, and
+uses brute force over the model's own mechanism sets as the independent reference
+for both the least weight and the most likely observable.
+
+It is deliberately not registered in `registry.py`, and the reason is a protocol
+promise rather than an unimplemented constructor. `DetectorErrorModelDecoder`
+says that a decoder can be built from a model and exposes the `DecodingGraph` it
+built, and a model carrying a three-detector mechanism has no such graph:
+`DecodingGraph.from_detector_error_model` refuses it as the same hyperedge this
+module exists to answer. Adding a `from_detector_error_model` classmethod and a
+`graph` property that raised on the models this decoder is for would put a class
+under a name whose stated contract it cannot satisfy, which is a worse failure
+than the one the registry was built to prevent, so the class is constructed
+directly while the matcher and the cross-check are reached by name. Naming it
+would mean widening or splitting the protocol first, and that is a decision about
+the registry rather than a missing method on this decoder.
+`tests/qec/test_bposd_decoder.py` measures the exclusion rather than repeating
+it: the matcher's instance carries the graph the protocol promises, this
+decoder's carries none, the class is not an instance of the protocol, and
+`register_decoder` refuses it for the missing constructor while the name it was
+offered stays free.
+
+The module imports `torch` and the standard library and nothing else, so no
+dependency is added and no second source of truth for linear algebra appears; a
+test starts a fresh interpreter and measures that. It is a decoder for one model
+at a time: there is no batching, no streaming, no sliding window, no
+logical-error-rate estimator and no threshold sweep, and it is not wired to the
+stim sampling path, so a syndrome it decodes comes from the caller rather than
+from this package's sampler.
+
 ## Reaching a decoder by name
 
 `registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
@@ -694,7 +774,11 @@ decoders in this layer take an ordered syndrome history rather than detection
 events, and `DetectorErrorModelDecoder` requires
 `from_detector_error_model`, so one name space over two input protocols would
 make a name mean one of two things. They stay directly constructed, which is also
-why the registry is a module of its own rather than methods on `Decoder`.
+why the registry is a module of its own rather than methods on `Decoder`. The
+belief-propagation decoder is the third case and the narrower one: it reads a
+detector error model like the registered two, and stays out because the protocol
+also promises the `DecodingGraph` that was built, which is exactly what a
+hyperedge model cannot produce. The section above states that reason in full.
 
 Registration is checked at registration time, while the registering module is
 being imported. `register_decoder` refuses a name that is not a non-empty string,

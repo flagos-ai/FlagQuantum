@@ -60,7 +60,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, and a name-keyed registry all landed; no BP+OSD, no sliding window, no plugin boundary. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a belief-propagation decoder with ordered statistics all landed; no sliding window, no name for the hyperedge decoder, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | partial | later | `qec_logical_operations` | Product rotation landed as a code-declaration operation: a candidate logical product is certified against the code's own checks and one observable's partner is derived over GF(2); lattice surgery and distillation are still absent. |
@@ -151,6 +151,33 @@ a name that silently is not there. No name is preferred over another: the
 registry returns the class a name is registered against, so the authority is
 returned for its own name wherever the extra happens to be present, and the
 cross-check is never reached by accident.
+
+The row's scope has since grown by one more piece, and it is a capability of
+its own rather than a fifth item in this row's order.
+`flagquantum/qec/bposd.py` decodes a detector error model by iterating min-sum
+messages over its mechanisms and then solving the syndrome over the most
+error-prone independent ones, so a mechanism flipping three detectors — the
+hyperedge the matcher refuses by design — is answered instead of declined. The
+two decoders are compared on the model they both accept, a two-round repetition
+code with 32 syndromes: they reach the least weight on every one of them and
+disagree on exactly six, and each of those six is a tie the model itself does not
+resolve, so the disagreement is two readings of one optimum and not a mistake on
+either side. On the one-round Steane model the hyperedge decoder reaches the
+least weight and the most likely observable for all 64 syndromes. On the
+one-round rotated surface code it carries more weight than the least-weight
+explanation on five syndromes of 256, by 0.6904 on two and 2.9444 on three, and
+differs from the most likely observable on three of those five; that is the whole
+of its gap to an optimal decoder on that model, and it is why
+`qec_belief_propagation_osd_decoder` is recorded at `development_evidence`
+rather than higher. It is deliberately not in `decoder_names()`, and the reason
+is the registry's protocol rather than a missing constructor: the protocol
+promises a `DecodingGraph` view of what was built, and a model with a
+three-detector mechanism has no pair-graph at all, because
+`DecodingGraph.from_detector_error_model` refuses one as a hyperedge. Adding the
+missing classmethod alone would therefore register a decoder that does not
+satisfy the protocol it is registered under, so naming it is a protocol decision
+that this row records rather than takes, and the capability itself is owned
+where it belongs.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
