@@ -168,7 +168,7 @@ def test_aggregate_selects_the_default_window() -> None:
 def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
     validate_evidence(payload)
-    assert payload["source_revision"] == "SOURCE_REVISION"
+    assert payload["source_revision"] == "51adb0a04f52745c0e019fa9f9ec402d7f9f6033"
     assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
     assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
     assert payload["minimum_default_window_speedup_over_pytorch_eager"] > 1.0
