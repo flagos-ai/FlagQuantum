@@ -49,7 +49,11 @@ from .registry import (
     register_decoder,
 )
 from .repetition import run_repetition_memory_experiment
-from .sampling import sample_memory_circuit
+from .sampling import (
+    MeasurementSamples,
+    sample_memory_circuit,
+    sample_memory_measurements,
+)
 from .types import (
     Correction,
     DecodeResult,
@@ -89,6 +93,7 @@ __all__ = (
     "MatchingDecodeResult",
     "MatchingDependencyError",
     "MeasurementMap",
+    "MeasurementSamples",
     "MeasurementRef",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
@@ -119,4 +124,5 @@ __all__ = (
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",
+    "sample_memory_measurements",
 )

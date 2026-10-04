@@ -346,6 +346,55 @@ Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
 two to each other rather than letting either stand for the other.
 
+## Read a recorded bit, not just a parity
+
+A detection event is a parity of recorded bits. Sometimes the bit itself is what a
+caller wants, and there is exactly one kind of bit that no layout names: round zero
+of a patch measures an X-type check whose outcome is not deterministic under the
+all-zero preparation, so no detector may name it, and it is still measured and
+still recorded. `measurement_refs` names every recorded bit and
+`sample_memory_measurements` returns them:
+
+```python
+from flagquantum.qec import (
+    MeasurementRef,
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+    sample_memory_measurements,
+)
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=2)
+samples = sample_memory_measurements(
+    memory,
+    noise=PhenomenologicalNoise(measurement_flip=0.02),
+    shots=1000,
+    seed=0,
+)
+Z_ANC = 9  # the code's first Z-type check; see RotatedSurfaceCode(...).checks
+print(samples.outcome(MeasurementRef(1, Z_ANC)).shape)
+print(samples.vector([MeasurementRef(0, Z_ANC), MeasurementRef(1, Z_ANC)]).shape)
+print(samples.integer([MeasurementRef(0, Z_ANC), MeasurementRef(1, Z_ANC)]).max())
+```
+
+A handle is a value in the same sense CUDA-Q's is: `outcome` reads one handle,
+`vector` reads a chosen sub-vector as booleans in the order asked for, and
+`integer` packs that same order into one integer per shot with the first handle
+least significant. Reading a gap in a bit stream does not need a parity and does
+not need a column index, and a detector's parity recomputed from the handles it
+names is the detector's parity — a test asserts that per detector and per
+observable, so the two readings cannot drift apart.
+
+What this layer is not is a statement about which handles are deterministic. A
+noiseless run reads a Z-type check's ancilla as 0 in every round, an X-type
+check's ancilla as unbiased, and an individual terminal data wire as unbiased, while
+every detector and every observable reads 0. So a rate read off a single handle is
+a rate read off the state and not a channel rate, and a detector is a parity and not
+a measurement. The absence this leaves standing is the kernel annotation form
+itself: `detector`, `detectors` and `logical_observable` as kernel calls are not
+implemented here, and identity is set in a layout record beside the source rather
+than in the kernel body.
+
 ## Hand a decoder both halves
 
 A model says which mechanisms a decoder can see. It does not say where in a shot
@@ -389,11 +438,13 @@ than returned empty.
 The split is a reading of the model, not a second construction: every detector is
 carried by the check whose ancilla it reads, so the Z component carries the
 terminal detectors and the union of the two components is the model as built.
-That is also why the numbering the maps use is pinned to the sampler's by a test
-rather than by a shared constant — the sampler derives its record columns from the
+That is also why the numbering the maps use is checked against the sampler's
+rather than shared with it — the sampler derives its record columns from the
 lowered program, this module derives them from the circuit's own declaration, and
-a decoder fed a sampled syndrome has to be matching detectors against the
-measurements that actually compose them.
+`measurement_refs` states the same layout a third time so that a handle names a bit
+whichever of the two a caller came from. A decoder fed a sampled syndrome has to be
+matching detectors against the measurements that actually compose them, and that is
+now something a test can recompute from handles rather than only assume.
 
 ## Change and verify
 
