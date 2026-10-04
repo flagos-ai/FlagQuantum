@@ -96,6 +96,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "cpu_performance_gate",
         "differentiable_simulator_corpus",
         "environment_probe",
+        "numa_memory_traffic",
         "simulator_compare",
         "simulator_compare_cirq",
         "simulator_compare_pennylane",

@@ -51,6 +51,28 @@ worker/thread matrix, optimization boundaries, and reproduction command are in
 It is a replicated multitask-throughput result, not single-circuit or
 distributed-statevector scaling evidence.
 
+On a dual-socket Linux x86-64 host, `numa_memory_traffic` compares the default
+first-touch policy with forced bind and interleave while reading Intel uncore
+IMC CAS counters. It also runs the same value-and-complete-gradient workload
+through PennyLane Lightning, so the report contains absolute latency, DRAM
+bytes per call, correctness, stability, and an external same-semantics ratio:
+
+```bash
+export CUDA_VISIBLE_DEVICES=""
+export OMP_PROC_BIND=close OMP_PLACES=cores
+flagquantum-benchmark run numa_memory_traffic \
+  --workloads hardware_efficient_vqe qaoa_path_maxcut \
+  --engines flagquantum_adjoint pennylane_lightning_adjoint \
+  --policies default bind interleave --nodes 0,1 \
+  --cpu-list 0-63 --socket-cpus 0,32 --n-wires 22 --threads 64 \
+  --warmup 2 --calls 7 --source-revision "$(git rev-parse HEAD)" \
+  --json-output benchmarks/results/comparison/numa-memory-traffic.json \
+  --markdown-output benchmarks/results/comparison/NUMA_MEMORY_TRAFFIC.md
+```
+
+This requires permission to open system-wide perf events and Intel IMC PMUs
+that expose `cas_count_read` and `cas_count_write`.
+
 The executable implementations are
 [`simulator_compare.py`](../flagquantum/benchmarking/simulator_compare.py) for
 FlagQuantum/Qiskit Aer and
