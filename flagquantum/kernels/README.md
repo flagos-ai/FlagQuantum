@@ -289,6 +289,27 @@ is single-device development evidence, not distributed scalability or release
 evidence. Reproduce or validate it with
 [`benchmarks/flagtree_tle_transpose_1q.py`](../../benchmarks/flagtree_tle_transpose_1q.py).
 
+`FQKI-TRITON-SV-007-A` packs the control-one subspace used by cross-shard CX
+transport without materializing an address tensor. The distributed
+statevector runtime selects it by default for contiguous CUDA `complex64`
+statevectors when the catalog and compiler capability checks pass, while
+preserving the indexed PyTorch fallback.
+
+The checked-in
+[`statevector_control_subspace_pack_dispatch_a800.json`](../../benchmarks/results/local/statevector_control_subspace_pack_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations across six fixed
+cases: the one-element boundary, full and offset compressed ranges, varied
+control-bit positions, state sizes through `2**24`, and a batched large state.
+It covers `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and
+FlagTree 0.7.0. Every result is exact against the indexed reference. Across
+the complete default window, catalog dispatch reaches at least `1.366x` the
+speed of PyTorch eager and `1.820x` the speed of `torch.compile`. The runner
+rejects any case below either `1.0x` floor, so the shared SV-007-A
+implementation is `provisional`. This is bounded single-device development
+evidence for the local packing stage, not a multi-rank communication,
+scalability, or release claim. Reproduce or validate it with
+[`benchmarks/statevector_control_subspace_pack_dispatch.py`](../../benchmarks/statevector_control_subspace_pack_dispatch.py).
+
 `FQKI-FLAGTREE-SV-007-A` and `FQKI-FLAGTREE-SV-008-A` extend the same explicit
 provider boundary to distributed-CX control-subspace pack and unpack. Their TLE
 source uses async loads for the non-contiguous state gather and packed-buffer
@@ -807,8 +828,8 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. SV-001-A
-through SV-006-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are
-provisional after their evidenced default-dispatch promotions; the other 19
+through SV-007-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are
+provisional after their evidenced default-dispatch promotions; the other 18
 implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
