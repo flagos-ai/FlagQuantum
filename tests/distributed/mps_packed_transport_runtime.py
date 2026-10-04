@@ -41,7 +41,7 @@ def main():
         tensor[:, :, 0, :] = 1
         local_tensors[wire] = tensor
     state = RankOwnedMPSState(
-        n_wires=4,
+        n_qubits=4,
         bsz=1,
         rank=rank,
         world_size=2,

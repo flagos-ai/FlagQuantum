@@ -95,7 +95,7 @@ def main() -> None:
             for owner in range(world)
         )
         sharded = ShardedMPSState(
-            n_wires=circuit.n_wires,
+            n_qubits=circuit.n_qubits,
             bsz=reference_mps.bsz,
             config=reference_mps.config,
             local_tensors={

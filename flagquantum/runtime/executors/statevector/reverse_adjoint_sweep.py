@@ -628,8 +628,8 @@ class _ReversibleAdjointSweep:
                             rank=self.rank,
                             n_qubits=self.ir.n_wires,
                             rank_bits=self.plan.rank_address_bits,
-                            local_physical_qubit=swap.local_physical_wire,
-                            sharded_physical_qubit=swap.sharded_physical_wire,
+                            local_physical_qubit=swap.local_physical_qubit,
+                            sharded_physical_qubit=swap.sharded_physical_qubit,
                             process_group=self.process_group,
                             output=self.reversible_state.amplitudes,
                             send_buffer=self.layout_send_buffer,
@@ -649,8 +649,8 @@ class _ReversibleAdjointSweep:
                         rank=self.rank,
                         n_qubits=self.ir.n_wires,
                         rank_bits=self.plan.rank_address_bits,
-                        local_physical_qubit=swap.local_physical_wire,
-                        sharded_physical_qubit=swap.sharded_physical_wire,
+                        local_physical_qubit=swap.local_physical_qubit,
+                        sharded_physical_qubit=swap.sharded_physical_qubit,
                         process_group=self.process_group,
                         output=self.adjoint,
                         send_buffer=self.layout_send_buffer,
@@ -666,11 +666,11 @@ class _ReversibleAdjointSweep:
                         byte_count + adjoint_bytes
                     )
                     (
-                        self.persistent_mapping[swap.local_logical_wire],
-                        self.persistent_mapping[swap.sharded_logical_wire],
+                        self.persistent_mapping[swap.local_logical_qubit],
+                        self.persistent_mapping[swap.sharded_logical_qubit],
                     ) = (
-                        self.persistent_mapping[swap.sharded_logical_wire],
-                        self.persistent_mapping[swap.local_logical_wire],
+                        self.persistent_mapping[swap.sharded_logical_qubit],
+                        self.persistent_mapping[swap.local_logical_qubit],
                     )
                 return True
         return False
@@ -1162,8 +1162,8 @@ class _ReversibleAdjointSweep:
                         rank=self.rank,
                         n_qubits=self.ir.n_wires,
                         rank_bits=self.plan.rank_address_bits,
-                        local_physical_qubit=swap.local_physical_wire,
-                        sharded_physical_qubit=swap.sharded_physical_wire,
+                        local_physical_qubit=swap.local_physical_qubit,
+                        sharded_physical_qubit=swap.sharded_physical_qubit,
                         process_group=self.process_group,
                         output=(
                             previous_reversible
@@ -1191,8 +1191,8 @@ class _ReversibleAdjointSweep:
                     rank=self.rank,
                     n_qubits=self.ir.n_wires,
                     rank_bits=self.plan.rank_address_bits,
-                    local_physical_qubit=swap.local_physical_wire,
-                    sharded_physical_qubit=swap.sharded_physical_wire,
+                    local_physical_qubit=swap.local_physical_qubit,
+                    sharded_physical_qubit=swap.sharded_physical_qubit,
                     process_group=self.process_group,
                     output=(
                         previous_adjoint if self.inplace_local else self.adjoint_scratch
@@ -1210,11 +1210,11 @@ class _ReversibleAdjointSweep:
             self.evidence.persistent_layout_swap_count += 1
             self.evidence.persistent_layout_swap_bytes += byte_count + adjoint_bytes
             (
-                self.persistent_mapping[swap.local_logical_wire],
-                self.persistent_mapping[swap.sharded_logical_wire],
+                self.persistent_mapping[swap.local_logical_qubit],
+                self.persistent_mapping[swap.sharded_logical_qubit],
             ) = (
-                self.persistent_mapping[swap.sharded_logical_wire],
-                self.persistent_mapping[swap.local_logical_wire],
+                self.persistent_mapping[swap.sharded_logical_qubit],
+                self.persistent_mapping[swap.local_logical_qubit],
             )
 
     def _finish(self) -> None:
