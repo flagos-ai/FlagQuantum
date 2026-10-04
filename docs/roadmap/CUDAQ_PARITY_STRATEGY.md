@@ -59,8 +59,8 @@ captured on 2026-09-30, is:
 | Status | Rows |
 | --- | ---: |
 | `supported` | 10 |
-| `partial` | 58 |
-| `unsupported` | 27 |
+| `partial` | 59 |
+| `unsupported` | 26 |
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -305,6 +305,37 @@ downgrade of the model the caller handed over, so the guide states the tradeoff
 instead, and the test that keeps it true executes every fence in one namespace and
 compares each print against the transcript quoted under it.
 
+`backend_asynchronous_multi_qpu` moved from `unsupported` to `partial` in the
+same wave, on a distinction the row's own reason had blurred. Submitted once,
+observed later, and fanned out to several targets are three separate things, and
+only the third was missing. Every remote path here already returned from `submit`
+without waiting and already carried a per-target stream -- the Quafu and Jiuding
+adapters both hand back a job with its own status, result, cancellation, and
+private receipt -- so what CUDA-Q's asynchronous multi-QPU option adds is not
+asynchrony at all. It is the fan-out: one program, several targets, and streams
+that progress independently.
+[submit_to_targets](../../flagquantum/remote/jobs.py) supplies it. It materializes
+the program to an IR once before contacting anything, hands each target its own
+submission to a thread pool, and reports in the order the caller named the targets
+rather than the order the network answered. A target that refuses the program is
+recorded with its exception type and message against that target while the others
+still submit, and a failed submission is never retried, because an ambiguous
+submission may already have reached a provider.
+
+The row stays `partial`, and the reason is the half CUDA-Q's own option name
+states. This is fan-out, not one partitioned workload: every target runs a full
+copy of the program, no state, shot, or sample crosses targets, and nothing
+combines the independent streams into one estimate. The report therefore declares
+`distribution_semantics = replicated_independent_targets` with
+`scalability_claim_allowed = False` and its blockers, and carries no `world_size`,
+`local_world_size`, `node_count`, or rank ownership -- there is no rank to
+attribute anything to, so the fields rule 5 of the operating manual requires of a
+distributed result have no honest value here and are deliberately absent rather
+than filled with a number that would license the very claim the row refuses. The
+roster is the two targets `submit` accepts rather than a backend-agnostic option,
+and because the remaining options are shared they must suit every target named, so
+the Quafu-only and Jiuding-only options cannot be combined in one call.
+
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
 `docs/roadmap/CAPABILITY_MATURITY.md` explains them; a parity row cites a registry
@@ -540,7 +571,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 27 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 26 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

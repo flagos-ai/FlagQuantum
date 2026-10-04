@@ -473,11 +473,12 @@ reason = "Absent. It is an MPS variant with a narrower applicability than the ma
 [[domains.capabilities]]
 id = "backend_asynchronous_multi_qpu"
 cudaq = "nvidia option=mqpu asynchronous multi-QPU execution"
-status = "unsupported"
+status = "partial"
 priority = "next"
 dependency_class = "none"
 maturity_ref = "cloud_deployment"
-reason = "Absent. FlagQuantum has single-target remote execution but no asynchronous fan-out across several QPUs with independent result streams."
+reason = "The single-workload half that was absent now exists, and the row is partial because the other half is what CUDA-Q actually claims. `flagquantum.remote.jobs.submit_to_targets` takes one program and a sequence of targets, materializes it to an IR once before any target is contacted, hands each target its own submission to a thread pool, and returns without waiting. Every target gets the `RemoteJob` the single-target `submit` returns -- its own status, wait, result, cancel, and private receipt -- so the streams progress independently and are read independently, and the report lists targets in the order the caller named them rather than in the order the network answered. A target that refuses the program is recorded with its exception type and message against that target, and the others still submit; a failed submission is never retried, because an ambiguous submission may already have reached a provider. An unreadable program, a non-sequence `targets`, an empty list, a repeated target, and a `name` that would have to name several submissions are all refused before any target is contacted, and the refusal is argued for by a submission count of zero rather than by a message. What is absent is the half CUDA-Q's own name for the option states: this is fan-out, not one partitioned workload. Every target runs a full copy of the program, no state, shot, or sample crosses targets, and nothing combines the independent streams into one estimate, so the report declares `distribution_semantics = replicated_independent_targets` and `scalability_claim_allowed = False` with its three blockers, and deliberately carries no `world_size`, `local_world_size`, `node_count`, or rank ownership, because there is no rank to attribute anything to. The roster is also the two targets `submit` accepts rather than a backend-agnostic option, and a shared option list must suit every target named, so the Quafu-only and Jiuding-only options cannot be combined in one call. The function is not re-exported from `flagquantum.remote` and no root name was added."
+evidence = ["flagquantum/remote/jobs.py", "tests/api_contract/test_remote_job_fanout.py", "flagquantum/remote/README.md", "search:no partitioning of one workload across targets, no combination of the independent streams into one estimate, and no rank or world size to report"]
 
 [[domains.capabilities]]
 id = "backend_trajectory_noise"

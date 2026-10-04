@@ -6,9 +6,10 @@ import json
 import math
 import os
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Literal
 
 from ..errors import CapabilityError, ExecutionError
@@ -370,6 +371,162 @@ def _submit_quafu(
     )
 
 
+@dataclass(frozen=True)
+class TargetSubmission:
+    """One target's outcome of a multi-target submission.
+
+    ``job`` is set exactly when the target accepted the program, and
+    ``error_kind`` exactly when it did not, so a caller cannot reach a handle
+    that was never obtained. The error is recorded rather than raised because a
+    target that fails belongs to the caller of this target, not to the call.
+    """
+
+    target: str
+    job: RemoteJob | None = None
+    error_kind: str | None = None
+    error_message: str | None = None
+
+    @property
+    def submitted(self) -> bool:
+        return self.job is not None
+
+
+@dataclass(frozen=True)
+class MultiTargetSubmission:
+    """One program handed to several targets, each with its own result stream.
+
+    The premise is the one CUDA-Q's asynchronous multi-QPU option states: one
+    program, several execution targets, streams that progress independently.
+    What it is *not* is a distributed execution. No rank exists, no amplitude,
+    shot, or sample is partitioned, and nothing here combines the streams into
+    one estimate -- so the record carries the two fields the evidence rules
+    exist to protect, an explicit distribution semantics and a
+    ``scalability_claim_allowed`` of ``False`` with its blockers, and carries no
+    ``world_size``, rank ownership, or communication figures, because there is
+    no rank to attribute anything to.
+
+    ``submissions`` is in the order the caller named the targets, and
+    ``jobs`` holds only the targets that accepted the program. Each job is the
+    same object ``submit`` returns: an independent stream with its own
+    ``status``, ``wait``, ``result``, ``cancel``, and ``save``.
+    """
+
+    submissions: tuple[TargetSubmission, ...]
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        return tuple(item.target for item in self.submissions)
+
+    @property
+    def jobs(self) -> Mapping[str, RemoteJob]:
+        return MappingProxyType(
+            {item.target: item.job for item in self.submissions if item.job is not None}
+        )
+
+    @property
+    def failed_targets(self) -> tuple[str, ...]:
+        return tuple(item.target for item in self.submissions if item.job is None)
+
+    @property
+    def submitted_count(self) -> int:
+        return len(self.submissions) - len(self.failed_targets)
+
+    def evidence(self) -> dict[str, Any]:
+        """Describe what was submitted and what may not be claimed for it."""
+
+        return {
+            "targets": self.targets,
+            "submitted": self.submitted_count,
+            "failed_targets": self.failed_targets,
+            "distribution_semantics": "replicated_independent_targets",
+            "scalability_claim_allowed": False,
+            "blockers": (
+                "each target executes a full copy of the program",
+                "no state, shot, or sample is partitioned across targets",
+                "the per-target results are independent streams and are not combined",
+            ),
+        }
+
+
+def submit_to_targets(
+    program: Circuit | CircuitIR,
+    *,
+    targets: Sequence[str],
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    shots: int | None = None,
+    compiler: str | None = None,
+    target_qubits: Sequence[int] | None = None,
+    name: str | None = None,
+    image: str | None = None,
+    workspace: str | None = None,
+    project: str | None = None,
+    queue: str | None = None,
+    credentials: JiudingCredentials | None = None,
+) -> MultiTargetSubmission:
+    """Submit one program to several targets and return without waiting.
+
+    Submissions run concurrently, so this returns in about the time one target
+    takes rather than the sum of them, and the report is ordered as the caller
+    named the targets rather than as the network answered. Every target is
+    contacted exactly once: a target whose submission raises is recorded with
+    its error and is never retried, because an ambiguous submission may already
+    have reached the provider.
+
+    The program is materialized to an IR once, before any target is contacted, so
+    a program that cannot be read fails before a paid job exists. The remaining
+    options are shared, so they must suit every target named: the Quafu-only and
+    Jiuding-only options cannot be combined, and one target's refusal is
+    recorded against that target rather than aborting the rest. A ``name`` is
+    refused for more than one target, because a single job name cannot name
+    several submissions.
+
+    This is fan-out, not one partitioned workload. See
+    :class:`MultiTargetSubmission` for what may not be claimed about it, and
+    reach for it by module path: it is not re-exported from
+    ``flagquantum.remote``.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from ..core.ir import ensure_circuit_ir
+
+    if isinstance(targets, str) or not isinstance(targets, Sequence):
+        raise ValueError("targets must be a non-empty sequence of target strings")
+    named = tuple(targets)
+    if not named or any(not isinstance(target, str) for target in named):
+        raise ValueError("targets must be a non-empty sequence of target strings")
+    repeated = sorted({target for target in named if named.count(target) > 1})
+    if repeated:
+        raise ValueError(f"targets must be distinct; repeated: {', '.join(repeated)}")
+    if name is not None and len(named) > 1:
+        raise ValueError("name applies to one submission, not to several targets")
+    ir = ensure_circuit_ir(program)
+
+    def one(target: str) -> TargetSubmission:
+        try:
+            job = submit(
+                ir,
+                target=target,
+                outputs=outputs,
+                shots=shots,
+                compiler=compiler,
+                target_qubits=target_qubits,
+                name=name,
+                image=image,
+                workspace=workspace,
+                project=project,
+                queue=queue,
+                credentials=credentials,
+            )
+        except Exception as exc:
+            return TargetSubmission(target, None, type(exc).__name__, str(exc))
+        return TargetSubmission(target, job)
+
+    with ThreadPoolExecutor() as pool:
+        futures = [pool.submit(one, target) for target in named]
+        submissions = tuple(future.result() for future in futures)
+    return MultiTargetSubmission(submissions)
+
+
 def restore_job(
     path: str | Path, *, credentials: JiudingCredentials | None = None
 ) -> RemoteJob:
@@ -447,4 +604,12 @@ def restore_job(
     raise ValueError("Unsupported receipt provider")
 
 
-__all__ = ("JobStatus", "RemoteJob", "restore_job", "submit")
+__all__ = (
+    "JobStatus",
+    "MultiTargetSubmission",
+    "RemoteJob",
+    "TargetSubmission",
+    "restore_job",
+    "submit",
+    "submit_to_targets",
+)

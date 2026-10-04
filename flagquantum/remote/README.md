@@ -21,6 +21,29 @@ with their owning domains.
 - [Quafu guide](../../docs/guides/QUAFU_BACKEND.md): compiler, token, and hardware setup.
 - [Jiuding guide](../../docs/guides/JIUDING.md): jobs, workspace execution, and recovery.
 
+## Submit one program to several targets
+
+`flagquantum.remote.jobs.submit_to_targets` takes one program and a sequence of
+targets, submits concurrently, and returns without waiting. Each target gets its
+own `RemoteJob` -- its own status, result, cancel, and receipt -- and the report
+lists the targets in the order the caller named them, not the order the network
+answered. A target that refuses the program is recorded with its exception type
+and message rather than aborting the others, and is never retried; an
+unreadable program is refused before any target is contacted.
+
+This is fan-out, not one partitioned workload: every target runs a full copy of
+the program, and no state, shot, or sample crosses targets. The report therefore
+carries `distribution_semantics="replicated_independent_targets"` and
+`scalability_claim_allowed=False` with its blockers, and carries no `world_size`
+or rank ownership, because there is no rank to attribute anything to. Reaching
+for the same program on several QPUs to compare or to average independent
+streams is what this is for; capacity expansion is not.
+
+Offline evidence is `tests/api_contract/test_remote_job_fanout.py`, which drives
+the fan-out through a transport double. The function is not re-exported from
+`flagquantum.remote`: reach it by module path so it cannot be mistaken for a
+single submission.
+
 ## Emulate a target without submitting
 
 `flagquantum.remote.emulation.emulate` takes the same `CloudBackendProfile` an
