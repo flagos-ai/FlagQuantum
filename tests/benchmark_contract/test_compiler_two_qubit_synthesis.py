@@ -387,3 +387,137 @@ def test_the_qiskit_anchor_agrees_on_the_entangler_count(payload: dict) -> None:
     assert anchor["reference_entanglers"] == list(SUPERCONTROLLED_ENTANGLERS)
     for row in anchor["rows"]:
         assert row["port_entangler_count"] == _ENTANGLER_COST[row["opcode"]], row
+
+
+#: What each basis reaches on the local-split population, pinned per basis. These
+#: are reach counts -- a route either serves a case or refuses it -- and they are
+#: saturated (all 96, or none), so they are pinned as equalities.
+_SPLIT_REACH = {
+    # label: (comparable, shipped_unreachable, entangler_unreachable)
+    "ibm-rz-sx-cx": (96, 0, 0),
+    "ibm-heron-cz": (96, 0, 0),
+    "rotational": (96, 0, 0),
+    "ion-trap-rz-rx-rzz": (96, 0, 0),
+    "rz-sx-rotation-only": (96, 0, 96),
+}
+
+#: How many cases each basis's *hand-written* route -- the same operator spoken as
+#: its two declared factors -- refuses. ``clifford-t`` publishes no z-rotation, so a
+#: one-wire matrix instruction has no route on it either. The basis is kept in the
+#: benchmark precisely so that a population reaching almost nothing cannot be read
+#: as agreement.
+_SPLIT_HAND_UNREACHABLE = {
+    "ibm-rz-sx-cx": 0,
+    "ibm-heron-cz": 0,
+    "rotational": 0,
+    "ion-trap-rz-rx-rzz": 0,
+    "clifford-t": 90,
+}
+
+#: The two length columns are **not** pinned as equalities, and the reason is
+#: measured rather than cautious: the number of instructions the entangler route
+#: emits is decided by the one-qubit Euler synthesis, whose short forms branch on
+#: exact polar-angle comparisons, so a 1-ulp difference in the platform's `libm`
+#: moves a case from a three-leaf form to the general five-leaf one. The
+#: classification rule this repository already applies to such a column is a
+#: reference plus a documented allowance, so that is what these are: the gap is
+#: structural -- `synthesize_two_qubit` pays its full local padding on the identity
+#: branch of a product, which is 10 leaves, while the split emits between one and
+#: four -- so the floor and ceiling below sit in the middle of an order-of-magnitude
+#: gap rather than on a boundary, and each is stated against the measured count.
+_ENTANGLER_LONGER_FLOOR = 8  # measured 16 of 96
+_ENTANGLER_SHORTER_CEILING = 8  # measured 1 of 96, the identity case
+
+#: The split reproduces its input by arithmetic, so its residual is rounding of an
+#: exact product. The entangler route is a KAK synthesis, which cannot record the
+#: global phase it drops because `CircuitIR` has no field for one, so its residual
+#: is pi. The gap between the two is the measurement, not the tolerance.
+_SPLIT_RESIDUAL_BOUND = 1e-14
+_ENTANGLER_PHASE_FLOOR = 3.14
+_ENTANGLER_PHASE_CEILING = 3.15
+
+
+def _split_by_label(payload: dict) -> dict[str, dict]:
+    rows = list(payload["product_split"]) + [payload["product_split_rotation_only"]]
+    return {row["label"]: row for row in rows}
+
+
+def test_the_split_payload_is_pinned_per_basis(payload: dict) -> None:
+    rows = _split_by_label(payload)
+    assert set(rows) == set(_SPLIT_REACH) | {"clifford-t"}
+    for label, expected in _SPLIT_REACH.items():
+        row = rows[label]
+        assert row["case_count"] == 96, label
+        assert (
+            row["comparable_case_count"],
+            row["shipped_unreachable_case_count"],
+            row["entangler_unreachable_case_count"],
+        ) == expected, (label, row)
+        if row["entangler"] is None:
+            continue
+        assert row["entangler_longer_than_shipped_count"] >= _ENTANGLER_LONGER_FLOOR, (
+            label,
+            row,
+        )
+        assert row["entangler_shorter_than_shipped_count"] <= (
+            _ENTANGLER_SHORTER_CEILING
+        ), (label, row)
+
+
+def test_the_split_reaches_every_case_the_hand_written_route_reaches(
+    payload: dict,
+) -> None:
+    """The claim, stated as reach and not as agreement between two routes.
+
+    A basis whose shipped route reaches nothing must not be able to pass this by
+    matching a hand-written route that also reaches nothing, which is why the two
+    counts are pinned separately for every basis rather than compared to each
+    other. The rotation-only basis is the sharp case: it publishes no entangler, so
+    the route that existed before reaches none of the 96 cases there, and the split
+    reaches every one of them.
+    """
+
+    rows = _split_by_label(payload)
+    for label, hand_unreachable in _SPLIT_HAND_UNREACHABLE.items():
+        assert rows[label]["hand_split_unreachable_case_count"] == hand_unreachable
+    for label in _SPLIT_REACH:
+        assert rows[label]["shipped_unreachable_case_count"] == 0, label
+
+    # `clifford-t` reaches nothing either way, and says so rather than reporting a
+    # comparison it cannot make.
+    clifford = rows["clifford-t"]
+    assert clifford["comparable_case_count"] == 0
+    assert clifford["shipped_unreachable_case_count"] == 96
+
+    # The rotation-only basis has no entangler to synthesize at all, so the
+    # entangler arm reaches nothing and the count is a failure rather than a tie.
+    rotation_only = rows["rz-sx-rotation-only"]
+    assert rotation_only["entangler"] is None
+    assert rotation_only["entangler_unreachable_case_count"] == 96
+
+
+def test_the_split_drops_no_global_phase_and_the_entangler_route_drops_one(
+    payload: dict,
+) -> None:
+    """Both halves of the comparison, so neither can pass by being zero.
+
+    The split's phase column is the whole reason this pass exists in the form it
+    does: its two factors are read off the product's own blocks with a positive real
+    scaling, so no phase has to be recorded anywhere -- and `CircuitIR` has no field
+    to record one in. The entangler route has the opposite property, and the
+    benchmark reports it, which is what stops the first column from being read as
+    "this input class is easy" rather than "this route is exact".
+    """
+
+    for row in _split_by_label(payload).values():
+        if row["comparable_case_count"] == 0:
+            continue
+        assert row["worst_split_entry_residual"] < _SPLIT_RESIDUAL_BOUND, row["label"]
+        assert row["worst_split_phase_radians"] < _SPLIT_RESIDUAL_BOUND, row["label"]
+        if row["entangler"] is None:
+            continue
+        assert (
+            _ENTANGLER_PHASE_FLOOR
+            < row["worst_entangler_phase_radians"]
+            < _ENTANGLER_PHASE_CEILING
+        ), row["label"]

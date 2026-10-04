@@ -11,6 +11,7 @@ from flagquantum.compiler.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, canonical_opcode
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,
@@ -884,3 +885,183 @@ def test_a_basis_without_a_z_rotation_reaches_only_the_identities() -> None:
     assert len(missing) == 7
     # A failure names the native gate the target is missing, not the source gate.
     assert all("requires unsupported native gate" in text for text in missing.values())
+
+
+def _cnot_matrix() -> list[list[complex]]:
+    """The runtime's own `cx` matrix, so the test does not restate the convention."""
+
+    return (
+        gate_matrix(
+            Instruction("cx", (0, 1)),
+            bsz=1,
+            device=torch.device("cpu"),
+            dtype=torch.complex128,
+        )
+        .reshape(4, 4)
+        .tolist()
+    )
+
+
+def _product_instruction(
+    left: str, right: str, *, left_angle: float = 0.7137, right_angle: float = 1.1
+) -> Instruction:
+    """One two-wire matrix instruction whose matrix is ``left (x) right``.
+
+    The two factors are read from the runtime gate table, so the wiring convention
+    this test depends on is the executor's own rather than a second copy of it.
+    """
+
+    def factor(
+        opcode: str, wire: int, angle: float
+    ) -> tuple[Instruction, torch.Tensor]:
+        schema = OPERATOR_SCHEMAS[canonical_opcode(opcode)]
+        params = dict.fromkeys(schema.parameters, angle)
+        instruction = Instruction(opcode, (wire,), params=params)
+        values = gate_matrix(
+            instruction,
+            bsz=1,
+            device=torch.device("cpu"),
+            dtype=torch.complex128,
+        ).reshape(2, 2)
+        return instruction, values
+
+    left_instruction, left_values = factor(left, 0, left_angle)
+    right_instruction, right_values = factor(right, 1, right_angle)
+    product = torch.kron(left_values, right_values)
+    return (
+        Instruction("blob", (0, 1), matrix=product.tolist()),
+        left_instruction,
+        right_instruction,
+    )
+
+
+def test_a_product_reaches_a_basis_that_publishes_no_entangler() -> None:
+    """The reach W9-23 adds, on the one input class it admits.
+
+    Before the local split, a two-wire matrix instruction had exactly one route
+    out of the legalizer: `synthesize_two_qubit`, which needs an entangler. A
+    target that publishes a z-rotation and a pulse and nothing else -- a
+    single-qubit-only device, or the moment before its two-qubit calibration is
+    verified -- therefore failed closed on it, and the operator it can actually
+    execute perfectly well was unreachable.
+
+    The program still matches its declared reference only up to one global phase,
+    and that is the pre-existing one-qubit synthesis contract rather than a phase
+    this pass drops: `synthesize_one_qubit_matrix` cannot record a factor's phase,
+    so it is dropped once per factor. The pass's own arithmetic is checked exactly
+    in `tests/unit/test_compilation_split_two_qubit_blocks.py`; what is asserted
+    here is that the phase that remains is that one, and not a second one.
+    """
+
+    product, left_instruction, right_instruction = _product_instruction("x", "rz")
+    source = CircuitIR(
+        2,
+        (Instruction("h", (0,)), product),
+        dtype="complex128",
+    )
+    reference = CircuitIR(
+        2,
+        (Instruction("h", (0,)), left_instruction, right_instruction),
+        dtype="complex128",
+    )
+    result = legalize_native_gates(
+        source,
+        # A z-rotation and a pulse, and deliberately no entangler at all.
+        snapshot=_z_sx_snapshot(),
+        evaluated_at=_NOW,
+    )
+
+    assert tuple(item.name for item in result.program.instructions) == (
+        "rz",
+        "sx",
+        "rz",
+        "sx",
+        "sx",
+        "rz",
+    )
+    assert "blob" in {record.source_opcode for record in result.decompositions}
+    # A rotation-only basis has no entangler to emit, and the reach above is the
+    # whole of what it buys: the program is single-qubit throughout.
+    assert {item.name for item in result.program.instructions} <= {"rz", "sx"}
+    assert all(len(item.wires) == 1 for item in result.program.instructions)
+
+    original = _state(reference).reshape(-1)
+    legalized = _state(result.program).reshape(-1)
+    overlap = torch.vdot(original, legalized)
+    assert float(torch.abs(overlap)) == pytest.approx(1.0, abs=1e-12)
+    # The remaining phase is the pre-existing one-qubit synthesis contract -- an
+    # `h` and an `x` each contribute one -- and the raw difference is not zero, so
+    # this test would also catch a change that started dropping a further phase.
+    assert float(torch.max(torch.abs(legalized - original))) > 0.1
+    assert abs(float(torch.angle(overlap))) > 1e-3
+
+
+def test_the_local_split_is_preferred_over_the_entangler_route() -> None:
+    """A product is reached as its two factors even where an entangler exists.
+
+    Both routes can serve this input, and the split is the exact one: it costs no
+    entangler and drops no phase of its own. Choosing the two-wire route instead
+    would spend an entangler and introduce a phase that is not the synthesis
+    contract's.
+    """
+
+    product, left_instruction, right_instruction = _product_instruction("x", "rz")
+    source = CircuitIR(2, (Instruction("h", (0,)), product), dtype="complex128")
+    basis = _z_sx_snapshot({"name": "cx", "parameters": ()})
+    result = legalize_native_gates(source, snapshot=basis, evaluated_at=_NOW)
+
+    assert "cx" not in {item.name for item in result.program.instructions}
+    assert tuple(item.name for item in result.program.instructions) == (
+        "rz",
+        "sx",
+        "rz",
+        "sx",
+        "sx",
+        "rz",
+    )
+    # And the program that route produces is the same one the entangler-free basis
+    # produces, which is the statement that the entangler was not needed.
+    without = legalize_native_gates(
+        source,
+        snapshot=  # `_z_sx_snapshot` is deliberately the rotation-only basis: a z-rotation and a
+        # pulse, and no entangler at all.
+        _z_sx_snapshot(),
+        evaluated_at=_NOW,
+    )
+    assert [item.name for item in without.program.instructions] == [
+        item.name for item in result.program.instructions
+    ]
+
+
+def test_a_non_product_still_fails_closed_without_an_entangler() -> None:
+    """The split must not become a general two-qubit route.
+
+    `cx` is not a product, so a target with no entangler has no way to execute it
+    and the legalizer has to say so rather than approximate. The failure text names
+    the input instruction, not a gate the target is missing, because there is no
+    decomposition to name.
+    """
+
+    source = CircuitIR(
+        2, (Instruction("cx", (0, 1), matrix=_cnot_matrix()),), dtype="complex128"
+    )
+    with pytest.raises(
+        NativeGateLegalizationError,
+        match="custom matrix instruction 'cx' has no native contract",
+    ):
+        legalize_native_gates(
+            source,
+            snapshot=  # `_z_sx_snapshot` is deliberately the rotation-only basis: a z-rotation and a
+            # pulse, and no entangler at all.
+            _z_sx_snapshot(),
+            evaluated_at=_NOW,
+        )
+    # With an entangler published, the same input is served, so the failure above
+    # is about the target rather than about the instruction being unreachable in
+    # general.
+    served = legalize_native_gates(
+        source,
+        snapshot=_z_sx_snapshot({"name": "cx", "parameters": ()}),
+        evaluated_at=_NOW,
+    )
+    assert [item.name for item in served.program.instructions] == ["cx"]

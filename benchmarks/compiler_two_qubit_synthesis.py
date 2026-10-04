@@ -61,6 +61,7 @@ from flagquantum.compiler.native_gate_legalization import (
     _supports,
     legalize_native_gates,
 )
+from flagquantum.compiler.two_qubit_optimization import split_two_qubit_blocks
 from flagquantum.compiler.two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,
     synthesize_two_qubit,
@@ -532,6 +533,217 @@ def phase_evidence(basis: Basis) -> dict[str, Any]:
     }
 
 
+#: The population the local-gate split is measured on. A product of two declared
+#: single-qubit unitaries is the one input class `split_two_qubit_blocks` admits,
+#: and every factor is a declared opcode rather than a random matrix, so the
+#: population is one the schema table already names and re-derives from the index
+#: alone.
+_SPLIT_SEED = 20261024
+SPLIT_CASE_COUNT = 96
+SPLIT_FACTORS: tuple[str, ...] = (
+    "i",
+    "x",
+    "y",
+    "z",
+    "h",
+    "s",
+    "sdg",
+    "sx",
+    "sxdg",
+    "t",
+    "tdg",
+)
+
+#: A target that publishes a z-rotation and a pulse and no entangler at all. The
+#: entangler route has no answer on it, so the reach the split route adds there is
+#: a count rather than a claim.
+ROTATION_ONLY_BASIS = Basis(
+    "rz-sx-rotation-only", (_gate("rz"), _gate("sx")), None, "rz", "sx"
+)
+
+
+def _factor_matrix(opcode: str) -> list[list[complex]]:
+    values = gate_matrix(
+        Instruction(opcode, (0,)), bsz=1, device=torch.device("cpu"), dtype=COMPLEX
+    )
+    return values.reshape(2, 2).tolist()
+
+
+def product_case(index: int) -> tuple[str, str, list[list[complex]]]:
+    """One product of two declared single-qubit unitaries, addressed by case index.
+
+    The two opcodes are returned beside the product so that the hand-split arm of
+    `product_split` can be built from the factors themselves rather than from the
+    pass's own reading of the product, which is what keeps that arm independent.
+    """
+
+    rng = random.Random(_SPLIT_SEED + index)
+    left_opcode = rng.choice(SPLIT_FACTORS)
+    right_opcode = rng.choice(SPLIT_FACTORS)
+    left = _factor_matrix(left_opcode)
+    right = _factor_matrix(right_opcode)
+    return (
+        left_opcode,
+        right_opcode,
+        [
+            [
+                left[row // 2][column // 2] * right[row % 2][column % 2]
+                for column in range(4)
+            ]
+            for row in range(4)
+        ],
+    )
+
+
+def _matrix_residual(
+    matrix: list[list[complex]], program: CircuitIR
+) -> tuple[float, float]:
+    """Max entry and overlap angle of `matrix` against a program's own product.
+
+    Nothing is divided out, so the entry residual answers "does this program
+    compute the operator itself" rather than "does it compute it up to a phase".
+    The second number is the angle that would have to be recorded to make the two
+    agree, which is the quantity CircuitIR has no field for.
+    """
+
+    source = torch.tensor(matrix, dtype=COMPLEX)
+    product = _product(program.instructions)
+    overlap = torch.trace(source.conj().T @ product) / 4
+    return (
+        float(torch.max(torch.abs(source - product))),
+        abs(float(torch.angle(overlap))),
+    )
+
+
+def product_split(basis: Basis) -> dict[str, Any]:
+    """Measure the local-gate split on the input class it admits.
+
+    Three arms over one seeded population, and each is asked only what it can
+    answer:
+
+    * ``shipped`` -- the product handed over as one two-wire matrix instruction,
+      which is what `legalize_native_gates` sees from an adapter or a caller;
+    * ``hand_split`` -- the same operator written as its two declared factors on
+      their own wires, which is the only thing a caller could write before the
+      split existed;
+    * ``entangler`` -- the route the two-wire matrix branch took instead,
+      `synthesize_two_qubit` against the basis's own entangler.
+
+    The claim is **reach**: every case the hand-written route serves, the shipped
+    route serves too, and it serves them as matrices rather than as the declared
+    names the hand-written route could lean on. Its length is deliberately *not*
+    compared against the hand-written route case for case, because the two
+    programs are not the same input -- the hand-written one names ``x`` where the
+    shipped one holds an opaque matrix, and a basis that publishes ``x`` keeps the
+    name. That difference is name preservation, not reach, and counting it would
+    report an artifact of the comparison as a property of the pass.
+
+    The entangler arm is compared by length honestly: both arms are handed the
+    same matrix. Where a basis publishes no entangler at all, that arm reaches
+    nothing and the count is a failure rather than a tie.
+
+    A basis that serves no arm -- ``clifford-t`` publishes no z-rotation, so a
+    one-wire matrix has no route either -- is recorded with zero comparable cases
+    rather than folded into a comparison that cannot be made.
+    """
+
+    entangler_longer = 0
+    entangler_shorter = 0
+    shipped_unreachable = 0
+    hand_split_unreachable = 0
+    entangler_unreachable = 0
+    comparable = 0
+    worst_split_residual = 0.0
+    worst_split_phase = 0.0
+    worst_entangler_phase = 0.0
+    descriptors = _native_descriptors(snapshot(basis), evaluated_at=_NOW)
+    for index in range(SPLIT_CASE_COUNT):
+        left_opcode, right_opcode, matrix = product_case(index)
+        # The pass's own round trip, measured on the matrices it emits rather than
+        # on a statevector: a matrix-carrying instruction is a compiler input, so
+        # the runtime cannot execute either side of this comparison. Nothing is
+        # divided out, so the residual is against the operator itself.
+        emitted = split_two_qubit_blocks(
+            CircuitIR(
+                2, (Instruction("blob", (0, 1), matrix=matrix),), dtype="complex128"
+            )
+        )
+        residual, phase = _matrix_residual(matrix, emitted)
+        worst_split_residual = max(worst_split_residual, residual)
+        worst_split_phase = max(worst_split_phase, phase)
+        shipped = legalize(
+            CircuitIR(
+                2, (Instruction("blob", (0, 1), matrix=matrix),), dtype="complex128"
+            ),
+            basis,
+        )
+        if isinstance(shipped, str):
+            shipped_unreachable += 1
+        # The hand-split arm is written from the two factors' own declared
+        # matrices, not from the pass's reading of the product, so the agreement
+        # between the arms is a statement about the pass rather than about one
+        # arithmetic used on both sides.
+        hand = legalize(
+            CircuitIR(
+                2,
+                (
+                    Instruction(left_opcode, (0,), matrix=_factor_matrix(left_opcode)),
+                    Instruction(
+                        right_opcode, (1,), matrix=_factor_matrix(right_opcode)
+                    ),
+                ),
+                dtype="complex128",
+            ),
+            basis,
+        )
+        if isinstance(hand, str):
+            hand_split_unreachable += 1
+        if isinstance(shipped, str) or isinstance(hand, str):
+            continue
+        comparable += 1
+        leaves = (
+            None
+            if basis.entangler is None or basis.z_rotation is None
+            else synthesize_two_qubit(
+                matrix,
+                wires=(0, 1),
+                entangler=basis.entangler,
+                z_rotation=basis.z_rotation,
+                pulse_opcode=basis.pulse_opcode,
+            )
+        )
+        if leaves is None:
+            entangler_unreachable += 1
+            continue
+        # The leaves are the opcodes the basis itself publishes, so the entangler
+        # arm needs no translation and its leaf count is the count the basis sees.
+        if not all(_supports(descriptors, leaf) for leaf in leaves):
+            entangler_unreachable += 1
+            continue
+        if len(leaves) > len(shipped.program.instructions):
+            entangler_longer += 1
+        elif len(leaves) < len(shipped.program.instructions):
+            entangler_shorter += 1
+        worst_entangler_phase = max(
+            worst_entangler_phase,
+            _matrix_residual(matrix, CircuitIR(2, leaves, dtype="complex128"))[1],
+        )
+    return {
+        "label": basis.label,
+        "entangler": basis.entangler,
+        "case_count": SPLIT_CASE_COUNT,
+        "comparable_case_count": comparable,
+        "shipped_unreachable_case_count": shipped_unreachable,
+        "hand_split_unreachable_case_count": hand_split_unreachable,
+        "entangler_unreachable_case_count": entangler_unreachable,
+        "entangler_longer_than_shipped_count": entangler_longer,
+        "entangler_shorter_than_shipped_count": entangler_shorter,
+        "worst_split_entry_residual": worst_split_residual,
+        "worst_split_phase_radians": worst_split_phase,
+        "worst_entangler_phase_radians": worst_entangler_phase,
+    }
+
+
 def entangler_table() -> list[dict[str, Any]]:
     """The entangler cost of every declared opcode over ``cx``, before the
     legalizer sees it, so the cost is a property of the decomposition."""
@@ -577,6 +789,9 @@ def run_benchmark(*, bases: tuple[Basis, ...] = DEFAULT_BASES) -> dict[str, Any]
         "reference_revision": "qiskit 1.2.4 TwoQubitBasisDecomposer(euler_basis='ZSX')",
         "synthesis_identity": "U == exp(i*phase) * (K1l x K1r) * exp(i*(a XX + b YY + c ZZ)) * (K2l x K2r)",
         "phase_contract": "equal up to one global phase, which CircuitIR cannot record",
+        "split_identity": "U == left (x) right, with no global phase to record",
+        "split_case_seed": _SPLIT_SEED,
+        "split_factors": list(SPLIT_FACTORS),
         "declared_two_qubit_unitary_opcodes": list(TWO_QUBIT_OPCODES),
         "supercontrolled_entanglers": list(SUPERCONTROLLED_ENTANGLERS),
         "random_case_seed": _RANDOM_SEED,
@@ -584,6 +799,8 @@ def run_benchmark(*, bases: tuple[Basis, ...] = DEFAULT_BASES) -> dict[str, Any]
         "reach": rows,
         "random_reach": [random_reach(basis) for basis in bases],
         "phase": [phase_evidence(basis) for basis in bases],
+        "product_split": [product_split(basis) for basis in bases],
+        "product_split_rotation_only": product_split(ROTATION_ONLY_BASIS),
         "entangler_cost": entangler_table(),
         "reference_anchor": _qiskit_anchor(),
     }
