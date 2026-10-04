@@ -41,14 +41,12 @@ def _instruction_to_op(instruction: Any) -> dict[str, Any]:
     }
 
 
+#: The key every operation entry carries once it has passed this module.
 CANONICAL_QUBIT_KEY = "qubits"
-"""The key every operation entry carries once it has passed this module."""
 
+#: The key a pre-qubit-vocabulary object may use instead. Read here and dropped
+#: on the way through, so no renderer ever meets it.
 LEGACY_QUBIT_KEYS = ("wires",)
-"""The key a pre-qubit-vocabulary object may use instead.
-
-Read here and dropped on the way through, so no renderer ever meets it.
-"""
 
 
 def _op_qubits(op: Mapping[str, Any]) -> list[Any]:
