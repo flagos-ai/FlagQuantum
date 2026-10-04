@@ -405,9 +405,10 @@ cudaq = "from_qasm and from_qiskit bringing a foreign circuit into the framework
 status = "partial"
 priority = "next"
 dependency_class = "none"
-maturity_ref = "qiskit_interop"
-reason = "The Qiskit direction exists: an ecosystem adapter builds a FlagQuantum circuit from a provider object. OpenQASM import does not, and the OpenQASM surface FlagQuantum carries is an emitter, so a circuit that exists only as text cannot enter the framework."
-evidence = ["flagquantum/ecosystem/qiskit", "search:no OpenQASM text importer"]
+maturity_refs = ["openqasm_interchange", "qiskit_interop"]
+reason = "Both directions exist and each is governed by its own contract. `flagquantum.ecosystem.qiskit` builds a FlagQuantum circuit from a Qiskit provider object and exports one back under `tests/test_qiskit_interop_conformance.py`. `fq.from_openqasm` reads OpenQASM text into the same IR, is a stable export, and is governed by `contracts/openqasm-import-v1-candidate.json`. The OpenQASM half is the inverse of the emitter over one canonical subset rather than a general front end: the names it accepts in a version lane are exactly the names the emitter writes in that lane, 25 of the 28 declared spellings in OpenQASM 2 and 24 in OpenQASM 3, and the difference between the lanes is the spelling each one canonically writes rather than a gap in either. The row names two registry entries because the two front ends are separate capabilities with separate surfaces and separate evidence: `openqasm_interchange` owns the text reader and its protected contract, `qiskit_interop` owns the provider-object adapter, and neither front end can be reached through the other."
+baseline_gap = "A circuit that exists as text in any other form cannot enter the framework. OpenQASM 2's whole-register `measure q -> c;` is refused, as are `reset`, `barrier`, `if`, `for`, `delay`, `box`, `gphase`, `input`, `opaque` and `gate` declarations; a program must declare one quantum and one classical register and end in a measurement block covering the whole classical register. `ch`, `rzz`, `cu3` and OpenQASM 3's lowercase `u` are refused as unknown gates."
+evidence = ["flagquantum/compiler/openqasm_import.py", "flagquantum/compiler/openqasm_gates.py", "flagquantum/ecosystem/qiskit", "tests/unit/test_openqasm_import_extent.py", "tests/unit/test_openqasm_import_contract.py"]
 
 [[domains]]
 id = "simulation_backends"
