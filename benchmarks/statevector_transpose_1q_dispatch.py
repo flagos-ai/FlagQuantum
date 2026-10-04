@@ -162,6 +162,7 @@ def _case(
     torch.testing.assert_close(
         compiled, expected, atol=CORRECTNESS_TOLERANCE, rtol=CORRECTNESS_TOLERANCE
     )
+    maximum_absolute_error = float(torch.max(torch.abs(actual - expected)))
     results = {
         "catalog_dispatch": _measure(
             catalog_dispatch,
@@ -193,7 +194,7 @@ def _case(
         "dtype": "complex64",
         "layout": "contiguous_sharded_statevector",
         "default_eligible": default_eligible,
-        "maximum_absolute_error": float(torch.max(torch.abs(actual - expected))),
+        "maximum_absolute_error": maximum_absolute_error,
         **results,
         "speedup_over_pytorch_eager": _median(results["pytorch_eager"])
         / catalog_median,
