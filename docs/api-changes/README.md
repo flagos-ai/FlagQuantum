@@ -35,3 +35,4 @@ process.
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)
 - [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
 - [A native SPSA optimizer for objectives with no gradient](FQ-SPSA-OPTIMIZER-20261002.md)
+- [A global phase on the program](FQ-IR-GLOBAL-PHASE-20261006.md)
