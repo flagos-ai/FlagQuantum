@@ -82,7 +82,7 @@ def _mps_wire_probability_kernel_match(
 def _require_mps_wire_probability_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired MPS-007 implementation or fail closed."""
+    """Return the connected MPS-007 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _mps_wire_probability_kernel_match(

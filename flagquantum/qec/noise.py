@@ -70,7 +70,7 @@ class PhenomenologicalNoise:
 
     The three data fields name the three single-qubit Pauli faults:
     ``data_flip`` is an X fault, ``phase_flip`` a Z fault, and ``both_flip`` a Y
-    fault, which is the two of them at once. Each applies to every data wire at
+    fault, which is the two of them at once. Each applies to every data qubit at
     the start of every syndrome round, before that round's parity-check CNOTs.
     ``measurement_flip`` applies to every syndrome measurement of every check in
     every round. All four are independent per location per round.

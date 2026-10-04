@@ -527,7 +527,7 @@ class Circuit:
         Examples:
             >>> import flagquantum as fq
             >>> bell = fq.Circuit(2).h(0).cx(0, 1)
-            >>> fq.Circuit(4).x(0).compose(bell, qubits=(1, 2)).to_ir().instructions[-1].wires
+            >>> fq.Circuit(4).x(0).compose(bell, qubits=(1, 2)).to_ir().instructions[-1].qubits
             (1, 2)
         """
 

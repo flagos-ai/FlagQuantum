@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from ...circuit import Circuit
 
 
-# The Apple-arm64 18-wire/batch-32 corpus measured this budget at 1.05x-1.27x
+# The Apple-arm64 18-qubit/batch-32 corpus measured this budget at 1.05x-1.27x
 # over one monolithic batch across all five representative workloads. This is a
 # logical state budget, not a process-RSS promise; individual kernels still own
 # their temporary storage.

@@ -4,7 +4,7 @@ A rewrite is chosen from two sources: the exact named-gate equivalences in
 `basis_translation`, composed recursively until every leaf is native, and the
 one-qubit Euler and two-qubit KAK syntheses for a matrix-carrying instruction,
 which no operator schema describes. A synthesis applies only when the target
-publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one wire,
+publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one qubit,
 plus a supercontrolled entangler for two. Among the rewrites that reach the
 native set the shortest wins, so a basis that can carry a gate exactly keeps its
 exact form instead of paying for the general one. A synthesized rewrite is equal
@@ -232,7 +232,7 @@ def _matrix_replacement(
 ) -> tuple[Instruction, ...] | None:
     """Rewrite a matrix-carrying instruction, which no schema table describes.
 
-    One wire goes through Euler synthesis, two through KAK synthesis, and
+    One qubit goes through Euler synthesis, two through KAK synthesis, and
     anything wider is refused because the entangler basis reaches exactly two.
     """
 

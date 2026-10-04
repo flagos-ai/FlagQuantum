@@ -633,10 +633,10 @@ def _validate_distributed_statevector_plan(
             f"{empty_shards} would own an empty share of {plan.total_amplitudes}"
         )
     if plan.distribution == "qubit_address_sharded":
-        # The rank address must fit inside the wire budget: the executor splits
+        # The rank address must fit inside the qubit budget: the executor splits
         # each global index into rank bits and a local offset, so a plan whose
         # rank address is wider than `n_wires` names global indices no shard
-        # covers. `sharded_wires` is truncated to the wire count when that
+        # covers. `sharded_wires` is truncated to the qubit count when that
         # happens, which is exactly why the width has to be checked here.
         if plan.rank_address_bits > plan.n_qubits:
             errors.append(

@@ -35,7 +35,7 @@ def quafu_noise_model_from_chip_info(
     readout_confusion_matrices: Sequence[Sequence[Sequence[float]]] | None = None,
     correlated_readout_confusion_matrix: Sequence[Sequence[float]] | None = None,
 ) -> NoiseModel:
-    """Build a logical-wire noise model from a QuarkCircuit ``chip_info``.
+    """Build a logical-qubit noise model from a QuarkCircuit ``chip_info``.
 
     Quafu currently reports T1/T2 in microseconds and gate lengths in seconds.
     Reported one-qubit fidelities are converted to Pauli depolarizing

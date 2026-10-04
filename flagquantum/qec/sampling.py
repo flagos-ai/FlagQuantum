@@ -123,7 +123,7 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
         )
     block = len(instructions) // rounds
     # Two rounds are the same round when they execute the same operations on the
-    # same wires. They are not the same records: a lowered measurement carries
+    # same qubits. They are not the same records: a lowered measurement carries
     # the absolute classical bit it writes, which necessarily differs per round,
     # so equality of the whole instruction would refuse every program.
     template = tuple(

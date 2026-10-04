@@ -28,7 +28,7 @@ def _triton_local_cx_segment_decision(
     device_type: str,
     dtype: str,
 ) -> KernelDecision:
-    """Select the exact evidenced implementation wired into the runtime."""
+    """Select the exact evidenced implementation connected into the runtime."""
 
     return select_cataloged_triton_kernel(
         "local_cx_segment",

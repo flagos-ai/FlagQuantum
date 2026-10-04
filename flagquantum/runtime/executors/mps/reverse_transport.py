@@ -54,11 +54,11 @@ def begin_reverse_layer_halo_prefetch(
     """Launch disjoint layer-boundary halo sends before rank-local compute.
 
     The result describes the *layer*, not this rank: a rank that owns neither
-    wire of a cut still receives a prefetch object (with no transfers) for as
+    qubit of a cut still receives a prefetch object (with no transfers) for as
     long as the layer cuts anything. The caller follows a non-``None`` prefetch
     with a full-group split-metadata collective, so returning ``None`` merely
     because this rank has nothing to send would leave that collective short of
-    participants. Only a layer with no cut wire at all returns ``None``, which
+    participants. Only a layer with no cut qubit at all returns ``None``, which
     every rank decides identically.
     """
     boundary = tuple(

@@ -95,7 +95,7 @@ def _memory_circuit_entries(
             # Unreachable through ``_mechanisms``, which sets the field from the
             # annotation; stated for a caller that builds records itself, where a
             # bare ``else`` would read an unknown kind as a measurement flip
-            # whenever the wire is a declared ancilla.
+            # whenever the qubit is a declared ancilla.
             raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
         detectors, observables = _forced_signature(circuit, source)
         entries.append((mechanism.probability, detectors, observables))
@@ -370,7 +370,7 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
     """Return a code record's CSS generator matrices.
 
     Column ``q`` of every matrix is the ``q``-th qubit :attr:`data_qubits` names, so
-    a code is free to declare its data qubits on any wires, and the rows follow the
+    a code is free to declare its data qubits on any qubits, and the rows follow the
     code's own declaration order. Each of the code's checks contributes one row to
     the matrix of its own type and none to the other, and each logical observable
     does the same, so a code that declares an X-type logical operator is modelled
@@ -384,7 +384,7 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
     Raises:
         TypeError: If ``code`` is not a :class:`~flagquantum.qec.StabilizerCode`.
         ValueError: If a logical observable is of mixed type, or if a check or
-            observable names a wire the code does not declare as a data wire.
+            observable names a qubit the code does not declare as a data qubit.
     """
 
     if not isinstance(code, StabilizerCode):
@@ -450,7 +450,7 @@ _FLIP_INDENT = "        "
 
 @dataclass(frozen=True)
 class _Mechanism:
-    """One physical noise location, by kind, round, and wire.
+    """One physical noise location, by kind, round, and qubit.
 
         The record carries the coordinates the matching injector needs rather than a
         rendered source. A caller that fires a set of mechanisms at once has to
@@ -480,11 +480,11 @@ def _mechanisms(
     probability is zero cannot flip anything, so it is not enumerated at all: a
     caller that counts mechanisms then counts exactly what can happen.
 
-    A code that declares a data wire twice is refused rather than enumerated
+    A code that declares a data qubit twice is refused rather than enumerated
     twice. Its second copy would be the same physical location as the first
     with the same signature, so merging them states one location's rate as two
     independent flips, ``p * (1 - p) + p * (1 - p)``, instead of ``p`` — a wrong
-    model with no signal. A code whose checks share an ancilla wire is refused
+    model with no signal. A code whose checks share an ancilla qubit is refused
     for the same reason: both checks record their syndrome bit at one position
     in the classical register, so the later check's position overwrites the
     earlier one's and each round's detectors read that one bit for both. The
@@ -610,7 +610,7 @@ def _inject_measurement_flip(
     """Return ``circuit``'s source with one check measurement forced to flip.
 
     The flip is an ``X`` on the ancilla immediately before the check measures
-    it, guarded by ``if round_index == <round_index>:``. A check's ancilla wire
+    it, guarded by ``if round_index == <round_index>:``. A check's ancilla qubit
     is unique to it, so the anchor names exactly one check; a source where that
     line is missing or repeated is refused rather than injected into the wrong
     check.

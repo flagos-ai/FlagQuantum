@@ -825,7 +825,7 @@ class DetectorErrorModel:
         The matrices are read directly rather than simulated, so an arbitrary code
         reaches a model without a circuit record standing for it: a code whose
         checks and logical operators are known as matrices needs no gadget, no
-        wire layout, and no statevector. See
+        qubit layout, and no statevector. See
         :func:`~flagquantum.qec.dem_construction._code_matrix_entries` for the row
         and column conventions and for the detector geometry, which is the
         code-capacity one and not the geometry

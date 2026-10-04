@@ -121,7 +121,7 @@ class _ShardedForwardSweep:
             local_world_size = resolve_local_world_size(
                 self.world_size, subgroup=self.process_group is not None
             )
-        # Resolved before the layout, not after: which wire carries the rank bit
+        # Resolved before the layout, not after: which qubit carries the rank bit
         # depends on whether more than one node is involved, and that is the
         # same placement the plan is built on.
         self.local_world_size = local_world_size
@@ -186,7 +186,7 @@ class _ShardedForwardSweep:
             # The planner describes an arbitrary shard count as
             # `contiguous_amplitude_range` and plans an `indexed_all_to_all` for
             # every gate, but this sweep implements qubit-address sharding only:
-            # with no sharded wires every gate resolves to a local kernel, no
+            # with no sharded qubits every gate resolves to a local kernel, no
             # exchange is issued, and each rank would return its own contiguous
             # slice of a gate it never applied -- wrong amplitudes reported as a
             # successful distributed run. Refuse instead, and name the shape.
@@ -596,7 +596,7 @@ class _ShardedForwardSweep:
         matrix: torch.Tensor,
         touched: bool,
     ) -> int | None:
-        """Compose adjacent gates on one local wire before scanning the state."""
+        """Compose adjacent gates on one local qubit before scanning the state."""
 
         if not (
             self.local_compilation

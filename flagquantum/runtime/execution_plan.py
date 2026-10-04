@@ -162,7 +162,7 @@ class ExecutionPlan:
 
     `recommended_mode` and `world_size` are recommendations, not enforcement:
     `fq.run` accepts a plan and still chooses. `shardable_wires` names the
-    wires a sharded statevector layout may cut, which is every wire but the
+    qubits a sharded statevector layout may cut, which is every qubit but the
     last. A `runtime_config` of ``None`` means the plan was built without one;
     `routing_plan` and `noisy_execution_plan` are present only when the
     corresponding feature was in play.

@@ -1,12 +1,12 @@
 """Initial-placement planning for a program on a coupling map.
 
-Routing has two halves: deciding which physical wires a program's logical wires
-start on, and inserting SWAPs when a two-wire operation lands on wires the device
+Routing has two halves: deciding which physical qubits a program's logical qubits
+start on, and inserting SWAPs when a two-qubit operation lands on qubits the device
 does not join. This module is the first half. It answers "where should this
 program start" before any SWAP is considered.
 
 A placement here is ``logical_to_physical[logical]``, one physical slot per
-logical wire, with distinct slots drawn from ``range(coupling_map.n_qubits)``.
+logical qubit, with distinct slots drawn from ``range(coupling_map.n_qubits)``.
 These functions return it as a bare tuple, which is the argument
 ``route_to_directed_topology`` takes and the entry the routed program later
 reports through :func:`~flagquantum.compiler.layout.final_layout`.
@@ -18,26 +18,26 @@ a :class:`~flagquantum.compiler.directed_topology.DirectedCouplingMap`, whose
 physical workspace owns the idle slots and is cleaned by the inverse routing
 SWAPs. A plain :class:`~flagquantum.compiler.routing.CouplingMap` refuses
 ``initial_layout`` outright, because routing one there may not reach through a
-wire the program does not own. A caller therefore pairs a placement from this
+qubit the program does not own. A caller therefore pairs a placement from this
 module with ``route_to_directed_topology(..., initial_layout=placement)`` or with
 ``legalize_circuit_topology(..., initial_layout=placement)`` on a directed
 coupling map.
 
-``plan_trivial_layout`` places logical wire ``i`` on physical wire ``i``.
+``plan_trivial_layout`` places logical qubit ``i`` on physical qubit ``i``.
 ``plan_dense_layout`` places the program on a densely connected window of
-physical wires. On a device no wider than the program there is exactly one window
+physical qubits. On a device no wider than the program there is exactly one window
 of the required width, so both functions return the identity, and
 ``plan_dense_layout`` is safe to ask unconditionally.
 
 The window search is the one Qiskit's ``DenseLayout`` runs before it reorders its
-result: walk breadth first from every physical wire in turn, keep the window with
+result: walk breadth first from every physical qubit in turn, keep the window with
 the most device connections inside it, and let the lowest-index winning window
 win a tie. Two measured caveats:
 
 * The search is a heuristic over breadth-first prefixes and not an exact
   optimum. Checking every connected subset of the required width over 55
   device/width combinations found the same answer in 45 and a better window in
-  10, each time by exactly one internal connection. The 4-wire windows of a 4x4
+  10, each time by exactly one internal connection. The 4-qubit windows of a 4x4
   grid are the smallest case: the search returns ``(0, 1, 2, 4)`` with 3 internal
   connections, where ``(5, 6, 9, 10)`` has 4.
 * Qiskit then applies a reverse-Cuthill-McKee permutation that SciPy computes.
@@ -88,10 +88,10 @@ def _validated_device(
 def _weak_adjacency(
     coupling_map: CouplingMap | DirectedCouplingMap,
 ) -> tuple[tuple[int, ...], ...]:
-    """Return ascending undirected neighbours for every physical wire.
+    """Return ascending undirected neighbours for every physical qubit.
 
     A directed coupling map is read as weak connectivity, because the placement
-    decides which wires a program may occupy and not which way a two-wire
+    decides which qubits a program may occupy and not which way a two-qubit
     operation may point.
     """
 
@@ -107,11 +107,11 @@ def _breadth_first_window(
     start: int,
     width: int,
 ) -> tuple[int, ...] | None:
-    """Return the first ``width`` wires a breadth-first walk from ``start`` reaches.
+    """Return the first ``width`` qubits a breadth-first walk from ``start`` reaches.
 
     The walk completes a level before it starts the next one, so the window is a
-    connected set of wires rather than a path. ``None`` means ``start``'s
-    connected component holds fewer than ``width`` wires.
+    connected set of qubits rather than a path. ``None`` means ``start``'s
+    connected component holds fewer than ``width`` qubits.
     """
 
     window: list[int] = []
@@ -161,17 +161,17 @@ def plan_trivial_layout(
     circuit_or_ir: Any,
     coupling_map: CouplingMap | DirectedCouplingMap,
 ) -> tuple[int, ...]:
-    """Place logical wire ``i`` on physical wire ``i``.
+    """Place logical qubit ``i`` on physical qubit ``i``.
 
-    This is the placement that assumes the device's lowest-numbered wires are as
-    good as any other set, which is true only on a device whose wires are
+    This is the placement that assumes the device's lowest-numbered qubits are as
+    good as any other set, which is true only on a device whose qubits are
     interchangeable. It is the placement every router in this package already
     starts from, and the one a device exactly as wide as the program is stuck
     with.
 
     Raises:
         TypeError: if ``coupling_map`` is not a Compiler coupling map.
-        LayoutPlanningError: if the device has fewer wires than the program.
+        LayoutPlanningError: if the device has fewer qubits than the program.
     """
 
     ir = ensure_circuit_ir(circuit_or_ir)
@@ -185,13 +185,13 @@ def plan_dense_layout(
 ) -> tuple[int, ...]:
     """Place the program on a densely connected window of the device.
 
-    The placement starts every logical wire on the window and returns the window
-    in ascending physical order, so logical wire ``i`` lands on the ``i``-th
-    lowest wire of the window. A device no wider than the program has one window
+    The placement starts every logical qubit on the window and returns the window
+    in ascending physical order, so logical qubit ``i`` lands on the ``i``-th
+    lowest qubit of the window. A device no wider than the program has one window
     of the required width, and this returns the identity there, which is why the
     function is safe to ask before knowing whether the device is wider.
 
-    The window is the best one a breadth-first walk from each physical wire
+    The window is the best one a breadth-first walk from each physical qubit
     finds, which is not always the exact optimum; see the module docstring for
     the measured shortfall.
 
@@ -201,7 +201,7 @@ def plan_dense_layout(
 
     Raises:
         TypeError: if ``coupling_map`` is not a Compiler coupling map.
-        LayoutPlanningError: if the device has fewer wires than the program, or if
+        LayoutPlanningError: if the device has fewer qubits than the program, or if
             every connected component of the device is narrower than the program.
     """
 
