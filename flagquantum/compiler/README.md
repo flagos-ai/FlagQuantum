@@ -134,7 +134,12 @@ takes that population anyway and pays the difference into `dag.global_phase`,
 which its DAG has and `CircuitIR` does not; measured over 4000 seeded mixed runs,
 a word that agrees only up to a global phase exists for all 4000 and is three
 gates shorter on mean, while one that agrees entry for entry exists for 230 to
-425 of them. The gap is the missing field, not missing synthesis.
+425 of them. The gap is the missing field, not missing synthesis. That second
+column is reported as a reference rather than a constant because it counts a
+floating-point coincidence: which runs the five-gate template happens to hit
+exactly depends on exact-equality branches reading `cmath`, so it moves with the
+platform's C library. The bound the obstruction actually implies is reported
+separately and does not move.
 [benchmarks/compiler_one_qubit_decomposition.py](../../benchmarks/compiler_one_qubit_decomposition.py)
 measures the determinant subgroup per basis, the two columns per declared pair,
 and the phase `native_gate_legalization` already drops on 76 to 78 of 80 seeded

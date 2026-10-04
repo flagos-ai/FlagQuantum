@@ -116,23 +116,20 @@ _PINNED_REACHABILITY = {
 #: applies and the entry-for-entry column is bounded. The second two swap in a
 #: z-rotation whose determinant is its parameter, where the obstruction does not
 #: apply and the same column instead measures this repository's own five-gate
-#: template. Both are pinned so that a change to either cannot pass unnoticed.
+#: template.
 #:
-#: The up-to-a-phase column is pinned only as "every run has one", because the
-#: *length* of the best word is a property of the run rather than of the pair:
-#: `_leaves` picks its branch from the run's own Euler triple, so the same runs
-#: give the same word length under every pair.
-#:
-#: The entry-for-entry column is a *reference* rather than an equality, and
-#: `_PLATFORM_MARGIN` below is why: which runs land in it is decided by the
-#: exact-equality branch tests inside `one_qubit_synthesis._leaves` and
-#: `._pulse_leaf` (`polar == _HALF_PI`, `_is_zero(angle)`) plus `_emit`'s
-#: `abs(anchor) > 1.0e-15`, all evaluated on `cmath`/`math` results that a
-#: different C library may return one unit in the last place away. The same tree
-#: measures 247 runs here and 241 on the x86-64 CI runner, while the column the
-#: claim rests on -- every run has a phase-blind word -- is 4000 out of 4000 on
-#: both. Pinning these two digits as an equality would make the contract a
-#: property of the platform's libm instead of the mathematics.
+#: The up-to-a-phase column is pinned as an equality: every run has a word, and
+#: that is arithmetic. The entry-for-entry column is pinned as a **reference with a
+#: margin**, and the distinction is the point of this contract rather than a
+#: concession to it. Which runs this repository's template hits exactly is decided
+#: by the exact-equality branch tests inside `one_qubit_synthesis._leaves` and
+#: `._pulse_leaf` (`polar == _HALF_PI`, `_is_zero(angle)`) together with `_emit`'s
+#: `abs(anchor) > 1.0e-15`, all of them reading `cmath`/`math` results a different C
+#: library may return one unit in the last place away. The same tree measures
+#: `247`/`188` here, `241` on the x86-64 CI runner, and moves by one run under a
+#: one-ulp change to every run angle: it is a **platform quantity**. What is not a
+#: platform quantity is `beyond_the_subgroup`, asserted below as a hard bound,
+#: because the two cases it separates are 45 degrees apart.
 _PINNED_REACH = {
     ("rz", "sx"): (True, 247, 188),
     ("rz", "rx"): (True, 230, 193),
@@ -140,15 +137,28 @@ _PINNED_REACH = {
     ("u1", "rx"): (False, 425, 529),
 }
 
-#: How far the entry-for-entry column may move from its reference and still be the
-#: same measurement. The observed platform spread is 6 runs of 4000; the margin is
-#: twice that, and it is small enough that a real regression -- the column growing
-#: toward the phase-blind one, or collapsing -- still fails.
+#: The measured number of runs per pair whose *own* product determinant lies
+#: outside the subgroup a word over that pair can carry. No exact word can exist
+#: for those runs at any length, so this bounds the entry-for-entry column from
+#: above, and unlike that column the bound is not a rounding question.
+_PINNED_BOUND = {("rz", "sx"): 2429, ("rz", "rx"): 3770}
+
+#: The allowance on the entry-for-entry reference, in runs. Measured spread across
+#: the two platforms available is 6 runs of 4000 and 24 saved gates; a quarter of
+#: the reference is several times that and is still far below the fourfold gap to
+#: the phase-blind column that separates the two claims.
 _PLATFORM_MARGIN = 12
 
 #: The same allowance for the 80-circuit legalization population, where 12 would
 #: be a sixth of the population. Three circuits is the same few-percent band.
 _PLATFORM_MARGIN_SMALL = 3
+
+
+def _reference_margin(reference: int) -> int:
+    """How far a platform quantity may sit from its reference and be the same."""
+
+    return max(_PLATFORM_MARGIN, reference // 4)
+
 
 #: The phase each shipped basis multiplies the statevector by when it legalizes a
 #: program, over the seeded entangled population. ``phase_is_not_a_sign`` is the
@@ -240,9 +250,15 @@ def test_every_run_has_a_word_but_almost_none_has_an_exact_one(payload: dict) ->
     the basis is phase-free -- the reachability test above bounds it -- so a
     regression here would be a claim that the port is cheaper than it is.
 
-    The entry-for-entry column is held to its reference within `_PLATFORM_MARGIN`,
-    for the reason recorded there; the phase-blind column is 4000 of 4000 and is
-    not a platform quantity.
+    Three assertions have three different strengths on purpose. The phase-blind
+    column is an equality, because 4000 of 4000 is arithmetic and every platform
+    measures it. The entry-for-entry column is a reference within
+    `_reference_margin`, because it counts a floating-point coincidence. And for
+    the pairs where the obstruction applies, that column is additionally bounded
+    by `_PINNED_BOUND`, which is recomputed here from the run set by an
+    independent route -- each run's own product determinant against the pair's
+    subgroup -- and which no platform can move. If the two routes ever disagree,
+    the measurement is wrong rather than the platform.
     """
 
     for row in payload["declared_basis_reach"]:
@@ -255,12 +271,26 @@ def test_every_run_has_a_word_but_almost_none_has_an_exact_one(payload: dict) ->
         assert phase_blind["words_shorter"] > 0
         assert phase_blind["gates_saved"] > 0
         exact = row["entry_for_entry"]
-        assert abs(exact["words_found"] - exact_words) <= _PLATFORM_MARGIN
-        assert abs(exact["gates_saved"] - exact_saved) <= _PLATFORM_MARGIN
+        assert exact["words_found"] > 0
+        assert exact["gates_saved"] > 0
+        assert abs(exact["words_found"] - exact_words) <= _reference_margin(exact_words)
+        assert abs(exact["gates_saved"] - exact_saved) <= _reference_margin(exact_saved)
         # The two columns must stay far apart, and in this direction. An exact
         # word is also a phase-blind one, so this can never invert.
         assert exact["words_found"] < phase_blind["words_found"] // 4
         assert exact["gates_saved"] < phase_blind["gates_saved"] // 4
+        bound = row["beyond_the_subgroup"]
+        if not obstruction:
+            # A free determinant makes the generated subgroup dense, so there is
+            # nothing left to bound the column with, and saying so is the honest
+            # report: this pair measures the template rather than an obstruction.
+            assert bound is None
+            continue
+        assert bound is not None
+        assert bound["run_count"] == _PINNED_BOUND[pair]
+        assert exact["words_found"] <= bound["run_count"]
+        # The bound has to be a real bound, not a restatement of the column.
+        assert bound["run_count"] > exact["words_found"]
 
 
 def test_legalization_already_drops_a_phase_that_is_not_a_sign(payload: dict) -> None:

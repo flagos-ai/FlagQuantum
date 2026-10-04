@@ -30,6 +30,15 @@ things and pins none of them to a particular implementation:
   the z-rotation's determinant is its parameter, the determinant blocks nothing
   and the first column instead measures how far this repository's own five-gate
   template reaches; a solver could move that column, and the row says so.
+
+  The bound is reported separately from the column, as ``beyond_the_subgroup``,
+  because the column is not itself a mathematical quantity: which runs this
+  repository's template reproduces exactly is decided by exact-equality branch
+  tests on `cmath` results, so it moves with the platform's C library, while the
+  bound is a subgroup membership test whose two cases are 45 degrees apart and
+  does not. A reader needs the bound to know what the obstruction forbids and the
+  column to know what the template achieves; conflating the two is how a rounding
+  coincidence becomes a claim.
 * ``legalization_phase`` -- the same obstruction where it is already shipped.
   `native_gate_legalization` reaches a target basis through `one_qubit_synthesis`,
   which documents its result as equal to its source up to one global phase, so a
@@ -113,6 +122,13 @@ _DETERMINANT_ANGLES = (1.1, 2.3)
 #: is the error that would matter, and `1e-9` cannot produce one from float noise
 #: three orders smaller.
 _TOL = 1.0e-9
+
+#: The tolerance, in degrees, on the subgroup membership test that produces
+#: `beyond_the_subgroup`. Two subgroup values of a declared basis are 45 degrees
+#: apart at the closest and a run's own determinant argument is computed in
+#: `float64`, so this is enormous relative to the arithmetic and tiny relative to
+#: the gap: the classification cannot be moved by a different C library.
+_SUBGROUP_TOL = 1.0e-6
 
 
 def _runtime_matrix(opcode: str, angle: float) -> Any:
@@ -335,10 +351,37 @@ def _entry_gap(left: Any, right: Any) -> float:
     )
 
 
+def _determinant(matrix: Any) -> complex:
+    return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+
+
 def declared_basis_reach(pair: tuple[str, str]) -> dict[str, Any]:
-    """Both columns of the re-spelling question for one declared pair."""
+    """Both columns of the re-spelling question for one declared pair.
+
+    The entry-for-entry column is a count of the runs this repository's own
+    five-gate template happens to hit exactly, and which runs those are is a
+    rounding question (see `_candidate_words` and the module docstring). What is
+    not a rounding question is the *bound*: if the pair's z-rotation has a fixed
+    determinant, then the argument of a run's own product determinant either lies
+    in the subgroup the pair can generate -- and then a word may exist -- or it
+    does not, and then no word over the pair reproduces the run at any length. The
+    two cases are at least 45 degrees apart, so a tolerance of `1.0e-6` degrees
+    separates them on any platform, and `beyond_the_subgroup` is an upper bound a
+    different C library cannot move.
+    """
 
     z_rotation, pulse_opcode = pair
+    obstruction = not _moves_with_parameter(z_rotation)
+    reachable = (
+        _generated_subgroup(
+            [
+                _determinant_argument(z_rotation, _DETERMINANT_ANGLES[0]),
+                _determinant_argument(pulse_opcode, _DETERMINANT_ANGLES[0]),
+            ]
+        )
+        if obstruction
+        else None
+    )
     rng = random.Random(_RUN_SEED)
     source_gates = 0
     found = 0
@@ -347,12 +390,19 @@ def declared_basis_reach(pair: tuple[str, str]) -> dict[str, Any]:
     exact = 0
     exact_shorter = 0
     exact_saved = 0
+    beyond_the_subgroup = 0
     worst_phase_degrees = 0.0
     for _ in range(RUN_TRIAL_COUNT):
         run = _mixed_run(rng)
         source_gates += len(run)
         product = _run_product(list(run))
         assert product is not None
+        if reachable is not None:
+            argument = math.degrees(cmath.phase(_determinant(product)))
+            if all(
+                _circle_distance(argument, value) > _SUBGROUP_TOL for value in reachable
+            ):
+                beyond_the_subgroup += 1
         matched: tuple[tuple[Instruction, ...], Any, complex] | None = None
         for word in _candidate_words(
             product, z_rotation=z_rotation, pulse_opcode=pulse_opcode
@@ -413,6 +463,22 @@ def declared_basis_reach(pair: tuple[str, str]) -> dict[str, Any]:
             "words_shorter": exact_shorter,
             "gates_saved": exact_saved,
         },
+        # `None` where the pair's z-rotation has a free determinant: the subgroup
+        # is then dense and nothing is out of reach, so the entry-for-entry column
+        # measures the template rather than an obstruction. Where it is a number it
+        # is a bound on that column which no platform can move.
+        "beyond_the_subgroup": (
+            {
+                "run_count": beyond_the_subgroup,
+                "argument": (
+                    "the argument of these runs' own product determinant lies "
+                    f"outside {reachable} degrees, so no word over this pair "
+                    "reproduces them at any length, up to a global phase"
+                ),
+            }
+            if reachable is not None
+            else None
+        ),
     }
 
 
