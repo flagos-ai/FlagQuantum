@@ -51,25 +51,37 @@ def logical_mps_bytes(n_sites: int, max_bond: int) -> int:
 def rank_owned_initial_mps(
     n_sites: int, max_bond: int, device: torch.device
 ) -> dict[int, torch.Tensor]:
+    """Return this rank's slice of the frozen initial state.
+
+    The state is one left-canonical tensor-train whose tensor at a wire is a
+    function of that wire's bond pair alone, so every rank draws the distinct
+    bond shapes in the order the whole chain visits them and then keeps the
+    wires it owns. Drawing the shapes in the order this rank's own slice
+    happens to visit them would give a wire a different tensor at every rank
+    count: the generator advances once per newly seen shape, so a rank whose
+    slice begins deep in the chain would draw the tensor that belongs to an
+    earlier wire. The state would then depend on the rank boundaries, a
+    single-device leg and a sharded leg of the same frozen circuit would start
+    from different states, and the truncation a sharded leg reports would be a
+    property of its deployment rather than of the workload. The tensors
+    themselves are unchanged: the same generator, the same seed, and the same
+    draw order as a whole-chain walk, which is what a single-device leg builds.
+    """
+
     rank, world = dist.get_rank(), dist.get_world_size()
     first, last = rank * n_sites // world, (rank + 1) * n_sites // world
     bonds = bond_dimensions(n_sites, max_bond)
     generator = torch.Generator(device=device).manual_seed(520_052)
     cache: dict[tuple[int, int], torch.Tensor] = {}
-    tensors = {}
-    for wire in range(first, last):
+    for wire in range(n_sites):
         shape = (bonds[wire], bonds[wire + 1])
-        if shape not in cache:
-            real = torch.randn(
-                2 * shape[0], shape[1], device=device, generator=generator
-            )
-            imag = torch.randn(
-                2 * shape[0], shape[1], device=device, generator=generator
-            )
-            q, _ = torch.linalg.qr(torch.complex(real, imag), mode="reduced")
-            cache[shape] = q.reshape(1, shape[0], 2, shape[1]).contiguous()
-        tensors[wire] = cache[shape]
-    return tensors
+        if shape in cache:
+            continue
+        real = torch.randn(2 * shape[0], shape[1], device=device, generator=generator)
+        imag = torch.randn(2 * shape[0], shape[1], device=device, generator=generator)
+        q, _ = torch.linalg.qr(torch.complex(real, imag), mode="reduced")
+        cache[shape] = q.reshape(1, shape[0], 2, shape[1]).contiguous()
+    return {wire: cache[(bonds[wire], bonds[wire + 1])] for wire in range(first, last)}
 
 
 def reverse_checkpoint_capacity_bytes(logical_bytes: int, world_size: int) -> int:
