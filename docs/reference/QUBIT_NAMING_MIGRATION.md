@@ -380,7 +380,7 @@ not read as "no user-visible `wire` is left":
 | `n_wires` | the metric key in `ExecutionResult(metrics={"n_wires": …})` built by the backend adapters | kept; a metric key is part of a comparison payload |
 | `--n-wires`, `--wires`, `--wire-layout`, `--marginal-wires`, `--capacity-wires`, `--start-wires`, `--step-wires`, `--stop-wires`, `--worker-wire`, `--max-reference-wires`, `--fq-dense-observable-wires` | command-line flags, declared by 66 `argparse` calls over 11 distinct names in 59 files across `benchmarks/`, `tools/` and `flagquantum/` | open; a flag is a typed interface, so it migrates the way keyword arguments did — publish the qubit spelling, keep the old one as a hidden deprecated alias. 51 of the 66 declarations are `--n-wires` |
 | `n_wires`, `wires`, `wire`, `wire0`, `wire1`, `capacity_wires`, `dense_observable_wires` | parameters of helper functions in `benchmarks/` (141 sites in 60 files), `tools/` and `examples/` | open; `[boundary]` is the package, so the parameter ledger does not read these files at all |
-| `wire`, `wires` | Python docstrings and comments inside the package (280 occurrences over 129 docstrings, plus 49 in 39 comment lines) | open; this is what `help()` prints, so it is user-facing, but it is a code surface rather than a documentation one |
+| `wire`, `wires`, `n_wires` | Python docstrings and comments inside the package (285 occurrences over 131 docstrings in 59 files, plus 54 over 44 comment lines in 18 files) | open; this is what `help()` prints, so it is user-facing, but it is prose attached to a name rather than a name, so no ledger reads it |
 
 The capture keyword is the remaining open work. Renaming it would break every
 hybrid program the capture layer can read, so it is a decision for the
