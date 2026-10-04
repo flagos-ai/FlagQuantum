@@ -29,6 +29,7 @@ from benchmarks.compiler_identity_elimination import (
 from benchmarks.compiler_two_qubit_optimization import (
     BOUNDARY_SAMPLE_COUNT,
     FOLD_POLICIES,
+    MEMBERSHIP_POLICIES,
     POPULATION_SEEDS,
     RUN_LENGTHS,
     _fold_patch,
@@ -282,6 +283,93 @@ def test_no_run_is_deleted_unless_its_product_is_the_identity(payload: dict) -> 
     assert deleted <= identity_products
 
 
+#: The population size every per-circuit column below has to fit inside. Pinned here
+#: rather than read from the benchmark so that a population quietly shrinking to make a
+#: per-circuit count fit is a failure and not an adjustment.
+_MEMBERSHIP_CIRCUIT_COUNT = 120
+
+#: What the wider membership is allowed to do, per population, as
+#: ``(shipped - runs_only, circuits shortened, circuits lengthened, circuits the
+#: fallback rescues)``. The shipped rule has to be **no longer** than the two-qubit-run
+#: rule on every population, and the two arms of the table that say so are the shipped
+#: one and the fallback's.
+_MEMBERSHIP_MONOTONICITY = {
+    "clifford": (0, 0, 0, 0),
+    "swaps": (0, 0, 0, 0),
+    "interleaved": (-2, 1, 0, 40),
+    "routed": (0, 0, 0, 0),
+}
+
+#: The one population where drawing single-qubit gates into a block costs the rule a
+#: fold it would otherwise have taken -- 40 of 120 circuits -- and by how much the
+#: widened membership without its fallback would overshoot the narrower rule
+#: (1516 against 1463). Both numbers are the reason the fallback exists rather than a
+#: precaution: without it this population is 53 instructions *longer* than the rule the
+#: pass replaced, and with it the pass is 2 shorter.
+_MEMBERSHIP_UNPROTECTED = ("interleaved", 40, 1516, 1463)
+
+
+def test_widening_the_membership_is_monotone_and_says_what_makes_it_so(
+    payload: dict,
+) -> None:
+    """The round's central claim, measured against the rule it replaced.
+
+    Drawing a single-qubit gate into a block strictly enlarges the product the rule has
+    to re-spell as one declared two-qubit opcode, and a larger product is not more
+    likely to *be* one -- the same block the two-qubit-run rule re-spelled can stop
+    being re-spellable once a Hadamard on one of its wires is inside it. So the widening
+    is not monotone by construction, and asserting that it is would be asserting the
+    conclusion. What is asserted instead is the measurement: with the fallback in place
+    the shipped rule is never longer than the two-qubit-run rule on any population, and
+    without the fallback it is longer on one.
+
+    The third and fourth cells of ``_MEMBERSHIP_UNPROTECTED`` are what make the fallback
+    load-bearing rather than decorative. They bound it as well as require it: the
+    fallback may recover no more than the whole gap, and the gap is pinned, so an
+    instrument that had stopped removing the fallback -- which is what a rename would do
+    -- fails here rather than quietly reporting the shipped numbers twice.
+    """
+
+    assert MEMBERSHIP_POLICIES == ("runs_only", "shipped", "wide_without_the_floor")
+    rows = {row["label"]: row for row in payload["membership"]}
+    assert set(rows) == {label for label, _, _ in POPULATION_SEEDS}
+
+    for label, (
+        delta,
+        shortened,
+        lengthened,
+        rescued,
+    ) in _MEMBERSHIP_MONOTONICITY.items():
+        row = rows[label]
+        assert row["shipped_optimized"] - row["runs_only_optimized"] == delta, label
+        assert row["circuits_the_widening_shortens"] == shortened, label
+        assert row["circuits_the_widening_lengthens"] == lengthened, label
+        assert row["circuits_the_fallback_rescues"] == rescued, label
+        # A population's circuit count is one number stated in three places, so the
+        # four per-circuit columns have to fit inside it.
+        assert (
+            shortened + lengthened + rescued
+            <= row["circuit_count"]
+            == _MEMBERSHIP_CIRCUIT_COUNT
+        ), label
+
+    assert _MEMBERSHIP_MONOTONICITY[_MEMBERSHIP_UNPROTECTED[0]][2] == 0
+    label, rescued, unprotected, runs_only = _MEMBERSHIP_UNPROTECTED
+    row = rows[label]
+    assert row["circuits_the_fallback_rescues"] == rescued, label
+    assert row["wide_without_the_floor_optimized"] == unprotected, label
+    assert row["runs_only_optimized"] == runs_only, label
+    # The fallback is not merely non-zero somewhere: without it the widening overshoots
+    # the rule it replaced on this population, and with it the pass is under it.
+    assert unprotected > runs_only > row["shipped_optimized"], label
+    # Non-vacuity: the same table has three populations where the widening changes
+    # nothing at all, so it is not one behaviour measured four times.
+    assert (
+        sum(1 for delta, _, _, _ in _MEMBERSHIP_MONOTONICITY.values() if delta == 0)
+        == 3
+    )
+
+
 def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
     """The one measurement this round changed outside its own files, attributed.
 
@@ -310,11 +398,15 @@ def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
 
     #: ``population -> ((superseded rule, shipped rule) with the fold out, ... with it
     #: in)``. Each pair is the row's two post-pipeline counts, which are exactly what
-    #: `compiler_identity_elimination` pins.
+    #: `compiler_identity_elimination` pins. The ``with it in`` halves were re-measured
+    #: when the fold stopped being an all-two-qubit run and became a block that also
+    #: draws in the single-qubit gates on the pair's wires: that widening reaches
+    #: further into both of these populations, and the control group below is what
+    #: says the further reach is still theirs.
     expected = {
         "two_wire_rotations": ((245, 245), (201, 201)),
-        "mixed": ((406, 391), (398, 383)),
-        "mixed_with_mid_circuit_measures": ((511, 498), (505, 493)),
+        "mixed": ((406, 391), (393, 383)),
+        "mixed_with_mid_circuit_measures": ((511, 498), (499, 492)),
     }
     #: Populations the fold has no reach in, whose rows must therefore not move.
     untouched = {label for label, _ in IDENTITY_POPULATIONS if label not in expected}

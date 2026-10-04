@@ -1,24 +1,42 @@
-"""Collapse a consecutive run over one ordered wire pair into one exact gate.
+"""Collapse a block over one ordered wire pair into one exact gate.
 
 `pipeline` already removes identities, cancels self-inverse and declared inverse
 pairs, adds up adjacent rotations that share one opcode, and folds a same-wire run
 of *single*-qubit gates. None of those compose two-qubit gates, which is where a
 routed program spends its budget: a conjugation (`swap cz swap` is exactly `cz`, so
 a router's swap that only moves a control is removable), an accumulation
-(`rzz(a) rzz(b)` is `rzz(a + b)`), and a run whose *product* is the identity, which
+(`rzz(a) rzz(b)` is `rzz(a + b)`), and a block whose *product* is the identity, which
 this pass sees and `remove_identity_gates` does not, because that pass reads a zero
-parameter rather than a product. This module composes such a run and re-spells it as
-one declared two-qubit opcode, which is the kind of reduction Qiskit's
-`OptimizeCliffords` performs on a run of its native `Clifford` objects -- done here
-over the declared opcode vocabulary, because FlagQuantum carries no opaque Clifford
-type and `CollectCliffords`' gate-name filter has no counterpart to select on.
+parameter rather than a product. This module composes such a block and re-spells it
+as one declared two-qubit opcode: the reduction Qiskit's `ConsolidateBlocks` performs
+by resynthesizing a block against a target basis, and the one `OptimizeCliffords`
+performs on a run of its native `Clifford` objects. It is done here over the declared
+opcode vocabulary and without a target basis, because FlagQuantum carries no opaque
+Clifford type, `CollectCliffords`' gate-name filter has no counterpart to select on,
+and `optimize` is target-independent.
 
-Four properties make the fold admissible.
+Five properties make the fold admissible.
 
-**The run is one ordered wire pair.** Only instructions whose `wires` tuple is
-identical can join, so the control/target roles are the same for every member of
-the run and one matrix convention describes all of them. `wires=(0, 1)` and
-`wires=(1, 0)` are different runs even though they share both wires.
+**The block is one ordered wire pair.** A member's wires must be a subset of the
+pair's, so the control/target roles are the same for every two-wire member and one
+matrix convention describes all of them. `wires=(0, 1)` and `wires=(1, 0)` are
+different blocks even though they share both wires.
+
+**A single-qubit gate on one of the pair's wires is a member.** That is the
+difference from a run, and it is what reaches `h(1) cz(0, 1) h(1)`, which is exactly
+`cx(0, 1)`: a conjugation by a gate one of the pair's own wires carries, rather than
+by a two-qubit gate alone. Which wire carries the conjugation is a property of the
+pair's *order* and not of the gate -- the same three gates with the `h`s on `0`
+compose to `cx(1, 0)`, a gate on the other ordered pair, and are declined, which is
+what keeps this a rewrite by matrix equality rather than by relabelling. Such a
+member is lifted by a Kronecker product on the side the pair gives it, so the block's
+product is the 4x4 operator the program computes and not a phase-free shadow of it. A
+one-wire instruction never *opens* a block, because `h(0)` alone does not say whether
+it belongs to `(0, 1)` or `(0, 2)`; it is instead drawn into a block at the moment a
+two-wire gate opens one, out of the contiguous single-qubit gates immediately to the
+left, and it joins a block that is already open. Two open blocks can never share a
+wire, which is what makes that assignment unambiguous without a general dependency
+graph.
 
 **The replacement is one declared opcode or nothing, and it is verified.** A
 candidate angle is *guessed* from the product by inverting one entry of the
@@ -29,16 +47,21 @@ becoming approximate in a way nothing checks. A replacement is one gate at most:
 general two-qubit resynthesis is deliberately not attempted here, and
 `synthesize_two_qubit` is the module that decomposes an arbitrary unitary.
 
-**A run is replaced only when the replacement is strictly shorter.** Equal length
-is not a win, so a single gate is never re-spelled as itself and the pass is
-idempotent, which `_optimize_to_fixed_point` relies on. A single-gate run is
-therefore asked one question only -- whether its product is the identity, which is
-what `cphase(2*pi)`, `crz(4*pi)` and `rzz(4*pi)` are and what
-`remove_identity_gates` does not see, because that pass reads a zero parameter.
+**A block is replaced only when the replacement is strictly shorter, and the
+narrower rule is kept as a floor.** Equal length is not a win, so a single gate is
+never re-spelled as itself and the pass is idempotent, which
+`_optimize_to_fixed_point` relies on. A single-gate block is therefore asked one
+question only -- whether its product is the identity, which is what `cphase(2*pi)`,
+`crz(4*pi)` and `rzz(4*pi)` are and what `remove_identity_gates` does not see,
+because that pass reads a zero parameter. A block the widened membership cannot
+re-spell is then offered to the same rule one two-qubit sub-block at a time, split at
+each single-qubit member, so widening the membership can never cost a fold the
+narrower rule would have taken; `benchmarks/compiler_two_qubit_optimization.py`
+measures that floor as its `runs_only` arm and asserts it circuit by circuit.
 
 **No trainable angle takes part.** Composition reads numbers, and a trainable angle
 has none; the same reason `one_qubit_synthesis` refuses to select a branch on one.
-A run carrying a trainable angle is left to `merge_adjacent_rotations`, which adds
+A block carrying a trainable angle is left to `merge_adjacent_rotations`, which adds
 angles with the caller's own objects and keeps them in the autograd graph.
 """
 
@@ -337,12 +360,67 @@ def _instruction_matrix(instruction: Instruction) -> Matrix | None:
     return _rotation_matrix(opcode, float(angle))
 
 
-def _run_product(instructions: Sequence[Instruction]) -> Matrix | None:
-    """The exact product of one run, or None when any member is unreadable."""
+def _kron(
+    left: Sequence[Sequence[complex]], right: Sequence[Sequence[complex]]
+) -> Matrix:
+    """The Kronecker product of two 2x2 factors, as one 4x4 matrix."""
+
+    return [
+        [
+            left[row // 2][column // 2] * right[row % 2][column % 2]
+            for column in range(4)
+        ]
+        for row in range(4)
+    ]
+
+
+#: The factor a lifted single-qubit member puts on the wire of the pair it does not
+#: touch.
+_IDENTITY_FACTOR: list[list[complex]] = [[1.0 + 0.0j, 0.0j], [0.0j, 1.0 + 0.0j]]
+
+
+def _lifted_matrix(instruction: Instruction, pair: tuple[int, ...]) -> Matrix | None:
+    """One block member's exact 4x4 matrix on `pair`, or None.
+
+    None means the instruction cannot take part in a block: its wires are not a
+    subset of the pair's, it is not a declared unitary at its own arity, one of its
+    angles is trainable and therefore has no number to compose with, or one of them
+    is a batch rather than one value.
+
+    A two-wire member spans the pair and is read by `_instruction_matrix`. A one-wire
+    member is read as a single-qubit gate -- by `one_qubit_optimization`'s reader, so
+    that the convention phase the runtime applies to `rz`, `phase` and `u1` is part
+    of the factor -- and lifted by a Kronecker product on the side the pair gives it:
+    `pair[0]` is the most significant index bit, so a gate on `pair[0]` multiplies
+    the first factor. Lifting the runtime matrix rather than a phase-free shadow of
+    it is what makes the comparison in `_replacement` a comparison against what the
+    program computes.
+    """
+
+    if len(instruction.wires) == 2:
+        if tuple(instruction.wires) != pair:
+            return None
+        return _instruction_matrix(instruction)
+    if len(instruction.wires) != 1 or instruction.wires[0] not in pair:
+        return None
+    from .one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
+
+    factor = _one_qubit_matrix(instruction)
+    if factor is None:
+        return None
+    if instruction.wires[0] == pair[0]:
+        return _kron(factor, _IDENTITY_FACTOR)
+    return _kron(_IDENTITY_FACTOR, factor)
+
+
+def _block_product(
+    instructions: Sequence[Instruction], pair: tuple[int, ...]
+) -> Matrix | None:
+    """The exact product of one block, or None when any member is unreadable."""
 
     product = _IDENTITY
     for instruction in instructions:
-        matrix = _instruction_matrix(instruction)
+        matrix = _lifted_matrix(instruction, pair)
         if matrix is None:
             return None
         product = _matmul(matrix, product)
@@ -350,30 +428,69 @@ def _run_product(instructions: Sequence[Instruction]) -> Matrix | None:
 
 
 def _is_foldable(instruction: Instruction) -> bool:
-    """Whether one instruction is a two-qubit unitary that could join a run.
+    """Whether one instruction is a readable two-qubit unitary over its own pair.
 
-    False for anything else -- a wider or narrower gate, a measurement, a barrier,
-    a channel, or an opcode no family covers -- and such an instruction *ends* the
-    run on each wire it touches rather than joining it.
+    False for anything else -- a wider or narrower gate, a measurement, a barrier, a
+    channel, an opcode no family covers, an unreadable matrix, or a trainable angle,
+    which has no number to compose with -- and such an instruction *ends* every block
+    on each wire it reaches rather than joining one. Only a two-wire instruction can
+    open a block: a single-qubit gate on one of a block's wires is a member of it,
+    but `h(0)` alone does not say whether it belongs to `(0, 1)` or `(0, 2)`.
     """
 
     if len(instruction.wires) != 2:
         return False
-    if instruction.matrix is not None:
-        return True
-    return canonical_opcode(instruction.name) in _FAMILIES
+    if (
+        instruction.matrix is None
+        and canonical_opcode(instruction.name) not in _FAMILIES
+    ):
+        return False
+    return _instruction_matrix(instruction) is not None
+
+
+def _draws_in_as_leading_member(
+    instruction: Instruction, pair: tuple[int, ...]
+) -> bool:
+    """Whether a one-wire instruction may be a member of a block on `pair`.
+
+    This is the whole of what the block rule here has that the two-qubit-run rule it
+    replaces did not: a readable single-qubit gate on either wire of the pair. It is a
+    module-level function because it is the seam
+    `benchmarks/compiler_two_qubit_optimization.py` patches to measure the pass against
+    the narrower rule that had no single-qubit members at all -- patching one
+    predicate, not a second copy of the loop.
+    """
+
+    if len(instruction.wires) != 1 or instruction.wires[0] not in pair:
+        return False
+    return _lifted_matrix(instruction, pair) is not None
+
+
+def _joins_pair(instruction: Instruction, pair: tuple[int, ...]) -> bool:
+    """Whether `instruction` is a member of the block open on `pair`.
+
+    `pair` is an ordered pair, so a two-wire member has to match it exactly and keep
+    the control/target roles the block was opened with. A one-wire member is decided by
+    `_draws_in_as_leading_member`. Nothing else joins.
+    """
+
+    if len(instruction.wires) == 2:
+        return tuple(instruction.wires) == pair and _is_foldable(instruction)
+    if len(instruction.wires) != 1:
+        return False
+    return _draws_in_as_leading_member(instruction, pair)
 
 
 def _declines_vocabulary(instructions: Sequence[Instruction], opcode: str) -> bool:
-    """Whether the fold declines to re-spell a run as `opcode`.
+    """Whether the fold declines to re-spell a block as `opcode`.
 
     A parameter-free replacement is never declined: `cx`, `cy`, `cz` and `swap` are
     the gates every parameterized two-qubit gate in this schema is built out of, so
-    replacing a run with one of them is a strictly shorter program in every basis
+    replacing a block with one of them is a strictly shorter program in every basis
     this repository can measure.
 
-    A parameterized replacement *is* declined unless the run was already spelled in
-    that same family. Such a replacement is a different parameterization of the
+    A parameterized replacement *is* declined unless the block was already spelled
+    in that same family. Such a replacement is a different parameterization of the
     two-qubit group rather than a more primitive operation, and `optimize` is
     target-independent: it cannot see whether the target publishes the gate the run
     was spelled in or the gate it would be re-spelled as. The same-family case is
@@ -401,18 +518,18 @@ def _replacement(
     pair: tuple[int, ...],
     metadata: Mapping[str, Any],
 ) -> tuple[Instruction, ...] | None:
-    """The exact replacement of one run, or None to leave it.
+    """The exact replacement of one block, or None to leave it.
 
     None covers refusal as well as no gain. Every member here is foldable and
     readable, so the only refusals are the ones `_declines_vocabulary` describes and
     a product no declared opcode matches.
 
-    A single-gate run is asked one question only -- whether it *is* the identity.
+    A single-member block is asked one question only -- whether it *is* the identity.
     Nothing is shorter than one gate except nothing at all, and re-spelling one
     declared gate as an equal-length one is not a win and would not terminate.
     """
 
-    product = _run_product(instructions)
+    product = _block_product(instructions, pair)
     if product is None:  # pragma: no cover - guarded by the caller
         return None
     if _same(product, _IDENTITY):
@@ -445,66 +562,147 @@ def _replacement(
     return None
 
 
-def collapse_two_qubit_runs(ir: CircuitIR) -> CircuitIR:
-    """Collapse each same-wire-pair run of two-qubit gates into one exact gate.
+def _write_replacement(
+    replaced: list[Instruction | None],
+    positions: Sequence[int],
+    replacement: Sequence[Instruction],
+) -> None:
+    """Put `replacement` at the front of `positions` and drop the rest."""
 
-    A run is maximal over one ordered wire pair: it continues across a gate that
-    touches neither of its wires, which commutes with it, and it ends at a gate
-    that touches one of them -- including a single-qubit gate, which does not
-    commute past a controlled gate in general. The replacement is written at the
-    run's own position, so it keeps its place in program order.
+    for offset, instruction in enumerate(replacement):
+        replaced[positions[offset]] = instruction
+    for position in positions[len(replacement) :]:
+        replaced[position] = None
 
-    A run is left untouched when one of its gates carries a trainable angle, when
-    its product matches no declared two-qubit opcode, or when the replacement would
-    not be strictly shorter.
+
+def _two_qubit_sub_runs(
+    positions: Sequence[int], output: Sequence[Instruction]
+) -> list[list[int]]:
+    """The maximal all-two-qubit sub-runs of one block's member positions.
+
+    These are the runs the pass composed before single-qubit members existed, and
+    they are what the floor rule is applied to when the block as a whole is refused.
+    """
+
+    runs: list[list[int]] = []
+    contiguous = False
+    for position in positions:
+        if len(output[position].wires) != 2:
+            contiguous = False
+            continue
+        if contiguous:
+            runs[-1].append(position)
+        else:
+            runs.append([position])
+        contiguous = True
+    return runs
+
+
+def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
+    """Collapse each block over one ordered wire pair into one exact gate.
+
+    A block is maximal over one ordered wire pair. A two-qubit gate opens one, and
+    draws in the contiguous single-qubit gates immediately to its left that sit on
+    one of its wires -- which is what lets a conjugation by a *single*-qubit gate be
+    folded, `h(1) cz(0, 1) h(1)` being exactly `cx(0, 1)`. A gate that reaches a
+    block's wires and is not readable as a member ends it, because a controlled gate
+    does not commute past an arbitrary single-qubit gate; a gate that touches neither
+    of its wires commutes with it and leaves it open. Two open blocks can never share a wire,
+    because the second gate to reach a wire joins the block already there.
+
+    Every instruction belongs to **at most one** block, which the draw-in has to be
+    told rather than derive: a single-qubit gate between two blocks on different
+    ordered pairs is a legitimate trailing member of the first and a legitimate
+    leading member of the second, so a backward scan that ignored the first block
+    would claim it twice and then write two replacements through it. The scan
+    therefore stops at any index already claimed, closed blocks included.
+
+    The replacement is written at the block's earliest member, so it keeps its place
+    in program order, and every other member is pairwise commuting with everything it
+    moves past.
+
+    A block is left untouched when a member carries a trainable angle or a batch of
+    angles, when its product matches no declared two-qubit opcode, or when the
+    replacement would not be strictly shorter. A block the widened membership cannot
+    re-spell is then offered to the narrower rule -- one all-two-qubit sub-run at a
+    time -- so this pass never returns a longer program than the one that composed
+    two-qubit runs alone.
     """
 
     output: list[Instruction] = []
-    open_runs: dict[tuple[int, ...], list[int]] = {}
-    closed_runs: list[list[int]] = []
+    open_blocks: dict[tuple[int, ...], list[int]] = {}
+    closed_blocks: list[tuple[tuple[int, ...], list[int]]] = []
+    #: Output indices already owned by a block, open or closed. Membership is
+    #: exclusive because two blocks that both fold through one instruction would each
+    #: write their replacement at it, and only one of the two can be what the program
+    #: computes.
+    claimed: set[int] = set()
 
-    def close_interfering(
-        touched: Sequence[int], keep: tuple[int, ...] | None = None
-    ) -> None:
-        """End every open run this instruction reaches, except `keep`.
+    def close_interfering(touched: Sequence[int], keep: tuple[int, ...] | None) -> None:
+        """End every open block this instruction reaches, except `keep`.
 
-        A run on a pair this instruction does not touch commutes with it and stays
+        A block on a pair this instruction does not touch commutes with it and stays
         open. `keep` is the pair this instruction is joining, which must survive its
         own arrival.
         """
 
         arriving = set(touched)
-        for pair in [p for p in open_runs if p != keep and arriving & set(p)]:
-            closed_runs.append(open_runs.pop(pair))
+        for pair in [p for p in open_blocks if p != keep and arriving & set(p)]:
+            closed_blocks.append((pair, open_blocks.pop(pair)))
 
     for instruction in ir:
-        readable = (
-            _is_foldable(instruction) and _instruction_matrix(instruction) is not None
-        )
-        close_interfering(instruction.wires, instruction.wires if readable else None)
-        if readable:
-            open_runs.setdefault(instruction.wires, []).append(len(output))
+        joining: tuple[int, ...] | None = None
+        for pair in open_blocks:
+            if _joins_pair(instruction, pair):
+                joining = pair
+                break
+        close_interfering(instruction.wires, joining)
+        if joining is not None:
+            open_blocks[joining].append(len(output))
+            claimed.add(len(output))
+        elif len(instruction.wires) == 2 and _is_foldable(instruction):
+            pair = tuple(instruction.wires)
+            members: list[int] = []
+            back = len(output) - 1
+            while back >= 0 and back not in claimed:
+                if not _draws_in_as_leading_member(output[back], pair):
+                    break
+                members.append(back)
+                back -= 1
+            members.reverse()
+            members.append(len(output))
+            open_blocks[pair] = members
+            claimed.update(members)
         output.append(instruction)
-    closed_runs.extend(open_runs.values())
+    for pair, members in open_blocks.items():
+        closed_blocks.append((pair, members))
 
     replaced: list[Instruction | None] = list(output)
-    for run in closed_runs:
-        members = [output[position] for position in run]
-        replacement = _replacement(
-            members,
-            pair=members[0].wires,
-            metadata=members[0].metadata,
+    for pair, members in closed_blocks:
+        # Program order: the assembly appends members in the order the program puts
+        # them in and the sub-run splitter reads that order, so an out-of-order member
+        # list would split a block into the wrong sub-runs rather than fail.
+        positions = sorted(members)
+        block = _replacement(
+            [output[position] for position in positions],
+            pair=pair,
+            metadata=output[positions[0]].metadata,
         )
-        if replacement is None:
+        if block is not None:
+            _write_replacement(replaced, positions, block)
             continue
-        for offset, instruction in enumerate(replacement):
-            replaced[run[offset]] = instruction
-        for position in run[len(replacement) :]:
-            replaced[position] = None
+        for run in _two_qubit_sub_runs(positions, output):
+            narrower = _replacement(
+                [output[position] for position in run],
+                pair=pair,
+                metadata=output[run[0]].metadata,
+            )
+            if narrower is not None:
+                _write_replacement(replaced, run, narrower)
     return replace(
         ir,
         instructions=tuple(item for item in replaced if item is not None),
     )
 
 
-__all__ = ["collapse_two_qubit_runs"]
+__all__ = ["collapse_two_qubit_blocks"]
