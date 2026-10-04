@@ -312,6 +312,9 @@ def _leg(*, world: int, seconds: float) -> dict:
         "measured_peak_memory_bytes": 1024,
         "device_name": "NVIDIA A800-SXM4-80GB",
         "workload_sha256": "b" * 64,
+        # A leg launched without the bound records none, and the summary role
+        # compares the two legs' budgets before it reports a ratio.
+        "checkpoint_budget_bytes": None,
         "software": {"torch": "2.9.0"},
     }
     return {**record, "ranks": [dict(record) for _ in range(world)]}
@@ -524,3 +527,69 @@ def test_the_communication_fraction_is_measured_from_the_timed_call(
     # elsewhere in this repository for a byte share and a reader has to be able
     # to tell which ratio a payload reports.
     assert "collective seconds" in measured["communication_fraction_definition"]
+
+
+def test_a_matched_speed_pair_must_share_one_checkpoint_budget(
+    tmp_path: Path,
+) -> None:
+    """Two legs under different budgets are not one comparison of one device.
+
+    The budget bounds the reverse tape, so it changes the memory profile of the
+    step both legs timed while leaving the arithmetic identical. A ratio between
+    a bounded leg and an unbounded one would therefore report the effect of the
+    bound as though it were the effect of the second device, which is the one
+    number a matched-speed ladder exists to isolate.
+    """
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8")
+
+    budget = 4 * 1024**3
+    bounded = tmp_path / "bounded.json"
+    bounded.write_text(
+        json.dumps({**_leg(world=2, seconds=2.0), "checkpoint_budget_bytes": budget}),
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit, match="different checkpoint budgets"):
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(bounded),
+                "--measurements",
+                str(tmp_path / "never.json"),
+            ]
+        )
+
+    # Both legs under one budget assemble, and the payload states the budget
+    # rather than leaving a reader to assume the unbounded path completed it.
+    shared = tmp_path / "bounded_baseline.json"
+    shared.write_text(
+        json.dumps({**_leg(world=1, seconds=4.0), "checkpoint_budget_bytes": budget}),
+        encoding="utf-8",
+    )
+    summary = tmp_path / "summary.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(shared),
+                "--sharded",
+                str(bounded),
+                "--measurements",
+                str(summary),
+            ]
+        )
+        == 0
+    )
+    measured = json.loads(summary.read_text(encoding="utf-8"))["measurements"]
+    assert measured["checkpoint_budget_bytes"] == budget

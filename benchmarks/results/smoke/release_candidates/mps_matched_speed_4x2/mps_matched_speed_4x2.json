@@ -148,7 +148,6 @@
     "capacity_baseline_topology_fingerprint": "c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5",
     "capacity_failure_reason": "CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 1.19 MiB is free. Process 1670607 has 540.00 MiB memory in use. Including non-PyTorch memory, this process has 78.71 GiB memory in use. Of the allocated memory 69.99 GiB is allocated by PyTorch, and 7.78 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
     "capacity_premise_workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
-    "claim_evidence_type": "production_training_benchmark",
     "collective_backend": "nccl",
     "communication_bytes": 3670016,
     "communication_counting": "each boundary payload is counted at both of the ranks that own it, which is the convention the ISSUE-092 capacity artifact uses",
@@ -630,9 +629,6 @@
       4.543534521013498,
       4.5444422494620085
     ],
-    "release_gate_allowed": true,
-    "release_payload": true,
-    "scalability_claim_allowed": true,
     "scaling_efficiency": 0.13825097381728546,
     "single_gpu_expected_oom": true,
     "site_ownership_policy": "balanced",
@@ -8871,8 +8867,8 @@
   "evidence_scope": "scheduled_4_8_gpu_scale",
   "integrity": {
     "algorithm": "hmac-sha256",
-    "content_sha256": "34be80799f8796effcdd5bb6ef08b22e537aebcac864e8475aa2218774d54c58",
-    "signature": "3bca2979ce9d392b32a1220b13ed914f493c44f814753d0b56658826661f5790"
+    "content_sha256": "c2c6f6540de52b19804ddbe379f74e428fedd3db5a1c6a9441a8ad07c9f056ae",
+    "signature": "739b0485e00518976f69e55db9d632f1d0483146261b5151b5417cbc96e5a148"
   },
   "provenance": {
     "collective_backend": "nccl",

@@ -772,6 +772,20 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
     world = int(sharded.get("world_size", 0))
     if world <= 1:
         raise SystemExit("the matched-speed sharded leg must run above world size 1")
+    # The budget bounds the reverse tape, so it changes the memory profile of
+    # the step both legs timed. Two legs that ran under different budgets were
+    # not running the same experiment, and the speedup would be a comparison
+    # between two different numbers of saved tensors rather than between one
+    # device and several.
+    baseline_budget = baseline.get("checkpoint_budget_bytes")
+    sharded_budget = sharded.get("checkpoint_budget_bytes")
+    if baseline_budget != sharded_budget:
+        raise SystemExit(
+            "the two speed legs ran under different checkpoint budgets "
+            f"({baseline_budget!r} against {sharded_budget!r}), so the ratio "
+            "between them would compare two different reverse-tape profiles "
+            "rather than one device against several"
+        )
     left = {item["name"]: item for item in baseline["measurements"]["configurations"]}
     right = {item["name"]: item for item in sharded["measurements"]["configurations"]}
     if set(left) != set(right):
@@ -853,6 +867,12 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
         "world_size": world,
         "local_world_size": int(sharded["local_world_size"]),
         "node_count": int(sharded["node_count"]),
+        # The freeze does not name a budget, so the payload states the one both
+        # legs actually ran under rather than leaving a reader to assume the
+        # unbounded path. A rung that completes under a bound completed because
+        # the tape was bounded, and the difference between the two profiles is
+        # exactly what the frozen floor note could not separate.
+        "checkpoint_budget_bytes": sharded_budget,
         "distribution_semantics": "sharded_across_ranks",
         "collective_backend": "nccl",
         "topology_scope": (
