@@ -104,6 +104,12 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-007-A",
         "tests/test_statevector_triton_gates.py::test_control_one_pack_unpack_matches_index_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_forward.py::test_control_subspace_transport_decisions_bind_catalog_identity",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_control_subspace_pack_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-SV-008-A",

@@ -136,6 +136,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "pack_complex64_control_one",
         layouts=("flat_statevector", "packed_subspace"),
         addressing=("distributed", "control_subspace"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-008-A",
