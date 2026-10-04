@@ -397,6 +397,26 @@ development evidence for the reversible local reverse-mode kernel, not a
 distributed scalability or release claim. Reproduce or validate it with
 [`benchmarks/statevector_reversible_vjp_dispatch.py`](../../benchmarks/statevector_reversible_vjp_dispatch.py).
 
+`FQKI-TRITON-GR-003-A` fuses one rank's sharded one-qubit adjoint VJP after
+the peer ket and adjoint chunks have arrived. It reads the local and remote
+chunks once, emits the next local adjoint, and reduces that rank's real
+gradient contribution without materializing the reconstructed two-row state.
+
+The checked-in
+[`statevector_sharded_adjoint_vjp_dispatch_a800.json`](../../benchmarks/results/local/statevector_sharded_adjoint_vjp_dispatch_a800.json)
+artifact records five fixed chunk shapes, both rank-basis branches, a batched
+large chunk, both A800 hosts, and both stock Triton 3.7.1 and FlagTree 0.7.0.
+Maximum next-adjoint absolute error is `5.34e-7` and maximum local-gradient
+absolute error is `4.89e-4`. Across the complete default window, catalog
+dispatch reaches at least `1.888x` the speed of PyTorch eager and `5.166x` the
+speed of `torch.compile`. The runner rejects any case below either `1.0x`
+performance floor or the established adjoint/gradient tolerances, so the
+shared GR-003-A implementation is `provisional`. This is bounded single-device
+development evidence for one rank's local post-exchange compute, not evidence
+of communication overlap, multi-rank scalability, or release readiness.
+Reproduce or validate it with
+[`benchmarks/statevector_sharded_adjoint_vjp_dispatch.py`](../../benchmarks/statevector_sharded_adjoint_vjp_dispatch.py).
+
 `FQKI-FLAGTREE-GR-003-A` extends the explicit provider boundary to one rank's
 sharded one-qubit adjoint VJP. The four complex local and remote ket/adjoint
 streams use TLE async loads, while the selected matrix and derivative scalars

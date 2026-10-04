@@ -153,6 +153,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         gradient_tests=(
             "tests/unit/test_statevector_triton.py::test_fused_sharded_vjp_and_adjoint_matches_global_pair",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_sharded_adjoint_vjp_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-GR-004-A",
