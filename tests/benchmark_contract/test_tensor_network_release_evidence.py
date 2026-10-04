@@ -270,6 +270,11 @@ def _configuration(name: str, seconds: float) -> dict:
         "median_seconds": seconds,
         "minimum_seconds": seconds,
         "communication_bytes": 4096,
+        # The matched-speed role records the collective time the runtime reported
+        # for the configuration it timed. That duration is what the release
+        # contract's communication fraction is measured from, so a leg that did
+        # not carry it is not a leg a fraction can be read from.
+        "collective_seconds": 0.25,
         "training_step_count": 1,
         "parameter_ownership": {"rank:0": ["parameter:0"], "rank:1": ["parameter:1"]},
         "optimizer_update_ownership": {
@@ -290,9 +295,7 @@ def _leg(*, world: int, seconds: float) -> dict:
     are compared across the ranks rather than read from rank 0.
     """
 
-    configurations = [
-        _configuration(entry["name"], seconds) for entry in _ladder()
-    ]
+    configurations = [_configuration(entry["name"], seconds) for entry in _ladder()]
     record = {
         "schema": "flagquantum.tensor_network_release_measurements.v1",
         "role": "matched-speed",
@@ -405,9 +408,7 @@ def test_the_assembled_speed_summary_states_the_state_mode(tmp_path: Path) -> No
     """
 
     baseline = tmp_path / "baseline.json"
-    baseline.write_text(
-        json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8"
-    )
+    baseline.write_text(json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8")
     sharded = tmp_path / "sharded.json"
     sharded.write_text(json.dumps(_leg(world=2, seconds=2.0)), encoding="utf-8")
     summary = tmp_path / "summary.json"
@@ -451,3 +452,75 @@ def test_the_assembled_speed_summary_states_the_state_mode(tmp_path: Path) -> No
     assert json.loads(evidence.read_text(encoding="utf-8"))["state_mode"] == (
         _frozen_state_mode()
     )
+
+
+def test_the_communication_fraction_is_measured_from_the_timed_call(
+    tmp_path: Path,
+) -> None:
+    """The fraction is a ratio of two durations the runtime reported itself.
+
+    The frozen contract requires a measured communication fraction, and a
+    fraction the producer invented -- or divided bytes by a step time to obtain
+    -- would put two different units in one ratio and let the payload disagree
+    with the run it describes. The value is therefore read from the timed call's
+    own step records, and a leg that did not report those seconds is refused
+    rather than recorded with a zero.
+    """
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8")
+
+    silent = _leg(world=2, seconds=2.0)
+    for configuration in silent["measurements"]["configurations"]:
+        del configuration["collective_seconds"]
+    unmeasured = tmp_path / "unmeasured.json"
+    unmeasured.write_text(json.dumps(silent), encoding="utf-8")
+    with pytest.raises(SystemExit, match="collective seconds"):
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(unmeasured),
+                "--measurements",
+                str(tmp_path / "never.json"),
+            ]
+        )
+
+    sharded = tmp_path / "sharded.json"
+    sharded.write_text(json.dumps(_leg(world=2, seconds=2.0)), encoding="utf-8")
+    summary = tmp_path / "summary.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(sharded),
+                "--measurements",
+                str(summary),
+            ]
+        )
+        == 0
+    )
+    measured = json.loads(summary.read_text(encoding="utf-8"))["measurements"]
+    acceptance = next(
+        item
+        for item in measured["configurations"]
+        if item["name"] == SPEED["acceptance_configuration"]
+    )
+    assert measured["communication_fraction"] == pytest.approx(
+        acceptance["sharded_collective_seconds"] / acceptance["sharded_median_seconds"]
+    )
+    # The definition travels with the number, because the same name is used
+    # elsewhere in this repository for a byte share and a reader has to be able
+    # to tell which ratio a payload reports.
+    assert "collective seconds" in measured["communication_fraction_definition"]

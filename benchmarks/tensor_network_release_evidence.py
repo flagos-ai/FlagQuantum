@@ -49,6 +49,8 @@ ROLES = (
     "speed-summary",
     "release-payload",
 )
+
+
 def _commit() -> str:
     """Return the revision the producer is running at."""
 
@@ -621,6 +623,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
                     "minimum_seconds": min(seconds),
                     "median_seconds": _median(seconds),
                     "communication_bytes": int(summary.get("communication_bytes", 0)),
+                    "collective_seconds": _collective_seconds(summary),
                     "training_step_count": int(summary.get("training_step_count", 0)),
                     "local_memory_bytes_by_rank": [
                         int(item)
@@ -704,6 +707,33 @@ def _median(values: Sequence[float]) -> float:
     return 0.5 * (ordered[middle - 1] + ordered[middle])
 
 
+def _collective_seconds(summary: Mapping[str, Any]) -> float:
+    """Return the seconds the runtime recorded inside its collectives.
+
+    The result states the collective time of every step it ran, so the timed
+    call's collective time is the sum of its own step records rather than a
+    second timer started beside the call.
+    """
+
+    return sum(
+        float(record.get("collective_seconds", 0.0))
+        for record in summary.get("step_records", ())
+        if isinstance(record, Mapping)
+    )
+
+
+def _communication_fraction(step_seconds: float, collective_seconds: float) -> float:
+    """Return the share of the timed step that ran inside collectives.
+
+    The fraction is a measured ratio of two durations the runtime reported for
+    the same call. Dividing bytes by a step time would mix units, and inventing
+    a second notion of communication here would let the payload disagree with
+    the run it describes.
+    """
+
+    return collective_seconds / max(float(step_seconds), 1e-12)
+
+
 def _agreed_ownership(
     published: list[Mapping[str, list[str]]], *, context: str
 ) -> dict[str, list[str]]:
@@ -752,6 +782,12 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             left[name]["seconds"], right[name]["seconds"]
         )
         speedup = left[name]["median_seconds"] / right[name]["median_seconds"]
+        if "collective_seconds" not in right[name]:
+            raise SystemExit(
+                f"the sharded leg did not report the collective seconds it spent "
+                f"in {name!r}, so the communication fraction cannot be measured "
+                "from the run that the speedup was measured from"
+            )
         table.append(
             {
                 "name": name,
@@ -762,6 +798,7 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
                 "parameter_count": left[name]["parameter_count"],
                 "baseline_median_seconds": left[name]["median_seconds"],
                 "sharded_median_seconds": right[name]["median_seconds"],
+                "sharded_collective_seconds": float(right[name]["collective_seconds"]),
                 "speedup": speedup,
                 "speedup_confidence_interval": [lower, upper],
                 "scaling_efficiency": speedup / world,
@@ -823,19 +860,21 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             if multi_node
             else "single_node_executed_collective"
         ),
-        # A release payload must state the capacity premise the released
-        # capability rests on. For this capability the premise is not yet
-        # established and the frozen manifest says so, which is why the gate
-        # reports it rather than passing on an assumed premise; the field names
-        # the frozen workload so a reader can follow it to the ladder.
         "single_gpu_expected_oom": True,
         "capacity_baseline_device": f"cuda:0 on {baseline['device_name']}",
+        # A release payload must state the capacity premise the released
+        # capability rests on. This one states that the premise is not
+        # established, and says what was measured to decide that, rather than
+        # leaving a reader to infer a premise from the blocker alone.
         "capacity_failure_reason": (
             "the frozen capacity workload "
-            f"{manifest['capacity_workload']['name']} ({capacity_digest}) exhausts "
-            "a single device at every measured slicing; no measured shape yet "
-            "separates that failure from a sharded completion at the same "
-            "slicing, so the premise is recorded as not established"
+            f"{manifest['capacity_workload']['name']} ({capacity_digest}) was "
+            "swept at slice counts 2, 3, 4, 5 and 6 on one device and on the "
+            "pair, and no slicing both exhausts one device and completes "
+            "sharded: at the only slicing that exhausts one device both legs "
+            "exhaust with the same per-rank peak, and every other slicing either "
+            "completes on one device alone or is refused on both, so the premise "
+            "is recorded as not established"
         ),
         "capacity_premise_workload_sha256": capacity_digest,
         **ownership_semantics,
@@ -856,6 +895,17 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
         "communication_bytes": int(accepted_sharded["communication_bytes"]),
         "inter_node_communication_bytes": (
             int(accepted_sharded["communication_bytes"]) if multi_node else 0
+        ),
+        # The frozen contract asks for a measured communication fraction. It is
+        # reported as the share of the timed step the runtime spent inside its
+        # collectives, taken from the step records of the call that was timed.
+        "communication_fraction": _communication_fraction(
+            accepted["sharded_median_seconds"],
+            accepted["sharded_collective_seconds"],
+        ),
+        "communication_fraction_definition": (
+            "measured collective seconds of the timed call, summed from that "
+            "call's own step records, over its median measured step seconds"
         ),
         "timings": [item["sharded_median_seconds"] for item in table],
         "training_step_count": int(accepted_sharded["training_step_count"]),
