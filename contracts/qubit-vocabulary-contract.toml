@@ -81,10 +81,10 @@ public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
 public_definition_owner = "WQ-2"
 public_definition_condition = "ledgered: every module-level public name is reconciled against [definition_ledger] on every run"
-message_strings = 537
+message_strings = 538
 message_strings_reproduce = "python -c \"from tools.census_wire_vocabulary import message_strings as f; print(len(f()))\""
 message_strings_owner = "WQ-8"
-message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording. The number is a reading and not a reconciliation -- the check above only requires it to be positive and owned -- so it can drift without failing anything, and it has three times over. `WQ-8` recorded 634 and the command beside it yields 632 on the commit that recorded it, so the record was 2 stale from the moment it was written. The drawer compatibility fix on the sibling branch yields 641, because it adds 9 literals that name the retired option spellings in order to warn about them. The docstring slice yields 537, because a docstring *is* an `ast.Constant` string: rewording one so that it no longer names a wire spelling removes it from this surface. Growth the migration wants and a drop it also wants are the same evidence that a ledger reconciled to a number would have blocked, and it is why the number is a starting point rather than a target. A reader who needs the figure must run the command; the recorded one is a starting point, and this condition is why it is not a target"
+message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording. The number is a reading and not a reconciliation -- the check above only requires it to be positive and owned -- so it can drift without failing anything, and it has four times over. `WQ-8` recorded 634 and the command beside it yields 632 on the commit that recorded it, so the record was 2 stale from the moment it was written. The drawer compatibility fix on the sibling branch yields 641, because it adds 9 literals that name the retired option spellings in order to warn about them. The docstring slice first yielded 537, because a docstring *is* an `ast.Constant` string: rewording one so that it no longer names a wire spelling removes it from this surface. It now yields 538, because the same slice restored the canonical spelling on one executable example line -- `Instruction.wires` in `Circuit.compose`, which a previous commit of the same slice had rewritten to `.qubits`. Growth the migration wants, a drop it wants, and a rise caused by the slice correcting itself are the same evidence that a ledger reconciled to a number would have blocked, and it is why the number is a starting point rather than a target. A reader who needs the figure must run the command; the recorded one is a starting point, and this condition is why it is not a target"
 
 # The sixth surface, and the only one whose expected count is not a measurement but
 # an invariant. Every other section here records how much of the migration is done;
@@ -149,7 +149,7 @@ reason = "documents a live deprecated alias: `fq.Circuit(n_wires=2)` still const
 keywords = ["n_wires="]
 
 [docstring]
-measured_tokens = 44
+measured_tokens = 43
 measured_reproduce = "python -c \"import sys; sys.path.insert(0, 'tools'); from census_wire_vocabulary import docstring_census as f; print(len(f()))\""
 owner = "WD-2"
 condition = "exempt: each entry names the containers and the token multiset they may show, and the gate reconciles per container, so a second occurrence inside an already-exempt docstring needs its own row; every other docstring and comment in the package must show none, and the comparison is a multiset rather than a total, so moving a token from an exempt docstring to a live one cannot balance out"
@@ -168,6 +168,14 @@ condition = "exempt: each entry names the containers and the token multiset they
 # own definition; a comment is keyed by the innermost definition containing it, which
 # keeps the key stable when lines move inside that definition and gives a module-scope
 # comment the key `<module>`.
+#
+# A `>>>` block inside a docstring is not prose: `doctest` runs it.
+# `tests/api_contract/test_public_docstring_examples.py` runs every `>>>` block the
+# public entries carry, so a wire-named token on one of those lines is a code token and
+# is counted by `[docstring_example]` below instead. That split is not cosmetic: a pass
+# that could not tell the two apart rewrote `Instruction.wires` to `.qubits` inside the
+# `Circuit.compose` example, and an example that had resolved for years began raising
+# `AttributeError`.
 [[docstring.keep]]
 identifier = [
     "flagquantum/algorithms/kmedians.py::_nearest_centroid::n_wires",
@@ -195,7 +203,6 @@ identifier = [
 reason = "`[boundary]` is the public function surface, so a private parameter is outside the migration and the docstring that explains it keeps its spelling"
 [[docstring.keep]]
 identifier = [
-    "flagquantum/_api.py::compile::n_wires",
     "flagquantum/_api.py::run::n_wires",
     "flagquantum/circuit.py::_composition_source::n_wires",
     "flagquantum/core/ir.py::_normalize_count::n_wires",
@@ -248,6 +255,37 @@ identifier = [
     "flagquantum/compiler/routing.py::<module>::test_multi_wire_routing_locality",
 ]
 reason = "the path of a test the package ships"
+
+# The eighth surface, and the second one that is not prose. A `>>>` block inside a
+# docstring is a program the doctest runner executes, so a wire-named token on one of
+# those lines is a *code* token: rewording it is a rename, and a rename needs the
+# authorization a rename needs. The rule the token obeys is not a vocabulary rule at
+# all -- it is that the example has to keep working -- so unlike `[docstring]` this
+# section is not a progress ledger: nothing here is debt the migration owes. It is
+# pinned so that a rewriting pass cannot move a token here without saying so, which is
+# the one thing that went wrong in this slice. `Instruction.wires` in the
+# `Circuit.compose` example became `.qubits`, a spelling no attribute carries, and the
+# example that had resolved for years started raising `AttributeError`. Nothing in the
+# repository noticed until `tests/api_contract/test_public_docstring_examples.py` was
+# run by hand.
+#
+# The count is small because the package keeps its examples off the wire vocabulary in
+# the first place. That is the fact worth pinning: the surface is nearly empty, so an
+# entry appearing here is a signal rather than noise.
+[docstring_example]
+measured_tokens = 2
+measured_reproduce = "python -c \"import sys; sys.path.insert(0, 'tools'); from census_wire_vocabulary import docstring_example_tokens as f; print(len(f()))\""
+owner = "WD-2"
+condition = "exempt: each entry names the containers and the token multiset they may show, and the gate reconciles per container; a token here is code the doctest runner executes, so it is listed with the reason it must keep its spelling, and a slice that wants to reword one has to move the example to a qubit spelling that exists and record it here"
+
+# Both entries name a spelling the package really has. `.n_wires` is `CircuitIR.n_wires`,
+# a live deprecated alias; `.wires` is `Instruction.wires`, still canonical.
+[[docstring_example.keep]]
+identifier = [
+    "flagquantum/_api.py::compile::n_wires",
+    "flagquantum/circuit.py::Circuit.compose::wires",
+]
+reason = "an executable example, so the token is a code attribute rather than a word about one: `Instruction.wires` is still the canonical spelling and `CircuitIR.n_wires` is a live deprecated alias, and a pass that rewrote either to `qubits` would raise `AttributeError` without failing any vocabulary gate"
 
 # Canonical sites still spelled `wire`, one per line, keyed by module,
 # qualified name, and parameter. The list is the frozen baseline and keeps
@@ -2143,5 +2181,6 @@ accelerator_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ACCELERATORS-2
 compiler_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md"
 documentation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-DOCUMENTATION-20261013.md"
 docstring_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-DOCSTRINGS-20261014.md"
+docstring_example_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-DOCSTRINGS-20261014.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

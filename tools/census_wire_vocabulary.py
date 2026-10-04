@@ -1210,10 +1210,41 @@ def _enclosing(spans: tuple[tuple[int, int, str], ...], line: int) -> str:
     return "<module>" if best is None else best[1]
 
 
+def _example_lines(doc: str) -> set[int]:
+    """The zero-based docstring lines that lie inside an executable example block.
+
+    ``doctest`` starts an example at a line whose stripped form begins with ``>>>``
+    and ends it at the next blank line; the lines between are either the statement or
+    the output it is compared against. Both are read by ``doctest`` rather than by a
+    person, so neither is prose.
+
+    This distinction is load-bearing. ``tests/api_contract/test_public_docstring_examples.py``
+    runs every ``>>>`` the public entries carry, and a wire-named token on one of those
+    lines is a *code* token: a rewriting pass that could not tell the two apart turned
+    ``Instruction.wires`` into ``.qubits`` in the ``Circuit.compose`` example, and the
+    example that had resolved for years started raising ``AttributeError``. The doctest
+    runner is what governs those tokens, so they are counted apart from the prose ledger.
+    """
+
+    inside = False
+    lines: set[int] = set()
+    for index, line in enumerate(doc.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith(">>>"):
+            inside = True
+        elif not stripped:
+            inside = False
+        # An output line keeps the block open. A prose line cannot open one, because
+        # only `>>>` sets the flag.
+        if inside:
+            lines.add(index)
+    return lines
+
+
 def docstring_census(
     package_root: Path | None = None,
 ) -> tuple[tuple[str, str], ...]:
-    """Every wire-bearing token a package docstring or comment publishes.
+    """Every wire-bearing token a package docstring's prose or a comment publishes.
 
     A docstring is what ``help()`` prints and what an editor shows on hover, and a
     comment is what the next reader of the module is taught, so this surface reaches
@@ -1225,6 +1256,10 @@ def docstring_census(
     multiset per container, so a second occurrence cannot hide behind the first. The
     scope a comment belongs to is the innermost definition containing it, which keeps
     the key stable when lines move inside that definition.
+
+    An executable example block inside a docstring is skipped, because those lines are
+    code that ``doctest`` runs rather than prose a reader reads; they are counted by
+    ``docstring_example_tokens`` instead. See ``_example_lines``.
     """
 
     root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
@@ -1244,7 +1279,10 @@ def docstring_census(
             if not doc or "wire" not in doc.lower():
                 continue
             qualname = names.get(id(node), "<module>")
-            for line in doc.splitlines():
+            examples = _example_lines(doc)
+            for index, line in enumerate(doc.splitlines()):
+                if index in examples:
+                    continue
                 for token in _wire_tokens(line):
                     found.append((f"{relative}::{qualname}", token))
         for comment in tokenize.generate_tokens(io.StringIO(source).readline):
@@ -1253,6 +1291,42 @@ def docstring_census(
             scope = _enclosing(spans, comment.start[0])
             for word in _wire_tokens(comment.string):
                 found.append((f"{relative}::{scope}", word))
+    return tuple(sorted(found))
+
+
+def docstring_example_tokens(
+    package_root: Path | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """Every wire-bearing token on a docstring line that ``doctest`` executes.
+
+    Reported rather than reconciled, for the same reason ``message_strings`` is: the
+    rule these obey is not a vocabulary rule but the one the doctest runner already
+    enforces -- the example has to keep working. A token here is a code token, so
+    rewording it is a rename, and a rename needs the authorization a rename needs.
+    Counting them apart is what makes that visible *before* a rewriting pass reaches
+    them, which is exactly what failed once: ``Instruction.wires`` in
+    ``Circuit.compose`` became ``.qubits``, a spelling no attribute carries.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    found: list[tuple[str, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parent).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
+        names = _definition_names(tree)
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                continue
+            doc = ast.get_docstring(node, clean=False)
+            if not doc or "wire" not in doc.lower():
+                continue
+            qualname = names.get(id(node), "<module>")
+            lines = doc.splitlines()
+            for index in sorted(_example_lines(doc)):
+                for token in _wire_tokens(lines[index]):
+                    found.append((f"{relative}::{qualname}", token))
     return tuple(sorted(found))
 
 

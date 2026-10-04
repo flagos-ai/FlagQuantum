@@ -931,6 +931,65 @@ def test_the_docstring_exemptions_cover_exactly_the_live_tokens() -> None:
     )
 
 
+def test_the_docstring_example_surface_is_read_apart_from_the_prose(
+    tmp_path: Path,
+) -> None:
+    """A `>>>` block is code the doctest runner executes, not prose a reader reads.
+
+    Both live in a docstring, so a scan that read the whole string would hand a
+    rewriting pass a code token and call it a sentence. That is not hypothetical: it
+    turned `Instruction.wires` into `.qubits` in the `Circuit.compose` example, and
+    the example started raising `AttributeError`. So the two readings have to be
+    disjoint, and their union has to be the whole docstring.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/example.py": (
+                '"""Prose about a wire.\n'
+                "\n"
+                "Examples:\n"
+                "    >>> Circuit(2).n_wires\n"
+                "    2\n"
+                '"""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+    assert _CENSUS.docstring_example_tokens(root) == (
+        ("flagquantum/example.py::<module>", "n_wires"),
+    )
+
+
+def test_the_live_example_tokens_match_the_pinned_record() -> None:
+    """The count is small, so an entry appearing here is a signal rather than noise.
+
+    Unlike the prose ledger, a token here is not debt the migration owes: the example
+    would still work if it had always been written in the qubit vocabulary. It is
+    pinned so that a pass cannot move one without saying so.
+    """
+
+    contract = _contract()
+    pinned: dict[str, list[str]] = {}
+    for row in contract["docstring_example"]["keep"]:
+        for identifier in row["identifier"]:
+            container, _, token = str(identifier).rpartition("::")
+            pinned.setdefault(container, []).append(token)
+    observed: dict[str, list[str]] = {}
+    for container, token in _CENSUS.docstring_example_tokens(_ROOT / "flagquantum"):
+        observed.setdefault(container, []).append(token)
+    assert observed, "the docstring example census found nothing to reconcile"
+    assert {name: sorted(tokens) for name, tokens in observed.items()} == {
+        name: sorted(tokens) for name, tokens in pinned.items()
+    }
+    assert int(contract["docstring_example"]["measured_tokens"]) == sum(
+        len(tokens) for tokens in pinned.values()
+    )
+
+
 def _importable_package(tmp_path: Path, name: str, files: dict[str, str]) -> Path:
     """Write a package that the scan can actually import, and return its root.
 

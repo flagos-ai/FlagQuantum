@@ -59,6 +59,7 @@ from census_wire_vocabulary import (  # noqa: E402
     census,
     definition_census,
     docstring_census,
+    docstring_example_tokens,
     documentation_census,
     public_parameter_names,
     qubit_keyword_mismatches,
@@ -258,6 +259,7 @@ def contract_errors(
     errors.extend(_definition_errors(contract, package_root))
     errors.extend(_documentation_errors(contract))
     errors.extend(_docstring_errors(contract))
+    errors.extend(_docstring_example_errors(contract))
     errors.extend(_call_site_errors(contract))
 
     slices = list(contract.get("slices", ()))
@@ -776,6 +778,82 @@ def _docstring_errors(contract: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
+    """Reconcile the wire vocabulary on docstring lines that `doctest` executes.
+
+    The prose ledger above skips `>>>` blocks, because those lines are a program
+    rather than a sentence. `tests/api_contract/test_public_docstring_examples.py`
+    runs every `>>>` block the public entries carry, so a token on one of those
+    lines is a code token: `.wires` in the `Circuit.compose` example is
+    `Instruction.wires`, and rewording it is a rename rather than a rephrasing.
+
+    The check is the same shape as the prose one -- per container, as a multiset --
+    but its meaning is different and the condition says so: this list is not debt
+    the migration owes, because the example would still work if it had always been
+    written in the qubit vocabulary. It is pinned so that a rewriting pass cannot
+    quietly move a token here and leave a doctest that raises `AttributeError`,
+    which is what happened once in this slice and went unnoticed by every other
+    check.
+    """
+
+    errors: list[str] = []
+    section = contract.get("docstring_example", {})
+    for name in ("owner", "condition"):
+        if not isinstance(section.get(name), str) or not section[name]:
+            errors.append(f"qubit vocabulary docstring example {name} is unowned")
+
+    exempt: dict[str, list[str]] = {}
+    for row in section.get("keep", ()):
+        identifiers = [str(entry) for entry in row.get("identifier", ())]
+        if not identifiers:
+            errors.append(
+                "qubit vocabulary docstring example exemption is missing an identifier"
+            )
+            continue
+        if not isinstance(row.get("reason"), str) or not row["reason"]:
+            errors.append(
+                "qubit vocabulary docstring example exemption "
+                f"{identifiers[0]} states no reason"
+            )
+        for identifier in identifiers:
+            container, separator, token = identifier.rpartition("::")
+            if not separator or not container or not token:
+                errors.append(
+                    f"qubit vocabulary docstring example exemption {identifier} is "
+                    "not a container::token key"
+                )
+                continue
+            exempt.setdefault(container, []).append(token)
+
+    reported: dict[str, list[str]] = {}
+    for container, token in docstring_example_tokens():
+        reported.setdefault(container, []).append(token)
+
+    for container, tokens in sorted(reported.items()):
+        allowed = exempt.get(container)
+        if allowed is None:
+            errors.append(
+                "qubit vocabulary docstring example shows a wire-named token: "
+                f"{container} {sorted(set(tokens))}"
+            )
+        elif sorted(tokens) != sorted(allowed):
+            errors.append(
+                f"qubit vocabulary docstring example in {container} shows "
+                f"{sorted(tokens)}, but {sorted(allowed)} is exempt"
+            )
+    for container in sorted(set(exempt) - set(reported)):
+        errors.append(
+            f"qubit vocabulary docstring example exemption {container} is stale"
+        )
+
+    measured = int(section.get("measured_tokens", -1))
+    if measured != len(docstring_example_tokens()):
+        errors.append(
+            "qubit vocabulary docstring example measured_tokens must equal the live scan"
+        )
+    return errors
+
+
 def _definition_errors(
     contract: dict[str, Any],
     package_root: Path | None,
@@ -990,6 +1068,16 @@ def _report(contract: dict[str, Any]) -> None:
         "Qubit vocabulary docstrings and comments: "
         f"{kept} of {len(docstring_census())} wire-named tokens kept as recorded "
         f"({len(docstring_census()) - kept} to reword)"
+    )
+
+    example_section = contract.get("docstring_example", {})
+    pinned = sum(
+        len(row.get("identifier", ())) for row in example_section.get("keep", ())
+    )
+    print(
+        "Qubit vocabulary docstring examples: "
+        f"{pinned} of {len(docstring_example_tokens())} executable wire-named tokens "
+        "pinned by name rather than owed as debt"
     )
 
     # The only line that reports an invariant rather than progress. It is printed

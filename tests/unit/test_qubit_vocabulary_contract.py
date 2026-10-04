@@ -297,6 +297,106 @@ def test_the_docstring_surface_is_not_the_documentation_surface() -> None:
     assert "exempt" in contract["documentation"]
 
 
+def test_the_gate_reports_docstring_example_progress() -> None:
+    """A `>>>` block is a program, so its tokens are code and not a sentence.
+
+    `[docstring]` reads prose; a `>>>` block inside the same docstring is run by
+    `doctest`. Reading them as one surface is what let `Instruction.wires` become
+    `.qubits` in the `Circuit.compose` example, where the vocabulary gate saw a
+    token disappear and every dictionary said the migration was finished while the
+    example raised `AttributeError`.
+    """
+
+    contract = _contract()
+    pinned = sum(
+        len(row.get("identifier", ())) for row in contract["docstring_example"]["keep"]
+    )
+    scanned = _CENSUS.docstring_example_tokens(_ROOT / "flagquantum")
+    assert scanned, "the docstring example census found nothing to reconcile"
+    assert (
+        pinned == len(scanned) == int(contract["docstring_example"]["measured_tokens"])
+    )
+    assert "condition" in contract["docstring_example"]
+    assert "owner" in contract["docstring_example"]
+
+
+def test_an_unrecorded_docstring_example_token_is_reported() -> None:
+    """The default: an executable wire-named token and no row for it."""
+
+    contract = _contract()
+    dropped = contract["docstring_example"]["keep"].pop(0)
+    container = dropped["identifier"][0].rsplit("::", 1)[0]
+    errors = _errors(contract)
+    _some(errors, "docstring example shows a wire-named token")
+    assert any(container in message for message in errors), (container, errors)
+
+
+def test_a_docstring_example_exemption_wider_than_the_tree_is_reported() -> None:
+    """The row pins the whole multiset, so it cannot be widened to absorb a code token."""
+
+    contract = _contract()
+    row = contract["docstring_example"]["keep"][0]
+    container = row["identifier"][0].rsplit("::", 1)[0]
+    row["identifier"] = [*row["identifier"], f"{container}::phantom_wire"]
+    _some(_errors(contract), "is exempt")
+
+
+def test_a_stale_docstring_example_exemption_is_reported() -> None:
+    """A row naming a container with no executable token is dead weight."""
+
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = [
+        "flagquantum/circuit.py::Circuit.compose::a_token_that_is_not_there"
+    ]
+    _some(_errors(contract), "is exempt")
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = [
+        "flagquantum/_api.py::a_definition_that_does_not_exist::n_wires"
+    ]
+    _some(_errors(contract), "docstring example exemption")
+    _some(_errors(contract), "is stale")
+
+
+def test_a_docstring_example_exemption_without_a_reason_is_reported() -> None:
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["reason"] = ""
+    _some(_errors(contract), "docstring example exemption")
+    _some(_errors(contract), "states no reason")
+
+
+def test_a_docstring_example_exemption_without_an_identifier_is_reported() -> None:
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = []
+    _some(_errors(contract), "docstring example exemption is missing an identifier")
+
+
+def test_a_docstring_example_identifier_that_is_not_a_container_token_key_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = ["just_a_token"]
+    _some(_errors(contract), "container::token")
+
+
+def test_a_docstring_example_measurement_that_disagrees_with_the_scan_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["docstring_example"]["measured_tokens"] = (
+        int(contract["docstring_example"]["measured_tokens"]) + 1
+    )
+    _some(
+        _errors(contract), "docstring example measured_tokens must equal the live scan"
+    )
+
+
+@pytest.mark.parametrize("field", ("owner", "condition"))
+def test_an_unowned_docstring_example_surface_is_reported(field: str) -> None:
+    contract = _contract()
+    contract["docstring_example"][field] = ""
+    _some(_errors(contract), f"docstring example {field} is unowned")
+
+
 def test_the_gate_reports_progress_per_slice() -> None:
     """Retirement moves a site from `remaining` to `retired`, never off the books.
 

@@ -256,11 +256,13 @@ logical_qubit_count as {n}, which does not fit a {m}-qubit program", "No couplin
 path between qubits {a} and {b}", "Directed coupling map requires a positive qubit
 count", "Coupling qubit count must be an integer", "correlated readout matrix size
 must match qubits", and "routed CircuitIR retains nonlocal two-qubit
-instructions". 537 string literals still carry a wire spelling; they are reported
+instructions". 538 string literals still carry a wire spelling; they are reported
 by the census and not judged by it. The count is lower than the 632 the previous
 slices recorded only because a docstring is itself a string literal: the docstring
 slice reworded 260 lines of them, and each reworded docstring that no longer names a
-wire spelling left this surface with it.
+wire spelling left this surface with it. It went back up by one when the same slice
+restored `Instruction.wires` on the one executable example line it had reworded by
+mistake — see the docstring slice's record.
 
 ### The names this slice keeps
 
@@ -301,8 +303,9 @@ The migration covers four ledgers plus a report, all measured by
 | public attribute and property names | 144 | 122 renamed, 22 excluded as payload keys; 5 of the 122 keep a forwarder until 0.4.0 |
 | module-level public definition names | 10 | renamed |
 | documented keyword arguments | 17 | 13 reworded; 4 kept, in two documents, each with a recorded reason |
-| package docstrings and comments | 339 | 295 reworded; 44 kept, across 22 files, each with a recorded reason |
-| string literals | 537 | reported only, never ledgered; a docstring is a string literal, so the docstring slice lowers this count as a side effect |
+| package docstrings and comments | 337 | 294 reworded; 43 kept, across 22 files, each with a recorded reason |
+| executable docstring examples | 2 | pinned, not owed: a `>>>` line is a program the doctest runner executes, so rewording one is a rename; both entries name a spelling the package still has |
+| string literals | 538 | reported only, never ledgered; a docstring is a string literal, so the docstring slice lowers this count as a side effect, and raises it by one when it repairs its own regression |
 
 An attribute is renamed whether it is a field, a property or method
 (`Circuit.n_wires`), or an instance attribute assigned in a method
@@ -384,7 +387,7 @@ not read as "no user-visible `wire` is left":
 | `n_wires` | the metric key in `ExecutionResult(metrics={"n_wires": …})` built by the backend adapters | kept; a metric key is part of a comparison payload |
 | `--n-wires`, `--wires`, `--wire-layout`, `--marginal-wires`, `--capacity-wires`, `--start-wires`, `--step-wires`, `--stop-wires`, `--worker-wire`, `--max-reference-wires`, `--fq-dense-observable-wires` | command-line flags, declared by 66 `argparse` calls over 11 distinct names in 59 files across `benchmarks/`, `tools/` and `flagquantum/` | open; a flag is a typed interface, so it migrates the way keyword arguments did — publish the qubit spelling, keep the old one as a hidden deprecated alias. 51 of the 66 declarations are `--n-wires` |
 | `n_wires`, `wires`, `wire`, `wire0`, `wire1`, `capacity_wires`, `dense_observable_wires` | parameters of helper functions in `benchmarks/` (141 sites in 60 files), `tools/` and `examples/` | open; `[boundary]` is the package, so the parameter ledger does not read these files at all |
-| `wire`, `wires`, `n_wires` | Python docstrings and comments inside the package — what `help()` prints and what an editor shows on hover | **migrated**: 339 tokens in 148 containers across 66 files became 44 in 32 containers across 22 files; 295 were reworded on 260 lines. The 44 that remain keep their spelling for one of nine recorded reasons — a private parameter (21), a frozen payload key (8), a retired spelling the package still accepts (4), the field or parameter of the definition the docstring explains (3), a live public attribute (2), a third-party object's own spelling (2), the word itself quoted (2), one live private switch, and the file name of a shipped test. Each is recorded in `[docstring]` and reconciled per container on every run, so a new wire-named token anywhere in a docstring or a comment fails the gate |
+| `wire`, `wires`, `n_wires` | Python docstrings and comments inside the package — what `help()` prints and what an editor shows on hover | **migrated**: 337 prose tokens in 146 containers across 66 files became 43 in 31 containers across 22 files; 294 were reworded on 260 lines. The 43 that remain keep their spelling for one of nine recorded reasons — a private parameter (21), a frozen payload key (7), a retired spelling the package still accepts (4), the field or parameter of the definition the docstring explains (3), a live public attribute (2), a third-party object's own spelling (2), the word itself quoted (2), one live private switch, and the file name of a shipped test. Each is recorded in `[docstring]` and reconciled per container on every run, so a new wire-named token anywhere in a docstring or a comment fails the gate. A `>>>` line inside a docstring is not prose but a program the doctest runner executes, so the two executable wire-named tokens the package carries are reconciled separately in `[docstring_example]`: they are pinned rather than owed, because rewording one is a rename |
 The capture keyword is the remaining open work. Renaming it would break every
 hybrid program the capture layer can read, so it is a decision for the
 hybrid-language owner rather than for this migration. The four rows after it are

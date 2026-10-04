@@ -75,7 +75,7 @@ and becomes
 
 The prose moved and the expression did not, because the expression is the code.
 
-## What the 44 kept tokens are
+## What the 43 kept tokens are
 
 The gate groups them into nine reasons, one `[[docstring.keep]]` row per reason. A row
 names the containers and the exact multiset of tokens they may show.
@@ -83,7 +83,7 @@ names the containers and the exact multiset of tokens they may show.
 | Reason | Tokens | Why it keeps its spelling |
 |---|---:|---|
 | a private parameter | 21 | `[boundary]` is the public function surface, so a private parameter is outside the migration and the docstring that explains it keeps its spelling |
-| a frozen payload key | 8 | the spelling of a serialized key — `CircuitIR.n_wires`, `Instruction.wires`, and the `n_wires` field of the two simulation records that serialize it — so renaming it is a payload-schema change rather than a rename |
+| a frozen payload key | 7 | the spelling of a serialized key — `CircuitIR.n_wires`, the `n_wires` field of `EvolutionPlan.n_qubits` and `TEBDResult.n_qubits`, and the twin evidence envelope that serializes it — so renaming it is a payload-schema change rather than a rename |
 | a retired spelling the package still accepts | 4 | `sharded_wires`, `wire_options`, `show_wire_labels`, `active_wire_notches`; the package still reads each and warns, so the docstring that explains the compatibility promise has to say the name |
 | the field or parameter of the definition the docstring explains | 3 | `_Mechanism.wire` twice and `_checked_wire`'s own `wire` parameter; a docstring that documents a name has to use that name |
 | a live public attribute | 2 | `HamiltonianTerm.max_wire`, `ExecutionPlan.shardable_wires` |
@@ -100,6 +100,13 @@ different readers, and keyed by the bare `_prepare` they would be one container 
 single row covers an occurrence nobody had looked at. A docstring is keyed by its own
 definition; a comment is keyed by the innermost definition containing it, which keeps
 the key stable when lines move inside that definition.
+
+A `>>>` block inside a docstring is not prose, and this slice learned that the hard
+way — see [The example that had no legal spelling](#the-example-that-had-no-legal-spelling).
+Those lines are counted by a separate `[docstring_example]` section, and the two
+surfaces are disjoint: the union of `docstring_census()` and
+`docstring_example_tokens()` is every wire-named token the package's docstrings and
+comments carry, with nothing counted twice and nothing dropped.
 
 Two definitions that share a bare name were in fact the one thing this slice got wrong
 on its first attempt. The key was the bare `node.name` for a docstring and the dotted
@@ -152,24 +159,39 @@ union      22 files
 ```
 
 The snippet counts *substring* occurrences, which is the metric the baseline above
-was measured with, and it counts every `.py` under `flagquantum/`. The census below
-counts *tokens* and is what the gate reconciles; the two agree at 44 here because
-every remaining occurrence is identifier-shaped.
+was measured with, and it counts every `.py` under `flagquantum/`. It also counts the
+two executable example lines, because a substring walk cannot tell a `>>>` line from a
+sentence about it. The census below counts *tokens*, splits the prose from the
+examples, and is what the gate reconciles; the two agree at 43 prose tokens here
+because every remaining prose occurrence is identifier-shaped.
 
 The census:
 
 ```console
 $ python -c "import sys; sys.path.insert(0, 'tools'); \
     from census_wire_vocabulary import docstring_census as f; print(len(f()))"
-44
+43
 ```
 
 ```console
 $ python -c "import sys; sys.path.insert(0, 'tools'); \
     from census_wire_vocabulary import docstring_census as f; \
     print(len({c for c, _ in f()}))"
-32
+31
 ```
+
+```console
+$ python -c "import sys; sys.path.insert(0, 'tools'); \
+    from census_wire_vocabulary import docstring_example_tokens as f; print(len(f()))"
+2
+```
+
+The same two functions run against the baseline revision `f44909ef`, by pointing them
+at that worktree's package root, read `337` prose tokens over `146` containers in `66`
+files and `2` executable tokens over `2` containers in `2` files. The figure this
+record carried before the split — 339 prose tokens — was those 337 plus the 2 example
+lines, and the 295 tokens it reported as reworded were 294 reworded prose tokens plus
+the one example line this slice rewrote by mistake.
 
 The gate:
 
@@ -177,7 +199,8 @@ The gate:
 $ python tools/check_qubit_vocabulary.py
 ...
 Qubit vocabulary documentation: 4 of 4 documented wire-named keywords exempt as recorded (0 to reword)
-Qubit vocabulary docstrings and comments: 44 of 44 wire-named tokens kept as recorded (0 to reword)
+Qubit vocabulary docstrings and comments: 43 of 43 wire-named tokens kept as recorded (0 to reword)
+Qubit vocabulary docstring examples: 2 of 2 executable wire-named tokens pinned by name rather than owed as debt
 Qubit vocabulary call sites: 0 keywords passed that their callee rejects (invariant: 0)
 $ echo $?
 0
@@ -186,11 +209,75 @@ $ echo $?
 The record's table is generated from the census rather than typed, and the generator
 is the same walk the gate uses, so the two cannot disagree.
 
+## The example that had no legal spelling
+
+This is the defect this slice shipped and then found, and it is the reason the
+executable example is now a surface of its own.
+
+The `Circuit.compose` docstring ends with an example:
+
+```python
+>>> fq.Circuit(4).x(0).compose(bell, qubits=(1, 2)).to_ir().instructions[-1].wires
+(1, 2)
+```
+
+The second commit of this slice reworded the prose in that docstring and, in the same
+pass, reworded that line to `.qubits`. The vocabulary census then read one fewer token
+and the record booked it as a successful migration. It is not a successful migration:
+`Instruction` carries no `qubits` attribute, so the example raises
+
+```text
+AttributeError: 'Instruction' object has no attribute 'qubits'
+```
+
+and `tests/api_contract/test_public_docstring_examples.py` fails. That test is marked
+`api_contract`, and the PR lane's marker expression is
+`(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and
+not triton`, which does not select it — so the broken example passed CI green. It was
+found by running that file by hand, not by any gate in the repository.
+
+Two things are true at once here, and the second one is the design lesson:
+
+* The census was **right** to demand that the token move. `Instruction.wires` is one of
+  the seven stable-core-reachable owners of the spelling, it has no `qubits` alias, and
+  a docstring that says `.wires` while a slice is retiring the vocabulary is exactly
+  what the surface exists to flag. The token cannot be reworded, because there is no
+  other spelling of it.
+* A prose scan **cannot** tell a `>>>` line from a sentence about one, because both are
+  the same `ast.Constant`. So the surface has to be split, and the split has to be
+  reconciled apart, because the two halves obey different rules: prose obeys the
+  vocabulary rule and is debt the migration owes; an example obeys
+  "the doctest must keep working" and is not debt at all.
+
+So the fix has three parts, all in one commit:
+
+1. `docstring_census()` now skips the lines of a `>>>` block, and
+   `docstring_example_tokens()` reads exactly those lines. `_example_lines()` is the
+   shared definition of a block: a line whose stripped form starts with `>>>` opens one,
+   a blank line closes it, and an output line keeps it open.
+2. The example line is restored to `.wires`, which is what makes the doctest pass.
+3. `[docstring_example]` is added to the contract, reconciled per container with the
+   same rigor as the prose surface but with a different `condition`: the two tokens
+   there are *pinned*, not owed. A future pass that touches one gets a gate failure
+   instead of a green run.
+
+The prose count fell from 44 to 43 as a side effect, and that fall is correct: one of
+the 44 was never prose. The one kept token that the restore put back —
+`flagquantum/_api.py::compile::n_wires`, the other executable example, which was
+already written in the deprecated spelling before this slice and which the old reading
+had mis-filed under "a frozen payload key" — moved to the example surface with it.
+
+The honest generalisation: **a vocabulary census cannot audit a doctest, and a doctest
+allow-list that no CI lane selects cannot audit itself.** The gate now knows the
+difference between the two; the repository still does not run the doctests in CI, and
+that remains open (the migration reference's open-work table says so).
+
 ## Negative tests
 
 A gate that reports zero findings is worth nothing until it has been shown to fail.
-All four of these were run against the finished tree and then reverted; the gate
-returns to 0 afterwards.
+All eight of these were run against the finished tree and then reverted; the gate
+returns to 0 afterwards. The first four exercise the prose surface, the last four the
+executable-example surface.
 
 1. **A new wire token in a docstring.** Adding `Every wire carries one variable.` to
    `qubo_to_ising`:
@@ -215,12 +302,51 @@ returns to 0 afterwards.
    exit 1
    ```
 
-4. **A measurement that drifts.** Changing `measured_tokens` from 44 to 43:
+4. **A measurement that drifts.** Changing `measured_tokens` from 43 to 44:
 
    ```text
    qubit vocabulary docstring measured_tokens must equal the live scan
    exit 1
    ```
+
+5. **An executable token with no row.** Dropping the `[docstring_example]` row, which
+   is what a pass that reworded an example line would effectively do:
+
+   ```text
+   qubit vocabulary docstring example shows a wire-named token: flagquantum/_api.py::compile ['n_wires']
+   qubit vocabulary docstring example shows a wire-named token: flagquantum/circuit.py::Circuit.compose ['wires']
+   exit 1
+   ```
+
+6. **An executable exemption that permits more than the tree shows.** Adding a phantom
+   token to the example row:
+
+   ```text
+   qubit vocabulary docstring example in flagquantum/_api.py::compile shows ['n_wires'], but ['n_wires', 'phantom_wire'] is exempt
+   exit 1
+   ```
+
+7. **A stale executable exemption.** Renaming the example key to a definition that does
+   not exist:
+
+   ```text
+   qubit vocabulary docstring example shows a wire-named token: flagquantum/_api.py::compile ['n_wires']
+   qubit vocabulary docstring example exemption flagquantum/_api.py::a_definition_that_does_not_exist is stale
+   exit 1
+   ```
+
+8. **An executable measurement that drifts.** Changing
+   `[docstring_example].measured_tokens` from 2 to 3:
+
+   ```text
+   qubit vocabulary docstring example measured_tokens must equal the live scan
+   exit 1
+   ```
+
+The sixth and seventh are separate cases rather than one, because a container that
+exists but shows the wrong multiset reaches the *over-broad* branch while a container
+that does not exist reaches the *stale* branch; a fixture that fabricates a container
+therefore only ever proves the second one.
 
 ## Why there is no API change proposal
 
@@ -229,8 +355,15 @@ serialized schemas. This slice changes none of them: no name is renamed, no sign
 moves, and no payload key changes its spelling. What it changes is the prose the
 package prints as `help()`, and `[docstring]` is where that is authorized and
 reconciled — exactly as `[documentation]` authorized the previous slice, which is why
-this slice adds a `docstring_authorization` key to `[verification]` and no new
+this slice adds `docstring_authorization` and `docstring_example_authorization` to
+`[verification]` (both naming this record) and no new
 `docs/development/API_CHANGE_PROPOSAL_*.md`.
+
+The one place this slice touched something a proposal does cover is the `.wires` it
+*restored*, and the restore is the point: `Instruction.wires` was never renamed, so
+putting the example back is not an API change but the removal of one. Rule 8 is why
+the example could not be migrated in the first place — the attribute it names is
+canonical, and this slice renamed no attribute.
 
 The distinction that decides it is the one the previous slice drew: a documented
 keyword argument is an *instruction* a reader copies into a script, and a docstring
@@ -240,20 +373,26 @@ not a signature at all.
 
 ## The measurement this slice moved that it did not intend to
 
-`[other_surfaces].message_strings` was 632 and is now 537.
+`[other_surfaces].message_strings` was 632 and is now 538.
 
 `message_strings()` walks every `ast.Constant` string under the public modules and
 reports the ones containing `wire`. A docstring **is** an `ast.Constant` string, so
 every docstring this slice reworded far enough to stop naming a wire spelling left
-that surface with it. The drop is the migration working.
+that surface with it. The drop is the migration working. The last one back is the
+slice correcting itself: restoring `.wires` on the `Circuit.compose` example line puts
+one wire-bearing literal back, so the honest figure is `537 + 1 = 538`. The reading
+moved twice in one slice, in opposite directions, for two different and both correct
+reasons.
 
 This surface is deliberately reported and never reconciled — the contract's
-`message_strings_condition` says so, and says the number has drifted three times now:
-`634` recorded against `632` measured, `641` after the drawer compatibility fix, and
-`537` after this slice. Each drift had a different and correct cause, which is the
-argument for keeping the surface reported. A ledger reconciled to this number would
-have blocked the drawer fix that made legacy device objects drawable and would have
-blocked this slice.
+`message_strings_condition` says so, and says the number has drifted four times now:
+`634` recorded against `632` measured, `641` after the drawer compatibility fix, `537`
+after this slice, and `538` once this slice's own regression was repaired. Each drift
+had a different and correct cause, which is the argument for keeping the surface
+reported. A ledger reconciled to this number would have blocked the drawer fix that
+made legacy device objects drawable, would have blocked this slice, and would then have
+blocked the correction of the defect this slice introduced — three separate pieces of
+right work.
 
 ## What the slice does not reach
 
@@ -261,6 +400,11 @@ blocked this slice.
   package. Their docstrings and comments are not scanned here.
 * A docstring in a *test* is not scanned either: the census walks `flagquantum/`, and
   a test's prose is not what `help()` prints.
+* The executable-example surface is now reconciled, but the test that would *catch* a
+  broken example — `tests/api_contract/test_public_docstring_examples.py` — is still
+  outside every CI lane. The gate can now see the token that broke; it cannot see the
+  `AttributeError`. Adding that lane is the follow-up this incident argues for and does
+  not perform.
 * The command-line flag surface, the `benchmarks/` helper parameters, the capture
   keyword and the payload keys in the migration reference's table are untouched and
   remain the open work.
