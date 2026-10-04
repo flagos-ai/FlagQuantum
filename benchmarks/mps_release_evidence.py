@@ -1631,6 +1631,38 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
             )
             if str(rung["name"]) == acceptance:
                 measurement = summary
+        if measurement is None:
+            raise SystemExit(
+                f"the frozen acceptance configuration {acceptance!r} was not timed, so "
+                "the leg measured no rung a ratio can be reported at"
+            )
+        record = {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": rank,
+            "world_size": world,
+            "local_rank": device.index,
+            "local_world_size": local_world,
+            "node_count": node_count,
+            "state_mode": "mps",
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "collective_backend": collective_backend,
+            "warmup": int(arguments.warmup),
+            "iterations": int(arguments.iterations),
+            "steps": steps,
+            "ladder_fingerprint": str(speed["ladder_fingerprint"]),
+            "acceptance_configuration": acceptance,
+            "configurations": configurations,
+            "acceptance_summary": dict(measurement),
+            "measured_peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
+            "device_name": torch.cuda.get_device_properties(device).name,
+            "device_total_memory_bytes": int(
+                torch.cuda.get_device_properties(device).total_memory
+            ),
+            "software": _software(),
+        }
+        records = _gather(record, world)
     except (torch.OutOfMemoryError, RuntimeError) as error:
         failure_reason = str(error).splitlines()[0]
         if rank == 0:
@@ -1639,38 +1671,6 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
     finally:
         if dist.is_initialized():
             dist.destroy_process_group()
-    if measurement is None:
-        raise SystemExit(
-            f"the frozen acceptance configuration {acceptance!r} was not timed, so "
-            "the leg measured no rung a ratio can be reported at"
-        )
-    record = {
-        "schema": SCHEMA,
-        "role": arguments.role,
-        "rank": rank,
-        "world_size": world,
-        "local_rank": device.index,
-        "local_world_size": local_world,
-        "node_count": node_count,
-        "state_mode": "mps",
-        "hostname": socket.gethostname(),
-        "commit": _commit(),
-        "collective_backend": collective_backend,
-        "warmup": int(arguments.warmup),
-        "iterations": int(arguments.iterations),
-        "steps": steps,
-        "ladder_fingerprint": str(speed["ladder_fingerprint"]),
-        "acceptance_configuration": acceptance,
-        "configurations": configurations,
-        "acceptance_summary": dict(measurement),
-        "measured_peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
-        "device_name": torch.cuda.get_device_properties(device).name,
-        "device_total_memory_bytes": int(
-            torch.cuda.get_device_properties(device).total_memory
-        ),
-        "software": _software(),
-    }
-    records = _gather(record, world)
     if rank != 0:
         return 0
     _write(arguments, {**records[0], "ranks": records})

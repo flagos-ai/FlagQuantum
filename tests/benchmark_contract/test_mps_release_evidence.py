@@ -1309,3 +1309,143 @@ def test_the_launcher_hands_the_topology_and_the_shape_to_the_role(
     assert arguments.steps == CAPACITY["steps"]
     assert arguments.local_world_size == 8
     assert arguments.node_count == 2
+
+
+def test_the_timed_leg_exchanges_records_before_it_tears_the_group_down(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The ranks report what they timed while there is still a group to report on.
+
+    Every rank times every rung, so the leg hands its own record to a gloo
+    subgroup and reads rank 0's copy back. That exchange is a collective, and a
+    collective after ``destroy_process_group`` has no default group to build its
+    subgroup on: the leg died with ``Default process group has not been
+    initialized`` from ``new_group``, and reported it as a matched-speed
+    measurement failure. The order of these two events is therefore part of what
+    the role has to get right, and it is observed here rather than inferred from
+    the file the role happened to write.
+    """
+
+    events: list[str] = []
+
+    class _Dist:
+        @staticmethod
+        def is_initialized() -> bool:
+            return True
+
+        @staticmethod
+        def get_backend() -> str:
+            return "nccl"
+
+        @staticmethod
+        def new_group(backend: str) -> object:
+            events.append(f"new_group:{backend}")
+            return object()
+
+        @staticmethod
+        def gather_object(value: object, gathered: list | None, **_: object) -> None:
+            events.append("gather_object")
+            if gathered is not None:
+                gathered[:] = [dict(value), dict(value)]
+
+        @staticmethod
+        def destroy_process_group(group: object = None) -> None:
+            events.append("destroy_process_group")
+
+    class _Rung:
+        N_SITES = 512
+        MAX_BOND = 64
+
+        @staticmethod
+        def logical_mps_bytes(n_sites: int, max_bond: int) -> int:
+            return 32_855_360
+
+        @staticmethod
+        def reverse_checkpoint_capacity_bytes(
+            logical_bytes: int, world_size: int
+        ) -> int:
+            return 2 * (logical_bytes // world_size) + (1 << 30)
+
+        @staticmethod
+        def rank_owned_initial_mps(n_sites: int, max_bond: int, device: object) -> dict:
+            return {}
+
+        @staticmethod
+        def frozen_parameters(device: object) -> dict:
+            return {}
+
+        @staticmethod
+        def workload(parameters: dict) -> object:
+            return object()
+
+    class _Training:
+        @staticmethod
+        def summary() -> dict:
+            return {"completed_steps": 1, "losses": [0.5]}
+
+    class _Device:
+        name = "NVIDIA A800-SXM4-80GB"
+        total_memory = 85_093_777_408
+
+    monkeypatch.setenv("WORLD_SIZE", "2")
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setenv("LOCAL_RANK", "0")
+    monkeypatch.setattr(producer, "dist", _Dist)
+    monkeypatch.setattr(producer, "_initialize", lambda device: None)
+    monkeypatch.setattr(producer, "_commit", lambda: "a" * 40)
+    monkeypatch.setattr(producer, "_frozen_workload_at", lambda *a, **k: _Rung)
+    monkeypatch.setattr(
+        producer,
+        "_speed_ladder",
+        lambda speed: [
+            {
+                "name": FROZEN["speed_workload"]["acceptance_configuration"],
+                "n_sites": 512,
+                "trained_max_bond": 64,
+                "parameter_count": 31,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        producer.fqxd,
+        "train_distributed_mps",
+        lambda *a, **k: _Training(),
+    )
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "set_device", lambda device: None)
+    monkeypatch.setattr(torch.cuda, "synchronize", lambda device: None)
+    monkeypatch.setattr(torch.cuda, "reset_peak_memory_stats", lambda device: None)
+    monkeypatch.setattr(torch.cuda, "max_memory_allocated", lambda device: 1024)
+    monkeypatch.setattr(torch.cuda, "get_device_properties", lambda device: _Device())
+
+    output = tmp_path / "mps_speed_pair.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "matched-speed",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--warmup",
+                str(FROZEN["speed_workload"]["warmup_steps"]),
+                "--iterations",
+                str(FROZEN["speed_workload"]["measured_steps"]),
+                "--local-world-size",
+                "2",
+                "--node-count",
+                "1",
+                "--measurements",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    assert events == [
+        "new_group:gloo",
+        "gather_object",
+        "destroy_process_group",
+        "destroy_process_group",
+    ]
+    written = json.loads(output.read_text(encoding="utf-8"))
+    assert len(written["ranks"]) == 2
