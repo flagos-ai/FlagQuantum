@@ -13,24 +13,24 @@ from ..primitives import (
 )
 
 
-def jax_mps_initial_padded_stack(n_wires: int, bond_dim: int) -> Any:
+def jax_mps_initial_padded_stack(n_qubits: int, bond_dim: int) -> Any:
     import jax.numpy as jnp
 
     tensor = jnp.zeros((int(bond_dim), 2, int(bond_dim)), dtype=_jax_complex_dtype())
     tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
     return jnp.broadcast_to(
-        tensor, (int(n_wires), int(bond_dim), 2, int(bond_dim))
+        tensor, (int(n_qubits), int(bond_dim), 2, int(bond_dim))
     ).copy()
 
 
-def jax_mps_initial_open_boundary_tensors(n_wires: int) -> list[Any]:
+def jax_mps_initial_open_boundary_tensors(n_qubits: int) -> list[Any]:
     """Create an open-boundary MPS representation of the all-zero state."""
 
     import jax.numpy as jnp
 
     tensor = jnp.zeros((1, 2, 1), dtype=_jax_complex_dtype())
     tensor = tensor.at[0, 0, 0].set(1.0 + 0.0j)
-    return [tensor for _ in range(int(n_wires))]
+    return [tensor for _ in range(int(n_qubits))]
 
 
 def jax_mps_site_transfer(environment: Any, tensor: Any) -> Any:
@@ -62,10 +62,10 @@ def jax_mps_site_observable_transfer(
 def jax_sharded_mps_z_sum(
     rank_tensors: Mapping[int, Mapping[int, Any]],
     *,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     dtype: Any,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
 ) -> Any:
     """Evaluate a Z sum after collecting rank-owned MPS site tensors."""
 
@@ -74,21 +74,25 @@ def jax_sharded_mps_z_sum(
     z_operator = _jax_pauli_matrix("z", dtype=dtype)
     environment = jnp.ones((int(batch_size), 1, 1), dtype=dtype)
     accumulated = jnp.zeros((int(batch_size), 1, 1), dtype=dtype)
-    target_wires = (
-        set(range(int(n_wires)))
-        if observable_wires is None
-        else {int(wire) for wire in observable_wires}
+    target_qubits = (
+        set(range(int(n_qubits)))
+        if observable_qubits is None
+        else {int(qubit) for qubit in observable_qubits}
     )
-    tensors_by_wire: dict[int, Any] = {}
+    tensors_by_qubit: dict[int, Any] = {}
     for tensors in rank_tensors.values():
-        tensors_by_wire.update({int(wire): tensor for wire, tensor in tensors.items()})
-    missing = tuple(wire for wire in range(int(n_wires)) if wire not in tensors_by_wire)
+        tensors_by_qubit.update(
+            {int(qubit): tensor for qubit, tensor in tensors.items()}
+        )
+    missing = tuple(
+        qubit for qubit in range(int(n_qubits)) if qubit not in tensors_by_qubit
+    )
     if missing:
-        raise RuntimeError(f"Missing MPS site tensors for wires {missing}.")
-    for wire in range(int(n_wires)):
-        tensor = tensors_by_wire[wire]
+        raise RuntimeError(f"Missing MPS site tensors for qubits {missing}.")
+    for qubit in range(int(n_qubits)):
+        tensor = tensors_by_qubit[qubit]
         next_accumulated = jax_mps_site_transfer(accumulated, tensor)
-        if wire in target_wires:
+        if qubit in target_qubits:
             next_accumulated = next_accumulated + jax_mps_site_observable_transfer(
                 environment,
                 tensor,
@@ -189,8 +193,8 @@ def jax_mps_apply_adjacent_chain_scan(
 ) -> Any:
     """Apply the same two-site gate across a chain in one scanned pass.
 
-    The bond a wire sits on grows with the layer index until it saturates, and
-    the per-wire shapes below are derived from that rule rather than from the
+    The bond a qubit sits on grows with the layer index until it saturates, and
+    the per-qubit shapes below are derived from that rule rather than from the
     tensors, so every step of the scan has the same shape and can be compiled
     once. Compiling per step instead would be correct and much slower.
 
@@ -200,8 +204,8 @@ def jax_mps_apply_adjacent_chain_scan(
     import jax
     import jax.numpy as jnp
 
-    n_wires = int(tensors.shape[0])
-    if n_wires <= 1:
+    n_qubits = int(tensors.shape[0])
+    if n_qubits <= 1:
         return tensors
 
     def rank_before(bond: int) -> int:
@@ -209,20 +213,20 @@ def jax_mps_apply_adjacent_chain_scan(
             return 1
         return min(
             int(max_bond),
-            1 << min(int(layer_index), int(bond) + 1, n_wires - 1 - int(bond)),
+            1 << min(int(layer_index), int(bond) + 1, n_qubits - 1 - int(bond)),
         )
 
     def rank_after(bond: int) -> int:
         return min(
             int(max_bond),
-            1 << min(int(layer_index) + 1, int(bond) + 1, n_wires - 1 - int(bond)),
+            1 << min(int(layer_index) + 1, int(bond) + 1, n_qubits - 1 - int(bond)),
         )
 
-    def spec(wire: int) -> tuple[int, int, int, int]:
-        left_active = 1 if int(wire) == 0 else rank_after(int(wire) - 1)
-        shared_active = rank_before(int(wire))
-        right_active = 1 if int(wire) == n_wires - 2 else rank_before(int(wire) + 1)
-        out_rank = rank_after(int(wire))
+    def spec(qubit: int) -> tuple[int, int, int, int]:
+        left_active = 1 if int(qubit) == 0 else rank_after(int(qubit) - 1)
+        shared_active = rank_before(int(qubit))
+        right_active = 1 if int(qubit) == n_qubits - 2 else rank_before(int(qubit) + 1)
+        out_rank = rank_after(int(qubit))
         return left_active, shared_active, right_active, out_rank
 
     def apply_one(
@@ -243,14 +247,14 @@ def jax_mps_apply_adjacent_chain_scan(
 
     pieces = []
     carry = tensors[0]
-    wire = 0
-    while wire < n_wires - 1:
-        current_spec = spec(wire)
-        run_end = wire + 1
+    qubit = 0
+    while qubit < n_qubits - 1:
+        current_spec = spec(qubit)
+        run_end = qubit + 1
         if current_spec[0] == current_spec[3]:
-            while run_end < n_wires - 1 and spec(run_end) == current_spec:
+            while run_end < n_qubits - 1 and spec(run_end) == current_spec:
                 run_end += 1
-        if run_end - wire > 1:
+        if run_end - qubit > 1:
 
             def step(
                 left_tensor: Any,
@@ -263,15 +267,15 @@ def jax_mps_apply_adjacent_chain_scan(
                 return next_right, next_left
 
             carry, completed = jax.lax.scan(
-                step, carry, tensors[wire + 1 : run_end + 1]
+                step, carry, tensors[qubit + 1 : run_end + 1]
             )
             pieces.append(completed)
-            wire = run_end
+            qubit = run_end
             continue
 
-        next_left, carry = apply_one(carry, tensors[wire + 1], current_spec)
+        next_left, carry = apply_one(carry, tensors[qubit + 1], current_spec)
         pieces.append(next_left[None, :, :, :])
-        wire += 1
+        qubit += 1
 
     pieces.append(carry[None, :, :, :])
     return jnp.concatenate(pieces, axis=0)
@@ -286,20 +290,20 @@ def jax_mps_apply_one(tensor: Any, matrix: Any, matmul_precision: str | None) ->
 def jax_mps_apply_two_remote(
     tensors: list[Any],
     matrix: Any,
-    wires: tuple[int, int],
+    qubits: tuple[int, int],
     *,
     max_bond: int | None,
     cutoff: float,
     matmul_precision: str | None,
 ) -> list[Any]:
-    first, second = int(wires[0]), int(wires[1])
+    first, second = int(qubits[0]), int(qubits[1])
     left = min(first, second)
     right = max(first, second)
-    for wire in range(right - 1, left, -1):
+    for qubit in range(right - 1, left, -1):
         tensors = jax_mps_apply_two_adjacent(
             tensors,
             _jax_swap(),
-            wire,
+            qubit,
             reverse=False,
             max_bond=max_bond,
             cutoff=cutoff,
@@ -314,11 +318,11 @@ def jax_mps_apply_two_remote(
         cutoff=cutoff,
         matmul_precision=matmul_precision,
     )
-    for wire in range(left + 1, right):
+    for qubit in range(left + 1, right):
         tensors = jax_mps_apply_two_adjacent(
             tensors,
             _jax_swap(),
-            wire,
+            qubit,
             reverse=False,
             max_bond=max_bond,
             cutoff=cutoff,
@@ -330,14 +334,14 @@ def jax_mps_apply_two_remote(
 def jax_mps_apply_two_adjacent(
     tensors: list[Any],
     matrix: Any,
-    left_wire: int,
+    left_qubit: int,
     *,
     reverse: bool,
     max_bond: int | None,
     cutoff: float,
     matmul_precision: str | None,
 ) -> list[Any]:
-    """Apply a two-site gate to adjacent wires and re-split the pair.
+    """Apply a two-site gate to adjacent qubits and re-split the pair.
 
     `reverse` swaps the two physical indices before the gate and back after it,
     which is what lets one kernel serve both sweeps. The result is split by the
@@ -346,8 +350,8 @@ def jax_mps_apply_two_adjacent(
     """
     import jax.numpy as jnp
 
-    left = tensors[int(left_wire)]
-    right = tensors[int(left_wire) + 1]
+    left = tensors[int(left_qubit)]
+    right = tensors[int(left_qubit) + 1]
     theta = jnp.einsum("lsm,mtr->lstr", left, right, precision=matmul_precision)
     if reverse:
         theta = jnp.swapaxes(theta, 1, 2)
@@ -361,8 +365,8 @@ def jax_mps_apply_two_adjacent(
         theta = jnp.swapaxes(theta, 1, 2)
     next_left, next_right = jax_mps_split_pair(theta, max_bond=max_bond, cutoff=cutoff)
     out = list(tensors)
-    out[int(left_wire)] = next_left
-    out[int(left_wire) + 1] = next_right
+    out[int(left_qubit)] = next_left
+    out[int(left_qubit) + 1] = next_right
     return out
 
 
@@ -449,47 +453,47 @@ def jax_mps_expectation_product_ops(
 
     env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
     identity = _jax_pauli_matrix("i")
-    for wire, tensor in enumerate(tensors):
-        op = ops.get(int(wire), identity)
+    for qubit, tensor in enumerate(tensors):
+        op = ops.get(int(qubit), identity)
         env = jax_mps_transfer_op(env, tensor, op, matmul_precision)
     return jnp.real(env[0, 0])
 
 
 def jax_mps_z_values(
-    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
+    tensors: Sequence[Any], qubits: Iterable[int], matmul_precision: str | None
 ) -> Any:
     import jax.numpy as jnp
 
     z_op = _jax_pauli_matrix("z")
     values = []
-    for wire in wires:
+    for qubit in qubits:
         values.append(
             jax_mps_expectation_product_ops(
-                tensors, {int(wire): z_op}, matmul_precision
+                tensors, {int(qubit): z_op}, matmul_precision
             )
         )
     return jnp.stack(values) if values else jnp.zeros((0,), dtype=_jax_real_dtype())
 
 
 def jax_mps_z_sum(
-    tensors: Sequence[Any], wires: Iterable[int], matmul_precision: str | None
+    tensors: Sequence[Any], qubits: Iterable[int], matmul_precision: str | None
 ) -> Any:
     import jax.numpy as jnp
 
-    targets = tuple(int(wire) for wire in wires)
+    targets = tuple(int(qubit) for qubit in qubits)
     if not targets:
         return jnp.zeros((), dtype=_jax_real_dtype())
     target_counts: dict[int, int] = {}
-    for wire in targets:
-        if wire < 0 or wire >= len(tensors):
-            raise ValueError("JAX MPS z_sum wire index out of range.")
-        target_counts[wire] = target_counts.get(wire, 0) + 1
+    for qubit in targets:
+        if qubit < 0 or qubit >= len(tensors):
+            raise ValueError("JAX MPS z_sum qubit index out of range.")
+        target_counts[qubit] = target_counts.get(qubit, 0) + 1
     env = jnp.ones((1, 1), dtype=_jax_complex_dtype())
     acc = jnp.zeros((1, 1), dtype=_jax_complex_dtype())
     z_op = _jax_pauli_matrix("z")
-    for wire, tensor in enumerate(tensors):
+    for qubit, tensor in enumerate(tensors):
         next_acc = jax_mps_transfer_identity(acc, tensor, matmul_precision)
-        count = target_counts.get(int(wire), 0)
+        count = target_counts.get(int(qubit), 0)
         if count:
             next_acc = next_acc + count * jax_mps_transfer_op(
                 env, tensor, z_op, matmul_precision
@@ -505,41 +509,41 @@ def jax_mps_pauli_string_expectation(
     matmul_precision: str | None,
 ) -> Any:
     op_map: dict[int, Any] = {}
-    for wire, name in ops:
+    for qubit, name in ops:
         normalized = str(name).lower()
         if normalized != "i":
-            op_map[int(wire)] = _jax_pauli_matrix(normalized)
+            op_map[int(qubit)] = _jax_pauli_matrix(normalized)
     return jax_mps_expectation_product_ops(tensors, op_map, matmul_precision)
 
 
 def parse_zz_z_chain_hamiltonian(
     terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[dict[str, tuple[float, ...]], tuple[float, ...], float] | None:
     local_coeffs = {
-        name: [0.0 for _ in range(int(n_wires))] for name in ("x", "y", "z")
+        name: [0.0 for _ in range(int(n_qubits))] for name in ("x", "y", "z")
     }
-    zz_coeffs = [0.0 for _ in range(max(0, int(n_wires) - 1))]
+    zz_coeffs = [0.0 for _ in range(max(0, int(n_qubits) - 1))]
     constant = 0.0
     for coefficient, ops in terms:
         normalized = tuple(
-            (int(wire), str(name).lower())
-            for wire, name in ops
+            (int(qubit), str(name).lower())
+            for qubit, name in ops
             if str(name).lower() != "i"
         )
         if not normalized:
             constant += float(coefficient)
             continue
         if len(normalized) == 1 and normalized[0][1] in local_coeffs:
-            wire = normalized[0][0]
-            if wire < 0 or wire >= int(n_wires):
+            qubit = normalized[0][0]
+            if qubit < 0 or qubit >= int(n_qubits):
                 return None
-            local_coeffs[normalized[0][1]][wire] += float(coefficient)
+            local_coeffs[normalized[0][1]][qubit] += float(coefficient)
             continue
         if len(normalized) == 2 and normalized[0][1] == "z" and normalized[1][1] == "z":
             left = min(normalized[0][0], normalized[1][0])
             right = max(normalized[0][0], normalized[1][0])
-            if left < 0 or right >= int(n_wires) or right != left + 1:
+            if left < 0 or right >= int(n_qubits) or right != left + 1:
                 return None
             zz_coeffs[left] += float(coefficient)
             continue
@@ -553,9 +557,9 @@ def parse_zz_z_chain_hamiltonian(
 
 def is_zz_z_chain_hamiltonian(
     terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
-    n_wires: int,
+    n_qubits: int,
 ) -> bool:
-    return parse_zz_z_chain_hamiltonian(terms, n_wires) is not None
+    return parse_zz_z_chain_hamiltonian(terms, n_qubits) is not None
 
 
 def jax_mps_single_pauli_with_envs(

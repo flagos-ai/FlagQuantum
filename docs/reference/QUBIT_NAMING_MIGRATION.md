@@ -158,6 +158,60 @@ file and only has the imported name changed. The discipline was to repair exactl
 the call sites `mypy --strict` names and nothing else: `operations.py` and
 `local.py` keep every wire-named local and every `request.wires` read of their own.
 
+## The accelerator surface
+
+`flagquantum.simulation.jax` and `flagquantum.simulation.tensor_network` are the
+seventh slice: the numerical cores behind the `jax` and `tensor_network` runtime
+modes. Neither is an attribute of the `fq` package, so no name here keeps a
+forwarder and every rename below is a hard rename in the same release.
+
+| Before | After |
+|---|---|
+| every parameter named `wire`, `wires`, `n_wires` in `jax/{mps,statevector,tensor_network}/kernels.py` | the `qubit` spellings |
+| `local_wires`, `local_gate_wires`, `n_local_wires`, `sharded_wires`, `touched_sharded_wires`, `left_wire`, `left_wires`, `dense_observable_wires`, `observable_wires` | the `…_qubits` / `…_qubit` spellings |
+| `DenseIslandPlan.n_wires`, `DenseIslandPlan.island_for_wire`, `MPSBondProfile.n_wires`, `MPSConfig.dense_observable_wires`, `CompiledMPSOperation.wires` | the `qubit` spellings |
+| `MPSState.n_wires`, `StaticMPSProgram.n_wires`, `MPSPlanningMixin.n_wires`, `SiteKernelStats.triton_wire_probability_calls`, `SiteKernelStats.wire_probability_fallback_calls` | the `qubit` spellings |
+| `TensorNetworkState.n_wires`, `TensorNetworkState.dense_observable_wires`, and the `n_wires` / `wires` / `observable_wires` fields of `CompiledTNProgram`, `CompiledTNObservableProgram`, `TensorNetworkContractionPlan`, `TensorNetworkExpectationPlan` | the `qubit` spellings |
+| the definition `jax_basis_indices_for_wires` | `jax_basis_indices_for_qubits` |
+| the private names `_validate_wire`, `_wire_probabilities`, `_local_z_diagonal`, `_split_pair`, `_validate_observable_wires`, `_local_layers`, `_product_state`, `_validate_inputs`, `_normalize_bitstring`, `_initial_state_tensors` | the `qubit` spellings |
+
+One spelling in the slice's own files is **kept**, and it is a frozen payload key
+rather than this slice's name:
+
+* `TEBDResult.n_wires` is written into `TEBDResult.to_dict()` and read back by
+  `TEBDResult.from_dict()`, and is the slice's only `[attribute_exclusions]` row.
+  The field keeps the old spelling and gains a `n_qubits` property, the same shape
+  `EvolutionPlan.n_wires` uses.
+
+Three more spellings are kept because the name is a *catalog identity* or a
+neighbour's payload key, not a qubit name. The module
+`simulation/mps/wire_probability_dispatch.py` and its `_mps_wire_probabilities`
+helper share the `wire_probability` token with the Triton kernel's `kind` string
+`wire_probabilities` and the semantic id `mps.measurement.wire_probabilities.local`
+— identities that are asserted by
+`tests/unit/test_mps_wire_probability_catalog_dispatch.py` and recorded in
+`benchmarks/results/local/mps_wire_probability_dispatch_a800.json`. The slice's own
+`SiteKernelStats` counters are not catalog identity and do move. `Instruction.wires`
+and `CircuitIR.n_wires` are declared in `flagquantum/core/ir.py` and are the
+`IR_VERSION = "1.0"` payload; the MPS path reads them and passes
+`CompiledInstruction(wires=…)` for the same reason.
+
+Bare-name string literals that name a qubit index or collection move with the
+rename — the slice's own summaries and in-package interfaces — but only where the
+module that *writes* the key is one the rename reached. Two summaries keep
+`"observable_wires"` because they are written by
+`runtime/executors/statevector/reverse.py` and `runtime/executors/jax/kernel.py`,
+which are outside this slice's reach, and the tests that read them are unchanged.
+
+`flagquantum.simulation` is sparsely sliced and this slice's public functions are
+called from outside it, so twenty-two executor and neighbour modules were caught
+up under the same discipline as WQ-6 — repair the call sites `mypy --strict` names
+and nothing else. Ten of them also lose a private wire-named parameter, which is
+why `boundary.measured_private` drops from 308 to 275. Two of those helpers,
+`_initialize_jax_mps_rank_tensors` and `_jax_mps_boundary_protocol`, had their
+declarations renamed in `jax/mps/{shards,canonicalization}.py` and their call sites
+had to move with them.
+
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by

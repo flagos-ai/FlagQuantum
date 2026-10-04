@@ -109,15 +109,15 @@ def _apply_ry_layer(
     tensors: list[torch.Tensor], field: torch.Tensor, *, compiled: bool
 ) -> None:
     buckets: dict[tuple[int, ...], list[int]] = defaultdict(list)
-    for wire, tensor in enumerate(tensors):
-        buckets[tuple(tensor.shape[1:])].append(wire)
-    for wires in buckets.values():
-        use_compiled = compiled and len(wires) >= _MIN_COMPILED_BUCKET_SIZE
+    for qubit, tensor in enumerate(tensors):
+        buckets[tuple(tensor.shape[1:])].append(qubit)
+    for qubits in buckets.values():
+        use_compiled = compiled and len(qubits) >= _MIN_COMPILED_BUCKET_SIZE
         kernel = _compiled_kernels()[0] if use_compiled else _ry_bucket_eager
-        packed = torch.stack([tensors[wire] for wire in wires], dim=0)
-        updated = kernel(packed, field[wires])
-        for position, wire in enumerate(wires):
-            tensors[wire] = updated[position]
+        packed = torch.stack([tensors[qubit] for qubit in qubits], dim=0)
+        updated = kernel(packed, field[qubits])
+        for position, qubit in enumerate(qubits):
+            tensors[qubit] = updated[position]
 
 
 def _apply_rxx_parity(
@@ -131,23 +131,23 @@ def _apply_rxx_parity(
     buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[int]] = defaultdict(
         list
     )
-    for wire in range(parity, len(tensors) - 1, 2):
-        key = (tuple(tensors[wire].shape[1:]), tuple(tensors[wire + 1].shape[1:]))
-        buckets[key].append(wire)
-    for wires in buckets.values():
-        use_compiled = compiled and len(wires) >= _MIN_COMPILED_BUCKET_SIZE
+    for qubit in range(parity, len(tensors) - 1, 2):
+        key = (tuple(tensors[qubit].shape[1:]), tuple(tensors[qubit + 1].shape[1:]))
+        buckets[key].append(qubit)
+    for qubits in buckets.values():
+        use_compiled = compiled and len(qubits) >= _MIN_COMPILED_BUCKET_SIZE
         kernel = _compiled_kernels()[1] if use_compiled else _rxx_bucket_eager
-        left = torch.stack([tensors[wire] for wire in wires], dim=0)
-        right = torch.stack([tensors[wire + 1] for wire in wires], dim=0)
+        left = torch.stack([tensors[qubit] for qubit in qubits], dim=0)
+        right = torch.stack([tensors[qubit + 1] for qubit in qubits], dim=0)
         full_rank = min(left.shape[2] * 2, right.shape[-2] * 2)
         if max_bond is not None and max_bond < full_rank:
             raise ValueError(
                 "compiled brickwork exact split requires max_bond >= active full rank"
             )
-        left_out, right_out = kernel(left, right, coupling[wires])
-        for position, wire in enumerate(wires):
-            tensors[wire] = left_out[position]
-            tensors[wire + 1] = right_out[position]
+        left_out, right_out = kernel(left, right, coupling[qubits])
+        for position, qubit in enumerate(qubits):
+            tensors[qubit] = left_out[position]
+            tensors[qubit + 1] = right_out[position]
 
 
 def run_batched_brickwork_mps(
@@ -162,29 +162,29 @@ def run_batched_brickwork_mps(
 ) -> MPSState:
     """Run a fused spatial-bucket brickwork sweep without Circuit interpretation."""
 
-    n_wires = int(field.numel())
+    n_qubits = int(field.numel())
     batch = len(flipped_sites)
-    if batch < 1 or coupling.shape != (n_wires - 1,):
+    if batch < 1 or coupling.shape != (n_qubits - 1,):
         raise ValueError("invalid batch or coupling shape")
     # Build the complete product-state batch in one allocation.  Creating one
     # tensor and one host-to-device bit copy per site is especially expensive
     # for the 1024-qubit, shallow-circuit workload, where those tiny launches
     # are a material fraction of a step.
     product = torch.zeros(
-        n_wires, batch, 1, 2, 1, 2, dtype=field.dtype, device=field.device
+        n_qubits, batch, 1, 2, 1, 2, dtype=field.dtype, device=field.device
     )
-    bits = torch.zeros(n_wires, batch, dtype=torch.long, device=field.device)
+    bits = torch.zeros(n_qubits, batch, dtype=torch.long, device=field.device)
     flip_pairs = [
-        (int(wire), probe_index)
+        (int(qubit), probe_index)
         for probe_index, sites in enumerate(flipped_sites)
-        for wire in sites
+        for qubit in sites
     ]
     if flip_pairs:
         flip_index = torch.tensor(flip_pairs, dtype=torch.long, device=field.device)
         bits[flip_index[:, 0], flip_index[:, 1]] = 1
-    wires = torch.arange(n_wires, device=field.device).unsqueeze(1)
+    qubits = torch.arange(n_qubits, device=field.device).unsqueeze(1)
     batches = torch.arange(batch, device=field.device).unsqueeze(0)
-    product[wires, batches, 0, bits, 0, 0] = 1
+    product[qubits, batches, 0, bits, 0, 0] = 1
     tensors = list(product.unbind(0))
     scaled_field = 2.0 * float(dt) * field
     scaled_coupling = 2.0 * float(dt) * coupling
@@ -250,22 +250,22 @@ def _real_observable_scan_eager(
     z_sign = padded_tensors.new_tensor((1.0, -1.0))
     z_values = []
     zz_values = []
-    for wire in targets:
-        tensor = padded_tensors[wire]
+    for qubit in targets:
+        tensor = padded_tensors[qubit]
         # Insert Z by multiplying the ket physical channel.
         z_tensor = tensor * z_sign.reshape(1, 1, 2, 1, 1)
-        inserted = _environment_step_real(left[wire], tensor, z_tensor)
+        inserted = _environment_step_real(left[qubit], tensor, z_tensor)
         overlap = (
-            inserted[..., 0] * right[wire][..., 0]
-            - inserted[..., 1] * right[wire][..., 1]
+            inserted[..., 0] * right[qubit][..., 0]
+            - inserted[..., 1] * right[qubit][..., 1]
         )
         z_values.append(overlap.sum(dim=(-2, -1)))
-        if wire + 1 < sites:
-            next_z = padded_tensors[wire + 1] * z_sign.reshape(1, 1, 2, 1, 1)
-            pair = _environment_step_real(inserted, padded_tensors[wire + 1], next_z)
+        if qubit + 1 < sites:
+            next_z = padded_tensors[qubit + 1] * z_sign.reshape(1, 1, 2, 1, 1)
+            pair = _environment_step_real(inserted, padded_tensors[qubit + 1], next_z)
             pair_overlap = (
-                pair[..., 0] * right[wire + 1][..., 0]
-                - pair[..., 1] * right[wire + 1][..., 1]
+                pair[..., 0] * right[qubit + 1][..., 0]
+                - pair[..., 1] * right[qubit + 1][..., 1]
             )
             zz_values.append(pair_overlap.sum(dim=(-2, -1)))
     return torch.stack(z_values, dim=-1), torch.stack(zz_values, dim=-1)
@@ -294,7 +294,7 @@ def _compiled_observable_scan(
 
 
 def compiled_local_z_zz(
-    state: MPSState, wires: Sequence[int], *, compiled: bool = True
+    state: MPSState, qubits: Sequence[int], *, compiled: bool = True
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Evaluate local Z/ZZ through one padded real-channel environment scan."""
 
@@ -306,7 +306,7 @@ def compiled_local_z_zz(
         right_pad = max_bond - tensor.shape[3]
         padded.append(functional.pad(tensor, (0, 0, 0, right_pad, 0, 0, 0, left_pad)))
     stacked = torch.stack(padded, dim=0)
-    targets = tuple(int(wire) for wire in wires)
+    targets = tuple(int(qubit) for qubit in qubits)
     if compiled:
         return _compiled_observable_scan(targets)(stacked)
     return _real_observable_scan_eager(stacked, targets)

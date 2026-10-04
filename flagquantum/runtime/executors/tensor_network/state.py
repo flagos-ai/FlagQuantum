@@ -181,7 +181,7 @@ class DistributedTensorNetworkState:
 
     @property
     def n_qubits(self) -> int:
-        return self.local_state.n_wires
+        return self.local_state.n_qubits
 
     @property
     def bsz(self) -> int:
@@ -364,7 +364,7 @@ class DistributedTensorNetworkExpectation:
         return {
             "state_mode": "distributed_tensor_network_expectation",
             "output_target": "local_observables",
-            "observable_wires": self.observable_qubits,
+            "observable_qubits": self.observable_qubits,
             "slice_tasks": len(self.tasks),
             "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),

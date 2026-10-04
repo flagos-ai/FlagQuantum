@@ -181,7 +181,7 @@ def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
                 "contraction_strategy": "greedy",
                 "max_intermediate_size": None,
                 "sliced_labels": None,
-                "dense_observable_wires": 0,
+                "dense_observable_qubits": 0,
                 "max_intermediate_bytes": None,
             },
         )
@@ -301,7 +301,7 @@ def test_tensor_network_expectation_plan_is_public_and_matches_circuit():
     expectation_plan = build_tensor_network_expectation(plan, x=[0, 2], z=[1])
 
     assert isinstance(expectation_plan, TensorNetworkExpectationPlan)
-    assert expectation_plan.observable_wires == (0, 1, 2)
+    assert expectation_plan.observable_qubits == (0, 1, 2)
     assert expectation_plan.summary()["contraction"] == "expectation"
     assert torch.allclose(
         tensor_network_expectation_ps(plan, x=[0, 2], z=[1]),
@@ -317,7 +317,7 @@ def test_build_tensor_network_exposes_contraction_plan():
     plan = build_tensor_network(circuit)
 
     assert isinstance(plan, TensorNetworkContractionPlan)
-    assert plan.n_wires == 2
+    assert plan.n_qubits == 2
     assert plan.n_nodes == 4
     assert len(plan.path) == plan.n_nodes
     assert torch.allclose(plan.contract(), circuit.state(), atol=1e-6)
@@ -381,7 +381,7 @@ def test_tensor_network_memory_greedy_avoids_outer_products_while_connected():
         TensorNetworkNode(torch.ones(2), (2,), name="component_b"),
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=0,
+        n_qubits=0,
         bsz=1,
         nodes=nodes,
         output_labels=(),
@@ -542,7 +542,7 @@ def test_tensor_network_slicing_budget_fails_closed():
         name="output",
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=1,
+        n_qubits=1,
         bsz=1,
         nodes=(node,),
         output_labels=(0, 1),
@@ -574,7 +574,7 @@ def test_tensor_network_dry_run_uses_meta_for_huge_intermediate():
         ),
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=0,
+        n_qubits=0,
         bsz=1,
         nodes=nodes,
         output_labels=(0, 1),
@@ -874,7 +874,7 @@ def test_small_tn_reuses_one_state_contraction_for_many_z_observables():
     theta = torch.tensor(0.2, requires_grad=True)
     state = fqtn.run_tensor_network(
         fq.Circuit(4).ry(0, theta).cx(0, 1).cx(1, 2).cx(2, 3),
-        dense_observable_wires=12,
+        dense_observable_qubits=12,
     )
 
     values = state.expectation_z((0, 1, 2, 3))
@@ -890,7 +890,7 @@ def test_compiled_z_observable_batch_avoids_full_state_materialization():
     theta = torch.tensor(0.2, requires_grad=True)
     state = fqtn.run_tensor_network(
         fq.Circuit(3).ry(0, theta).cx(0, 1).cx(1, 2),
-        dense_observable_wires=0,
+        dense_observable_qubits=0,
     )
 
     values = state.expectation_z((0, 1, 2))
@@ -909,9 +909,9 @@ def test_compiled_z_observable_batch_avoids_full_state_materialization():
 def test_compiled_z_observable_program_is_reused_across_runs():
     circuit = fq.Circuit(3).ry(0, 0.2).cx(0, 1).cx(1, 2)
 
-    first = fqtn.run_tensor_network(circuit, dense_observable_wires=0)
+    first = fqtn.run_tensor_network(circuit, dense_observable_qubits=0)
     first_values = first.expectation_z((0, 1, 2))
-    second = fqtn.run_tensor_network(circuit, dense_observable_wires=0)
+    second = fqtn.run_tensor_network(circuit, dense_observable_qubits=0)
     second_values = second.expectation_z((0, 1, 2))
 
     assert first.summary()["observable_program_cache_hit"] is False
@@ -1280,7 +1280,7 @@ def test_distributed_local_observable_avoids_full_state_materialization():
         atol=1e-6,
     )
     assert summary["output_target"] == "local_observables"
-    assert summary["observable_wires"] == (0, 2, 5)
+    assert summary["observable_qubits"] == (0, 2, 5)
     assert summary["full_state_materialized"] is False
     assert (
         summary["reduction_payload_bytes"]
