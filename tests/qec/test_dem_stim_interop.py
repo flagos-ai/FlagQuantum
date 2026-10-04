@@ -429,7 +429,7 @@ def test_the_surface_code_declares_the_detector_shape_stim_declares(
     """
 
     code = RotatedSurfaceCode(distance=distance)
-    x_checks = sum(1 for check in code.checks if check.stabilizer.x_wires)
+    x_checks = sum(1 for check in code.checks if check.stabilizer.x_qubits)
     z_checks = len(code.checks) - x_checks
     memory = build_memory_circuit(code, rounds=rounds)
 

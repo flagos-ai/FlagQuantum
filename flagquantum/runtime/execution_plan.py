@@ -143,6 +143,12 @@ class CircuitAnalysis:
     channel_count: int = 0
     has_noise: bool = False
 
+    @property
+    def n_qubits(self) -> int:
+        """Qubit-named accessor for the field the plan payload pins by name."""
+
+        return self.n_wires
+
 
 @dataclass(frozen=True)
 class ExecutionPlan:
@@ -292,7 +298,7 @@ class ExecutionPlan:
             "world_size": self.world_size,
             "state_bytes": self.state_bytes,
             "depth": self.analysis.depth,
-            "n_wires": self.analysis.n_wires,
+            "n_wires": self.analysis.n_qubits,
             "n_instructions": self.analysis.n_instructions,
             "two_qubit_gates": self.analysis.two_qubit_gates,
             "multi_qubit_gates": self.analysis.multi_qubit_gates,

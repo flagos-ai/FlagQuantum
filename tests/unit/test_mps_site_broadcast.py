@@ -50,11 +50,11 @@ def test_site_broadcast_round_trip_on_real_only_transport(
         initialized=True,
     )
     sent = distributed_state._broadcast_mps_site_tensor(
-        source, src=0, context=context, wire=0
+        source, src=0, context=context, qubit=0
     )
     receiving = True
     received = distributed_state._broadcast_mps_site_tensor(
-        None, src=0, context=replace(context, rank=1, local_rank=1), wire=0
+        None, src=0, context=replace(context, rank=1, local_rank=1), qubit=0
     )
     assert not payloads
     assert received.dtype == dtype

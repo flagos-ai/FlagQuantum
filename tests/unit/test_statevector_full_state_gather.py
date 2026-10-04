@@ -16,7 +16,7 @@ from flagquantum.runtime.executors.statevector.errors import (
     FullStateMaterializationError,
 )
 from flagquantum.runtime.executors.statevector.forward import (
-    communication_aware_wire_layout,
+    communication_aware_qubit_layout,
 )
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
@@ -60,9 +60,9 @@ def _dense(circuit: fq.Circuit) -> torch.Tensor:
 class TestWorldSizeOne:
     """One rank already holds the whole state; the gather must not perturb it."""
 
-    @pytest.mark.parametrize("wire_layout", ["canonical", "communication_aware"])
+    @pytest.mark.parametrize("qubit_layout", ["canonical", "communication_aware"])
     def test_the_gathered_vector_matches_the_single_device_vector(
-        self, wire_layout: str
+        self, qubit_layout: str
     ) -> None:
         circuit = _unique_amplitude_circuit(4)
 
@@ -70,7 +70,7 @@ class TestWorldSizeOne:
             circuit,
             device=torch.device("cpu"),
             dtype=torch.complex128,
-            wire_layout=wire_layout,
+            qubit_layout=qubit_layout,
         )
         gathered = gather_distributed_statevector(result)
 
@@ -156,7 +156,7 @@ class TestMultiRankPlacement:
         self, n_wires: int, world_size: int
     ) -> None:
         circuit = _unique_amplitude_circuit(n_wires)
-        ir, mapping = communication_aware_wire_layout(
+        ir, mapping = communication_aware_qubit_layout(
             ensure_circuit_ir(circuit), world_size=world_size, local_world_size=1
         )
 
@@ -167,8 +167,8 @@ class TestMultiRankPlacement:
         internal = _place_rank_blocks(blocks, simulated.plan)
         state = _canonical_basis_order(internal, tuple(mapping))
 
-        assert simulated.plan.sharded_wires == tuple(
-            sorted(simulated.plan.sharded_wires)
+        assert simulated.plan.sharded_qubits == tuple(
+            sorted(simulated.plan.sharded_qubits)
         )
         assert torch.allclose(state[0], _dense(circuit), atol=1e-12)
 
@@ -178,7 +178,7 @@ class TestMultiRankPlacement:
         """Rank ownership is the plan's, and the placement follows it exactly."""
 
         circuit = _unique_amplitude_circuit(5)
-        ir, mapping = communication_aware_wire_layout(
+        ir, mapping = communication_aware_qubit_layout(
             ensure_circuit_ir(circuit), world_size=4, local_world_size=1
         )
         simulated = simulate_distributed_statevector_local(
@@ -187,7 +187,7 @@ class TestMultiRankPlacement:
         plan = simulated.plan
 
         assert plan.distribution == "qubit_address_sharded"
-        assert plan.sharded_wires == (3, 4)
+        assert plan.sharded_qubits == (3, 4)
         assert mapping == (0, 1, 2, 4, 3)
 
         blocks = [
@@ -217,18 +217,18 @@ class _GatherRefusal:
 class TestRefusals:
     """A gather that cannot place the amplitudes must fail rather than guess."""
 
-    def test_an_unpublished_wire_layout_is_refused(self) -> None:
+    def test_an_unpublished_qubit_layout_is_refused(self) -> None:
         _, result = _GatherRefusal.baseline()
 
-        with pytest.raises(FullStateMaterializationError, match="wire layout"):
-            gather_distributed_statevector(replace(result, wire_layout="custom"))
+        with pytest.raises(FullStateMaterializationError, match="qubit layout"):
+            gather_distributed_statevector(replace(result, qubit_layout="custom"))
 
     def test_a_mapping_that_is_not_a_permutation_is_refused(self) -> None:
         _, result = _GatherRefusal.baseline()
 
         with pytest.raises(FullStateMaterializationError, match="not a permutation"):
             gather_distributed_statevector(
-                replace(result, logical_to_physical_wires=(0, 1, 1))
+                replace(result, logical_to_physical_qubits=(0, 1, 1))
             )
 
     def test_a_mapping_of_the_wrong_length_is_refused(self) -> None:
@@ -236,7 +236,7 @@ class TestRefusals:
 
         with pytest.raises(FullStateMaterializationError, match="not a permutation"):
             gather_distributed_statevector(
-                replace(result, logical_to_physical_wires=(0, 1))
+                replace(result, logical_to_physical_qubits=(0, 1))
             )
 
     def test_a_distribution_without_plan_derived_ownership_is_refused(self) -> None:

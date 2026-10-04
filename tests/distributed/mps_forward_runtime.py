@@ -88,14 +88,14 @@ def main() -> None:
             DistributedShardPlan(
                 rank=owner,
                 world_size=world,
-                wires=tuple(result.shard_state.ownership[owner]),
+                qubits=tuple(result.shard_state.ownership[owner]),
                 left_boundary=None,
                 right_boundary=None,
             )
             for owner in range(world)
         )
         sharded = ShardedMPSState(
-            n_wires=circuit.n_wires,
+            n_qubits=circuit.n_qubits,
             bsz=reference_mps.bsz,
             config=reference_mps.config,
             local_tensors={

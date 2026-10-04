@@ -559,7 +559,7 @@ def plan_advanced(
         _require_stabilizer_representation(bsz, world_size, require_gradients)
     state_bytes = estimate_execution_state_bytes(
         state_mode,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         complex_bytes=complex_bytes,
         max_bond=max_bond,

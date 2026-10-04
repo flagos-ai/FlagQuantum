@@ -225,7 +225,7 @@ def _calibration_metadata(
         return {}
     match = calibration.estimate_seconds(
         mode=mode,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         channel_count=channel_count,
         circuit_digest=circuit_digest,
         noise_model_identity=noise_model_identity,

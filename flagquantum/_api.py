@@ -125,13 +125,15 @@ def run(
             )
             measurements = import_module(".observables", __package__).lower_outputs(
                 outputs,
-                n_wires=ir.n_wires,
+                # ``lower_outputs`` took the qubit spelling; ``CircuitIR.n_wires``
+                # keeps the old one because it is a frozen payload key.
+                n_qubits=ir.n_wires,
                 shots=selected_shots,
                 seed=selected_seed,
             )
             import_module(".runtime.measurements", __package__).validate_measurements(
                 measurements,
-                n_wires=ir.n_wires,
+                n_qubits=ir.n_wires,
             )
         elif shots is not None:
             raise TypeError(
@@ -308,14 +310,14 @@ def plan(
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     measurements = import_module(".observables", __package__).lower_outputs(
         outputs,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         shots=getattr(options, "shots", None),
         seed=getattr(options, "seed", None),
     )
     if measurements is not None:
         import_module(".runtime.measurements", __package__).validate_measurements(
             measurements,
-            n_wires=ir.n_wires,
+            n_qubits=ir.n_wires,
         )
     from .runtime.planner import plan as plan_execution
 

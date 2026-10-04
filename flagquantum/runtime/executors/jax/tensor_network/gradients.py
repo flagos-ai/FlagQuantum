@@ -43,7 +43,7 @@ from .records import (
 
 def _jax_parameterized_tn_state_nodes(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     *,
     bsz: int,
     complex_bytes: int,
@@ -59,13 +59,13 @@ def _jax_parameterized_tn_state_nodes(
     nodes: list[JAXTensorNetworkNode] = []
     zero = jnp.zeros((int(bsz), 2), dtype=_jax_complex_dtype(complex_bytes))
     zero = zero.at[:, 0].set(1.0 + 0.0j)
-    for wire in range(int(n_wires)):
+    for qubit in range(int(n_qubits)):
         label = next_label
         next_label += 1
         current_labels.append(label)
         nodes.append(
             JAXTensorNetworkNode(
-                tensor=zero, labels=(int(batch_label), label), name=f"init_{wire}"
+                tensor=zero, labels=(int(batch_label), label), name=f"init_{qubit}"
             )
         )
     for index, instruction in enumerate(circuit.to_ir()):
@@ -73,7 +73,7 @@ def _jax_parameterized_tn_state_nodes(
             raise NotImplementedError(
                 "JAX parameterized sliced TN currently supports unitary circuit instructions."
             )
-        wires = tuple(int(wire) for wire in instruction.wires)
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
         matrix = _jax_instruction_matrix(instruction)
         if conjugate:
             matrix = jnp.conj(matrix)
@@ -81,18 +81,18 @@ def _jax_parameterized_tn_state_nodes(
             raise NotImplementedError(
                 "JAX parameterized sliced TN expects unbatched gate matrices."
             )
-        tensor = matrix.reshape((2,) * (2 * len(wires)))
-        input_labels = tuple(current_labels[wire] for wire in wires)
-        output_labels = tuple(range(next_label, next_label + len(wires)))
-        next_label += len(wires)
-        for wire, label in zip(wires, output_labels, strict=True):
-            current_labels[wire] = label
+        tensor = matrix.reshape((2,) * (2 * len(qubits)))
+        input_labels = tuple(current_labels[qubit] for qubit in qubits)
+        output_labels = tuple(range(next_label, next_label + len(qubits)))
+        next_label += len(qubits)
+        for qubit, label in zip(qubits, output_labels, strict=True):
+            current_labels[qubit] = label
         nodes.append(
             JAXTensorNetworkNode(
                 tensor=tensor,
                 labels=output_labels + input_labels,
                 name=f"{index}:{instruction.name}",
-                metadata={"wires": wires},
+                metadata={"wires": qubits},
             )
         )
     return nodes, current_labels, next_label
@@ -100,7 +100,7 @@ def _jax_parameterized_tn_state_nodes(
 
 def _jax_parameterized_tn_expectation_nodes(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     *,
     bsz: int,
     complex_bytes: int,
@@ -109,7 +109,7 @@ def _jax_parameterized_tn_expectation_nodes(
     _, jnp = _require_jax()
     ket_nodes, ket_outputs, next_label = _jax_parameterized_tn_state_nodes(
         circuit,
-        n_wires,
+        n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
         batch_label=0,
@@ -120,7 +120,7 @@ def _jax_parameterized_tn_expectation_nodes(
     offset = max(int(next_label), int(max_label) + 1)
     bra_nodes, bra_outputs, _ = _jax_parameterized_tn_state_nodes(
         circuit,
-        n_wires,
+        n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
         batch_label=offset,
@@ -136,17 +136,17 @@ def _jax_parameterized_tn_expectation_nodes(
             name="batch_identity",
         )
     )
-    for wire in range(int(n_wires)):
+    for qubit in range(int(n_qubits)):
         matrix = _jax_pauli_matrix(
-            ops.get(int(wire), "i"),
+            ops.get(int(qubit), "i"),
             dtype=_jax_complex_dtype(complex_bytes),
         )
         nodes.append(
             JAXTensorNetworkNode(
                 tensor=matrix,
-                labels=(int(bra_outputs[wire]), int(ket_outputs[wire])),
-                name=f"obs_{wire}",
-                metadata={"wire": int(wire)},
+                labels=(int(bra_outputs[qubit]), int(ket_outputs[qubit])),
+                name=f"obs_{qubit}",
+                metadata={"wire": int(qubit)},
             )
         )
     return tuple(nodes), (0,)
@@ -158,7 +158,7 @@ def _static_expectation_plan_for_parameterized_tn(
     bsz: int,
     complex_bytes: int,
     observable: str,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]],
 ) -> Any:
     from .....simulation.tensor_network.entrypoints import (
@@ -170,13 +170,13 @@ def _static_expectation_plan_for_parameterized_tn(
     base = build_tensor_network(circuit, bsz=bsz, device="cpu", dtype=torch_dtype)
     normalized = str(observable)
     if normalized in {"z", "z_sum"}:
-        wires = (
+        qubits = (
             tuple(range(base.n_wires))
-            if observable_wires is None
-            else tuple(int(wire) for wire in observable_wires)
+            if observable_qubits is None
+            else tuple(int(qubit) for qubit in observable_qubits)
         )
-        wire = int(wires[0]) if wires else 0
-        return build_tensor_network_expectation(base, z=(wire,))
+        qubit = int(qubits[0]) if qubits else 0
+        return build_tensor_network_expectation(base, z=(qubit,))
     if normalized == "state_norm":
         return build_tensor_network_expectation(base)
     if normalized == "hamiltonian":
@@ -186,9 +186,9 @@ def _static_expectation_plan_for_parameterized_tn(
         op_map = _pauli_ops_from_term(first_ops)
         return build_tensor_network_expectation(
             base,
-            x=tuple(wire for wire, name in op_map.items() if name == "x"),
-            y=tuple(wire for wire, name in op_map.items() if name == "y"),
-            z=tuple(wire for wire, name in op_map.items() if name == "z"),
+            x=tuple(qubit for qubit, name in op_map.items() if name == "x"),
+            y=tuple(qubit for qubit, name in op_map.items() if name == "y"),
+            z=tuple(qubit for qubit, name in op_map.items() if name == "z"),
         )
     raise ValueError(
         "JAX parameterized sliced TN supports observable='z_sum', 'z', 'state_norm', or 'hamiltonian'."
@@ -221,7 +221,7 @@ def _jax_parameterized_tn_scalar_from_nodes(
 def _jax_parameterized_tn_observable_loss(
     circuit: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     complex_bytes: int,
     tasks: Sequence[tuple[int, tuple[tuple[int, int], ...]]],
@@ -230,25 +230,25 @@ def _jax_parameterized_tn_observable_loss(
     compute_backend: str,
     collective_backend: str,
     observable: str,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]],
 ) -> Any:
     _, jnp = _require_jax()
     normalized = str(observable)
     if normalized in {"z", "z_sum"}:
-        wires = (
-            tuple(range(int(n_wires)))
-            if observable_wires is None
-            else tuple(int(wire) for wire in observable_wires)
+        qubits = (
+            tuple(range(int(n_qubits)))
+            if observable_qubits is None
+            else tuple(int(qubit) for qubit in observable_qubits)
         )
         total = jnp.zeros((), dtype=_jax_real_dtype(complex_bytes))
-        for wire in wires:
+        for qubit in qubits:
             nodes, _ = _jax_parameterized_tn_expectation_nodes(
                 circuit,
-                n_wires,
+                n_qubits,
                 bsz=bsz,
                 complex_bytes=complex_bytes,
-                ops={int(wire): "z"},
+                ops={int(qubit): "z"},
             )
             total = total + _jax_parameterized_tn_scalar_from_nodes(
                 nodes,
@@ -262,7 +262,7 @@ def _jax_parameterized_tn_observable_loss(
     if normalized == "state_norm":
         nodes, _ = _jax_parameterized_tn_expectation_nodes(
             circuit,
-            n_wires,
+            n_qubits,
             bsz=bsz,
             complex_bytes=complex_bytes,
             ops={},
@@ -280,7 +280,7 @@ def _jax_parameterized_tn_observable_loss(
         for coefficient, term_ops in hamiltonian_terms:
             nodes, _ = _jax_parameterized_tn_expectation_nodes(
                 circuit,
-                n_wires,
+                n_qubits,
                 bsz=bsz,
                 complex_bytes=complex_bytes,
                 ops=_pauli_ops_from_term(term_ops),
@@ -312,7 +312,7 @@ def jax_sliced_tensor_network_value_and_grad(
     max_intermediate_size: int | None = None,
     sliced_labels: Sequence[int] | None = None,
     observable: str = "z_sum",
-    observable_wires: Sequence[int] | None = None,
+    observable_qubits: Sequence[int] | None = None,
     distributed_backend_policy: DistributedBackendPolicy | None = None,
     distributed_profile: str | None = None,
     jax_backend: str | None = None,
@@ -398,7 +398,7 @@ def jax_sliced_tensor_network_value_and_grad(
             n_wires=plan.n_wires,
             bsz=plan.bsz,
             observable=observable,
-            observable_wires=observable_wires,
+            observable_wires=observable_qubits,
         )
 
     value_and_grad = jax.value_and_grad(_loss)
@@ -432,7 +432,7 @@ def jax_sliced_tensor_network_value_and_grad(
         slicing=slicing,
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_wires=plan.n_wires,
+        n_qubits=plan.n_wires,
         bsz=plan.bsz,
         complex_bytes=complex_bytes,
         local_world_size=resolved_local_world_size,
@@ -449,7 +449,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
     circuit_builder: Callable[[Any], Any],
     parameters: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     world_size: int | None = None,
     local_world_size: int | None = None,
     bsz: int = 1,
@@ -458,7 +458,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
     max_intermediate_size: int | None = None,
     sliced_labels: Sequence[int] | None = None,
     observable: str = "z_sum",
-    observable_wires: Sequence[int] | None = None,
+    observable_qubits: Sequence[int] | None = None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]] = (),
     distributed_backend_policy: DistributedBackendPolicy | None = None,
     distributed_profile: str | None = None,
@@ -510,7 +510,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         bsz=bsz,
         complex_bytes=complex_bytes,
         observable=observable,
-        observable_wires=observable_wires,
+        observable_qubits=observable_qubits,
         hamiltonian_terms=hamiltonian_terms,
     )
     slicing = static_plan.slicing_plan(
@@ -539,7 +539,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
             circuit = circuit_builder(_JAXParameterProxy(parameter_array))
             return _jax_parameterized_tn_observable_loss(
                 circuit,
-                n_wires=int(n_wires),
+                n_qubits=int(n_qubits),
                 bsz=static_plan.bsz,
                 complex_bytes=complex_bytes,
                 tasks=tasks,
@@ -548,7 +548,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
                 compute_backend=resolved_compute_backend,
                 collective_backend=resolved_collective_backend,
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_qubits=observable_qubits,
                 hamiltonian_terms=hamiltonian_terms,
             )
         finally:
@@ -577,7 +577,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         summary_circuit = circuit_builder(_JAXParameterProxy(jax_parameters))
         summary_nodes, _ = _jax_parameterized_tn_expectation_nodes(
             summary_circuit,
-            int(n_wires),
+            int(n_qubits),
             bsz=static_plan.bsz,
             complex_bytes=complex_bytes,
             ops={},
@@ -600,7 +600,7 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         slicing=slicing,
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_wires=int(n_wires),
+        n_qubits=int(n_qubits),
         bsz=static_plan.bsz,
         complex_bytes=complex_bytes,
         parameter_shape=parameter_shape,

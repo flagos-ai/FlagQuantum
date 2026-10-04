@@ -27,18 +27,18 @@ class _TwoQubitParityCode:
     num_ancilla_qubits = 1
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 1
-    data_wires = (0, 1)
-    ancilla_wires = (2,)
+    data_qubits = (0, 1)
+    ancilla_qubits = (2,)
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=2,
-            cnot_wires=((0, 2), (1, 2)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=2,
+            cnot_qubits=((0, 2), (1, 2)),
         ),
     )
-    stabilizers = (Pauli(z_wires=(0, 1)),)
-    logical_observables = (Pauli(z_wires=(0, 1)),)
+    stabilizers = (Pauli(z_qubits=(0, 1)),)
+    logical_observables = (Pauli(z_qubits=(0, 1)),)
 
 
 class _ThreeCheckParityCode:
@@ -49,30 +49,34 @@ class _ThreeCheckParityCode:
     num_ancilla_qubits = 3
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 3
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4, 5)
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4, 5)
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=3,
-            cnot_wires=((0, 3), (1, 3)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=3,
+            cnot_qubits=((0, 3), (1, 3)),
         ),
         CodeCheck(
             index=1,
-            stabilizer=Pauli(z_wires=(1, 2)),
-            ancilla_wire=4,
-            cnot_wires=((1, 4), (2, 4)),
+            stabilizer=Pauli(z_qubits=(1, 2)),
+            ancilla_qubit=4,
+            cnot_qubits=((1, 4), (2, 4)),
         ),
         CodeCheck(
             index=2,
-            stabilizer=Pauli(z_wires=(0, 2)),
-            ancilla_wire=5,
-            cnot_wires=((0, 5), (2, 5)),
+            stabilizer=Pauli(z_qubits=(0, 2)),
+            ancilla_qubit=5,
+            cnot_qubits=((0, 5), (2, 5)),
         ),
     )
-    stabilizers = (Pauli(z_wires=(0, 1)), Pauli(z_wires=(1, 2)), Pauli(z_wires=(0, 2)))
-    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+    stabilizers = (
+        Pauli(z_qubits=(0, 1)),
+        Pauli(z_qubits=(1, 2)),
+        Pauli(z_qubits=(0, 2)),
+    )
+    logical_observables = (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_detector_count_matches_the_stated_formula() -> None:
@@ -124,7 +128,7 @@ def test_observable_layout_declares_the_terminal_data_parity() -> None:
     assert len(built.observables) == 1
     (observable,) = built.observables.observables
     assert observable.index == 0
-    assert observable.pauli == Pauli(z_wires=(0, 1, 2))
+    assert observable.pauli == Pauli(z_qubits=(0, 1, 2))
     assert observable.measurement_parity == (
         MeasurementRef(None, 0),
         MeasurementRef(None, 1),
@@ -274,7 +278,7 @@ def test_logical_observable_rejects_an_x_type_operator() -> None:
     with pytest.raises(ValueError, match="Z-type"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(x_wires=(0,)),
+            pauli=Pauli(x_qubits=(0,)),
             measurement_parity=(MeasurementRef(None, 0),),
         )
 
@@ -285,7 +289,7 @@ def test_observable_layout_requires_a_dense_ordering() -> None:
             (
                 LogicalObservable(
                     index=2,
-                    pauli=Pauli(z_wires=(0,)),
+                    pauli=Pauli(z_qubits=(0,)),
                     measurement_parity=(MeasurementRef(None, 0),),
                 ),
             )
@@ -311,11 +315,11 @@ class _ChecklessCode:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 0
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4)
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4)
     checks: tuple[CodeCheck, ...] = ()
     stabilizers: tuple[Pauli, ...] = ()
-    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+    logical_observables = (Pauli(z_qubits=(0, 1, 2)),)
 
 
 class _RogueLogicalCode:
@@ -333,11 +337,11 @@ class _RogueLogicalCode:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 2
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4)
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4)
     checks = RepetitionCode(3).checks
     stabilizers = RepetitionCode(3).stabilizers
-    logical_observables = (Pauli(z_wires=(0, 1, 99)),)
+    logical_observables = (Pauli(z_qubits=(0, 1, 99)),)
 
 
 def _built_layout() -> MemoryCircuit:
@@ -370,7 +374,7 @@ def test_memory_circuit_rejects_a_non_code_object() -> None:
 def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
     built = _built_layout()
 
-    with pytest.raises(ValueError, match="declared ancilla wire"):
+    with pytest.raises(ValueError, match="declared ancilla qubit"):
         MemoryCircuit(
             code=built.code,
             rounds=built.rounds,
@@ -383,7 +387,7 @@ def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
 def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_wire() -> None:
     built = _built_layout()
 
-    with pytest.raises(ValueError, match="declared data wire"):
+    with pytest.raises(ValueError, match="declared data qubit"):
         MemoryCircuit(
             code=built.code,
             rounds=built.rounds,
@@ -408,14 +412,14 @@ def test_memory_circuit_rejects_a_syndrome_round_beyond_the_configuration() -> N
 
 def test_logical_observable_rejects_an_empty_readout() -> None:
     with pytest.raises(ValueError, match="at least one measurement"):
-        LogicalObservable(index=0, pauli=Pauli(z_wires=(0,)), measurement_parity=())
+        LogicalObservable(index=0, pauli=Pauli(z_qubits=(0,)), measurement_parity=())
 
 
 def test_logical_observable_rejects_a_round_indexed_readout() -> None:
     with pytest.raises(ValueError, match="terminal"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(z_wires=(0,)),
+            pauli=Pauli(z_qubits=(0,)),
             measurement_parity=(MeasurementRef(0, 0),),
         )
 
@@ -424,7 +428,7 @@ def test_logical_observable_rejects_a_readout_outside_the_operator_support() -> 
     with pytest.raises(ValueError, match="support"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(z_wires=(0, 1)),
+            pauli=Pauli(z_qubits=(0, 1)),
             measurement_parity=(MeasurementRef(None, 0),),
         )
 
@@ -439,7 +443,7 @@ def test_memory_circuit_rejects_an_observable_that_disagrees_with_the_code() -> 
     (observable,) = built.observables.observables
     incoherent = LogicalObservable(
         index=0,
-        pauli=Pauli(z_wires=(99,)),
+        pauli=Pauli(z_qubits=(99,)),
         measurement_parity=(MeasurementRef(None, 99),),
     )
 
@@ -451,14 +455,14 @@ def test_memory_circuit_rejects_an_observable_that_disagrees_with_the_code() -> 
             detectors=built.detectors,
             observables=ObservableLayout((incoherent,)),
         )
-    assert observable.pauli == Pauli(z_wires=(0, 1, 2))
+    assert observable.pauli == Pauli(z_qubits=(0, 1, 2))
 
 
 def test_memory_circuit_rejects_an_observable_readout_on_an_undeclared_wire() -> None:
     built = build_memory_circuit(RepetitionCode(3), rounds=3)
     incoherent = LogicalObservable(
         index=0,
-        pauli=Pauli(z_wires=(0, 1, 99)),
+        pauli=Pauli(z_qubits=(0, 1, 99)),
         measurement_parity=(
             MeasurementRef(None, 0),
             MeasurementRef(None, 1),
@@ -466,7 +470,7 @@ def test_memory_circuit_rejects_an_observable_readout_on_an_undeclared_wire() ->
         ),
     )
 
-    with pytest.raises(ValueError, match="declared data wire"):
+    with pytest.raises(ValueError, match="declared data qubit"):
         MemoryCircuit(
             code=_RogueLogicalCode(),
             rounds=built.rounds,

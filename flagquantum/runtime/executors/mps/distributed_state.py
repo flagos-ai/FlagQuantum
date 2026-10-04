@@ -54,11 +54,11 @@ _PARAM_ALIASES = {
 
 @dataclass(frozen=True)
 class DistributedShardPlan:
-    """A contiguous MPS wire shard assigned to one distributed rank."""
+    """A contiguous MPS qubit shard assigned to one distributed rank."""
 
     rank: int
     world_size: int
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     left_boundary: int | None
     right_boundary: int | None
 
@@ -67,8 +67,8 @@ class DistributedShardPlan:
 class DistributedBoundarySync:
     """A nearest-neighbor MPS gate crossing two adjacent rank shards."""
 
-    left_wire: int
-    right_wire: int
+    left_qubit: int
+    right_qubit: int
     left_rank: int
     right_rank: int
     owner_rank: int
@@ -144,16 +144,16 @@ def _split_contiguous(n_items: int, world_size: int) -> tuple[tuple[int, ...], .
     return tuple(out)
 
 
-def _mps_shards(n_wires: int, world_size: int) -> tuple[DistributedShardPlan, ...]:
+def _mps_shards(n_qubits: int, world_size: int) -> tuple[DistributedShardPlan, ...]:
     shards = []
-    for rank, wires in enumerate(_split_contiguous(n_wires, world_size)):
-        left = wires[0] - 1 if wires and wires[0] > 0 else None
-        right = wires[-1] if wires and wires[-1] < n_wires - 1 else None
+    for rank, qubits in enumerate(_split_contiguous(n_qubits, world_size)):
+        left = qubits[0] - 1 if qubits and qubits[0] > 0 else None
+        right = qubits[-1] if qubits and qubits[-1] < n_qubits - 1 else None
         shards.append(
             DistributedShardPlan(
                 rank=rank,
                 world_size=int(world_size),
-                wires=wires,
+                qubits=qubits,
                 left_boundary=left,
                 right_boundary=right,
             )
@@ -224,7 +224,7 @@ class DistributedMPSState:
         self.strict_sharded = bool(strict_sharded)
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         return self.local_state.n_wires
 
     @property
@@ -458,8 +458,8 @@ class DistributedMPSState:
                 ),
                 "boundary_syncs": tuple(
                     {
-                        "left_wire": item.left_wire,
-                        "right_wire": item.right_wire,
+                        "left_wire": item.left_qubit,
+                        "right_wire": item.right_qubit,
                         "left_rank": item.left_rank,
                         "right_rank": item.right_rank,
                         "owner_rank": item.owner_rank,
@@ -489,7 +489,7 @@ class DistributedMPSState:
                 "rank_shards": tuple(
                     {
                         "rank": shard.rank,
-                        "wires": shard.wires,
+                        "wires": shard.qubits,
                         "left_boundary": shard.left_boundary,
                         "right_boundary": shard.right_boundary,
                     }
@@ -500,7 +500,7 @@ class DistributedMPSState:
         site_ownership = tuple(
             {
                 "rank": int(shard.rank),
-                "wires": tuple(int(wire) for wire in shard.wires),
+                "wires": tuple(int(qubit) for qubit in shard.qubits),
                 "ownership_semantics": "mps_site_range",
             }
             for shard in self.shards
@@ -579,7 +579,7 @@ def _broadcast_mps_site_tensor(
     *,
     src: int,
     context: TorchDistributedContext,
-    wire: int,
+    qubit: int,
 ) -> torch.Tensor:
     """Broadcast one MPS site without pickle or host staging under NCCL."""
     transport_device = (
@@ -589,14 +589,16 @@ def _broadcast_mps_site_tensor(
     )
     if context.rank == src:
         if tensor is None:
-            raise RuntimeError(f"Rank {src} does not hold its owned MPS wire {wire}.")
+            raise RuntimeError(f"Rank {src} does not hold its owned MPS qubit {qubit}.")
         tensor = tensor.detach().resolve_conj().to(device=transport_device).contiguous()
         if tensor.dtype == torch.complex64:
             dtype_code = 0
         elif tensor.dtype == torch.complex128:
             dtype_code = 1
         else:
-            raise RuntimeError(f"MPS wire {wire} has unsupported dtype {tensor.dtype}.")
+            raise RuntimeError(
+                f"MPS qubit {qubit} has unsupported dtype {tensor.dtype}."
+            )
         metadata = torch.tensor(
             (tensor.ndim, dtype_code, *tensor.shape),
             dtype=torch.int64,
@@ -608,16 +610,20 @@ def _broadcast_mps_site_tensor(
     dist.broadcast(metadata, src=src)
     ndim = int(metadata[0].item())
     if ndim != 4:
-        raise RuntimeError(f"MPS wire {wire} must have rank 4, received rank {ndim}.")
+        raise RuntimeError(f"MPS qubit {qubit} must have rank 4, received rank {ndim}.")
     dtype_code = int(metadata[1].item())
     if dtype_code not in {0, 1}:
-        raise RuntimeError(f"MPS wire {wire} has unsupported dtype code {dtype_code}.")
+        raise RuntimeError(
+            f"MPS qubit {qubit} has unsupported dtype code {dtype_code}."
+        )
     dtype = torch.complex64 if dtype_code == 0 else torch.complex128
     shape = tuple(int(size) for size in metadata[2 : ndim + 2].tolist())
     if tensor is None:
         tensor = torch.empty(shape, dtype=dtype, device=transport_device)
     elif tuple(tensor.shape) != shape:
-        raise RuntimeError(f"MPS wire {wire} metadata does not match its local tensor.")
+        raise RuntimeError(
+            f"MPS qubit {qubit} metadata does not match its local tensor."
+        )
     # Gloo in the minimum supported PyTorch version cannot broadcast complex
     # scalars. The real view shares storage and preserves the payload bytes.
     dist.broadcast(torch.view_as_real(tensor), src=src)
@@ -630,7 +636,7 @@ class ShardedMPSState:
     def __init__(
         self,
         *,
-        n_wires: int,
+        n_qubits: int,
         bsz: int,
         config: MPSConfig,
         local_tensors: Mapping[int, torch.Tensor],
@@ -638,7 +644,7 @@ class ShardedMPSState:
         context: TorchDistributedContext | None = None,
         rank: int | None = None,
     ) -> None:
-        self.n_wires = int(n_wires)
+        self.n_qubits = int(n_qubits)
         self.bsz = int(bsz)
         self.config = config
         self.local_tensors = dict(local_tensors)
@@ -660,95 +666,100 @@ class ShardedMPSState:
 
     def gather_tensors(self) -> dict[int, torch.Tensor]:
         local_payload = {
-            wire: tensor.detach().cpu() for wire, tensor in self.local_tensors.items()
+            qubit: tensor.detach().cpu() for qubit, tensor in self.local_tensors.items()
         }
         if self.context is None or not self.context.initialized:
             return local_payload
         if self.context.world_size == 1:
             return local_payload
 
-        owner_by_wire: dict[int, int] = {}
+        owner_by_qubit: dict[int, int] = {}
         for shard in self.shards:
-            for wire in shard.wires:
-                if wire in owner_by_wire:
-                    raise RuntimeError(f"MPS wire {wire} has multiple shard owners.")
-                owner_by_wire[wire] = shard.rank
+            for qubit in shard.qubits:
+                if qubit in owner_by_qubit:
+                    raise RuntimeError(f"MPS qubit {qubit} has multiple shard owners.")
+                owner_by_qubit[qubit] = shard.rank
         missing_owners = [
-            wire for wire in range(self.n_wires) if wire not in owner_by_wire
+            qubit for qubit in range(self.n_qubits) if qubit not in owner_by_qubit
         ]
         if missing_owners:
             raise RuntimeError(
-                f"MPS shard plan has no owner for wires {missing_owners}."
+                f"MPS shard plan has no owner for qubits {missing_owners}."
             )
 
         out: dict[int, torch.Tensor] = {}
-        for wire in range(self.n_wires):
-            owner = owner_by_wire[wire]
+        for qubit in range(self.n_qubits):
+            owner = owner_by_qubit[qubit]
             if self.rank == owner:
                 try:
-                    tensor = self.local_tensors[wire]
+                    tensor = self.local_tensors[qubit]
                 except KeyError as exc:
                     raise RuntimeError(
-                        f"Rank {owner} does not hold its owned MPS wire {wire}."
+                        f"Rank {owner} does not hold its owned MPS qubit {qubit}."
                     ) from exc
             else:
                 tensor = None
-            out[wire] = _broadcast_mps_site_tensor(
+            out[qubit] = _broadcast_mps_site_tensor(
                 tensor,
                 src=owner,
                 context=self.context,
-                wire=wire,
+                qubit=qubit,
             )
         return out
 
-    def apply_one_local(self, matrix: torch.Tensor, wire: int) -> None:
-        wire = int(wire)
-        if wire not in self.local_tensors:
-            raise ValueError(f"Wire {wire} is not owned by rank {self.rank}.")
-        self.local_tensors[wire] = _apply_one_mps_tensor(
-            self.local_tensors[wire], matrix
+    def apply_one_local(self, matrix: torch.Tensor, qubit: int) -> None:
+        qubit = int(qubit)
+        if qubit not in self.local_tensors:
+            raise ValueError(f"Wire {qubit} is not owned by rank {self.rank}.")
+        self.local_tensors[qubit] = _apply_one_mps_tensor(
+            self.local_tensors[qubit], matrix
         )
 
     def apply_two_local(
-        self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
+        self, matrix: torch.Tensor, left_qubit: int, *, reverse: bool = False
     ) -> MpsSplitInfo:
-        """Apply a two-wire gate to two sites this rank owns.
+        """Apply a two-qubit gate to two sites this rank owns.
 
         Returns the split metadata instead of only the discarded weight: the
         weight alone does not say which bond was truncated, so a caller holding
         just the scalar cannot record the truncation.
         """
-        left_wire = int(left_wire)
-        right_wire = left_wire + 1
-        if left_wire not in self.local_tensors or right_wire not in self.local_tensors:
+        left_qubit = int(left_qubit)
+        right_qubit = left_qubit + 1
+        if (
+            left_qubit not in self.local_tensors
+            or right_qubit not in self.local_tensors
+        ):
             raise ValueError(
-                f"Wires {left_wire} and {right_wire} are not both owned by rank {self.rank}."
+                f"Wires {left_qubit} and {right_qubit} are not both owned by rank {self.rank}."
             )
         left, right, split_info = _apply_two_mps_tensors_with_info(
-            self.local_tensors[left_wire],
-            self.local_tensors[right_wire],
+            self.local_tensors[left_qubit],
+            self.local_tensors[right_qubit],
             matrix,
             self.config,
             reverse=reverse,
         )
-        self.local_tensors[left_wire] = left
-        self.local_tensors[right_wire] = right
+        self.local_tensors[left_qubit] = left
+        self.local_tensors[right_qubit] = right
         return split_info
 
     def to_mps(self) -> MPSState:
-        tensors_by_wire = self.gather_tensors()
-        missing = [wire for wire in range(self.n_wires) if wire not in tensors_by_wire]
+        tensors_by_qubit = self.gather_tensors()
+        missing = [
+            qubit for qubit in range(self.n_qubits) if qubit not in tensors_by_qubit
+        ]
         if missing:
             raise RuntimeError(
-                f"Cannot reconstruct sharded MPS; missing wires {missing}."
+                f"Cannot reconstruct sharded MPS; missing qubits {missing}."
             )
         device = (
             self.context.device
             if self.context
-            else next(iter(tensors_by_wire.values())).device
+            else next(iter(tensors_by_qubit.values())).device
         )
         tensors = [
-            tensors_by_wire[wire].to(device=device) for wire in range(self.n_wires)
+            tensors_by_qubit[qubit].to(device=device) for qubit in range(self.n_qubits)
         ]
         return MPSState(tensors, config=self.config)
 
@@ -762,7 +773,7 @@ class ShardedMPSState:
             "state_mode": "sharded_mps",
             "rank": self.rank,
             "world_size": self.world_size,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "local_tensor_wires": tuple(sorted(self.local_tensors)),
             "local_tensor_count": len(self.local_tensors),

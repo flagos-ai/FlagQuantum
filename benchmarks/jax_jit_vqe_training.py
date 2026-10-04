@@ -112,7 +112,7 @@ def _train(
             backend="jax",
             interface="torch",
             mode="statevector",
-            n_wires=n_wires,
+            n_qubits=n_wires,
             hamiltonian=hamiltonian,
             jit=True,
             compute_dtype="complex64",
@@ -298,7 +298,7 @@ def main() -> None:
                 for backend in ("pytorch", "jax"):
                     result = _train(
                         backend=backend,
-                        n_wires=n_wires,
+                        n_qubits=n_wires,
                         layers=layers,
                         steps=args.steps,
                         optimizer_name=optimizer_name,

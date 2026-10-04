@@ -840,7 +840,7 @@ def main() -> None:
             backend="jax",
             interface="torch",
             mode="tensor_network" if args.mode == "tn" else args.mode,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             observable="z_sum" if args.observable == "z_sum" else "hamiltonian",
             hamiltonian=hamiltonian,
             jit=not args.no_jax_jit,

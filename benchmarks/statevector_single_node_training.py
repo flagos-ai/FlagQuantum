@@ -130,7 +130,7 @@ def main() -> None:
         result = fqxd.train_distributed_statevector(
             circuit,
             steps=args.steps,
-            observable_wire=args.n_wires - 2,
+            observable_qubit=args.n_wires - 2,
             optimizer=args.optimizer,
             checkpoint_dir=args.checkpoint_dir,
             resume=args.resume,

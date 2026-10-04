@@ -1,6 +1,6 @@
 """State preparation from a classical amplitude vector.
 
-The uniform case puts every wire in an equal superposition with Hadamard gates. The arbitrary
+The uniform case puts every qubit in an equal superposition with Hadamard gates. The arbitrary
 case builds a circuit that carries ``|0...0>`` onto a requested amplitude vector using
 uniformly controlled rotations, following Möttönen, Vartiainen, Bergholm, and Salomaa,
 "Transformation of quantum states using uniformly controlled rotations", *Quantum Information
@@ -34,34 +34,34 @@ _RY_GATE = "ry"
 _RZ_GATE = "rz"
 
 
-def uniform_state(n_wires: int) -> Circuit:
-    """Build the uniform superposition on ``n_wires`` wires.
+def uniform_state(n_qubits: int) -> Circuit:
+    """Build the uniform superposition on ``n_qubits`` qubits.
 
     Args:
-        n_wires: The number of wires; must be at least one.
+        n_qubits: The number of qubits; must be at least one.
 
     Returns:
-        A circuit of ``n_wires`` Hadamard gates, whose amplitudes are all ``1/sqrt(2**n)``.
+        A circuit of ``n_qubits`` Hadamard gates, whose amplitudes are all ``1/sqrt(2**n)``.
 
     Raises:
-        ValueError: If ``n_wires`` is not positive.
+        ValueError: If ``n_qubits`` is not positive.
     """
-    if n_wires < 1:
-        raise ValueError(f"uniform state needs at least one wire, got {n_wires}")
-    circuit = Circuit(n_wires)
-    for wire in range(n_wires):
-        circuit.gate("h", wire)
+    if n_qubits < 1:
+        raise ValueError(f"uniform state needs at least one qubit, got {n_qubits}")
+    circuit = Circuit(n_qubits)
+    for qubit in range(n_qubits):
+        circuit.gate("h", qubit)
     return circuit
 
 
 def arbitrary_state(
-    amplitudes: torch.Tensor, *, wires: Sequence[int] | None = None
+    amplitudes: torch.Tensor, *, qubits: Sequence[int] | None = None
 ) -> Circuit:
     """Build a circuit that prepares ``amplitudes`` from ``|0...0>``.
 
-    The circuit is built on a fresh register: with ``wires`` given, a circuit large enough to
-    hold the highest wire, and with ``wires`` omitted, a circuit on wires ``0..n-1`` where
-    ``n`` is the base-two logarithm of the amplitude count. Wire ``0`` is the most significant
+    The circuit is built on a fresh register: with ``qubits`` given, a circuit large enough to
+    hold the highest qubit, and with ``qubits`` omitted, a circuit on qubits ``0..n-1`` where
+    ``n`` is the base-two logarithm of the amplitude count. Qubit ``0`` is the most significant
     bit, so ``circuit.state().reshape(-1)[k]`` is the amplitude of basis state ``|k>``.
 
     The cost is the caveat that matters here. Computing the rotation angles takes a classical
@@ -72,26 +72,26 @@ def arbitrary_state(
     Args:
         amplitudes: The amplitude vector, one-dimensional, of power-of-two length at least
             two, and not the zero vector. Any norm is accepted; the vector is normalised here.
-        wires: The wires to prepare, most significant first; defaults to
+        qubits: The qubits to prepare, most significant first; defaults to
             ``range(n)`` with ``n = log2(len(amplitudes))``.
 
     Returns:
-        A circuit preparing the normalised amplitudes on ``wires``.
+        A circuit preparing the normalised amplitudes on ``qubits``.
 
     Raises:
         ValueError: If ``amplitudes`` is not a one-dimensional tensor of power-of-two length
-            at least two; if it is the zero vector; if ``wires`` does not carry one wire per
-            amplitude index; or if it repeats a wire or holds a negative or non-integer one.
+            at least two; if it is the zero vector; if ``qubits`` does not carry one qubit per
+            amplitude index; or if it repeats a qubit or holds a negative or non-integer one.
     """
-    data, n_wires = _prepared_amplitudes(amplitudes)
-    ordered = _resolve_wires(wires, n_wires)
+    data, n_qubits = _prepared_amplitudes(amplitudes)
+    ordered = _resolve_qubits(qubits, n_qubits)
     circuit = Circuit(max(ordered) + 1)
     _append_state_preparation(circuit, data, ordered)
     return circuit
 
 
 def append_arbitrary_state(
-    circuit: Circuit, amplitudes: torch.Tensor, wires: Sequence[int]
+    circuit: Circuit, amplitudes: torch.Tensor, qubits: Sequence[int]
 ) -> None:
     """Append a state-preparation circuit for ``amplitudes`` to ``circuit`` in place.
 
@@ -104,14 +104,14 @@ def append_arbitrary_state(
     Args:
         circuit: The circuit to extend.
         amplitudes: The amplitude vector, validated as in :func:`arbitrary_state`.
-        wires: The wires to prepare, most significant first.
+        qubits: The qubits to prepare, most significant first.
 
     Raises:
-        ValueError: If ``amplitudes`` or ``wires`` fail the validation described in
+        ValueError: If ``amplitudes`` or ``qubits`` fail the validation described in
             :func:`arbitrary_state`.
     """
-    data, n_wires = _prepared_amplitudes(amplitudes)
-    ordered = _resolve_wires(wires, n_wires)
+    data, n_qubits = _prepared_amplitudes(amplitudes)
+    ordered = _resolve_qubits(qubits, n_qubits)
     _append_state_preparation(circuit, data, ordered)
 
 
@@ -146,7 +146,7 @@ def _prepared_amplitudes(amplitudes: torch.Tensor) -> tuple[torch.Tensor, int]:
     if length & (length - 1):
         raise ValueError(
             f"amplitudes length must be a power of two, got {length}; a register of "
-            "n wires carries 2**n amplitudes"
+            "n qubits carries 2**n amplitudes"
         )
     data = amplitudes.to(device="cpu", dtype=torch.complex64)
     norm = float(data.norm())
@@ -154,47 +154,47 @@ def _prepared_amplitudes(amplitudes: torch.Tensor) -> tuple[torch.Tensor, int]:
         raise ValueError(
             "amplitudes must not be the zero vector; nothing can be normalised"
         )
-    n_wires = length.bit_length() - 1
-    return data / norm, n_wires
+    n_qubits = length.bit_length() - 1
+    return data / norm, n_qubits
 
 
-def _resolve_wires(wires: Sequence[int] | None, n_wires: int) -> list[int]:
-    """Validate the wires a preparation targets and return them as a list.
+def _resolve_qubits(qubits: Sequence[int] | None, n_qubits: int) -> list[int]:
+    """Validate the qubits a preparation targets and return them as a list.
 
     Args:
-        wires: The requested wires, or ``None`` for the leading register.
-        n_wires: The number of wires the amplitudes require.
+        qubits: The requested qubits, or ``None`` for the leading register.
+        n_qubits: The number of qubits the amplitudes require.
 
     Returns:
-        The wires in the order the caller gave them.
+        The qubits in the order the caller gave them.
 
     Raises:
-        ValueError: If the count does not match, or a wire repeats, is negative, or is not an
+        ValueError: If the count does not match, or a qubit repeats, is negative, or is not an
             integer.
     """
-    if wires is None:
-        return list(range(n_wires))
-    ordered = list(wires)
-    if len(ordered) != n_wires:
+    if qubits is None:
+        return list(range(n_qubits))
+    ordered = list(qubits)
+    if len(ordered) != n_qubits:
         raise ValueError(
-            f"the amplitudes describe {n_wires} wires, got {len(ordered)} wires"
+            f"the amplitudes describe {n_qubits} qubits, got {len(ordered)} qubits"
         )
     if len(set(ordered)) != len(ordered):
         raise ValueError(
-            "wires must be distinct; a repeated wire would drive the same qubit twice"
+            "qubits must be distinct; a repeated qubit would drive the same qubit twice"
         )
-    for wire in ordered:
-        if isinstance(wire, bool) or not isinstance(wire, int):
-            raise ValueError(f"wires must be integers, got {wire!r}")
-        if wire < 0:
-            raise ValueError(f"wires must be non-negative, got {wire}")
+    for qubit in ordered:
+        if isinstance(qubit, bool) or not isinstance(qubit, int):
+            raise ValueError(f"qubits must be integers, got {qubit!r}")
+        if qubit < 0:
+            raise ValueError(f"qubits must be non-negative, got {qubit}")
     return ordered
 
 
 def _append_state_preparation(
-    circuit: Circuit, data: torch.Tensor, wires: Sequence[int]
+    circuit: Circuit, data: torch.Tensor, qubits: Sequence[int]
 ) -> None:
-    """Append the two-pass preparation of ``data`` on ``wires`` to ``circuit``.
+    """Append the two-pass preparation of ``data`` on ``qubits`` to ``circuit``.
 
     The magnitude pass emits one uniformly controlled ``ry`` per level, which leaves the
     register in the all-positive vector of the target magnitudes. The phase pass then emits
@@ -206,43 +206,43 @@ def _append_state_preparation(
     Args:
         circuit: The circuit to extend.
         data: The normalised amplitude vector, one entry per basis state.
-        wires: The wires to prepare, most significant first.
+        qubits: The qubits to prepare, most significant first.
     """
-    n_wires = len(wires)
-    for level in range(n_wires):
+    n_qubits = len(qubits)
+    for level in range(n_qubits):
         _append_uniformly_controlled_rotation(
             circuit,
             gate=_RY_GATE,
-            target=wires[level],
-            controls=wires[:level],
-            theta=_magnitude_angles(data, n_wires, level),
+            target=qubits[level],
+            controls=qubits[:level],
+            theta=_magnitude_angles(data, n_qubits, level),
         )
-    for level, angles in enumerate(_phase_angles(data, n_wires)):
+    for level, angles in enumerate(_phase_angles(data, n_qubits)):
         _append_uniformly_controlled_rotation(
             circuit,
             gate=_RZ_GATE,
-            target=wires[level],
-            controls=wires[:level],
+            target=qubits[level],
+            controls=qubits[:level],
             theta=angles,
         )
 
 
-def _magnitude_angles(data: torch.Tensor, n_wires: int, level: int) -> list[float]:
+def _magnitude_angles(data: torch.Tensor, n_qubits: int, level: int) -> list[float]:
     """Return the ``ry`` angle of every branch of one level of the magnitude pass.
 
     Level ``q`` splits the register into ``2**q`` blocks of ``2**(n-q)`` amplitudes. Inside a
-    block the wire ``q`` bit picks the half, and ``2*atan2`` of the two half-norms is the
+    block the qubit ``q`` bit picks the half, and ``2*atan2`` of the two half-norms is the
     rotation that gives the halves their relative weight.
 
     Args:
         data: The normalised amplitude vector.
-        n_wires: The register width.
+        n_qubits: The register width.
         level: The level ``q``, from zero upward.
 
     Returns:
         One angle per branch of the level's control register, in branch order.
     """
-    block = 2 ** (n_wires - level)
+    block = 2 ** (n_qubits - level)
     half = block // 2
     angles: list[float] = []
     for branch in range(2**level):
@@ -258,7 +258,7 @@ def _block_norm(block: torch.Tensor) -> float:
     return float(block.abs().pow(2).sum().sqrt())
 
 
-def _phase_angles(data: torch.Tensor, n_wires: int) -> list[list[float]]:
+def _phase_angles(data: torch.Tensor, n_qubits: int) -> list[list[float]]:
     """Return the ``rz`` angle of every branch of every level of the phase pass.
 
     Each uniformly controlled ``rz`` at level ``q`` adds ``0.5 * eps_q(k) * gamma[q][p]`` to
@@ -271,15 +271,15 @@ def _phase_angles(data: torch.Tensor, n_wires: int) -> list[list[float]]:
 
     Args:
         data: The normalised amplitude vector.
-        n_wires: The register width.
+        n_qubits: The register width.
 
     Returns:
         One list of angles per level, in branch order.
     """
-    size = 2**n_wires
+    size = 2**n_qubits
     column_of: list[list[int]] = []
     columns = 0
-    for level in range(n_wires):
+    for level in range(n_qubits):
         level_columns = []
         for _branch in range(2**level):
             level_columns.append(columns)
@@ -290,9 +290,9 @@ def _phase_angles(data: torch.Tensor, n_wires: int) -> list[list[float]]:
     matrix = torch.zeros((size, size), dtype=torch.float64)
     rhs = torch.angle(data).to(torch.float64)
     for state in range(size):
-        for level in range(n_wires):
-            sign = 1.0 if (state >> (n_wires - 1 - level)) & 1 else -1.0
-            matrix[state, column_of[level][state >> (n_wires - level)]] += 0.5 * sign
+        for level in range(n_qubits):
+            sign = 1.0 if (state >> (n_qubits - 1 - level)) & 1 else -1.0
+            matrix[state, column_of[level][state >> (n_qubits - level)]] += 0.5 * sign
         matrix[state, size - 1] = 1.0
     solution = torch.linalg.solve(matrix, rhs)
     return [
@@ -315,13 +315,13 @@ def _append_uniformly_controlled_rotation(
     emitted angles are the Walsh transform of ``theta`` in Gray-code order. Consecutive
     branches differ in one control bit, so each step carries one CNOT on that bit and the walk
     closes with one more CNOT; leaving the closing CNOT out makes the walk open, which leaves
-    an odd number of CNOTs on each control wire and breaks the block structure.
+    an odd number of CNOTs on each control qubit and breaks the block structure.
 
     Args:
         circuit: The circuit to extend.
         gate: ``"ry"`` or ``"rz"``, the rotation to control.
-        target: The wire the rotation acts on.
-        controls: The control wires, most significant first.
+        target: The qubit the rotation acts on.
+        controls: The control qubits, most significant first.
         theta: One effective angle per branch of ``controls``.
     """
     n_controls = len(controls)
@@ -346,7 +346,7 @@ def _walsh(theta: Sequence[float], n_controls: int) -> list[float]:
 
     Args:
         theta: The effective angle of each branch of the control register.
-        n_controls: The number of control wires.
+        n_controls: The number of control qubits.
 
     Returns:
         ``alpha`` with ``alpha[p] = 2**-k * sum_q (-1)**popcount(p & q) * theta[q]``.

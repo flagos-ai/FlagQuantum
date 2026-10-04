@@ -34,38 +34,39 @@ from .optimization import (
 _PAULI_NAMES = {"i", "x", "y", "z"}
 
 
-def _as_wire_tuple(wires: Iterable[int] | int | None) -> tuple[int, ...]:
-    if wires is None:
+def _as_qubit_tuple(qubits: Iterable[int] | int | None) -> tuple[int, ...]:
+    if qubits is None:
         return ()
-    if isinstance(wires, int):
-        return (wires,)
-    return tuple(int(wire) for wire in wires)
+    if isinstance(qubits, int):
+        return (qubits,)
+    return tuple(int(qubit) for qubit in qubits)
 
 
 def _normalize_pauli(
     pauli: str | Mapping[int, str],
-    wires: Iterable[int] | int | None,
+    qubits: Iterable[int] | int | None,
 ) -> tuple[tuple[int, str], ...]:
     if isinstance(pauli, Mapping):
-        items = tuple((int(wire), str(name).lower()) for wire, name in pauli.items())
+        items = tuple((int(qubit), str(name).lower()) for qubit, name in pauli.items())
     else:
-        wire_tuple = _as_wire_tuple(wires)
-        if len(pauli) != len(wire_tuple):
-            raise ValueError("Pauli string length must match wires length.")
+        qubit_tuple = _as_qubit_tuple(qubits)
+        if len(pauli) != len(qubit_tuple):
+            raise ValueError("Pauli string length must match qubits length.")
         items = tuple(
-            (wire, name.lower()) for wire, name in zip(wire_tuple, pauli, strict=True)
+            (qubit, name.lower())
+            for qubit, name in zip(qubit_tuple, pauli, strict=True)
         )
 
     normalized = []
     seen = set()
-    for wire, name in items:
+    for qubit, name in items:
         if name not in _PAULI_NAMES:
             raise ValueError("Pauli operators must be one of I, X, Y, or Z.")
-        if wire in seen:
-            raise ValueError("A Hamiltonian term cannot repeat a wire.")
-        seen.add(wire)
+        if qubit in seen:
+            raise ValueError("A Hamiltonian term cannot repeat a qubit.")
+        seen.add(qubit)
         if name != "i":
-            normalized.append((wire, name))
+            normalized.append((qubit, name))
     return tuple(sorted(normalized))
 
 
@@ -88,25 +89,25 @@ class HamiltonianTerm:
 
     coefficient: float | complex | torch.Tensor
     pauli: str | Mapping[int, str]
-    wires: tuple[int, ...] = ()
+    qubits: tuple[int, ...] = ()
 
     def __init__(
         self,
         coefficient: float | complex | torch.Tensor,
         pauli: str | Mapping[int, str],
-        wires: Iterable[int] | int | None = None,
+        qubits: Iterable[int] | int | None = None,
     ) -> None:
         self.ops: tuple[tuple[int, str], ...]
         object.__setattr__(self, "coefficient", coefficient)
         object.__setattr__(self, "pauli", pauli)
-        object.__setattr__(self, "wires", _as_wire_tuple(wires))
-        object.__setattr__(self, "ops", _normalize_pauli(pauli, self.wires))
+        object.__setattr__(self, "qubits", _as_qubit_tuple(qubits))
+        object.__setattr__(self, "ops", _normalize_pauli(pauli, self.qubits))
 
     @property
-    def max_wire(self) -> int:
+    def max_qubit(self) -> int:
         if not self.ops:
             return -1
-        return max(wire for wire, _ in self.ops)
+        return max(qubit for qubit, _ in self.ops)
 
     def expectation(self, target: Circuit | MPSState | torch.Tensor) -> torch.Tensor:
         """Evaluate this term on a circuit, MPS state, statevector, or density matrix."""
@@ -116,9 +117,9 @@ class HamiltonianTerm:
                 target.state().real.new_ones(target.bsz)
                 if not self.ops
                 else target.expectation_ps(
-                    x=[wire for wire, name in self.ops if name == "x"],
-                    y=[wire for wire, name in self.ops if name == "y"],
-                    z=[wire for wire, name in self.ops if name == "z"],
+                    x=[qubit for qubit, name in self.ops if name == "x"],
+                    y=[qubit for qubit, name in self.ops if name == "y"],
+                    z=[qubit for qubit, name in self.ops if name == "z"],
                 )
             )
             coeff = _coefficient_tensor(
@@ -133,9 +134,9 @@ class HamiltonianTerm:
                 target.tensors[0].real.new_ones(target.bsz)
                 if not self.ops
                 else target.expectation_ps(
-                    x=[wire for wire, name in self.ops if name == "x"],
-                    y=[wire for wire, name in self.ops if name == "y"],
-                    z=[wire for wire, name in self.ops if name == "z"],
+                    x=[qubit for qubit, name in self.ops if name == "x"],
+                    y=[qubit for qubit, name in self.ops if name == "y"],
+                    z=[qubit for qubit, name in self.ops if name == "z"],
                 )
             )
             coeff = _coefficient_tensor(
@@ -145,22 +146,22 @@ class HamiltonianTerm:
 
         tensor = target
         if tensor.ndim >= 2 and tensor.shape[-1] == tensor.shape[-2]:
-            n_wires = infer_n_wires_from_dense_state(tensor)
+            n_qubits = infer_n_wires_from_dense_state(tensor)
             base = (
                 tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 3 else 1,
                 )
                 if not self.ops
-                else pauli_product_density_expectation(tensor, self.ops, n_wires)
+                else pauli_product_density_expectation(tensor, self.ops, n_qubits)
             )
         else:
-            n_wires = infer_n_wires_from_dense_state(tensor)
+            n_qubits = infer_n_wires_from_dense_state(tensor)
             base = (
                 tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 2 else 1,
                 )
                 if not self.ops
-                else pauli_product_statevector_expectation(tensor, self.ops, n_wires)
+                else pauli_product_statevector_expectation(tensor, self.ops, n_qubits)
             )
         coeff = _coefficient_tensor(
             self.coefficient, dtype=base.dtype, device=base.device
@@ -181,8 +182,8 @@ class Hamiltonian:
         return len(self.terms)
 
     @property
-    def n_wires(self) -> int:
-        return 1 + max((term.max_wire for term in self.terms), default=-1)
+    def n_qubits(self) -> int:
+        return 1 + max((term.max_qubit for term in self.terms), default=-1)
 
     def expectation(
         self,
@@ -212,15 +213,15 @@ class Hamiltonian:
                     raise ValueError(
                         "adjoint differentiation requires real Hamiltonian coefficients"
                     )
-                wires = tuple(wire for wire, name in term.ops if name == "z")
-                if len(wires) != len(term.ops) or len(wires) > 2:
+                qubits = tuple(qubit for qubit, name in term.ops if name == "z")
+                if len(qubits) != len(term.ops) or len(qubits) > 2:
                     raise ValueError(
                         "adjoint differentiation currently supports only Z and ZZ terms"
                     )
-                if not wires:
+                if not qubits:
                     constant += coefficient_value.real
                 else:
-                    observable_terms.append((coefficient_value.real, wires))
+                    observable_terms.append((coefficient_value.real, qubits))
             if not observable_terms:
                 raise ValueError(
                     "adjoint differentiation requires at least one Z or ZZ term"
@@ -242,9 +243,9 @@ class Hamiltonian:
             for term in self.terms:
                 ops = term.ops
                 if len(ops) == 1 and ops[0][1] == "z":
-                    wire = ops[0][0]
-                    z_coefficients[wire] = (
-                        z_coefficients.get(wire, 0.0) + term.coefficient
+                    qubit = ops[0][0]
+                    z_coefficients[qubit] = (
+                        z_coefficients.get(qubit, 0.0) + term.coefficient
                     )
                 elif (
                     len(ops) == 2
@@ -252,9 +253,9 @@ class Hamiltonian:
                     and ops[1][1] == "z"
                     and ops[1][0] == ops[0][0] + 1
                 ):
-                    wire = ops[0][0]
-                    zz_coefficients[wire] = (
-                        zz_coefficients.get(wire, 0.0) + term.coefficient
+                    qubit = ops[0][0]
+                    zz_coefficients[qubit] = (
+                        zz_coefficients.get(qubit, 0.0) + term.coefficient
                     )
                 else:
                     chain_compatible = False
@@ -278,14 +279,14 @@ class Hamiltonian:
     ) -> torch.Tensor:
         """Materialize a dense operator for small-system diagnostics."""
 
-        if self.n_wires > 12:
-            raise ValueError("dense Hamiltonian diagnostics are limited to 12 wires")
-        dimension = 1 << self.n_wires
+        if self.n_qubits > 12:
+            raise ValueError("dense Hamiltonian diagnostics are limited to 12 qubits")
+        dimension = 1 << self.n_qubits
         result = torch.zeros(dimension, dimension, dtype=dtype, device=device)
         for term in self.terms:
             coefficient = torch.as_tensor(term.coefficient, dtype=dtype, device=device)
             result = result + coefficient * pauli_product_operator(
-                term.ops, self.n_wires, dtype=dtype, device=device
+                term.ops, self.n_qubits, dtype=dtype, device=device
             )
         return result
 
@@ -342,15 +343,15 @@ class AdaptVQEResult:
 def pauli_term(
     coefficient: float | complex | torch.Tensor,
     pauli: str | Mapping[int, str],
-    wires: Iterable[int] | int | None = None,
+    qubits: Iterable[int] | int | None = None,
 ) -> HamiltonianTerm:
     """Create a weighted Pauli product term."""
 
-    return HamiltonianTerm(coefficient, pauli, wires)
+    return HamiltonianTerm(coefficient, pauli, qubits)
 
 
 def transverse_field_ising(
-    n_wires: int,
+    n_qubits: int,
     *,
     coupling: float = 1.0,
     field: float = 1.0,
@@ -359,17 +360,17 @@ def transverse_field_ising(
     """Build ``-coupling * ZZ - field * X`` transverse-field Ising Hamiltonian."""
 
     terms: list[HamiltonianTerm] = []
-    for wire in range(n_wires - 1):
-        terms.append(pauli_term(-coupling, "ZZ", (wire, wire + 1)))
-    if periodic and n_wires > 2:
-        terms.append(pauli_term(-coupling, "ZZ", (n_wires - 1, 0)))
-    for wire in range(n_wires):
-        terms.append(pauli_term(-field, "X", (wire,)))
+    for qubit in range(n_qubits - 1):
+        terms.append(pauli_term(-coupling, "ZZ", (qubit, qubit + 1)))
+    if periodic and n_qubits > 2:
+        terms.append(pauli_term(-coupling, "ZZ", (n_qubits - 1, 0)))
+    for qubit in range(n_qubits):
+        terms.append(pauli_term(-field, "X", (qubit,)))
     return Hamiltonian(terms)
 
 
 def zz_chain_hamiltonian(
-    n_wires: int,
+    n_qubits: int,
     *,
     coupling: float = 1.0,
     field: float = 0.0,
@@ -378,26 +379,26 @@ def zz_chain_hamiltonian(
     """Build a nearest-neighbor ``coupling * ZZ + field * Z`` Hamiltonian."""
 
     terms: list[HamiltonianTerm] = []
-    for wire in range(n_wires - 1):
-        terms.append(pauli_term(coupling, "ZZ", (wire, wire + 1)))
-    if periodic and n_wires > 2:
-        terms.append(pauli_term(coupling, "ZZ", (n_wires - 1, 0)))
-    for wire in range(n_wires):
+    for qubit in range(n_qubits - 1):
+        terms.append(pauli_term(coupling, "ZZ", (qubit, qubit + 1)))
+    if periodic and n_qubits > 2:
+        terms.append(pauli_term(coupling, "ZZ", (n_qubits - 1, 0)))
+    for qubit in range(n_qubits):
         if field:
-            terms.append(pauli_term(field, "Z", (wire,)))
+            terms.append(pauli_term(field, "Z", (qubit,)))
     return Hamiltonian(terms)
 
 
 def hardware_efficient_parameter_count(
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     rotations: Sequence[str] = ("ry", "rz"),
 ) -> int:
-    return int(n_wires) * int(layers) * len(tuple(rotations))
+    return int(n_qubits) * int(layers) * len(tuple(rotations))
 
 
 def hardware_efficient_ansatz(
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     parameters: torch.Tensor | Sequence[float],
     *,
@@ -408,36 +409,36 @@ def hardware_efficient_ansatz(
     """Build a common differentiable layered ansatz."""
 
     params = torch.as_tensor(parameters, dtype=torch.float32, device=device).reshape(-1)
-    expected = hardware_efficient_parameter_count(n_wires, layers, rotations)
+    expected = hardware_efficient_parameter_count(n_qubits, layers, rotations)
     if params.numel() != expected:
         raise ValueError(f"Expected {expected} parameters, got {params.numel()}.")
 
     circuit = Circuit(
-        n_wires,
+        n_qubits,
         device=device,
         dtype=getattr(torch, get_runtime_config().complex_dtype),
     )
     cursor = 0
     for _ in range(layers):
-        for wire in range(n_wires):
+        for qubit in range(n_qubits):
             for rotation in rotations:
-                getattr(circuit, rotation.lower())(wire, theta=params[cursor])
+                getattr(circuit, rotation.lower())(qubit, theta=params[cursor])
                 cursor += 1
         if entanglement == "linear":
-            for wire in range(n_wires - 1):
-                circuit.gate("cx", (wire, wire + 1))
+            for qubit in range(n_qubits - 1):
+                circuit.gate("cx", (qubit, qubit + 1))
         elif entanglement == "circular":
-            for wire in range(n_wires - 1):
-                circuit.gate("cx", (wire, wire + 1))
-            if n_wires > 2:
-                circuit.gate("cx", (n_wires - 1, 0))
+            for qubit in range(n_qubits - 1):
+                circuit.gate("cx", (qubit, qubit + 1))
+            if n_qubits > 2:
+                circuit.gate("cx", (n_qubits - 1, 0))
         elif entanglement != "none":
             raise ValueError("entanglement must be 'linear', 'circular', or 'none'.")
     return circuit
 
 
 def qaoa_circuit(
-    n_wires: int,
+    n_qubits: int,
     edges: Iterable[tuple[int, int] | tuple[int, int, float]],
     gammas: torch.Tensor | Sequence[float],
     betas: torch.Tensor | Sequence[float],
@@ -455,12 +456,12 @@ def qaoa_circuit(
 
     edge_tuple = tuple(edges)
     circuit = Circuit(
-        n_wires,
+        n_qubits,
         device=device,
         dtype=getattr(torch, get_runtime_config().complex_dtype),
     )
-    for wire in range(n_wires):
-        circuit.gate("h", wire)
+    for qubit in range(n_qubits):
+        circuit.gate("h", qubit)
 
     for gamma, beta in zip(gamma_values, beta_values, strict=True):
         for edge in edge_tuple:
@@ -470,8 +471,8 @@ def qaoa_circuit(
             else:
                 src, dst, weight = edge
             circuit.gate("rzz", (int(src), int(dst)), theta=2.0 * gamma * float(weight))
-        for wire in range(n_wires):
-            circuit.gate("rx", wire, theta=2.0 * beta)
+        for qubit in range(n_qubits):
+            circuit.gate("rx", qubit, theta=2.0 * beta)
     return circuit
 
 
@@ -495,14 +496,14 @@ def vqe_loss(
 
 
 def heisenberg_chain_hamiltonian(
-    n_wires: int, *, anisotropy: float = 1.0, field: float = 0.0
+    n_qubits: int, *, anisotropy: float = 1.0, field: float = 0.0
 ) -> Hamiltonian:
     """Return the open-boundary XX + YY + anisotropy ZZ Hamiltonian."""
 
-    if n_wires < 2:
-        raise ValueError("Heisenberg chains require at least two wires")
+    if n_qubits < 2:
+        raise ValueError("Heisenberg chains require at least two qubits")
     terms: list[HamiltonianTerm] = []
-    for left in range(n_wires - 1):
+    for left in range(n_qubits - 1):
         terms.extend(
             (
                 pauli_term(1.0, "XX", (left, left + 1)),
@@ -511,26 +512,26 @@ def heisenberg_chain_hamiltonian(
             )
         )
     if field:
-        terms.extend(pauli_term(field, "Z", (wire,)) for wire in range(n_wires))
+        terms.extend(pauli_term(field, "Z", (qubit,)) for qubit in range(n_qubits))
     return Hamiltonian(terms)
 
 
 def heisenberg_hva_parameter_count(
-    n_wires: int, depth: int, *, parameterization: str = "bond_resolved_phase"
+    n_qubits: int, depth: int, *, parameterization: str = "bond_resolved_phase"
 ) -> int:
-    if n_wires < 2 or depth < 1:
-        raise ValueError("n_wires >= 2 and depth >= 1 are required")
+    if n_qubits < 2 or depth < 1:
+        raise ValueError("n_qubits >= 2 and depth >= 1 are required")
     if parameterization == "shared_parity":
         return 6 * depth
     if parameterization == "bond_resolved":
-        return 3 * (n_wires - 1) * depth
+        return 3 * (n_qubits - 1) * depth
     if parameterization == "bond_resolved_phase":
-        return (3 * (n_wires - 1) + n_wires) * depth
+        return (3 * (n_qubits - 1) + n_qubits) * depth
     raise ValueError("unknown Heisenberg HVA parameterization")
 
 
 def heisenberg_hva(
-    n_wires: int,
+    n_qubits: int,
     depth: int,
     parameters: torch.Tensor | Sequence[float],
     *,
@@ -541,17 +542,17 @@ def heisenberg_hva(
 
     values = torch.as_tensor(parameters)
     expected = heisenberg_hva_parameter_count(
-        n_wires, depth, parameterization=parameterization
+        n_qubits, depth, parameterization=parameterization
     )
     if values.numel() != expected:
         raise ValueError(f"expected {expected} HVA parameters, got {values.numel()}")
     values = values.reshape(-1)
-    circuit = Circuit(n_wires, device=values.device)
+    circuit = Circuit(n_qubits, device=values.device)
     if initial_state == "neel":
-        for wire in range(1, n_wires, 2):
-            circuit.gate("x", wire)
+        for qubit in range(1, n_qubits, 2):
+            circuit.gate("x", qubit)
     elif initial_state == "dimer_singlet":
-        for left in range(0, n_wires - 1, 2):
+        for left in range(0, n_qubits - 1, 2):
             circuit.gate("x", left + 1)
             circuit.gate("h", left)
             circuit.gate("cx", (left, left + 1))
@@ -565,24 +566,24 @@ def heisenberg_hva(
             for axis, gate_name in enumerate(("rxx", "ryy", "rzz")):
                 for parity in (0, 1):
                     theta = values[offset + 2 * axis + parity]
-                    for left in range(parity, n_wires - 1, 2):
+                    for left in range(parity, n_qubits - 1, 2):
                         circuit.gate(gate_name, (left, left + 1), theta=theta)
             continue
-        per_layer = 3 * (n_wires - 1) + (
-            n_wires if parameterization == "bond_resolved_phase" else 0
+        per_layer = 3 * (n_qubits - 1) + (
+            n_qubits if parameterization == "bond_resolved_phase" else 0
         )
         offset = per_layer * layer
         for axis, gate_name in enumerate(("rxx", "ryy", "rzz")):
-            for left in range(n_wires - 1):
+            for left in range(n_qubits - 1):
                 circuit.gate(
                     gate_name,
                     (left, left + 1),
-                    theta=values[offset + axis * (n_wires - 1) + left],
+                    theta=values[offset + axis * (n_qubits - 1) + left],
                 )
         if parameterization == "bond_resolved_phase":
-            phase_offset = offset + 3 * (n_wires - 1)
-            for wire in range(n_wires):
-                circuit.gate("rz", wire, theta=values[phase_offset + wire])
+            phase_offset = offset + 3 * (n_qubits - 1)
+            for qubit in range(n_qubits):
+                circuit.gate("rz", qubit, theta=values[phase_offset + qubit])
     return circuit
 
 
@@ -877,7 +878,7 @@ def run_layerwise_vqe(
 
 
 def qaoa_loss(
-    n_wires: int,
+    n_qubits: int,
     edges: Iterable[tuple[int, int] | tuple[int, int, float]],
     gammas: torch.Tensor | Sequence[float],
     betas: torch.Tensor | Sequence[float],
@@ -888,7 +889,7 @@ def qaoa_loss(
 ) -> torch.Tensor:
     """Evaluate a differentiable QAOA objective."""
 
-    circuit = qaoa_circuit(n_wires, edges, gammas, betas, device=device)
+    circuit = qaoa_circuit(n_qubits, edges, gammas, betas, device=device)
     values = hamiltonian.expectation(circuit)
     if reduction == "none":
         return values

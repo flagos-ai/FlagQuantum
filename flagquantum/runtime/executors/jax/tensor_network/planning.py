@@ -82,7 +82,7 @@ def _tensor_network_plan(
     gradient_blockers = ("jax_sharded_tensor_network_reverse_contraction_pending",)
     return JAXDistributedQuantumPlan(
         mode="tensor_network",
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
         node_count=_node_count(world_size, local_world_size),

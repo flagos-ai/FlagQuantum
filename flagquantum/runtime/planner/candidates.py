@@ -244,7 +244,7 @@ class RuntimeCandidateBuilder:
         ownership = rank_ownership(
             mode=mode,
             state=state,
-            n_wires=context.analysis.n_wires,
+            n_qubits=context.analysis.n_qubits,
             world_size=context.world_size,
             local_world_size=context.local_world_size,
         )

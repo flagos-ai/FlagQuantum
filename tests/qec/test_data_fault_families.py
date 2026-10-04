@@ -201,7 +201,7 @@ def test_the_three_families_compose_as_the_paulis_do(case: str) -> None:
     """
 
     code, _ = _CASES[case]
-    for wire in code.data_wires:  # type: ignore[attr-defined]
+    for wire in code.data_qubits:  # type: ignore[attr-defined]
         for round_index in range(_memory(case).rounds):
             x_detectors = set(_round_signature(case, "data", wire, round_index)[0])
             z_detectors = set(_round_signature(case, "phase", wire, round_index)[0])
@@ -228,13 +228,13 @@ def test_a_z_fault_reaches_only_the_checks_that_can_see_it(case: str) -> None:
     """
 
     code, _ = _CASES[case]
-    for wire in code.data_wires:  # type: ignore[attr-defined]
+    for wire in code.data_qubits:  # type: ignore[attr-defined]
         assert _family_flips(case, "phase", wire)[1] == ()
         assert _round_signature(case, "phase", wire, 0) == ((), ())
 
     later = {
         wire: _family_flips(case, "phase", wire)[0]
-        for wire in code.data_wires  # type: ignore[attr-defined]
+        for wire in code.data_qubits  # type: ignore[attr-defined]
     }
     if case == "repetition-d3":
         assert all(detectors == () for detectors in later.values())
@@ -275,7 +275,7 @@ def test_the_sampler_places_each_family_as_one_conjugated_channel() -> None:
         else:
             profile = {
                 f"{family}_flip_per_qubit": _one_wire_vector(
-                    len(memory.code.data_wires), 0
+                    len(memory.code.data_qubits), 0
                 )
             }
             wire = 0
@@ -328,7 +328,7 @@ def test_a_certain_family_fault_is_exactly_what_the_sampler_draws(case: str) -> 
 
     memory = _memory(case)
     code, _ = _CASES[case]
-    data_wires = code.data_wires  # type: ignore[attr-defined]
+    data_wires = code.data_qubits  # type: ignore[attr-defined]
     for family in ("data", "phase", "both"):
         for position, wire in enumerate(data_wires):
             expected = _family_flips(case, family, wire)

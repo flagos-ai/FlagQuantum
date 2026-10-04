@@ -50,7 +50,7 @@ class FlagOSStatevectorScaleCase:
         if self.dtype not in FLAGOS_SCALE_DTYPES:
             raise ValueError(f"unsupported FlagOS scale dtype {self.dtype!r}")
         if self.n_wires < 2:
-            raise ValueError("scale cases require at least two wires")
+            raise ValueError("scale cases require at least two qubits")
         if not 0 < self.local_amplitudes < self.total_amplitudes:
             raise ValueError("scale cases must retain a strict rank-local shard")
         measurements = (

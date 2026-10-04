@@ -39,7 +39,7 @@ def assess_dynamic_backend(
     circuit: DynamicCircuit, backend: Any
 ) -> DynamicBackendCompatibility:
     blockers = []
-    if circuit.n_wires > int(getattr(backend, "n_wires", 0)):
+    if circuit.n_qubits > int(getattr(backend, "n_wires", 0)):
         blockers.append("circuit_exceeds_backend_qubit_capacity")
     if not bool(getattr(backend, "supports_openqasm", False)):
         blockers.append("backend_does_not_support_openqasm")
@@ -126,7 +126,7 @@ def create_dynamic_deployment_package(
     routing_evidence = build_deployment_routing_evidence(
         dict(deployment_ir.metadata.get("routing", {}) or {}),
         routing_reused=routing_reused,
-        n_wires=circuit.n_wires,
+        n_wires=circuit.n_qubits,
         coupling_map=backend.coupling_map,
     )
     routing_hash = stable_payload_sha256(routing_evidence)

@@ -80,12 +80,12 @@ def test_handle_vector_is_the_code_and_round_arithmetic() -> None:
         memory = build_memory_circuit(code, rounds=rounds)
         refs = memory.measurement_refs
         expected = [
-            MeasurementRef(round_index, check.ancilla_wire)
+            MeasurementRef(round_index, check.ancilla_qubit)
             for round_index in range(rounds)
             for check in code.checks
-        ] + [MeasurementRef(None, wire) for wire in code.data_wires]
+        ] + [MeasurementRef(None, wire) for wire in code.data_qubits]
         assert refs == tuple(expected)
-        assert len(refs) == rounds * len(code.checks) + len(code.data_wires)
+        assert len(refs) == rounds * len(code.checks) + len(code.data_qubits)
         # A handle vector is a set of distinct names, so a bit has one address.
         assert len(set(refs)) == len(refs)
         # The handles are code-derived, so a repetition code's vector is shorter
@@ -108,9 +108,9 @@ def test_a_layout_need_not_name_every_handle() -> None:
     one_round = _surface(3, 1)
     unused = set(one_round.measurement_refs) - _used_handles(one_round)
     x_ancillas = {
-        check.ancilla_wire
+        check.ancilla_qubit
         for check in RotatedSurfaceCode(distance=3).checks
-        if check.stabilizer.x_wires
+        if check.stabilizer.x_qubits
     }
     # A one-round patch's X-type checks are deterministic in neither the initial
     # state nor the terminal readout, so nothing can be compared and no detector
@@ -312,7 +312,7 @@ def test_a_noiseless_run_pins_parities_rather_than_bits() -> None:
 
     memory = _surface(3, 2)
     code = RotatedSurfaceCode(distance=3)
-    x_type = {check.ancilla_wire for check in code.checks if check.stabilizer.x_wires}
+    x_type = {check.ancilla_qubit for check in code.checks if check.stabilizer.x_qubits}
     samples = sample_memory_measurements(
         memory, noise=PhenomenologicalNoise(), shots=512, seed=41
     )
@@ -320,7 +320,7 @@ def test_a_noiseless_run_pins_parities_rather_than_bits() -> None:
     free = 0
     for reference in memory.measurement_refs:
         rate = float(samples.outcome(reference).to(torch.float64).mean())
-        if reference.round_index is not None and reference.wire in x_type:
+        if reference.round_index is not None and reference.qubit in x_type:
             assert 0.4 < rate < 0.6, reference
             free += 1
         elif reference.round_index is not None:
@@ -349,7 +349,7 @@ def test_a_measurement_flip_fires_a_deterministic_handle_at_its_stated_rate() ->
 
     memory = _surface(3, 2)
     code = RotatedSurfaceCode(distance=3)
-    x_type = {check.ancilla_wire for check in code.checks if check.stabilizer.x_wires}
+    x_type = {check.ancilla_qubit for check in code.checks if check.stabilizer.x_qubits}
     samples = sample_memory_measurements(
         memory,
         noise=PhenomenologicalNoise(measurement_flip=0.25),
@@ -359,12 +359,12 @@ def test_a_measurement_flip_fires_a_deterministic_handle_at_its_stated_rate() ->
     pinned = [
         reference
         for reference in memory.measurement_refs
-        if reference.round_index is not None and reference.wire not in x_type
+        if reference.round_index is not None and reference.qubit not in x_type
     ]
     free = [
         reference
         for reference in memory.measurement_refs
-        if reference.round_index is not None and reference.wire in x_type
+        if reference.round_index is not None and reference.qubit in x_type
     ]
     assert pinned and free
     observed = sum(int(samples.outcome(reference).sum()) for reference in pinned) / (

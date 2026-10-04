@@ -72,7 +72,7 @@ def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
             device=state.device,
             dtype=state.dtype,
         )
-        state = _apply_matrix(state, matrix, instruction.wires, circuit.n_wires)
+        state = _apply_matrix(state, matrix, instruction.wires, circuit.n_qubits)
     return state
 
 

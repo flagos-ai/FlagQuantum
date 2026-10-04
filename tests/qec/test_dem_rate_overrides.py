@@ -152,7 +152,7 @@ def test_a_family_the_code_has_no_block_for_contributes_nothing() -> None:
     noise = PhenomenologicalNoise(phase_flip_per_qubit=(0.1, 0.2, 0.3))
     entries = _entries(code, noise)
 
-    assert len(entries) == len(code.data_wires)
+    assert len(entries) == len(code.data_qubits)
     assert all(entry[1] == () and entry[2] == () for entry in entries)
     assert DetectorErrorModel.from_code(code, noise=noise).num_errors == 0
 
@@ -212,7 +212,7 @@ def test_the_x_vector_reaches_the_z_type_checks() -> None:
 
     code = RotatedSurfaceCode(distance=3)
     matrices = css_code_matrices(code)
-    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_wires)))
+    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_qubits)))
     entries = _entries(
         code, PhenomenologicalNoise(data_flip_per_qubit=vector), num_rounds=1
     )
@@ -228,7 +228,7 @@ def test_the_z_vector_reaches_the_x_type_checks() -> None:
 
     code = RotatedSurfaceCode(distance=3)
     matrices = css_code_matrices(code)
-    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_wires)))
+    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_qubits)))
     entries = _entries(
         code, PhenomenologicalNoise(phase_flip_per_qubit=vector), num_rounds=1
     )
@@ -255,7 +255,7 @@ def test_the_y_vector_reaches_both_blocks() -> None:
 
     code = RotatedSurfaceCode(distance=3)
     matrices = css_code_matrices(code)
-    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_wires)))
+    vector = tuple(0.001 * (qubit + 1) for qubit in range(len(code.data_qubits)))
     entries = _entries(
         code, PhenomenologicalNoise(both_flip_per_qubit=vector), num_rounds=1
     )
@@ -384,7 +384,7 @@ def test_the_circuit_route_reads_the_per_check_vector_in_the_matrix_order() -> N
         matching = [
             mechanism
             for mechanism in mechanisms
-            if mechanism.wire == check.ancilla_wire
+            if mechanism.wire == check.ancilla_qubit
         ]
         assert len(matching) == 1
         assert matching[0].probability == pytest.approx(rates[order[position]])

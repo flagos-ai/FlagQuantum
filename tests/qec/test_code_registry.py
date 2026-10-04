@@ -50,10 +50,10 @@ def _repetition_checks(distance: int) -> tuple[CodeCheck, ...]:
 def test_bands_split_the_repetition_ancillas_by_check_type() -> None:
     """The repetition code measures Z only, so its X band is empty."""
 
-    x_wires, z_wires = ancilla_bands(_repetition_checks(5))
+    x_qubits, z_qubits = ancilla_bands(_repetition_checks(5))
 
-    assert x_wires == ()
-    assert z_wires == (5, 6, 7, 8)
+    assert x_qubits == ()
+    assert z_qubits == (5, 6, 7, 8)
 
 
 def test_bands_are_sorted_and_carry_no_duplicate_wire() -> None:
@@ -66,31 +66,31 @@ def test_bands_are_sorted_and_carry_no_duplicate_wire() -> None:
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=5,
-            cnot_wires=((0, 5), (1, 5)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=5,
+            cnot_qubits=((0, 5), (1, 5)),
         ),
         CodeCheck(
             index=1,
-            stabilizer=Pauli(z_wires=(1, 2)),
-            ancilla_wire=5,
-            cnot_wires=((1, 5), (2, 5)),
+            stabilizer=Pauli(z_qubits=(1, 2)),
+            ancilla_qubit=5,
+            cnot_qubits=((1, 5), (2, 5)),
         ),
     )
 
-    x_wires, z_wires = ancilla_bands(checks)
+    x_qubits, z_qubits = ancilla_bands(checks)
 
-    assert x_wires == ()
-    assert z_wires == (5,)
+    assert x_qubits == ()
+    assert z_qubits == (5,)
 
 
 def test_bands_keep_the_two_bases_apart_on_a_mixed_code() -> None:
     """A code with both kinds of check reports one wire in each band."""
 
-    x_wires, z_wires = ancilla_bands(SteaneCode().checks)
+    x_qubits, z_qubits = ancilla_bands(SteaneCode().checks)
 
-    assert x_wires == (10, 11, 12)
-    assert z_wires == (7, 8, 9)
+    assert x_qubits == (10, 11, 12)
+    assert z_qubits == (7, 8, 9)
 
 
 def test_bands_refuse_an_ancilla_that_measures_both_bases() -> None:
@@ -104,15 +104,15 @@ def test_bands_refuse_an_ancilla_that_measures_both_bases() -> None:
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=5,
-            cnot_wires=((0, 5), (1, 5)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=5,
+            cnot_qubits=((0, 5), (1, 5)),
         ),
         CodeCheck(
             index=1,
-            stabilizer=Pauli(x_wires=(0, 1)),
-            ancilla_wire=5,
-            cnot_wires=((5, 0), (5, 1)),
+            stabilizer=Pauli(x_qubits=(0, 1)),
+            ancilla_qubit=5,
+            cnot_qubits=((5, 0), (5, 1)),
         ),
     )
 
@@ -129,11 +129,11 @@ def test_bands_leave_a_flag_ancilla_out_of_both() -> None:
     split.
     """
 
-    x_wires, z_wires = ancilla_bands(_repetition_checks(3))
+    x_qubits, z_qubits = ancilla_bands(_repetition_checks(3))
 
-    assert x_wires == ()
-    assert z_wires == (3, 4)
-    assert len(x_wires) + len(z_wires) < RepetitionCode(3).num_ancilla_qubits + 1
+    assert x_qubits == ()
+    assert z_qubits == (3, 4)
+    assert len(x_qubits) + len(z_qubits) < RepetitionCode(3).num_ancilla_qubits + 1
 
 
 @pytest.mark.parametrize(
@@ -151,13 +151,13 @@ def test_each_shipped_record_reports_the_bands_its_checks_define(
 ) -> None:
     """The stated per-basis counts and the derived bands agree, code by code."""
 
-    x_wires, z_wires = ancilla_bands(record.checks)
+    x_qubits, z_qubits = ancilla_bands(record.checks)
 
     assert (record.num_ancilla_x_qubits, record.num_ancilla_z_qubits) == (
         x_count,
         z_count,
     )
-    assert (len(x_wires), len(z_wires)) == (x_count, z_count)
+    assert (len(x_qubits), len(z_qubits)) == (x_count, z_count)
 
 
 @pytest.mark.parametrize(
@@ -199,11 +199,11 @@ class _Registered:
     num_ancilla_qubits = 2
     num_ancilla_x_qubits = 0
     num_ancilla_z_qubits = 2
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4)
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4)
     checks = RepetitionCode(3).checks
     stabilizers = RepetitionCode(3).stabilizers
-    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+    logical_observables = (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_the_registry_holds_the_three_shipped_families() -> None:
@@ -275,11 +275,11 @@ def test_a_record_with_no_fields_lists_the_empty_option_set() -> None:
         num_ancilla_qubits = 1
         num_ancilla_x_qubits = 0
         num_ancilla_z_qubits = 1
-        data_wires = (0, 1)
-        ancilla_wires = (2,)
+        data_qubits = (0, 1)
+        ancilla_qubits = (2,)
         checks = _repetition_checks(2)
-        stabilizers = (Pauli(z_wires=(0, 1)),)
-        logical_observables = (Pauli(z_wires=(0, 1)),)
+        stabilizers = (Pauli(z_qubits=(0, 1)),)
+        logical_observables = (Pauli(z_qubits=(0, 1)),)
 
     register_code("_fieldless")(_Fieldless)
     try:
@@ -332,7 +332,7 @@ def test_registering_a_class_that_misses_protocol_members_names_them() -> None:
         distance = 3
         num_data_qubits = 3
         num_ancilla_qubits = 2
-        data_wires = (0, 1, 2)
+        data_qubits = (0, 1, 2)
 
     with pytest.raises(TypeError) as excinfo:
         register_code("_partial")(_Partial)
@@ -382,11 +382,11 @@ def test_builder_rejects_a_record_whose_stated_bands_disagree_with_its_checks() 
         num_ancilla_qubits = 4
         num_ancilla_x_qubits = 1
         num_ancilla_z_qubits = 1
-        data_wires = (0, 1, 2, 3, 4)
-        ancilla_wires = (5, 6, 7, 8)
+        data_qubits = (0, 1, 2, 3, 4)
+        ancilla_qubits = (5, 6, 7, 8)
         checks = _repetition_checks(5)
         stabilizers = RepetitionCode(5).stabilizers
-        logical_observables = (Pauli(z_wires=(0, 1, 2, 3, 4)),)
+        logical_observables = (Pauli(z_qubits=(0, 1, 2, 3, 4)),)
 
         @property
         def distance(self) -> int:

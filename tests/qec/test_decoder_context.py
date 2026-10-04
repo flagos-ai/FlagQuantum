@@ -84,8 +84,8 @@ def _sampler_columns(circuit):
 
     def column(reference):
         if reference.round_index is None:
-            return plan.terminal_columns[reference.wire]
-        return plan.syndrome_columns[(reference.round_index, reference.wire)]
+            return plan.terminal_columns[reference.qubit]
+        return plan.syndrome_columns[(reference.round_index, reference.qubit)]
 
     return column, plan
 
@@ -335,7 +335,7 @@ def test_the_measurement_count_is_one_per_check_per_round_plus_the_readout() -> 
     circuit = _circuit()
     checks = len(circuit.code.checks)
     assert _context().num_measurements() == checks * circuit.rounds + len(
-        circuit.code.data_wires
+        circuit.code.data_qubits
     )
 
 
@@ -347,7 +347,7 @@ def test_the_terminal_readout_follows_the_last_syndrome_round() -> None:
     checks = len(circuit.code.checks)
     assert sorted(plan.syndrome_columns.values()) == list(range(checks * 3))
     assert sorted(plan.terminal_columns.values()) == list(
-        range(checks * 3, checks * 3 + len(circuit.code.data_wires))
+        range(checks * 3, checks * 3 + len(circuit.code.data_qubits))
     )
 
 
@@ -375,16 +375,16 @@ def _component_detectors(context: DecoderContext, *, x_type: bool) -> list[int]:
     change in the split rather than restate it.
     """
 
-    by_ancilla = {check.ancilla_wire: check for check in context.circuit.code.checks}
+    by_ancilla = {check.ancilla_qubit: check for check in context.circuit.code.checks}
     kept: list[int] = []
     for detector in context.circuit.detectors.detectors:
         ancillas = {
-            reference.wire
+            reference.qubit
             for reference in detector.parity
             if reference.round_index is not None
         }
         assert len(ancillas) == 1
-        if bool(by_ancilla[next(iter(ancillas))].stabilizer.x_wires) is x_type:
+        if bool(by_ancilla[next(iter(ancillas))].stabilizer.x_qubits) is x_type:
             kept.append(detector.index)
     return kept
 
@@ -426,7 +426,7 @@ def test_the_z_component_holds_the_terminal_detectors() -> None:
     assert set(terminals) <= set(z_kept)
     assert not set(terminals) & set(_component_detectors(context, x_type=True))
     z_checks = sum(
-        1 for check in context.circuit.code.checks if not check.stabilizer.x_wires
+        1 for check in context.circuit.code.checks if not check.stabilizer.x_qubits
     )
     assert len(terminals) == z_checks
     assert len(z_kept) == z_checks * (context.circuit.rounds + 1)

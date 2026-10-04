@@ -342,7 +342,7 @@ def test_a_program_carrying_lowered_measurement_nodes_is_refused() -> None:
     """
 
     base = fq.Circuit(2).h(0).cx(0, 1).to_ir()
-    nodes = observables.lower_outputs(fq.samples(), n_wires=2, shots=10)
+    nodes = observables.lower_outputs(fq.samples(), n_qubits=2, shots=10)
     assert nodes
     lowered = dataclasses.replace(base, measurements=nodes)
     lowered.validate()

@@ -34,7 +34,7 @@ def rank_ownership(
     *,
     mode: str,
     state: str,
-    n_wires: int,
+    n_qubits: int,
     world_size: int,
     local_world_size: int,
 ) -> tuple[dict[str, Any], ...]:
@@ -45,7 +45,7 @@ def rank_ownership(
         "distributed_statevector",
         "jax_sharded_statevector",
     }:
-        ranges = rank_ranges(2 ** int(n_wires), world_size)
+        ranges = rank_ranges(2 ** int(n_qubits), world_size)
         return tuple(
             dict(
                 item,
@@ -56,7 +56,7 @@ def rank_ownership(
             for item, (start, end) in zip(placement, ranges, strict=True)
         )
     if state == "mps" and ("sharded" in mode or mode == "distributed_mps"):
-        ranges = rank_ranges(n_wires, world_size)
+        ranges = rank_ranges(n_qubits, world_size)
         return tuple(
             dict(
                 item,
@@ -67,7 +67,7 @@ def rank_ownership(
             for item, (start, end) in zip(placement, ranges, strict=True)
         )
     if state == "tensor_network" and ("tensor_network" in mode or mode.endswith("_tn")):
-        ranges = rank_ranges(max(world_size, n_wires), world_size)
+        ranges = rank_ranges(max(world_size, n_qubits), world_size)
         return tuple(
             dict(
                 item,

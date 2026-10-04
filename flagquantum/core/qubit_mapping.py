@@ -122,21 +122,21 @@ def qubit_map_from(
 
 
 def remap_qubits(
-    wires: Sequence[int],
+    qubits: Sequence[int],
     mapping: Mapping[int, int] | Sequence[int],
     *,
     owner: str = "composition",
 ) -> tuple[int, ...]:
-    """Relabel ``wires`` through ``mapping``.
+    """Relabel ``qubits`` through ``mapping``.
 
     Args:
-        wires: Qubit labels to relabel.
+        qubits: Qubit labels to relabel.
         mapping: Either a mapping from source label to target label, or a sequence
             whose ``index``-th entry is the target of source label ``index``.
         owner: Name of the caller, used in refusal messages.
 
     Returns:
-        The target of every label in ``wires``, in the original order.
+        The target of every label in ``qubits``, in the original order.
 
     Raises:
         ValueError: If a label has no target, or a sequence mapping is indexed by a
@@ -146,22 +146,22 @@ def remap_qubits(
 
     if isinstance(mapping, Mapping):
         targets = []
-        for wire in wires:
-            if wire not in mapping:
+        for qubit in qubits:
+            if qubit not in mapping:
                 raise ValueError(
-                    f"{owner} references qubit {wire}, which the qubit map does not name"
+                    f"{owner} references qubit {qubit}, which the qubit map does not name"
                 )
-            targets.append(mapping[wire])
+            targets.append(mapping[qubit])
         return tuple(targets)
     ordered = tuple(mapping)
     targets = []
-    for wire in wires:
-        if wire < 0 or wire >= len(ordered):
+    for qubit in qubits:
+        if qubit < 0 or qubit >= len(ordered):
             raise ValueError(
-                f"{owner} references qubit {wire}, which a qubit map of "
+                f"{owner} references qubit {qubit}, which a qubit map of "
                 f"{len(ordered)} qubit(s) does not name"
             )
-        targets.append(ordered[wire])
+        targets.append(ordered[qubit])
     return tuple(targets)
 
 

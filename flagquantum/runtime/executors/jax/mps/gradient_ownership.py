@@ -35,7 +35,7 @@ def _execute_local_mps_parameter_gradient_ownership(
     )
     world_size = int(parameter_flow_plan.world_size)
     rank_site_ranges = {
-        int(shard.rank): tuple(int(wire) for wire in shard.wires)
+        int(shard.rank): tuple(int(wire) for wire in shard.qubits)
         for shard in shard_plans
     }
     gradient_host = np.asarray(gradient)

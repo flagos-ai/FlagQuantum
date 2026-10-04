@@ -22,9 +22,9 @@ def execute_torch_distributed_statevector(
     process_group: Any | None = None,
     fuse_cross_shard_gates: bool = True,
     pipeline_pair_exchange: bool = True,
-    wire_layout: str = "canonical",
-    preferred_local_wires: Sequence[int] = (),
-    persistent_wire_layout: bool = False,
+    qubit_layout: str = "canonical",
+    preferred_local_qubits: Sequence[int] = (),
+    persistent_qubit_layout: bool = False,
 ) -> TorchDistributedStatevectorResult:
     """Execute validated IR while retaining only the current rank's shard."""
 
@@ -38,7 +38,7 @@ def execute_torch_distributed_statevector(
         process_group=process_group,
         fuse_cross_shard_gates=fuse_cross_shard_gates,
         pipeline_pair_exchange=pipeline_pair_exchange,
-        wire_layout=wire_layout,
-        preferred_local_wires=preferred_local_wires,
-        persistent_wire_layout=persistent_wire_layout,
+        wire_layout=qubit_layout,
+        preferred_local_wires=preferred_local_qubits,
+        persistent_wire_layout=persistent_qubit_layout,
     ).run()

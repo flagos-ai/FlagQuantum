@@ -239,8 +239,8 @@ def test_qarm_example_estimates_the_frequent_item_fraction() -> None:
 
     assert "frequent-item fractions -- flagquantum.algorithms.qarm" in output
     assert _labelled(output, "supports") == "(2, 1)"
-    assert _labelled(output, "support wires") == "2"
-    assert _labelled(output, "evaluation wires") == "5"
+    assert _labelled(output, "support qubits") == "2"
+    assert _labelled(output, "evaluation qubits") == "5"
     assert _labelled(output, "estimate") == "0.5"
     assert _labelled(output, "resolution") == "0.097545"
     assert _labelled(output, "exact fraction") == "0.5"
@@ -260,8 +260,8 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     assert _labelled(output, "alpha") == "7.745967"
     assert _labelled(output, "within(largest)") == "True"
     assert _labelled(output, "mode") == "101001"
-    assert _labelled(output, "one-wire readout") == "7.745967"
-    assert _labelled(output, "one-wire alpha") == "7.745967"
+    assert _labelled(output, "one-qubit readout") == "7.745967"
+    assert _labelled(output, "one-qubit alpha") == "7.745967"
     assert _labelled(output, "readout equals alpha") == "True"
     assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
     assert _labelled(output, "raised")

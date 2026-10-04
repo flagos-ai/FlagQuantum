@@ -71,7 +71,7 @@ def _prepare_cirq(
         lambda: export_cirq(circuit.to_ir()), setup_iterations
     )
     simulator = cirq.Simulator(dtype=numpy.complex128, seed=SEED)
-    qubit_order = cirq.LineQubit.range(circuit.n_wires)
+    qubit_order = cirq.LineQubit.range(circuit.n_qubits)
 
     def execute() -> Any:
         result = simulator.simulate(converted.circuit, qubit_order=qubit_order)
@@ -115,7 +115,7 @@ def _prepare_pennylane(
     )
     device = qml.device(
         "lightning.qubit",
-        wires=range(circuit.n_wires),
+        wires=range(circuit.n_qubits),
         shots=None,
     )
 

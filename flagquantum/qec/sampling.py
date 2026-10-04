@@ -89,8 +89,7 @@ class _MeasurementPlan:
     round ``r`` owns ``program.instructions[r * block : (r + 1) * block]``.
     ``measure_offsets`` is the template position of each check's readout, in the
     code's declared check order. ``syndrome_columns`` and ``terminal_columns``
-    are engine record columns: the first indexes ``(round_index, ancilla_wire)``,
-    the second a data wire.
+    are engine record columns: the first indexes ``(round_index, ancilla_qubit)``, the second a data qubit.
     """
 
     program: CircuitIR
@@ -169,7 +168,7 @@ class MeasurementSamples:
             if column is None:
                 raise ValueError(
                     f"measurement handle (round={reference.round_index}, "
-                    f"wire={reference.wire}) is not one this experiment records"
+                    f"qubit={reference.qubit}) is not one this experiment records"
                 )
             columns.append(column)
         return tuple(columns)
@@ -300,7 +299,7 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
     measures = tuple(
         index for index, (name, _) in enumerate(template) if name == _MEASURE_OPCODE
     )
-    expected = tuple((check.ancilla_wire,) for check in checks)
+    expected = tuple((check.ancilla_qubit,) for check in checks)
     if tuple(template[index][1] for index in measures) != expected:
         raise ValueError(
             "the memory program's syndrome round does not measure the code's "
@@ -309,11 +308,11 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
         )
     columns = len(checks)
     syndrome_columns = {
-        (round_index, check.ancilla_wire): round_index * columns + position
+        (round_index, check.ancilla_qubit): round_index * columns + position
         for round_index in range(rounds)
         for position, check in enumerate(checks)
     }
-    data_wires = tuple(memory.code.data_wires)
+    data_wires = tuple(memory.code.data_qubits)
     terminal_columns = {
         wire: columns * rounds + position for position, wire in enumerate(data_wires)
     }
@@ -332,7 +331,7 @@ def _noise_locations(
     """Return every location the noise record configures, in placement order.
 
     The three data families come first, one pass per family and each pass one
-    round per data wire, with a location before the round's first instruction;
+    round per data qubit, with a location before the round's first instruction;
     measurement locations come second, one per round per check, sitting before
     the readout of the check it corrupts. Each location carries the rate that
     named it -- the element of the vector, or the scalar when no vector is
@@ -340,9 +339,9 @@ def _noise_locations(
     placement, so the caller never pays for a channel that cannot fire and a
     per-element vector is how one quiet location between two noisy ones is stated.
 
-    A wire can therefore carry up to three locations in one round, one per
+    A qubit can therefore carry up to three locations in one round, one per
     family, and the record states each family's rate separately: a profile that
-    is noisy in one Pauli and quiet in the others costs one channel per wire, not
+    is noisy in one Pauli and quiet in the others costs one channel per qubit, not
     three. The families and their order are the ones
     :func:`~flagquantum.qec.dem_construction._mechanisms` enumerates, so the two
     routes place and record the same locations.
@@ -355,11 +354,11 @@ def _noise_locations(
 
     Raises:
         ValueError: If a per-element rate vector the noise states does not name
-            every data wire or every check the code declares.
+            every data qubit or every check the code declares.
     """
 
     checks = tuple(memory.code.checks)
-    data_wires = memory.code.data_wires
+    data_wires = memory.code.data_qubits
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
     rate_order = _check_rate_order(checks)
     locations: list[_NoiseLocation] = []
@@ -377,7 +376,7 @@ def _noise_locations(
             _NoiseLocation(
                 "measurement",
                 round_index,
-                int(check.ancilla_wire),
+                int(check.ancilla_qubit),
                 start + plan.measure_offsets[position],
                 measurement_flip_rates[rate_order[position]],
             )
@@ -451,12 +450,12 @@ def _recorded_bits(
 
     def recorded(reference: MeasurementRef) -> torch.Tensor:
         if reference.round_index is None:
-            return record[:, plan.terminal_columns[reference.wire]]
-        column = plan.syndrome_columns.get((reference.round_index, reference.wire))
+            return record[:, plan.terminal_columns[reference.qubit]]
+        column = plan.syndrome_columns.get((reference.round_index, reference.qubit))
         if column is None:
             raise ValueError(
-                f"detector syndrome measurement names ancilla wire "
-                f"{reference.wire}, which no check owns"
+                f"detector syndrome measurement names ancilla qubit "
+                f"{reference.qubit}, which no check owns"
             )
         return record[:, column]
 
@@ -468,7 +467,7 @@ def _recorded_bits(
     for observable in memory.observables.observables:
         parity = torch.zeros(shots, dtype=dtype)
         for reference in observable.measurement_parity:
-            parity ^= record[:, plan.terminal_columns[reference.wire]]
+            parity ^= record[:, plan.terminal_columns[reference.qubit]]
         observables[:, observable.index] = parity
     return detectors, observables
 
@@ -485,7 +484,7 @@ def _sample_record(
     plan = _measurement_plan(circuit)
     locations = _noise_locations(circuit, plan, noise)
     program = _noisy_program(plan, locations)
-    data_wires = tuple(circuit.code.data_wires)
+    data_wires = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
         program, shots=shots, terminal_wires=data_wires, seed=seed
     )
@@ -507,13 +506,13 @@ def _measurement_samples(
     columns: list[int] = []
     for reference in refs:
         if reference.round_index is None:
-            column = plan.terminal_columns.get(reference.wire)
+            column = plan.terminal_columns.get(reference.qubit)
         else:
-            column = plan.syndrome_columns.get((reference.round_index, reference.wire))
+            column = plan.syndrome_columns.get((reference.round_index, reference.qubit))
         if column is None:
             raise ValueError(
                 f"measurement handle (round={reference.round_index}, "
-                f"wire={reference.wire}) has no recorded column in the lowered "
+                f"qubit={reference.qubit}) has no recorded column in the lowered "
                 "program"
             )
         columns.append(column)

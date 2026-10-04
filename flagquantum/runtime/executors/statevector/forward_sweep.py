@@ -50,7 +50,7 @@ from .forward import (
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
     _vectorized_subgroup_exchange_gate,
-    communication_aware_wire_layout,
+    communication_aware_qubit_layout,
 )
 from .forward_rzz_segment import apply_native_rzz_segment
 from .kernel_dispatch import KernelDispatchEvidence
@@ -61,7 +61,7 @@ from .layout import (
 )
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
 from .planning import plan_distributed_statevector
-from .program_cache import remap_instruction_wires
+from .program_cache import remap_instruction_qubits
 from .transpose_dispatch import _triton_transpose_1q_tensor_decision
 
 
@@ -129,11 +129,11 @@ class _ShardedForwardSweep:
             raise ValueError("wire_layout must be 'canonical' or 'communication_aware'")
         self.logical_to_physical = tuple(range(self.ir.n_wires))
         if self.wire_layout == "communication_aware":
-            self.ir, self.logical_to_physical = communication_aware_wire_layout(
+            self.ir, self.logical_to_physical = communication_aware_qubit_layout(
                 self.ir,
                 world_size=self.world_size,
                 local_world_size=self.local_world_size,
-                preferred_local_wires=self.preferred_local_wires,
+                preferred_local_qubits=self.preferred_local_wires,
             )
         if self.persistent_wire_layout and self.world_size > 1:
             self.ir = schedule_statevector_dependency_dag(
@@ -296,7 +296,7 @@ class _ShardedForwardSweep:
                 and not torch.is_grad_enabled()
                 and len(instruction_swaps) == 1
                 and len(instruction.wires) == 1
-                and instruction_swaps[0].sharded_logical_wire
+                and instruction_swaps[0].sharded_logical_qubit
                 == int(instruction.wires[0])
                 and matrix.shape == (2, 2)
                 and matrix.dtype == self.shard_state.amplitudes.dtype
@@ -306,7 +306,7 @@ class _ShardedForwardSweep:
         )
         fused_swap_gate = transpose_decision.accelerated
         for swap_index, swap in enumerate(instruction_swaps):
-            rank_bit_position = self.ir.n_wires - swap.sharded_physical_wire - 1
+            rank_bit_position = self.ir.n_wires - swap.sharded_physical_qubit - 1
             checkpoint_mode = _ket_checkpoint_mode()
             if checkpoint_mode == "all" or (
                 checkpoint_mode == "inter_node"
@@ -323,10 +323,10 @@ class _ShardedForwardSweep:
             swapped, count, byte_count = distributed_swap_rank_local_bits(
                 self.shard_state.amplitudes,
                 rank=self.rank,
-                n_wires=self.ir.n_wires,
+                n_qubits=self.ir.n_wires,
                 rank_bits=self.plan.rank_address_bits,
-                local_physical_wire=swap.local_physical_wire,
-                sharded_physical_wire=swap.sharded_physical_wire,
+                local_physical_qubit=swap.local_physical_qubit,
+                sharded_physical_qubit=swap.sharded_physical_qubit,
                 process_group=self.process_group,
                 output=self.shard_state.amplitudes,
                 send_buffer=self.layout_send_buffer,
@@ -340,11 +340,11 @@ class _ShardedForwardSweep:
             if fused_swap_gate:
                 self.kernel_dispatch_evidence.record(transpose_decision)
             (
-                self.persistent_mapping[swap.local_logical_wire],
-                self.persistent_mapping[swap.sharded_logical_wire],
+                self.persistent_mapping[swap.local_logical_qubit],
+                self.persistent_mapping[swap.sharded_logical_qubit],
             ) = (
-                self.persistent_mapping[swap.sharded_logical_wire],
-                self.persistent_mapping[swap.local_logical_wire],
+                self.persistent_mapping[swap.sharded_logical_qubit],
+                self.persistent_mapping[swap.local_logical_qubit],
             )
             self.peak_scratch = max(
                 self.peak_scratch,
@@ -354,10 +354,10 @@ class _ShardedForwardSweep:
             self.local_count += 1
             return index + 1
         original_instruction = self.ir.instructions[index]
-        instruction = remap_instruction_wires(
+        instruction = remap_instruction_qubits(
             original_instruction, self.persistent_mapping
         )
-        touched = any(wire in self.plan.sharded_wires for wire in instruction.wires)
+        touched = any(wire in self.plan.sharded_qubits for wire in instruction.wires)
         cursor = self._cx_segment(index, instruction, touched)
         if cursor is not None:
             return cursor
@@ -423,7 +423,7 @@ class _ShardedForwardSweep:
                 mapped = tuple(
                     self.persistent_mapping[int(wire)] for wire in candidate.wires
                 )
-                if any(wire in self.plan.sharded_wires for wire in mapped):
+                if any(wire in self.plan.sharded_qubits for wire in mapped):
                     break
                 segment_wires.append(mapped)
                 segment_cursor += 1
@@ -437,11 +437,11 @@ class _ShardedForwardSweep:
                             self.cx_segment_scratch = torch.empty_like(previous)
                         gathered = self.cx_segment_scratch
                         compact_applied = False
-                        if use_compact_cpu_cx_mapping(self.plan.n_wires):
+                        if use_compact_cpu_cx_mapping(self.plan.n_qubits):
                             images = compact_cx_permutation_images(
                                 controls,
                                 targets,
-                                self.plan.n_wires,
+                                self.plan.n_qubits,
                             )
                             compact_applied = fused_compact_cx_gather_out(
                                 previous,
@@ -454,7 +454,7 @@ class _ShardedForwardSweep:
                             index_table = _cx_sequence_permutation_index(
                                 controls,
                                 targets,
-                                self.plan.n_wires,
+                                self.plan.n_qubits,
                                 device=previous.device,
                                 dtype=previous.dtype,
                             )
@@ -465,14 +465,14 @@ class _ShardedForwardSweep:
                                     previous,
                                     controls,
                                     targets,
-                                    self.plan.n_wires,
+                                    self.plan.n_qubits,
                                 )
                     else:
                         gathered = _apply_cx_sequence_gather(
                             previous,
                             controls,
                             targets,
-                            self.plan.n_wires,
+                            self.plan.n_qubits,
                         )
                     self.shard_state = replace(self.shard_state, amplitudes=gathered)
                     self.local_count += len(segment_wires)
@@ -485,13 +485,13 @@ class _ShardedForwardSweep:
                     apply_complex64_local_cx_segment,
                 )
 
-                rank_bits = len(self.plan.sharded_wires)
+                rank_bits = len(self.plan.sharded_qubits)
                 controls = tuple(
-                    self.plan.n_wires - wires[0] - 1 - rank_bits
+                    self.plan.n_qubits - wires[0] - 1 - rank_bits
                     for wires in segment_wires
                 )
                 targets = tuple(
-                    self.plan.n_wires - wires[1] - 1 - rank_bits
+                    self.plan.n_qubits - wires[1] - 1 - rank_bits
                     for wires in segment_wires
                 )
                 previous = self.shard_state.amplitudes
@@ -540,7 +540,7 @@ class _ShardedForwardSweep:
         generic_layer = native_cpu_one_qubit_layer_available()
         if not generic_layer and instruction.name not in {"rx", "ry", "rz"}:
             return None
-        max_block_wires = native_cpu_forward_rotation_tile_wires(self.plan.n_wires)
+        max_block_wires = native_cpu_forward_rotation_tile_wires(self.plan.n_qubits)
         cursor = index
         active_wire: int | None = None
         while cursor < len(self.ir.instructions):
@@ -554,7 +554,7 @@ class _ShardedForwardSweep:
             ):
                 break
             wire = self.persistent_mapping[int(candidate.wires[0])]
-            if wire in self.plan.sharded_wires:
+            if wire in self.plan.sharded_qubits:
                 break
             if wire == active_wire:
                 block_matrices[-1] = self.matrices[cursor] @ block_matrices[-1]
@@ -578,7 +578,7 @@ class _ShardedForwardSweep:
             self.shard_state.amplitudes,
             matrices,
             wires,
-            n_wires=self.plan.n_wires,
+            n_wires=self.plan.n_qubits,
         ):
             return None
         self.local_count += cursor - index
@@ -668,12 +668,14 @@ class _ShardedForwardSweep:
                     int(candidate_original.wires[0])
                 ]
                 if (
-                    candidate_wire in self.plan.sharded_wires
+                    candidate_wire in self.plan.sharded_qubits
                     or candidate_wire in block_wires
                 ):
                     break
                 block_instructions.append(
-                    remap_instruction_wires(candidate_original, self.persistent_mapping)
+                    remap_instruction_qubits(
+                        candidate_original, self.persistent_mapping
+                    )
                 )
                 block_matrices.append(self.matrices[block_cursor])
                 block_wires.append(candidate_wire)
@@ -852,7 +854,7 @@ class _ShardedForwardSweep:
         if (
             _cross_shard_cx_packing_enabled()
             and instruction.name == "cx"
-            and sum(wire in self.plan.sharded_wires for wire in instruction.wires) == 1
+            and sum(wire in self.plan.sharded_qubits for wire in instruction.wires) == 1
         ):
             self.shard_state, count, byte_count, scratch = _vectorized_cross_shard_cx(
                 self.shard_state,
@@ -866,7 +868,7 @@ class _ShardedForwardSweep:
             )
         elif (
             len(instruction.wires) == 1
-            and instruction.wires[0] in self.plan.sharded_wires
+            and instruction.wires[0] in self.plan.sharded_qubits
         ):
             self.shard_state, count, byte_count, scratch = (
                 _vectorized_pair_exchange_gate(
@@ -975,8 +977,8 @@ class _ShardedForwardSweep:
                 if self.exchange_workspace is not None
                 else 0
             ),
-            wire_layout=self.wire_layout,
-            logical_to_physical_wires=self.logical_to_physical,
+            qubit_layout=self.wire_layout,
+            logical_to_physical_qubits=self.logical_to_physical,
             distributed_identity=build_distributed_identity(
                 outer_backend=str(self.backend),
                 logical_device=str(self.resolved_device),

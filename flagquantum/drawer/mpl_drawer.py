@@ -10,11 +10,51 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle, FancyBboxPatch
 
-from .ir_adapter import to_drawable_circuit
+from ..core._qubit_aliases import warn_qubit_alias
+from .ir_adapter import _detected_qubit_count, to_drawable_circuit
+
+#: Presentation options this drawer accepts, under their pre-qubit names.
+#:
+#: These travel through ``**kwargs`` rather than being declared parameters, so no
+#: census counts them and no static check sees them. A caller still writing
+#: ``show_wire_labels=False`` used to be obeyed and would now be silently
+#: ignored -- the diagram comes back with exactly the labels the caller asked to
+#: hide, and nothing says why. So the legacy spelling is honoured and warned
+#: about, the way every other migrated name is.
+LEGACY_OPTION_SPELLINGS: dict[str, str] = {
+    "wire_options": "qubit_options",
+    "show_wire_labels": "show_qubit_labels",
+    "active_wire_notches": "active_qubit_notches",
+}
+
+
+def resolve_legacy_options(
+    kwargs: dict[str, Any], *, stacklevel: int = 4
+) -> dict[str, Any]:
+    """Return ``kwargs`` with any pre-qubit option name moved to its new name.
+
+    Each entry point calls this, so a caller of ``draw_mpl`` and a caller of
+    ``MPLDrawer`` are each warned once, at their own frame. The canonical name
+    wins if a caller passes both.
+    """
+
+    resolved = dict(kwargs)
+    for legacy, canonical in LEGACY_OPTION_SPELLINGS.items():
+        if legacy not in resolved:
+            continue
+        value = resolved.pop(legacy)
+        warn_qubit_alias(legacy, canonical, stacklevel=stacklevel)
+        resolved.setdefault(canonical, value)
+    return resolved
 
 
 class MPLDrawer:
-    """Matplotlib circuit drawer"""
+    """Matplotlib circuit drawer.
+
+    Rendering options arrive through ``**kwargs`` rather than as declared
+    parameters, so :func:`resolve_legacy_options` is the one place that decides
+    which spellings of them are understood.
+    """
 
     _box_length = 0.8
     _circ_rad = 0.25
@@ -86,51 +126,50 @@ class MPLDrawer:
     def __init__(
         self,
         qdev: object,
-        wire_order: Sequence[int | str] | None = None,
+        qubit_order: Sequence[int | str] | None = None,
         fig: Figure | None = None,
         **kwargs: Any,
     ) -> None:
+        kwargs = resolve_legacy_options(kwargs)
         qdev = to_drawable_circuit(qdev)
         self.qdev = qdev
         self.op_history: Sequence[dict[str, Any]] = getattr(qdev, "op_history", ())
-        self.n_wires: int = getattr(qdev, "n_wires", self._detect_n_wires())
+        self.n_qubits: int = getattr(qdev, "n_qubits", self._detect_n_qubits())
         self.decimals: int | None = kwargs.get("decimals", 2)
-        self.active_notches = kwargs.get("active_wire_notches", True)
-        self.wire_map = self._create_wire_map(wire_order)
+        self.active_notches = kwargs.get("active_qubit_notches", True)
+        self.qubit_map = self._create_qubit_map(qubit_order)
         self.layers = self._create_layers()
         self.n_layers = len(self.layers)
         self._setup_figure(fig, kwargs.get("figsize"))
-        self._draw_wires(kwargs.get("wire_options"))
+        self._draw_qubits(kwargs.get("qubit_options"))
         self._draw_operations()
         self._draw_measurements()
-        if kwargs.get("show_wire_labels", True):
+        if kwargs.get("show_qubit_labels", True):
             self._draw_labels(kwargs.get("label_options"))
         else:
             self._crop_labels()
 
-    def _detect_n_wires(self) -> int:
-        """Detect the number of qubits from operation history"""
-        max_wire = -1
-        for op in self.op_history:
-            wires = op.get("wires", [])
-            if isinstance(wires, int):
-                wires = [wires]
-            for w in wires:
-                if isinstance(w, int) and w > max_wire:
-                    max_wire = w
-        return max_wire + 1 if max_wire >= 0 else 0
+    def _detect_n_qubits(self) -> int:
+        """The width implied by the entries this drawer holds.
 
-    def _create_wire_map(
+        The entries are already qubit-named: they came through
+        ``to_drawable_circuit``, which is the one place that reads a legacy
+        spelling. Reached only for an input the adapter could not adapt at all,
+        whose history is empty.
+        """
+        return _detected_qubit_count(self.op_history)
+
+    def _create_qubit_map(
         self, wire_order: Sequence[int | str] | None
     ) -> dict[int | str, int]:
-        """Create a mapping from wire labels to display indices"""
+        """Create a mapping from qubit labels to display indices"""
         wire_order = (
-            list(range(self.n_wires)) if wire_order is None else list(wire_order)
+            list(range(self.n_qubits)) if wire_order is None else list(wire_order)
         )
-        for w in range(self.n_wires):
+        for w in range(self.n_qubits):
             if w not in wire_order:
                 wire_order.append(w)
-        return {wire: idx for idx, wire in enumerate(wire_order)}
+        return {qubit: idx for idx, qubit in enumerate(wire_order)}
 
     def _create_layers(self) -> list[list[dict[str, Any]]]:
         """
@@ -141,20 +180,20 @@ class MPLDrawer:
         last_op_layer: dict[int, int] = {}
         layers: list[list[dict[str, Any]]] = []
         for op in self.op_history:
-            wires = op.get("wires", [])
-            if isinstance(wires, int):
-                wires = [wires]
-            if not wires:
+            qubits = op.get("qubits", [])
+            if isinstance(qubits, int):
+                qubits = [qubits]
+            if not qubits:
                 continue
 
-            # Get all wires occupied by this operation (including intermediate wires)
-            min_w = min(wires)
-            max_w = max(wires)
-            occupied_wires = set(range(min_w, max_w + 1))
+            # Get all qubits occupied by this operation (including intermediate qubits)
+            min_w = min(qubits)
+            max_w = max(qubits)
+            occupied_qubits = set(range(min_w, max_w + 1))
 
-            # Map to display wire indices
+            # Map to display qubit indices
             mapped_occupied = [
-                self.wire_map[w] for w in occupied_wires if w in self.wire_map
+                self.qubit_map[w] for w in occupied_qubits if w in self.qubit_map
             ]
             if not mapped_occupied:
                 continue
@@ -175,12 +214,12 @@ class MPLDrawer:
     ) -> None:
         """Initialize the matplotlib figure and axes"""
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + 1)
+            figsize = (self.n_layers + 3, self.n_qubits + 1)
         self._fig = fig if fig else plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + 0.5),
+            ylim=(-1, self.n_qubits + 0.5),
             xticks=[],
             yticks=[],
         )
@@ -188,10 +227,17 @@ class MPLDrawer:
         self._ax.set_facecolor("#F7F7F7")
         self._ax.invert_yaxis()
 
-    def _draw_wires(self, wire_options: dict[str, Any] | None) -> None:
-        """Draw horizontal quantum wire lines"""
+    def _draw_qubits(self, wire_options: dict[str, Any] | None) -> None:
+        """Draw horizontal quantum qubit lines.
+
+        The parameter keeps its pre-qubit name on purpose. ``[boundary]`` in the
+        vocabulary contract records that private code keeps ``wire`` names and
+        measures the bucket so the exclusion stays honest; a compatibility fix
+        is not the place to move that number.
+        """
+
         opts = wire_options or {}
-        for wire_label, idx in self.wire_map.items():
+        for qubit_label, idx in self.qubit_map.items():
             line = plt.Line2D(
                 (-1, self.n_layers),
                 (idx, idx),
@@ -248,11 +294,11 @@ class MPLDrawer:
     def _draw_operation(self, op: dict[str, Any], x: float) -> None:
         """Draw a single operation at the specified x-coordinate"""
         name = op.get("name_or_mat", "").lower()
-        wires = op.get("wires", [])
+        qubits = op.get("qubits", [])
         params = op.get("params", [])
-        if isinstance(wires, int):
-            wires = [wires]
-        if not wires:
+        if isinstance(qubits, int):
+            qubits = [qubits]
+        if not qubits:
             return
 
         # Measurement operations are handled separately
@@ -274,67 +320,73 @@ class MPLDrawer:
         gate_type = "param" if is_param_gate else "single"
 
         # Single-qubit gate
-        if len(wires) == 1:
+        if len(qubits) == 1:
             if name in ["rx", "ry", "rz"]:
-                self._draw_box(x, wires[0], label, gate_type)
+                self._draw_box(x, qubits[0], label, gate_type)
             elif name in ["p", "phase"]:
-                self._draw_box(x, wires[0], label, "p")
+                self._draw_box(x, qubits[0], label, "p")
             else:
-                self._draw_box(x, wires[0], label, gate_type)
+                self._draw_box(x, qubits[0], label, gate_type)
 
         # Toffoli (CCX) - 3 qubits
-        elif name in ["ccx", "toffoli"] and len(wires) == 3:
-            control1, control2, target = wires[0], wires[1], wires[2]
+        elif name in ["ccx", "toffoli"] and len(qubits) == 3:
+            control1, control2, target = qubits[0], qubits[1], qubits[2]
             self._draw_toffoli(x, control1, control2, target)
 
         # Fredkin (CSWAP) - 3 qubits
-        elif name in ["cswap", "fredkin"] and len(wires) == 3:
-            control, target1, target2 = wires[0], wires[1], wires[2]
+        elif name in ["cswap", "fredkin"] and len(qubits) == 3:
+            control, target1, target2 = qubits[0], qubits[1], qubits[2]
             self._draw_cswap(x, control, target1, target2)
 
         # CNOT/CX
-        elif name in ["cx", "cnot"] and len(wires) >= 2:
-            self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="X")
+        elif name in ["cx", "cnot"] and len(qubits) >= 2:
+            self._draw_controlled_gate(x, qubits[0], qubits[1], target_symbol="X")
 
         # CY
-        elif name == "cy" and len(wires) >= 2:
-            self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="Y")
+        elif name == "cy" and len(qubits) >= 2:
+            self._draw_controlled_gate(x, qubits[0], qubits[1], target_symbol="Y")
 
         # CZ
-        elif name == "cz" and len(wires) >= 2:
-            self._draw_controlled_gate(x, wires[0], wires[1], target_symbol="Z")
+        elif name == "cz" and len(qubits) >= 2:
+            self._draw_controlled_gate(x, qubits[0], qubits[1], target_symbol="Z")
 
         # CPhase
-        elif name in ["cphase", "controlledphase"] and len(wires) >= 2:
+        elif name in ["cphase", "controlledphase"] and len(qubits) >= 2:
             self._draw_controlled_phase_gate_with_param(
-                x, wires[0], wires[1], params, "CP"
+                x, qubits[0], qubits[1], params, "CP"
             )
 
         # CRX, CRY, CRZ
-        elif name == "crx" and len(wires) >= 2:
-            self._draw_controlled_gate_with_param(x, wires[0], wires[1], params, "CRX")
-        elif name == "cry" and len(wires) >= 2:
-            self._draw_controlled_gate_with_param(x, wires[0], wires[1], params, "CRY")
-        elif name == "crz" and len(wires) >= 2:
-            self._draw_controlled_gate_with_param(x, wires[0], wires[1], params, "CRZ")
+        elif name == "crx" and len(qubits) >= 2:
+            self._draw_controlled_gate_with_param(
+                x, qubits[0], qubits[1], params, "CRX"
+            )
+        elif name == "cry" and len(qubits) >= 2:
+            self._draw_controlled_gate_with_param(
+                x, qubits[0], qubits[1], params, "CRY"
+            )
+        elif name == "crz" and len(qubits) >= 2:
+            self._draw_controlled_gate_with_param(
+                x, qubits[0], qubits[1], params, "CRZ"
+            )
 
         # Ising (RXX, RYY, RZZ)
-        elif name in ["rxx", "ryy", "rzz"] and len(wires) >= 2:
-            self._draw_ising_gate(x, wires, name.upper(), params)
+        elif name in ["rxx", "ryy", "rzz"] and len(qubits) >= 2:
+            self._draw_ising_gate(x, qubits, name.upper(), params)
 
         # SWAP
-        elif name == "swap" and len(wires) >= 2:
-            self._draw_swap_gate(x, wires)
+        elif name == "swap" and len(qubits) >= 2:
+            self._draw_swap_gate(x, qubits)
 
         # Multi-qubit gate
-        elif len(wires) > 1:
-            self._draw_multi_gate(x, wires, label)
+        elif len(qubits) > 1:
+            self._draw_multi_gate(x, qubits, label)
 
     def _draw_controlled_gate_with_param(
         self, x: float, control: int, target: int, params: object, gate_name: str
     ) -> None:
         """Draw parameterized controlled gates (CRX, CRY, CRZ)"""
-        # Connecting wire
+        # Connecting qubit
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
@@ -366,7 +418,7 @@ class MPLDrawer:
         self, x: float, control: int, target: int, params: object, gate_name: str
     ) -> None:
         """Draw parameterized controlled phase gate (CP)"""
-        # Connecting wire
+        # Connecting qubit
         line = plt.Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
@@ -397,7 +449,7 @@ class MPLDrawer:
     def _draw_ising_gate(
         self, x: float, wires: Sequence[int], gate_name: str, params: object
     ) -> None:
-        """Draw Ising gates (RXX, RYY, RZZ) - boxes spanning all involved wires"""
+        """Draw Ising gates (RXX, RYY, RZZ) - boxes spanning all involved qubits"""
         min_w = min(wires)
         max_w = max(wires)
         half = self._box_length / 2
@@ -440,11 +492,11 @@ class MPLDrawer:
         self, x: float, control1: int, control2: int, target: int
     ) -> None:
         """Draw Toffoli gate (CCX)"""
-        min_wire = min(control1, control2, target)
-        max_wire = max(control1, control2, target)
+        min_qubit = min(control1, control2, target)
+        max_qubit = max(control1, control2, target)
 
         line = plt.Line2D(
-            (x, x), (min_wire, max_wire), color="#333333", linewidth=1.5, zorder=1
+            (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
 
@@ -490,11 +542,11 @@ class MPLDrawer:
 
     def _draw_cswap(self, x: float, control: int, target1: int, target2: int) -> None:
         """Draw Fredkin gate (CSWAP)"""
-        min_wire = min(control, target1, target2)
-        max_wire = max(control, target1, target2)
+        min_qubit = min(control, target1, target2)
+        max_qubit = max(control, target1, target2)
 
         line = plt.Line2D(
-            (x, x), (min_wire, max_wire), color="#333333", linewidth=1.5, zorder=1
+            (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
 
@@ -624,15 +676,15 @@ class MPLDrawer:
         if len(wires) < 2:
             return
 
-        mapped_wires = [self.wire_map[w] for w in wires if w in self.wire_map]
-        if not mapped_wires:
+        mapped_qubits = [self.qubit_map[w] for w in wires if w in self.qubit_map]
+        if not mapped_qubits:
             return
 
-        min_wire = min(mapped_wires)
-        max_wire = max(mapped_wires)
+        min_qubit = min(mapped_qubits)
+        max_qubit = max(mapped_qubits)
 
         line = plt.Line2D(
-            (x, x), (min_wire, max_wire), color="#333333", linewidth=1.5, zorder=1
+            (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
 
@@ -641,14 +693,14 @@ class MPLDrawer:
         # Top X
         l1 = plt.Line2D(
             (x - d, x + d),
-            (min_wire - d, min_wire + d),
+            (min_qubit - d, min_qubit + d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
         )
         l2 = plt.Line2D(
             (x - d, x + d),
-            (min_wire + d, min_wire - d),
+            (min_qubit + d, min_qubit - d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
@@ -659,14 +711,14 @@ class MPLDrawer:
         # Bottom X
         l1 = plt.Line2D(
             (x - d, x + d),
-            (max_wire - d, max_wire + d),
+            (max_qubit - d, max_qubit + d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
         )
         l2 = plt.Line2D(
             (x - d, x + d),
-            (max_wire + d, max_wire - d),
+            (max_qubit + d, max_qubit - d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
@@ -703,7 +755,7 @@ class MPLDrawer:
         )
 
     def _draw_multi_gate(self, x: float, wires: Sequence[int], text: str) -> None:
-        """Draw multi-qubit gate box spanning multiple wires"""
+        """Draw multi-qubit gate box spanning multiple qubits"""
         min_w, max_w = min(wires), max(wires)
         half = self._box_length / 2
         height = max_w - min_w + self._box_length
@@ -739,21 +791,21 @@ class MPLDrawer:
         )
         if has_measure:
             x = self.n_layers
-            for wire in range(self.n_wires):
-                self._draw_box(x, wire, "MZ", "measure")
+            for qubit in range(self.n_qubits):
+                self._draw_box(x, qubit, "MZ", "measure")
 
     def _draw_labels(self, label_options: dict[str, Any] | None) -> None:
-        """Draw wire labels (can optionally display initial state)"""
+        """Draw qubit labels (can optionally display initial state)"""
         opts = dict(label_options) if isinstance(label_options, dict) else {}
         show_initial_state = (
             opts.pop("show_initial_state", False) if isinstance(opts, dict) else False
         )
 
-        for wire_label, idx in self.wire_map.items():
+        for qubit_label, idx in self.qubit_map.items():
             if show_initial_state:
-                label_text = f"{wire_label}: |0⟩"
+                label_text = f"{qubit_label}: |0⟩"
             else:
-                label_text = str(wire_label)
+                label_text = str(qubit_label)
 
             self._ax.text(
                 -1.5,
@@ -793,13 +845,17 @@ def draw_mpl(
         show_initial_state: Whether to show the initial state (e.g., "0: |0⟩")
         **kwargs: Additional parameters
             - decimals: Precision for parameter display
-            - wire_order: Wire order
+            - qubit_order: Qubit order
             - fig: Existing matplotlib figure
             - figsize: Figure size
-            - wire_options: Wire style options
+            - qubit_options: Qubit line style options
             - label_options: Label style options
-            - show_wire_labels: Whether to show wire labels
+            - show_qubit_labels: Whether to show qubit labels
+            - active_qubit_notches: Whether to notch the line a gate acts on.
+              The pre-qubit spellings ``wire_options``, ``show_wire_labels``,
+              and ``active_wire_notches`` are still honoured and warn.
     """
+    kwargs = resolve_legacy_options(kwargs)
     supplied_labels = kwargs.get("label_options", {})
     label_options = dict(supplied_labels) if isinstance(supplied_labels, dict) else {}
     if isinstance(label_options, dict):

@@ -137,7 +137,7 @@ def _validate_inputs(
         raise TypeError("hamiltonian must be a FlagQuantum Hamiltonian.")
     if isinstance(n_wires, bool) or not isinstance(n_wires, int) or n_wires < 2:
         raise ValueError("n_wires must be an integer greater than or equal to 2.")
-    if hamiltonian.n_wires > n_wires:
+    if hamiltonian.n_qubits > n_wires:
         raise ValueError("Hamiltonian references a wire outside n_wires.")
     if evolution != "imaginary_time":
         raise ValueError("Only evolution='imaginary_time' is supported.")

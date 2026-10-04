@@ -155,19 +155,19 @@ def _global_indices(torch: Any, result: Any) -> Any:
         return shard.global_indices.detach().cpu().to(torch.long)
     local = torch.arange(shard.amplitudes.shape[-1], dtype=torch.long)
     if result.plan.distribution == "qubit_address_sharded":
-        return (local << len(result.plan.sharded_wires)) | shard.rank
+        return (local << len(result.plan.sharded_qubits)) | shard.rank
     return local + shard.shard.amplitude_start
 
 
 def _physical_to_logical_indices(torch: Any, result: Any) -> Any:
     physical_indices = _global_indices(torch, result)
-    mapping = tuple(int(item) for item in result.logical_to_physical_wires)
-    if mapping == tuple(range(result.plan.n_wires)):
+    mapping = tuple(int(item) for item in result.logical_to_physical_qubits)
+    if mapping == tuple(range(result.plan.n_qubits)):
         return physical_indices
     logical_indices = torch.zeros_like(physical_indices)
     for logical_wire, physical_wire in enumerate(mapping):
-        source_shift = result.plan.n_wires - physical_wire - 1
-        target_shift = result.plan.n_wires - logical_wire - 1
+        source_shift = result.plan.n_qubits - physical_wire - 1
+        target_shift = result.plan.n_qubits - logical_wire - 1
         logical_indices |= ((physical_indices >> source_shift) & 1) << target_shift
     return logical_indices
 
@@ -244,7 +244,7 @@ def _run_case(
         circuit,
         device=context.device,
         dtype=dtype,
-        persistent_wire_layout=persistent,
+        persistent_qubit_layout=persistent,
     )
     torch.flagos.synchronize()
     elapsed = _global_max(torch, time.perf_counter() - started, context.device)
@@ -274,7 +274,7 @@ def _run_case(
         circuit,
         device=context.device,
         dtype=dtype,
-        persistent_wire_layout=persistent,
+        persistent_qubit_layout=persistent,
     )
     local_determinism = float(
         torch.max(torch.abs(second.shard_state.amplitudes - actual)).item()
@@ -299,7 +299,7 @@ def _run_case(
         and actual.numel() * context.world_size == first.plan.total_amplitudes
         and (
             first.distributed_gate_count > 0
-            or (persistent and first.wire_layout == "persistent")
+            or (persistent and first.qubit_layout == "persistent")
         )
         and first.communication_count > 0
         and first.communication_bytes > 0
@@ -333,7 +333,7 @@ def _run_case(
         norm_error=norm_error,
         determinism_error=determinism_error,
         tolerance=tolerance,
-        persistent_wire_layout=persistent,
+        persistent_qubit_layout=persistent,
         device_type=actual.device.type,
         reference_scope=reference_scope,
     )

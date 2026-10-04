@@ -43,7 +43,7 @@ class OperatorSchema:
     semantic_kind: str
     adjoint: str
     decomposition: tuple[str, ...]
-    wire_convention: tuple[str, ...]
+    qubit_convention: tuple[str, ...]
     parameter_frequencies: tuple[tuple[float, ...], ...] = ()
 
     def __post_init__(self) -> None:
@@ -162,11 +162,11 @@ def parameter_shift_rule(
 
 @dataclass(frozen=True)
 class GateInfo:
-    """User-facing description of a built-in gate's wires and parameters."""
+    """User-facing description of a built-in gate's qubits and parameters."""
 
     name: str
     aliases: tuple[str, ...]
-    n_wires: int
+    n_qubits: int
     parameters: tuple[str, ...]
     parameter_shapes: Mapping[str, tuple[int, ...]]
     differentiable: bool
@@ -188,7 +188,7 @@ def _unitary(
     adjoint: str = "matrix_adjoint",
     decomposition: tuple[str, ...] = (),
 ) -> OperatorSchema:
-    wire_names = {
+    qubit_names = {
         1: ("target",),
         2: ("control_or_left", "target_or_right"),
         3: ("control_0", "control_1_or_target_0", "target_or_target_1"),
@@ -202,7 +202,7 @@ def _unitary(
         semantic_kind="unitary",
         adjoint=adjoint,
         decomposition=decomposition,
-        wire_convention=wire_names,
+        qubit_convention=qubit_names,
         parameter_frequencies=frequencies,
     )
 
@@ -231,7 +231,7 @@ def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
         semantic_kind="channel",
         adjoint="not_applicable",
         decomposition=(),
-        wire_convention=("target",),
+        qubit_convention=("target",),
     )
 
 
@@ -450,7 +450,7 @@ def inverse_operator(
 
 
 def gate_info(name: str) -> GateInfo:
-    """Return discoverable parameter and wire requirements for a built-in gate."""
+    """Return discoverable parameter and qubit requirements for a built-in gate."""
 
     schema = get_operator_schema(name)
     if schema is None:
@@ -458,7 +458,7 @@ def gate_info(name: str) -> GateInfo:
     return GateInfo(
         name=schema.opcode,
         aliases=schema.aliases,
-        n_wires=schema.arity,
+        n_qubits=schema.arity,
         parameters=schema.parameters,
         parameter_shapes=MappingProxyType(dict.fromkeys(schema.parameters, ())),
         differentiable=schema.differentiable,
@@ -479,7 +479,7 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
             "adjoint": schema.adjoint,
             "decomposition": schema.decomposition,
             "differentiable": schema.differentiable,
-            "wire_convention": schema.wire_convention,
+            "qubit_convention": schema.qubit_convention,
             "parameter_frequencies": schema.parameter_frequencies,
         }
         for schema in OPERATOR_SCHEMAS.values()

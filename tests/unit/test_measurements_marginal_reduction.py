@@ -446,5 +446,5 @@ def test_the_retained_width_limit_still_refuses_a_wider_marginal() -> None:
     with pytest.raises(ValueError, match="exceed the supported limit of 8"):
         measurements.validate_measurements(
             (MeasurementNode("probabilities", tuple(range(9))),),
-            n_wires=9,
+            n_qubits=9,
         )

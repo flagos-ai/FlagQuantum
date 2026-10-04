@@ -240,7 +240,7 @@ def _run_case(
     )
     probe = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=n_wires - 1,
+        observable_qubit=n_wires - 1,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="interval", interval=3),
         device=context.device,
     )
@@ -268,7 +268,7 @@ def _run_case(
         result = train_distributed_statevector(
             circuit,
             steps=steps,
-            observable_wire=n_wires - 1,
+            observable_qubit=n_wires - 1,
             optimizer=optimizer,
             lr=lr,
             rematerialization_interval=2,

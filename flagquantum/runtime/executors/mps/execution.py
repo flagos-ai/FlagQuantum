@@ -245,10 +245,10 @@ def run_distributed_mps(
         wire: local.tensors[wire]
         for shard in shards
         if shard.rank == active_rank
-        for wire in shard.wires
+        for wire in shard.qubits
     }
     sharded_state = ShardedMPSState(
-        n_wires=local.n_wires,
+        n_qubits=local.n_wires,
         bsz=local.bsz,
         config=local.config,
         local_tensors=local_shard_tensors,
@@ -467,8 +467,8 @@ def _boundary_protocol_record(
     *,
     transport: str = "auto",
 ) -> DistributedBoundaryProtocol:
-    tensor_bytes = _tensor_nbytes(mps.tensors[record.left_wire]) + _tensor_nbytes(
-        mps.tensors[record.right_wire]
+    tensor_bytes = _tensor_nbytes(mps.tensors[record.left_qubit]) + _tensor_nbytes(
+        mps.tensors[record.right_qubit]
     )
     recipients = tuple(sorted({record.left_rank, record.right_rank}))
     normalized_transport = _resolve_boundary_transport(transport)
@@ -607,7 +607,7 @@ def _broadcast_mps(
             tensor if context.rank == src else None,
             src=src,
             context=context,
-            wire=wire,
+            qubit=wire,
         ).to(device=context.device)
         for wire, tensor in enumerate(mps.tensors)
     ]
@@ -626,7 +626,7 @@ def _broadcast_mps_tensors(
             mps.tensors[wire] if context.rank == src else None,
             src=src,
             context=context,
-            wire=wire,
+            qubit=wire,
         ).to(device=context.device)
 
 
@@ -653,10 +653,10 @@ def _sync_boundary_mps_tensors(
 
     gathered = _gather_boundary_mps_tensors(mps, record, context=context)
     if context.rank == record.owner_rank:
-        mps.tensors[record.left_wire] = gathered[record.left_wire].to(
+        mps.tensors[record.left_qubit] = gathered[record.left_qubit].to(
             device=context.device
         )
-        mps.tensors[record.right_wire] = gathered[record.right_wire].to(
+        mps.tensors[record.right_qubit] = gathered[record.right_qubit].to(
             device=context.device
         )
         mps.apply_instruction(instruction)
@@ -676,10 +676,10 @@ def _sync_boundary_mps_tensors_p2p(
     if context.rank == record.right_rank:
         _send = _send_tensor_async_p2p if async_transfer else _send_tensor_p2p
         _recv = _recv_tensor_async_p2p if async_transfer else _recv_tensor_p2p
-        _send(mps.tensors[record.right_wire], dst=record.owner_rank)
-        mps.tensors[record.right_wire] = _recv(
+        _send(mps.tensors[record.right_qubit], dst=record.owner_rank)
+        mps.tensors[record.right_qubit] = _recv(
             src=record.owner_rank,
-            reference=mps.tensors[record.right_wire],
+            reference=mps.tensors[record.right_qubit],
         )
         return
 
@@ -687,13 +687,13 @@ def _sync_boundary_mps_tensors_p2p(
         _send = _send_tensor_async_p2p if async_transfer else _send_tensor_p2p
         _recv = _recv_tensor_async_p2p if async_transfer else _recv_tensor_p2p
         if record.right_rank != record.owner_rank:
-            mps.tensors[record.right_wire] = _recv(
+            mps.tensors[record.right_qubit] = _recv(
                 src=record.right_rank,
-                reference=mps.tensors[record.right_wire],
+                reference=mps.tensors[record.right_qubit],
             )
         mps.apply_instruction(instruction)
         if record.right_rank != record.owner_rank:
-            _send(mps.tensors[record.right_wire], dst=record.right_rank)
+            _send(mps.tensors[record.right_qubit], dst=record.right_rank)
 
 
 def _gather_boundary_mps_tensors(
@@ -703,25 +703,25 @@ def _gather_boundary_mps_tensors(
     context: TorchDistributedContext,
 ) -> dict[int, torch.Tensor]:
     return {
-        record.left_wire: _broadcast_mps_site_tensor(
+        record.left_qubit: _broadcast_mps_site_tensor(
             (
-                mps.tensors[record.left_wire]
+                mps.tensors[record.left_qubit]
                 if context.rank == record.left_rank
                 else None
             ),
             src=record.left_rank,
             context=context,
-            wire=record.left_wire,
+            qubit=record.left_qubit,
         ),
-        record.right_wire: _broadcast_mps_site_tensor(
+        record.right_qubit: _broadcast_mps_site_tensor(
             (
-                mps.tensors[record.right_wire]
+                mps.tensors[record.right_qubit]
                 if context.rank == record.right_rank
                 else None
             ),
             src=record.right_rank,
             context=context,
-            wire=record.right_wire,
+            qubit=record.right_qubit,
         ),
     }
 
@@ -733,21 +733,21 @@ def _scatter_boundary_mps_tensors(
     context: TorchDistributedContext,
 ) -> None:
     left = _broadcast_mps_site_tensor(
-        mps.tensors[record.left_wire] if context.rank == record.owner_rank else None,
+        mps.tensors[record.left_qubit] if context.rank == record.owner_rank else None,
         src=record.owner_rank,
         context=context,
-        wire=record.left_wire,
+        qubit=record.left_qubit,
     )
     right = _broadcast_mps_site_tensor(
-        mps.tensors[record.right_wire] if context.rank == record.owner_rank else None,
+        mps.tensors[record.right_qubit] if context.rank == record.owner_rank else None,
         src=record.owner_rank,
         context=context,
-        wire=record.right_wire,
+        qubit=record.right_qubit,
     )
     if context.rank == record.left_rank:
-        mps.tensors[record.left_wire] = left.to(device=context.device)
+        mps.tensors[record.left_qubit] = left.to(device=context.device)
     if context.rank == record.right_rank:
-        mps.tensors[record.right_wire] = right.to(device=context.device)
+        mps.tensors[record.right_qubit] = right.to(device=context.device)
 
 
 def _sync_mps_from_sharded(
@@ -796,7 +796,7 @@ def _rank_tensors_from_mps(
     shards: Sequence[DistributedShardPlan],
 ) -> dict[int, dict[int, torch.Tensor]]:
     return {
-        shard.rank: {wire: mps.tensors[wire] for wire in shard.wires}
+        shard.rank: {wire: mps.tensors[wire] for wire in shard.qubits}
         for shard in shards
     }
 
@@ -811,7 +811,7 @@ def _development_sharded_states(
 ) -> tuple[ShardedMPSState, ...]:
     return tuple(
         ShardedMPSState(
-            n_wires=n_wires,
+            n_qubits=n_wires,
             bsz=bsz,
             config=config,
             local_tensors=rank_tensors.get(shard.rank, {}),
@@ -918,9 +918,9 @@ def _run_mps_site_sharded_local(
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
             boundary_sync = _boundary_sync_record(instruction, shards)
             tensor_bytes = _tensor_nbytes(
-                rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire]
+                rank_tensors[boundary_sync.left_rank][boundary_sync.left_qubit]
             ) + _tensor_nbytes(
-                rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire]
+                rank_tensors[boundary_sync.right_rank][boundary_sync.right_qubit]
             )
             protocol = DistributedBoundaryProtocol(
                 sync=boundary_sync,
@@ -945,19 +945,19 @@ def _run_mps_site_sharded_local(
                 dtype=seed_mps.dtype,
             )
             left, right, split_info = _apply_two_mps_tensors_with_info(
-                rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire],
-                rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire],
+                rank_tensors[boundary_sync.left_rank][boundary_sync.left_qubit],
+                rank_tensors[boundary_sync.right_rank][boundary_sync.right_qubit],
                 matrix,
                 config,
                 reverse=first > second,
             )
-            rank_tensors[boundary_sync.left_rank][boundary_sync.left_wire] = left
-            rank_tensors[boundary_sync.right_rank][boundary_sync.right_wire] = right
+            rank_tensors[boundary_sync.left_rank][boundary_sync.left_qubit] = left
+            rank_tensors[boundary_sync.right_rank][boundary_sync.right_qubit] = right
             step_error = float(split_info["discarded_weight"])
             if step_error > 0:
                 truncation_errors.append(step_error)
             truncation_record = _truncation_record_from_split_info(
-                split_info, bond=boundary_sync.left_wire, config=config
+                split_info, bond=boundary_sync.left_qubit, config=config
             )
             if truncation_record is not None:
                 truncation_records.append(truncation_record)
@@ -1048,14 +1048,14 @@ def _run_mps_site_sharded_sync(
     )
     shards = _mps_shards(ir.n_wires, world_size)
     local_sharded = ShardedMPSState(
-        n_wires=mps.n_wires,
+        n_qubits=mps.n_wires,
         bsz=mps.bsz,
         config=mps.config,
         local_tensors={
             wire: mps.tensors[wire]
             for shard in shards
             if shard.rank == context.rank
-            for wire in shard.wires
+            for wire in shard.qubits
         },
         shards=shards,
         context=context,

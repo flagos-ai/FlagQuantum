@@ -244,13 +244,13 @@ def _measurement_columns(
     checks = tuple(circuit.code.checks)
     per_round = len(checks)
     syndrome = {
-        (round_index, check.ancilla_wire): round_index * per_round + position
+        (round_index, check.ancilla_qubit): round_index * per_round + position
         for round_index in range(circuit.rounds)
         for position, check in enumerate(checks)
     }
     terminal = {
         wire: per_round * circuit.rounds + position
-        for position, wire in enumerate(circuit.code.data_wires)
+        for position, wire in enumerate(circuit.code.data_qubits)
     }
     return syndrome, terminal
 
@@ -263,12 +263,12 @@ def _measurement_index(
     """Return the record column one measurement reference addresses."""
 
     if reference.round_index is None:
-        column = terminal.get(reference.wire)
-        described = f"the terminal readout of data wire {reference.wire}"
+        column = terminal.get(reference.qubit)
+        described = f"the terminal readout of data qubit {reference.qubit}"
     else:
-        column = syndrome.get((reference.round_index, reference.wire))
+        column = syndrome.get((reference.round_index, reference.qubit))
         described = (
-            f"the syndrome measurement of wire {reference.wire} in round "
+            f"the syndrome measurement of qubit {reference.qubit} in round "
             f"{reference.round_index}"
         )
     if column is None:
@@ -304,11 +304,11 @@ def _detector_checks(circuit: MemoryCircuit) -> tuple[CodeCheck, ...]:
     neighbour.
     """
 
-    by_ancilla = {check.ancilla_wire: check for check in circuit.code.checks}
+    by_ancilla = {check.ancilla_qubit: check for check in circuit.code.checks}
     owners: list[CodeCheck] = []
     for detector in circuit.detectors.detectors:
         ancillas = {
-            reference.wire
+            reference.qubit
             for reference in detector.parity
             if reference.round_index is not None
         }
@@ -423,7 +423,7 @@ class DecoderContext:
         """
 
         return len(self.circuit.code.checks) * self.circuit.rounds + len(
-            self.circuit.code.data_wires
+            self.circuit.code.data_qubits
         )
 
     def full_component(self) -> DecoderInputs:
@@ -485,7 +485,7 @@ class DecoderContext:
             for detector, owner in zip(
                 self.circuit.detectors.detectors, owners, strict=True
             )
-            if bool(owner.stabilizer.x_wires) is x_type
+            if bool(owner.stabilizer.x_qubits) is x_type
         )
         if kept:
             return self._inputs(_projected(self.dem, kept), kept)

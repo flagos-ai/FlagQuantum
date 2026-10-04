@@ -44,24 +44,24 @@ def mps_expectation_and_adjoints(
     observable: Mapping[int, str],
     target: torch.Tensor | float | None = None,
     *,
-    adjoint_wires: Sequence[int] | None = None,
+    adjoint_qubits: Sequence[int] | None = None,
 ) -> tuple[torch.Tensor, dict[int, torch.Tensor]]:
     """Evaluate one Pauli observable and its rank-local tensor adjoints."""
 
     reference = next(iter(state.local_tensors.values()))
-    requested_adjoint_wires = (
+    requested_adjoint_qubits = (
         set(state.local_tensors)
-        if adjoint_wires is None
-        else {int(wire) for wire in adjoint_wires}
+        if adjoint_qubits is None
+        else {int(qubit) for qubit in adjoint_qubits}
     )
-    local_adjoint_wires = requested_adjoint_wires.intersection(state.local_tensors)
+    local_adjoint_qubits = requested_adjoint_qubits.intersection(state.local_tensors)
     operators = {}
-    for wire, tensor in state.local_tensors.items():
-        name = str(observable.get(wire, "i")).lower()
+    for qubit, tensor in state.local_tensors.items():
+        name = str(observable.get(qubit, "i")).lower()
         matrix = GATE_MAT_DICT[name]
         if not isinstance(matrix, torch.Tensor):
             raise ValueError(f"observable {name!r} requires a fixed gate matrix")
-        operators[wire] = matrix.to(device=tensor.device, dtype=tensor.dtype)
+        operators[qubit] = matrix.to(device=tensor.device, dtype=tensor.dtype)
     left_envs: dict[int, torch.Tensor] = {}
     env: torch.Tensor | None = None
     with record_function("flagquantum::mps::left_environment_scan"):
@@ -76,11 +76,11 @@ def mps_expectation_and_adjoints(
                         device=reference.device,
                     )
                 assert env is not None
-                for wire in state.ownership[owner]:
-                    if wire in local_adjoint_wires:
-                        left_envs[wire] = env
-                    tensor = state.local_tensors[wire]
-                    operator = operators[wire]
+                for qubit in state.ownership[owner]:
+                    if qubit in local_adjoint_qubits:
+                        left_envs[qubit] = env
+                    tensor = state.local_tensors[qubit]
+                    operator = operators[qubit]
                     env = transfer_mps_operator_environment(
                         env,
                         tensor,
@@ -138,11 +138,11 @@ def mps_expectation_and_adjoints(
                         device=reference.device,
                     )
                 assert right is not None
-                for wire in reversed(state.ownership[owner]):
-                    if wire in local_adjoint_wires:
-                        right_envs[wire] = right
-                    tensor = state.local_tensors[wire]
-                    operator = operators[wire]
+                for qubit in reversed(state.ownership[owner]):
+                    if qubit in local_adjoint_qubits:
+                        right_envs[qubit] = right
+                    tensor = state.local_tensors[qubit]
+                    operator = operators[qubit]
                     right = transfer_mps_operator_right_environment(
                         tensor,
                         operator,
@@ -164,13 +164,13 @@ def mps_expectation_and_adjoints(
 
     adjoints = {}
     with record_function("flagquantum::mps::objective_adjoint"):
-        for wire in sorted(local_adjoint_wires):
-            tensor = state.local_tensors[wire]
-            operator = operators[wire]
-            adjoints[wire] = mps_local_observable_adjoint(
+        for qubit in sorted(local_adjoint_qubits):
+            tensor = state.local_tensors[qubit]
+            operator = operators[qubit]
+            adjoints[qubit] = mps_local_observable_adjoint(
                 tensor,
-                left_envs[wire],
-                right_envs[wire],
+                left_envs[qubit],
+                right_envs[qubit],
                 operator,
                 weights,
                 hermitian=True,
@@ -207,8 +207,8 @@ def mps_heisenberg_energy_and_adjoints(
                     inputs = tuple(item.detach() for item in carry.unbind(0))
                 inputs = tuple(item.requires_grad_(True) for item in inputs)
                 variables = tuple(
-                    state.local_tensors[wire].detach().requires_grad_(True)
-                    for wire in state.ownership[owner]
+                    state.local_tensors[qubit].detach().requires_grad_(True)
+                    for qubit in state.ownership[owner]
                 )
                 outputs = mps_heisenberg_local_scan(
                     inputs,
@@ -232,8 +232,8 @@ def mps_heisenberg_energy_and_adjoints(
                         shape=stacked_outputs.shape,
                     )
                 elif state.rank == owner + 1:
-                    first_wire = state.ownership[state.rank][0]
-                    left_dim = int(state.local_tensors[first_wire].shape[1])
+                    first_qubit = state.ownership[state.rank][0]
+                    left_dim = int(state.local_tensors[first_qubit].shape[1])
                     carry = receive_static_reverse_tensor(
                         reference,
                         source=owner,
@@ -298,8 +298,8 @@ def mps_heisenberg_energy_and_adjoints(
         value = torch.zeros((), dtype=reference.real.dtype, device=reference.device)
     dist.broadcast(value, src=state.world_size - 1)
     adjoints = {
-        wire: torch.zeros_like(tensor) if gradient is None else gradient.detach()
-        for wire, tensor, gradient in zip(
+        qubit: torch.zeros_like(tensor) if gradient is None else gradient.detach()
+        for qubit, tensor, gradient in zip(
             state.ownership[state.rank],
             state.local_tensors.values(),
             variable_grads,
@@ -318,20 +318,20 @@ def parse_mps_z_zz_terms(
     parsed = []
     reference = next(iter(state.local_tensors.values())).real
     for observable, target in terms:
-        wires = tuple(
+        qubits = tuple(
             sorted(
-                int(wire)
-                for wire, name in observable.items()
+                int(qubit)
+                for qubit, name in observable.items()
                 if str(name).lower() != "i"
             )
         )
         if (
-            not wires
-            or len(wires) > 2
-            or any(str(observable[wire]).lower() != "z" for wire in wires)
+            not qubits
+            or len(qubits) > 2
+            or any(str(observable[qubit]).lower() != "z" for qubit in qubits)
         ):
             return None
-        if len(wires) == 2 and wires[1] != wires[0] + 1:
+        if len(qubits) == 2 and qubits[1] != qubits[0] + 1:
             return None
         value = torch.as_tensor(
             target, dtype=reference.dtype, device=reference.device
@@ -342,7 +342,7 @@ def parse_mps_z_zz_terms(
             raise ValueError(
                 "Z/ZZ target must be scalar or have one value per batch item"
             )
-        parsed.append((wires, value))
+        parsed.append((qubits, value))
     return tuple(parsed)
 
 
@@ -355,10 +355,12 @@ def parse_mps_heisenberg_terms(
     if not terms:
         raise ValueError("hamiltonian_terms must contain at least one term")
     reference = next(iter(state.local_tensors.values())).real
-    field_z = torch.zeros(state.n_wires, dtype=reference.dtype, device=reference.device)
+    field_z = torch.zeros(
+        state.n_qubits, dtype=reference.dtype, device=reference.device
+    )
     couplings = {
         axis: torch.zeros(
-            max(0, state.n_wires - 1),
+            max(0, state.n_qubits - 1),
             dtype=reference.dtype,
             device=reference.device,
         )
@@ -367,8 +369,8 @@ def parse_mps_heisenberg_terms(
     for observable, coefficient in terms:
         ops = tuple(
             sorted(
-                (int(wire), str(name).lower())
-                for wire, name in observable.items()
+                (int(qubit), str(name).lower())
+                for qubit, name in observable.items()
                 if str(name).lower() != "i"
             )
         )
@@ -378,17 +380,17 @@ def parse_mps_heisenberg_terms(
         if value.numel() != 1:
             return None
         if len(ops) == 1 and ops[0][1] == "z":
-            wire = ops[0][0]
-            if wire < 0 or wire >= state.n_wires:
+            qubit = ops[0][0]
+            if qubit < 0 or qubit >= state.n_qubits:
                 return None
-            field_z[wire] += value.reshape(())
+            field_z[qubit] += value.reshape(())
             continue
         if (
             len(ops) == 2
             and ops[1][0] == ops[0][0] + 1
             and ops[0][1] == ops[1][1]
             and ops[0][1] in couplings
-            and 0 <= ops[0][0] < state.n_wires - 1
+            and 0 <= ops[0][0] < state.n_qubits - 1
         ):
             couplings[ops[0][1]][ops[0][0]] += value.reshape(())
             continue

@@ -60,7 +60,8 @@ Measured on the WQ-1 base commit by `tools/census_wire_vocabulary.py`:
 | Parameters on the public function surface, still spelled `wire` | **341** | renamed by this program |
 | Parameters that are already deprecated aliases of a `qubit` sibling | **11** | deleted at 0.4.0 |
 | Parameters in private code | 397 | out of scope; measured so the exclusion stays honest |
-| Public attribute and property names containing `wire` | 102 | owned gap, see *Open Questions* 1 |
+| Public attribute and property names containing `wire` | 102 → **144** | ledgered; see *Open Questions* 1 |
+| Module-level public definition names containing `wire` | **10** | ledgered; see *Open Questions* 1 |
 | String literals containing `wire` | 1291 | reported only, see *Open Questions* 2 |
 
 Four corrections were needed to reach a number that reproduces, and each is
@@ -224,6 +225,13 @@ is to reject the first new `wire` parameter.
    must exclude the serialized keys by name when it does. They are left out here
    rather than guessed at, because a per-item judgement made now would be a
    second, unreviewed copy of the exclusion table.
+   **Answered** by
+   [`FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md`](FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md):
+   the surface is now ledgered, and the count it ledgers is 144 rather than 102
+   because the original scan could only see a class's fields. A member (a property
+   such as `Circuit.n_wires`) and an instance attribute (`TextDrawer().wire_order`)
+   are on the same screen and needed their own walk; ten module-level definition
+   names needed a third.
 2. **Message strings are reported, not ledgered.** 1291 string literals contain
    `wire`. A literal scan cannot separate a serialized key from a refusal
    sentence, so a ledger built on that test would fail on legitimate rewording and
