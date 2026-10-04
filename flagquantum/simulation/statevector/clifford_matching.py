@@ -69,20 +69,20 @@ def _store_clifford_phase_map(
 def _encode_clifford_phase_mapping(
     cx_mapping: torch.Tensor,
     step: _StatevectorCliffordMatchingStep,
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[torch.Tensor, tuple[tuple[int, int], ...] | None]:
     """Encode each destination's CZ sign into a cached full CX mapping."""
 
     enabled = (
         bool(step.cz_edges)
-        and cx_mapping.numel() == 1 << n_wires
+        and cx_mapping.numel() == 1 << n_qubits
         and os.getenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "1").strip().lower()
         not in {"0", "false", "off", "no"}
     )
     if not enabled:
         return cx_mapping, step.cz_edges
     key = (
-        n_wires,
+        n_qubits,
         step.controls,
         step.targets,
         step.cz_edges,
@@ -100,8 +100,8 @@ def _encode_clifford_phase_mapping(
         cx_mapping.numel(), dtype=torch.bool, device=cx_mapping.device
     )
     for left, right in step.cz_edges:
-        left_mask = 1 << (n_wires - left - 1)
-        right_mask = 1 << (n_wires - right - 1)
+        left_mask = 1 << (n_qubits - left - 1)
+        right_mask = 1 << (n_qubits - right - 1)
         negative.logical_xor_(
             ((destinations & left_mask) != 0) & ((destinations & right_mask) != 0)
         )
@@ -136,7 +136,7 @@ def apply_native_clifford_matching(
     step: _StatevectorCliffordMatchingStep,
     state: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     scratch: torch.Tensor | None,
     reuse_output: bool,
     owns_state: bool,
@@ -145,22 +145,22 @@ def apply_native_clifford_matching(
     """Apply one matching and retain only a safe previous-state scratch."""
 
     cx_mapping = (
-        compact_cx_permutation_images(step.controls, step.targets, n_wires)
-        if use_compact_cpu_cx_mapping(n_wires)
+        compact_cx_permutation_images(step.controls, step.targets, n_qubits)
+        if use_compact_cpu_cx_mapping(n_qubits)
         else mapping_builder(
             step.controls,
             step.targets,
-            n_wires,
+            n_qubits,
             device=state.device,
             dtype=state.dtype,
         )
     )
-    cx_mapping, cz_edges = _encode_clifford_phase_mapping(cx_mapping, step, n_wires)
+    cx_mapping, cz_edges = _encode_clifford_phase_mapping(cx_mapping, step, n_qubits)
     output = fused_clifford_matching_out(
         state,
         cx_mapping,
         cz_edges,
-        n_wires,
+        n_qubits,
         output=scratch if reuse_output else None,
     )
     if output is None:
@@ -221,18 +221,18 @@ def fuse_native_disjoint_clifford_matchings(
             continue
 
         matching: list[_StatevectorGateStep] = []
-        occupied_wires: set[int] = set()
+        occupied_qubits: set[int] = set()
         cursor = index
         while cursor < len(program):
             candidate = program[cursor]
             if not _is_exact_cx_or_cz(candidate):
                 break
             assert isinstance(candidate, _StatevectorGateStep)
-            wires = set(map(int, candidate.instruction.wires))
-            if not occupied_wires.isdisjoint(wires):
+            qubits = set(map(int, candidate.instruction.wires))
+            if not occupied_qubits.isdisjoint(qubits):
                 break
             matching.append(candidate)
-            occupied_wires.update(wires)
+            occupied_qubits.update(qubits)
             cursor += 1
 
         cx_steps = tuple(
@@ -272,18 +272,18 @@ def _reorder_disjoint_clifford_matchings(
             continue
 
         matching: list[_StatevectorGateStep] = []
-        occupied_wires: set[int] = set()
+        occupied_qubits: set[int] = set()
         cursor = index
         while cursor < len(program):
             candidate = program[cursor]
             if not _is_exact_cx_or_cz(candidate):
                 break
             assert isinstance(candidate, _StatevectorGateStep)
-            wires = set(map(int, candidate.instruction.wires))
-            if not occupied_wires.isdisjoint(wires):
+            qubits = set(map(int, candidate.instruction.wires))
+            if not occupied_qubits.isdisjoint(qubits):
                 break
             matching.append(candidate)
-            occupied_wires.update(wires)
+            occupied_qubits.update(qubits)
             cursor += 1
 
         cz_steps = [

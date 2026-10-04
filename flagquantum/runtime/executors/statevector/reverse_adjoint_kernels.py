@@ -180,9 +180,11 @@ def _fused_single_process_cpu_reversible_vjp(
             adjoint,
             matrix,
             name=instruction.name,
-            wire=instruction.wires[0],
-            second_wire=(instruction.wires[1] if len(instruction.wires) == 2 else None),
-            n_wires=n_wires,
+            qubit=instruction.wires[0],
+            second_qubit=(
+                instruction.wires[1] if len(instruction.wires) == 2 else None
+            ),
+            n_qubits=n_wires,
         )
         if native_gradient is not None:
             return native_gradient

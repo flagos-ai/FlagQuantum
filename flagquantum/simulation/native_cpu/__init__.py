@@ -15,7 +15,7 @@ from .adjoint import (
     native_cpu_parallel_build_available,
     native_cpu_rotation_rzz_fusion_available,
     native_cpu_rotation_segment_available,
-    native_cpu_rotation_tile_wires,
+    native_cpu_rotation_tile_qubits,
     native_cpu_shared_rotation_gradient_available,
     native_cpu_terminal_adjoint_no_restore_available,
 )
@@ -66,7 +66,7 @@ __all__ = [
     "native_cpu_parallel_build_available",
     "native_cpu_rotation_segment_available",
     "native_cpu_rotation_rzz_fusion_available",
-    "native_cpu_rotation_tile_wires",
+    "native_cpu_rotation_tile_qubits",
     "native_cpu_shared_rotation_gradient_available",
     "native_cpu_terminal_adjoint_no_restore_available",
     "fused_rotation_block_forward_",

@@ -117,6 +117,47 @@ have renamed a name this slice does not own.
 private class. A private name is not on the ledger and no gate counts it, but it
 is the same attribute and moves with the rename.
 
+## The simulation surface
+
+`flagquantum.simulation` is the sixth slice: its CPU cores, the code the executors
+call. `fq.simulation` is not an attribute of the `fq` package and none of the 104
+public names this slice's files declare is reachable as `fq.<name>`, so no name
+here keeps a forwarder and every rename below is a hard rename in the same
+release.
+
+| Before | After |
+|---|---|
+| every `simulation` parameter named `wire`, `wires`, `n_wires` | the `qubit` spellings |
+| `first_wires`, `second_wires`, `rzz_first_wires`, `rzz_second_wires`, `second_wire`, `terminal_wires`, `global_wires`, `local_wires`, `target_wires`, `gate_wires`, `raw_wires`, `occupied_wires`, `ordered_wires`, `relabeled_wires`, `normalized_wires`, `concatenated_wires`, `moved_wires`, `built_wires`, `other_wires`, `swap_wires`, `max_wires` | the `…_qubits` / `…_qubit` spellings |
+| `CollapseOperator.wires` | `CollapseOperator.qubits` |
+| the definitions `native_cpu_rotation_tile_wires`, `native_cpu_forward_rotation_tile_wires`, `infer_n_wires_from_dense_state` | `native_cpu_rotation_tile_qubits`, `native_cpu_forward_rotation_tile_qubits`, `infer_n_qubits_from_dense_state` |
+| the private names `_validate_wires`, `_step_wire_groups`, `_swap_wires`, `_apply_wire_permutation_gather`, `_rotation_segment_tile_wires`, `component_by_wire`, `by_wire`, `invalid_n_wires` | the `qubit` spellings |
+
+Two spellings in the slice's own files are **kept**, and both are neighbours'
+names rather than this slice's:
+
+* `EvolutionPlan.n_wires` is written into `EvolutionPlan.to_dict()`, read back by
+  `flagquantum/lindblad/_plan.py`, and is the slice's only
+  `[attribute_exclusions]` row. The field keeps the old spelling and gains a
+  `n_qubits` property, the same shape the IR keys use.
+* `_StatevectorFusedGateStep.wires`, `_StatevectorDenseRegion.wires`, and the
+  other `Step`/`Region` variants are declared in
+  `flagquantum/simulation/statevector/program.py`, a module no slice owns. This
+  slice reads them and does not rename them; they move with whatever slice owns
+  `program.py`. For the same reason
+  `flagquantum/simulation/statevector/wire_permutation.py` keeps its module name:
+  a file name is not a name on the function surface, and renaming it would move an
+  import path across two unowned modules.
+
+`flagquantum/simulation` is sparsely sliced — the contract names 17 of its modules
+— and this slice's public functions are called from far outside it. Fourteen
+modules were caught up: the nine `runtime/executors/statevector` files that drive
+the renamed kernels, `simulation/statevector/{local,operations}.py`,
+`lindblad/_plan.py`, `qec/sampling.py`, and `algorithms/core.py`, which is WQ-5's
+file and only has the imported name changed. The discipline was to repair exactly
+the call sites `mypy --strict` names and nothing else: `operations.py` and
+`local.py` keep every wire-named local and every `request.wires` read of their own.
+
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by

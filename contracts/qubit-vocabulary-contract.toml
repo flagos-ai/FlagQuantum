@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 331
+measured_private = 308
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -590,6 +590,83 @@ sites = [
     "flagquantum/algorithms/qarm.py::run_frequent_itemset::n_counting_wires",
     "flagquantum/algorithms/qarm.py::run_frequent_itemset::n_support_wires",
     "flagquantum/algorithms/svd.py::estimate_singular_values::n_counting_wires",
+    "flagquantum/simulation/density_matrix.py::apply_kraus_density::n_wires",
+    "flagquantum/simulation/density_matrix.py::apply_kraus_density::wires",
+    "flagquantum/simulation/density_matrix.py::apply_unitary_density::n_wires",
+    "flagquantum/simulation/density_matrix.py::apply_unitary_density::wires",
+    "flagquantum/simulation/density_matrix.py::expand_operator::n_wires",
+    "flagquantum/simulation/density_matrix.py::expand_operator::wires",
+    "flagquantum/simulation/density_matrix.py::expectation_z_density::wires",
+    "flagquantum/simulation/lindblad.py::amplitude_damping::wire",
+    "flagquantum/simulation/lindblad.py::evolve_density_matrix::n_wires",
+    "flagquantum/simulation/lindblad.py::plan_density_matrix_evolution::n_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_cx_rotation_segment_adjoint::n_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_cx_rotation_segment_adjoint::wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_adjoint_::n_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_adjoint_::second_wire",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_adjoint_::wire",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_segment_adjoint_::n_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_segment_adjoint_::rzz_first_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_segment_adjoint_::rzz_second_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rotation_segment_adjoint_::wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rzz_segment_adjoint_::first_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rzz_segment_adjoint_::n_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::fused_rzz_segment_adjoint_::second_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::compact_cpu_cx_adjoint_auxiliary_bytes::n_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::compact_cx_permutation_images::n_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::fused_clifford_matching_out::n_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::fused_cx_adjoint_inplace_::n_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::use_compact_cpu_cx_adjoint_cycles::n_wires",
+    "flagquantum/simulation/native_cpu/permutation.py::use_compact_cpu_cx_mapping::n_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_hadamard_block_adjoint_::n_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_hadamard_block_adjoint_::wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_adjoint_::n_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_adjoint_::wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_forward_::n_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_forward_::rzz_first_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_forward_::rzz_second_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_rotation_block_forward_::wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_static_clifford_layer_::n_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::fused_static_clifford_layer_::wires",
+    "flagquantum/simulation/native_cpu/rotation.py::native_cpu_forward_rotation_tile_wires::n_wires",
+    "flagquantum/simulation/native_cpu/rzz.py::fused_rzz_segment_forward_::first_wires",
+    "flagquantum/simulation/native_cpu/rzz.py::fused_rzz_segment_forward_::n_wires",
+    "flagquantum/simulation/native_cpu/rzz.py::fused_rzz_segment_forward_::second_wires",
+    "flagquantum/simulation/pauli.py::pauli_product_density_expectation::n_wires",
+    "flagquantum/simulation/pauli.py::pauli_product_operator::n_wires",
+    "flagquantum/simulation/pauli.py::pauli_product_statevector_expectation::n_wires",
+    "flagquantum/simulation/stabilizer/engine.py::sample_noisy_measurements::terminal_wires",
+    "flagquantum/simulation/stabilizer/engine.py::sample_stabilizer::wires",
+    "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::n_wires",
+    "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::wire",
+    "flagquantum/simulation/statevector/adjoint.py::z_expectation_chunk::n_wires",
+    "flagquantum/simulation/statevector/adjoint.py::z_expectation_chunk::wire",
+    "flagquantum/simulation/statevector/adjoint.py::z_hamiltonian_chunk::n_wires",
+    "flagquantum/simulation/statevector/adjoint.py::z_hamiltonian_weights::n_wires",
+    "flagquantum/simulation/statevector/clifford_matching.py::apply_native_clifford_matching::n_wires",
+    "flagquantum/simulation/statevector/double_single.py::apply_double_single_gate::n_wires",
+    "flagquantum/simulation/statevector/double_single.py::apply_double_single_gate::wires",
+    "flagquantum/simulation/statevector/double_single.py::double_single_pauli_term_expectation::n_wires",
+    "flagquantum/simulation/statevector/double_single.py::run_double_single_statevector::n_wires",
+    "flagquantum/simulation/statevector/dynamic_noise.py::apply_dynamic_bit_flip::n_wires",
+    "flagquantum/simulation/statevector/dynamic_noise.py::apply_dynamic_bit_flip::wire",
+    "flagquantum/simulation/statevector/fixed_layer_cpu.py::apply_native_fixed_one_qubit_layer::n_wires",
+    "flagquantum/simulation/statevector/noisy.py::apply_amplitude_damping_batched::n_wires",
+    "flagquantum/simulation/statevector/noisy.py::apply_amplitude_damping_batched::wire",
+    "flagquantum/simulation/statevector/noisy.py::apply_kraus_batched::n_wires",
+    "flagquantum/simulation/statevector/noisy.py::apply_kraus_batched::wires",
+    "flagquantum/simulation/statevector/noisy.py::apply_matrix_batched::n_wires",
+    "flagquantum/simulation/statevector/noisy.py::apply_matrix_batched::wires",
+    "flagquantum/simulation/statevector/noisy.py::expectation_z::n_wires",
+    "flagquantum/simulation/statevector/product_state.py::execute_product_state_program::n_wires",
+    "flagquantum/simulation/statevector/product_state.py::product_state_execution_is_beneficial.merge::wires",
+    "flagquantum/simulation/statevector/product_state.py::product_state_execution_is_beneficial::n_wires",
+    "flagquantum/simulation/statevector/single_qubit_cpu.py::apply_single_qubit_matrix_cpu::n_wires",
+    "flagquantum/simulation/statevector/single_qubit_cpu.py::apply_single_qubit_matrix_cpu::wire",
+    "flagquantum/simulation/statevector/split_real_imag.py::apply_gate_pair::n_wires",
+    "flagquantum/simulation/statevector/split_real_imag.py::apply_gate_pair::wires",
+    "flagquantum/simulation/statevector/split_real_imag.py::double_single_pauli_term_expectation::n_wires",
+    "flagquantum/simulation/statevector/split_real_imag.py::pauli_term_expectation::n_wires",
 ]
 
 [[slices]]
@@ -721,7 +798,7 @@ files = [
 [[slices]]
 id = "WQ-6"
 title = "simulation CPU cores"
-owner_team = "simulation"
+owner_team = "simulation + algorithms + core"
 canonical_count = 77
 attribute_count = 1
 attribute_field_count = 1
@@ -1541,6 +1618,10 @@ site = "flagquantum/algorithms/svd.py::SingularValueResult::n_counting_wires"
 replacement = "n_counting_qubits"
 declaration = "field"
 
+[[attribute_retirement.sites]]
+site = "flagquantum/simulation/lindblad.py::CollapseOperator::wires"
+replacement = "qubits"
+declaration = "field"
 [definition_ledger]
 measured_canonical = 10
 
@@ -1603,6 +1684,9 @@ sites = [
     "flagquantum/runtime/executors/jax/common.py::validate_observable_wires",
     "flagquantum/runtime/executors/statevector/forward.py::communication_aware_wire_layout",
     "flagquantum/runtime/executors/statevector/program_cache.py::remap_instruction_wires",
+    "flagquantum/simulation/native_cpu/adjoint.py::native_cpu_rotation_tile_wires",
+    "flagquantum/simulation/native_cpu/rotation.py::native_cpu_forward_rotation_tile_wires",
+    "flagquantum/simulation/pauli.py::infer_n_wires_from_dense_state",
 ]
 
 [verification]
@@ -1615,5 +1699,6 @@ attribute_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261
 runtime_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-RUNTIME-20261007.md"
 executor_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md"
 algorithms_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md"
+simulation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-SIMULATION-CPU-20261009.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

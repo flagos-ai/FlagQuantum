@@ -120,8 +120,8 @@ def _local_expectation_z(
         total = total + _z_expectation_chunk(
             shard_state.amplitudes[:, start:end],
             indices,
-            n_wires=n_wires,
-            wire=wire,
+            n_qubits=n_wires,
+            qubit=wire,
         )
     return total
 
@@ -140,8 +140,8 @@ def _local_expectation_z_adjoint(
             adjoint[:, start:end] = _z_expectation_adjoint_chunk(
                 shard_state.amplitudes[:, start:end],
                 indices,
-                n_wires=n_wires,
-                wire=wire,
+                n_qubits=n_wires,
+                qubit=wire,
             )
     return adjoint
 
@@ -187,7 +187,7 @@ def _local_expectation_z_hamiltonian(
         contribution, _ = z_hamiltonian_chunk(
             shard_state.amplitudes[:, start:end],
             indices,
-            n_wires=n_wires,
+            n_qubits=n_wires,
             terms=terms,
         )
         total = total + contribution
@@ -223,7 +223,7 @@ def _local_expectation_z_hamiltonian_and_weights(
             indices = _storage_global_indices(shard_state, start, end, plan=plan)
             weights[start:end] = z_hamiltonian_weights(
                 indices,
-                n_wires=n_wires,
+                n_qubits=n_wires,
                 terms=terms,
                 dtype=weights.dtype,
             )

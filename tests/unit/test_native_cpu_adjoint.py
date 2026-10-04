@@ -52,7 +52,7 @@ from flagquantum.simulation.native_cpu import (
     use_compact_cpu_cx_adjoint_cycles,
 )
 from flagquantum.simulation.native_cpu.rotation import (
-    native_cpu_forward_rotation_tile_wires,
+    native_cpu_forward_rotation_tile_qubits,
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
 
@@ -538,7 +538,7 @@ def test_native_rotation_block_matches_sequential_pytorch(
         state,
         matrices,
         torch.tensor(wires, dtype=torch.int64),
-        n_wires=n_wires,
+        n_qubits=n_wires,
     )
 
     assert applied
@@ -575,7 +575,7 @@ def test_native_fixed_clifford_block_matches_sequential_pytorch(
         state,
         matrices,
         torch.arange(wire_count, dtype=torch.int64),
-        n_wires=wire_count,
+        n_qubits=wire_count,
     )
 
     tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
@@ -624,7 +624,7 @@ def test_native_batch_specific_rotation_block_matches_sequential_pytorch(
         state,
         matrices,
         torch.arange(wire_count, dtype=torch.int64),
-        n_wires=wire_count,
+        n_qubits=wire_count,
     )
 
     tolerance = 3e-5 if dtype == torch.complex64 else 2e-12
@@ -634,12 +634,12 @@ def test_native_batch_specific_rotation_block_matches_sequential_pytorch(
 def test_forward_rotation_tile_width_has_explicit_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    assert native_cpu_forward_rotation_tile_wires(15) == 4
-    assert native_cpu_forward_rotation_tile_wires(22) == 8
+    assert native_cpu_forward_rotation_tile_qubits(15) == 4
+    assert native_cpu_forward_rotation_tile_qubits(22) == 8
 
     monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES", "0")
 
-    assert native_cpu_forward_rotation_tile_wires(22) == 6
+    assert native_cpu_forward_rotation_tile_qubits(22) == 6
 
 
 def test_native_rotation_block_has_explicit_environment_rollback(
@@ -653,7 +653,7 @@ def test_native_rotation_block_has_explicit_environment_rollback(
         state,
         matrices,
         torch.tensor((0, 1), dtype=torch.int64),
-        n_wires=2,
+        n_qubits=2,
     )
 
     assert not applied
@@ -693,10 +693,10 @@ def test_native_rotation_block_fuses_preceding_shared_rzz(
         state,
         matrices,
         torch.arange(n_wires, dtype=torch.int64),
-        n_wires=n_wires,
+        n_qubits=n_wires,
         rzz_angles=rzz_angles,
-        rzz_first_wires=first_wires,
-        rzz_second_wires=second_wires,
+        rzz_first_qubits=first_wires,
+        rzz_second_qubits=second_wires,
     )
 
     assert applied
@@ -719,11 +719,11 @@ def test_specialized_forward_rotation_arithmetic_has_explicit_rollback(
 
     monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "1")
     assert fused_rotation_block_forward_(
-        specialized, matrices, torch.tensor((0, 1)), n_wires=2
+        specialized, matrices, torch.tensor((0, 1)), n_qubits=2
     )
     monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "0")
     assert fused_rotation_block_forward_(
-        rollback, matrices, torch.tensor((0, 1)), n_wires=2
+        rollback, matrices, torch.tensor((0, 1)), n_qubits=2
     )
 
     torch.testing.assert_close(specialized, rollback, atol=2e-12, rtol=2e-12)
@@ -748,10 +748,12 @@ def test_specialized_fixed_clifford_arithmetic_has_explicit_rollback(
 
     monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "1")
     assert fused_rotation_block_forward_(
-        specialized, matrices, torch.arange(3), n_wires=3
+        specialized, matrices, torch.arange(3), n_qubits=3
     )
     monkeypatch.setenv("FQ_NATIVE_CPU_FORWARD_SPECIALIZED_ROTATIONS", "0")
-    assert fused_rotation_block_forward_(rollback, matrices, torch.arange(3), n_wires=3)
+    assert fused_rotation_block_forward_(
+        rollback, matrices, torch.arange(3), n_qubits=3
+    )
 
     torch.testing.assert_close(specialized, rollback, atol=2e-12, rtol=2e-12)
 
@@ -767,10 +769,10 @@ def test_native_rotation_block_rejects_nonshared_rzz_without_mutation() -> None:
         state,
         matrices,
         torch.tensor((0, 1), dtype=torch.int64),
-        n_wires=3,
+        n_qubits=3,
         rzz_angles=torch.tensor((0.1, 0.2), dtype=torch.float64),
-        rzz_first_wires=torch.tensor((0, 1), dtype=torch.int64),
-        rzz_second_wires=torch.tensor((1, 2), dtype=torch.int64),
+        rzz_first_qubits=torch.tensor((0, 1), dtype=torch.int64),
+        rzz_second_qubits=torch.tensor((1, 2), dtype=torch.int64),
     )
 
     assert not applied
@@ -805,7 +807,7 @@ def test_native_hadamard_block_adjoint_matches_two_sequential_states(
         ket,
         adjoint,
         torch.arange(wire_count, dtype=torch.int64),
-        n_wires=wire_count,
+        n_qubits=wire_count,
     )
 
     assert applied
@@ -827,7 +829,7 @@ def test_native_hadamard_block_adjoint_uses_wide_tile_rollback(
         ket,
         adjoint,
         torch.tensor((0, 1), dtype=torch.int64),
-        n_wires=2,
+        n_qubits=2,
     )
 
     assert not applied
@@ -869,7 +871,7 @@ def test_native_rzz_segment_forward_matches_sequential_pytorch(
         angles,
         torch.tensor(tuple(pair[0] for pair in pairs), dtype=torch.int64),
         torch.tensor(tuple(pair[1] for pair in pairs), dtype=torch.int64),
-        n_wires=5,
+        n_qubits=5,
     )
 
     assert applied
@@ -887,7 +889,7 @@ def test_native_rzz_segment_forward_has_explicit_environment_rollback(
         torch.tensor((0.1, 0.1), dtype=torch.float64),
         torch.tensor((0, 1), dtype=torch.int64),
         torch.tensor((1, 2), dtype=torch.int64),
-        n_wires=3,
+        n_qubits=3,
     )
 
     assert not applied
@@ -1095,7 +1097,7 @@ def test_native_rotation_adjoint_matches_pytorch_reference(
     )
 
     gradient = fused_rotation_adjoint_(
-        ket, adjoint, matrix, name=name, wire=wire, n_wires=5
+        ket, adjoint, matrix, name=name, qubit=wire, n_qubits=5
     )
 
     assert gradient is not None
@@ -1113,7 +1115,9 @@ def test_native_rotation_adjoint_has_explicit_environment_rollback(
     adjoint = torch.ones_like(ket)
     matrix = torch.eye(2, dtype=torch.complex128)
 
-    result = fused_rotation_adjoint_(ket, adjoint, matrix, name="ry", wire=0, n_wires=1)
+    result = fused_rotation_adjoint_(
+        ket, adjoint, matrix, name="ry", qubit=0, n_qubits=1
+    )
 
     assert result is None
     torch.testing.assert_close(ket, torch.ones_like(ket))
@@ -1173,7 +1177,7 @@ def test_native_rotation_segment_adjoint_matches_sequential_reference(
         angles,
         torch.tensor(tuple({"rx": 0, "ry": 1, "rz": 2}[name] for name in names)),
         torch.tensor(wires, dtype=torch.int64),
-        n_wires=6,
+        n_qubits=6,
         aggregate_shared_parameter=aggregate,
     )
 
@@ -1227,11 +1231,11 @@ def test_native_rotation_segment_fuses_preceding_hadamards(
         angles,
         torch.zeros(n_wires, dtype=torch.int64),
         wires,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         aggregate_shared_parameter=True,
         rzz_angles=rzz_angles,
-        rzz_first_wires=first_wires,
-        rzz_second_wires=second_wires,
+        rzz_first_qubits=first_wires,
+        rzz_second_qubits=second_wires,
     )
     hadamard = torch.tensor(((1.0, 1.0), (1.0, -1.0)), dtype=dtype) / torch.sqrt(
         torch.tensor(2.0, dtype=real_dtype)
@@ -1248,11 +1252,11 @@ def test_native_rotation_segment_fuses_preceding_hadamards(
         angles,
         torch.zeros(n_wires, dtype=torch.int64),
         wires,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         aggregate_shared_parameter=True,
         rzz_angles=rzz_angles,
-        rzz_first_wires=first_wires,
-        rzz_second_wires=second_wires,
+        rzz_first_qubits=first_wires,
+        rzz_second_qubits=second_wires,
         fuse_preceding_hadamards=True,
     )
 
@@ -1294,7 +1298,7 @@ def test_native_rotation_segment_fuses_observable_seed(
         angles,
         kinds,
         wires,
-        n_wires=n_wires,
+        n_qubits=n_wires,
     )
     ket = initial_ket.clone()
     adjoint = torch.empty_like(ket)
@@ -1304,7 +1308,7 @@ def test_native_rotation_segment_fuses_observable_seed(
         angles,
         kinds,
         wires,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         observable_weights=weights,
     )
 
@@ -1355,7 +1359,7 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "1")
@@ -1368,7 +1372,7 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD", "1")
@@ -1381,7 +1385,7 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "1")
@@ -1393,7 +1397,7 @@ def test_native_rotation_segment_fast_path_matches_exact_rollback(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     assert rollback_gradients is not None
@@ -1466,7 +1470,7 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         angles,
         kinds,
         wires,
-        n_wires=7,
+        n_qubits=7,
     )
     fused = fused_cx_rotation_segment_adjoint(
         initial_ket,
@@ -1475,7 +1479,7 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         angles,
         kinds,
         wires,
-        n_wires=7,
+        n_qubits=7,
         observable_weights=weights,
     )
     compact = fused_cx_rotation_segment_adjoint(
@@ -1485,7 +1489,7 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         angles,
         kinds,
         wires,
-        n_wires=7,
+        n_qubits=7,
         observable_weights=weights,
         cx_images=images,
     )
@@ -1497,7 +1501,7 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         angles,
         kinds,
         wires,
-        n_wires=7,
+        n_qubits=7,
         observable_weights=weights,
         restore_state=False,
     )
@@ -1546,7 +1550,7 @@ def test_native_rotation_segment_adjoint_has_explicit_environment_rollback(
         angles,
         torch.tensor((0, 1), dtype=torch.int64),
         torch.tensor((0, 1), dtype=torch.int64),
-        n_wires=2,
+        n_qubits=2,
     )
 
     assert gradients is None
@@ -1591,7 +1595,7 @@ def test_native_rotation_segment_wide_tiles_match_legacy_tiles(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "1")
@@ -1603,7 +1607,7 @@ def test_native_rotation_segment_wide_tiles_match_legacy_tiles(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=7,
+        n_qubits=7,
     )
 
     assert legacy_gradients is not None
@@ -1649,7 +1653,7 @@ def test_native_rotation_segment_adaptive_grain_matches_legacy_grain(
             angles,
             gate_kinds,
             wires,
-            n_wires=8,
+            n_qubits=8,
         )
         assert gradients is not None
         return gradients, ket, adjoint
@@ -1709,7 +1713,7 @@ def test_native_rotation_segment_wide_tiles_cover_complete_large_layer(
             angles,
             gate_kinds,
             wire_tensor,
-            n_wires=8,
+            n_qubits=8,
         )
         is None
     )
@@ -1723,7 +1727,7 @@ def test_native_rotation_segment_wide_tiles_cover_complete_large_layer(
         angles,
         gate_kinds,
         wire_tensor,
-        n_wires=8,
+        n_qubits=8,
     )
 
     assert actual_gradients is not None
@@ -2040,9 +2044,9 @@ def test_native_rzz_adjoint_matches_pytorch_reference(
         adjoint,
         matrix,
         name="rzz",
-        wire=wires[0],
-        second_wire=wires[1],
-        n_wires=5,
+        qubit=wires[0],
+        second_qubit=wires[1],
+        n_qubits=5,
     )
 
     assert gradient is not None
@@ -2083,9 +2087,9 @@ def test_native_rzz_segment_matches_sequential_reference(dtype: torch.dtype) -> 
             expected_adjoint,
             matrix,
             name="rzz",
-            wire=int(first),
-            second_wire=int(second),
-            n_wires=5,
+            qubit=int(first),
+            second_qubit=int(second),
+            n_qubits=5,
         )
         assert gradient is not None
         expected_gradients.append(gradient)
@@ -2098,7 +2102,7 @@ def test_native_rzz_segment_matches_sequential_reference(dtype: torch.dtype) -> 
         angles,
         first_wires,
         second_wires,
-        n_wires=5,
+        n_qubits=5,
     )
 
     assert gradients is not None
@@ -2141,9 +2145,9 @@ def test_native_shared_rzz_path_aggregates_gradient(dtype: torch.dtype) -> None:
             expected_adjoint,
             _rotation_matrix("rzz", angle, dtype),
             name="rzz",
-            wire=int(first),
-            second_wire=int(second),
-            n_wires=5,
+            qubit=int(first),
+            second_qubit=int(second),
+            n_qubits=5,
         )
         assert gradient is not None
         expected_gradient += gradient
@@ -2156,7 +2160,7 @@ def test_native_shared_rzz_path_aggregates_gradient(dtype: torch.dtype) -> None:
         angles,
         first_wires,
         second_wires,
-        n_wires=5,
+        n_qubits=5,
         aggregate_shared_parameter=True,
     )
 
@@ -2181,6 +2185,6 @@ def test_native_rotation_adjoint_rejects_unsupported_gates(name: str) -> None:
     matrix = torch.eye(2, dtype=torch.complex128)
 
     assert (
-        fused_rotation_adjoint_(ket, adjoint, matrix, name=name, wire=0, n_wires=2)
+        fused_rotation_adjoint_(ket, adjoint, matrix, name=name, qubit=0, n_qubits=2)
         is None
     )

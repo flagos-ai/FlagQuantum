@@ -16,15 +16,15 @@ def apply_single_qubit_matrix_cpu(
     state: torch.Tensor,
     matrix: torch.Tensor,
     *,
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Apply one CPU gate by visiting contiguous amplitude pairs directly."""
 
-    if not 0 <= int(wire) < int(n_wires):
-        raise ValueError("wire is outside the statevector")
+    if not 0 <= int(qubit) < int(n_qubits):
+        raise ValueError("qubit is outside the statevector")
     bsz = state.shape[0]
-    stride = 1 << (int(n_wires) - int(wire) - 1)
+    stride = 1 << (int(n_qubits) - int(qubit) - 1)
     paired = state.reshape(bsz, -1, 2, stride)
     zero = paired[:, :, 0, :]
     one = paired[:, :, 1, :]
