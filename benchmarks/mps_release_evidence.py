@@ -2,7 +2,7 @@
 
 The output of this script is a *measurements document*, not a signed artifact: it
 reports what executed, and ``tools/seal_runtime_evidence.py`` reports what that is
-worth. Three roles are implemented.
+worth. Five roles are implemented.
 
 ``capacity-failure`` runs the frozen capacity workload on one device and records
 the exhaustion that makes the workload a capacity premise. ``capacity-completion``
@@ -11,15 +11,20 @@ from a validated ISSUE-092 capacity premise, and records the sharded training
 update that completes it. ``release-payload`` projects one role document onto the
 top-level contract the sealer reads.
 
-``matched-speed`` and ``speed-summary`` are declared and refused. The frozen
-manifest deliberately contains no matched-speed configuration ladder
-(``speed_workload.configuration_ladder`` is null), because no MPS timing of any
-kind has been taken: there is no measured single-device leg and no measured
-sharded leg to compare. A timing protocol chosen now would be chosen without a
-measurement to choose it from, and a speed comparison run against a ladder that
-was picked after the fact is not a frozen acceptance test. The refusal is
-implemented rather than left to a comment, so a launcher that asks for a speed
-role is told why instead of being handed a document that looks like evidence.
+``matched-speed`` times the frozen matched-speed ladder at the world it was
+launched at and records one entry per rung. ``speed-summary`` compares one
+single-device leg against one sharded leg rung by rung, bootstraps the ratio, and
+assembles the matched-speed release contract the sealer reads.
+
+The matched-speed ladder is frozen in ``speed_workload`` because the capacity
+workload cannot be the denominator of a ratio: it exhausts a single device, which
+is what the capacity premise asserts, so there is no single-device leg to divide
+by. Each rung is therefore a reduced shape of the same construction built by the
+same frozen body at the same target world size, and ``_frozen_workload_at``
+refuses a rung whose parameterization drifted from the frozen one. A comparison
+run against a ladder picked after the numbers were known would not be a frozen
+acceptance test, so the ladder is read from the manifest rather than from the
+arguments.
 
 The frozen workload is identified by the digests the release manifest declares,
 and the manifest is read through the release gate's loader so that the producer
@@ -66,6 +71,12 @@ from benchmarks.internal.evidence.mps_release_gate import (
 from benchmarks.internal.evidence.mps_release_gate import (
     load_manifest as _load_frozen_manifest,
 )
+from benchmarks.internal.evidence.speedup import (
+    bootstrap_ratio_interval,
+)
+from benchmarks.internal.evidence.speedup import (
+    median as _median,
+)
 from flagquantum.testing import (
     MPSCapacityCertificationError,
     require_general_mps_capacity,
@@ -80,7 +91,6 @@ ROLES = (
     "speed-summary",
     "release-payload",
 )
-UNFROZEN_SPEED_ROLES = ("matched-speed", "speed-summary")
 
 
 def _commit() -> str:
@@ -148,20 +158,15 @@ def _workload_body_digest(contract: Mapping[str, Any]) -> str:
     return str(_workload_body_source(contract)["sha256"])
 
 
-def _frozen_workload(contract: Mapping[str, Any]) -> Any:
-    """Return the frozen workload module, built at the contract's shape.
+def _load_workload_module(contract: Mapping[str, Any]) -> Any:
+    """Execute the digest-verified body that builds a frozen circuit.
 
-    The manifest freezes a site count, a maximum bond dimension, a target world
-    size and a circuit; the body that builds the circuit carries the last three
-    as module constants, exactly as the ISSUE-092 launcher patches them. The body
-    named by the manifest is executed here in a namespace of its own, at the
-    frozen shape, and then asked for the arithmetic, so a contract that disagrees
-    with the code that builds the workload fails before anything is measured.
-
-    Executing the verified file rather than importing the module by name is what
-    ties the code that runs to the digest that was checked; sharing the imported
-    module would also let one leg's shape leak into every later reader of it,
-    because the shape is carried in module globals.
+    The manifest freezes a launcher, a body and the digests of both; the body is
+    executed here in a namespace of its own, because sharing the imported module
+    would let one leg's shape leak into every later reader of it, since the shape
+    is carried in module globals. Executing the verified file rather than
+    importing the module by name is what ties the code that runs to the digest
+    that was checked.
     """
 
     for source in (
@@ -183,6 +188,21 @@ def _frozen_workload(contract: Mapping[str, Any]) -> Any:
         raise SystemExit(f"{body_path} is not an importable workload body")
     workload = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(workload)
+    return workload
+
+
+def _frozen_workload(contract: Mapping[str, Any]) -> Any:
+    """Return the frozen workload module, built at the contract's shape.
+
+    The manifest freezes a site count, a maximum bond dimension, a target world
+    size and a circuit; the body that builds the circuit carries the last three
+    as module constants, exactly as the ISSUE-092 launcher patches them. The body
+    named by the manifest is executed here at the frozen shape, and then asked
+    for the arithmetic, so a contract that disagrees with the code that builds
+    the workload fails before anything is measured.
+    """
+
+    workload = _load_workload_module(contract)
     workload.N_SITES = int(contract["n_sites"])
     workload.MAX_BOND = int(contract["trained_max_bond"])
     workload.TARGET_WORLD = int(contract["target_world_size"])
@@ -202,6 +222,34 @@ def _frozen_workload(contract: Mapping[str, Any]) -> Any:
             f"{measured_parameters} trainable parameters where the manifest "
             f"declares {int(contract['parameter_count'])}; a run at either count "
             "trained a different circuit"
+        )
+    return workload
+
+
+def _frozen_workload_at(
+    contract: Mapping[str, Any], n_sites: int, trained_max_bond: int
+) -> Any:
+    """Return the frozen body built at one rung of a frozen ladder.
+
+    A ladder freezes several shapes of one parameterization, so the contract
+    states which body and which parameterization while each rung states the size.
+    The target world size and the parameter count are properties of the circuit
+    rather than of its size, so they are checked here exactly as they are for a
+    single-shape contract: a rung built by a body that changed either one is a
+    different circuit however small it looks.
+    """
+
+    workload = _load_workload_module(contract)
+    workload.N_SITES = int(n_sites)
+    workload.MAX_BOND = int(trained_max_bond)
+    workload.TARGET_WORLD = int(contract["target_world_size"])
+    measured_parameters = int(workload.parameter_count())
+    if measured_parameters != int(contract["parameter_count"]):
+        raise SystemExit(
+            "the frozen workload definition builds "
+            f"{measured_parameters} trainable parameters at the rung's shape where "
+            f"the manifest declares {int(contract['parameter_count'])}; a rung "
+            "built at either count timed a different circuit"
         )
     return workload
 
@@ -234,6 +282,138 @@ def _require_frozen_shape(
             f"step(s); a run at {int(arguments.steps)} measured a different "
             "workload"
         )
+
+
+def _load_ladder_module(speed: Mapping[str, Any]) -> Any:
+    """Execute the digest-verified ladder definition the manifest freezes.
+
+    The ladder is a frozen protocol, not a configuration knob, so it is defined
+    once in a module and frozen in the manifest by that module's digest. The file
+    is executed only after its bytes match the digest the manifest declares,
+    which is what ties the rungs that ran to the rungs the gate reads.
+    """
+
+    definition = Path(str(speed.get("ladder_definition_path", "")))
+    if not definition.is_file():
+        raise SystemExit(
+            f"the ladder module {definition} the frozen manifest names is not on "
+            "disk, so the rungs it declares cannot be checked"
+        )
+    if _sha256(definition) != str(speed.get("workload_sha256", "")):
+        raise SystemExit(
+            f"{definition} is not the ladder the frozen manifest declares; the "
+            "rungs were frozen against a different definition, so a comparison "
+            "run against these shapes would not be a frozen acceptance test"
+        )
+    spec = importlib.util.spec_from_file_location(
+        f"{definition.stem}_frozen", definition
+    )
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"{definition} is not an importable ladder definition")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _ladder_steps(speed: Mapping[str, Any]) -> int:
+    """Return the optimizer steps each timed call of the ladder was frozen at.
+
+    One timed call is one optimizer update, so this is the step count the
+    protocol fixes; a leg that timed a different number measured a different
+    unit. The value is read from the ladder definition rather than repeated in
+    the arguments, because the fingerprint the manifest freezes already commits
+    to it.
+    """
+
+    steps = int(_load_ladder_module(speed).STEPS)
+    if steps <= 0:
+        raise SystemExit(
+            f"the frozen ladder definition fixes {steps} optimizer step(s) per "
+            "timed call, which measures no training update"
+        )
+    return steps
+
+
+def _speed_ladder(speed: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the frozen matched-speed ladder, checked against its own module.
+
+    The gate reads the rungs from the manifest so that it never has to execute
+    the workload to know what was frozen, and the manifest repeats the ladder the
+    module defines. Two copies of one list is a drift hazard, so the manifest's
+    copy is compared against the definition and the definition's fingerprint is
+    compared against the one the manifest freezes. The rungs are returned in the
+    manifest's order because that order is the one the ladder was measured in.
+    """
+
+    rungs = speed.get("configuration_ladder")
+    if not isinstance(rungs, Sequence) or isinstance(rungs, (str, bytes)) or not rungs:
+        raise SystemExit(
+            "the frozen MPS manifest declares no matched-speed configuration "
+            f"ladder (configuration_ladder={rungs!r}), so a speed role has no "
+            "frozen protocol to measure against: a ladder chosen now would not be "
+            "a frozen acceptance test"
+        )
+    module = _load_ladder_module(speed)
+    ladder: list[dict[str, Any]] = []
+    for rung in rungs:
+        if not isinstance(rung, Mapping) or not {
+            "name",
+            "n_sites",
+            "trained_max_bond",
+            "parameter_count",
+        } <= set(rung):
+            raise SystemExit(
+                f"the frozen matched-speed ladder declares a rung that is not a "
+                f"configuration: {rung!r}"
+            )
+        ladder.append(
+            {
+                "name": str(rung["name"]),
+                "n_sites": int(rung["n_sites"]),
+                "trained_max_bond": int(rung["trained_max_bond"]),
+                "parameter_count": int(rung["parameter_count"]),
+            }
+        )
+    # The shapes are the ladder module's to declare; the parameter count is not a
+    # shape the module chooses but a property of the workload body, which the
+    # frozen-leg builder cross-checks against the body at every rung. Comparing
+    # the shapes here is what stops the manifest and the definition from drifting.
+    declared = [
+        {
+            "name": str(rung["name"]),
+            "n_sites": int(rung["n_sites"]),
+            "trained_max_bond": int(rung["trained_max_bond"]),
+        }
+        for rung in module.LADDER
+    ]
+    shapes = [
+        {
+            "name": rung["name"],
+            "n_sites": rung["n_sites"],
+            "trained_max_bond": rung["trained_max_bond"],
+        }
+        for rung in ladder
+    ]
+    if shapes != declared:
+        raise SystemExit(
+            "the rungs the frozen manifest lists are not the rungs the ladder "
+            f"definition declares: {shapes} against {declared}"
+        )
+    fingerprint = str(speed.get("ladder_fingerprint", ""))
+    if fingerprint != str(module.ladder_fingerprint()):
+        raise SystemExit(
+            "the frozen manifest's ladder fingerprint is not the one the ladder "
+            "definition computes, so the manifest describes a protocol that was "
+            "not the one written down"
+        )
+    acceptance = str(speed.get("acceptance_configuration", ""))
+    names = [rung["name"] for rung in ladder]
+    if acceptance not in names:
+        raise SystemExit(
+            "the frozen acceptance configuration is not one of the ladder's own "
+            f"configurations: {acceptance!r} against {names}"
+        )
+    return ladder
 
 
 def _write(arguments: argparse.Namespace, document: Mapping[str, Any]) -> None:
@@ -488,13 +668,16 @@ def _sharded_contract(
     runtime: Mapping[str, Any],
     *,
     summaries: Sequence[Mapping[str, Any]],
-    premise: Mapping[str, Any],
+    premise: Mapping[str, Any] | None,
     digest: str,
     collective_backend: str,
     local_world_size: int,
     node_count: int,
+    shape: Mapping[str, Any] | None = None,
+    acceptance_case: str = "multi_gpu_capacity_completion",
+    extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Assemble the release contract from the measured rank summaries.
+    """Assemble a release contract from the measured rank summaries.
 
     Every field is either read from a rank summary or derived from one by an
     operation stated here, and the derived fields name the measured fields they
@@ -502,11 +685,27 @@ def _sharded_contract(
     is the collective backend, which is read from the process group that ran the
     leg instead of from the manifest that declared it: a leg that ran over gloo
     must not be reported as NCCL. Nothing else is carried over from the contract
-    as if it had been measured: the shape is checked against the contract
+    as if it had been measured: the shape is checked against the frozen shape
     instead, and the baseline facts come from the premise artifact the
     single-device failure was measured in.
+
+    Two payload kinds are assembled here because they are the same measurement of
+    the same construction at different sizes. A capacity completion measures the
+    frozen capacity workload; a matched-speed payload measures one rung of the
+    frozen speed ladder. Both inherit the same capacity premise, because both are
+    claims about one construction whose capacity shape was measured to exhaust a
+    single device, and the single-device failure is a fact about that
+    construction rather than about the rung a comparison happened to time.
+    ``shape`` is therefore the shape the leg was launched at, ``acceptance_case``
+    names which of the two claims the payload makes, and ``extra`` carries the
+    fields only that kind states -- the timed ladder and the ratio read off it.
+    The shape fields follow ``shape`` while the release-facing facts the gate
+    checks against the frozen capacity workload -- the workload digest the
+    premise is named by -- stay the capacity contract's, which is what
+    ``capacity_premise_workload_sha256`` states explicitly.
     """
 
+    frozen = dict(contract) if shape is None else dict(shape)
     world_size = len(summaries)
     if world_size <= 1:
         raise SystemExit(
@@ -538,8 +737,28 @@ def _sharded_contract(
             "the measured site ownership map does not give every rank of a "
             f"world of {world_size} at least one site"
         )
+    # One ownership record per trainable leaf, published by every rank. The part
+    # of a record that describes the workload -- which parameter it is, which
+    # rank owns it, and the routes its gradient and update take -- is a global
+    # fact every rank states, so the ranks are required to agree on exactly that
+    # part. ``optimizer_state_local`` is deliberately excluded: the engine sets
+    # it to ``owner_rank == rank``, so it is a property of the rank that
+    # published the record and two ranks are *supposed* to report different
+    # values for the same parameter. Comparing whole records would reject every
+    # sharded run, which is why the rank-local half is checked per rank below.
     ownership_entries = _agreed(
-        [tuple(summary["optimizer_ownership"]) for summary in summaries],
+        [
+            tuple(
+                {
+                    "parameter_index": entry["parameter_index"],
+                    "owner_rank": entry["owner_rank"],
+                    "gradient_route": entry["gradient_route"],
+                    "update_route": entry["update_route"],
+                }
+                for entry in summary["optimizer_ownership"]
+            )
+            for summary in summaries
+        ],
         context="the optimizer ownership map",
     )
     # The engine assigns parameter ``index`` to rank ``index % world_size`` and
@@ -549,10 +768,10 @@ def _sharded_contract(
     # manifest here so a run whose circuit drifted from the frozen
     # parameterization cannot report the contract's count while training another.
     parameter_count = len(ownership_entries)
-    if parameter_count != int(contract["parameter_count"]):
+    if parameter_count != int(frozen["parameter_count"]):
         raise SystemExit(
             f"the sharded leg trained {parameter_count} parameters where the "
-            f"release manifest freezes {int(contract['parameter_count'])}"
+            f"release manifest freezes {int(frozen['parameter_count'])}"
         )
     parameter_ownership = _ownership_map(ownership_entries, world_size=world_size)
     gradient_route = _routes(
@@ -561,18 +780,23 @@ def _sharded_contract(
     update_route = _routes(
         ownership_entries, "update_route", context="optimizer update route"
     )
-    if (
-        not all(
-            bool(entry["optimizer_state_local"])
-            == (int(entry["owner_rank"]) == int(summaries[0]["rank"]))
-            for entry in ownership_entries
-        )
-        and world_size > 1
-    ):
-        raise SystemExit(
-            "the sharded leg holds optimizer state on a rank that does not own "
-            "the parameter it belongs to"
-        )
+    # Each rank states which of the parameters it holds optimizer state for, and
+    # that statement has to be the ownership rule the engine applies. A rank that
+    # claimed state for a parameter another rank owns would be reporting an
+    # optimizer that is not sharded, and one that dropped the state for its own
+    # parameters would be reporting an update it never applied.
+    for summary in summaries:
+        reporting_rank = int(summary["rank"])
+        for entry in summary["optimizer_ownership"]:
+            owner = int(entry["owner_rank"])
+            if bool(entry["optimizer_state_local"]) != (owner == reporting_rank):
+                raise SystemExit(
+                    f"rank {reporting_rank} reports optimizer state "
+                    f"{'for' if entry['optimizer_state_local'] else 'against'} "
+                    f"parameter {entry['parameter_index']}, which rank {owner} "
+                    "owns; the optimizer state of a sharded run is held by the "
+                    "rank that owns the parameter"
+                )
 
     step_metrics = [summary["step_metrics"][-1] for summary in summaries]
     edges = _boundary_edges(
@@ -616,11 +840,15 @@ def _sharded_contract(
         ]
         for summary in summaries
     ]
-    baseline = dict(premise["baseline"])
-    return {
-        "acceptance_case": "multi_gpu_capacity_completion",
+    baseline = dict(premise["baseline"]) if premise is not None else {}
+    evidence: dict[str, Any] = {
+        "acceptance_case": acceptance_case,
         "state_mode": "mps",
-        "topology_scope": "multi_node_production_transport",
+        "topology_scope": (
+            "multi_node_production_transport"
+            if node_count > 1
+            else "single_node_executed_collective"
+        ),
         "distribution_semantics": "sharded_across_ranks",
         "mps_forward_distribution_semantics": "sharded_across_ranks",
         "mps_backward_distribution_semantics": "sharded_across_ranks",
@@ -632,16 +860,16 @@ def _sharded_contract(
         "rank_placement": "rank // local_world_size",
         "optimizer": str(summaries[0]["optimizer"]),
         "training_step_count": step_count,
-        "batch_size": int(contract["batch_size"]),
-        "dtype": str(contract["dtype"]),
-        "n_sites": int(contract["n_sites"]),
-        "initial_max_bond": int(contract["initial_max_bond"]),
-        "max_bond_dimension": int(contract["trained_max_bond"]),
-        "logical_mps_bytes": int(contract["logical_mps_bytes"]),
+        "batch_size": int(frozen["batch_size"]),
+        "dtype": str(frozen["dtype"]),
+        "n_sites": int(frozen["n_sites"]),
+        "initial_max_bond": int(frozen["initial_max_bond"]),
+        "max_bond_dimension": int(frozen["trained_max_bond"]),
+        "logical_mps_bytes": int(frozen["logical_mps_bytes"]),
         "parameter_count": parameter_count,
         "workload_body_sha256": _workload_body_digest(contract),
-        "gradient_policy": str(contract["gradient_policy"]),
-        "truncation_error_budget": float(contract["truncation_error_budget"]),
+        "gradient_policy": str(frozen["gradient_policy"]),
+        "truncation_error_budget": float(frozen["truncation_error_budget"]),
         "site_ownership_policy": str(summaries[0]["site_ownership_policy"]),
         "site_shard_ownership": {
             f"rank:{rank}": list(sites) for rank, sites in enumerate(site_ownership)
@@ -742,30 +970,45 @@ def _sharded_contract(
         "gpu_activity": 1.0,
         "full_mps_materialization": False,
         "workload_sha256": digest,
-        "workload_definition_sha256": str(contract["workload_definition_sha256"]),
+        "workload_definition_sha256": str(frozen["workload_definition_sha256"]),
         "state_mode_evidence": {
             "state_mode": "mps",
             "executor": str(summaries[0]["executor"]),
             "full_mps_materialization": False,
         },
-        "single_gpu_expected_oom": True,
-        "capacity_baseline_device": str(baseline["capacity_baseline_device"]),
-        "capacity_baseline_device_source": str(baseline["source"]),
-        "capacity_failure_reason": str(baseline["capacity_failure_reason"]),
-        "capacity_baseline_peak_memory_bytes": int(
-            baseline["single_gpu_peak_memory_bytes"]
-        ),
-        "capacity_baseline_device_total_memory_bytes": int(
-            baseline["single_gpu_device_total_memory_bytes"]
-        ),
-        "capacity_baseline_artifact": str(premise["path"]),
-        "capacity_baseline_sha256": str(premise["sha256"]),
-        "capacity_baseline_topology_fingerprint": str(premise["topology_fingerprint"]),
-        "premise_source_integrity": dict(premise["source_integrity"]),
-        "fallback_semantics": str(runtime["fallback_semantics"]),
-        "fallback_events": [],
-        "blockers": [],
     }
+    if premise is not None:
+        evidence.update(
+            {
+                "single_gpu_expected_oom": True,
+                "capacity_premise_workload_sha256": str(contract["workload_sha256"]),
+                "capacity_baseline_device": str(baseline["capacity_baseline_device"]),
+                "capacity_baseline_device_source": str(baseline["source"]),
+                "capacity_failure_reason": str(baseline["capacity_failure_reason"]),
+                "capacity_baseline_peak_memory_bytes": int(
+                    baseline["single_gpu_peak_memory_bytes"]
+                ),
+                "capacity_baseline_device_total_memory_bytes": int(
+                    baseline["single_gpu_device_total_memory_bytes"]
+                ),
+                "capacity_baseline_artifact": str(premise["path"]),
+                "capacity_baseline_sha256": str(premise["sha256"]),
+                "capacity_baseline_topology_fingerprint": str(
+                    premise["topology_fingerprint"]
+                ),
+                "premise_source_integrity": dict(premise["source_integrity"]),
+            }
+        )
+    evidence.update(
+        {
+            "fallback_semantics": str(runtime["fallback_semantics"]),
+            "fallback_events": [],
+            "blockers": [],
+        }
+    )
+    if extra is not None:
+        evidence.update(dict(extra))
+    return evidence
 
 
 def _bond_shard_ownership(
@@ -1267,19 +1510,343 @@ def _role_release_payload(arguments: argparse.Namespace) -> int:
     return 0
 
 
-def _refuse_unfrozen_speed(arguments: argparse.Namespace) -> int:
-    """Refuse a speed role the frozen manifest cannot support."""
+def _role_matched_speed(arguments: argparse.Namespace) -> int:
+    """Time every rung of the frozen matched-speed ladder where it was launched.
 
+    The same role runs both legs of the comparison: at world size one it is the
+    baseline the ratio divides by, and above it the sharded leg. Both legs
+    therefore time the same rungs of the same frozen protocol with the same
+    untimed warmup, which is what makes the ratio a measurement rather than a
+    pairing of two convenient numbers. Every rank times every rung, because a
+    ladder only rank 0 ran would compare one device against itself.
+
+    The acceptance rung's full training summary travels in the record beside the
+    timings. It is what the summary role derives the release contract from, so
+    the contract is assembled from the measurement rather than from the timings
+    restated.
+    """
+
+    contract = _capacity_contract(arguments.release_manifest)
     manifest = _load_frozen_manifest(Path(arguments.release_manifest))
-    ladder = manifest["speed_workload"]["configuration_ladder"]
-    raise SystemExit(
-        f"the frozen MPS manifest declares no matched-speed configuration ladder "
-        f"(configuration_ladder={ladder!r}), so the {arguments.role} role has no "
-        "frozen protocol to measure against: no MPS single-device leg and no MPS "
-        "sharded leg has been timed, and a comparison run against a ladder chosen "
-        "now would not be a frozen acceptance test. Freeze the ladder in "
-        f"{arguments.release_manifest} first."
+    speed = manifest["speed_workload"]
+    ladder = _speed_ladder(speed)
+    steps = _ladder_steps(speed)
+    acceptance = str(speed["acceptance_configuration"])
+    frozen_protocol = (int(speed["warmup_steps"]), int(speed["measured_steps"]))
+    if (arguments.warmup, arguments.iterations) != frozen_protocol:
+        raise SystemExit(
+            "the frozen matched-speed protocol requires --warmup "
+            f"{frozen_protocol[0]} --iterations {frozen_protocol[1]}; a run at "
+            f"{arguments.warmup}/{arguments.iterations} timed a protocol nobody "
+            "froze, so its ratio is not the frozen acceptance measurement"
+        )
+    world = _env_int("WORLD_SIZE", 1)
+    local_world = int(arguments.local_world_size)
+    node_count = int(arguments.node_count)
+    if local_world <= 0 or world % local_world or world // local_world != node_count:
+        raise SystemExit(
+            f"a world of {world} over {node_count} host(s) of {local_world} "
+            "device(s) does not place every rank exactly once"
+        )
+    if not torch.cuda.is_available():
+        raise SystemExit(
+            "matched-speed needs the measured devices; a run without accelerators "
+            "measured no latency"
+        )
+    device = torch.device("cuda", _env_int("LOCAL_RANK", 0))
+    torch.cuda.set_device(device)
+    _initialize(device)
+    # Read the backend off the group the leg ran in, while it is still up, so the
+    # document states the transport that carried the measured calls.
+    collective_backend = str(dist.get_backend())
+    rank = _env_int("RANK", 0)
+    configurations: list[dict[str, Any]] = []
+    measurement: Mapping[str, Any] | None = None
+    try:
+        for rung in ladder:
+            workload = _frozen_workload_at(
+                contract, int(rung["n_sites"]), int(rung["trained_max_bond"])
+            )
+            logical_bytes = int(
+                workload.logical_mps_bytes(workload.N_SITES, workload.MAX_BOND)
+            )
+            budget_bytes = int(
+                workload.reverse_checkpoint_capacity_bytes(logical_bytes, world)
+            )
+            initial = workload.rank_owned_initial_mps(
+                workload.N_SITES, workload.MAX_BOND, device
+            )
+            parameters = workload.frozen_parameters(device)
+            circuit = workload.workload(parameters)
+            torch.cuda.reset_peak_memory_stats(device)
+            seconds: list[float] = []
+            summary: dict[str, Any] = {}
+            for iteration in range(arguments.warmup + arguments.iterations):
+                torch.cuda.synchronize(device)
+                started = time.perf_counter()
+                result = fqxd.train_distributed_mps(
+                    circuit,
+                    steps=steps,
+                    observable={workload.N_SITES // 2: "z"},
+                    optimizer=str(contract["optimizer"]),
+                    lr=float(contract["learning_rate"]),
+                    device=device,
+                    max_bond=int(workload.MAX_BOND),
+                    gradient_policy=str(contract["gradient_policy"]),
+                    gradient_tolerance=float(contract["truncation_error_budget"]),
+                    initial_mps_tensors=initial,
+                    initial_mps_left_canonical=bool(
+                        contract["initial_mps_left_canonical"]
+                    ),
+                    canonicalization_policy=str(contract["canonicalization_policy"]),
+                    svd_driver=str(contract["svd_driver"]),
+                    reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
+                        max_saved_bytes=budget_bytes
+                    ),
+                )
+                torch.cuda.synchronize(device)
+                if iteration >= arguments.warmup:
+                    seconds.append(round(time.perf_counter() - started, 6))
+                summary = dict(result.summary())
+                del result
+            peak = int(torch.cuda.max_memory_allocated(device))
+            configurations.append(
+                {
+                    "name": str(rung["name"]),
+                    "n_sites": int(workload.N_SITES),
+                    "trained_max_bond": int(workload.MAX_BOND),
+                    "parameter_count": int(rung["parameter_count"]),
+                    "steps": steps,
+                    "warmup": int(arguments.warmup),
+                    "iterations": int(arguments.iterations),
+                    "seconds": seconds,
+                    "minimum_seconds": min(seconds),
+                    "median_seconds": _median(seconds),
+                    "logical_mps_bytes": logical_bytes,
+                    "checkpoint_budget_bytes": budget_bytes,
+                    "peak_memory_bytes": peak,
+                    "training_step_count": int(summary["completed_steps"]),
+                    "final_loss": float(summary["losses"][-1]),
+                }
+            )
+            if str(rung["name"]) == acceptance:
+                measurement = summary
+    except (torch.OutOfMemoryError, RuntimeError) as error:
+        failure_reason = str(error).splitlines()[0]
+        if rank == 0:
+            print(f"the matched-speed leg failed: {failure_reason}", file=sys.stderr)
+        return 2
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if measurement is None:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} was not timed, so "
+            "the leg measured no rung a ratio can be reported at"
+        )
+    record = {
+        "schema": SCHEMA,
+        "role": arguments.role,
+        "rank": rank,
+        "world_size": world,
+        "local_rank": device.index,
+        "local_world_size": local_world,
+        "node_count": node_count,
+        "state_mode": "mps",
+        "hostname": socket.gethostname(),
+        "commit": _commit(),
+        "collective_backend": collective_backend,
+        "warmup": int(arguments.warmup),
+        "iterations": int(arguments.iterations),
+        "steps": steps,
+        "ladder_fingerprint": str(speed["ladder_fingerprint"]),
+        "acceptance_configuration": acceptance,
+        "configurations": configurations,
+        "acceptance_summary": dict(measurement),
+        "measured_peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
+        "device_name": torch.cuda.get_device_properties(device).name,
+        "device_total_memory_bytes": int(
+            torch.cuda.get_device_properties(device).total_memory
+        ),
+        "software": _software(),
+    }
+    records = _gather(record, world)
+    if rank != 0:
+        return 0
+    _write(arguments, {**records[0], "ranks": records})
+    return 0
+
+
+def _role_speed_summary(arguments: argparse.Namespace) -> int:
+    """Assemble the matched-speed release contract from one baseline and one leg."""
+
+    contract = _capacity_contract(arguments.release_manifest)
+    runtime = _runtime_contract(arguments.release_manifest)
+    manifest = _load_frozen_manifest(Path(arguments.release_manifest))
+    speed = manifest["speed_workload"]
+    ladder = _speed_ladder(speed)
+    acceptance = str(speed["acceptance_configuration"])
+    if arguments.premise is None:
+        raise SystemExit(
+            "speed-summary requires --premise: a matched-speed payload still "
+            "asserts that the released construction exhausts one device, and that "
+            "assertion is worth only the measured single-device failure behind it"
+        )
+    if arguments.baseline is None or arguments.sharded is None:
+        raise SystemExit(
+            "speed-summary requires --baseline and --sharded: a ratio needs the "
+            "two legs it divides"
+        )
+    baseline = json.loads(Path(arguments.baseline).read_text(encoding="utf-8"))
+    sharded = json.loads(Path(arguments.sharded).read_text(encoding="utf-8"))
+    if int(baseline.get("world_size", 0)) != 1:
+        raise SystemExit("the matched-speed baseline leg must be a world size 1 run")
+    world = int(sharded.get("world_size", 0))
+    if world <= 1:
+        raise SystemExit("the matched-speed sharded leg must run above world size 1")
+    for leg, name in ((baseline, arguments.baseline), (sharded, arguments.sharded)):
+        if str(leg.get("ladder_fingerprint", "")) != str(speed["ladder_fingerprint"]):
+            raise SystemExit(
+                f"{name} timed a ladder that is not the frozen one; its fingerprint "
+                "is not the fingerprint the manifest declares"
+            )
+    if str(baseline.get("collective_backend", "")) != str(
+        sharded.get("collective_backend", "")
+    ):
+        raise SystemExit(
+            "the two speed legs ran over different collectives, so their latencies "
+            "are not a ratio of one transport"
+        )
+    left = {item["name"]: item for item in baseline["configurations"]}
+    right = {item["name"]: item for item in sharded["configurations"]}
+    frozen_names = [str(rung["name"]) for rung in ladder]
+    if set(left) != set(right) or set(left) != set(frozen_names):
+        raise SystemExit(
+            "the two speed legs did not time the frozen ladder's own "
+            f"configurations: {sorted(left)} against {sorted(right)} for the "
+            f"frozen {frozen_names}"
+        )
+    table = []
+    for rung in ladder:
+        name = str(rung["name"])
+        left_leg, right_leg = left[name], right[name]
+        if float(right_leg["median_seconds"]) <= 0.0:
+            raise SystemExit(
+                f"the sharded leg reports a median of "
+                f"{right_leg['median_seconds']} s for {name!r}, which is not a "
+                "latency a ratio can divide by"
+            )
+        left_seconds = float(left_leg["median_seconds"])
+        right_seconds = float(right_leg["median_seconds"])
+        lower, upper = bootstrap_ratio_interval(
+            left_leg["seconds"], right_leg["seconds"]
+        )
+        speedup = left_seconds / right_seconds
+        table.append(
+            {
+                "name": name,
+                "n_sites": int(rung["n_sites"]),
+                "trained_max_bond": int(rung["trained_max_bond"]),
+                "parameter_count": int(rung["parameter_count"]),
+                "steps": int(left_leg["steps"]),
+                "baseline_median_seconds": left_seconds,
+                "sharded_median_seconds": right_seconds,
+                "speedup": speedup,
+                "speedup_confidence_interval": [lower, upper],
+                "scaling_efficiency": speedup / world,
+            }
+        )
+    accepted = next((item for item in table if item["name"] == acceptance), None)
+    if accepted is None:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} did not run"
+        )
+    accepted_leg = right[acceptance]
+    rank_records = [dict(record) for record in sharded.get("ranks", [sharded])]
+    if len(rank_records) != world:
+        raise SystemExit(
+            f"the sharded leg declares a world of {world} ranks and published "
+            f"{len(rank_records)} rank records, so its world size is not the number "
+            "of ranks that ran"
+        )
+    summaries = []
+    for record in rank_records:
+        measurement = record.get("acceptance_summary")
+        if not isinstance(measurement, Mapping):
+            raise SystemExit(
+                f"a rank of the sharded leg published no measurement of "
+                f"{acceptance!r}, so the release contract cannot be assembled from "
+                "the ranks that ran"
+            )
+        summaries.append(dict(measurement))
+    shape = {
+        "batch_size": int(contract["batch_size"]),
+        "dtype": str(contract["dtype"]),
+        "n_sites": int(accepted_leg["n_sites"]),
+        "initial_max_bond": int(accepted_leg["trained_max_bond"]),
+        "trained_max_bond": int(accepted_leg["trained_max_bond"]),
+        "logical_mps_bytes": int(accepted_leg["logical_mps_bytes"]),
+        "parameter_count": int(accepted_leg["parameter_count"]),
+        "gradient_policy": str(contract["gradient_policy"]),
+        "truncation_error_budget": float(contract["truncation_error_budget"]),
+        "workload_definition_sha256": str(contract["workload_definition_sha256"]),
+    }
+    premise = _premise(
+        contract, Path(arguments.premise), workload=_frozen_workload(contract)
     )
+    measurements = _sharded_contract(
+        contract,
+        runtime,
+        summaries=summaries,
+        premise=premise,
+        digest=_workload_digest(contract),
+        collective_backend=str(sharded["collective_backend"]),
+        local_world_size=int(sharded["local_world_size"]),
+        node_count=int(sharded["node_count"]),
+        shape=shape,
+        acceptance_case="matched_speed",
+        extra={
+            # The timed shape is a rung of the ladder rather than the capacity
+            # workload, so the definition this payload measured is the ladder's
+            # and the capacity launcher's digest travels as the premise instead.
+            "workload_sha256": str(speed["workload_sha256"]),
+            "ladder_definition_path": str(speed["ladder_definition_path"]),
+            "ladder_fingerprint": str(speed["ladder_fingerprint"]),
+            "acceptance_configuration": acceptance,
+            "warmup_steps": int(speed["warmup_steps"]),
+            "measured_steps": int(speed["measured_steps"]),
+            "timing_unit": str(speed["timing_unit"]),
+            "speedup": accepted["speedup"],
+            "speedup_confidence_interval": accepted["speedup_confidence_interval"],
+            "scaling_efficiency": accepted["scaling_efficiency"],
+            "configurations": table,
+            "hardware_inventory": [
+                str(record["device_name"]) for record in rank_records
+            ],
+        },
+    )
+    _write(
+        arguments,
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": 0,
+            "world_size": world,
+            "local_world_size": int(sharded["local_world_size"]),
+            "node_count": int(sharded["node_count"]),
+            "hostname": socket.gethostname(),
+            "commit": sharded["commit"],
+            "state_mode": "mps",
+            "measurements": measurements,
+            "timings": [item["sharded_median_seconds"] for item in table],
+            "warmup": int(speed["warmup_steps"]),
+            "iterations": int(speed["measured_steps"]),
+            "measured_peak_memory_bytes": measurements["measured_peak_memory_bytes"],
+            "device_name": str(rank_records[0]["device_name"]),
+            "software": sharded["software"],
+        },
+    )
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -1307,6 +1874,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--warmup",
+        type=int,
+        help=(
+            "untimed calls the matched-speed role repeats before it starts timing. "
+            "It is checked against the frozen protocol and never used to choose "
+            "one, because a warmed rank and a cold one measure different latencies"
+        ),
+    )
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        help=(
+            "timed calls the matched-speed role takes per rung, checked against the "
+            "frozen protocol for the same reason as --warmup"
+        ),
+    )
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--sharded", type=Path)
+    parser.add_argument(
         "--local-world-size",
         type=int,
         default=1,
@@ -1322,8 +1908,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if arguments.role == "release-payload":
         return _role_release_payload(arguments)
-    if arguments.role in UNFROZEN_SPEED_ROLES:
-        return _refuse_unfrozen_speed(arguments)
+    if arguments.role == "speed-summary":
+        return _role_speed_summary(arguments)
+    if arguments.role == "matched-speed":
+        return _role_matched_speed(arguments)
     if arguments.role == "capacity-failure":
         return _role_capacity_failure(arguments)
     return _role_capacity_completion(arguments)

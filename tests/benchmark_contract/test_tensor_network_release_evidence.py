@@ -21,6 +21,7 @@ import pytest
 import torch
 
 from benchmarks import tensor_network_release_evidence as producer
+from benchmarks.internal.evidence.speedup import bootstrap_ratio_interval
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 
@@ -106,7 +107,7 @@ def test_ownership_must_agree_across_the_ranks_that_published_it() -> None:
 def test_the_bootstrap_interval_brackets_a_ratio_the_samples_imply() -> None:
     baseline = [4.0, 4.1, 3.9, 4.05, 3.95]
     sharded = [1.0, 1.02, 0.98, 1.01, 0.99]
-    lower, upper = producer._bootstrap_ratio_interval(baseline, sharded)
+    lower, upper = bootstrap_ratio_interval(baseline, sharded)
     assert lower < 4.0 < upper
     # The interval is a percentile interval of the ratio, so it can never
     # exclude the point estimate the medians themselves give.

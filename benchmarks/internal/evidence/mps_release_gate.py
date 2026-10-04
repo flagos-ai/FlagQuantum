@@ -271,11 +271,26 @@ def _world_is_carried_by_envelope(
     return True
 
 
+def matched_speed_workload_sha256(manifest: Mapping[str, Any]) -> str:
+    """Return the digest of the definition that freezes the timed ladder.
+
+    The capacity workload cannot be timed on one device -- it exhausts one, which
+    is what the premise asserts -- so a matched-speed payload is a comparison at
+    reduced shapes of the same construction. Those shapes are frozen by the speed
+    block, and the file that defines them is the workload a matched-speed payload
+    measured, so its digest is what such a payload's envelope names.
+    """
+
+    return str(manifest["speed_workload"].get("workload_sha256", ""))
+
+
 def _check_provenance_binding(
     evidence: Mapping[str, Any],
     provenance: Mapping[str, Any],
     capacity: Mapping[str, Any],
     blockers: list[str],
+    *,
+    speed_workload_sha256: str,
 ) -> None:
     """Report where the sealed provenance disagrees with the frozen contract.
 
@@ -283,9 +298,23 @@ def _check_provenance_binding(
     records are the ones the sealer attested. A payload whose envelope names a
     different workload, or a different revision than the payload does, is not
     evidence about the frozen workload however well the payload reads.
+
+    A matched-speed payload is the one case where the envelope legitimately names
+    a workload other than the capacity launcher, because the capacity workload
+    cannot be timed on one device. The ladder digest is accepted only when the
+    payload also carries the frozen capacity workload's own digest as the premise
+    it rests on, so the exemption binds the payload to the premise instead of
+    releasing it from the contract.
     """
 
-    if str(provenance.get("workload_sha256", "")) != str(capacity["workload_sha256"]):
+    declared = str(evidence.get("capacity_premise_workload_sha256", ""))
+    attested = str(provenance.get("workload_sha256", ""))
+    names_the_ladder = (
+        bool(speed_workload_sha256)
+        and attested == speed_workload_sha256
+        and declared == str(capacity["workload_sha256"])
+    )
+    if attested != str(capacity["workload_sha256"]) and not names_the_ladder:
         blockers.append("production_payload_provenance_workload_mismatch")
     if str(evidence.get("workload_body_sha256", "")) != str(
         frozen_workload_body_sha256(capacity)
@@ -650,7 +679,50 @@ def _mps_contract_blockers(
 
     # The shape is what makes a completion artifact evidence for *this* frozen
     # workload, so a missing shape field and a wrong one are reported apart: the
-    # first is an incomplete record and the second is a different workload.
+    # first is an incomplete record and the second is a different workload. A
+    # matched-speed payload is the one payload whose shape is not the capacity
+    # workload's, because the capacity workload cannot be timed on one device, so
+    # its shape is checked against the frozen ladder instead.
+    blockers.extend(_workload_shape_blockers(evidence, capacity, manifest))
+
+    return tuple(blockers)
+
+
+def _workload_shape_blockers(
+    evidence: Mapping[str, Any],
+    capacity: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return where a payload measured a shape this manifest did not freeze.
+
+    Every payload this contract accepts is evidence about a frozen shape: the
+    capacity workload's, or one rung of the frozen matched-speed ladder. Both
+    checks report the same two blockers, because the requirement they serve is
+    one requirement -- the payload measured a shape this manifest freezes -- and
+    a reader of the report should not have to know which payload kind produced
+    it to know what was wrong. The dtype is protocol rather than shape and is
+    checked against the contract for both kinds, since a payload that trained in
+    another precision trained another workload whatever its size.
+    """
+
+    blockers: list[str] = []
+    if evidence.get("dtype") is None:
+        blockers.append("missing_capacity_workload_shape_evidence")
+    elif str(evidence["dtype"]) != str(capacity["dtype"]):
+        blockers.append("capacity_workload_shape_mismatch")
+    if evidence.get("acceptance_case") == "matched_speed":
+        blockers.extend(_ladder_shape_blockers(evidence, capacity, manifest))
+    else:
+        blockers.extend(_capacity_shape_blockers(evidence, capacity))
+    return tuple(blockers)
+
+
+def _capacity_shape_blockers(
+    evidence: Mapping[str, Any], capacity: Mapping[str, Any]
+) -> tuple[str, ...]:
+    """Return where a payload's shape is not the frozen capacity workload's."""
+
+    blockers: list[str] = []
     for field, expected in (
         ("n_sites", _as_int(capacity["n_sites"])),
         ("max_bond_dimension", _as_int(capacity["trained_max_bond"])),
@@ -661,11 +733,49 @@ def _mps_contract_blockers(
             blockers.append("missing_capacity_workload_shape_evidence")
         elif _as_int(value) != expected:
             blockers.append("capacity_workload_shape_mismatch")
-    if evidence.get("dtype") is None:
-        blockers.append("missing_capacity_workload_shape_evidence")
-    elif str(evidence["dtype"]) != str(capacity["dtype"]):
-        blockers.append("capacity_workload_shape_mismatch")
+    return tuple(blockers)
 
+
+def _ladder_shape_blockers(
+    evidence: Mapping[str, Any],
+    capacity: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return where a matched-speed payload did not time a frozen ladder rung.
+
+    The comparison is only meaningful at a shape the manifest froze before the
+    legs ran, so the payload's shape has to be one of the ladder's. The rung is
+    identified by all three of its shape numbers together -- site count, bond
+    dimension and trainable parameter count -- because a payload that matched a
+    rung's site count while training a different parameterization would be a
+    different circuit of the same size.
+    """
+
+    blockers: list[str] = []
+    if _as_int(evidence.get("batch_size")) != _as_int(capacity["batch_size"]):
+        blockers.append("capacity_workload_shape_mismatch")
+    if evidence.get("n_sites") is None or evidence.get("max_bond_dimension") is None:
+        blockers.append("missing_capacity_workload_shape_evidence")
+        return tuple(blockers)
+    ladder = tuple(manifest["speed_workload"].get("configuration_ladder") or ())
+    if not ladder:
+        blockers.append("missing_capacity_workload_shape_evidence")
+        return tuple(blockers)
+    claimed = (
+        _as_int(evidence.get("n_sites")),
+        _as_int(evidence.get("max_bond_dimension")),
+        _as_int(evidence.get("parameter_count")),
+    )
+    frozen = {
+        (
+            _as_int(rung.get("n_sites")),
+            _as_int(rung.get("trained_max_bond")),
+            _as_int(rung.get("parameter_count")),
+        )
+        for rung in ladder
+    }
+    if claimed not in frozen:
+        blockers.append("capacity_workload_shape_mismatch")
     return tuple(blockers)
 
 
@@ -839,7 +949,13 @@ def evaluate_mps_release(
 
     for evidence, provenance in production:
         blockers.extend(_mps_contract_blockers(evidence, manifest))
-        _check_provenance_binding(evidence, provenance, capacity, blockers)
+        _check_provenance_binding(
+            evidence,
+            provenance,
+            capacity,
+            blockers,
+            speed_workload_sha256=matched_speed_workload_sha256(manifest),
+        )
         if _has_required_fields(evidence, provenance, required):
             blockers.append("production_artifact_missing_required_fields")
         blockers.extend(

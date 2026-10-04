@@ -211,17 +211,194 @@
   "schema_version": "flagquantum.mps.release_manifest.v1",
   "speed_workload": {
     "acceptance_case": "matched_speed",
+    "acceptance_configuration": "matched_speed_8192sites_chi64",
     "confidence_interval_must_exclude_speedup": 1.0,
     "confidence_level": 0.95,
-    "configuration_ladder": null,
-    "measured_single_device_floor": [],
+    "configuration_ladder": [
+      {
+        "n_sites": 512,
+        "name": "matched_speed_512sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 1024,
+        "name": "matched_speed_1024sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 2048,
+        "name": "matched_speed_2048sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 4096,
+        "name": "matched_speed_4096sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 8192,
+        "name": "matched_speed_8192sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      }
+    ],
+    "ladder_definition_path": "benchmarks/internal/evidence/general_mps_speed_ladder_v1.py",
+    "ladder_fingerprint": "58f88d24d1c08846a2e3ecc7c7989570dc2a3ae06372b21d21b689ff3c855b47",
+    "ladder_note": "The matched-speed ladder is now frozen. configuration_ladder repeats the rungs ladder_definition_path defines so the release gate can read the timed shapes without executing code, and both the producer and the contract tests fail if the two copies disagree. Every rung is a reduced shape of the same capacity workload built by the same frozen body, at the same target world size, with the same trainable-leaf-per-gate parameterization, optimizer, gradient policy and reverse-tape rule, so a sharded leg of the acceptance rung is the capacity premise's own construction sharded rather than a second, unrelated circuit. The thresholds in this block are protocol rather than measurement: they are the levels a timed comparison must reach to be accepted, fixed before the legs ran so they cannot be chosen after the numbers are known.",
+    "measured_single_device_floor": [
+      {
+        "build_seconds": 0.07824692688882351,
+        "checkpoint_budget_bytes": 1139452544,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577698066830635,
+        "logical_mps_bytes": 32855360,
+        "median_seconds": 0.51475,
+        "minimum_seconds": 0.4968,
+        "n_sites": 512,
+        "name": "matched_speed_512sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 62932480,
+        "samples_seconds": [
+          0.5257,
+          0.5216,
+          0.5093,
+          0.5027,
+          0.4968,
+          0.5004,
+          0.5161,
+          0.5134,
+          0.5215,
+          0.5188
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.009947,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.07792303711175919,
+        "checkpoint_budget_bytes": 1206561408,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577727682888508,
+        "logical_mps_bytes": 66409792,
+        "median_seconds": 0.8254,
+        "minimum_seconds": 0.8121,
+        "n_sites": 1024,
+        "name": "matched_speed_1024sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 96486912,
+        "samples_seconds": [
+          0.8283,
+          0.8265,
+          0.827,
+          0.813,
+          0.8225,
+          0.8267,
+          0.8243,
+          0.8173,
+          0.8121,
+          0.8289
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.006297,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.07931860536336899,
+        "checkpoint_budget_bytes": 1340779136,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.015777766704559326,
+        "logical_mps_bytes": 133518656,
+        "median_seconds": 1.4146,
+        "minimum_seconds": 1.4085,
+        "n_sites": 2048,
+        "name": "matched_speed_2048sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 163595776,
+        "samples_seconds": [
+          1.433,
+          1.4315,
+          1.4125,
+          1.4107,
+          1.4167,
+          1.4265,
+          1.4248,
+          1.4086,
+          1.4099,
+          1.4085
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.009744,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.0820793118327856,
+        "checkpoint_budget_bytes": 1609214592,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.015778331086039543,
+        "logical_mps_bytes": 267736384,
+        "median_seconds": 2.6174,
+        "minimum_seconds": 2.6061,
+        "n_sites": 4096,
+        "name": "matched_speed_4096sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 297813504,
+        "samples_seconds": [
+          2.6126,
+          2.6259,
+          2.6225,
+          2.6172,
+          2.6061,
+          2.7962,
+          2.6211,
+          2.6176,
+          2.6129,
+          2.6066
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.057404,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.09773963317275047,
+        "checkpoint_budget_bytes": 2146085504,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577860116958618,
+        "logical_mps_bytes": 536171840,
+        "median_seconds": 5.15495,
+        "minimum_seconds": 5.1266,
+        "n_sites": 8192,
+        "name": "matched_speed_8192sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 566248960,
+        "samples_seconds": [
+          5.1561,
+          5.3279,
+          5.1398,
+          5.1447,
+          5.254,
+          5.1266,
+          5.1604,
+          5.1538,
+          5.2486,
+          5.1533
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.066416,
+        "trained_max_bond": 64
+      }
+    ],
+    "measured_single_device_floor_note": "The floor below was measured on one A800-SXM4-80GB before any release payload was sealed, under the frozen protocol: two warmup calls and ten measured calls, one optimizer step per call, the frozen reverse-tape rule (2 * (logical_mps_bytes // world_size) + 1 GiB) at world_size 1, and the frozen gradient policy. The ladder's cost is linear in the site count at a fixed bond dimension -- 0.51 s at 512 sites through 5.16 s at 8192 -- so the widest rung is the acceptance configuration and the ratio is not dominated by per-call overhead. The same final loss appears at every rung to six decimals, which is the arithmetic check that one construction was timed at five sizes rather than five different circuits. These readings come from an exploratory probe run outside the release producer (fq_mps_speed_probe.py, revision ac1043b6), so they freeze the protocol and the shapes; they are not release evidence and no payload rests on them. What a release payload must show is measured afterwards by benchmarks/mps_release_evidence.py, sealed, and read by the gate.",
     "measured_steps": 10,
     "minimum_scaling_efficiency": 0.5,
     "minimum_speedup": 1.05,
     "name": "mps_matched_speed_v1",
-    "thresholds_note": "Every number in this block is an acceptance threshold to be crossed, not a measurement. No MPS matched-speed measurement of any kind exists: there is no measured single-device leg at any configuration and no measured sharded leg, which is why measured_single_device_floor is empty rather than populated with the capacity workload's numbers, which were measured for capacity and not for speed. The configuration ladder is deliberately unfrozen (configuration_ladder is null) because no MPS configuration has been chosen or measured for timing, so there is nothing to choose it from; a later revision must freeze the ladder before any timed run, and until then the gate reports speed_configuration_ladder_not_frozen alongside the missing speed artifact. The thresholds themselves are protocol: they are the levels a future speed comparison must reach to be accepted, and they are fixed here so that they are not chosen after the numbers are known.",
     "timing_unit": "one full forward-and-reverse sharded MPS training step, measured end to end on the ranks it is sharded across",
-    "warmup_steps": 2
+    "warmup_steps": 2,
+    "workload_sha256": "0ebbbdc7666bb4ea025fe92bd4d5c12b1db6ffa7c7828099400607569b847e69"
   },
   "standing_blockers": [
     {

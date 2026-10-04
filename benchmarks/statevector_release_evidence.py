@@ -48,7 +48,6 @@ import json
 import math
 import os
 import platform
-import random
 import statistics
 import subprocess
 import sys
@@ -63,6 +62,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
+from benchmarks.internal.evidence.speedup import bootstrap_ratio_interval
 
 SCHEMA = "flagquantum.statevector_release_measurements.v1"
 ROLES = (
@@ -72,10 +72,6 @@ ROLES = (
     "speed-summary",
     "release-payload",
 )
-BOOTSTRAP_RESAMPLES = 2000
-BOOTSTRAP_SEED = 440044
-
-
 def _commit() -> str:
     try:
         return subprocess.run(
@@ -304,27 +300,6 @@ def _runtime_ownership(
         context=repr(name),
     )
     return _agreed_ownership(published, context=repr(name)), semantics
-
-
-def _bootstrap_ratio_interval(
-    baseline: list[float],
-    sharded: list[float],
-) -> tuple[float, float]:
-    """Percentile interval for the ratio of two independent latency samples."""
-
-    generator = random.Random(BOOTSTRAP_SEED)
-    ratios: list[float] = []
-    for _ in range(BOOTSTRAP_RESAMPLES):
-        left = _median([generator.choice(baseline) for _ in baseline])
-        right = _median([generator.choice(sharded) for _ in sharded])
-        if right > 0:
-            ratios.append(left / right)
-    if not ratios:
-        return (float("-inf"), float("-inf"))
-    ratios.sort()
-    lower = ratios[int(0.025 * (len(ratios) - 1))]
-    upper = ratios[int(0.975 * (len(ratios) - 1))]
-    return (lower, upper)
 
 
 def _timed_step(
@@ -856,7 +831,7 @@ def _role_speed_summary(args: argparse.Namespace) -> int:
         raise SystemExit("the two speed legs did not run the same configurations")
     table = []
     for name in sorted(left):
-        lower, upper = _bootstrap_ratio_interval(
+        lower, upper = bootstrap_ratio_interval(
             left[name]["seconds"], right[name]["seconds"]
         )
         speedup = left[name]["median_seconds"] / right[name]["median_seconds"]

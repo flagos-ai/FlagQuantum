@@ -20,13 +20,13 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+from benchmarks.internal.evidence.speedup import bootstrap_ratio_interval
 from benchmarks.internal.evidence.statevector_release_gate import (
     evaluate_issue044_release,
     load_manifest,
 )
 from benchmarks.statevector_release_evidence import (
     _agreed_ownership,
-    _bootstrap_ratio_interval,
     _capacity_circuit,
     _control_group,
     _gather,
@@ -576,7 +576,7 @@ def test_bootstrap_interval_orders_the_paired_legs():
     fast = [1.0, 1.01, 0.99, 1.02, 1.0]
     slow = [2.0, 2.02, 1.98, 2.04, 2.0]
 
-    lower, upper = _bootstrap_ratio_interval(fast, slow)
+    lower, upper = bootstrap_ratio_interval(fast, slow)
 
     assert 0.4 < lower < 0.6
     assert 0.4 < upper < 0.6

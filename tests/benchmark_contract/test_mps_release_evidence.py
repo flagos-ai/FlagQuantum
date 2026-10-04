@@ -45,9 +45,12 @@ def _contract() -> dict:
 def _sharded_contract_fields() -> set[str]:
     """Return the fields the sharded contract is assembled from.
 
-    The contract is one literal dictionary, so its keys can be read without
-    building a run: this is what lets the producer be checked against the release
-    manifest before a campaign spends a cluster on it.
+    The contract is one literal dictionary bound to ``evidence`` and returned
+    after the kind-specific fields are folded into it, so its keys can be read
+    without building a run: this is what lets the producer be checked against the
+    release manifest before a campaign spends a cluster on it. The keys folded in
+    afterwards are read too, because a field stated only by one payload kind is
+    still a field the contract states.
     """
 
     tree = ast.parse(Path(producer.__file__).read_text(encoding="utf-8"))
@@ -56,8 +59,33 @@ def _sharded_contract_fields() -> set[str]:
         for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "_sharded_contract"
     )
-    returned = next(node for node in ast.walk(function) if isinstance(node, ast.Return))
-    return {key.value for key in returned.value.keys if isinstance(key, ast.Constant)}
+    literals: list[ast.Dict] = []
+    for node in ast.walk(function):
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "evidence"
+            and isinstance(node.value, ast.Dict)
+        ):
+            literals.append(node.value)
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "update"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "evidence"
+            and node.args
+            and isinstance(node.args[0], ast.Dict)
+        ):
+            literals.append(node.args[0])
+    if not literals:
+        raise AssertionError("_sharded_contract states no evidence literal")
+    return {
+        key.value
+        for literal in literals
+        for key in literal.keys
+        if isinstance(key, ast.Constant)
+    }
 
 
 def _gate_payload_fields() -> set[str]:
@@ -752,15 +780,452 @@ def test_the_completion_role_discloses_a_release_world_the_envelope_cannot_carry
     )
 
 
-def test_the_speed_roles_are_refused_because_no_mps_timing_has_been_taken() -> None:
-    """No ladder is frozen, so a timed comparison would be chosen after the fact."""
+def _acceptance_rung() -> dict:
+    speed = FROZEN["speed_workload"]
+    return next(
+        rung
+        for rung in speed["configuration_ladder"]
+        if rung["name"] == speed["acceptance_configuration"]
+    )
 
-    assert producer.UNFROZEN_SPEED_ROLES == ("matched-speed", "speed-summary")
-    assert FROZEN["speed_workload"]["configuration_ladder"] is None
 
-    for role in producer.UNFROZEN_SPEED_ROLES:
-        with pytest.raises(SystemExit, match="no matched-speed configuration ladder"):
-            producer.main(["--role", role, "--release-manifest", str(RELEASE_MANIFEST)])
+def _configurations(seconds: float) -> list[dict]:
+    """Return the timings one speed leg publishes for the whole frozen ladder.
+
+    The samples are a real spread around the median rather than one repeated
+    reading, because the confidence interval is resampled from them: a leg whose
+    samples were constant would bracket a ratio with a degenerate interval that
+    says nothing about the latency it measured.
+    """
+
+    spread = (1.0, 1.02, 0.98, 1.01, 0.99, 1.03, 0.97, 1.0, 1.02, 0.98, 1.01, 0.99)
+    count = int(FROZEN["speed_workload"]["measured_steps"])
+    samples = [round(seconds * factor, 6) for factor in spread[:count]]
+    return [
+        {
+            "name": str(rung["name"]),
+            "n_sites": int(rung["n_sites"]),
+            "trained_max_bond": int(rung["trained_max_bond"]),
+            "parameter_count": int(rung["parameter_count"]),
+            "steps": 1,
+            "warmup": int(FROZEN["speed_workload"]["warmup_steps"]),
+            "iterations": count,
+            "seconds": samples,
+            "minimum_seconds": min(samples),
+            "median_seconds": seconds,
+            "logical_mps_bytes": 4096,
+            "checkpoint_budget_bytes": 1 << 20,
+            "peak_memory_bytes": 1024,
+            "training_step_count": 1,
+            "final_loss": 0.5,
+        }
+        for rung in FROZEN["speed_workload"]["configuration_ladder"]
+    ]
+
+
+def _boundaries(world: int) -> list[list[dict]]:
+    """Return, for every rank, the adjacent-rank boundaries that rank took part in.
+
+    A boundary is owned by two ranks and published by both, which is what makes a
+    one-sided report the signature of a transport that never crossed the cut.
+    """
+
+    records = [
+        {
+            "owner_ranks": [rank, rank + 1],
+            "bond": rank,
+            "operation_id": f"bond:{rank}",
+            "payload_bytes": 4096,
+            "forward_transport": "batched_isend_irecv",
+            "reverse_transport": "batched_isend_irecv",
+        }
+        for rank in range(world - 1)
+    ]
+    return [
+        [dict(record) for record in records if rank in record["owner_ranks"]]
+        for rank in range(world)
+    ]
+
+
+def _summary(rank: int, world: int) -> dict:
+    """Return one rank's training summary in the shape the engine publishes it.
+
+    The ownership map is the whole workload's, stated by every rank, and the one
+    field that is a property of the reporting rank rather than of the workload --
+    whether that rank holds optimizer state -- is set the way the engine sets it,
+    to ``owner_rank == rank``. A fixture that made that field agree across ranks
+    would be a fixture no real sharded run can produce.
+    """
+
+    ownership = [
+        {
+            "parameter_index": index,
+            "owner_rank": index % world,
+            "optimizer_state_local": (index % world) == rank,
+            "gradient_route": "owner_reduce",
+            "update_route": "owner_step",
+        }
+        for index in range(int(CAPACITY["parameter_count"]))
+    ]
+    metric = {
+        "useful_work_completed": True,
+        "bond_updates": _boundaries(world)[rank],
+        "boundary_bytes": 4096 * max(0, world - 1),
+        "gradient_collective_bytes": 0,
+        "optimizer_collective_bytes": 0,
+        "layer_halo_intra_node_bytes": 0,
+        "layer_halo_inter_node_bytes": 0,
+        "boundary_forward_exchanges": 1,
+        "boundary_reverse_exchanges": 1,
+        "peak_memory_bytes": 1024,
+        "reverse_peak_memory_bytes": 512,
+        "forward_peak_memory_bytes": 512,
+        "end_to_end_seconds": 1.0,
+    }
+    return {
+        "executor": "pytorch_native_sharded_mps_training_v1",
+        "optimizer": "adam",
+        "rank": rank,
+        "world_size": world,
+        "local_world_size": 1,
+        "site_ownership_policy": "balanced",
+        "completed_steps": 1,
+        "losses": [0.5],
+        "site_ownership": tuple((index,) for index in range(world)),
+        "optimizer_ownership": ownership,
+        "step_metrics": [dict(metric)],
+    }
+
+
+def _speed_leg(*, world: int, seconds: float) -> dict:
+    """Return one timed leg of the matched-speed ladder as the role records it.
+
+    The two legs differ in the world they ran at, which is the whole comparison,
+    and the sharded leg carries one record per rank because the ownership and
+    timing evidence is read from every rank rather than from rank 0 alone.
+    """
+
+    configurations = _configurations(seconds)
+    record = {
+        "schema": "flagquantum.mps_release_measurements.v2",
+        "role": "matched-speed",
+        "rank": 0,
+        "world_size": world,
+        "local_world_size": 1,
+        "node_count": world,
+        "state_mode": "mps",
+        "hostname": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+        "commit": "a" * 40,
+        "collective_backend": "nccl",
+        "warmup": int(FROZEN["speed_workload"]["warmup_steps"]),
+        "iterations": int(FROZEN["speed_workload"]["measured_steps"]),
+        "steps": 1,
+        "ladder_fingerprint": str(FROZEN["speed_workload"]["ladder_fingerprint"]),
+        "acceptance_configuration": str(
+            FROZEN["speed_workload"]["acceptance_configuration"]
+        ),
+        "configurations": configurations,
+        "acceptance_summary": _summary(0, world),
+        "measured_peak_memory_bytes": 1024,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "device_total_memory_bytes": int(CAPACITY["single_device_total_memory_bytes"]),
+        "software": {"torch": "2.13.0+cu130"},
+    }
+    return {
+        **record,
+        "ranks": [
+            {
+                **record,
+                "rank": index,
+                "acceptance_summary": _summary(index, world),
+            }
+            for index in range(world)
+        ],
+    }
+
+
+def test_the_assembled_speed_summary_states_the_whole_release_contract(
+    tmp_path: Path,
+) -> None:
+    """The ratio the release publishes is assembled from two measured legs.
+
+    The two legs are timed at the frozen ladder, so the document this role writes
+    has to carry the ladder's identity, the acceptance rung's shape and the
+    interval the ratio was bracketed by, on top of every field the capacity roles
+    state. It is checked against the manifest's own required-field list rather
+    than a list copied here, so a field added to the contract and not to this role
+    fails this test.
+    """
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_speed_leg(world=1, seconds=4.0)), encoding="utf-8")
+    sharded = tmp_path / "sharded.json"
+    sharded.write_text(json.dumps(_speed_leg(world=2, seconds=2.0)), encoding="utf-8")
+    summary = tmp_path / "summary.json"
+
+    assert (
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--premise",
+                str(PREMISE_ARTIFACT),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(sharded),
+                "--measurements",
+                str(summary),
+            ]
+        )
+        == 0
+    )
+    document = json.loads(summary.read_text(encoding="utf-8"))
+    measurements = document["measurements"]
+
+    assert document["state_mode"] == "mps"
+    assert measurements["acceptance_case"] == "matched_speed"
+    # Four of the required fields are read off the machine that ran the rank and
+    # are carried by the envelope, so the requirement is taken from the gate
+    # rather than restated here.
+    envelope = {
+        "devices": ("GPU-0000",),
+        "raw_log_sha256": "a" * 64,
+        "commit": "b" * 40,
+        "rank_mapping": ("rank=0:device_uuid=GPU-0000",),
+    }
+    required_from_payload = set(
+        gate._has_required_fields({}, envelope, FROZEN["required_artifact_fields"])
+    )
+    assert required_from_payload - set(measurements) == set()
+    # The envelope names the ladder the leg timed and the evidence names the
+    # capacity premise the rung rests on, which are two different digests.
+    assert (
+        measurements["workload_sha256"] == FROZEN["speed_workload"]["workload_sha256"]
+    )
+    assert (
+        measurements["capacity_premise_workload_sha256"] == CAPACITY["workload_sha256"]
+    )
+    assert (
+        measurements["ladder_fingerprint"]
+        == FROZEN["speed_workload"]["ladder_fingerprint"]
+    )
+    assert measurements["acceptance_configuration"] == _acceptance_rung()["name"]
+    # The acceptance rung's shape is the rung's, not the capacity workload's, and
+    # it is a shape the ladder froze.
+    assert measurements["n_sites"] == _acceptance_rung()["n_sites"]
+    assert measurements["max_bond_dimension"] == _acceptance_rung()["trained_max_bond"]
+    assert measurements["parameter_count"] == _acceptance_rung()["parameter_count"]
+    assert measurements["n_sites"] != int(CAPACITY["n_sites"])
+    # 4.0 s against 2.0 s over a world of two, from samples the interval is
+    # resampled from, so a payload whose ratio drifted from its timings is caught.
+    assert measurements["speedup"] == pytest.approx(2.0)
+    assert measurements["scaling_efficiency"] == pytest.approx(1.0)
+    lower, upper = measurements["speedup_confidence_interval"]
+    assert lower < measurements["speedup"] < upper
+    # Every rung is reported with its own ratio, not only the acceptance one.
+    assert [item["name"] for item in measurements["configurations"]] == [
+        str(rung["name"]) for rung in FROZEN["speed_workload"]["configuration_ladder"]
+    ]
+
+    # The sealer reads the projected measurements as the envelope's evidence, so
+    # the contract has to survive that projection unchanged.
+    evidence = tmp_path / "evidence.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "release-payload",
+                "--document",
+                str(summary),
+                "--measurements",
+                str(evidence),
+            ]
+        )
+        == 0
+    )
+    assert json.loads(evidence.read_text(encoding="utf-8")) == measurements
+
+
+def test_a_speed_summary_refuses_legs_that_are_not_one_comparison(
+    tmp_path: Path,
+) -> None:
+    """A ratio is only a ratio of one ladder, one transport and two real legs."""
+
+    # The baseline leg is the world size 1 run the comparison divides by, so the
+    # refusals below are about the sharded leg unless one of them says otherwise.
+    solo = _speed_leg(world=1, seconds=4.0)
+
+    def leg(**patches) -> dict:
+        return {**_speed_leg(world=2, seconds=2.0), **patches}
+
+    def run(baseline: dict, sharded: dict) -> None:
+        baseline_path = tmp_path / "baseline.json"
+        baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
+        sharded_path = tmp_path / "sharded.json"
+        sharded_path.write_text(json.dumps(sharded), encoding="utf-8")
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--premise",
+                str(PREMISE_ARTIFACT),
+                "--baseline",
+                str(baseline_path),
+                "--sharded",
+                str(sharded_path),
+                "--measurements",
+                str(tmp_path / "never.json"),
+            ]
+        )
+
+    # A denominator measured on one device is not a distributed speedup.
+    with pytest.raises(SystemExit, match="sharded leg must run above world size 1"):
+        run(solo, leg(world_size=1, node_count=1))
+    # A leg timed at another protocol measured a comparison nobody froze.
+    with pytest.raises(SystemExit, match="timed a ladder that is not the frozen one"):
+        run(solo, leg(ladder_fingerprint="0" * 64))
+    # A ratio across two transports is not a ratio of either of them.
+    with pytest.raises(SystemExit, match="different collectives"):
+        run(solo, leg(collective_backend="gloo"))
+    # Both legs have to have timed the frozen ladder's own configurations.
+    with pytest.raises(SystemExit, match="did not time the frozen ladder"):
+        incomplete = leg()
+        incomplete["configurations"] = incomplete["configurations"][1:]
+        run(solo, incomplete)
+    # A ratio needs a denominator that is a latency.
+    with pytest.raises(SystemExit, match="not a latency a ratio can divide by"):
+        zero = leg()
+        for item in zero["configurations"]:
+            item["median_seconds"] = 0.0
+        run(solo, zero)
+    # Every rank has to have measured something, or the world size the payload
+    # states is not the number of ranks that ran.
+    with pytest.raises(SystemExit, match="published .* rank records"):
+        short = leg()
+        short["ranks"] = short["ranks"][:1]
+        run(solo, short)
+    # Optimizer state is held by the rank that owns the parameter, and a rank
+    # that states otherwise is reporting an optimizer that is not sharded.
+    with pytest.raises(SystemExit, match="owns; the optimizer state"):
+        drifted = leg()
+        for entry in drifted["ranks"][1]["acceptance_summary"]["optimizer_ownership"]:
+            entry["optimizer_state_local"] = True
+        run(solo, drifted)
+
+
+def test_the_frozen_ladder_is_the_protocol_the_manifest_declares() -> None:
+    """The rungs the manifest lists are the rungs the ladder definition fixes.
+
+    Two copies of one protocol is a drift hazard: the gate reads the manifest so
+    that it never executes a workload, and the producer executes the definition,
+    so the producer is where the two can be compared. The fingerprint is checked
+    as well, because it is what the sealer's measured payloads name: a rung list
+    that agreed while the fingerprint moved would let a payload attest to a
+    protocol the manifest no longer describes.
+    """
+
+    speed = FROZEN["speed_workload"]
+    module = producer._load_ladder_module(speed)
+
+    assert producer._speed_ladder(speed) == [
+        {
+            "name": rung["name"],
+            "n_sites": rung["n_sites"],
+            "trained_max_bond": rung["trained_max_bond"],
+            "parameter_count": FROZEN["capacity_workload"]["parameter_count"],
+        }
+        for rung in module.LADDER
+    ]
+    assert speed["acceptance_configuration"] == module.ACCEPTANCE
+    assert producer._ladder_steps(speed) == module.STEPS
+    assert speed["ladder_fingerprint"] == module.ladder_fingerprint()
+    assert speed["workload_sha256"] == producer._sha256(
+        Path(speed["ladder_definition_path"])
+    )
+    acceptance = next(
+        rung
+        for rung in speed["configuration_ladder"]
+        if rung["name"] == speed["acceptance_configuration"]
+    )
+    assert (
+        acceptance["parameter_count"] == FROZEN["capacity_workload"]["parameter_count"]
+    )
+
+
+def test_a_speed_role_refuses_a_protocol_the_manifest_did_not_freeze(
+    tmp_path: Path,
+) -> None:
+    """A leg timed at another protocol measured a comparison nobody froze.
+
+    The warmup and the measured call count are protocol rather than tuning: a
+    cold rank and a warmed one measure different latencies, so a ratio computed
+    across two different protocols is not the frozen acceptance measurement. The
+    refusal comes before any device is touched, which is what makes it a launch
+    check rather than a post-hoc one.
+    """
+
+    for warmup, iterations in ((0, 10), (2, 1)):
+        with pytest.raises(SystemExit, match="the frozen matched-speed protocol"):
+            producer.main(
+                [
+                    "--role",
+                    "matched-speed",
+                    "--release-manifest",
+                    str(RELEASE_MANIFEST),
+                    "--warmup",
+                    str(warmup),
+                    "--iterations",
+                    str(iterations),
+                ]
+            )
+
+    # A manifest whose ladder module is not the one it froze cannot be timed at
+    # all: the rungs the leg would run are not the rungs the gate reads.
+    unfrozen = copy.deepcopy(FROZEN)
+    unfrozen["speed_workload"]["ladder_definition_path"] = str(
+        tmp_path / "not_the_ladder.py"
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(unfrozen), encoding="utf-8")
+    with pytest.raises(SystemExit, match="is not on disk"):
+        producer.main(
+            [
+                "--role",
+                "matched-speed",
+                "--release-manifest",
+                str(manifest),
+                "--warmup",
+                str(FROZEN["speed_workload"]["warmup_steps"]),
+                "--iterations",
+                str(FROZEN["speed_workload"]["measured_steps"]),
+            ]
+        )
+
+
+def test_the_speed_summary_role_requires_both_legs_and_the_premise() -> None:
+    """A ratio is not derivable from one leg, and a premise is not inferable."""
+
+    with pytest.raises(SystemExit, match="requires --premise"):
+        producer.main(
+            ["--role", "speed-summary", "--release-manifest", str(RELEASE_MANIFEST)]
+        )
+
+    with pytest.raises(SystemExit, match="requires --baseline and --sharded"):
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--premise",
+                str(PREMISE_ARTIFACT),
+            ]
+        )
 
 
 def test_the_release_payload_role_projects_the_contract_the_role_assembled(

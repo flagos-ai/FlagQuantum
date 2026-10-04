@@ -25,7 +25,6 @@ import argparse
 import hashlib
 import json
 import os
-import random
 import socket
 import subprocess
 import sys
@@ -38,6 +37,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
+from benchmarks.internal.evidence.speedup import bootstrap_ratio_interval
 from flagquantum.experimental.distributed import train_distributed_tensor_network
 from flagquantum.runtime.audit.vocabulary import TENSOR_NETWORK_STATE_MODES
 
@@ -49,10 +49,6 @@ ROLES = (
     "speed-summary",
     "release-payload",
 )
-BOOTSTRAP_RESAMPLES = 2000
-BOOTSTRAP_SEED = 440044
-
-
 def _commit() -> str:
     """Return the revision the producer is running at."""
 
@@ -708,27 +704,6 @@ def _median(values: Sequence[float]) -> float:
     return 0.5 * (ordered[middle - 1] + ordered[middle])
 
 
-def _bootstrap_ratio_interval(
-    baseline: Sequence[float], sharded: Sequence[float]
-) -> tuple[float, float]:
-    """Percentile interval for the ratio of two independent latency samples."""
-
-    generator = random.Random(BOOTSTRAP_SEED)
-    ratios: list[float] = []
-    for _ in range(BOOTSTRAP_RESAMPLES):
-        left = _median([generator.choice(baseline) for _ in baseline])
-        right = _median([generator.choice(sharded) for _ in sharded])
-        if right > 0:
-            ratios.append(left / right)
-    if not ratios:
-        return (float("-inf"), float("-inf"))
-    ratios.sort()
-    return (
-        ratios[int(0.025 * (len(ratios) - 1))],
-        ratios[int(0.975 * (len(ratios) - 1))],
-    )
-
-
 def _agreed_ownership(
     published: list[Mapping[str, list[str]]], *, context: str
 ) -> dict[str, list[str]]:
@@ -773,7 +748,7 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
         raise SystemExit("the two speed legs did not run the same configurations")
     table = []
     for name in sorted(left):
-        lower, upper = _bootstrap_ratio_interval(
+        lower, upper = bootstrap_ratio_interval(
             left[name]["seconds"], right[name]["seconds"]
         )
         speedup = left[name]["median_seconds"] / right[name]["median_seconds"]

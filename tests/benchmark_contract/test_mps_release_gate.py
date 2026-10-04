@@ -87,9 +87,11 @@ def _manifest(topology: dict[str, Any] | None = None, **patches: Any) -> dict[st
 def _sealable_topology_manifest(**patches: Any) -> dict[str, Any]:
     """Return a manifest whose release world can be sealed, and accepted.
 
-    The premise is established and the speed ladder is frozen here so that the
-    accept path is exercised: with the frozen document's real state the gate must
-    report those two as open, which is what the checked-in-manifest test asserts.
+    The premise is established here so that the accept path is exercised: with
+    the frozen document's real state the gate must report the premise as open,
+    which is what the checked-in-manifest test asserts. The speed ladder is not
+    patched, because the checked-in manifest already freezes one and a fixture
+    ladder would let the accept path pass against rungs no workload defines.
     """
 
     manifest = _manifest(SEALABLE_TOPOLOGY, **patches)
@@ -100,16 +102,17 @@ def _sealable_topology_manifest(**patches: Any) -> dict[str, Any]:
     # discloses two absent sources and a drifted artifact, which is why its own
     # premise is unestablished and why the gate reports the drift as well.
     manifest["capacity_workload"]["premise_provenance"]["absent_sources"] = []
-    manifest["speed_workload"]["configuration_ladder"] = [
-        {
-            "name": "matched_speed_2x32512_chi768",
-            "world_size": 2,
-            "n_sites": 65024,
-            "sites_per_rank": 32512,
-            "bond_dimension": 768,
-        }
-    ]
     return manifest
+
+
+def _acceptance_rung(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Return the ladder rung the manifest names as its acceptance configuration."""
+
+    speed = manifest["speed_workload"]
+    acceptance = speed["acceptance_configuration"]
+    return next(
+        rung for rung in speed["configuration_ladder"] if rung["name"] == acceptance
+    )
 
 
 def _baseline_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -178,6 +181,24 @@ def _sharded_evidence(
         else local_world_size
     )
     nodes = int(world // local) if node_count is None else node_count
+    # A matched-speed payload is the one payload whose shape is not the capacity
+    # workload's: the capacity workload cannot be timed on one device, so a ratio
+    # is measured at a rung of the frozen ladder. Its envelope therefore names the
+    # ladder's digest and its evidence names the capacity premise the rung rests
+    # on, which is what the gate's provenance binding reads.
+    if acceptance_case == "matched_speed":
+        rung = _acceptance_rung(manifest)
+        n_sites = int(rung["n_sites"])
+        max_bond = int(rung["trained_max_bond"])
+        parameters = int(rung["parameter_count"])
+        workload_sha256 = str(manifest["speed_workload"]["workload_sha256"])
+        premise_workload_sha256 = str(capacity["workload_sha256"])
+    else:
+        n_sites = int(capacity["n_sites"])
+        max_bond = int(capacity["trained_max_bond"])
+        parameters = int(capacity["parameter_count"])
+        workload_sha256 = str(capacity["workload_sha256"])
+        premise_workload_sha256 = str(capacity["workload_sha256"])
     return {
         "acceptance_case": acceptance_case,
         "state_mode": "mps",
@@ -192,8 +213,8 @@ def _sharded_evidence(
         "topology_scope": "multi_node_production_transport",
         "release_gate_allowed": True,
         "training_step_count": 3,
-        "n_sites": capacity["n_sites"],
-        "max_bond_dimension": capacity["trained_max_bond"],
+        "n_sites": n_sites,
+        "max_bond_dimension": max_bond,
         "batch_size": capacity["batch_size"],
         "dtype": capacity["dtype"],
         "collective_backend": "nccl",
@@ -272,9 +293,10 @@ def _sharded_evidence(
         "speedup": 1.2,
         "speedup_confidence_interval": [1.1, 1.3],
         "scaling_efficiency": 0.62,
-        "workload_sha256": capacity["workload_sha256"],
+        "workload_sha256": workload_sha256,
+        "capacity_premise_workload_sha256": premise_workload_sha256,
         "workload_body_sha256": frozen_workload_body_sha256(capacity),
-        "parameter_count": capacity["parameter_count"],
+        "parameter_count": parameters,
         "blockers": [],
     }
 
@@ -657,18 +679,19 @@ ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
 
 
 def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly three named reasons.
+    """The checked-in state fails the gate for exactly two named reasons.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains are the three things the frozen document itself
-    discloses: the capacity premise is unestablished, the provenance it cites for
-    that premise is not re-verifiable, and no MPS speed configuration has been
-    chosen or timed. The sixteen-rank release world used to appear here as well,
-    because no evidence scope could carry it; API change proposal 065 added
-    ``MULTI_NODE_SCALE`` and this contract was re-frozen against it, so the
-    world is now sealable and its absence from this tuple is the change rather
-    than an omission. Asserting the exact tuple means a fourth blocker appearing
-    here would have to be explained rather than absorbed.
+    satisfied. What remains are the two things the frozen document itself
+    discloses about its premise: it is not established, and the provenance it
+    cites for it is not re-verifiable. The sixteen-rank release world used to
+    appear here as well, because no evidence scope could carry it; API change
+    proposal 065 added ``MULTI_NODE_SCALE`` and this contract was re-frozen
+    against it, so the world is now sealable. The matched-speed ladder used to
+    appear here too, while the manifest froze no rungs; it now freezes a ladder
+    whose shapes were measured, so a speed payload is a payload this contract can
+    accept. Asserting the exact tuple means a third blocker appearing here would
+    have to be explained rather than absorbed.
     """
 
     manifest = load_manifest()
@@ -676,12 +699,11 @@ def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
 
     assert passed is False
     assert blockers == (
-        "speed_configuration_ladder_not_frozen",
         "capacity_premise_not_established",
         "capacity_premise_evidence_not_verifiable",
     )
     assert manifest["capacity_workload"]["premise_established"] is False
-    assert manifest["speed_workload"]["configuration_ladder"] is None
+    assert manifest["speed_workload"]["configuration_ladder"]
 
 
 def test_a_complete_release_set_satisfies_the_contract() -> None:
@@ -881,11 +903,16 @@ def test_every_manifest_state_blocker_is_reachable() -> None:
     assert "missing_release_world_sizes" in blockers_for(
         established, [_baseline_evidence(established)]
     )
-    # A ladder chosen after the numbers were known is not a frozen protocol.
+    # A ladder chosen after the numbers were known is not a frozen protocol. The
+    # payloads are built before the ladder is withdrawn, because a matched-speed
+    # payload has no shape to take from a ladder that is not there -- which is
+    # itself the point: the gate reports the missing protocol rather than reading
+    # the payload as evidence about one.
     unfrozen = _sealable_topology_manifest()
+    unfrozen_payloads = _payloads(unfrozen)
     unfrozen["speed_workload"]["configuration_ladder"] = None
     assert "speed_configuration_ladder_not_frozen" in blockers_for(
-        unfrozen, _payloads(unfrozen)
+        unfrozen, unfrozen_payloads
     )
     # A named speed case cannot bypass the frozen statistical thresholds.
     weak = _sealable_topology_manifest()
