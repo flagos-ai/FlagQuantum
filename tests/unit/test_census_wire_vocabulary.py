@@ -839,6 +839,60 @@ def test_a_wire_token_is_reported_each_time_it_occurs(tmp_path: Path) -> None:
     )
 
 
+def test_two_definitions_sharing_a_bare_name_are_two_containers(tmp_path: Path) -> None:
+    """The key is a dotted qualname, and the exemption is per container.
+
+    `A._prepare` and `B._prepare` are different docstrings that reach different
+    readers. Keyed by the bare `_prepare` they would be one container holding two
+    tokens, and a single recorded row would then cover an occurrence in the other
+    class -- so the gate would pass on a docstring nobody had looked at.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/two.py": (
+                "class A:\n"
+                '    """A."""\n'
+                "\n"
+                "    def _prepare(self) -> None:\n"
+                '        """Bind each wire to one index."""\n'
+                "\n"
+                "\n"
+                "class B:\n"
+                '    """B."""\n'
+                "\n"
+                "    def _prepare(self) -> None:\n"
+                '        """Bind each wire to one index."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/two.py::A._prepare", "wire"),
+        ("flagquantum/two.py::B._prepare", "wire"),
+    )
+
+
+def test_a_nested_definition_is_keyed_by_its_whole_path(tmp_path: Path) -> None:
+    """A closure is not the method that holds it, and a reader can reach both."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/nested.py": (
+                "def outer() -> None:\n"
+                '    """Outer."""\n'
+                "\n"
+                "    def inner() -> None:\n"
+                '        """Reindex every wire."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/nested.py::outer.inner", "wire"),
+    )
+
+
 def test_the_docstring_matcher_finds_wire_anywhere_in_the_name() -> None:
     """`terminal_wires` is the same question as `wires`, as the keyword matcher is."""
 

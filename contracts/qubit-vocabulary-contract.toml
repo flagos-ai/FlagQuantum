@@ -162,38 +162,18 @@ condition = "exempt: each entry names the containers and the token multiset they
 # The scan reads the whole package rather than its public modules, because a private
 # module's docstring still prints.
 #
-# The key is `relative::Qualname::token`. A comment is attributed to the innermost
-# definition containing it, so the key survives a line moving inside that definition, and
-# a module-scope comment is keyed `<module>`.
-[[docstring.keep]]
-identifier = [
-    "flagquantum/_api.py::compile::n_wires",
-    "flagquantum/_api.py::run::n_wires",
-    "flagquantum/circuit.py::_composition_source::n_wires",
-    "flagquantum/core/ir.py::_normalize_count::n_wires",
-    "flagquantum/simulation/lindblad.py::n_qubits::n_wires",
-    "flagquantum/simulation/mps/tebd.py::n_qubits::n_wires",
-    "flagquantum/twin/circuit_support.py::_circuit_depth::n_wires",
-    "flagquantum/twin/evidence.py::TwinEvidenceEnvelope.supports_structure::n_wires",
-]
-reason = "the spelling of a serialized key, so the docstring that explains the record has to name it; renaming it is a payload-schema change, not a rename"
-[[docstring.keep]]
-identifier = [
-    "flagquantum/simulation/statevector/operations.py::_apply_single_wire_matrix::_cpu_single_wire_elementwise_enabled",
-]
-reason = "a private module-level switch whose own name contains the word"
-[[docstring.keep]]
-identifier = [
-    "flagquantum/algorithms/qubo.py::_constant_wire::max_wire",
-    "flagquantum/runtime/execution_plan.py::ExecutionPlan::shardable_wires",
-]
-reason = "a live attribute name on the public surface"
+# The key is `relative::Qualname::token` with the qualname dotted, so two classes that
+# each define a method of the same name cannot share a container: one container's
+# exemption would otherwise pay for the other's occurrence. A docstring is keyed by its
+# own definition; a comment is keyed by the innermost definition containing it, which
+# keeps the key stable when lines move inside that definition and gives a module-scope
+# comment the key `<module>`.
 [[docstring.keep]]
 identifier = [
     "flagquantum/algorithms/kmedians.py::_nearest_centroid::n_wires",
     "flagquantum/algorithms/qubo.py::_constant_wire::n_wires",
-    "flagquantum/circuit.py::_require_width_covers_recorded_qubits::wire",
-    "flagquantum/compiler/pipeline.py::last_touching::wires",
+    "flagquantum/circuit.py::Circuit._require_width_covers_recorded_qubits::wire",
+    "flagquantum/compiler/pipeline.py::_WireLocalProgram.last_touching::wires",
     "flagquantum/ecosystem/simulators/advisor.py::_recommend_profile::n_wires",
     "flagquantum/runtime/executors/statevector/planning.py::_validate_distributed_statevector_plan::n_wires",
     "flagquantum/runtime/measurements.py::_ideal_probabilities::n_wires",
@@ -215,23 +195,24 @@ identifier = [
 reason = "`[boundary]` is the public function surface, so a private parameter is outside the migration and the docstring that explains it keeps its spelling"
 [[docstring.keep]]
 identifier = [
+    "flagquantum/_api.py::compile::n_wires",
+    "flagquantum/_api.py::run::n_wires",
+    "flagquantum/circuit.py::_composition_source::n_wires",
+    "flagquantum/core/ir.py::_normalize_count::n_wires",
+    "flagquantum/simulation/lindblad.py::EvolutionPlan.n_qubits::n_wires",
+    "flagquantum/simulation/mps/tebd.py::TEBDResult.n_qubits::n_wires",
+    "flagquantum/twin/circuit_support.py::_circuit_depth::n_wires",
+    "flagquantum/twin/evidence.py::TwinEvidenceEnvelope.supports_structure::n_wires",
+]
+reason = "the spelling of a serialized key, so the docstring that explains the record has to name it; renaming it is a payload-schema change rather than a rename"
+[[docstring.keep]]
+identifier = [
     "flagquantum/drawer/mpl_drawer.py::draw_mpl::active_wire_notches",
     "flagquantum/drawer/mpl_drawer.py::draw_mpl::show_wire_labels",
     "flagquantum/drawer/mpl_drawer.py::draw_mpl::wire_options",
     "flagquantum/runtime/executors/statevector/planning.py::_validate_distributed_statevector_plan::sharded_wires",
 ]
 reason = "the package still reads it and warns, so the docstring that explains the compatibility promise has to be able to say the name"
-[[docstring.keep]]
-identifier = [
-    "flagquantum/compiler/routing.py::<module>::test_multi_wire_routing_locality",
-]
-reason = "the path of a test the package ships"
-[[docstring.keep]]
-identifier = [
-    "flagquantum/drawer/ir_adapter.py::_op_qubits::wires",
-    "flagquantum/drawer/ir_adapter.py::to_drawable_circuit::wires",
-]
-reason = "the object is the caller's, not the package's; the package reads the spelling at one boundary and re-expresses it as `qubits` immediately"
 [[docstring.keep]]
 identifier = [
     "flagquantum/qec/dem_construction.py::_Mechanism::wire",
@@ -241,10 +222,32 @@ identifier = [
 reason = "the definition's own field or parameter carries this spelling, and a docstring that documents a name has to use that name"
 [[docstring.keep]]
 identifier = [
-    "flagquantum/drawer/mpl_drawer.py::_draw_qubits::wire",
+    "flagquantum/algorithms/qubo.py::_constant_wire::max_wire",
+    "flagquantum/runtime/execution_plan.py::ExecutionPlan::shardable_wires",
+]
+reason = "a live attribute name on the public surface"
+[[docstring.keep]]
+identifier = [
+    "flagquantum/drawer/ir_adapter.py::_op_qubits::wires",
+    "flagquantum/drawer/ir_adapter.py::to_drawable_circuit::wires",
+]
+reason = "the object is the caller's, not the package's; the package reads the spelling at one boundary and re-expresses it as `qubits` immediately"
+[[docstring.keep]]
+identifier = [
+    "flagquantum/drawer/mpl_drawer.py::MPLDrawer._draw_qubits::wire",
     "flagquantum/observables/__init__.py::_selected_qubit::wire",
 ]
 reason = "the sentence is about the retired spelling rather than using it"
+[[docstring.keep]]
+identifier = [
+    "flagquantum/simulation/statevector/operations.py::_apply_single_wire_matrix::_cpu_single_wire_elementwise_enabled",
+]
+reason = "a private module-level switch whose own name contains the word"
+[[docstring.keep]]
+identifier = [
+    "flagquantum/compiler/routing.py::<module>::test_multi_wire_routing_locality",
+]
+reason = "the path of a test the package ships"
 
 # Canonical sites still spelled `wire`, one per line, keyed by module,
 # qualified name, and parameter. The list is the frozen baseline and keeps

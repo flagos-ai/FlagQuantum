@@ -94,9 +94,19 @@ names the containers and the exact multiset of tokens they may show.
 
 The gate does not take a total. It compares the multiset of tokens **per container**,
 so a second occurrence inside an already-exempt docstring needs its own row rather
-than being absorbed by the first. The key is `relative::Qualname::token`, and a
-comment is attributed to the innermost definition containing it, so the key survives a
-line moving inside that definition.
+than being absorbed by the first. The key is `relative::Qualname::token`, with the
+qualname dotted: `A._prepare` and `B._prepare` are different docstrings that reach
+different readers, and keyed by the bare `_prepare` they would be one container whose
+single row covers an occurrence nobody had looked at. A docstring is keyed by its own
+definition; a comment is keyed by the innermost definition containing it, which keeps
+the key stable when lines move inside that definition.
+
+Two definitions that share a bare name were in fact the one thing this slice got wrong
+on its first attempt. The key was the bare `node.name` for a docstring and the dotted
+path for a comment, so five recorded rows named containers the live scan no longer
+produced and the gate called them stale. The fix is not a wider exemption but a
+narrower key, and the two tests that pin it — `A._prepare` against `B._prepare`, and a
+closure against the method that holds it — are the regression.
 
 ## Evidence
 

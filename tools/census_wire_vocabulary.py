@@ -1175,6 +1175,31 @@ def _scope_names(tree: ast.Module) -> tuple[tuple[int, int, str], ...]:
     return tuple(spans)
 
 
+def _definition_names(tree: ast.Module) -> dict[int, str]:
+    """Every definition node's dotted qualname, keyed by the node's identity.
+
+    A docstring is keyed by the dotted name rather than the bare one for the same
+    reason a comment is: two classes may each define a method of the same name, and a
+    key that merged them would let one container's exemption pay for the other's
+    occurrence. Identity rather than position keeps the lookup independent of
+    ``ast.walk``'s order.
+    """
+
+    names: dict[int, str] = {}
+
+    def walk(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                name = f"{prefix}{child.name}"
+                names[id(child)] = name
+                walk(child, f"{name}.")
+            else:
+                walk(child, prefix)
+
+    walk(tree, "")
+    return names
+
+
 def _enclosing(spans: tuple[tuple[int, int, str], ...], line: int) -> str:
     """The innermost definition containing a line, or `<module>` at file scope."""
 
@@ -1209,6 +1234,7 @@ def docstring_census(
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=relative)
         spans = _scope_names(tree)
+        names = _definition_names(tree)
         for node in ast.walk(tree):
             if not isinstance(
                 node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
@@ -1217,7 +1243,7 @@ def docstring_census(
             doc = ast.get_docstring(node, clean=False)
             if not doc or "wire" not in doc.lower():
                 continue
-            qualname = "<module>" if isinstance(node, ast.Module) else node.name
+            qualname = names.get(id(node), "<module>")
             for line in doc.splitlines():
                 for token in _wire_tokens(line):
                     found.append((f"{relative}::{qualname}", token))
