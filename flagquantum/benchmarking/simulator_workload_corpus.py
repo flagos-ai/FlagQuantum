@@ -26,6 +26,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core import CircuitIR
 
+from ._environment import cpu_affinity, cpu_model
 from .contract import runtime_metadata, write_json_atomic
 from .simulator_compare import ABSOLUTE_TOLERANCE, SEED
 from .simulator_compare import build_workload as build_hwe
@@ -488,6 +489,8 @@ def run_benchmark(
         environment={
             "machine": platform.machine(),
             "processor": platform.processor() or "unknown",
+            "cpu_model": cpu_model(),
+            "cpu_affinity": cpu_affinity(),
             "torch": torch.__version__,
             "torch_threads": threads,
             "thread_environment": thread_environment,
