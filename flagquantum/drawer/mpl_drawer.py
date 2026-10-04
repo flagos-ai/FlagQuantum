@@ -10,11 +10,52 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle, FancyBboxPatch
 
-from .ir_adapter import to_drawable_circuit
+from ..core._qubit_aliases import warn_qubit_alias
+from .ir_adapter import _detected_qubit_count, to_drawable_circuit
+
+LEGACY_OPTION_SPELLINGS: dict[str, str] = {
+    "wire_options": "qubit_options",
+    "show_wire_labels": "show_qubit_labels",
+    "active_wire_notches": "active_qubit_notches",
+}
+"""Presentation options this drawer accepts, under their pre-qubit names.
+
+These travel through ``**kwargs`` rather than being declared parameters, so no
+census counts them and no static check sees them. A caller still writing
+``show_wire_labels=False`` used to be obeyed and would now be silently ignored
+-- the diagram comes back with exactly the labels the caller asked to hide, and
+nothing says why. So the legacy spelling is honoured and warned about, the way
+every other migrated name is.
+"""
+
+
+def resolve_legacy_options(
+    kwargs: dict[str, Any], *, stacklevel: int = 4
+) -> dict[str, Any]:
+    """Return ``kwargs`` with any pre-qubit option name moved to its new name.
+
+    Each entry point calls this, so a caller of ``draw_mpl`` and a caller of
+    ``MPLDrawer`` are each warned once, at their own frame. The canonical name
+    wins if a caller passes both.
+    """
+
+    resolved = dict(kwargs)
+    for legacy, canonical in LEGACY_OPTION_SPELLINGS.items():
+        if legacy not in resolved:
+            continue
+        value = resolved.pop(legacy)
+        warn_qubit_alias(legacy, canonical, stacklevel=stacklevel)
+        resolved.setdefault(canonical, value)
+    return resolved
 
 
 class MPLDrawer:
-    """Matplotlib circuit drawer"""
+    """Matplotlib circuit drawer.
+
+    Rendering options arrive through ``**kwargs`` rather than as declared
+    parameters, so :func:`resolve_legacy_options` is the one place that decides
+    which spellings of them are understood.
+    """
 
     _box_length = 0.8
     _circ_rad = 0.25
@@ -90,6 +131,7 @@ class MPLDrawer:
         fig: Figure | None = None,
         **kwargs: Any,
     ) -> None:
+        kwargs = resolve_legacy_options(kwargs)
         qdev = to_drawable_circuit(qdev)
         self.qdev = qdev
         self.op_history: Sequence[dict[str, Any]] = getattr(qdev, "op_history", ())
@@ -109,16 +151,14 @@ class MPLDrawer:
             self._crop_labels()
 
     def _detect_n_qubits(self) -> int:
-        """Detect the number of qubits from operation history"""
-        max_qubit = -1
-        for op in self.op_history:
-            qubits = op.get("qubits", [])
-            if isinstance(qubits, int):
-                qubits = [qubits]
-            for w in qubits:
-                if isinstance(w, int) and w > max_qubit:
-                    max_qubit = w
-        return max_qubit + 1 if max_qubit >= 0 else 0
+        """The width implied by the entries this drawer holds.
+
+        The entries are already qubit-named: they came through
+        ``to_drawable_circuit``, which is the one place that reads a legacy
+        spelling. Reached only for an input the adapter could not adapt at all,
+        whose history is empty.
+        """
+        return _detected_qubit_count(self.op_history)
 
     def _create_qubit_map(
         self, wire_order: Sequence[int | str] | None
@@ -189,7 +229,14 @@ class MPLDrawer:
         self._ax.invert_yaxis()
 
     def _draw_qubits(self, wire_options: dict[str, Any] | None) -> None:
-        """Draw horizontal quantum qubit lines"""
+        """Draw horizontal quantum qubit lines.
+
+        The parameter keeps its pre-qubit name on purpose. ``[boundary]`` in the
+        vocabulary contract records that private code keeps ``wire`` names and
+        measures the bucket so the exclusion stays honest; a compatibility fix
+        is not the place to move that number.
+        """
+
         opts = wire_options or {}
         for qubit_label, idx in self.qubit_map.items():
             line = plt.Line2D(
@@ -802,10 +849,14 @@ def draw_mpl(
             - qubit_order: Qubit order
             - fig: Existing matplotlib figure
             - figsize: Figure size
-            - wire_options: Wire style options
+            - qubit_options: Qubit line style options
             - label_options: Label style options
-            - show_wire_labels: Whether to show wire labels
+            - show_qubit_labels: Whether to show qubit labels
+            - active_qubit_notches: Whether to notch the line a gate acts on.
+              The pre-qubit spellings ``wire_options``, ``show_wire_labels``,
+              and ``active_wire_notches`` are still honoured and warn.
     """
+    kwargs = resolve_legacy_options(kwargs)
     supplied_labels = kwargs.get("label_options", {})
     label_options = dict(supplied_labels) if isinstance(supplied_labels, dict) else {}
     if isinstance(label_options, dict):
