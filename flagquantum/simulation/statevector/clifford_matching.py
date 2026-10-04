@@ -39,6 +39,16 @@ _CLIFFORD_PHASE_MAP_CACHE: dict[
 ] = {}
 
 
+def native_clifford_matching_enabled() -> bool:
+    """Return whether the native matching kernel is enabled and loadable."""
+
+    return bool(
+        os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_clifford_matching_available()
+    )
+
+
 def _clifford_phase_map_cache_bytes() -> int:
     return sum(
         int(mapping.numel()) * int(mapping.element_size())
@@ -207,9 +217,7 @@ def native_clifford_matching_compile_enabled(
         state.device.type == "cpu"
         and (batch_size >= 2 or scalar_matching)
         and not requires_grad
-        and native_cpu_clifford_matching_available()
-        and os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
-        not in {"0", "false", "off", "no"}
+        and native_clifford_matching_enabled()
     )
 
 

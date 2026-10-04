@@ -11,21 +11,25 @@ from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..native_cpu.rotation import fused_static_clifford_layer_
+from .clifford_matching import apply_native_clifford_matching
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
 )
+from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
 from .operations import (
     _apply_cx_sequence_gather,
     _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_single_qubit_fixed,
+    _cx_sequence_permutation_index,
     _diagonal_region,
     _environment_flag,
     _fused_gate_matrix,
 )
 from .program import (
+    _StatevectorCliffordMatchingStep,
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
     _StatevectorCXSequenceStep,
@@ -37,6 +41,8 @@ from .wire_permutation import _apply_wire_permutation_gather
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from ...circuit import _StatevectorExecutionStatistics
 
 
 _PRODUCT_STATE_MIN_WIRES = 16
@@ -53,6 +59,7 @@ _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", 
 _FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})
 _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH = 5
 _PRODUCT_STATE_NATIVE_STATIC_CLIFFORD_MIN_WIRES = 16
+_PRODUCT_STATE_NATIVE_MIXED_CLIFFORD_MIN_WIRES = 16
 _NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "x": 4}
 
 
@@ -203,6 +210,83 @@ class _ProductComponent:
     state: torch.Tensor
 
 
+def _apply_product_clifford_matching(
+    component: _ProductComponent,
+    step: _StatevectorCliffordMatchingStep,
+    execution_statistics: _StatevectorExecutionStatistics | None,
+) -> _ProductComponent:
+    """Apply one matching after its edges have joined product components."""
+
+    wire_set = set(component.wires)
+    controls = tuple(
+        component.wires.index(control)
+        for control, target in zip(step.controls, step.targets, strict=True)
+        if control in wire_set and target in wire_set
+    )
+    targets = tuple(
+        component.wires.index(target)
+        for control, target in zip(step.controls, step.targets, strict=True)
+        if control in wire_set and target in wire_set
+    )
+    cz_edges = tuple(
+        (component.wires.index(left), component.wires.index(right))
+        for left, right in step.cz_edges
+        if left in wire_set and right in wire_set
+    )
+    local_step = _StatevectorCliffordMatchingStep(
+        controls=controls,
+        targets=targets,
+        cz_edges=cz_edges,
+    )
+    matching_state: torch.Tensor | None = None
+    if (
+        len(component.wires) >= _PRODUCT_STATE_NATIVE_MIXED_CLIFFORD_MIN_WIRES
+        and controls
+    ):
+        matching_state, _ = apply_native_clifford_matching(
+            local_step,
+            component.state,
+            n_wires=len(component.wires),
+            scratch=None,
+            reuse_output=False,
+            owns_state=False,
+            mapping_builder=_cx_sequence_permutation_index,
+        )
+    if matching_state is not None:
+        if execution_statistics is not None:
+            execution_statistics["native_cpu_clifford_matching_regions"] = (
+                execution_statistics.get("native_cpu_clifford_matching_regions", 0) + 1
+            )
+        return _ProductComponent(component.wires, matching_state)
+
+    matching_state = component.state
+    if controls:
+        if len(controls) >= _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH:
+            matching_state = _apply_cx_sequence_gather(
+                matching_state,
+                controls,
+                targets,
+                len(component.wires),
+            )
+        else:
+            for control, target in zip(controls, targets, strict=True):
+                matching_state = _apply_fixed_permutation(
+                    matching_state,
+                    "cx",
+                    (control, target),
+                    len(component.wires),
+                )
+    if cz_edges:
+        signs, wires = _cz_graph_signs_cpu(cz_edges, device=matching_state.device)
+        matching_state = _apply_cz_graph_cpu(
+            matching_state,
+            signs,
+            wires,
+            len(component.wires),
+        )
+    return _ProductComponent(component.wires, matching_state)
+
+
 def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], ...]:
     if isinstance(step, _StatevectorGateStep):
         return (tuple(step.instruction.wires),)
@@ -224,6 +308,8 @@ def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], .
         )
     if isinstance(step, _StatevectorCXSequenceStep):
         return tuple(zip(step.controls, step.targets, strict=True))
+    if isinstance(step, _StatevectorCliffordMatchingStep):
+        return (*step.cz_edges, *tuple(zip(step.controls, step.targets, strict=True)))
     return ()
 
 
@@ -240,7 +326,7 @@ def _is_static_clifford_step(step: _StatevectorProgramStep) -> bool:
     """Whether a compiled step is an exact parameter-free Clifford operation."""
 
     instructions: tuple[Instruction, ...]
-    if isinstance(step, _StatevectorCXSequenceStep):
+    if isinstance(step, (_StatevectorCXSequenceStep, _StatevectorCliffordMatchingStep)):
         return True
     if isinstance(step, _StatevectorGateStep):
         instructions = (step.instruction,)
@@ -550,6 +636,7 @@ def execute_product_state_program(
     enable_fixed_clifford: bool = True,
     enable_clifford_matching: bool = True,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None = None,
+    execution_statistics: _StatevectorExecutionStatistics | None = None,
 ) -> torch.Tensor:
     """Execute an exact program while merging components only when required."""
 
@@ -662,6 +749,26 @@ def execute_product_state_program(
                             len(component.wires),
                         )
                 updated = _ProductComponent(component.wires, state)
+                for wire in updated.wires:
+                    components[wire] = updated
+            index += 1
+            continue
+        if isinstance(step, _StatevectorCliffordMatchingStep):
+            matching_edges = (
+                *step.cz_edges,
+                *tuple(zip(step.controls, step.targets, strict=True)),
+            )
+            for left, right in matching_edges:
+                _merge_components(components, (left, right))
+
+            selected: dict[int, _ProductComponent] = {}
+            for left, _ in matching_edges:
+                component = components[left]
+                selected[id(component)] = component
+            for component in selected.values():
+                updated = _apply_product_clifford_matching(
+                    component, step, execution_statistics
+                )
                 for wire in updated.wires:
                     components[wire] = updated
             index += 1

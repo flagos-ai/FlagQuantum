@@ -1,8 +1,4 @@
-"""Local statevector numerical execution.
-
-Simulation owns the numerical loop and cache contents. ``Circuit`` remains the
-thin public facade and owns cache containers and mutation-time invalidation.
-"""
+"""Local statevector numerical execution with Circuit-owned caches."""
 
 from __future__ import annotations
 
@@ -31,12 +27,13 @@ from .clifford_matching import (
     apply_native_clifford_matching,
     clifford_matching_output_reuse_enabled,
     native_clifford_matching_compile_enabled,
+    native_clifford_matching_enabled,
 )
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
 )
-from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
+from .cz_graph import _apply_cz_graph_cpu, _cached_cz_graph_signs, _cz_graph_signs_cpu
 from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
@@ -108,24 +105,6 @@ from .program import (
 
 if TYPE_CHECKING:
     from ...circuit import Circuit
-
-
-def _cz_graph_signs(
-    circuit: Circuit,
-    step: _StatevectorCZGraphStep,
-    device: torch.device,
-) -> tuple[torch.Tensor, tuple[int, ...]]:
-    """Return cached compact signs for one compiled CZ graph."""
-
-    key = (id(step), str(device), torch.int8, circuit.n_qubits)
-    cached = circuit._statevector_fused_matrices.get(key)
-    graph_wires = tuple(sorted({wire for edge in step.edges for wire in edge}))
-    if cached is None:
-        cached, built_wires = _cz_graph_signs_cpu(step.edges, device=device)
-        if built_wires != graph_wires:
-            raise RuntimeError("compiled CZ graph wire order changed unexpectedly")
-        circuit._statevector_fused_matrices[key] = cached
-    return cached, graph_wires
 
 
 def _cx_sequence_masks(
@@ -741,7 +720,12 @@ def _execute_statevector_program(
             owns_output = True
             continue
         if isinstance(step, _StatevectorCZGraphStep):
-            signs, wires = _cz_graph_signs(circuit, step, output.device)
+            signs, wires = _cached_cz_graph_signs(
+                circuit._statevector_fused_matrices,
+                step,
+                circuit.n_qubits,
+                output.device,
+            )
             output = _apply_cz_graph_cpu(
                 output, signs, wires, circuit.n_qubits, inplace=owns_output
             )
@@ -886,6 +870,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         )
         product_swap_remapping = _cpu_product_state_swap_remapping_enabled()
         product_clifford_matching = _cpu_product_state_clifford_matching_enabled()
+        product_native_clifford_matching = bool(
+            product_state_candidate
+            and product_clifford_matching
+            and native_clifford_matching_enabled()
+        )
         product_program: tuple[_StatevectorProgramStep, ...] = ()
         if product_state_candidate:
             product_program_key = (
@@ -893,6 +882,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_cpu_controlled_phase_decomposition,
                 enable_cpu_controlled_phase_graph,
                 product_clifford_matching,
+                product_native_clifford_matching,
             )
             cached_product_program = cast(
                 tuple[_StatevectorProgramStep, ...] | None,
@@ -910,6 +900,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                         enable_cpu_controlled_phase_graph
                     ),
                     enable_cpu_disjoint_clifford_matching=product_clifford_matching,
+                    enable_cpu_native_clifford_matching=(
+                        product_native_clifford_matching
+                    ),
                 )
                 circuit._backend_programs[product_program_key] = product_program
             else:
@@ -919,6 +912,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             circuit.n_qubits,
             enable_swap_remapping=product_swap_remapping,
         ):
+            product_runtime = initial_runtime_metrics(
+                product_program, enable_triton_loop=False
+            )
             output = execute_product_state_program(
                 product_program,
                 n_wires=circuit.n_qubits,
@@ -930,10 +926,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 enable_fixed_clifford=_cpu_product_state_fixed_clifford_enabled(),
                 enable_clifford_matching=product_clifford_matching,
                 constant_cache=circuit._statevector_fused_matrices,
+                execution_statistics=product_runtime,
             )
-            circuit._last_statevector_runtime = initial_runtime_metrics(
-                product_program, enable_triton_loop=False
-            )
+            circuit._last_statevector_runtime = product_runtime
             circuit._last_statevector_runtime["batched_rx_ry_rz_regions"] = 0
             circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
             circuit._state_cache = output
