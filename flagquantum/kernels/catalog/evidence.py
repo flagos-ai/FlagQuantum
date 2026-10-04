@@ -85,7 +85,10 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_single_qubit_loop_triton.py::test_repeated_rx_rz_cuda_matches_reference",
         ),
         capability_tests=(
-            "tests/unit/test_single_qubit_loop_triton.py::test_repeated_rx_rz_cpu_fallback_matches_reference",
+            "tests/unit/test_single_qubit_loop_triton.py::test_circuit_ir_rx_rz_fusion_matches_eager_state_and_vqe_gradients",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_rx_rz_sequence_dispatch_a800.json",
         ),
     ),
     _evidence(
