@@ -316,9 +316,9 @@ def jax_sharded_statevector_parameter_value_and_grad(
             )
             return _jax_sharded_statevector_loss_from_shards(
                 shards,
-                n_wires=int(n_qubits),
+                n_qubits=int(n_qubits),
                 observable=observable,
-                observable_wires=observable_qubits,
+                observable_qubits=observable_qubits,
             )
         finally:
             _set_active_jax_compute_dtype(previous_dtype)
@@ -332,7 +332,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
                 plan=plan,
                 complex_bytes=complex_bytes,
                 observable=observable,
-                observable_wires=observable_qubits,
+                observable_qubits=observable_qubits,
             )
 
     elif resolved_backward_backend == "shard_map":
@@ -344,7 +344,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
                 plan=plan,
                 complex_bytes=complex_bytes,
                 observable=observable,
-                observable_wires=observable_qubits,
+                observable_qubits=observable_qubits,
             )
 
     else:

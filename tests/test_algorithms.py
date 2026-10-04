@@ -66,9 +66,9 @@ def test_mps_z_zz_chain_fastpath_matches_termwise_energy_and_gradient():
             circuit.ry(wire, values[wire])
         return circuit.cx(0, 1).cx(2, 3).cx(4, 5)
 
-    state = fqmps.run_mps(build(parameters), max_bond=4, dense_observable_wires=0)
+    state = fqmps.run_mps(build(parameters), max_bond=4, dense_observable_qubits=0)
     reference_state = fqmps.run_mps(
-        build(reference_parameters), max_bond=4, dense_observable_wires=0
+        build(reference_parameters), max_bond=4, dense_observable_qubits=0
     )
     actual = hamiltonian.expectation(state).sum()
     reference = sum(

@@ -15,7 +15,7 @@ from ..statevector.operations import _apply_matrix
 
 @dataclass(frozen=True)
 class DenseIslandPlan:
-    n_wires: int
+    n_qubits: int
     intervals: tuple[tuple[int, int], ...]
     max_dense_width: int
     max_bond: int
@@ -24,31 +24,31 @@ class DenseIslandPlan:
     @classmethod
     def equal_width(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         island_width: int,
         max_bond: int,
         compression_interval: int = 1,
     ) -> "DenseIslandPlan":
-        if n_wires < 1 or island_width < 1 or max_bond < 1:
-            raise ValueError("n_wires, island_width, and max_bond must be positive")
+        if n_qubits < 1 or island_width < 1 or max_bond < 1:
+            raise ValueError("n_qubits, island_width, and max_bond must be positive")
         intervals = tuple(
-            (start, min(start + island_width, n_wires))
-            for start in range(0, n_wires, island_width)
+            (start, min(start + island_width, n_qubits))
+            for start in range(0, n_qubits, island_width)
         )
         return cls(
-            n_wires=int(n_wires),
+            n_qubits=int(n_qubits),
             intervals=intervals,
             max_dense_width=int(island_width),
             max_bond=int(max_bond),
             compression_interval=int(compression_interval),
         )
 
-    def island_for_wire(self, wire: int) -> int:
+    def island_for_qubit(self, qubit: int) -> int:
         for index, (start, stop) in enumerate(self.intervals):
-            if start <= int(wire) < stop:
+            if start <= int(qubit) < stop:
                 return index
-        raise IndexError(f"wire {wire} is outside the plan")
+        raise IndexError(f"qubit {qubit} is outside the plan")
 
 
 class DenseIslandState:
@@ -89,8 +89,8 @@ class DenseIslandState:
     def batch_size(self) -> int:
         return int(self.tensors[0].shape[0])
 
-    def apply_local(self, matrix: torch.Tensor, wires: Sequence[int]) -> None:
-        """Apply a gate whose wires lie inside one island.
+    def apply_local(self, matrix: torch.Tensor, qubits: Sequence[int]) -> None:
+        """Apply a gate whose qubits lie inside one island.
 
         A gate spanning two islands cannot be applied to a single tensor, so it is
         handed to the cross-island path and counted; the count is what tells a
@@ -102,18 +102,18 @@ class DenseIslandState:
         since broadcasting it would otherwise silently apply one batch's matrix to
         another's state.
         """
-        wires = tuple(int(wire) for wire in wires)
-        islands = {self.plan.island_for_wire(wire) for wire in wires}
+        qubits = tuple(int(qubit) for qubit in qubits)
+        islands = {self.plan.island_for_qubit(qubit) for qubit in qubits}
         if len(islands) != 1:
             self.cross_island_gate_count += 1
-            self._apply_cross_island(matrix, wires, tuple(sorted(islands)))
+            self._apply_cross_island(matrix, qubits, tuple(sorted(islands)))
             return
         island = islands.pop()
         start, stop = self.plan.intervals[island]
         tensor = self.tensors[island]
         batch, left_bond, physical, right_bond = tensor.shape
         width = stop - start
-        local_wires = tuple(wire - start for wire in wires)
+        local_qubits = tuple(qubit - start for qubit in qubits)
         packed = tensor.permute(0, 1, 3, 2).reshape(
             batch * left_bond * right_bond, physical
         )
@@ -127,7 +127,7 @@ class DenseIslandState:
                     batch * left_bond * right_bond, matrix.shape[-2], matrix.shape[-1]
                 )
             )
-        updated = _apply_matrix(packed, matrix, local_wires, width)
+        updated = _apply_matrix(packed, matrix, local_qubits, width)
         self.tensors[island] = updated.reshape(
             batch, left_bond, right_bond, physical
         ).permute(0, 1, 3, 2)
@@ -136,7 +136,7 @@ class DenseIslandState:
     def _apply_cross_island(
         self,
         matrix: torch.Tensor,
-        wires: tuple[int, ...],
+        qubits: tuple[int, ...],
         islands: tuple[int, ...],
     ) -> None:
         if len(islands) != 2 or islands[1] != islands[0] + 1:
@@ -174,7 +174,7 @@ class DenseIslandState:
         updated = _apply_matrix(
             packed,
             matrix,
-            tuple(wire - left_start for wire in wires),
+            tuple(qubit - left_start for qubit in qubits),
             width,
         ).reshape(batch, outer_left, outer_right, left_physical, right_physical)
         updated = updated.permute(0, 1, 3, 4, 2)
@@ -285,10 +285,10 @@ class DenseIslandState:
 
     @staticmethod
     def _local_z_diagonal(
-        width: int, local_wire: int, *, device: torch.device, dtype: torch.dtype
+        width: int, local_qubit: int, *, device: torch.device, dtype: torch.dtype
     ) -> torch.Tensor:
         indices = torch.arange(2**width, device=device)
-        bits = (indices >> (width - 1 - int(local_wire))) & 1
+        bits = (indices >> (width - 1 - int(local_qubit))) & 1
         return (1 - 2 * bits).to(dtype)
 
     def expectation_z_zz_chain(
@@ -299,9 +299,9 @@ class DenseIslandState:
     ) -> torch.Tensor:
         """Evaluate weighted Z and nearest-neighbour ZZ in shared environments."""
 
-        if len(z_weights) != self.plan.n_wires:
-            raise ValueError("z_weights must contain one value per wire")
-        if len(zz_weights) != self.plan.n_wires - 1:
+        if len(z_weights) != self.plan.n_qubits:
+            raise ValueError("z_weights must contain one value per qubit")
+        if len(zz_weights) != self.plan.n_qubits - 1:
             raise ValueError("zz_weights must contain one value per adjacent bond")
         device = self.tensors[0].device
         real_dtype = self.tensors[0].real.dtype
@@ -333,16 +333,16 @@ class DenseIslandState:
         ):
             width = stop - start
             local_diagonals = [
-                self._local_z_diagonal(width, wire, device=device, dtype=real_dtype)
-                for wire in range(width)
+                self._local_z_diagonal(width, qubit, device=device, dtype=real_dtype)
+                for qubit in range(width)
             ]
             diagonals.append(local_diagonals)
             combined = torch.zeros(2**width, device=device, dtype=real_dtype)
-            for local_wire, diagonal in enumerate(local_diagonals):
-                combined = combined + z_weights[start + local_wire] * diagonal
-            for local_wire in range(width - 1):
-                combined = combined + zz_weights[start + local_wire] * (
-                    local_diagonals[local_wire] * local_diagonals[local_wire + 1]
+            for local_qubit, diagonal in enumerate(local_diagonals):
+                combined = combined + z_weights[start + local_qubit] * diagonal
+            for local_qubit in range(width - 1):
+                combined = combined + zz_weights[start + local_qubit] * (
+                    local_diagonals[local_qubit] * local_diagonals[local_qubit + 1]
                 )
             inserted = self._environment_step(
                 left_environments[island], tensor, combined
@@ -352,7 +352,7 @@ class DenseIslandState:
             )
 
         for island in range(len(self.tensors) - 1):
-            boundary_wire = self.plan.intervals[island][1] - 1
+            boundary_qubit = self.plan.intervals[island][1] - 1
             inserted = self._environment_step(
                 left_environments[island],
                 self.tensors[island],
@@ -363,7 +363,7 @@ class DenseIslandState:
                 self.tensors[island + 1],
                 diagonals[island + 1][0],
             )
-            energy = energy + zz_weights[boundary_wire] * torch.real(
+            energy = energy + zz_weights[boundary_qubit] * torch.real(
                 torch.einsum("bij,bij->b", inserted, right_environments[island + 2])
             )
         return energy
@@ -371,7 +371,7 @@ class DenseIslandState:
     def summary(self) -> dict[str, object]:
         return {
             "state_mode": "dense_island_mps_experimental",
-            "n_wires": self.plan.n_wires,
+            "n_qubits": self.plan.n_qubits,
             "intervals": self.plan.intervals,
             "max_dense_width": self.plan.max_dense_width,
             "max_bond": self.plan.max_bond,

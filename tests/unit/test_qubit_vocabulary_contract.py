@@ -161,7 +161,7 @@ def test_the_gate_reports_definition_progress_per_slice() -> None:
 
     rows = _GATE.slice_progress(_contract(), "definition")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert sum(retired for _, retired, _ in rows) == 7
+    assert sum(retired for _, retired, _ in rows) == 8
     assert sum(retired + remaining for _, retired, remaining in rows) == 10
 
 
@@ -956,10 +956,12 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
     assert (
-        "208 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+        "286 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
     )
-    assert "84 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
-    assert "7 of 10 definition names retired" in lines[16]
+    assert (
+        "102 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
+    )
+    assert "8 of 10 definition names retired" in lines[16]
 
 
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
@@ -1163,9 +1165,9 @@ def test_a_definition_rename_that_disagrees_with_the_rule_is_reported() -> None:
     row = next(
         entry
         for entry in _definition_rows(contract)
-        if entry["site"].endswith("::jax_basis_indices_for_wires")
+        if entry["site"].endswith("::build_two_wire_diagonal_chain")
     )
-    row["replacement"] = "jax_basis_indices_for_qubit_indices"
+    row["replacement"] = "build_two_qubit_indices_diagonal_chain"
     _some(_errors(contract), "must be replaced by")
 
 

@@ -60,6 +60,12 @@ class TEBDResult:
     fallback_used: bool = False
 
     @property
+    def n_qubits(self) -> int:
+        """Return the public qubit count; ``n_wires`` remains serialized internally."""
+
+        return self.n_wires
+
+    @property
     def initial_energy(self) -> float:
         return self.energy_history[0]
 
@@ -123,7 +129,7 @@ def _real_scalar(value: Any, *, label: str) -> float:
 def _validate_inputs(
     hamiltonian: Hamiltonian,
     *,
-    n_wires: int,
+    n_qubits: int,
     total_time: float,
     time_step: float,
     max_bond: int,
@@ -135,10 +141,10 @@ def _validate_inputs(
 ) -> tuple[int, float, float, float]:
     if not isinstance(hamiltonian, Hamiltonian):
         raise TypeError("hamiltonian must be a FlagQuantum Hamiltonian.")
-    if isinstance(n_wires, bool) or not isinstance(n_wires, int) or n_wires < 2:
-        raise ValueError("n_wires must be an integer greater than or equal to 2.")
-    if hamiltonian.n_qubits > n_wires:
-        raise ValueError("Hamiltonian references a wire outside n_wires.")
+    if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 2:
+        raise ValueError("n_qubits must be an integer greater than or equal to 2.")
+    if hamiltonian.n_qubits > n_qubits:
+        raise ValueError("Hamiltonian references a qubit outside n_qubits.")
     if evolution != "imaginary_time":
         raise ValueError("Only evolution='imaginary_time' is supported.")
     if order != 2:
@@ -169,7 +175,7 @@ def _validate_inputs(
 
 
 def _product_state(
-    n_wires: int,
+    n_qubits: int,
     initial_state: str,
     *,
     device: torch.device | str,
@@ -178,7 +184,7 @@ def _product_state(
 ) -> MPSState:
     inv_sqrt_two = 1 / math.sqrt(2)
     tensors = []
-    for wire in range(n_wires):
+    for qubit in range(n_qubits):
         if initial_state == "+x":
             values = (inv_sqrt_two, inv_sqrt_two)
         elif initial_state == "+z":
@@ -186,9 +192,9 @@ def _product_state(
         elif initial_state == "-z":
             values = (0.0, 1.0)
         elif initial_state == "neel_z":
-            values = (1.0, 0.0) if wire % 2 == 0 else (0.0, 1.0)
+            values = (1.0, 0.0) if qubit % 2 == 0 else (0.0, 1.0)
         else:
-            values = (1.0, 0.0) if wire < n_wires // 2 else (0.0, 1.0)
+            values = (1.0, 0.0) if qubit < n_qubits // 2 else (0.0, 1.0)
         tensor = torch.as_tensor(values, device=device, dtype=dtype).reshape(1, 1, 2, 1)
         tensors.append(tensor)
     state = MPSState(tensors, config=config)
@@ -199,7 +205,7 @@ def _product_state(
 def _local_layers(
     hamiltonian: Hamiltonian,
     *,
-    n_wires: int,
+    n_qubits: int,
     device: torch.device | str,
     dtype: torch.dtype,
 ) -> tuple[tuple[tuple[int, torch.Tensor], ...], ...]:
@@ -212,12 +218,12 @@ def _local_layers(
             continue
         if len(ops) > 2:
             raise ValueError("TEBD supports only one-site and two-site Pauli terms.")
-        wires = tuple(wire for wire, _ in ops)
-        if any(wire < 0 or wire >= n_wires for wire in wires):
-            raise ValueError("Hamiltonian references a wire outside n_wires.")
-        if len(wires) == 2 and wires[1] != wires[0] + 1:
+        qubits = tuple(qubit for qubit, _ in ops)
+        if any(qubit < 0 or qubit >= n_qubits for qubit in qubits):
+            raise ValueError("Hamiltonian references a qubit outside n_qubits.")
+        if len(qubits) == 2 and qubits[1] != qubits[0] + 1:
             raise ValueError(
-                "Two-site TEBD terms must act on adjacent open-chain wires."
+                "Two-site TEBD terms must act on adjacent open-chain qubits."
             )
         local = torch.ones(1, 1, dtype=dtype, device=device)
         for _, name in ops:
@@ -226,18 +232,18 @@ def _local_layers(
                 raise ValueError("TEBD Pauli terms require fixed gate matrices.")
             local = torch.kron(local, matrix.to(device=device, dtype=dtype))
         local = coefficient * local
-        target = one_site if len(wires) == 1 else two_site
-        key = wires[0]
+        target = one_site if len(qubits) == 1 else two_site
+        key = qubits[0]
         target[key] = target[key] + local if key in target else local
 
     layers: list[tuple[tuple[int, torch.Tensor], ...]] = []
     if one_site:
         layers.append(tuple(sorted(one_site.items())))
     even = tuple(
-        sorted((wire, matrix) for wire, matrix in two_site.items() if wire % 2 == 0)
+        sorted((qubit, matrix) for qubit, matrix in two_site.items() if qubit % 2 == 0)
     )
     odd = tuple(
-        sorted((wire, matrix) for wire, matrix in two_site.items() if wire % 2 == 1)
+        sorted((qubit, matrix) for qubit, matrix in two_site.items() if qubit % 2 == 1)
     )
     if even:
         layers.append(even)
@@ -253,12 +259,12 @@ def _apply_layer(
     layer: tuple[tuple[int, torch.Tensor], ...],
     duration: float,
 ) -> None:
-    for wire, local_hamiltonian in layer:
+    for qubit, local_hamiltonian in layer:
         gate = torch.matrix_exp(-duration * local_hamiltonian)
         if gate.shape == (2, 2):
-            state.apply_one(gate, wire)
+            state.apply_one(gate, qubit)
         else:
-            state.apply_two(gate, wire)
+            state.apply_two(gate, qubit)
 
 
 def _finite_scalar(value: torch.Tensor, *, label: str) -> float:
@@ -281,7 +287,7 @@ def _program_hash(
         terms.append(
             {
                 "coefficient": _real_scalar(term.coefficient, label="coefficient"),
-                "ops": [[int(wire), name] for wire, name in term.ops],
+                "ops": [[int(qubit), name] for qubit, name in term.ops],
             }
         )
     payload = {"schema": "flagquantum.tebd_program.v1", "terms": terms, **parameters}
@@ -292,7 +298,7 @@ def _program_hash(
 def run_tebd(
     hamiltonian: Hamiltonian,
     *,
-    n_wires: int,
+    n_qubits: int,
     total_time: float,
     time_step: float,
     max_bond: int,
@@ -314,7 +320,7 @@ def run_tebd(
 
     steps, total, dt, cutoff_value = _validate_inputs(
         hamiltonian,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         total_time=total_time,
         time_step=time_step,
         max_bond=max_bond,
@@ -327,7 +333,7 @@ def run_tebd(
     resolved_device = torch.device(device)
     config = MPSConfig(max_bond=max_bond, cutoff=cutoff_value)
     state = _product_state(
-        n_wires,
+        n_qubits,
         initial_state,
         device=resolved_device,
         dtype=dtype,
@@ -335,7 +341,7 @@ def run_tebd(
     )
     layers = _local_layers(
         hamiltonian,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         device=resolved_device,
         dtype=dtype,
     )
@@ -382,7 +388,7 @@ def run_tebd(
         raise RuntimeError("TEBD cumulative discarded weight is non-finite.")
     program_sha256 = _program_hash(
         hamiltonian,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         total_time=total,
         time_step=dt,
         max_bond=max_bond,
@@ -395,7 +401,7 @@ def run_tebd(
     return TEBDResult(
         state=state,
         program_sha256=program_sha256,
-        n_wires=n_wires,
+        n_wires=n_qubits,
         term_count=hamiltonian.n_terms,
         steps=steps,
         total_time=total,

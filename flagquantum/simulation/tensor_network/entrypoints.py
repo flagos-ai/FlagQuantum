@@ -121,20 +121,20 @@ def tensor_network_expectation_ps(
 
 def _normalize_bitstring(
     bitstring: int | str | Sequence[int],
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[int, ...]:
     if isinstance(bitstring, int):
-        if bitstring < 0 or bitstring >= 2**n_wires:
+        if bitstring < 0 or bitstring >= 2**n_qubits:
             raise ValueError("integer bitstring is outside the circuit state space")
-        bits = tuple(int(bit) for bit in f"{bitstring:0{n_wires}b}")
+        bits = tuple(int(bit) for bit in f"{bitstring:0{n_qubits}b}")
     elif isinstance(bitstring, str):
-        if len(bitstring) != n_wires or set(bitstring) - {"0", "1"}:
-            raise ValueError("bitstring must contain exactly n_wires binary digits")
+        if len(bitstring) != n_qubits or set(bitstring) - {"0", "1"}:
+            raise ValueError("bitstring must contain exactly n_qubits binary digits")
         bits = tuple(int(bit) for bit in bitstring)
     else:
         bits = tuple(int(bit) for bit in bitstring)
-        if len(bits) != n_wires or any(bit not in {0, 1} for bit in bits):
-            raise ValueError("bitstring must contain exactly n_wires binary values")
+        if len(bits) != n_qubits or any(bit not in {0, 1} for bit in bits):
+            raise ValueError("bitstring must contain exactly n_qubits binary values")
     return bits
 
 
@@ -144,10 +144,10 @@ def _amplitude_projection(
 ) -> tuple[tuple[TensorNetworkNode, ...], tuple[int, ...]]:
     """Attach computational-basis projectors to a ket contraction plan."""
 
-    bits = _normalize_bitstring(bitstring, plan.n_wires)
+    bits = _normalize_bitstring(bitstring, plan.n_qubits)
     reference = plan.nodes[0].tensor
     nodes = list(plan.nodes)
-    for wire, (label, bit) in enumerate(
+    for qubit, (label, bit) in enumerate(
         zip(plan.output_labels[1:], bits, strict=False)
     ):
         projector = torch.zeros(2, dtype=reference.dtype, device=reference.device)
@@ -156,8 +156,8 @@ def _amplitude_projection(
             TensorNetworkNode(
                 tensor=projector,
                 labels=(label,),
-                name=f"amplitude_projector_{wire}_{bit}",
-                metadata={"wire": wire, "bit": bit},
+                name=f"amplitude_projector_{qubit}_{bit}",
+                metadata={"qubit": qubit, "bit": bit},
             )
         )
     return tuple(nodes), (plan.output_labels[0],)
@@ -170,7 +170,7 @@ def _amplitude_batch_projection(
     """Attach a shared target axis for a batch of computational basis states."""
 
     bits = tuple(
-        _normalize_bitstring(bitstring, plan.n_wires) for bitstring in bitstrings
+        _normalize_bitstring(bitstring, plan.n_qubits) for bitstring in bitstrings
     )
     if not bits:
         raise ValueError("bitstrings must contain at least one target")
@@ -179,20 +179,20 @@ def _amplitude_batch_projection(
         max((label for node in plan.nodes for label in node.labels), default=0) + 1
     )
     nodes = list(plan.nodes)
-    for wire, label in enumerate(plan.output_labels[1:]):
+    for qubit, label in enumerate(plan.output_labels[1:]):
         projector = torch.zeros(
             (len(bits), 2),
             dtype=reference.dtype,
             device=reference.device,
         )
         for target, target_bits in enumerate(bits):
-            projector[target, target_bits[wire]] = 1
+            projector[target, target_bits[qubit]] = 1
         nodes.append(
             TensorNetworkNode(
                 tensor=projector,
                 labels=(target_label, label),
-                name=f"amplitude_batch_projector_{wire}",
-                metadata={"wire": wire, "targets": len(bits)},
+                name=f"amplitude_batch_projector_{qubit}",
+                metadata={"qubit": qubit, "targets": len(bits)},
             )
         )
     return tuple(nodes), (plan.output_labels[0], target_label)
@@ -330,7 +330,7 @@ def run_tensor_network(
     contraction_strategy: str = "greedy",
     max_intermediate_size: int | None = None,
     sliced_labels: Sequence[int] | None = None,
-    dense_observable_wires: int = 0,
+    dense_observable_qubits: int = 0,
     max_intermediate_bytes: int | None = None,
 ) -> TensorNetworkState:
     """Run a circuit through the general tensor-network contraction engine.
@@ -355,6 +355,6 @@ def run_tensor_network(
         contraction_strategy=contraction_strategy,
         max_intermediate_size=max_intermediate_size,
         sliced_labels=sliced_labels,
-        dense_observable_wires=dense_observable_wires,
+        dense_observable_qubits=dense_observable_qubits,
         max_intermediate_bytes=max_intermediate_bytes,
     )

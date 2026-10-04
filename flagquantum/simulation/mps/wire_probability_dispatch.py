@@ -1,4 +1,4 @@
-"""Catalog authorization for fused MPS wire-probability reductions."""
+"""Catalog authorization for fused MPS qubit-probability reductions."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from ...kernels.catalog import (
 )
 from ..kernel_dispatch import _require_cataloged_kernel
 from .site_kernels import (
-    _record_mps_wire_probability_fallback,
-    _record_mps_wire_probability_route,
+    _record_mps_qubit_probability_fallback,
+    _record_mps_qubit_probability_route,
 )
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ def _require_mps_wire_probability_kernel(
             dtype=dtype,
         ),
         implementation_id=_IMPLEMENTATION_ID,
-        description="fused MPS wire-probability kernel",
+        description="fused MPS qubit-probability kernel",
     )
 
 
@@ -118,18 +118,18 @@ def _try_apply_cataloged_mps_wire_probabilities(
     return _apply_cataloged_mps_wire_probabilities(tensor)
 
 
-def _mps_wire_probabilities(state: MPSState, wire: int) -> torch.Tensor:
+def _mps_wire_probabilities(state: MPSState, qubit: int) -> torch.Tensor:
     """Evaluate one sampling probability pair through MPS-007 or PyTorch."""
 
-    state.move_orthogonality_center(wire)
-    tensor = state.tensors[wire]
+    state.move_orthogonality_center(qubit)
+    tensor = state.tensors[qubit]
     probabilities = _try_apply_cataloged_mps_wire_probabilities(tensor)
     if probabilities is None:
-        _record_mps_wire_probability_fallback()
+        _record_mps_qubit_probability_fallback()
         probabilities = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
         probabilities = torch.clamp(probabilities, min=0)
     else:
-        _record_mps_wire_probability_route()
+        _record_mps_qubit_probability_route()
     normalizer = probabilities.sum(dim=-1, keepdim=True)
     if bool(torch.any(~torch.isfinite(probabilities))) or bool(
         torch.any(normalizer <= 1e-12)

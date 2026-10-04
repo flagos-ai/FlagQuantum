@@ -178,7 +178,7 @@ def run_jax_sharded_tensor_network(
         slicing=slicing,
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_qubits=plan.n_wires,
+        n_qubits=plan.n_qubits,
         bsz=plan.bsz,
         complex_bytes=complex_bytes,
         local_world_size=resolved_local_world_size,

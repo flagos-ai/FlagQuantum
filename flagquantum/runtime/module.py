@@ -670,8 +670,8 @@ class Module(torch.nn.Module):
         )
         circuit = self._build(inputs, self._owned_parameters())
         ir = ensure_circuit_ir(circuit)
-        wires = self.policy.observable_qubits
-        if self.policy.observable != "z" or len(wires) != 1:
+        qubits = self.policy.observable_qubits
+        if self.policy.observable != "z" or len(qubits) != 1:
             raise CapabilityError(
                 "production MPS integration currently supports one Z observable"
             )
@@ -685,7 +685,7 @@ class Module(torch.nn.Module):
                 max_bond=max_bond,
                 cutoff=cutoff,
             )
-            value = state.expectation_z(wires)[..., 0]
+            value = state.expectation_z(qubits)[..., 0]
             runtime = {
                 **plan.summary(),
                 "executor": "pytorch_native_local_mps",
@@ -706,7 +706,7 @@ class Module(torch.nn.Module):
                 )
             reverse = execute_torch_distributed_mps_reverse(
                 ir,
-                observable={wires[0]: "z"},
+                observable={qubits[0]: "z"},
                 device=self._parameter_tensors()[0].device,
                 max_bond=max_bond,
                 cutoff=cutoff,
@@ -765,11 +765,11 @@ class Module(torch.nn.Module):
             )
         selected_backend = requested_backend
         compatibility: dict[str, Any] = {"fallback_used": False}
-        wires = self.policy.observable_qubits or (0,)
+        qubits = self.policy.observable_qubits or (0,)
         runtime: Mapping[str, Any]
         if requested_backend == "jax":
             try:
-                if self.policy.observable == "z" and len(wires) > 1:
+                if self.policy.observable == "z" and len(qubits) > 1:
                     raise CapabilityError(
                         "JAX fq.Module does not yet support vector-valued Z "
                         "observables; use the PyTorch local fast path"
@@ -820,9 +820,9 @@ class Module(torch.nn.Module):
                         backend="jax",
                         interface="torch",
                         mode=self.policy.mode,
-                        n_wires=circuit.n_qubits,
+                        n_qubits=circuit.n_qubits,
                         observable=self.policy.observable,
-                        observable_wires=wires,
+                        observable_qubits=qubits,
                         hamiltonian=self.hamiltonian,
                         compute_dtype=self.precision.complex_dtype,
                         accepts_inputs=accepts_inputs,
@@ -871,7 +871,7 @@ class Module(torch.nn.Module):
                 execute_torch_distributed_statevector_reverse,
             )
 
-            if self.policy.observable != "z" or len(wires) != 1:
+            if self.policy.observable != "z" or len(qubits) != 1:
                 raise CapabilityError(
                     "distributed_statevector currently supports one Z observable; "
                     "observable batching must use explicit term groups"
@@ -882,7 +882,7 @@ class Module(torch.nn.Module):
                 )
             reverse = execute_torch_distributed_statevector_reverse(
                 ir,
-                observable_wire=wires[0],
+                observable_wire=qubits[0],
                 device=self._parameter_tensors()[0].device,
                 process_group=self._state_process_group,
             )
@@ -900,7 +900,7 @@ class Module(torch.nn.Module):
                     **program_runtime,
                     **getattr(circuit, "_last_statevector_runtime", {}),
                 }
-                values = circuit.expectation_z(wires)
+                values = circuit.expectation_z(qubits)
                 executor = "pytorch_native_module_v1"
             elif self.policy.mode == "mps":
                 from ..simulation.mps.entrypoints import run_mps
@@ -911,7 +911,7 @@ class Module(torch.nn.Module):
                     max_bond=None,
                     cutoff=0.0,
                 )
-                values = backend_state.expectation_z(wires)
+                values = backend_state.expectation_z(qubits)
                 program_runtime = {**program_runtime, **backend_state.summary()}
                 executor = "pytorch_native_mps"
             elif self.policy.mode == "tensor_network":
@@ -919,9 +919,9 @@ class Module(torch.nn.Module):
 
                 state = None
                 tensor_network_state = run_tensor_network(
-                    circuit, dense_observable_wires=12
+                    circuit, dense_observable_qubits=12
                 )
-                values = tensor_network_state.expectation_z(wires)
+                values = tensor_network_state.expectation_z(qubits)
                 executor = "pytorch_native_tensor_network"
             else:
                 raise ExecutionError(f"unhandled fq.Module mode {self.policy.mode!r}")
@@ -942,7 +942,7 @@ class Module(torch.nn.Module):
                 value = (
                     values.sum(dim=-1)
                     if self.policy.observable == "z_sum"
-                    else values if len(wires) > 1 else values[..., 0]
+                    else values if len(qubits) > 1 else values[..., 0]
                 )
             runtime = {
                 "executor": executor,
@@ -963,7 +963,7 @@ class Module(torch.nn.Module):
         observable_count = (
             self.hamiltonian.n_terms
             if self.policy.observable == "hamiltonian" and self.hamiltonian is not None
-            else len(wires)
+            else len(qubits)
         )
         if self.policy.observable == "hamiltonian" and self.hamiltonian is not None:
             from .parallel import group_observables
@@ -1048,11 +1048,11 @@ class Module(torch.nn.Module):
                     "local fq.Module execution requires a Circuit builder result"
                 )
             self._last_ir = detached_ir_snapshot(ensure_circuit_ir(circuit))
-            wires = self.policy.observable_qubits or (0,)
+            qubits = self.policy.observable_qubits or (0,)
             backend_state: Any = None
             if self.policy.mode == "statevector":
                 circuit.state(refresh=True)
-                values = circuit.expectation_z(wires)
+                values = circuit.expectation_z(qubits)
             elif self.policy.mode == "mps":
                 from ..simulation.mps.entrypoints import run_mps
 
@@ -1061,12 +1061,12 @@ class Module(torch.nn.Module):
                     max_bond=None,
                     cutoff=0.0,
                 )
-                values = backend_state.expectation_z(wires)
+                values = backend_state.expectation_z(qubits)
             else:
                 from ..simulation.tensor_network.entrypoints import run_tensor_network
 
-                backend_state = run_tensor_network(circuit, dense_observable_wires=12)
-                values = backend_state.expectation_z(wires)
+                backend_state = run_tensor_network(circuit, dense_observable_qubits=12)
+                values = backend_state.expectation_z(qubits)
 
             if self.policy.observable == "hamiltonian":
                 if self.policy.mode == "tensor_network":
@@ -1084,7 +1084,7 @@ class Module(torch.nn.Module):
             elif self.policy.observable == "z_sum":
                 value = values.sum(dim=-1)
             else:
-                value = values if len(wires) > 1 else values[..., 0]
+                value = values if len(qubits) > 1 else values[..., 0]
 
             if self.policy.correctness_debug:
                 from .training_state import assert_finite_training
