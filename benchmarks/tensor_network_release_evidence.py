@@ -765,8 +765,25 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
     speed = manifest["speed_workload"]
     acceptance = str(speed["acceptance_configuration"])
     capacity_digest = str(manifest["capacity_workload"]["workload_sha256"])
+    # The protocol identity is the manifest file's own digest, so a leg measured
+    # against one revision of the manifest and an assembly projected against
+    # another are two different experiments with the same name. Checking it here
+    # is what makes the payload's workload_sha256 a verified statement about the
+    # run rather than a restatement of whichever manifest happened to be on disk
+    # when the summary was assembled.
+    protocol_digest = _protocol_digest(arguments.release_manifest)
     baseline = json.loads(Path(arguments.baseline).read_text(encoding="utf-8"))
     sharded = json.loads(Path(arguments.sharded).read_text(encoding="utf-8"))
+    for role, leg in (("baseline", baseline), ("sharded", sharded)):
+        recorded = str(leg.get("workload_sha256", ""))
+        if recorded != protocol_digest:
+            raise SystemExit(
+                f"the {role} leg was measured against the protocol "
+                f"{recorded or '<unrecorded>'}, which is not the protocol of the "
+                f"manifest this summary is assembled against "
+                f"({protocol_digest}); the speedup could not be attributed to the "
+                "frozen ladder"
+            )
     if int(baseline.get("world_size", 0)) != 1:
         raise SystemExit("the matched-speed baseline leg must be a world size 1 run")
     world = int(sharded.get("world_size", 0))

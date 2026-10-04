@@ -287,12 +287,14 @@ def _configuration(name: str, seconds: float) -> dict:
     }
 
 
-def _leg(*, world: int, seconds: float) -> dict:
+def _leg(*, world: int, seconds: float, protocol: str | None = None) -> dict:
     """Return one timed leg of the matched-speed ladder as the role records it.
 
     The two legs differ in the world they ran at, which is the whole comparison,
     and the sharded leg carries one record per rank because the ownership maps
-    are compared across the ranks rather than read from rank 0.
+    are compared across the ranks rather than read from rank 0. Each leg states
+    the protocol it was measured against, which is the manifest file's own
+    digest, and ``protocol`` overrides it for the drift case.
     """
 
     configurations = [_configuration(entry["name"], seconds) for entry in _ladder()]
@@ -311,7 +313,7 @@ def _leg(*, world: int, seconds: float) -> dict:
         "iterations": int(SPEED["measured_steps"]),
         "measured_peak_memory_bytes": 1024,
         "device_name": "NVIDIA A800-SXM4-80GB",
-        "workload_sha256": "b" * 64,
+        "workload_sha256": protocol or producer._protocol_digest(RELEASE_MANIFEST),
         # A leg launched without the bound records none, and the summary role
         # compares the two legs' budgets before it reports a ratio.
         "checkpoint_budget_bytes": None,
@@ -593,3 +595,66 @@ def test_a_matched_speed_pair_must_share_one_checkpoint_budget(
     )
     measured = json.loads(summary.read_text(encoding="utf-8"))["measurements"]
     assert measured["checkpoint_budget_bytes"] == budget
+
+
+def test_a_leg_measured_against_another_protocol_is_refused(
+    tmp_path: Path,
+) -> None:
+    """A ratio is only attributable to the ladder both legs were measured on.
+
+    The protocol identity is the manifest file's own digest, and the frozen
+    ladder is held inline in that file. A leg measured before the manifest moved
+    -- even by a note -- was measured against a different protocol, and a
+    summary that assembled it anyway would state the current digest as though
+    the run behind it had used that protocol.
+    """
+
+    current = producer._protocol_digest(RELEASE_MANIFEST)
+    assert current != "b" * 64
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8")
+
+    # The sharded leg names a protocol the manifest this summary is assembled
+    # against does not have.
+    drifted = tmp_path / "drifted.json"
+    drifted.write_text(
+        json.dumps(_leg(world=2, seconds=2.0, protocol="b" * 64)), encoding="utf-8"
+    )
+    with pytest.raises(SystemExit, match="which is not the protocol of the manifest"):
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(drifted),
+                "--measurements",
+                str(tmp_path / "never.json"),
+            ]
+        )
+
+    # A leg that records no protocol at all is refused as well, rather than
+    # read as agreeing with the manifest because there was nothing to compare.
+    silent = tmp_path / "silent.json"
+    record = _leg(world=2, seconds=2.0)
+    record.pop("workload_sha256")
+    silent.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(SystemExit, match="<unrecorded>"):
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(silent),
+                "--measurements",
+                str(tmp_path / "never.json"),
+            ]
+        )
