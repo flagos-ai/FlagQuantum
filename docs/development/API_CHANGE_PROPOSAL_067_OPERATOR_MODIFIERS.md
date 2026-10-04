@@ -5,6 +5,25 @@
 **Proposed. No code is written by this proposal and no behaviour changes until
 the repository owner approves it and the acceptance items below are measured.**
 
+**Revision 2, re-measured against this checkout.** Three of the eight premises
+below were measured on a checkout that has since moved, and revision 1 restated
+them as current fact. They are corrected in place, each with the measurement that
+replaces it, and each correction is marked with the heading **Re-measured**. The
+three are: the schema's adjoint vocabulary and its reader census (sections 2 and
+4), and the claim that `u2` has no measured adjoint rule (sections 5 and 7, and
+required-evidence item 5). None of the three weakens the proposal; one of them
+narrows it, because the adjoint rewrite this document asks for is now the rewrite
+`Circuit.adjoint` already performs, and the remaining work is to make that
+rewrite control-aware.
+
+The stale premises were not the only risk they carried. Revision 1's negative
+probe reported `CIRCUIT_ATTR_adjoint: False` and its section 9 therefore planned
+to *add* `adjoint` as a method on `Circuit`. `Circuit.adjoint` had already shipped
+in `cd5c8e43 feat(core): invert a program with Circuit.adjoint (#376)`, and the
+command it used to establish that absence returned the output of a different
+checkout. A premise that is measured is only as good as the checkout it was
+measured on, and this revision pins every re-measurement to a commit.
+
 This proposal fixes the contract W5-11 names: an arbitrary control-wire count, an
 adjoint modifier, an operator registration table, and the backend lowering
 contract a registered operator degrades through. Two other plan rows read this
@@ -15,41 +34,64 @@ vocabulary fixed here is the vocabulary W6-01 extends rather than replaces.
 section 10 of "Decision" states exactly what regenerating it does and does not
 mean.
 
-Eight premises below were measured on this checkout before the proposal was
-written, because engineering decision principle 6 requires inspecting what
-already exists and principle 10 forbids claiming a gap that has not been
-observed. Each measured premise is followed by the literal command and the
-literal output, and every negative claim is followed by the search that
-establishes the absence. Everything in "Required evidence" is a requirement on
-the implementation, not a result: nothing here has been built.
+Eight premises below were measured, because engineering decision principle 6
+requires inspecting what already exists and principle 10 forbids claiming a gap
+that has not been observed. Each measured premise is followed by the literal
+command and the literal output, and every negative claim is followed by the
+search that establishes the absence. Everything in "Required evidence" is a
+requirement on the implementation, not a result: nothing here has been built.
 
 ## Problem
 
 ### 1. The operator schema table has no field that can hold a control count or an
 adjoint rule
 
-`flagquantum/core/operator_schema.py` defines `OperatorSchema` at line 11 with
-ten fields, all of them required, and `OPERATOR_SCHEMAS` at line 130 holds 35
-entries behind a `MappingProxyType`.
+`flagquantum/core/operator_schema.py` defines `OperatorSchema` at line 37 (with
+`ADJOINT_RULES`, the vocabulary its `adjoint` field is drawn from, documented at
+line 11), and `OPERATOR_SCHEMAS` at line 362 holds 35 entries behind a
+`MappingProxyType`. Revision 1 cited lines 11 and 130 for the same two objects;
+the second was a different table and the first was the rule vocabulary rather
+than the class, so both are restated here.
+
+**Re-measured.** Revision 1 printed "ten fields, all of them required" and a
+three-value adjoint vocabulary. Neither holds on this checkout:
 
 ```
-$ PYTHONPATH=$PWD python /tmp/probe067.py
-FIELDS: ['opcode', 'aliases', 'arity', 'parameters', 'dtype_policy', 'semantic_kind', 'adjoint', 'decomposition', 'differentiable', 'wire_convention']
-WITH_DEFAULTS: []
+$ PYTHONPATH=$PWD python /tmp/probe067rev.py
+FIELDS: ['opcode', 'aliases', 'arity', 'parameters', 'dtype_policy', 'semantic_kind', 'adjoint', 'decomposition', 'wire_convention', 'parameter_frequencies']
+WITH_DEFAULTS: ['parameter_frequencies']
 N_SCHEMAS: 35
-ADJOINT_VOCAB: ['matrix_adjoint', 'not_applicable', 'self_inverse']
-SEMANTIC_KIND_VOCAB: ['channel', 'unitary']
+ADJOINT_VOCAB: ['adjoint_u2_angles', 'adjoint_u3_angles', 'negate_parameters', 'not_applicable', 's', 'sdg', 'self_inverse', 'sx', 'sxdg', 't', 'tdg']
+ADJOINT_RULES: ['self_inverse', 'negate_parameters', 'adjoint_u2_angles', 'adjoint_u3_angles', 'matrix_adjoint', 'not_applicable']
 ARITY_GT_TWO: [('ccx', 3), ('cswap', 3)]
 FIELDS_CONTAINING_CONTROL: []
-WIRE_CONVENTION_3Q: [('control_0', 'control_1_or_target_0', 'target_or_target_1')]
+WIRE_CONVENTION_3Q: [('control_0', 'control_1_or_target_0', 'target_or_target_1'), ('control_0', 'control_1_or_target_0', 'target_or_target_1')]
+CIRCUIT_ATTR_adjoint: True (self) -> "'Circuit'"
+CIRCUIT_ATTR_control: False
+CIRCUIT_ATTR_power: False
+OPERATORS_ALL: ('DEFAULT_DENSE_MATRIX_BYTES', 'GateInfo', 'SuperOperator', 'gate_info')
 ```
 
-Two facts follow directly and neither is an interpretation. First, exactly two
-opcodes have arity greater than two, `ccx` and `cswap`, and both of them encode
-"two controls" in their *name* rather than in a field. Second, no field name
+The distinction the last three lines make is the correction this revision turns
+on, and it is developed in sections 2 and 9: `control` is absent and `adjoint` is
+not. `ADJOINT_VOCAB` is the vocabulary actually declared by the 35 schemas and
+`ADJOINT_RULES` is the vocabulary `ADJOINT_RULES` allows; the difference between
+the two lists is the six symmetric partners.
+
+`parameter_frequencies` is an eleventh field and the only one with a default; it
+was added by the angle-synthesis work. Six of the eight adjoint values revision 1
+did not print are the symmetric-partner form, where `s`, `t`, and `sx` name their
+`dg` partner and the `dg` gates name them back. The consequence for this proposal
+is section 2's: the declaration vocabulary is richer than revision 1 measured, and
+it is read by more than one consumer.
+
+Two further facts are unchanged and are still what this proposal rests on. First,
+exactly two opcodes have arity greater than two, `ccx` and `cswap`, and both of
+them encode "two controls" in their *name* rather than in a field. Second, no field name
 contains `control`, so the number of control wires is not representable in the
 schema at all: it is recoverable today only by looking up a table of known
-opcode names. `_unitary` in the same file (line 49) is the constructor behind
+opcode names. `_unitary` in the same file (line 181; revision 1 cited line 49) is
+the constructor behind
 every unitary schema and it selects `wire_convention` from a dictionary with
 exactly three keys:
 
@@ -66,24 +108,54 @@ So the table that would have to describe a three-control `x` cannot describe a
 four-wire operator at all, and the wire-naming convention for the two existing
 three-wire operators is one string tuple, not a rule that generalises.
 
-### 2. Three unrelated things in this repository are already called "adjoint", and
+### 2. Four unrelated things in this repository are already called "adjoint", and
 none of them is a modifier
 
 The word is currently overloaded, and the overload is measurable.
 
 ```
-$ grep -rn "\.adjoint\b" --include=*.py flagquantum/ tools/ tests/ | grep -v __pycache__
-flagquantum/core/operator_schema.py:173:            "adjoint": schema.adjoint,
+$ grep -rn '\.adjoint\b' --include=*.py flagquantum/ tools/ | grep -v __pycache__ | wc -l
+69
+$ grep -rn '\.adjoint\b' --include=*.py flagquantum/ | grep -v __pycache__ \
+    | grep -v 'runtime/executors/statevector/reverse_adjoint' \
+    | grep -v 'simulation/statevector/adjoint.py' | grep -v 'simulation/native_cpu/'
+flagquantum/circuit.py:110:                    f"its adjoint declaration {schema.adjoint!r} names no inverse gate"
+flagquantum/circuit.py:460:            >>> [item.name for item in circuit.adjoint().to_ir().instructions]
+flagquantum/core/operator_schema.py:11:#: Rule names ``OperatorSchema.adjoint`` may use, and what each one computes.
+flagquantum/core/operator_schema.py:421:    if schema.adjoint == "self_inverse":
+flagquantum/core/operator_schema.py:423:    if schema.adjoint == "negate_parameters":
+flagquantum/core/operator_schema.py:428:    if schema.adjoint == "adjoint_u2_angles":
+flagquantum/core/operator_schema.py:434:    if schema.adjoint == "adjoint_u3_angles":
+flagquantum/core/operator_schema.py:441:    partner = OPERATOR_SCHEMAS.get(schema.adjoint)
+flagquantum/core/operator_schema.py:479:            "adjoint": schema.adjoint,
 flagquantum/runtime/executors/statevector/reverse_observable.py:49:    sweep.adjoint = seed_adjoint(
-flagquantum/runtime/executors/statevector/reverse_adjoint_rotation_segment.py:41:            sweep.adjoint,
-... (54 further matches, all in flagquantum/runtime/executors/statevector/reverse_adjoint*.py,
-     flagquantum/simulation/statevector/adjoint.py and flagquantum/simulation/native_cpu/*.py)
+flagquantum/compiler/inverse_cancellation.py:14:than from a table of its own. `OperatorSchema.adjoint` already names the inverse
+flagquantum/compiler/inverse_cancellation.py:17:`flagquantum.circuit.Circuit.adjoint` is already its consumer. A second table
+$ grep -rn '\.adjoint\b' --include=*.py tools/ | grep -v __pycache__
+tools/check_circuit_composition_contract.py:5:`Circuit.compose` and `Circuit.adjoint` guarantee and of every way they refuse. This
+tools/check_circuit_composition_contract.py:93:    if provided != ["Circuit.compose", "Circuit.adjoint"]:
+tools/check_circuit_composition_contract.py:160:    adjoint_arguments = list(inspect.signature(fq.Circuit.adjoint).parameters)
+tools/check_circuit_composition_contract.py:162:        errors.append(f"Circuit.adjoint grew parameters: {adjoint_arguments}")
+tools/check_circuit_composition_contract.py:274:        if OPERATOR_SCHEMAS[opcode].adjoint == "not_applicable"
 ```
 
-Every match outside `flagquantum/core/operator_schema.py` belongs to the gradient
-machinery: `sweep.adjoint` is an adjoint *state vector*, and
-`flagquantum/simulation/statevector/adjoint.py` is the reverse-mode sweeper. The
-same word appears a second time as a user-facing option:
+Of the 69 matches, 52 are the gradient machinery: every one under
+`flagquantum/runtime/executors/statevector/reverse_adjoint*` is `sweep.adjoint`, an
+adjoint *state vector*, and `flagquantum/simulation/statevector/adjoint.py` is the
+reverse-mode sweeper. The eleven in `flagquantum/core/operator_schema.py` are the
+schema field and the one function that reads it. The two in
+`flagquantum/compiler/inverse_cancellation.py` are the pass that already reads the
+field. The five in `tools/check_circuit_composition_contract.py` are the gate that
+pins `Circuit.adjoint`'s signature.
+
+That leaves the two in `flagquantum/circuit.py`, and they are the fourth meaning.
+`Circuit.adjoint` is a program-level inversion that returns a new `Circuit`. It is
+not a modifier, because the caller cannot name an operator: it inverts the whole
+program and takes no arguments. **Re-measured:** revision 1 named three meanings
+and did not mention this one, because the method had not shipped when the section
+was written.
+
+The same word appears again as a user-facing option, which is the second meaning:
 
 ```
 $ grep -n "differentiation" flagquantum/algorithms/core.py | head -3
@@ -93,21 +165,43 @@ $ grep -n "differentiation" flagquantum/algorithms/core.py | head -3
 
 That option selects a *gradient* method and is scope of the plan row W2-03 and
 `API_CHANGE_PROPOSAL_068_SV_GRADIENT_CONTRACT.md`, not of this document. The
-schema field is a third thing: a three-value metadata string whose only reader
-in the whole repository is the manifest renderer.
+schema field is the third thing, and it is the one this proposal extends.
+
+**Re-measured.** Revision 1 called the schema field "a three-value metadata
+string whose only reader in the whole repository is the manifest renderer" and
+followed it with a search that printed five lines inside
+`flagquantum/core/operator_schema.py` and concluded "Line 173 is the only
+consumer". Both halves are wrong on this checkout, and the reader census is the
+half that matters, because the rule table this proposal asks for is the table
+`Circuit.adjoint` already reads.
+
+The search is the one printed above. Revision 1's manifest line is line 479 today
+and it is one of three readers rather than the only one:
+`operator_schema.inverse_operator` (line 395) reads the declaration and turns it
+into an opcode and a parameter mapping, `flagquantum/circuit.py:110` reads it to
+name the declaration in a refusal, and
+`flagquantum/compiler/inverse_cancellation.py` reads it, through
+`inverse_operator`, as its only rule source. `Circuit.adjoint` is the consumer
+those three exist for, and the eleven-value vocabulary is measured in section 1.
+
+That is the shape this proposal wants rather than a problem it has to solve: the
+adjoint rewrite this document specifies in section 4 and the rewrite
+`Circuit.adjoint` performs are the same rewrite, and the work W5-11 owes is to
+make it control-aware instead of writing a second one beside it.
+
+The claim that there is no modifier still holds, for the two names this row owes
+and for the spellings a caller would reach for first:
 
 ```
-$ grep -rn "adjoint" --include=*.py flagquantum/core/ flagquantum/operators.py | grep -v "_unitary("
-flagquantum/core/operator_schema.py:18:    adjoint: str
-flagquantum/core/operator_schema.py:55:    adjoint: str = "matrix_adjoint",
-flagquantum/core/operator_schema.py:70:        adjoint=adjoint,
-flagquantum/core/operator_schema.py:85:        adjoint="not_applicable",
-flagquantum/core/operator_schema.py:173:            "adjoint": schema.adjoint,
+$ PYTHONPATH=$PWD python /tmp/probe_w511k.py
+CIRCUIT_ATTR_adjoint: True  sig= (self) -> "'Circuit'"
+has adjoint doc first line: Return the circuit that undoes this one.
+HAS Circuit.control: False
+HAS Circuit.power: False
+HAS Circuit.__invert__: False
+HAS Circuit.__pow__: False
+operators __all__: ('DEFAULT_DENSE_MATRIX_BYTES', 'GateInfo', 'SuperOperator', 'gate_info')
 ```
-
-Line 173 is the only consumer, and it copies the string into the manifest. There
-is no modifier: `Circuit` has none of the names a caller would try, and the
-negative search is exhaustive over the three plausible spellings.
 
 ```
 $ PYTHONPATH=$PWD python /tmp/probe067b.py
@@ -117,7 +211,6 @@ IR_REFUSED: 'cccx' -> unknown opcode 'cccx'; custom operations require an explic
 IR_REFUSED: 'adjoint_h' -> unknown opcode 'adjoint_h'; custom operations require an explicit matrix
 IR_REFUSED: 'h_dg' -> unknown opcode 'h_dg'; custom operations require an explicit matrix
 ARITY_REFUSED: 'cx' 4 wires -> opcode 'cx' requires 2 wire(s), got 4
-CIRCUIT_ATTR_adjoint: False
 CIRCUIT_ATTR_inverse: False
 CIRCUIT_ATTR_dagger: False
 CIRCUIT_ATTR_control: False
@@ -127,12 +220,13 @@ CIRCUIT_ATTR_power: False
 CIRCUIT_DUNDER_invert: False | __pow__: False
 ```
 
-```
-$ grep -rniE "def adjoint|def dagger|def inverse|def control\(|with_adjoint" --include=*.py flagquantum/ ; echo "exit=$?"
-exit=1
-```
-
-The refusal comes from `flagquantum/core/ir.py:364`, which is a deliberate rule
+Revision 1 also printed `CIRCUIT_ATTR_adjoint: False` here and closed with
+`grep -rniE "def adjoint|def dagger|def inverse|def control\(|with_adjoint"
+--include=*.py flagquantum/` returning `exit=1`. Both lines are removed above
+rather than corrected, because the grep they came from cannot return `1` on this
+checkout: `flagquantum/circuit.py:431` defines `def adjoint(self) -> "Circuit"`.
+The refusal text is unchanged and is what this section rests on. The refusal
+comes from `flagquantum/core/ir.py:364`, which is a deliberate rule
 rather than an accident: an unknown opcode is admitted only when the instruction
 carries an explicit matrix. A control-count-by-name design would therefore be
 refused by the IR before it reached any backend, and each name a caller invented
@@ -407,8 +501,6 @@ that the fixture is sensitive to a relative phase.
 $ PYTHONPATH=$PWD python /tmp/probe067l.py
 u3(t,p,l) then u3(-t,-p,-l)  0.99952259975704150
 u3(t,p,l) then u3(-t,-l,-p)  0.99999999999999978
-u2(p,l) then u2(-p,-l)       0.19789601078199381
-u2(p,l) then u2(-l,-p)       0.50553334120484683
 rx(t) then rx(-t)            1.00000000000000000
 s then s                     0.00000000000000000
 s then sdg                   0.99999999999999978
@@ -419,13 +511,36 @@ t then tdg                   0.99999999999999978
 Negating every parameter is correct for `rx` and wrong for `u3`, whose adjoint
 requires the `phi` and `lbd` arguments to be exchanged as well as negated: the
 naive rule closes to `0.99952259975704150`, which is twenty-one orders of
-magnitude away from the declared rule's `0.99999999999999978`. `u2` is worse than
-wrong: neither the identity-orientation swap nor the reversed-orientation guess
-reproduces the adjoint (`0.19789601078199381` and `0.50553334120484683`), which
-means a modifier that handled `u2` by rule would be guessing. `s` and `t` are not
+magnitude away from the declared rule's `0.99999999999999978`. `s` and `t` are not
 their own inverses (`0.00000000000000000` and `0.70710678118654746`) and are
 exact against the named `sdg` and `tdg`, which is why the rewrite table is keyed
 by name rather than derived from an arithmetic rule.
+
+**Re-measured, and the correction narrows this section.** The four `u2` lines
+above are removed: `u2`'s two guesses were measured as *overlaps* on a state
+vector, and on this checkout `u2` already carries a measured rule, so neither
+guess is the comparison that matters. The same three claims are re-measured as
+matrix residuals against the true adjoint `U2(phi, lbd)†`, at `complex128`, so
+the operator itself is compared rather than one overlap of it:
+
+```
+$ PYTHONPATH=$PWD python /tmp/probe067rev.py | tail -5
+INVERTS: 31 REFUSED: ['amplitude_damping', 'bit_flip', 'depolarizing', 'phase_flip']
+WORST_RESIDUAL: 5.502328482176191e-16
+   u2(-phi,-lbd) residual 1.8008942047053538
+   u2(-lbd,-phi) residual 1.9999999999999998
+   declared rule residual 3.8081823067227083e-16
+```
+
+`adjoint_u2_angles` is therefore a measured rule and not a guess: its residual is
+`3.808e-16` at `complex128`, the largest residual over all 31 invertible opcodes is
+`5.502e-16`, and the two guesses are wrong by `1.80` and `2.00`. Revision 1's
+conclusion that "a modifier that handled `u2` by rule would be guessing" is
+withdrawn, and with it required-evidence item 5, which asked for a rule to be
+*measured* -- the measurement exists and is what freed `u2` from the refusal list.
+The rewritten section 5 still refuses an opcode whose declaration is
+`matrix_adjoint` with no rule, which is now a rule about a class that no longer has
+`u2` in it.
 
 The seed matters, and this was measured rather than assumed. Run again from a
 computational-basis seed, `s` and `t` become indistinguishable from their
@@ -597,15 +712,22 @@ reverse order, and the adjoint of an instruction carrying `controls = k` is the
 control-carrying adjoint of the base operator, with the control wires unchanged.
 The per-operator part is a rewrite table keyed by the base opcode, derived from
 `OperatorSchema.adjoint` and, where that field is `matrix_adjoint`, from a
-per-opcode rule. Section 7 of "Problem" measures why a single arithmetic rule is
-insufficient: `u3` needs `phi` and `lbd` exchanged as well as negated, and `u2`
-has no rule that any of the natural guesses reproduces.
+per-opcode rule. That table is not new. `operator_schema.inverse_operator` is it,
+`flagquantum/circuit.py:110` refuses through it, and `Circuit.adjoint` applies it;
+this decision therefore extends the table's input rather than its contents, and
+adds no second reader of `OperatorSchema.adjoint`. Its fail-closed behaviour is
+what makes it usable for a control-carrying rewrite: section 7 of "Problem"
+measures why one arithmetic rule is insufficient, and the rule table answers each
+opcode separately, so a controlled rotation and an uncontrolled one take the same
+route.
 
-Adding the modifier does not make `OperatorSchema.adjoint` a consumer-facing
-field, and it does not promote the three-value vocabulary into a guarantee. The
-field keeps its single reader at `operator_schema.py:173`; the rewrite table is
-the new artefact and it is total over the base opcodes in the sense that every
-opcode either has a rule or is refused.
+**Re-measured.** The reader census in this section was wrong twice over. The field
+does not keep "its single reader at `operator_schema.py:173`"; that line is a
+manifest renderer at line 479 today, and the two other readers are
+`inverse_operator` and `flagquantum/circuit.py:110`. And the claim that `u2` has
+no rule was withdrawn in section 7: `adjoint_u2_angles` is measured to
+`3.808e-16` at `complex128`. What survives, and what this decision actually turns
+on, is that the rewrite is fail-closed per opcode.
 
 ### 5. An operator whose adjoint rule is not measured is refused
 
@@ -617,20 +739,26 @@ than approximated:
   `adjoint = not_applicable`. A channel's adjoint is not a channel in general,
   and this proposal does not introduce a second object for it.
 - A base opcode marked `matrix_adjoint` for which no per-opcode rule has been
-  measured and recorded. `u2` is in this class today, and it stays refused until
-  a rule is measured. The measured guesses for it are not close: the
-  identity-orientation negation closes to `0.19789601078199381` and the
-  reversed-orientation negation to `0.50553334120484683`, against `1.0` for a
-  correct adjoint, so admitting it by rule would be a guess rather than a
-  derivation.
+  measured and recorded. Measured on this checkout, that class is **empty**: the
+  eleven adjoint values in `OPERATOR_SCHEMAS` are four rule names
+  (`self_inverse`, `negate_parameters`, `adjoint_u2_angles`,
+  `adjoint_u3_angles`), four `not_applicable` channels, and six symmetric
+  partners, and `matrix_adjoint` is declared by no opcode. The refusal stays
+  because the declaration exists and a future opcode may use it, not because
+  `u2` needs it: revision 1 measured the two natural `u2` guesses as wrong
+  overlaps (`0.19789601078199381` and `0.50553334120484683`) and concluded the
+  opcode must be refused until a rule was measured. The rule has since been
+  measured -- `adjoint_u2_angles` closes to a `3.808e-16` matrix residual at
+  `complex128` -- so `u2` is in the table, not in this class.
 - An instruction whose adjoint would require reversing a sequence the modifier
   cannot see, which in practice means an instruction carrying a caller-supplied
   `matrix`: the adjoint of an opaque matrix is computable, but the *rewrite* is
   not expressible in the base vocabulary, so the modifier refuses and the caller
   supplies the adjoint explicitly if that is what they want.
 
-Each refusal names the opcode it blames. `u2`'s absence from the table is a
-recorded limitation, not a silent fallback.
+Each refusal names the opcode it blames. The class above is a recorded
+limitation, not a silent fallback, and its emptiness today is measured rather
+than assumed.
 
 ### 6. Registration returns a new frozen table; `OPERATOR_SCHEMAS` is never
 mutated
@@ -717,6 +845,19 @@ part of the frozen root manifest, so adding a method widens a class rather than
 adding a root name. `flagquantum/algorithms/core.py:191` already uses the word
 `adjoint` for a *gradient* option; the modifier is therefore spelled with names
 that cannot be confused with it, and this proposal does not touch that option.
+
+**Re-measured.** Revision 1 listed `adjoint` among the names this proposal would
+add to `Circuit`, on the strength of a probe that reported
+`CIRCUIT_ATTR_adjoint: False`. It is `True`: `def adjoint(self) -> "Circuit"` at
+`flagquantum/circuit.py:431`, shipped in
+`cd5c8e43 feat(core): invert a program with Circuit.adjoint (#376)`. Only
+`control` is added. This narrows the proposal in the way section 4 describes --
+the program-level adjoint exists, and the modifier half is the part that must
+extend it -- and it removes a collision that revision 1 would have created.
+`contracts/circuit-composition-contract.toml` already contracts both
+`Circuit.adjoint` and the *absence* of `Circuit.control`, and
+`tools/check_circuit_composition_contract.py` enforces both, so an accepted
+`control` is a change to a protected contract rather than an addition beside one.
 
 ### 10. The capability document is regenerated, never hand-edited
 
@@ -849,6 +990,57 @@ in "Compatibility". The new public root name count is zero.
   could not be expressed before is now expressible and is refused when it is
   meaningless.
 
+- **`Circuit.adjoint` already ships, so this proposal extends it rather than
+  adding it.** Revision 1 listed `adjoint` among the names it would add to
+  `Circuit`; that line is withdrawn in section 9 of "Decision". The method is
+  `def adjoint(self) -> "Circuit"` at `flagquantum/circuit.py:431`, landed in
+  `cd5c8e43 feat(core): invert a program with Circuit.adjoint (#376)`. The
+  consequence for compatibility is that the per-instruction spelling this
+  proposal wants is a **signature change to a name that is already in use**:
+  `Circuit.adjoint` today takes no arguments and inverts the whole program, so
+  `circuit.adjoint("u3", wires=..., params=...)` cannot be the same call. Two
+  ways out exist and the choice is the repository owner's, because only one of
+  them can be taken without a further compatibility statement:
+
+  - `Circuit.adjoint()` keeps its meaning and the per-instruction form is a
+    **distinct name**, chosen so it cannot be confused with the gradient option
+    at `flagquantum/algorithms/core.py:191`. Nothing that ships today changes.
+  - `Circuit.adjoint` is overloaded on its first argument. Then the
+    zero-argument form is preserved for callers and the one-argument form is new,
+    which is an additive change to a Stable Core method rather than a breaking
+    one, but it still requires the compatibility statement this proposal would
+    then owe and does not yet contain.
+
+  This proposal names the first as its default and records the second as the
+  alternative it does not choose, rather than leaving the collision unstated as
+  revision 1 did.
+
+- **`Circuit.control` is contracted as absent, so adding it is a protected-surface
+  change and not an addition beside one.** Measured, not inferred:
+
+  ```
+  $ grep -n 'not_provided\|^provided\|^\[scope\]' contracts/circuit-composition-contract.toml
+  25:[scope]
+  26:provided = ["Circuit.compose", "Circuit.adjoint"]
+  30:not_provided = ["Circuit.control", "Circuit.power"]
+  31:not_provided_reason = "no approved API change proposal; control and power are unplanned, not partial"
+  ```
+
+  `tools/check_circuit_composition_contract.py` enforces that list from three
+  sides: line 93 requires `provided` to equal `["Circuit.compose",
+  "Circuit.adjoint"]`, lines 95-101 require `not_provided` to equal
+  `["Circuit.control", "Circuit.power"]` **and** require every name in it to be
+  absent from `flagquantum`, and lines 160-162 require
+  `inspect.signature(fq.Circuit.adjoint).parameters` to be exactly `["self"]`.
+  So the gate fails today if `Circuit.control` is added, and it also fails if
+  `Circuit.adjoint` gains a parameter -- which is the second option above,
+  confirming that the collision is enforced rather than merely documented. Both
+  files are protected surfaces (`contracts/**` and `tools/**` in
+  `team-ownership.toml`), so an approved implementation must change the contract
+  and the gate together, and `tools/check_team_scope.py` will report both as
+  cross-team surfaces. Revision 1 did not record this and its acceptance path
+  would have failed this gate on the first run.
+
 - **No Stable Core root name changes, so no deprecation window is owed**, and no
   maturity level is raised by this proposal. `tools/check_capability_maturity.py`
   passes today and must still pass.
@@ -883,20 +1075,34 @@ it and observing a test fail.
       a basis-state seed reports `1.0` for both `s then s` and `s then sdg`, so a
       basis-seed fixture cannot support the claim and is not accepted as evidence.
 - [ ] The rewrite table is shown total over the base operators: enumerating the
-      35 schemas, every `self_inverse` opcode and every `matrix_adjoint` opcode
-      with a recorded rule rewrites to an instruction the IR accepts, and every
-      remaining opcode is refused by name. The refusal list is printed, and it
-      contains all four `channel` opcodes and `u2`.
-- [ ] `u2`'s adjoint is either given a measured rule with the fixture that
-      establishes it, or is listed in the refusal report with the two measured
-      guesses that do not work (`0.19789601078199381` for `u2(-phi,-lbd)` and
-      `0.50553334120484683` for `u2(-lbd,-phi)` on the section 7 fixture). The
-      item is satisfied by the record, not by forcing a rule.
+      35 schemas, every opcode whose declaration resolves to an inverse rewrites
+      to an instruction the IR accepts, and every remaining opcode is refused by
+      name. The refusal list is printed, and it contains all four `channel`
+      opcodes. **Re-measured:** revision 1 required the list to contain `u2`,
+      which contradicts this checkout. `adjoint_u2_angles` is a rule, `u2`
+      resolves, and the measured refusal list is exactly the four channels. The
+      current rule is stronger, not weaker: 31 of 35 opcodes must resolve and the
+      worst matrix residual across those 31 must be reported, measured at
+      `5.502e-16` at `complex128`.
+- [ ] `u2`'s adjoint is listed with the fixture that establishes its rule. The
+      fixture compares the operator, not one overlap of it: the residual of
+      `U2(phi, lbd)†` against the declared rule is `3.808e-16` at `complex128`,
+      against `1.80` and `2.00` for the two natural guesses. **Re-measured:**
+      revision 1 asked for `u2` either to be given a rule or to be listed in the
+      refusal report; the rule exists, so the item is satisfied by the
+      measurement, and section 7 prints both the rule's residual and the two
+      guesses that do not work.
 - [ ] A `k`-control instruction reproduces the named gate exactly for `k = 1`
       (`cx`) and `k = 2` (`ccx`) at `complex128`, compared gate-for-gate on the
       same state, with both probability vectors reported; and a `k = 3` case is
       compared against a dense reference built independently of the modifier,
-      with the reference route stated.
+      with the reference route stated. This item is already measured ahead of the
+      implementation, because the route the modifier must take is the route
+      `Circuit.any` already takes: at `k = 1` the controlled matrix and the named
+      `cx` agree state-for-state, at `k = 2` likewise for `ccx`, and the `k = 3`
+      case agrees with a hand-built `16 x 16` reference to `8.63e-08` -- a
+      `complex64` floor, because the reference route materialises the matrix in
+      the circuit's dtype rather than at `complex128`.
 - [ ] The control-prefix convention is shown to be the implemented one by
       measuring the target-first variant against it and reporting the margin; the
       measured margin on the fixture used in "Problem" section 3 is `2.0`, so a
