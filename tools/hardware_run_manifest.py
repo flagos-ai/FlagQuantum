@@ -34,7 +34,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-# Three files carry a copy of this literal because every tool in this repository
+# Four files carry a copy of this literal because every tool in this repository
 # is a self-contained script, and a script under `tools/` cannot name a sibling
 # module. `tests/unit/test_hardware_lane_policy.py` holds the copies to each
 # other, because a query and its parser that drift apart answer with nothing
