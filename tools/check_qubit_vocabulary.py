@@ -42,11 +42,11 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover
+else:  # pragma: no cover - Python 3.10
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,7 +89,7 @@ EXPECTED_HEADER = {
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
-    return cast(dict[str, Any], tomllib.loads(path.read_text(encoding="utf-8")))
+    return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
 def _duplicates(values: list[str]) -> list[str]:
@@ -558,16 +558,20 @@ def _attribute_errors(
             "qubit vocabulary attribute ledger entries are neither live nor "
             f"retired: {missing[:3]}"
         )
-    for site in sorted(kept):
-        if site not in live_names:
+    # `alias` and not `site`: the loop below binds `site` to an `AttributeSite`, and a
+    # shared name made this loop's `str` the only type mypy could see for it, so
+    # neither loop was checked. `tools/` is outside the strict check in CI, which is
+    # why the error sat here instead of failing a build.
+    for alias in sorted(kept):
+        if alias not in live_names:
             errors.append(
-                f"qubit vocabulary attribute alias {site} is not a live attribute "
+                f"qubit vocabulary attribute alias {alias} is not a live attribute "
                 "name, so the deprecation cannot forward from it"
             )
 
     for identifier, site in sorted(live_persisted.items()):
-        row = by_site.get(identifier)
-        if row is None:
+        record = by_site.get(identifier)
+        if record is None:
             if identifier not in retired:
                 errors.append(
                     "qubit vocabulary attribute reaches a payload but is not "
@@ -575,16 +579,16 @@ def _attribute_errors(
                 )
             continue
         if (
-            row.get("witness") != site.witness
-            or row.get("evidence") != site.evidence
-            or row.get("declaration") != site.declaration
+            record.get("witness") != site.witness
+            or record.get("evidence") != site.evidence
+            or record.get("declaration") != site.declaration
         ):
             errors.append(
                 f"qubit vocabulary exclusion {identifier} no longer matches the "
                 f"scan: witness {site.witness!r}, evidence {site.evidence!r}, "
                 f"declaration {site.declaration!r}"
             )
-        declared = str(row.get("replacement", ""))
+        declared = str(record.get("replacement", ""))
         if declared != site.replacement or not supersedes(site.attribute, declared):
             errors.append(
                 f"qubit vocabulary attribute {identifier} must be replaced by "

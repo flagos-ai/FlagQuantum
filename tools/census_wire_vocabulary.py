@@ -1394,26 +1394,32 @@ def main() -> int:
         f"({fields} fields and {members} members) and "
         f"{len(attributes.excluded)} persisted keys to leave alone"
     )
-    for site in attributes.excluded:
+    # Each loop below names its own variable. They used to share `site`, which forced
+    # mypy to pick the first binding's type and then reject the other three -- and
+    # `tools/` is outside the strict type check in CI, so the errors were real but
+    # invisible to the gate that would have caught them.
+    for excluded in attributes.excluded:
         print(
-            f"  persisted  {site.identifier}  ({site.evidence} by {site.witness}) "
-            f"-> {site.replacement}"
+            f"  persisted  {excluded.identifier}  "
+            f"({excluded.evidence} by {excluded.witness}) -> {excluded.replacement}"
         )
     definitions = definition_census()
     print(
         "definition surface: "
         f"{len(definitions.ledgered)} module-level public names to rename"
     )
-    for site in definitions.ledgered:
-        print(f"  {site.kind:8} {site.identifier} -> {site.replacement}")
+    for definition in definitions.ledgered:
+        print(
+            f"  {definition.kind:8} {definition.identifier} -> {definition.replacement}"
+        )
     documentation = documentation_census()
     print(
         "documentation surface: "
         f"{len(documentation.sites)} wire-named keyword arguments written into "
         f"{len(documentation_files())} tracked Markdown files"
     )
-    for site, count in sorted(documentation.counts().items()):
-        print(f"  {count:4d}  {site}")
+    for keyword, count in sorted(documentation.counts().items()):
+        print(f"  {count:4d}  {keyword}")
     print("reported but not ledgered:")
     print(f"  {len(message_strings()):4d}  string literals")
     # Printed after the enforced surfaces, and labelled as a reading rather than a
