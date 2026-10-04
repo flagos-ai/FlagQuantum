@@ -127,6 +127,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "apply_complex64_transpose_1q_inplace",
         layouts=("sharded_statevector",),
         addressing=("distributed", "transpose"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-007-A",

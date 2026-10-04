@@ -247,6 +247,26 @@ This is bounded single-device development evidence, not a multi-rank
 scalability or release claim. Reproduce or validate it with
 [`benchmarks/statevector_rx_rz_sequence_dispatch.py`](../../benchmarks/statevector_rx_rz_sequence_dispatch.py).
 
+`FQKI-TRITON-SV-006-A` fuses the received half-shard transpose with a
+one-qubit gate for contiguous CUDA `complex64` sharded statevectors. The
+statevector runtime selects this shared Triton path by default when Triton is
+available; `FQ_STATEVECTOR_TRITON_TRANSPOSE_1Q=0` retains the PyTorch fallback.
+
+The checked-in
+[`statevector_transpose_1q_dispatch_a800.json`](../../benchmarks/results/local/statevector_transpose_1q_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations across six fixed
+cases: the two-amplitude boundary, small and large shards, both exchanged bit
+values, varied bit positions, and a batched large shard. It covers
+`jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0.
+Maximum absolute error is below `3.4e-7`. Across the complete default window,
+catalog dispatch reaches at least `1.297x` the speed of PyTorch eager and
+`5.082x` the speed of `torch.compile`. The runner rejects any case below
+either `1.0x` floor, so the shared SV-006-A implementation is `provisional`.
+This is bounded single-device development evidence for the local compute
+stage, not a multi-rank communication, scalability, or release claim.
+Reproduce or validate it with
+[`benchmarks/statevector_transpose_1q_dispatch.py`](../../benchmarks/statevector_transpose_1q_dispatch.py).
+
 `FQKI-FLAGTREE-SV-006-A` applies the same explicit provider boundary to the
 fused distributed transpose and one-qubit gate. TLE async annotations cover
 both the retained local half-shard and the received remote half-shard; matrix
@@ -786,10 +806,10 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. SV-001-A,
-SV-002-A, SV-003-A, SV-004-A, SV-005-A, MPS-003 through MPS-007, and MEAS-001
-through MEAS-003 are provisional after their evidenced default-dispatch
-promotions; the other 20 implementations remain experimental.
+The current 26 semantics and 33 implementations are implemented. SV-001-A
+through SV-006-A, MPS-003 through MPS-007, and MEAS-001 through MEAS-003 are
+provisional after their evidenced default-dispatch promotions; the other 19
+implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
