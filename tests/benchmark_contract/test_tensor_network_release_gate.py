@@ -6,6 +6,12 @@ release claim, so these tests seal artifacts exactly as
 set and to name the specific thing that is missing from an incomplete one. The
 capacity premise is deliberately absent from the frozen manifest, so the tests
 also pin that the gate reports the missing premise instead of assuming one.
+
+The envelope carries no capability key, so the tests also pin that a payload
+belonging to another capability -- including the statevector payloads the gate
+would otherwise read from its own default results directory -- is refused as
+foreign evidence rather than read as a set that is one shape blocker from
+passing.
 """
 
 from __future__ import annotations
@@ -18,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from benchmarks.internal.evidence.tensor_network_release_gate import (
+    _is_tensor_network_evidence,
     baseline_results,
     evaluate_tensor_network_release,
     load_manifest,
@@ -35,6 +42,7 @@ KEY = b"tensor-network-release-gate-test-key"
 DEVICE = "NVIDIA A800-SXM4-80GB"
 
 ROOT = Path(__file__).resolve().parents[2]
+SCALABILITY = ROOT / "benchmarks/results/scalability"
 
 
 def _workload_digest(manifest: dict) -> str:
@@ -99,6 +107,7 @@ def _sharded_evidence(*, world: int = 2, node_count: int = 2) -> dict:
     manifest = load_manifest()
     return {
         "acceptance_case": "multi_gpu_capacity_completion",
+        "state_mode": "distributed_tensor_network",
         "world_size": world,
         "local_world_size": 1,
         "node_count": node_count,
@@ -152,6 +161,7 @@ def _baseline_evidence() -> dict:
     manifest = load_manifest()
     return {
         "acceptance_case": "single_gpu_capacity_failure",
+        "state_mode": "distributed_tensor_network",
         "world_size": 1,
         "local_world_size": 1,
         "node_count": 1,
@@ -335,6 +345,137 @@ def test_a_speedup_whose_interval_still_contains_one_does_not_qualify():
     )
     assert not passed
     assert "missing_statistically_significant_speedup_artifact" in blockers
+
+
+def _statevector_evidence(*, speedup: float = 1.42, lower: float = 1.11) -> list[dict]:
+    """Return the three payloads of a complete set that belongs to another lane.
+
+    Nothing about the shape of the release is missing: a baseline, a sharded
+    completion and a statistically significant speedup are all present and named
+    the way this contract names them. Only the state mode identifies the
+    capability the numbers were measured for, which is what makes the set the
+    decisive case for capability admission.
+    """
+
+    baseline = _baseline_evidence()
+    completion = _sharded_evidence()
+    speed = _speed_evidence(speedup=speedup, lower=lower)
+    for evidence in (baseline, completion, speed):
+        evidence["state_mode"] = "distributed_statevector"
+    return [
+        _seal(baseline, world=1, scope=EvidenceScope.ONE_GPU_LOCAL, release=False),
+        _seal(completion, world=2, scope=EvidenceScope.TWO_GPU_SEMANTIC, release=True),
+        _seal(speed, world=2, scope=EvidenceScope.TWO_GPU_SEMANTIC, release=True),
+    ]
+
+
+def _scalability_lane_envelopes() -> list[dict]:
+    """Return the sealed payloads the scalability lane already holds.
+
+    The lane is named for the payload rather than for the capability: the five
+    checked-in files were sealed by the statevector release campaign, and the
+    tensor-network gate reads that directory as its default result location. They
+    are read without a signing key here because the capability test is what is
+    under test, not the signature.
+    """
+
+    return [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted(SCALABILITY.glob("statevector_*.json"))
+    ]
+
+
+def test_a_complete_payload_of_another_capability_is_refused_by_capability():
+    """A capability is not established by a payload's shape.
+
+    The set below satisfies every measured requirement this contract states and
+    names itself as statevector evidence. A gate that reads it as tensor-network
+    evidence has certified the wrong capability.
+    """
+
+    manifest = _manifest_with_premise()
+    passed, blockers = evaluate_tensor_network_release(
+        _statevector_evidence(), manifest, signing_key=KEY
+    )
+    assert not passed
+    assert "production_artifact_is_not_tensor_network_evidence" in blockers
+
+
+def test_the_statevector_payloads_in_the_scalability_lane_are_not_tn_evidence():
+    """The lane's real payloads must not read as an almost-passing empty set.
+
+    Without the capability test these five signed statevector envelopes satisfy
+    the release world, multi-node, sharded-training and speed requirements, so
+    only the two tensor-network shape blockers remain and a directory that holds
+    no tensor-network evidence at all looks one measurement away from passing.
+    """
+
+    envelopes = _scalability_lane_envelopes()
+    assert envelopes, "the statevector lane must hold the payloads this reads"
+    manifest = _manifest_with_premise()
+    passed, blockers = evaluate_tensor_network_release(
+        envelopes, manifest, signing_key=None
+    )
+    assert not passed
+    assert "production_artifact_is_not_tensor_network_evidence" in blockers
+    assert set(blockers) != {
+        "missing_single_gpu_measured_oom_artifact",
+        "missing_multi_gpu_capacity_completion_artifact",
+    }
+
+
+def test_the_gate_admits_exactly_the_state_modes_the_vocabulary_names():
+    """The admission test and the audit vocabulary have to agree.
+
+    A capability test with a second copy of the mode names would drift from the
+    vocabulary the rest of the audit reads, and the drift would be invisible: the
+    gate would refuse real tensor-network evidence, or admit a mode the audit
+    calls something else, whichever copy moved first.
+    """
+
+    from flagquantum.runtime.audit.vocabulary import (
+        MPS_STATE_MODES,
+        STATEVECTOR_STATE_MODES,
+        TENSOR_NETWORK_STATE_MODES,
+    )
+
+    assert frozenset(
+        {"distributed_tensor_network", "jax_sharded_tensor_network", "tensor_network"}
+    ) == TENSOR_NETWORK_STATE_MODES
+    assert TENSOR_NETWORK_STATE_MODES.isdisjoint(
+        STATEVECTOR_STATE_MODES | MPS_STATE_MODES
+    )
+    for mode in TENSOR_NETWORK_STATE_MODES:
+        assert _is_tensor_network_evidence({"state_mode": mode})
+    for mode in STATEVECTOR_STATE_MODES | MPS_STATE_MODES | {"", "tn", "unknown"}:
+        assert not _is_tensor_network_evidence({"state_mode": mode})
+    assert not _is_tensor_network_evidence({})
+
+
+def test_a_tensor_network_payload_of_another_mode_is_not_evidence_for_the_frozen_run():
+    """Admission by family is not admission by the frozen execution path.
+
+    A payload may name any mode the vocabulary recognizes as tensor-network while
+    the manifest froze the distributed one, and the payload that names another
+    mode was measured by another execution path, so it cannot certify this run.
+    """
+
+    manifest = _manifest_with_premise()
+    mode = manifest["runtime"]["state_mode"]
+    assert mode == "distributed_tensor_network"
+    evidence = _sharded_evidence()
+    evidence["state_mode"] = "tensor_network"
+    artifact = _seal(
+        evidence, world=2, scope=EvidenceScope.TWO_GPU_SEMANTIC, release=True
+    )
+    passed, blockers = evaluate_tensor_network_release(
+        [artifact], manifest, signing_key=KEY
+    )
+    assert not passed
+    assert "missing_tensor_network_state_mode_evidence" in blockers
+    # The payload is still tensor-network evidence, so the foreign blocker is not
+    # the one that fires; the frozen contract is what refuses it.
+    assert "production_artifact_is_not_tensor_network_evidence" not in blockers
 
 
 def test_the_baseline_cannot_live_in_the_scalability_directory():

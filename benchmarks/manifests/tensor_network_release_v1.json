@@ -181,6 +181,7 @@
         "workload_sha256",
         "rank_mapping",
         "distribution_semantics",
+        "state_mode",
         "acceptance_case",
         "capacity_baseline_device",
         "capacity_failure_reason",
@@ -208,7 +209,8 @@
     "rank_peak_memory_bytes",
     "communication_fraction",
     "gpu_activity",
-    "distribution_semantics"
+    "distribution_semantics",
+    "state_mode"
   ],
   "runtime": {
     "backend": "pytorch_native",
@@ -216,7 +218,8 @@
     "dtype": "complex128",
     "gradient_scheme": "owner_reduce",
     "launcher": "torchrun",
-    "optimizer": "rank_owned_sharded_sgd"
+    "optimizer": "rank_owned_sharded_sgd",
+    "state_mode": "distributed_tensor_network"
   },
   "schema_version": "flagquantum.tensor_network.release_manifest.v1",
   "speed_workload": {

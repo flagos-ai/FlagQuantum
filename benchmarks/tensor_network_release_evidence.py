@@ -11,6 +11,12 @@ The frozen capacity workload is identified by its digest, not by its shape: the
 producer reads the digest the release manifest declares and refuses to record a
 run whose workload does not match it, so a manifest that has drifted away from
 what ran fails closed instead of attributing a completion to the wrong circuit.
+
+Every document this producer writes also states the capability it measured, read
+from the state mode the manifest froze, because the runtime-evidence envelope
+carries no capability key and the release gate admits a payload by that mode. A
+document that stated none, or one the manifest did not freeze, would be sealed as
+evidence for a capability nobody ran, so the write boundary refuses it.
 """
 
 from __future__ import annotations
@@ -33,6 +39,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 from flagquantum.experimental.distributed import train_distributed_tensor_network
+from flagquantum.runtime.audit.vocabulary import TENSOR_NETWORK_STATE_MODES
 
 RELEASE_MANIFEST = Path("benchmarks/manifests/tensor_network_release_v1.json")
 ROLES = (
@@ -63,6 +70,34 @@ def _software() -> dict[str, str]:
         "cuda": torch.version.cuda or "",
         "python": sys.version.split()[0],
     }
+
+
+def _stated_state_mode(manifest_path: Path) -> str:
+    """Return the state mode the frozen manifest states for this capability.
+
+    The release gate admits a payload by the state mode the payload states about
+    itself, and the audit vocabulary owns the names that may be stated, so the
+    mode is read from the frozen manifest and checked against that vocabulary
+    rather than restated here. A manifest that named a mode the vocabulary does
+    not recognize, or none at all, refuses this producer instead of emitting a
+    payload the gate would read as another capability's evidence.
+    """
+
+    manifest = _frozen(Path(manifest_path))
+    runtime = manifest.get("runtime")
+    declared = (
+        str(runtime.get("state_mode", "")).lower()
+        if isinstance(runtime, Mapping)
+        else ""
+    )
+    if declared not in TENSOR_NETWORK_STATE_MODES:
+        raise SystemExit(
+            f"{manifest_path} declares runtime.state_mode {declared!r}, which the "
+            "audit vocabulary does not recognize as a tensor-network state mode "
+            f"({sorted(TENSOR_NETWORK_STATE_MODES)}); a payload sealed without a "
+            "recognized mode is refused by the release gate as foreign evidence"
+        )
+    return declared
 
 
 def _frozen(path: Path) -> dict[str, Any]:
@@ -176,6 +211,7 @@ def _rank_record(
         "local_rank": local_rank,
         "local_world_size": local_world,
         "node_count": node_count,
+        "state_mode": _stated_state_mode(arguments.release_manifest),
         "hostname": socket.gethostname(),
         "commit": _commit(),
         "shape": list(shape),
@@ -204,6 +240,23 @@ def _checkpoint_budget_bytes(arguments: argparse.Namespace) -> int | None:
 
 
 def _write(arguments: argparse.Namespace, document: Mapping[str, Any]) -> None:
+    """Serialise one role document, refusing one that does not state its capability.
+
+    Every role writes through here, so the state mode is required once at the
+    boundary instead of being remembered at each write site. The mode is what the
+    release gate attributes a payload by, so a document that states none, or one
+    the frozen manifest did not freeze, is refused before it can be sealed as
+    evidence for a capability it does not name.
+    """
+
+    expected = _stated_state_mode(arguments.release_manifest)
+    declared = str(document.get("state_mode", "")).lower()
+    if declared != expected:
+        raise SystemExit(
+            "a tensor-network document must state the frozen state mode "
+            f"{expected!r} and this one states {declared!r}; without it the "
+            "release gate reads the sealed payload as foreign evidence"
+        )
     text = json.dumps(document, indent=2, sort_keys=True) + "\n"
     if arguments.measurements is None:
         print(text, end="")
@@ -598,6 +651,7 @@ def _role_matched_speed(arguments: argparse.Namespace) -> int:
             "local_rank": local_rank,
             "local_world_size": arguments.local_world_size,
             "node_count": arguments.node_count,
+            "state_mode": _stated_state_mode(arguments.release_manifest),
             "hostname": socket.gethostname(),
             "commit": _commit(),
             "measurements": {"configurations": configurations},
@@ -783,6 +837,7 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
     multi_node = int(sharded["node_count"]) > 1
     measurements = {
         "acceptance_case": "matched_speed",
+        "state_mode": _stated_state_mode(arguments.release_manifest),
         "world_size": world,
         "local_world_size": int(sharded["local_world_size"]),
         "node_count": int(sharded["node_count"]),
@@ -851,6 +906,7 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             "rank": 0,
             "world_size": world,
             "node_count": int(sharded["node_count"]),
+            "state_mode": _stated_state_mode(arguments.release_manifest),
             "commit": sharded["commit"],
             "measurements": measurements,
             "timings": measurements["timings"],

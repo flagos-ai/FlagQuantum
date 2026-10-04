@@ -13,6 +13,12 @@ measured pair is two hosts, and no third host exists on this cluster. The
 manifest therefore freezes a *pair* topology instead of a single-node ladder, and
 the gate requires the multi-node route to be observed in the payload rather than
 assumed from the rank count.
+
+The signature is not a capability. The runtime-evidence envelope carries no
+capability key, so the gate admits a payload only when the payload states a state
+mode the audit vocabulary recognizes as tensor-network, and a payload of another
+capability is counted and reported as foreign evidence instead of being read as a
+set that is one shape-specific blocker away from passing.
 """
 
 from __future__ import annotations
@@ -25,6 +31,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from flagquantum.runtime.audit.vocabulary import TENSOR_NETWORK_STATE_MODES
 from flagquantum.runtime.observability.evidence import verify_evidence_artifact
 
 MANIFEST = Path("benchmarks/manifests/tensor_network_release_v1.json")
@@ -68,6 +75,24 @@ def _is_single_device_baseline(
         and evidence.get("world_size") == 1
         and str(evidence.get("workload_sha256")) == str(contract["workload_sha256"])
     )
+
+
+def _is_tensor_network_evidence(evidence: Mapping[str, Any]) -> bool:
+    """Return whether a payload is evidence for this capability at all.
+
+    The runtime-evidence envelope carries no capability key, and the statevector
+    release payloads are ``measured_production_run`` artifacts with
+    ``release_gate_allowed`` set, so without a capability test another
+    capability's payload would satisfy this contract's release world, multi-node
+    and speed requirements while only the tensor-network shape checks remained. A
+    statevector payload either declares no state mode at all or declares one the
+    vocabulary assigns to another family, so the test is whether the payload
+    declares one of the modes the audit vocabulary recognizes as tensor-network.
+    Which of those the frozen contract accepts is a separate question, asked by
+    the contract check and answered from the manifest.
+    """
+
+    return str(evidence.get("state_mode", "")).lower() in TENSOR_NETWORK_STATE_MODES
 
 
 def _as_int(value: Any) -> int:
@@ -174,6 +199,7 @@ def evaluate_tensor_network_release(
     baselines: list[tuple[Mapping[str, Any], Mapping[str, Any]]] = []
     rejected = False
     single_device_claimants = False
+    foreign_evidence = 0
     for artifact in artifacts:
         if artifact.get("artifact_class") != "measured_production_run":
             continue
@@ -187,6 +213,14 @@ def evaluate_tensor_network_release(
             if not valid:
                 rejected = True
                 continue
+        # The envelope carries no capability key, so a payload of another
+        # capability can otherwise satisfy this contract's requirements. It is
+        # counted and reported rather than dropped: a directory holding five
+        # files of which none is admissible must not read as an empty set that
+        # only the shape-specific blockers are missing from.
+        if not _is_tensor_network_evidence(evidence):
+            foreign_evidence += 1
+            continue
         if _is_single_device_baseline(evidence, baseline_contract):
             baselines.append((evidence, provenance))
         if evidence.get("release_gate_allowed") is not True:
@@ -200,6 +234,8 @@ def evaluate_tensor_network_release(
         blockers.append("invalid_or_unsigned_production_artifact")
     if single_device_claimants:
         blockers.append("single_device_world_cannot_be_a_release_payload")
+    if foreign_evidence:
+        blockers.append("production_artifact_is_not_tensor_network_evidence")
 
     worlds = {_as_int(evidence.get("world_size")) for evidence, _ in production}
     required_worlds = set(manifest["topologies"]["release_world_sizes"])
@@ -251,6 +287,15 @@ def evaluate_tensor_network_release(
     ]
     if capacity["premise_established"] and not completions:
         blockers.append("missing_multi_gpu_capacity_completion_artifact")
+
+    # Being tensor-network evidence is not the same as being evidence for the
+    # frozen contract: a payload may name any of the modes the vocabulary
+    # recognizes while the manifest froze the distributed one, and a payload that
+    # names another mode was measured by another execution path.
+    expected_state_mode = str(manifest["runtime"]["state_mode"]).lower()
+    for evidence, _ in production:
+        if str(evidence.get("state_mode", "")).lower() != expected_state_mode:
+            blockers.append("missing_tensor_network_state_mode_evidence")
 
     for evidence, provenance in production:
         if _has_required_fields(evidence, provenance, required):

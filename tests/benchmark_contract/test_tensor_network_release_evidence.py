@@ -161,7 +161,11 @@ def test_the_timing_protocol_is_read_from_the_manifest_not_from_arguments(
 def test_the_release_payload_role_lifts_the_contract_out_of_a_document(
     tmp_path: Path,
 ) -> None:
-    contract = {"acceptance_case": "matched_speed", "world_size": 2}
+    contract = {
+        "acceptance_case": "matched_speed",
+        "world_size": 2,
+        "state_mode": FROZEN["runtime"]["state_mode"],
+    }
     document = tmp_path / "role.json"
     document.write_text(json.dumps({"measurements": contract}), encoding="utf-8")
     output = tmp_path / "evidence.json"
@@ -247,3 +251,202 @@ def test_the_launcher_hands_the_checkpoint_budget_to_the_role(
         == 0
     )
     assert producer._checkpoint_budget_bytes(captured[0]) == budget
+
+
+def _frozen_state_mode() -> str:
+    return str(FROZEN["runtime"]["state_mode"])
+
+
+def _configuration(name: str, seconds: float) -> dict:
+    return {
+        "name": name,
+        "qubits": 18,
+        "layers": 10,
+        "slice_count": 6,
+        "steps": 1,
+        "parameter_count": 180,
+        "seconds": [seconds] * 10,
+        "median_seconds": seconds,
+        "minimum_seconds": seconds,
+        "communication_bytes": 4096,
+        "training_step_count": 1,
+        "parameter_ownership": {"rank:0": ["parameter:0"], "rank:1": ["parameter:1"]},
+        "optimizer_update_ownership": {
+            "rank:0": ["parameter:0"],
+            "rank:1": ["parameter:1"],
+        },
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+    }
+
+
+def _leg(*, world: int, seconds: float) -> dict:
+    """Return one timed leg of the matched-speed ladder as the role records it.
+
+    The two legs differ in the world they ran at, which is the whole comparison,
+    and the sharded leg carries one record per rank because the ownership maps
+    are compared across the ranks rather than read from rank 0.
+    """
+
+    configurations = [
+        _configuration(entry["name"], seconds) for entry in _ladder()
+    ]
+    record = {
+        "schema": "flagquantum.tensor_network_release_measurements.v1",
+        "role": "matched-speed",
+        "rank": 0,
+        "world_size": world,
+        "local_world_size": 1,
+        "node_count": world,
+        "state_mode": _frozen_state_mode(),
+        "commit": "a" * 40,
+        "measurements": {"configurations": configurations},
+        "timings": [seconds],
+        "warmup": int(SPEED["warmup_steps"]),
+        "iterations": int(SPEED["measured_steps"]),
+        "measured_peak_memory_bytes": 1024,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "workload_sha256": "b" * 64,
+        "software": {"torch": "2.9.0"},
+    }
+    return {**record, "ranks": [dict(record) for _ in range(world)]}
+
+
+def test_the_producer_states_the_state_mode_the_manifest_froze(tmp_path: Path) -> None:
+    """The mode is the frozen contract's, not a second copy the producer owns."""
+
+    from flagquantum.runtime.audit.vocabulary import TENSOR_NETWORK_STATE_MODES
+
+    assert producer._stated_state_mode(RELEASE_MANIFEST) == _frozen_state_mode()
+    assert _frozen_state_mode() in TENSOR_NETWORK_STATE_MODES
+
+    # A manifest that named another capability's mode, or none at all, has to
+    # refuse the producer: a payload sealed under it would be read by the release
+    # gate as evidence for a capability that was never measured.
+    drifted = copy.deepcopy(FROZEN)
+    drifted["runtime"]["state_mode"] = "distributed_mps"
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(drifted), encoding="utf-8")
+    with pytest.raises(SystemExit, match="does not recognize"):
+        producer._stated_state_mode(manifest)
+
+
+def test_every_rank_record_states_the_state_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The per-rank records the capacity roles seal carry the mode themselves."""
+
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setenv("WORLD_SIZE", "2")
+    monkeypatch.setenv("LOCAL_RANK", "0")
+    monkeypatch.setattr(
+        producer.torch.cuda,
+        "get_device_properties",
+        lambda device: argparse.Namespace(name="NVIDIA A800-SXM4-80GB"),
+    )
+    arguments = argparse.Namespace(
+        role="capacity-completion",
+        release_manifest=RELEASE_MANIFEST,
+        node_count=2,
+        slice_count=4,
+        steps=2,
+        checkpoint_budget_bytes=None,
+    )
+    record = producer._rank_record(
+        arguments,
+        device=torch.device("cpu"),
+        contract=FROZEN["capacity_workload"],
+        digest="c" * 64,
+        shape=(4, 6, 2),
+    )
+    assert record["state_mode"] == _frozen_state_mode()
+
+
+def test_a_role_document_that_does_not_state_the_frozen_mode_is_refused(
+    tmp_path: Path,
+) -> None:
+    """Every role writes through one boundary, so the requirement is checked once.
+
+    A document that stated another capability's mode, or none, would be sealed as
+    evidence the release gate reads as foreign, so the producer refuses to
+    serialise it rather than leaving the mistake to the gate.
+    """
+
+    output = tmp_path / "role.json"
+    arguments = argparse.Namespace(
+        role="capacity-failure",
+        release_manifest=RELEASE_MANIFEST,
+        measurements=output,
+    )
+    with pytest.raises(SystemExit, match="must state the frozen state mode"):
+        producer._write(arguments, {"role": "capacity-failure"})
+    with pytest.raises(SystemExit, match="must state the frozen state mode"):
+        producer._write(
+            arguments, {"role": "capacity-failure", "state_mode": "distributed_mps"}
+        )
+    assert not output.exists()
+
+    producer._write(
+        arguments, {"role": "capacity-failure", "state_mode": _frozen_state_mode()}
+    )
+    assert json.loads(output.read_text(encoding="utf-8"))["state_mode"] == (
+        _frozen_state_mode()
+    )
+
+
+def test_the_assembled_speed_summary_states_the_state_mode(tmp_path: Path) -> None:
+    """A role document assembled from real legs carries the mode, top to bottom.
+
+    The speed-summary role is the one role the pair can assemble without an
+    accelerator, and its document is the one the sealer projects onto the release
+    payload, so the mode has to survive both the document and the projection.
+    """
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(_leg(world=1, seconds=4.0)), encoding="utf-8"
+    )
+    sharded = tmp_path / "sharded.json"
+    sharded.write_text(json.dumps(_leg(world=2, seconds=2.0)), encoding="utf-8")
+    summary = tmp_path / "summary.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "speed-summary",
+                "--release-manifest",
+                str(RELEASE_MANIFEST),
+                "--baseline",
+                str(baseline),
+                "--sharded",
+                str(sharded),
+                "--measurements",
+                str(summary),
+            ]
+        )
+        == 0
+    )
+    document = json.loads(summary.read_text(encoding="utf-8"))
+    assert document["state_mode"] == _frozen_state_mode()
+    assert document["measurements"]["state_mode"] == _frozen_state_mode()
+
+    # The sealer reads the projected measurements as the envelope's evidence, so
+    # the mode has to be inside that block and not only beside it.
+    evidence = tmp_path / "evidence.json"
+    assert (
+        producer.main(
+            [
+                "--role",
+                "release-payload",
+                "--document",
+                str(summary),
+                "--measurements",
+                str(evidence),
+            ]
+        )
+        == 0
+    )
+    assert json.loads(evidence.read_text(encoding="utf-8"))["state_mode"] == (
+        _frozen_state_mode()
+    )
