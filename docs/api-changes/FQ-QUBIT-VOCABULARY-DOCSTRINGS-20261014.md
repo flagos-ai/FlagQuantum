@@ -486,6 +486,107 @@ made legacy device objects drawable, would have blocked this slice, and would th
 blocked the correction of the defect this slice introduced — three separate pieces of
 right work.
 
+## What the example surface cost, and what it cost to give that back
+
+A new surface is not free, and the price of this one was paid by a lane that is not
+this slice's. The tier command CI runs for a pull request is `tools/ci_tier.py
+pr-default`, whose selection is `pytest -m "smoke or unit" -q` over `pytest.ini`'s
+`testpaths = tests`. Four runs of it, all on this machine in one sitting, two at each
+revision, with the second pair ignoring the two modules this slice owns:
+
+| revision | selection | result |
+|---|---|---|
+| base `f44909ef` | the lane | `3 failed, 6126 passed, 249 skipped, 2138 deselected, 79 warnings in 636.02s` |
+| base `f44909ef` | the lane, two vocabulary modules ignored | `3 failed, 6004 passed, 249 skipped, 2138 deselected, 79 warnings in 221.28s` |
+| tip `8fd6a910` | the lane | `3 failed, 6176 passed, 249 skipped, 2138 deselected, 79 warnings in 904.08s` |
+| tip `8fd6a910` | the lane, two vocabulary modules ignored | `3 failed, 6004 passed, 249 skipped, 2138 deselected, 79 warnings in 390.58s` |
+
+Four things in that table are worth more than the wall times, and the wall times are
+worth the least.
+
+**The counts are exact and they add up.** The two modules hold 122 tests at the base
+and 172 at the tip; every other test in the lane is `6004` at both revisions, and
+`6126 + 50 = 6176` is the whole difference between the two full runs. So this slice
+changed nothing in the lane outside its own two test modules, and the fifty new tests
+are the forty-three-token ledger being reconciled plus the nine negative tests that
+keep it honest.
+
+**The lane's cost is dominated by those two modules.** At the tip, 904.08 s of lane
+against 390.58 s of the same lane without them: the two modules are **513.50 s**, or
+57% of the lane, for 172 of its 6176 tests.
+
+**And that is the number the fix moved.** Measured isolated, the same two modules:
+
+    before   tests/unit/test_qubit_vocabulary_contract.py + tests/unit/test_census_wire_vocabulary.py
+             169 passed in 1128.89 s
+    after    172 passed in  621.83 s
+
+about 6.9 s per test down to 3.0 s per test, with fifty more tests in the module than
+the base carried and three of them new. What is left is not the docstring scan:
+`attribute_census`, `_call_site_errors`, `_payload_index` and `_member_literal_index`
+re-derive every surface on every call and none of them is memoized, which was equally
+true at the base. This record does not fix that and does not claim to.
+
+**Wall clock on this machine is not a measurement.** The base's own full lane read
+`367.12 s` in one run and `636.02 s` in another — same commit, same command, same
+laptop, 1.7× apart — and the tip's two full runs differ the same way. So the table is
+evidence for the *ratios* and for the test counts, and for nothing that would need the
+two full-lane columns to be comparable across rows. A per-test cost quoted from a
+single run would be a number with no error bar on a machine whose load this record
+does not control.
+
+Neither reading is a lane the stack has run in CI. `ci.yml` triggers `pull_request`
+only for `branches: [main]` and this pull request's base is a feature branch, so all
+four are local runs of the selection expression rather than CI results — the same
+distinction this record's Evidence section was corrected for once already.
+
+The fix is in the last two of this slice's eight commits — the first six are the
+surface and the ledger, the seventh reads the docstring's two halves once and memoizes
+them, the eighth fixes the loop-variable reuse that made both vocabulary tools
+type-check for the first time. It is described where it lives rather than here: the two
+halves of a docstring are now read in one traversal and memoized under a content digest
+of the tree, with three tests that fail if the digest is weakened to a size-and-mtime
+stamp, if the memo is deleted, or if the `_example_lines` early return stops matching
+the loop it replaces.
+
+"Eight commits" is the shape of the head branch, and it is worth saying which shape the
+content has *after* landing, because the two are different and the difference is not
+recoverable from the stack branch alone. The slice was squash-merged onto
+`feat/qubit-vocabulary-algorithms` as `0e617c1d`, whose tree is byte-identical to this
+branch's eighth commit; the eight messages above are in the merged commit's pull
+request and in this branch, and the stack branch carries their content as one commit.
+That is also why this record is committed separately from the two fixes it describes:
+its own file changes in none of them, so it can be read against either shape.
+
+The lane readings above were taken after the eighth, so they are the cost of the slice
+as it will land rather than the cost it had when the surface was added. That
+distinction is the whole reason the seventh commit exists, and it is the reason this
+section reports both the lane and the two modules: a slice that adds a surface owes its
+own cost back to the lane it shares, and the evidence that it did is a pair of readings
+rather than an assurance.
+
+## The lane's failures are the same three at both revisions
+
+Every one of the four runs above reports exactly three failures, and they are the same
+three names at the base and at the tip:
+
+* `tests/team/runtime/test_target_capability_matching.py::test_decision_identity_is_independent_of_python_hash_seed`
+* `tests/team/simulation/test_statevector_ops_numerics.py::test_native_fused_rotation_layer_only_promotes_terminal_regions`
+* `tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_and_rollback`
+
+None of them is this slice's, and the third is the one an earlier reading of this
+branch already reproduced at the base. A *fourth* of them is worth naming because
+naming it wrongly would have been easy: earlier full-lane runs at the tip reported
+`tests/test_simulator_advisor.py::test_advisor_live_calibrates_an_unmeasured_circuit`
+as well, with `assert 'flagquantum_native' == 'qiskit_aer'`. That test compares which
+backend it decided was faster, so it is a load-sensitive reading rather than a defect:
+it passed standalone, it passed under `-n 8` on its own file, it also fails at the base
+under load, and it did not appear in either of the two tip runs tabulated above. The
+honest description is that the lane has three stable failures at both revisions and one
+intermittent test that this slice neither introduced nor fixed — and that a lane whose
+failure list depends on how busy the machine is cannot be read as a pass/fail signal
+without the list being written down, which is the reason this section exists.
+
 ## What the slice does not reach
 
 * `benchmarks/`, `tools/` and `examples/` are outside `[boundary]`, which stops at the
