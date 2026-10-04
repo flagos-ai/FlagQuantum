@@ -81,6 +81,42 @@ check that sees them is a test run, because the reference reaches them through a
 `Any`. A rename whose reach is wider than its file list is not verified by
 `mypy --strict` alone.
 
+## The algorithms surface
+
+`flagquantum.algorithms` is the fifth slice. `fq.algorithms` is not an attribute
+of the `fq` package and no algorithm name appears in `fq.__all__`, so no name in
+this slice is reachable from `fq.*` and none of them keeps a forwarder: every
+rename below is a hard rename in the same release.
+
+| Before | After |
+|---|---|
+| every `algorithms` parameter and field named `wire`, `wires`, `n_wires` | the `qubit` spellings |
+| `n_counting_wires`, `n_evaluation_wires`, `n_support_wires`, `n_item_wires`, `n_a_wires`, `n_b_wires`, `n_embedding_wires` | `n_counting_qubits`, `n_evaluation_qubits`, `n_support_qubits`, `n_item_qubits`, `n_a_qubits`, `n_b_qubits`, `n_embedding_qubits` |
+| `counting_wires`, `evaluation_wires`, `declared_wires`, `data_wires`, `left_wires`, `right_wires`, `purification_wires` | the `…_qubits` spellings |
+| `HamiltonianTerm.max_wire` | `HamiltonianTerm.max_qubit` |
+| the private helpers `_as_wire_tuple`, `_resolve_wires`, `_zero_wires`, `_constant_wire`, `wire_tuple` | `_as_qubit_tuple`, `_resolve_qubits`, `_zero_qubits`, `_constant_qubit`, `qubit_tuple` |
+| the private constants `_GROVER_WIRE_LIMIT`, `_PHASE_ORACLE_WIRE_LIMIT`, `_CENTROID_WIRE_LIMIT`, `_MAX_SUPPORT_WIRES`, `_MAX_ITEM_WIRES`, `_MAX_DATA_WIRES` | the `QUBIT` spellings |
+
+This slice owns no payload. Its `persisted_attribute_count` is zero, so it adds
+no `[attribute_exclusions]` row and no `definition_retirement` name, and the
+private bucket the gate re-measures drops by the 41 private `wire` parameters the
+same rename reaches.
+
+`flagquantum/algorithms` is sparsely sliced too, and the files it does not own
+fall into three groups. Seven modules declare nothing any slice owns —
+`error_mitigation.py`, `feature_selection.py`, `kmedians.py`, `optimization.py`,
+`quantum_kernel.py`, `qubo.py`, `spsa.py` — and `qubo.py` reads
+`HamiltonianTerm.wires` and `Hamiltonian.n_wires`, so it was caught up while its
+own `wire`-named locals and prose were left for whoever owns them. Two files
+outside the package read the same two declarations and were caught up with it:
+`deployment/cloud.py` and `simulation/mps/tebd.py`. Both sit behind a local
+`n_wires` of their own, which is why a per-file replacement of the spelling would
+have renamed a name this slice does not own.
+
+`flagquantum/algorithms/primitives/qft.py` reads `step.wire` on `_Hadamard`, a
+private class. A private name is not on the ledger and no gate counts it, but it
+is the same attribute and moves with the rename.
+
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by

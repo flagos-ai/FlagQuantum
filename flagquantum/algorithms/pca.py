@@ -27,7 +27,7 @@ the entire amplitude vector. Nothing here is faster, or smaller, than diagonalis
 ``exp(-2 pi i rho)`` has eigenphase ``exp(-2 pi i * lambda)`` on an eigenvector of
 ``rho`` with eigenvalue ``lambda``, which is the phase ``phi = (-lambda) mod 1``;
 for ``lambda`` in ``(0, 1)`` that is ``phi = 1 - lambda``, so the counter value
-``k`` of ``m`` counting wires reads the eigenvalue ``lambda = 1 - k / 2**m``. The
+``k`` of ``m`` counting qubits reads the eigenvalue ``lambda = 1 - k / 2**m``. The
 inversion is part of the readout and not a cosmetic detail: dropping it reports
 ``phi``, which is a wrong eigenvalue rather than an error.
 
@@ -35,7 +35,7 @@ inversion is part of the readout and not a cosmetic detail: dropping it reports
 the phase to ``1 / 2**m``, so a resolved eigenvalue is accurate to about half that
 step and :class:`PcaResult` carries the step as its ``resolution``. What the readout
 does *not* report is a probability per eigenvalue: the sample's share at the counter
-value nearest an eigenvalue is not that eigenvalue. Measured at six counting wires,
+value nearest an eigenvalue is not that eigenvalue. Measured at six counting qubits,
 the small eigenvalue ``0.0038`` comes back on its own counter value with probability
 ``0.0331``, about nine times its weight, because phase estimation spreads the
 dominant peak's tail into the neighbouring value. :meth:`PcaResult.within` is the
@@ -55,7 +55,7 @@ and cannot infer it from the counter width or from the shape of the peak.
 
 The two runs below illustrate two outcomes. They are examples and not a criterion:
 nothing here says which spectra do which. Both use ``rho = diag(spectrum)``, six
-counting wires, ``shots=8000`` and sampling ``seed=1``, and both have the same
+counting qubits, ``shots=8000`` and sampling ``seed=1``, and both have the same
 largest eigenvalue, ``0.51015625``, at phase ``31.35/64``, so the largest eigenvalue
 and the trace are not what differs between them. In each, the second largest
 eigenvalue also sits exactly on a counter value -- a different one, because moving
@@ -80,11 +80,11 @@ values are separated by only about 0.004 at 4096 shots, and six of the first 500
 sampling seeds at that width put the mode on the second largest eigenvalue, the
 narrowest of the six by ``0.000244``.
 
-**Wire layout.** The counting register is wires ``0 .. m - 1``, the data register
+**Qubit layout.** The counting register is qubits ``0 .. m - 1``, the data register
 ``a`` follows it, and the purification register ``b`` follows that. The counting
 register's bits lead every sample key, as
-:meth:`flagquantum.circuit.Circuit.counts` returns them, one character per wire with
-wire 0 the most significant.
+:meth:`flagquantum.circuit.Circuit.counts` returns them, one character per qubit with
+qubit 0 the most significant.
 
 This unit is demonstration scale. It makes no performance, capacity, convergence, or
 hardware claim, and it does not select a runtime.
@@ -120,7 +120,7 @@ class PcaResult:
     overlap: the eigenvalue is confined to ``(0, 1]`` and the share to ``[0, 1]``,
     so the two overlap on ``(0, 1]``, and a spelling that hands each to the other's
     keyword can satisfy both bounds and be accepted. Measured, the readout of the
-    two-row matrix ``[[1, 0], [0, 2]]`` at four counting wires and 4096 shots with
+    two-row matrix ``[[1, 0], [0, 2]]`` at four counting qubits and 4096 shots with
     seed 7 -- ``dominant_eigenvalue`` ``0.8125`` and ``dominant_probability``
     ``0.7060546875``, two different values -- constructs with those two fields
     transposed, and the object then reports ``dominant_eigenvalue``
@@ -128,7 +128,7 @@ class PcaResult:
 
     Attributes:
         dominant_eigenvalue: The eigenvalue read out at the mode ``k`` of
-            ``distribution``, which is ``1 - k / 2**n_counting_wires``. The module
+            ``distribution``, which is ``1 - k / 2**n_counting_qubits``. The module
             does not claim this is the largest eigenvalue of ``rho`` and does not
             predict which eigenvalue it will be; the mode is simply the counter value
             with the largest share. :meth:`within` is how a caller checks a specific
@@ -137,14 +137,14 @@ class PcaResult:
         dominant_probability: The share of the sample that landed on that mode.
             It is not the eigenvalue's weight in ``rho``: see the module docstring.
         distribution: The counter register's marginal distribution, keyed by its
-            big-endian bit string, one character per counting wire. Shares of the
+            big-endian bit string, one character per counting qubit. Shares of the
             sample, so the values sum to one. The evaluation registers' bits are
             folded away rather than ignored: a key is truncated to its leading
-            ``n_counting_wires`` characters, because reading the full-register keys
+            ``n_counting_qubits`` characters, because reading the full-register keys
             instead would follow the registers the counting register is correlated
             with.
-        n_counting_wires: The width of the counting register the estimate came from.
-        resolution: The phase step the counter resolves, ``1 / 2**n_counting_wires``,
+        n_counting_qubits: The width of the counting register the estimate came from.
+        resolution: The phase step the counter resolves, ``1 / 2**n_counting_qubits``,
             expressed in eigenvalue units because ``lambda = 1 - phi`` maps a phase
             step to an eigenvalue step of the same size. A resolved eigenvalue is
             accurate to about half of it, which is the accuracy
@@ -154,7 +154,7 @@ class PcaResult:
     dominant_eigenvalue: float
     dominant_probability: float
     distribution: Mapping[str, float]
-    n_counting_wires: int
+    n_counting_qubits: int
     resolution: float
 
     def __post_init__(self) -> None:
@@ -169,7 +169,7 @@ class PcaResult:
             raise ValueError(
                 "a density matrix eigenvalue readout must lie in (0, 1], got "
                 f"dominant_eigenvalue={self.dominant_eigenvalue}; the counter value "
-                "0 reads 1 and the largest counter value reads 2**-n_counting_wires"
+                "0 reads 1 and the largest counter value reads 2**-n_counting_qubits"
             )
         if not 0.0 <= self.dominant_probability <= 1.0:
             raise ValueError(
@@ -181,10 +181,10 @@ class PcaResult:
                 "the counter distribution must not be empty; with no counter value "
                 "there is no eigenvalue to read"
             )
-        if self.n_counting_wires < 1:
+        if self.n_counting_qubits < 1:
             raise ValueError(
-                "the counting register needs at least one wire, got "
-                f"n_counting_wires={self.n_counting_wires}"
+                "the counting register needs at least one qubit, got "
+                f"n_counting_qubits={self.n_counting_qubits}"
             )
         if self.resolution <= 0.0:
             raise ValueError(
@@ -225,7 +225,7 @@ class PcaResult:
 def principal_components(
     A: torch.Tensor,  # noqa: N803
     *,
-    n_counting_wires: int,
+    n_counting_qubits: int,
     shots: int = _DEFAULT_SHOTS,
     seed: int | None = None,
 ) -> PcaResult:
@@ -246,10 +246,10 @@ def principal_components(
     Args:
         A: The data matrix, a real floating-point tensor with at least two rows and
             two columns, each a power of two so that the two registers carry whole
-            wires. Its Gram matrix must have a positive trace, so the zero matrix is
+            qubits. Its Gram matrix must have a positive trace, so the zero matrix is
             refused rather than normalised into a NaN.
-        n_counting_wires: The width of the counting register, at least one. The
-            resolution is ``2**-n_counting_wires`` in eigenvalue units.
+        n_counting_qubits: The width of the counting register, at least one. The
+            resolution is ``2**-n_counting_qubits`` in eigenvalue units.
         shots: The number of samples to draw, at least one. Every share in the
             returned distribution is a count over exactly this many samples.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
@@ -267,21 +267,21 @@ def principal_components(
         ValueError: If ``A`` is not a two-dimensional real floating-point tensor
             whose dimensions are powers of two of at least two; if ``A`` holds a
             non-finite entry; if ``A``'s Gram matrix has a non-positive trace; if
-            ``n_counting_wires`` is less than one; or if ``shots`` is less than one.
+            ``n_counting_qubits`` is less than one; or if ``shots`` is less than one.
     """
-    _validate_counting_width(n_counting_wires)
+    _validate_counting_width(n_counting_qubits)
     if shots < 1:
         raise ValueError(
             f"a quantum PCA run needs at least one shot, got shots={shots}; with no "
             "samples there is no counter value to read an eigenvalue from"
         )
-    rho, n_a_wires, n_b_wires = _density_matrix(A)
+    rho, n_a_qubits, n_b_qubits = _density_matrix(A)
     circuit = _pca_circuit(
         rho,
         amplitudes=A.reshape(-1),
-        n_counting_wires=n_counting_wires,
-        n_a_wires=n_a_wires,
-        n_b_wires=n_b_wires,
+        n_counting_qubits=n_counting_qubits,
+        n_a_qubits=n_a_qubits,
+        n_b_qubits=n_b_qubits,
     )
     generator = torch.Generator().manual_seed(seed) if seed is not None else None
     observed = circuit.counts(shots, generator=generator)[0]
@@ -290,17 +290,17 @@ def principal_components(
     # string that this mapping is typed as, and the coercion below is a no-op at
     # run time.
     counts = {str(key): count for key, count in observed.items()}
-    distribution = _counter_distribution(counts, n_counting_wires)
+    distribution = _counter_distribution(counts, n_counting_qubits)
     mode = max(distribution, key=distribution.__getitem__)
     # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
     # negative exponent yields a float, and an ``Any`` expression fails the type
     # gate.
-    resolution = 1.0 / 2.0**n_counting_wires
+    resolution = 1.0 / 2.0**n_counting_qubits
     return PcaResult(
-        dominant_eigenvalue=1.0 - int(mode, 2) / 2.0**n_counting_wires,
+        dominant_eigenvalue=1.0 - int(mode, 2) / 2.0**n_counting_qubits,
         dominant_probability=distribution[mode],
         distribution=distribution,
-        n_counting_wires=n_counting_wires,
+        n_counting_qubits=n_counting_qubits,
         resolution=resolution,
     )
 
@@ -310,7 +310,7 @@ class _PhaseFromDensityMatrix:
 
     The unitary is one dense matrix, so every form is that matrix or a power of it
     with the identity prepended on the control branch: a controlled ``U`` is
-    ``diag(I, U**power)`` in the control wire's block order, which is the block
+    ``diag(I, U**power)`` in the control qubit's block order, which is the block
     diagonal of the two. The unconditional ``apply`` embeds the matrix on the data
     register alone.
 
@@ -324,48 +324,48 @@ class _PhaseFromDensityMatrix:
         self._matrix = torch.matrix_exp(-2j * math.pi * rho.to(torch.complex128)).to(
             torch.complex64
         )
-        self._n_wires = int(self._matrix.shape[0]).bit_length() - 1
+        self._n_qubits = int(self._matrix.shape[0]).bit_length() - 1
 
     @property
-    def n_wires(self) -> int:
-        """The number of wires the data register carries."""
-        return self._n_wires
+    def n_qubits(self) -> int:
+        """The number of qubits the data register carries."""
+        return self._n_qubits
 
-    def apply(self, circuit: Circuit, wires: Sequence[int]) -> None:
+    def apply(self, circuit: Circuit, qubits: Sequence[int]) -> None:
         """Append ``U`` to ``circuit`` on the data register.
 
         Args:
             circuit: The circuit to extend.
-            wires: The data register's wires.
+            qubits: The data register's qubits.
         """
-        circuit.any(*wires, unitary=self._matrix, name="pca_phase")
+        circuit.any(*qubits, unitary=self._matrix, name="pca_phase")
 
     def apply_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int]
+        self, circuit: Circuit, control: int, qubits: Sequence[int]
     ) -> None:
         """Append ``U`` controlled on ``control``, its power form at exponent one.
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``U`` is controlled on.
-            wires: The data register's wires.
+            control: The qubit ``U`` is controlled on.
+            qubits: The data register's qubits.
         """
-        self.apply_power_controlled(circuit, control, wires, 1)
+        self.apply_power_controlled(circuit, control, qubits, 1)
 
     def apply_power_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int], power: int
+        self, circuit: Circuit, control: int, qubits: Sequence[int], power: int
     ) -> None:
         """Append ``U`` raised to ``power``, controlled on ``control``.
 
-        The exponent is the counting wire's significance, so it reaches
-        ``2**(n_counting_wires - 1)``; the power is taken of the matrix itself
+        The exponent is the counting qubit's significance, so it reaches
+        ``2**(n_counting_qubits - 1)``; the power is taken of the matrix itself
         rather than of its exponential, which keeps the emitted gate one dense
         block encoding of the same unitary.
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``U`` is controlled on.
-            wires: The data register's wires.
+            control: The qubit ``U`` is controlled on.
+            qubits: The data register's qubits.
             power: The exponent, at least zero.
         """
         block = torch.linalg.matrix_power(self._matrix, power)
@@ -378,7 +378,7 @@ class _PhaseFromDensityMatrix:
             ),
             dim=0,
         )
-        circuit.any(control, *wires, unitary=controlled, name="pca_phase_power")
+        circuit.any(control, *qubits, unitary=controlled, name="pca_phase_power")
 
 
 def _density_matrix(A: torch.Tensor) -> tuple[torch.Tensor, int, int]:  # noqa: N803
@@ -393,7 +393,7 @@ def _density_matrix(A: torch.Tensor) -> tuple[torch.Tensor, int, int]:  # noqa: 
         A: The candidate data matrix.
 
     Returns:
-        ``(rho, n_a_wires, n_b_wires)``, where ``rho`` is ``A A^T / tr(A A^T)`` in
+        ``(rho, n_a_qubits, n_b_qubits)``, where ``rho`` is ``A A^T / tr(A A^T)`` in
         double precision and the widths are the logarithms of ``A``'s dimensions.
 
     Raises:
@@ -423,7 +423,7 @@ def _density_matrix(A: torch.Tensor) -> tuple[torch.Tensor, int, int]:  # noqa: 
         if size < 2 or size & (size - 1):
             raise ValueError(
                 f"A's {name} must be a power of two of at least two, got {size}; a "
-                "register of whole wires carries a power-of-two number of amplitudes"
+                "register of whole qubits carries a power-of-two number of amplitudes"
             )
     if not bool(torch.isfinite(A).all()):
         raise ValueError(
@@ -447,9 +447,9 @@ def _pca_circuit(
     rho: torch.Tensor,
     *,
     amplitudes: torch.Tensor,
-    n_counting_wires: int,
-    n_a_wires: int,
-    n_b_wires: int,
+    n_counting_qubits: int,
+    n_a_qubits: int,
+    n_b_qubits: int,
 ) -> Circuit:
     """Build the quantum PCA circuit for ``rho`` and its purification amplitudes.
 
@@ -463,36 +463,38 @@ def _pca_circuit(
         rho: The density matrix, ``A A^T / tr(A A^T)``.
         amplitudes: The purification ``vec(A)``, one entry per basis state of the
             data and purification registers together.
-        n_counting_wires: The width of the counting register, at least one.
-        n_a_wires: The width of the data register.
-        n_b_wires: The width of the purification register.
+        n_counting_qubits: The width of the counting register, at least one.
+        n_a_qubits: The width of the data register.
+        n_b_qubits: The width of the purification register.
 
     Returns:
-        A circuit over ``n_counting_wires + n_a_wires + n_b_wires`` wires.
+        A circuit over ``n_counting_qubits + n_a_qubits + n_b_qubits`` qubits.
     """
-    data_wires = list(range(n_counting_wires, n_counting_wires + n_a_wires))
-    purification_wires = list(
-        range(n_counting_wires + n_a_wires, n_counting_wires + n_a_wires + n_b_wires)
+    data_qubits = list(range(n_counting_qubits, n_counting_qubits + n_a_qubits))
+    purification_qubits = list(
+        range(
+            n_counting_qubits + n_a_qubits, n_counting_qubits + n_a_qubits + n_b_qubits
+        )
     )
-    circuit = Circuit(n_counting_wires + n_a_wires + n_b_wires)
-    append_arbitrary_state(circuit, amplitudes, data_wires + purification_wires)
+    circuit = Circuit(n_counting_qubits + n_a_qubits + n_b_qubits)
+    append_arbitrary_state(circuit, amplitudes, data_qubits + purification_qubits)
     append_phase_estimation(
         circuit,
         unitary=_PhaseFromDensityMatrix(rho),
-        counting_wires=list(range(n_counting_wires)),
-        evaluation_wires=data_wires,
+        counting_qubits=list(range(n_counting_qubits)),
+        evaluation_qubits=data_qubits,
     )
     return circuit
 
 
 def _counter_distribution(
-    counts: Mapping[str, int], n_counting_wires: int
+    counts: Mapping[str, int], n_counting_qubits: int
 ) -> dict[str, float]:
     """Return the counter register's marginal distribution as shares of the sample.
 
-    Each count key carries every wire, so the data and purification registers' bits
+    Each count key carries every qubit, so the data and purification registers' bits
     are folded away before the distribution is formed: a key is truncated to its
-    leading ``n_counting_wires`` characters and its count accumulated onto that
+    leading ``n_counting_qubits`` characters and its count accumulated onto that
     counter value. Reading the full-register keys instead would follow the registers
     the counting register is correlated with and return a distribution that is not
     the eigenvalue distribution at all, without raising.
@@ -500,31 +502,31 @@ def _counter_distribution(
     Args:
         counts: The sample counts, keyed by the big-endian bit string of the whole
             register.
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
         One share per observed counter value, summing to one.
     """
     folded: dict[str, int] = {}
     for key, count in counts.items():
-        counter = key[:n_counting_wires]
+        counter = key[:n_counting_qubits]
         folded[counter] = folded.get(counter, 0) + count
     total = sum(folded.values())
     return {key: count / total for key, count in folded.items()}
 
 
-def _validate_counting_width(n_counting_wires: int) -> None:
+def _validate_counting_width(n_counting_qubits: int) -> None:
     """Check the width of a quantum PCA counting register.
 
     Args:
-        n_counting_wires: The register width as given.
+        n_counting_qubits: The register width as given.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one.
+        ValueError: If ``n_counting_qubits`` is less than one.
     """
-    if n_counting_wires < 1:
+    if n_counting_qubits < 1:
         raise ValueError(
-            f"quantum PCA needs at least one counting wire, got "
-            f"n_counting_wires={n_counting_wires}; a register with no wires resolves "
+            f"quantum PCA needs at least one counting qubit, got "
+            f"n_counting_qubits={n_counting_qubits}; a register with no qubits resolves "
             "no phase and reads no eigenvalue"
         )

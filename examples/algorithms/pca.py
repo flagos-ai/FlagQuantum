@@ -13,7 +13,7 @@ nothing in the example is faster than diagonalising `rho` directly.
 section.
 
 Sizes, and why: the data matrix is 2x2 so the data register and the purification
-register carry one whole wire each, and the counting register is six wires, the
+register carry one whole qubit each, and the counting register is six qubits, the
 width the guide measures its own examples at. The default sample is 4096 shots
 rather than the guide's 20000: the readout is a sample of the same experiment
 either way, and the smaller one keeps the script short.
@@ -51,7 +51,7 @@ def main() -> None:
     exact = [float(value) for value in torch.linalg.eigvalsh(rho)]
 
     result = principal_components(
-        data, n_counting_wires=N_COUNTING_WIRES, shots=args.shots, seed=args.seed
+        data, n_counting_qubits=N_COUNTING_WIRES, shots=args.shots, seed=args.seed
     )
 
     print("=" * 72)
@@ -67,7 +67,7 @@ def main() -> None:
     print(f"  {'data matrix':<18}: {rounded}")
     print(f"  {'shots':<18}: {args.shots}")
     print(f"  {'seed':<18}: {args.seed}")
-    print(f"  {'counting wires':<18}: {result.n_counting_wires}")
+    print(f"  {'counting qubits':<18}: {result.n_counting_qubits}")
     print()
     print("result")
     print(f"  {'exact eigenvalues':<18}: {[round(value, 4) for value in exact]}")

@@ -26,8 +26,8 @@ def test_optimal_iterations_is_exact_at_half_marked() -> None:
     The quotient is 0.9999999999999999 in floating point here, so a bare floor returns the
     wrong count and disagrees with the docstring.
     """
-    for n_wires in (1, 2, 3, 4, 5):
-        assert optimal_iterations(n_wires, 2 ** (n_wires - 1)) == 1, n_wires
+    for n_qubits in (1, 2, 3, 4, 5):
+        assert optimal_iterations(n_qubits, 2 ** (n_qubits - 1)) == 1, n_qubits
 
 
 def test_optimal_iterations_validates_its_arguments() -> None:
@@ -42,21 +42,21 @@ def test_optimal_iterations_validates_its_arguments() -> None:
 
 def test_grover_circuit_uses_exactly_the_evaluation_register() -> None:
     """The circuit carries the evaluation register and nothing else."""
-    for n_wires in (1, 2, 3):
-        circuit = grover_circuit(lambda value: value == 1, n_wires)
-        assert circuit.n_qubits == n_wires, n_wires
+    for n_qubits in (1, 2, 3):
+        circuit = grover_circuit(lambda value: value == 1, n_qubits)
+        assert circuit.n_qubits == n_qubits, n_qubits
 
 
 def test_grover_circuit_refuses_more_than_three_wires() -> None:
-    """Above three wires the phase oracle would need an ancilla the register does not have."""
+    """Above three qubits the phase oracle would need an ancilla the register does not have."""
     with pytest.raises(ValueError):
         grover_circuit(lambda value: value == 1, 4)
 
 
 def test_grover_circuit_accepts_an_explicit_iteration_count() -> None:
     """Zero iterations leaves the register in the uniform superposition."""
-    n_wires = 2
-    circuit = grover_circuit(lambda value: value == 1, n_wires, iterations=0)
+    n_qubits = 2
+    circuit = grover_circuit(lambda value: value == 1, n_qubits, iterations=0)
     probabilities = circuit.state().reshape(-1).abs() ** 2
     assert float(probabilities[0].item()) == pytest.approx(0.25, abs=1e-5)
 
