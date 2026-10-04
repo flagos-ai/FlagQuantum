@@ -16,6 +16,7 @@ from .block_encoding import SpectralBlockEncoding as SpectralBlockEncoding
 from .block_encoding import WalkEncoding as WalkEncoding
 from .block_encoding import spectral_block_encoding as spectral_block_encoding
 from .block_encoding import subnormalisation as subnormalisation
+from .linear_combination import LinearCombinationEncoding as LinearCombinationEncoding
 from .oracle import append_bit_oracle as append_bit_oracle
 from .oracle import append_comparator as append_comparator
 from .oracle import append_multi_controlled_x as append_multi_controlled_x
@@ -40,6 +41,7 @@ __all__ = [
     "AmplitudeOperator",
     "BlockEncoding",
     "ControlledUnitary",
+    "LinearCombinationEncoding",
     "PhaseEstimationSpec",
     "Predicate",
     "SpectralBlockEncoding",

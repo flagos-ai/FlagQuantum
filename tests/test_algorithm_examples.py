@@ -50,6 +50,7 @@ SCRIPTS = (
     "nelder_mead_optimizer",
     "trotter",
     "block_encoding",
+    "linear_combination",
     "logical_resources",
     "arithmetic",
 )
@@ -155,6 +156,18 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "block_encoding": (
         "nothing here bounds",
         "belongs to the caller",
+    ),
+    # Two halves. "the preparation is a dense classical precomputation over 2 ** k
+    # amplitudes, exponential in the index register's width" is the input model's
+    # own cost -- the term count decides a register width, not a gate count -- and
+    # "belongs to the caller's 2 ** k amplitudes rather than to any bound this unit
+    # states" is who owns the accuracy and the cost the module declines to bound.
+    # Pinning only the first would leave the ownership deletable, and an
+    # exponential-in-the-index-register construction read as a cost claim is the
+    # misreading the second half prevents.
+    "linear_combination": (
+        "exponential in the index",
+        "belongs to the caller's",
     ),
     # Two halves. "the report counts rather than measures: nothing runs, no
     # wall-clock time, memory, or allocation is read" is the input model the
@@ -699,6 +712,70 @@ def test_block_encoding_example_reads_its_block_back_out_of_the_circuit() -> Non
     assert "NOT REFUSED" not in output
     _assert_premise("block_encoding", output)
     assert "take away" in output
+
+
+def test_linear_combination_example_encodes_the_pauli_sum_from_its_coefficients() -> (
+    None
+):
+    output = _run("linear_combination")
+
+    # The factor is read off the coefficients and is checked against the two norms it is
+    # deliberately not. A construction that silently defaulted to the Frobenius norm would
+    # agree with the block and disagree with the coefficients, so both are pinned -- and
+    # the Frobenius norm is pinned as *different* rather than as larger or smaller, because
+    # a one-wire Pauli product has Frobenius norm `2 ** (n / 2)` and the two are not ordered
+    # against each other at all.
+    assert _labelled(output, "alpha is the sum of the magnitudes") == "True"
+    assert _labelled(output, "alpha clears the spectral norm") == "True"
+    assert _labelled(output, "alpha is the Frobenius norm") == "False"
+    assert (
+        abs(
+            float(_labelled(output, "Frobenius norm"))
+            - float(_labelled(output, "sum of the coefficient magnitudes"))
+        )
+        > 0.1
+    )
+    # One index wire per factor of two in the term count, plus the ladder the select
+    # needs: six terms is three index wires and one ladder ancilla, not six of either.
+    assert _labelled(output, "index_width") == "3"
+    assert _labelled(output, "ladder ancillas") == "1"
+    # The block is the *signed* sum over alpha, and the two residuals beside it are what
+    # separate the three candidate readings of it: the sum itself, and the same sum with
+    # the signs dropped, which is what a preparation carrying no relative phase gives.
+    assert float(_labelled(output, "circuit block vs H / alpha")) < 1e-6
+    assert float(_labelled(output, "circuit block vs H")) > 1.0
+    assert float(_labelled(output, "circuit block vs the sum of magnitudes")) > 0.1
+    assert float(_labelled(output, "the signed and unsigned sums differ")) > 0.1
+    # The encoding is a unitary and is not its own adjoint. The deviation is pinned as a
+    # lower bound rather than an exact value: it is the property that makes the adjoint's
+    # term reversal necessary, and a construction that was accidentally Hermitian would
+    # make the reversal untestable rather than wrong.
+    assert float(_labelled(output, "U is unitary")) < 1e-6
+    assert float(_labelled(output, "U is Hermitian")) > 1.0
+    # The walk identity is claimed on the ladder-zero subspace rather than on the whole
+    # register, and both halves are pinned: every encoded eigenvalue is attained there,
+    # and the subspace carries more eigenvalues than the encoding does, which is what
+    # "restricted" means rather than "equal".
+    assert _labelled(output, "encoded cosines attained") == "4 of 4"
+    assert int(_labelled(output, "subspace eigenvalues")) > 2 * 4
+    assert _labelled(output, "the subspace holds more than the encoding") == "True"
+    assert _labelled(output, "cosines off the endpoints") == "True"
+    assert _labelled(output, "subspace cosines").startswith("[-1.0, -1.0")
+    # The adjoint is checked as a composition over the whole register, because this
+    # construction's step is not its own adjoint and a spectrum cannot tell the two orders
+    # apart. `W^dagger W` is the assertion the reversal is what satisfies.
+    assert float(_labelled(output, "W^dagger W vs the identity")) < 1e-6
+    assert float(_labelled(output, "W W^dagger vs the identity")) < 1e-6
+    assert float(_labelled(output, "U^dagger U vs the identity")) < 1e-6
+    # Two implementations, one consumer, and the second one is the one that holds a dense
+    # matrix while this one never forms it: the same block read out of both is the
+    # replacement evidence, and the register shapes are what tell them apart.
+    assert _labelled(output, "this is a BlockEncoding") == "True"
+    assert _labelled(output, "this is a WalkEncoding") == "True"
+    assert _labelled(output, "spectral num_ancilla") == "1"
+    assert _labelled(output, "spectral alpha") == "4.5"
+    assert float(_labelled(output, "the two blocks agree")) < 1e-6
+    _assert_premise("linear_combination", output)
 
 
 def test_logical_resources_example_costs_one_program_and_refuses_the_rest() -> None:

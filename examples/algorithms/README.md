@@ -21,6 +21,7 @@ python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
+python -m examples.algorithms.linear_combination
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 ```
@@ -74,6 +75,14 @@ What they show:
   spectrum from a different routine, a second implementation that holds no matrix
   read by the same consumer, and the ten construction and three register refusals
   printed by name.
+- [`linear_combination.py`](linear_combination.py): a six-term Pauli sum block
+  encoded from its coefficients alone, with `alpha` printed beside the spectral
+  and Frobenius norms it deliberately is not, the block read back out of the
+  circuit and checked against the signed sum and against the same sum with the
+  signs dropped, the walk step's cosines matched on the ladder-zero subspace
+  where the identity is claimed rather than on the whole register, and the
+  encoding's own non-Hermiticity printed as the reason the adjoint reverses the
+  select's terms instead of reusing them.
 - [`logical_resources.py`](logical_resources.py): a Clifford+T program costed on a
   rotated surface code, with the compiler's own resource record printed beside the
   report's copy of it so a second T rule would show, the distance sweep tabulated
@@ -101,7 +110,11 @@ through the two shipped units rather than reimplemented in the script.
 the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
 is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
 either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
-the package's own `get_unitary`. `logical_resources.py` imports both: the estimator
+the package's own `get_unitary`. `linear_combination.py` needs no root alias
+either, and for the same reason: it builds the encoding from
+`flagquantum.algorithms.core.Hamiltonian`, composes `flagquantum.circuit.Circuit`,
+and reads the step back with `flagquantum.simulation.unitary.get_unitary`.
+`logical_resources.py` imports both: the estimator
 and the patch-size helper from the subpackage, and `flagquantum` itself for the
 `fq.Circuit` programs it costs. `arithmetic.py` imports both as well: the
 constructor and the register map from the subpackage, and `flagquantum` itself for

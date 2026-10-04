@@ -21,6 +21,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `data_encoding.py` — encoding a classical feature vector | Available. Pads a feature vector to a power of two and normalises it into the amplitudes of a prepared state, and encodes a second vector as one rotation per wire in either a fresh circuit or a circuit the caller already holds. | Möttönen et al. 2005 (amplitude encoding; the preparation itself is the state-preparation primitive) | **None, and the input is exponential for the amplitude half while the angular half is not an advantage either.** Amplitude encoding hands the padded vector to the same uniformly controlled rotation ladder the state-preparation primitive uses, so its classical input is already ``2**n`` amplitudes; angular encoding is one cheap gate per wire and packs far less data per wire, so it is a feature map rather than a compression. Neither is a speedup claim. |
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
 | `primitives/block_encoding.py` — block encoding and qubitization walk step | Available. Encodes a Hermitian matrix into the flagged block of a unitary at a subnormalisation the caller chooses, and appends one qubitization walk step whose eigenphases are the arccosines of the encoded eigenvalues. | Gilyén, Su, Low & Wiebe 2019 | **None, and the cost is a dense eigendecomposition.** The gate is one dense matrix on `n + 1` qubits built from `torch.linalg.eigh` of the input, so the cost is diagonalising the caller's matrix; the error of an approximate input is the caller's, because nothing here bounds it. |
+| `primitives/linear_combination.py` — block encoding of a weighted Pauli sum | Available. Encodes a Hamiltonian given as a weighted sum of Pauli words, from its coefficients rather than from a matrix, at the sum of the coefficient magnitudes as the subnormalisation, and satisfies the same two protocols so one consumer reads both this and the spectral encoding. | Gilyén, Su, Low & Wiebe 2019 | **None, and the preparation is exponential in the index register.** The coefficient weights are prepared as `2**k` amplitudes by a dense classical precomputation, with one index wire per factor of two in the term count rather than one wire per term, and the select is one multi-controlled Pauli per term; there is no gate-efficient synthesis, no amplitude amplification, and no gate-count or error bound, so this is a construction rather than a cost claim. |
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
@@ -1941,10 +1942,191 @@ the cost is diagonalising the caller's matrix and there is no gate-efficient
 synthesis; no error bound is reported, because an approximate `H` is the caller's
 error and nothing here estimates it. A Pauli linear-combination encoding — whose
 preparation is a superposition over coefficients rather than the identity, and
-which needs a multi-wire flag reflection — is the next family member and is
-absent. Qubitization is exposed as two protocol methods rather than as a public
-walk object holding a moment count, and QSVT and double factorization, the two
-algorithms the walk step exists to serve, are absent.
+which needs a multi-wire flag reflection — is the family's second member; it is
+[its own section below](#block-encoding-a-weighted-pauli-sum), and it is a
+construction rather than a gate-efficient synthesis either. Qubitization is
+exposed as two protocol methods rather than as a public walk object holding a
+moment count, and QSVT and double factorization, the two algorithms the walk step
+exists to serve, are absent.
+
+## Block encoding a weighted Pauli sum
+
+`primitives/linear_combination.py` is the second implementation of the two
+protocols above, and it is the one that takes the Hamiltonian the way a chemistry
+or spin-model workload states it: as a weighted sum of Pauli words rather than as
+a dense matrix. `LinearCombinationEncoding(hamiltonian)` is the constructor, and
+the Hamiltonian is `flagquantum.algorithms.core.Hamiltonian`.
+
+**The factor is stated from the data, not named after a norm.**
+``alpha = sum_j |c_j|``, computed from the coefficients before any circuit exists.
+It is at least the spectral norm of `H`, so the flagged block ``H / alpha`` has
+norm at most one, which is what a block encoding requires. It is deliberately
+**not** the Frobenius norm — the example prints both — and the two are not even
+ordered against each other: the Frobenius norm of a Pauli product on `n` wires is
+``2 ** (n / 2)``, so a one-wire sum can have a Frobenius norm above the sum of its
+magnitudes. A caller who wants a larger factor scales the Hamiltonian, which
+scales the block by the same factor; the factor is not a parameter.
+
+**The coefficients are prepared as amplitudes, and the sign is a separate
+diagonal.** The index register holds a uniform superposition over the terms
+weighted by ``sqrt(|c_j| / alpha)``, and the
+[state-preparation primitive](#state-preparation) carries no relative phase, so
+the coefficients cannot be prepared by signing the amplitudes: a Hamiltonian with
+negative coefficients needs the sign as its own diagonal, applied to the index
+register under the select. The block below is checked against the *signed* sum
+over `alpha` and against the same sum with the signs dropped, and the second
+residual is what a construction that lost the sign would print.
+
+**The walk identity is stated on the ladder-zero subspace, and that is the honest
+form of it.** The flag register is ``k + max(k - 2, 0)`` wires: `k` index wires,
+where ``k = max(1, ceil(log2 m))`` for `m` terms, plus the ladder ancillas the
+multi-controlled gates are built from. The encoding is exactly block diagonal in
+the ladder register — the ancillas enter and leave ``|0>`` — but it is **not** the
+identity there, so the arccosine spectrum is a claim about the subspace the
+ladder ancillas read zero on, which is the subspace the pair of flag registers
+selects, and the block below restricts to it rather than diagonalising the whole
+register. On that subspace every eigenvalue of ``H / alpha`` is attained, each
+carrying the walk's own multiplicity.
+
+**This construction is not its own adjoint, and that is a property rather than a
+defect.** The spectral encoding above is Hermitian and is its own inverse, so its
+adjoint is a no-op and its `W^dagger W` identity is uninformative. The
+linear-combination encoding is neither: its terms share the ladder ancillas the
+multi-controlled gates are built from, so the product of them is not its own
+reverse, and ``append_adjoint_walk_step`` has to emit the select's terms in the
+reverse order. The block prints the deviation on the public surface — the matrix
+residual, not a spectrum, because the two orders have the same kind of spectrum —
+and prints `W^dagger W` against the identity over the **whole** register rather
+than on the flagged subspace, since that is where a skipped reversal shows.
+
+```python
+import torch
+
+from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
+from flagquantum.algorithms.primitives import (
+    BlockEncoding,
+    LinearCombinationEncoding,
+    WalkEncoding,
+    spectral_block_encoding,
+)
+from flagquantum.circuit import Circuit
+from flagquantum.simulation.unitary import get_unitary
+
+terms = [
+    (1.0, {0: "x"}),
+    (0.5, {1: "z"}),
+    (-1.5, {0: "z", 1: "x"}),
+    (0.25, {0: "z", 1: "z"}),
+    (0.75, {0: "x", 1: "x"}),
+    (-0.5, {0: "x", 1: "z"}),
+]
+
+
+def build(pairs):
+    return Hamiltonian(
+        [HamiltonianTerm(c, dict(axes), sorted(axes)) for c, axes in pairs]
+    )
+
+
+encoding = LinearCombinationEncoding(build(terms))
+matrix = build(terms).matrix()
+print(encoding.num_system, encoding.num_ancilla, encoding.index_width)
+# 2 4 3  -- two system qubits, a four-wire flag register, and three index wires for six terms
+print(f"{encoding.alpha:.6f}", round(sum(abs(c) for c, _ in terms), 6))
+# 4.500000 4.5  -- the factor is the sum of the coefficient magnitudes, read off the data before any circuit exists
+print(round(float(torch.linalg.norm(matrix, 2)), 3), round(float(torch.linalg.norm(matrix)), 3))
+# 2.784 4.183  -- it clears the spectral norm and is not the Frobenius norm, which is what "stated rather than named after a norm" means
+
+columns = []
+for basis in range(4):
+    circuit = Circuit(6)
+    for index in range(2):
+        if (basis >> (1 - index)) & 1:
+            circuit.gate("x", 4 + index)
+    encoding.append_apply(circuit, ancilla=0, qubits=[4, 5])
+    columns.append(circuit.state().reshape(-1)[:4])
+block = torch.stack(columns, dim=1)
+print([round(float(block[index, index]), 3) for index in range(4)])
+# [0.167, -0.167, 0.056, -0.056]  -- the block's diagonal, read back out of the circuit one basis state at a time
+print([round(float(matrix[index, index] / encoding.alpha), 3) for index in range(4)])
+# [0.167, -0.167, 0.056, -0.056]  -- the same entries of the signed sum over the factor
+print(f"{(block - matrix.to(torch.complex128) / encoding.alpha).abs().max():.2e}")
+# 1.99e-07  -- the block is the signed sum over alpha, to the statevector's own precision
+print(round(float((block - matrix.to(torch.complex128)).abs().max()), 3))
+# 1.167  -- and not the sum itself, which is what a construction returning its argument would print as 0.0
+unsigned = build([(abs(c), axes) for c, axes in terms]).matrix()
+print(round(float((block - unsigned.to(torch.complex128) / encoding.alpha).abs().max()), 3))
+# 0.667  -- and not the same sum with the signs dropped, which is what a preparation carrying no relative phase would give
+print(round(float((matrix - unsigned).abs().max()), 3))
+# 3.0  -- the two candidates differ by twice the negative coefficients, so the check above compares a residual rather than a value with itself
+
+
+def step(target, adjoint=False):
+    circuit = Circuit(6)
+    if adjoint:
+        target.append_adjoint_walk_step(circuit, ancilla=0, qubits=[4, 5])
+    else:
+        target.append_walk_step(circuit, ancilla=0, qubits=[4, 5])
+    return get_unitary(circuit).to(torch.complex128)
+
+
+identity = torch.eye(64, dtype=torch.complex128)
+print(round(float((step(encoding) - step(encoding).mH).abs().max()), 3))
+# 1.744  -- the encoding is not Hermitian, because the terms share the ladder ancilla the multi-controlled gates are built from
+print(f"{(step(encoding, adjoint=True) @ step(encoding) - identity).abs().max():.2e}")
+# 9.11e-07  -- the adjoint inverts the step, which needs the select's terms reversed: reusing them forward leaves 1.66 here
+ladder_zero = [state for state in range(64) if state & (1 << 2) == 0]
+restricted = step(encoding)[ladder_zero][:, ladder_zero]
+observed = torch.sort(torch.cos(torch.angle(torch.linalg.eigvals(restricted)))).values
+encoded = torch.linalg.eigvalsh(matrix) / encoding.alpha
+expected = torch.sort(torch.cat((encoded, encoded))).values
+print([round(float(value), 3) for value in expected])
+# [-0.619, -0.619, -0.272, -0.272, 0.372, 0.372, 0.519, 0.519]  -- eigvalsh of the sum over alpha, each eigenvalue twice
+distinct = expected.unique()
+reached = sum(
+    int(float((observed - value).abs().min()) < 1e-6) for value in distinct
+)
+print(reached, distinct.numel(), observed.numel())
+# 4 4 32  -- every encoded eigenvalue is attained, in a subspace carrying thirty-two eigenvalues of its own
+print(bool(float((torch.abs(expected) - 1.0).abs().min()) > 1e-3))
+# True  -- and no encoded phase is trivial, so the identity carries more than the endpoints
+
+
+def consume(target: BlockEncoding) -> str:
+    kind = (isinstance(target, BlockEncoding), isinstance(target, WalkEncoding))
+    return f"{target.num_system} {target.num_ancilla} {kind}"
+print(consume(encoding), consume(spectral_block_encoding(matrix.real, encoding.alpha)))
+# 2 4 (True, True) 2 1 (True, True)  -- one consumer, two implementations: the second holds a dense matrix this one never forms
+```
+
+**One consumer, two implementations, and that is the admission ground.** The
+`consume` function above names only `num_system`, `num_ancilla`, and the two
+protocols, and it reads the spectral encoding and this one without being told
+which it holds. Neither implementation replaced a third consumer's code —
+`flagquantum/algorithms/svd.py` was already migrated to the spectral encoding —
+so what this second implementation demonstrates is the replacement gate's other
+half: the boundary was already load-bearing, and a new implementation was added
+behind it with no consumer edited.
+
+**Two divergences from CUDA-Q are inherited from the encoding above and one is
+its own.** The flagged block is `+H / alpha` rather than CUDA-Q's `-H / alpha`
+with the sign folded into the walk step, and `append_apply` names the flag
+`ancilla` and the operator's `qubits` separately rather than a combined register;
+both are as in the spectral encoding. This construction's own divergence is the
+subnormalisation: `sum_j |c_j|` is a tighter factor than a norm-based default
+would give and is not the spectral norm, so `alpha` here is a number the caller
+can read off the coefficients rather than one that needs a matrix.
+
+**Not here.** There is no gate-efficient synthesis, so the `2 ** k` preparation
+is a dense classical precomputation and the cost is exponential in the index
+register's width rather than in the term count; no amplitude amplification, so
+the success probability of the select is not amplified; no gate-count or error
+bound; and the walk is exposed as protocol methods rather than as a public
+qubitization object holding a moment count. Complex coefficients are refused
+rather than supported, because the preparation primitive's amplitudes carry the
+magnitudes and a complex phase would need a second diagonal this unit does not
+emit. QSVT, double factorization, and the Bravyi-Kitaev, parity and ternary-tree
+transforms remain absent.
 
 ## Logical-layer resource estimation
 

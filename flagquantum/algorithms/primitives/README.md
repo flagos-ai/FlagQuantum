@@ -37,6 +37,11 @@ arriving or by a grounded expectation of one.
   against, the spectral encoding that satisfies it, and the qubitization walk
   step that encoding admits, whose eigenvalues are the arccosines of the encoded
   matrix's eigenvalues over `alpha`.
+- `linear_combination.py`: a second implementation of the same two protocols, for
+  a Hamiltonian given as a weighted sum of Pauli words rather than as a matrix:
+  the factor is the sum of the coefficient magnitudes, stated from the data, and
+  the coefficients are prepared in an index register rather than read off a dense
+  matrix the construction never forms.
 - `types.py`: the callable protocols the primitives are written against.
 - `__init__.py`: the public primitives surface.
 
