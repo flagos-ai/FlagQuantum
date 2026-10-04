@@ -21,6 +21,8 @@ process.
 - [One word for a qubit, across the whole package](FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md)
 - [The other two doors: attribute names and definition names](FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md)
 - [The runtime slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-RUNTIME-20261007.md)
+- [The runtime executor slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md)
+- [The algorithms slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)

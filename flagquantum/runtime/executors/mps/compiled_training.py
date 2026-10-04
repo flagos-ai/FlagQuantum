@@ -91,7 +91,7 @@ class MPSTrainingStep:
     circuit_builder: CircuitBuilder
     mode: str = "mps"
     observable: str | LossBuilder = "z_sum"
-    observable_wires: tuple[int, ...] | None = None
+    observable_qubits: tuple[int, ...] | None = None
     mps_options: dict[str, Any] = field(default_factory=dict)
     compile: bool = False
     compile_backend: str | None = None
@@ -140,9 +140,9 @@ class MPSTrainingStep:
         if callable(self.observable):
             return self.observable(result)
         if self.observable == "z_sum":
-            return result.expectation_z_sum(self.observable_wires).sum()
+            return result.expectation_z_sum(self.observable_qubits).sum()
         if self.observable == "z":
-            return result.expectation_z(self.observable_wires).sum()
+            return result.expectation_z(self.observable_qubits).sum()
         raise ValueError("observable must be 'z_sum', 'z', or a callable.")
 
     def summary(self) -> dict[str, Any]:
@@ -204,7 +204,7 @@ def compile_mps_training_step(
     *,
     mode: str = "mps",
     observable: str | LossBuilder = "z_sum",
-    observable_wires: Iterable[int] | int | None = None,
+    observable_qubits: Iterable[int] | int | None = None,
     compile: bool = True,
     compile_backend: str | None = None,
     compile_mode: str | None = "reduce-overhead",
@@ -220,18 +220,18 @@ def compile_mps_training_step(
     """
 
     del example_parameters
-    wires: tuple[int, ...] | None
-    if isinstance(observable_wires, int):
-        wires = (int(observable_wires),)
-    elif observable_wires is None:
-        wires = None
+    qubits: tuple[int, ...] | None
+    if isinstance(observable_qubits, int):
+        qubits = (int(observable_qubits),)
+    elif observable_qubits is None:
+        qubits = None
     else:
-        wires = tuple(int(wire) for wire in observable_wires)
+        qubits = tuple(int(qubit) for qubit in observable_qubits)
     return MPSTrainingStep(
         circuit_builder=circuit_builder,
         mode=mode,
         observable=observable,
-        observable_wires=wires,
+        observable_qubits=qubits,
         mps_options=dict(mps_options),
         compile=compile,
         compile_backend=compile_backend,

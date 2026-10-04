@@ -522,7 +522,7 @@ def test_address_sharded_reverse_always_uses_compact_global_indices():
 @pytest.mark.parametrize("world_size", (2, 4, 8))
 def test_address_sharded_indices_are_built_from_local_ordinal(world_size):
     plan = plan_distributed_statevector(fq.Circuit(8), world_size=world_size)
-    rank_bits = len(plan.sharded_wires)
+    rank_bits = len(plan.sharded_qubits)
 
     for rank in range(world_size):
         indices = _rank_global_indices(plan, rank, device=torch.device("cpu"))
@@ -663,7 +663,7 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     dense = circuit.expectation_z(2)
     dense_grad = torch.autograd.grad(dense, (theta, phi), retain_graph=True)
 
-    result = execute_torch_distributed_statevector_reverse(circuit, observable_wire=2)
+    result = execute_torch_distributed_statevector_reverse(circuit, observable_qubit=2)
     pending = result.summary()
     assert pending["parameter_gradient_ready"] is False
     assert pending["backward_status"] == "pending"
@@ -748,7 +748,7 @@ def test_multi_z_sum_uses_one_forward_and_one_combined_adjoint(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wires=(0, 1),
+        observable_qubits=(0, 1),
     )
     result.backward()
 
@@ -825,14 +825,14 @@ def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():
     circuit = fq.Circuit(1).rx(0, theta)
 
     with pytest.raises(ValueError, match="at least one"):
-        execute_torch_distributed_statevector_reverse(circuit, observable_wires=())
+        execute_torch_distributed_statevector_reverse(circuit, observable_qubits=())
     with pytest.raises(TypeError, match="integers"):
         execute_torch_distributed_statevector_reverse(
             circuit,
-            observable_wires=(0.5,),
+            observable_qubits=(0.5,),
         )
     with pytest.raises(ValueError, match="outside"):
-        execute_torch_distributed_statevector_reverse(circuit, observable_wires=(1,))
+        execute_torch_distributed_statevector_reverse(circuit, observable_qubits=(1,))
 
 
 def test_checkpoint_policy_is_versioned_and_fail_closed():
@@ -858,7 +858,7 @@ def test_rematerialization_skips_reversible_cx_optimization(
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy=strategy, interval=1),
     )
     result.backward()
@@ -989,7 +989,7 @@ def test_budgeted_block_checkpoints_reduce_replay_and_preserve_gradient(
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=512),
     )
     result.backward()
@@ -1015,7 +1015,7 @@ def test_low_memory_cpu_cx_reversible_path_preserves_gradient():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=512),
     )
     result.backward()
@@ -1051,7 +1051,7 @@ def test_budgeted_compact_cpu_cx_cycles_preserve_gradient():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=3,
+        observable_qubit=3,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=1168),
     )
     result.backward()
@@ -1197,7 +1197,7 @@ def test_reversible_adjoint_matches_dense_autograd_on_all_active_wires():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
     )
     result.backward()
@@ -1231,7 +1231,7 @@ def test_reverse_local_cnot_uses_cataloged_triton_route(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=1,
+        observable_qubit=1,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )
@@ -1255,7 +1255,7 @@ def test_reverse_local_adjoint_vjp_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=0,
+        observable_qubit=0,
         device="cuda",
     )
     result.backward()
@@ -1288,7 +1288,7 @@ def test_reverse_local_reversible_vjp_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=0,
+        observable_qubit=0,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )
@@ -1321,7 +1321,7 @@ def test_reverse_local_cnot_sequence_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )

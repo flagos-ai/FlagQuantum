@@ -1,7 +1,7 @@
 """What the singular-value unit reads, checked against the matrix's own decomposition.
 
 Every expected value in this file was produced by a real run of the construction it
-checks, at six counting wires and 20000 shots, where one standard error of a share near
+checks, at six counting qubits and 20000 shots, where one standard error of a share near
 one half is about a third of a percent. The reference path is
 :func:`torch.linalg.svdvals`, which is the decomposition the readout estimates, and the
 phase grid the distribution sits on is checked a second time against
@@ -88,26 +88,26 @@ def _embedding(matrix: torch.Tensor) -> torch.Tensor:
 def _extracted_block(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
     """Read the encoding's block out of the circuit, one basis state at a time.
 
-    The block is ``<0| U |0>`` on the embedding's wires, so its column ``j`` is what the
-    circuit leaves on those wires when it is entered with the basis state ``|j>`` and the
+    The block is ``<0| U |0>`` on the embedding's qubits, so its column ``j`` is what the
+    circuit leaves on those qubits when it is entered with the basis state ``|j>`` and the
     ancilla in ``|0>``. Each column is therefore read from a circuit of its own, and no
     unitary is ever written out as a matrix: what is read is the state the composition
     leaves, which is the only way this package exposes a circuit's action.
     """
-    n_wires = int(embedding.shape[0]).bit_length() - 1
+    n_qubits = int(embedding.shape[0]).bit_length() - 1
     dimension = int(embedding.shape[0])
     columns = []
     for basis in range(dimension):
-        circuit = Circuit(1 + n_wires)
-        for index in range(n_wires):
-            if (basis >> (n_wires - 1 - index)) & 1:
+        circuit = Circuit(1 + n_qubits)
+        for index in range(n_qubits):
+            if (basis >> (n_qubits - 1 - index)) & 1:
                 circuit.gate("x", 1 + index)
         _append_block_encoding(
             circuit,
             embedding,
             alpha,
             ancilla=0,
-            wires=list(range(1, 1 + n_wires)),
+            qubits=list(range(1, 1 + n_qubits)),
         )
         columns.append(circuit.state().reshape(-1)[:dimension])
     return torch.stack(columns, dim=1)
@@ -194,7 +194,7 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
     # into the unit circle silently.
     with pytest.raises(ValueError, match="no unitary has an operator of norm"):
         _append_block_encoding(
-            Circuit(3), embedding, spectral / 2.0, ancilla=0, wires=[1, 2]
+            Circuit(3), embedding, spectral / 2.0, ancilla=0, qubits=[1, 2]
         )
     # And the one thing the selection itself refuses: an argument that is not Hermitian.
     spoiled = _embedding(_NON_SYMMETRIC)
@@ -205,7 +205,7 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
             spoiled,
             _subnormalisation(spoiled, None),
             ancilla=0,
-            wires=[1, 2],
+            qubits=[1, 2],
         )
 
 
@@ -226,32 +226,32 @@ def test_a_refused_encoding_leaves_the_circuit_as_it_was() -> None:
     ):
         circuit = Circuit(3)
         with pytest.raises(ValueError):
-            _append_block_encoding(circuit, target, factor, ancilla=0, wires=[1, 2])
+            _append_block_encoding(circuit, target, factor, ancilla=0, qubits=[1, 2])
         assert circuit.to_qir() == []
 
 
 def test_a_mode_in_the_register_lower_half_is_refused() -> None:
-    """At one counting wire the register returns ``alpha`` or it raises, and nothing else.
+    """At one counting qubit the register returns ``alpha`` or it raises, and nothing else.
 
     The refusal is an outcome of the sample rather than a precondition: the width is legal
     and the matrix is legal, and which of the two happens depends on where the sample's mode
     falls. The matrix and width used for the refusal half were measured stable rather than
-    chosen for convenience -- ``eye(4)`` at one wire refused for each of 200 seeds tried --
+    chosen for convenience -- ``eye(4)`` at one qubit refused for each of 200 seeds tried --
     while ``eye(2)`` and ``diag(1, 0.9)`` at the same width refuse for about half of them,
     which is why neither is used here. The other half of the contract is measured over eight
-    seeds: for ``[[1, 2], [3, 4]]`` at one wire the raise did not happen once in 200 seeds,
+    seeds: for ``[[1, 2], [3, 4]]`` at one qubit the raise did not happen once in 200 seeds,
     and the value returned cannot be anything but ``alpha``, because the register holds two
     counter values of which the lower one is refused -- over 200 seeds of five matrices, no
-    one-wire success read anything else.
+    one-qubit success read anything else.
     """
     for seed in range(24):
         with pytest.raises(ValueError, match="must lie in \\(0, alpha\\]"):
             estimate_singular_values(
-                torch.eye(4), n_counting_wires=1, shots=256, seed=seed
+                torch.eye(4), n_counting_qubits=1, shots=256, seed=seed
             )
     for seed in range(8):
         result = estimate_singular_values(
-            _NON_SYMMETRIC, n_counting_wires=1, shots=256, seed=seed
+            _NON_SYMMETRIC, n_counting_qubits=1, shots=256, seed=seed
         )
         assert result.dominant_singular_value == pytest.approx(result.alpha, abs=1e-9)
         assert result.resolution == pytest.approx(result.alpha, abs=1e-9)
@@ -278,7 +278,7 @@ def test_the_readout_is_the_singular_value_at_the_mode(
 ) -> None:
     """The mode's readout is the measured one, and it lands on the largest singular value."""
     result = estimate_singular_values(
-        matrix, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        matrix, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
     assert result.dominant_singular_value == pytest.approx(readout, abs=1e-6)
     assert result.dominant_share == pytest.approx(share, abs=0.01)
@@ -308,7 +308,7 @@ def test_the_mode_sits_at_the_counter_nearest_the_largest_eigenvalues_phase() ->
         phase = 1.0 - largest / (2.0 * alpha)
         nearest = round(phase * 2.0**_COUNTING_WIRES)
         result = estimate_singular_values(
-            matrix, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+            matrix, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
         )
         mode = max(result.distribution, key=result.distribution.__getitem__)
         assert int(mode, 2) == nearest
@@ -326,7 +326,7 @@ def test_the_lower_half_of_the_register_carries_almost_none_of_the_sample() -> N
     """
     for matrix in _MATRICES:
         result = estimate_singular_values(
-            matrix, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+            matrix, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
         )
         lower = sum(
             value
@@ -396,13 +396,13 @@ def test_the_post_selection_probability_of_the_dominant_direction_is_the_ratio()
     for matrix in _MATRICES:
         embedding = _embedding(matrix)
         alpha = _subnormalisation(embedding, None)
-        n_wires = int(embedding.shape[0]).bit_length() - 1
-        circuit = Circuit(1 + n_wires)
+        n_qubits = int(embedding.shape[0]).bit_length() - 1
+        circuit = Circuit(1 + n_qubits)
         append_arbitrary_state(
-            circuit, _positive_eigenvector(matrix, 0), list(range(1, 1 + n_wires))
+            circuit, _positive_eigenvector(matrix, 0), list(range(1, 1 + n_qubits))
         )
         _append_block_encoding(
-            circuit, embedding, alpha, ancilla=0, wires=list(range(1, 1 + n_wires))
+            circuit, embedding, alpha, ancilla=0, qubits=list(range(1, 1 + n_qubits))
         )
         state = circuit.state().reshape(-1)
         dimension = int(embedding.shape[0])
@@ -412,7 +412,7 @@ def test_the_post_selection_probability_of_the_dominant_direction_is_the_ratio()
 
 
 def test_every_form_of_the_phase_unitary_appends_a_gate() -> None:
-    """Each of the operator's three forms appends one gate on the wires it is given.
+    """Each of the operator's three forms appends one gate on the qubits it is given.
 
     Phase estimation consumes the power form only, so the plain form and the
     single-controlled form are reached by nothing else in the package: this is where they
@@ -421,16 +421,16 @@ def test_every_form_of_the_phase_unitary_appends_a_gate() -> None:
     """
     embedding = _embedding(_NON_SYMMETRIC)
     unitary = _PhaseFromEmbedding(embedding, _subnormalisation(embedding, None))
-    wires = list(range(1, 1 + unitary.n_wires))
-    plain = Circuit(1 + unitary.n_wires)
-    unitary.apply(plain, wires)
-    controlled = Circuit(2 + unitary.n_wires)
-    unitary.apply_controlled(controlled, 0, wires)
-    powered = Circuit(2 + unitary.n_wires)
-    unitary.apply_power_controlled(powered, 0, wires, 3)
+    qubits = list(range(1, 1 + unitary.n_qubits))
+    plain = Circuit(1 + unitary.n_qubits)
+    unitary.apply(plain, qubits)
+    controlled = Circuit(2 + unitary.n_qubits)
+    unitary.apply_controlled(controlled, 0, qubits)
+    powered = Circuit(2 + unitary.n_qubits)
+    unitary.apply_power_controlled(powered, 0, qubits, 3)
     for circuit in (plain, controlled, powered):
         assert len(circuit.to_qir()) == 1
-    # The two controlled forms are unitaries on one more wire than the plain one, which is
+    # The two controlled forms are unitaries on one more qubit than the plain one, which is
     # what makes them the same operator with an identity prepended on the control branch.
     matrix = torch.as_tensor(plain.to_qir()[0]["gate"]).to(torch.complex128)
     product = matrix @ matrix.conj().T
@@ -446,12 +446,12 @@ def test_the_distribution_is_the_counting_register_marginal(
 ) -> None:
     """The distribution is keyed by the counting register alone, and sums to one."""
     result = estimate_singular_values(
-        matrix, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        matrix, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
     assert set(len(key) for key in result.distribution) == {_COUNTING_WIRES}
     assert sum(result.distribution.values()) == pytest.approx(1.0, abs=1e-12)
     assert all(0.0 <= share <= 1.0 for share in result.distribution.values())
-    assert result.n_counting_wires == _COUNTING_WIRES
+    assert result.n_counting_qubits == _COUNTING_WIRES
 
 
 def test_within_accepts_half_a_step_and_rejects_more() -> None:
@@ -464,7 +464,7 @@ def test_within_accepts_half_a_step_and_rejects_more() -> None:
         dominant_singular_value=2.0,
         dominant_share=0.5,
         distribution={"100000": 0.5},
-        n_counting_wires=6,
+        n_counting_qubits=6,
         resolution=0.5,
         alpha=4.0,
     )
@@ -484,7 +484,7 @@ def test_the_result_rejects_fields_that_cannot_come_from_a_readout() -> None:
             "dominant_singular_value": 2.0,
             "dominant_share": 0.5,
             "distribution": {"100000": 0.5},
-            "n_counting_wires": 6,
+            "n_counting_qubits": 6,
             "resolution": 0.4,
             "alpha": 4.0,
         }
@@ -502,8 +502,8 @@ def test_the_result_rejects_fields_that_cannot_come_from_a_readout() -> None:
         build(dominant_share=1.5)
     with pytest.raises(ValueError, match="must not be empty"):
         build(distribution={})
-    with pytest.raises(ValueError, match="at least one wire"):
-        build(n_counting_wires=0)
+    with pytest.raises(ValueError, match="at least one qubit"):
+        build(n_counting_qubits=0)
     with pytest.raises(ValueError, match="step must be positive"):
         build(resolution=0.0)
 
@@ -511,7 +511,7 @@ def test_the_result_rejects_fields_that_cannot_come_from_a_readout() -> None:
 def test_the_result_is_frozen() -> None:
     """A result is a reading, not a register: its fields cannot be reassigned."""
     result = estimate_singular_values(
-        _DIAGONAL, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        _DIAGONAL, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
     with pytest.raises(FrozenInstanceError):
         result.alpha = 1.0  # type: ignore[misc]
@@ -524,7 +524,7 @@ def test_the_result_is_frozen() -> None:
         (torch.zeros(4, dtype=torch.float64), "two-dimensional"),
         (torch.zeros(2, 3, dtype=torch.float64), "must be square"),
         (torch.zeros(3, 3, dtype=torch.float64), "power of two"),
-        (torch.zeros(8, 8, dtype=torch.float64), "bounded at 2 index wires"),
+        (torch.zeros(8, 8, dtype=torch.float64), "bounded at 2 index qubits"),
         (torch.zeros(2, 2, dtype=torch.int64), "floating-point"),
         (torch.zeros(2, 2, dtype=torch.float64), "no embedding to normalise"),
         (torch.tensor([[1.0, float("nan")], [0.0, 1.0]]), "must be finite"),
@@ -535,28 +535,28 @@ def test_the_estimate_refuses_a_matrix_it_cannot_embed(
 ) -> None:
     """Every matrix-level refusal is reachable, and each names its own condition."""
     with pytest.raises(ValueError, match=message):
-        estimate_singular_values(matrix, n_counting_wires=2, shots=16)  # type: ignore[arg-type]
+        estimate_singular_values(matrix, n_counting_qubits=2, shots=16)  # type: ignore[arg-type]
 
 
 def test_the_estimate_refuses_a_width_or_a_sample_size_below_one() -> None:
-    """A register with no wires and a sample with no shots are both refused."""
-    with pytest.raises(ValueError, match="at least one counting wire"):
-        estimate_singular_values(_DIAGONAL, n_counting_wires=0)
+    """A register with no qubits and a sample with no shots are both refused."""
+    with pytest.raises(ValueError, match="at least one counting qubit"):
+        estimate_singular_values(_DIAGONAL, n_counting_qubits=0)
     with pytest.raises(ValueError, match="at least one shot"):
-        estimate_singular_values(_DIAGONAL, n_counting_wires=2, shots=0)
+        estimate_singular_values(_DIAGONAL, n_counting_qubits=2, shots=0)
 
 
 def test_the_estimate_replays_with_a_seed() -> None:
     """The same seed replays the same distribution exactly, and another seed is a re-sample."""
     first = estimate_singular_values(
-        _NON_SYMMETRIC, n_counting_wires=_COUNTING_WIRES, shots=512, seed=7
+        _NON_SYMMETRIC, n_counting_qubits=_COUNTING_WIRES, shots=512, seed=7
     )
     again = estimate_singular_values(
-        _NON_SYMMETRIC, n_counting_wires=_COUNTING_WIRES, shots=512, seed=7
+        _NON_SYMMETRIC, n_counting_qubits=_COUNTING_WIRES, shots=512, seed=7
     )
     assert first.distribution == again.distribution
     assert first.dominant_singular_value == again.dominant_singular_value
     other = estimate_singular_values(
-        _NON_SYMMETRIC, n_counting_wires=_COUNTING_WIRES, shots=512, seed=8
+        _NON_SYMMETRIC, n_counting_qubits=_COUNTING_WIRES, shots=512, seed=8
     )
     assert other.distribution != first.distribution

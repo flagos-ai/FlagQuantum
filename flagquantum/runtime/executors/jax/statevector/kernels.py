@@ -73,8 +73,8 @@ def _jax_apply_local_statevector_instruction(
         global_indices,
         matrix,
         wires,
-        n_wires=int(plan.n_wires),
-        sharded_wires=tuple(int(wire) for wire in plan.sharded_wires),
+        n_wires=int(plan.n_qubits),
+        sharded_wires=tuple(int(wire) for wire in plan.sharded_qubits),
         diagonal=diagonal,
         gate_name=str(instruction.name),
     )
@@ -93,7 +93,7 @@ def _jax_apply_all_to_all_statevector_instruction(
         instruction, complex_bytes=complex_bytes
     )
     wires = tuple(int(wire) for wire in instruction.wires)
-    sharded_wires = tuple(int(wire) for wire in plan.sharded_wires)
+    sharded_wires = tuple(int(wire) for wire in plan.sharded_qubits)
     sharded_set = set(sharded_wires)
     touched = tuple(wire for wire in wires if wire in sharded_set)
     if diagonal or not touched:
@@ -105,11 +105,11 @@ def _jax_apply_all_to_all_statevector_instruction(
             complex_bytes=complex_bytes,
         )
     local_wires = tuple(
-        wire for wire in range(int(plan.n_wires)) if wire not in sharded_set
+        wire for wire in range(int(plan.n_qubits)) if wire not in sharded_set
     )
     local_gate_wires = tuple(wire for wire in wires if wire not in sharded_set)
     basis_out = _jax_basis_indices_for_wires(
-        global_indices, n_wires=int(plan.n_wires), wires=wires
+        global_indices, n_wires=int(plan.n_qubits), wires=wires
     )
     updated = jnp.zeros_like(amplitudes)
     for delta_code in range(2 ** len(touched)):
@@ -133,7 +133,7 @@ def _jax_apply_all_to_all_statevector_instruction(
             global_indices,
             matrix,
             basis_out,
-            n_wires=int(plan.n_wires),
+            n_wires=int(plan.n_qubits),
             wires=wires,
             touched_sharded_wires=touched,
             local_wires=local_wires,
@@ -156,7 +156,7 @@ def _jax_apply_pair_exchange_statevector_instruction(
         instruction, complex_bytes=complex_bytes
     )
     wires = tuple(int(wire) for wire in instruction.wires)
-    sharded_wires = tuple(int(wire) for wire in plan.sharded_wires)
+    sharded_wires = tuple(int(wire) for wire in plan.sharded_qubits)
     touched = tuple(wire for wire in wires if wire in set(sharded_wires))
     if diagonal or not touched:
         return _jax_apply_local_statevector_instruction(
@@ -184,7 +184,7 @@ def _jax_apply_pair_exchange_statevector_instruction(
         partner,
         global_indices,
         matrix,
-        n_wires=int(plan.n_wires),
+        n_wires=int(plan.n_qubits),
         wire=wire,
     )
 
@@ -237,7 +237,7 @@ def _jax_pmap_statevector_parameter_loss(
             local_value = _jax_sharded_statevector_rank_loss_from_local_amplitudes(
                 amplitudes,
                 global_indices,
-                n_wires=int(plan.n_wires),
+                n_wires=int(plan.n_qubits),
                 observable=observable,
                 observable_wires=observable_wires,
             )
@@ -375,7 +375,7 @@ def _jax_shard_map_statevector_parameter_loss(
             local_value = _jax_sharded_statevector_rank_loss_from_local_amplitudes(
                 amplitudes,
                 global_indices,
-                n_wires=int(plan.n_wires),
+                n_wires=int(plan.n_qubits),
                 observable=observable,
                 observable_wires=observable_wires,
             )

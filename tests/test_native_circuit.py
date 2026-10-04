@@ -1742,7 +1742,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
     )
     assert result.summary()["state_mode"] == "distributed_mps"
     assert result.summary()["world_size"] == 2
-    assert tuple(shard.wires for shard in result.shards) == ((0, 1), (2, 3))
+    assert tuple(shard.qubits for shard in result.shards) == ((0, 1), (2, 3))
     assert torch.allclose(
         result.to_statevector(),
         fqr.run_native(circuit, mode="mps").to_statevector(),
@@ -2091,13 +2091,13 @@ def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
 def test_sharded_mps_apply_one_local_matches_mps_kernel():
     mps = MPSState.zero(2)
     sharded = ShardedMPSState(
-        n_wires=2,
+        n_qubits=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0]},
         shards=(
             DistributedShardPlan(
-                rank=0, world_size=1, wires=(0,), left_boundary=None, right_boundary=0
+                rank=0, world_size=1, qubits=(0,), left_boundary=None, right_boundary=0
             ),
         ),
     )
@@ -2112,13 +2112,17 @@ def test_sharded_mps_apply_one_local_matches_mps_kernel():
 def test_sharded_mps_apply_two_local_matches_mps_kernel():
     mps = MPSState.zero(2)
     sharded = ShardedMPSState(
-        n_wires=2,
+        n_qubits=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0], 1: mps.tensors[1]},
         shards=(
             DistributedShardPlan(
-                rank=0, world_size=1, wires=(0, 1), left_boundary=None, right_boundary=1
+                rank=0,
+                world_size=1,
+                qubits=(0, 1),
+                left_boundary=None,
+                right_boundary=1,
             ),
         ),
     )
@@ -2147,14 +2151,14 @@ def test_distributed_mps_identifies_cross_shard_boundary_gate():
     instruction = circuit.to_ir().instructions[0]
     shards = dist_runtime._mps_shards(4, 2)
 
-    assert tuple(shard.wires for shard in shards) == ((0, 1), (2, 3))
+    assert tuple(shard.qubits for shard in shards) == ((0, 1), (2, 3))
     assert dist_runtime._instruction_is_boundary_local(instruction, shards)
     assert not dist_runtime._instruction_is_site_local(instruction, shards)
     assert dist_runtime._boundary_touched_wires(instruction) == (1, 2)
     record = dist_runtime._boundary_sync_record(instruction, shards)
     assert isinstance(record, DistributedBoundarySync)
-    assert record.left_wire == 1
-    assert record.right_wire == 2
+    assert record.left_qubit == 1
+    assert record.right_qubit == 2
     assert record.left_rank == 0
     assert record.right_rank == 1
     assert record.owner_rank == 0

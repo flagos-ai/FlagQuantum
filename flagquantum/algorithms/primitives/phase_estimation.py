@@ -36,37 +36,37 @@ class PhaseEstimationSpec:
     """The resolution a phase-estimation circuit achieves.
 
     Args:
-        n_counting_wires: The number of wires in the counting register.
-        n_evaluation_wires: The number of wires the operator acts on.
+        n_counting_qubits: The number of qubits in the counting register.
+        n_evaluation_qubits: The number of qubits the operator acts on.
     """
 
-    n_counting_wires: int
-    n_evaluation_wires: int
+    n_counting_qubits: int
+    n_evaluation_qubits: int
 
     def __post_init__(self) -> None:
         """Reject a register width that cannot resolve a phase.
 
         Raises:
-            ValueError: If ``n_counting_wires`` is not positive, or ``n_evaluation_wires``
+            ValueError: If ``n_counting_qubits`` is not positive, or ``n_evaluation_qubits``
                 is negative.
         """
-        if self.n_counting_wires < 1:
+        if self.n_counting_qubits < 1:
             raise ValueError(
-                "the counting register needs at least one wire, "
-                f"got {self.n_counting_wires}"
+                "the counting register needs at least one qubit, "
+                f"got {self.n_counting_qubits}"
             )
-        if self.n_evaluation_wires < 0:
+        if self.n_evaluation_qubits < 0:
             raise ValueError(
                 "the evaluation register cannot have a negative width, "
-                f"got {self.n_evaluation_wires}"
+                f"got {self.n_evaluation_qubits}"
             )
 
     @property
     def precision(self) -> float:
-        """The phase resolution in radians, ``2*pi / 2**n_counting_wires``."""
+        """The phase resolution in radians, ``2*pi / 2**n_counting_qubits``."""
         # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
         # negative exponent yields a float, and an ``Any`` return fails the type gate.
-        return 2 * math.pi / 2.0**self.n_counting_wires
+        return 2 * math.pi / 2.0**self.n_counting_qubits
 
     @property
     def success_probability(self) -> float:
@@ -81,28 +81,28 @@ class PhaseEstimationSpec:
         """Return the most frequent counting outcome read as a phase in ``[0, 1)``.
 
         The keys are the full register as a big-endian bit string, so the counting register
-        is the first ``n_counting_wires`` characters. Every key's count is accumulated onto
+        is the first ``n_counting_qubits`` characters. Every key's count is accumulated onto
         those leading bits and the mode of that folded distribution is what is read: taking
         the most frequent full-register key instead would follow the evaluation register
         wherever it is correlated with the counting register, and return a silently wrong
         phase rather than an error. What the readout still assumes is the key layout only:
-        one character per wire, with the counting register's bits leading. The evaluation
+        one character per qubit, with the counting register's bits leading. The evaluation
         register's bits are otherwise read nowhere.
 
         Args:
             counts: Sample counts keyed by the full register's bit string.
 
         Returns:
-            The most frequent value of the leading ``n_counting_wires`` bits, divided by
-            ``2**n_counting_wires``.
+            The most frequent value of the leading ``n_counting_qubits`` bits, divided by
+            ``2**n_counting_qubits``.
 
         Raises:
             ValueError: If ``counts`` is empty, or if a key does not carry one bit per
-                register wire.
+                register qubit.
         """
         if not counts:
             raise ValueError("counts must not be empty")
-        expected = self.n_counting_wires + self.n_evaluation_wires
+        expected = self.n_counting_qubits + self.n_evaluation_qubits
         folded: dict[str, int] = {}
         for key, count in counts.items():
             if len(key) != expected:
@@ -110,97 +110,97 @@ class PhaseEstimationSpec:
                     f"count key {key!r} has {len(key)} bits, "
                     f"expected {expected} for this register"
                 )
-            counting_key = key[: self.n_counting_wires]
+            counting_key = key[: self.n_counting_qubits]
             folded[counting_key] = folded.get(counting_key, 0) + count
         most_frequent = max(folded, key=folded.__getitem__)
         # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
         # negative exponent yields a float, and an ``Any`` return fails the type gate.
-        return int(most_frequent, 2) / 2.0**self.n_counting_wires
+        return int(most_frequent, 2) / 2.0**self.n_counting_qubits
 
 
 def append_phase_estimation(
     circuit: Circuit,
     *,
     unitary: ControlledUnitary,
-    counting_wires: Sequence[int],
-    evaluation_wires: Sequence[int],
+    counting_qubits: Sequence[int],
+    evaluation_qubits: Sequence[int],
 ) -> None:
     """Append phase estimation for ``unitary`` to ``circuit`` in place.
 
-    The counting wires carry the uniform superposition and take the controlled powers of
-    ``unitary``; the evaluation wires carry the operator's eigenstate, which the caller
-    prepares. The counting wires must be the register's leading block, starting at wire 0,
+    The counting qubits carry the uniform superposition and take the controlled powers of
+    ``unitary``; the evaluation qubits carry the operator's eigenstate, which the caller
+    prepares. The counting qubits must be the register's leading block, starting at qubit 0,
     so that they are both its most significant bits and the bits the readout reads first.
 
     Args:
         circuit: The circuit to extend.
         unitary: The operator whose eigenphase is estimated.
-        counting_wires: The wires of the counting register, ``0`` upward in significance
+        counting_qubits: The qubits of the counting register, ``0`` upward in significance
             order.
-        evaluation_wires: The wires the operator acts on.
+        evaluation_qubits: The qubits the operator acts on.
 
     Raises:
-        ValueError: If ``counting_wires`` is empty, repeats a wire, or is not the leading
-            block ``0..len(counting_wires)-1``; if ``evaluation_wires`` does not carry
-            ``unitary.n_wires`` wires; or if the two registers share a wire.
+        ValueError: If ``counting_qubits`` is empty, repeats a qubit, or is not the leading
+            block ``0..len(counting_qubits)-1``; if ``evaluation_qubits`` does not carry
+            ``unitary.n_qubits`` qubits; or if the two registers share a qubit.
     """
-    counting = list(counting_wires)
-    evaluation = list(evaluation_wires)
+    counting = list(counting_qubits)
+    evaluation = list(evaluation_qubits)
     if not counting:
-        raise ValueError("the counting register needs at least one wire, got 0")
+        raise ValueError("the counting register needs at least one qubit, got 0")
     if len(set(counting)) != len(counting):
-        raise ValueError("counting wires must be distinct")
+        raise ValueError("counting qubits must be distinct")
     if counting != list(range(len(counting))):
         raise ValueError(
-            "counting wires must be the leading block of the register, starting at wire 0; "
+            "counting qubits must be the leading block of the register, starting at qubit 0; "
             f"got {counting!r}"
         )
-    if len(evaluation) != unitary.n_wires:
+    if len(evaluation) != unitary.n_qubits:
         raise ValueError(
-            f"the operator acts on {unitary.n_wires} wires, "
-            f"got {len(evaluation)} evaluation wires"
+            f"the operator acts on {unitary.n_qubits} qubits, "
+            f"got {len(evaluation)} evaluation qubits"
         )
     if set(counting) & set(evaluation):
-        raise ValueError("counting and evaluation wires must not overlap")
+        raise ValueError("counting and evaluation qubits must not overlap")
 
-    for wire in counting:
-        circuit.gate("h", wire)
-    for position, wire in enumerate(counting):
+    for qubit in counting:
+        circuit.gate("h", qubit)
+    for position, qubit in enumerate(counting):
         power = 2 ** (len(counting) - 1 - position)
-        unitary.apply_power_controlled(circuit, wire, evaluation, power)
+        unitary.apply_power_controlled(circuit, qubit, evaluation, power)
     append_qft(circuit, counting, inverse=True)
 
 
 def phase_estimation_circuit(
-    *, unitary: ControlledUnitary, n_counting_wires: int
+    *, unitary: ControlledUnitary, n_counting_qubits: int
 ) -> Circuit:
     """Build a phase-estimation circuit for ``unitary``.
 
-    The counting register occupies the first ``n_counting_wires`` wires and the operator's
-    wires follow it.
+    The counting register occupies the first ``n_counting_qubits`` qubits and the operator's
+    qubits follow it.
 
     Args:
         unitary: The operator whose eigenphase is estimated.
-        n_counting_wires: The number of wires in the counting register; must be at least one.
+        n_counting_qubits: The number of qubits in the counting register; must be at least one.
 
     Returns:
-        A circuit over ``n_counting_wires + unitary.n_wires`` wires.
+        A circuit over ``n_counting_qubits + unitary.n_qubits`` qubits.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is not positive.
+        ValueError: If ``n_counting_qubits`` is not positive.
     """
-    if n_counting_wires < 1:
+    if n_counting_qubits < 1:
         raise ValueError(
-            f"phase estimation needs at least one counting wire, got {n_counting_wires}"
+            f"phase estimation needs at least one counting qubit, got {n_counting_qubits}"
         )
-    n_evaluation_wires = unitary.n_wires
-    circuit = Circuit(n_counting_wires + n_evaluation_wires)
+    n_evaluation_qubits = unitary.n_qubits
+    circuit = Circuit(n_counting_qubits + n_evaluation_qubits)
     append_phase_estimation(
         circuit,
         unitary=unitary,
-        counting_wires=list(range(n_counting_wires)),
-        evaluation_wires=list(
-            range(n_counting_wires, n_counting_wires + n_evaluation_wires)
+        counting_qubits=list(range(n_counting_qubits)),
+        evaluation_qubits=list(
+            range(n_counting_qubits, n_counting_qubits + n_evaluation_qubits)
         ),
     )
     return circuit

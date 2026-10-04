@@ -49,7 +49,7 @@ def _hybrid_vjp(weights: torch.Tensor, data: torch.Tensor):
     assert all(term.name == "z" and term.coefficient == 1.0 for term in ir.observables)
     return execute_torch_distributed_statevector_reverse(
         ir,
-        observable_wires=tuple(term.wires[0] for term in ir.observables),
+        observable_qubits=tuple(term.wires[0] for term in ir.observables),
         device="cpu",
     )
 

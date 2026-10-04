@@ -744,7 +744,7 @@ def distributed_tensor_network_expectation(
         world_size=world_size,
         tasks=outcome.tasks,
         rank_partial_bytes=outcome.rank_partial_bytes,
-        observable_wires=plan.observable_wires,
+        observable_qubits=plan.observable_wires,
         distribution_semantics=outcome.semantics,
         working_set_preflight=outcome.working_set_preflight,
         rank_placement=placement,

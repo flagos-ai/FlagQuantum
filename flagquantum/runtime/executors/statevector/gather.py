@@ -37,9 +37,11 @@ BLOCKER_FULL_STATE_GATHER_IS_NOT_A_SCALING_RESULT = (
     "full_state_gather_is_not_a_scaling_result"
 )
 
-#: Layouts that publish a complete logical-to-physical wire permutation, which is
+#: Layouts that publish a complete logical-to-physical qubit permutation, which is
 #: what turns the internal physical basis order back into the logical one.
-_GATHERABLE_WIRE_LAYOUTS = frozenset({"canonical", "communication_aware", "persistent"})
+_GATHERABLE_QUBIT_LAYOUTS = frozenset(
+    {"canonical", "communication_aware", "persistent"}
+)
 
 #: Distributions whose rank ownership follows from the plan alone. A distribution
 #: that places shards by an index vector the ranks do not publish cannot be placed
@@ -53,28 +55,28 @@ _GATHERABLE_DISTRIBUTIONS = frozenset(
 )
 
 
-def _published_logical_to_physical_wires(
+def _published_logical_to_physical_qubits(
     result: TorchDistributedStatevectorResult,
 ) -> tuple[int, ...]:
-    """Return the result's wire permutation, or refuse to reconstruct without it.
+    """Return the result's qubit permutation, or refuse to reconstruct without it.
 
     The amplitudes a rank holds live in the executor's internal basis order. That
-    order is only recoverable from ``logical_to_physical_wires``; returning the
+    order is only recoverable from ``logical_to_physical_qubits``; returning the
     amplitudes without applying it would hand back a permuted vector under a
     canonical name.
     """
 
-    n_wires = int(result.plan.n_wires)
-    if result.wire_layout not in _GATHERABLE_WIRE_LAYOUTS:
+    n_qubits = int(result.plan.n_qubits)
+    if result.qubit_layout not in _GATHERABLE_QUBIT_LAYOUTS:
         raise FullStateMaterializationError(
-            f"wire layout {result.wire_layout!r} publishes no logical-to-physical "
+            f"qubit layout {result.qubit_layout!r} publishes no logical-to-physical "
             "permutation; the gathered amplitudes cannot be returned in logical "
             "basis order"
         )
-    mapping = tuple(int(wire) for wire in result.logical_to_physical_wires)
-    if sorted(mapping) != list(range(n_wires)):
+    mapping = tuple(int(qubit) for qubit in result.logical_to_physical_qubits)
+    if sorted(mapping) != list(range(n_qubits)):
         raise FullStateMaterializationError(
-            f"logical_to_physical_wires is not a permutation of {n_wires} wires: "
+            f"logical_to_physical_qubits is not a permutation of {n_qubits} qubits: "
             f"{mapping}"
         )
     return mapping
@@ -87,7 +89,7 @@ def _expected_global_indices(
 
     offsets = torch.arange(int(plan.shards[rank].local_amplitudes), dtype=torch.long)
     if plan.distribution == "qubit_address_sharded":
-        return (offsets << len(plan.sharded_wires)) | int(rank)
+        return (offsets << len(plan.sharded_qubits)) | int(rank)
     return offsets + int(plan.shards[rank].amplitude_start)
 
 
@@ -149,19 +151,19 @@ def _canonical_basis_order(
 ) -> torch.Tensor:
     """Reorder a vector from the internal physical basis to the logical basis.
 
-    ``mapping[logical_wire]`` is the physical wire that carries it, and both
-    indexes are read most-significant-wire-first, which is the convention the
+    ``mapping[logical_qubit]`` is the physical qubit that carries it, and both
+    indexes are read most-significant-qubit-first, which is the convention the
     probe's own validation readout uses.
     """
 
-    n_wires = len(mapping)
-    if mapping == tuple(range(n_wires)):
+    n_qubits = len(mapping)
+    if mapping == tuple(range(n_qubits)):
         return internal
     logical = torch.arange(internal.shape[1], dtype=torch.long)
     physical = torch.zeros_like(logical)
-    for logical_wire, physical_wire in enumerate(mapping):
-        bit = (logical >> (n_wires - logical_wire - 1)) & 1
-        physical = physical | (bit << (n_wires - physical_wire - 1))
+    for logical_qubit, physical_qubit in enumerate(mapping):
+        bit = (logical >> (n_qubits - logical_qubit - 1)) & 1
+        physical = physical | (bit << (n_qubits - physical_qubit - 1))
     return internal.index_select(1, physical.to(internal.device))
 
 
@@ -235,10 +237,10 @@ def _validate_gatherable(
         rank=int(result.shard_state.rank),
         global_indices=result.shard_state.global_indices,
     )
-    if len(mapping) != int(plan.n_wires):
+    if len(mapping) != int(plan.n_qubits):
         raise FullStateMaterializationError(
-            f"the wire permutation covers {len(mapping)} wires but the plan was "
-            f"built for {plan.n_wires}"
+            f"the qubit permutation covers {len(mapping)} qubits but the plan was "
+            f"built for {plan.n_qubits}"
         )
     return local
 
@@ -249,8 +251,8 @@ class DistributedStatevectorGatherResult:
 
     state: torch.Tensor
     plan: DistributedStatevectorPlan
-    wire_layout: str
-    logical_to_physical_wires: tuple[int, ...]
+    qubit_layout: str
+    logical_to_physical_qubits: tuple[int, ...]
     rank_global_index_map: tuple[dict[str, Any], ...]
     local_block_bytes: int
     full_state_bytes: int
@@ -274,9 +276,9 @@ class DistributedStatevectorGatherResult:
             "release_gate_allowed": False,
             "full_state_materialization": True,
             "amplitude_basis_order": "canonical_logical",
-            "wire_layout": self.wire_layout,
-            "logical_to_physical_wires": self.logical_to_physical_wires,
-            "n_wires": int(self.plan.n_wires),
+            "wire_layout": self.qubit_layout,
+            "logical_to_physical_wires": self.logical_to_physical_qubits,
+            "n_wires": int(self.plan.n_qubits),
             "bsz": int(self.plan.bsz),
             "world_size": int(self.plan.world_size),
             "local_world_size": int(self.plan.local_world_size),
@@ -319,7 +321,7 @@ def gather_distributed_statevector(
     Raises
     ------
     FullStateMaterializationError
-        If the result publishes no wire permutation, if the plan gives ranks
+        If the result publishes no qubit permutation, if the plan gives ranks
         uneven amplitude counts, if the published global indices disagree with
         the plan, or if the process group's world size differs from the plan's.
 
@@ -337,7 +339,7 @@ def gather_distributed_statevector(
     True
     """
 
-    mapping = _published_logical_to_physical_wires(result)
+    mapping = _published_logical_to_physical_qubits(result)
     local = _validate_gatherable(result, mapping)
     world_size = dist.get_world_size(process_group) if dist.is_initialized() else 1
     if world_size != int(result.plan.world_size):
@@ -363,8 +365,8 @@ def gather_distributed_statevector(
     return DistributedStatevectorGatherResult(
         state=state,
         plan=result.plan,
-        wire_layout=str(result.wire_layout),
-        logical_to_physical_wires=mapping,
+        qubit_layout=str(result.qubit_layout),
+        logical_to_physical_qubits=mapping,
         rank_global_index_map=_rank_global_index_map(result.plan),
         local_block_bytes=local_block_bytes,
         full_state_bytes=full_state_bytes,
