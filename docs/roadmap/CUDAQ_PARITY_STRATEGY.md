@@ -410,11 +410,10 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 4 of the 16 `B_open_neutral` rows
+The practical consequence is a scheduling one. 3 of the 16 `B_open_neutral` rows
 are `unsupported`, and every one of them is closed by integration rather than by
 research: a C++ front end and an MLIR dialect stack, a chemistry domain library,
-a QEC dialect, and the arithmetic constructions a logical layer needs. That is the cheapest
-capability per unit of effort available to the
+and a QEC dialect. That is the cheapest capability per unit of effort available to the
 programme, and § 5 governs it. The first of the family moved off `unsupported`
 without new research, which is the shape the remaining rows are expected to
 follow: the stabilizer backend landed by adopting the same permissively licensed
@@ -439,6 +438,15 @@ distillation, placement, and device model that would turn a patch count into a
 compiled estimate. **The reuse is the part worth carrying forward**: the row moved
 because a vertical path already existed through the compiler's resource estimate,
 and the new unit extended it instead of starting a second one.
+
+`arithmetic_bloqs` is the third of the family to leave `unsupported`, and it left
+the same way: the adder is a construction the compiler's existing Toffoli rule
+already prices, so the row moved without a new dependency, a new engine, or a
+number of its own. It is also the first closure that had to **narrow a row's
+`cudaq` column** before it could be honest -- the row is named for a construction
+this repository does not build -- which is why it is `partial` and why § 2 states
+the distinction rather than leaving it to be inferred. § 4's three owned cores are
+untouched by all three closures.
 
 ## 4. What must be owned
 
@@ -603,7 +611,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 26 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 25 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a
