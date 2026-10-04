@@ -132,6 +132,18 @@ class StabilizerCode(Protocol):
     which ancillas a round has to visit. :func:`ancilla_bands` derives the two
     bands from ``checks``, and the records in this module read their counts from
     it, so a record cannot report a split its own checks contradict.
+
+    ``num_x_stabilizers`` and ``num_z_stabilizers`` are the two further counts
+    upstream's record declares beside those three, as the pure virtuals
+    ``get_num_x_stabilizers`` and ``get_num_z_stabilizers``. Each of the three
+    code classes upstream ships answers the same number to a stabilizer count as
+    to the band count of the same basis, because one ancilla measures one
+    stabilizer there exactly as it does here; the two are therefore one quantity
+    in this repository rather than two, read once through
+    :func:`ancilla_bands`, and these two accessors are aliases of the two band
+    accessors rather than a second derivation. A caller reading upstream's
+    accessor list finds the same five counts here, and a record that stated the
+    same quantity a second time could state a different answer to it.
     """
 
     @property
@@ -148,6 +160,12 @@ class StabilizerCode(Protocol):
 
     @property
     def num_ancilla_z_qubits(self) -> int: ...
+
+    @property
+    def num_x_stabilizers(self) -> int: ...
+
+    @property
+    def num_z_stabilizers(self) -> int: ...
 
     @property
     def data_qubits(self) -> tuple[int, ...]: ...
@@ -199,6 +217,14 @@ class RepetitionCode:
     @property
     def num_ancilla_z_qubits(self) -> int:
         return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
 
     @property
     def data_qubits(self) -> tuple[int, ...]:
@@ -305,6 +331,14 @@ class RotatedSurfaceCode:
         return len(ancilla_bands(self.checks)[1])
 
     @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
     def data_qubits(self) -> tuple[int, ...]:
         return tuple(range(self.num_data_qubits))
 
@@ -402,6 +436,14 @@ class SteaneCode:
     @property
     def num_ancilla_z_qubits(self) -> int:
         return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
 
     @property
     def data_qubits(self) -> tuple[int, ...]:

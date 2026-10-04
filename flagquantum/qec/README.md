@@ -49,6 +49,7 @@ from flagquantum.qec import code_names, get_code
 print(code_names())
 patch = get_code("rotated_surface", distance=3)
 patch.num_ancilla_qubits, patch.num_ancilla_x_qubits, patch.num_ancilla_z_qubits
+patch.num_x_stabilizers, patch.num_z_stabilizers
 ```
 
 A record reports its ancillas as a total and as two bands, and the bands are
@@ -58,6 +59,13 @@ stabilizer's type fixes. An ancilla measuring neither basis -- a flag, or an idl
 ancilla -- is in neither band, so the bands need not cover the total, and
 `build_memory_circuit` refuses a record whose stated counts disagree with the
 bands its own checks define.
+
+The two stabilizer counts are the two further counts CUDA-Q QEC's `code` record
+declares as pure virtuals, which makes five counts a caller reads. In each of the
+three code classes upstream ships one ancilla measures one stabilizer, so a
+stabilizer count and the band count of the same basis are one quantity; here
+those two accessors read the bands rather than deriving the same number a second
+time.
 
 A detector is a measurement parity that is deterministic in the noiseless
 circuit. Because both the initial state and the terminal data readout are in the

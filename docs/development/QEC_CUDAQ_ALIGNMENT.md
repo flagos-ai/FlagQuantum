@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name and each reporting its X-type and Z-type ancilla bands, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
+| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -85,16 +85,32 @@ that much already — `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` �
 and what this round read is the rest of what the upstream record declares.
 
 The gap was an accessor. `cudaq::qec::code` declares `get_num_data_qubits`,
-`get_num_ancilla_qubits`, `get_num_ancilla_x_qubits` and
-`get_num_ancilla_z_qubits` as pure virtuals, and the last two are not decoration:
-a syndrome-extraction round visits the ancillas of one basis, and a detector band
-is the set of handles one basis produces, so a record that reports only a total
-cannot say which ancillas a round has to visit. `StabilizerCode` declared only
-the total, so a consumer typed against the protocol could not ask. It now
-declares `num_ancilla_x_qubits` and `num_ancilla_z_qubits` beside
-`num_ancilla_qubits`, on the protocol rather than on the three classes, because a
-member the consumers read has to be on the protocol or the next record is free to
-omit it and still be accepted.
+`get_num_ancilla_qubits`, `get_num_ancilla_x_qubits`, `get_num_ancilla_z_qubits`,
+`get_num_x_stabilizers` and `get_num_z_stabilizers` as pure virtuals, and the
+per-basis four are not decoration: a syndrome-extraction round visits the
+ancillas of one basis, and a detector band is the set of handles one basis
+produces, so a record that reports only a total cannot say which ancillas a round
+has to visit. `StabilizerCode` declared only the total, so a consumer typed
+against the protocol could not ask. It now declares `num_ancilla_x_qubits` and
+`num_ancilla_z_qubits` beside `num_ancilla_qubits`, on the protocol rather than
+on the three classes, because a member the consumers read has to be on the
+protocol or the next record is free to omit it and still be accepted.
+
+The two stabilizer counts came in the same pass, and how they are answered is the
+part worth recording. Upstream keeps them as two further virtuals, and every code
+class it ships answers the same number to a stabilizer count as to the band count
+of that same basis — Steane returns 3 and 3, the surface code `(d²-1)/2` for
+each, the repetition code 0 and `distance - 1` — because there one ancilla
+measures one stabilizer exactly as it does here. So the two are not a second
+quantity to derive but one quantity a caller may read under either name, and
+`num_x_stabilizers`/`num_z_stabilizers` return the two band counts rather than
+recounting the checks. Deriving the same number twice would be two answers to one
+question, which is the failure this row already refuses elsewhere: the alternative
+— a record whose stabilizer count and whose ancilla count were computed separately
+— is representable and wrong, and nothing would say so. A caller comparing this
+record against upstream's accessor list finds the same six counts, and the count
+of checks of each basis, which is what upstream counts, agrees with the number
+returned.
 
 The two bands are derived rather than declared, and that is the decision worth
 recording. A check's ancilla measures exactly the basis the stabilizer's type
@@ -127,8 +143,13 @@ an unknown field is a refusal that lists the ones the record takes rather than a
 traceback from inside the constructor.
 
 What did not land is upstream's second overload, `get_code(name, stabilizers,
-options)`, and it was left out rather than overlooked. A record built from an
-arbitrary stabilizer list has to decide each check's ancilla and its coupling
+options)`, and it was left out rather than overlooked. That overload builds the
+named record and then overwrites its stabilizer list, and the shape does not
+survive here: the counts this round just read are derived from the checks, so a
+record whose stabilizer list were swapped under it would answer with the split of
+the class it was built from while its checks stated another, which is exactly the
+disagreement `build_memory_circuit` refuses. A record built from an arbitrary
+stabilizer list has to decide each check's ancilla and its coupling
 direction on the caller's behalf, and a local `CodeCheck` states one ancilla and
 one CNOT direction fixed by the check's type — so a mixed X-and-Z stabilizer is
 refused rather than given a second ancilla, and the qLDPC, Reichardt and Floquet

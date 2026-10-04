@@ -398,6 +398,14 @@ class _SharedSupportCode:
         return len(ancilla_bands(self.checks)[1])
 
     @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
     def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
