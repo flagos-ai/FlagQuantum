@@ -163,6 +163,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_complex64_local_1q_reversible_vjp",
         layouts=("flat_statevector",),
         directions=("vjp",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-003-A",

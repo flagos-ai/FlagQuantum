@@ -373,6 +373,30 @@ evidence for the local reverse-mode kernel, not a distributed scalability or
 release claim. Reproduce or validate it with
 [`benchmarks/statevector_local_adjoint_vjp_dispatch.py`](../../benchmarks/statevector_local_adjoint_vjp_dispatch.py).
 
+`FQKI-TRITON-GR-002-A` combines the same scalar gate-parameter VJP with the
+reversible local one-qubit step used by the in-place reverse-mode executor. In
+one launch it restores the pre-gate ket, advances the adjoint state in place,
+and reduces the real gradient, avoiding separate inverse-gate and derivative
+state materialization.
+
+The checked-in
+[`statevector_reversible_vjp_dispatch_a800.json`](../../benchmarks/results/local/statevector_reversible_vjp_dispatch_a800.json)
+artifact records 30 synchronized single invocations across the same six fixed
+boundary, local-bit, large-state, and batched cases as GR-001. Because this is
+an in-place operator, every sample restores its ket and adjoint work buffers
+from immutable inputs and synchronizes before timing; the restore is excluded
+from the timed region. The matrix covers `jp-a800-171` and `jp-a800-172` under
+stock Triton 3.7.1 and FlagTree 0.7.0. Maximum restored-ket absolute error is
+`4.92e-7`, the next adjoint is exact for the measured rotation, and maximum
+gradient absolute error is `6.72e-4`. Across the complete default window,
+catalog dispatch reaches at least `1.890x` the speed of PyTorch eager and
+`5.038x` the speed of `torch.compile`. The runner rejects any case below either
+`1.0x` performance floor or the established state/gradient tolerances, so the
+shared GR-002-A implementation is `provisional`. This is bounded single-device
+development evidence for the reversible local reverse-mode kernel, not a
+distributed scalability or release claim. Reproduce or validate it with
+[`benchmarks/statevector_reversible_vjp_dispatch.py`](../../benchmarks/statevector_reversible_vjp_dispatch.py).
+
 `FQKI-FLAGTREE-GR-003-A` extends the explicit provider boundary to one rank's
 sharded one-qubit adjoint VJP. The four complex local and remote ket/adjoint
 streams use TLE async loads, while the selected matrix and derivative scalars
@@ -869,9 +893,10 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. SV-001-A
-through SV-008-A, GR-001-A, MPS-003 through MPS-007, and MEAS-001 through
-MEAS-003 are provisional after their evidenced default-dispatch promotions;
-the other 16 implementations remain experimental.
+through SV-008-A, GR-001-A through GR-002-A, MPS-003 through MPS-007, and
+MEAS-001 through MEAS-003 are provisional after their evidenced
+default-dispatch promotions;
+the other 15 implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
