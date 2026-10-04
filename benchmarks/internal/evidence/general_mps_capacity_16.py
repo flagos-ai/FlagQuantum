@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from pathlib import Path
 
 import torch
@@ -96,6 +97,57 @@ def target_boundaries() -> tuple[int, ...]:
     )
 
 
+def rank_parameter_wires() -> tuple[int, ...]:
+    """The wire on which each rank contributes a rotation of its own."""
+
+    return tuple(
+        (2 * rank + 1) * N_SITES // (2 * TARGET_WORLD) for rank in range(TARGET_WORLD)
+    )
+
+
+def parameter_count() -> int:
+    """The number of independent trainable leaves the frozen circuit carries.
+
+    One leaf per gate, which is the binding the release contract needs: the
+    optimizer assigns parameter ``index`` to rank ``index % world_size``, so a
+    circuit with fewer leaves than ranks leaves the surplus ranks owning no
+    parameter and no optimizer state, and the per-parameter ownership the
+    release payload reports is then true by construction rather than measured.
+    """
+
+    return len(rank_parameter_wires()) + len(target_boundaries())
+
+
+def initial_parameter_values() -> dict[str, float]:
+    """Return the starting angle of every leaf, keyed by the gate it drives.
+
+    The values alternate exactly as the two shared scalars they replace did, so
+    the forward arithmetic of the frozen circuit is unchanged by the rebinding
+    and the earlier single-device measurement still describes this workload.
+    """
+
+    values = {
+        f"ry:{wire}": 7e-5 if rank % 2 == 0 else -1.1e-4
+        for rank, wire in enumerate(rank_parameter_wires())
+    }
+    values.update(
+        {
+            f"rxx:{left}": -1.1e-4 if index % 2 == 0 else 7e-5
+            for index, left in enumerate(target_boundaries())
+        }
+    )
+    return values
+
+
+def frozen_parameters(device: torch.device) -> dict[str, torch.Tensor]:
+    """Return one trainable leaf per gate of the frozen circuit."""
+
+    return {
+        name: torch.tensor(value, device=device, requires_grad=True)
+        for name, value in initial_parameter_values().items()
+    }
+
+
 def topology_fingerprint() -> str:
     content = {
         "n_sites": N_SITES,
@@ -106,13 +158,13 @@ def topology_fingerprint() -> str:
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
 
-def workload(theta: torch.Tensor, phi: torch.Tensor) -> fq.Circuit:
-    circuit = fq.Circuit(N_SITES, device=theta.device)
-    for rank in range(TARGET_WORLD):
-        wire = (2 * rank + 1) * N_SITES // (2 * TARGET_WORLD)
-        circuit.ry(wire, theta if rank % 2 == 0 else phi)
-    for index, left in enumerate(target_boundaries()):
-        circuit.rxx(left, left + 1, phi if index % 2 == 0 else theta)
+def workload(parameters: Mapping[str, torch.Tensor]) -> fq.Circuit:
+    device = next(iter(parameters.values())).device
+    circuit = fq.Circuit(N_SITES, device=device)
+    for wire in rank_parameter_wires():
+        circuit.ry(wire, parameters[f"ry:{wire}"])
+    for left in target_boundaries():
+        circuit.rxx(left, left + 1, parameters[f"rxx:{left}"])
     return circuit
 
 
@@ -164,10 +216,9 @@ def main() -> None:
     started = time.perf_counter()
     try:
         initial = rank_owned_initial_mps(N_SITES, MAX_BOND, device)
-        theta = torch.tensor(7e-5, device=device, requires_grad=True)
-        phi = torch.tensor(-1.1e-4, device=device, requires_grad=True)
+        parameters = frozen_parameters(device)
         result = fqxd.train_distributed_mps(
-            workload(theta, phi),
+            workload(parameters),
             steps=1,
             observable={N_SITES // 2: "z"},
             optimizer="adam",
@@ -199,10 +250,8 @@ def main() -> None:
         del result
     if "initial" in locals():
         del initial
-    if "theta" in locals():
-        del theta
-    if "phi" in locals():
-        del phi
+    if "parameters" in locals():
+        del parameters
     gc.collect()
     torch.cuda.empty_cache()
     cleanup_allocated = int(torch.cuda.memory_allocated(device))
@@ -242,6 +291,7 @@ def main() -> None:
             "initial_max_bond": MAX_BOND,
             "trained_max_bond": MAX_BOND,
             "logical_mps_bytes": logical_bytes,
+            "parameter_count": parameter_count(),
             "device_total_memory_bytes": local["device_total_memory_bytes"],
             "topology_fingerprint": topology_fingerprint(),
             "capacity_failure": status == "cuda_oom",
@@ -306,6 +356,7 @@ def main() -> None:
                 "initial_max_bond": MAX_BOND,
                 "trained_max_bond": MAX_BOND,
                 "logical_mps_bytes": logical_bytes,
+                "parameter_count": parameter_count(),
                 "topology_fingerprint": topology_fingerprint(),
                 "world_size": TARGET_WORLD,
                 "distribution_semantics": "sharded_across_ranks",

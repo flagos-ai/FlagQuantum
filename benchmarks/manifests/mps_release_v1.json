@@ -43,6 +43,7 @@
       "wire": 65536
     },
     "optimizer": "adam",
+    "parameter_count": 31,
     "premise_established": false,
     "premise_established_note": "No measured MPS shape is recorded as release-grade evidence that both exhausts one A800 and completes sharded at the same configuration, so the premise is unestablished and the gate must report it. What is on record is a development-smoke pair at one shape, 131,072 sites and bond dimension 768 at batch size one: a single-device CUDA out-of-memory record (benchmarks/results/local/mps_capacity_131072q_chi768_1xa800_oom_20260805.json, 75,148,300,800 peak bytes against an 85,093,777,408 byte device) and a 16-rank completion over two nodes (benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json, world_size 16, local_world_size 8, node_count 2). Both records share the topology fingerprint c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5, and both are development smoke: benchmark_evidence_class is local_non_release, claim_evidence_type is development_smoke, scalability_claim_allowed and release_gate_allowed are false on both, the single-device record carries no commit field, and neither carries a signed measured_production_run envelope, so neither is a premise this contract may build a release claim on. The completion record's single_gpu_capacity_failure flag is inherited from the failure record rather than re-measured in the same signed run. The premise becomes established only by sealing a signed single_gpu_capacity_failure artifact and a signed multi_gpu_capacity_completion artifact at this frozen workload's digest, which is what the release gate requires.",
     "premise_provenance": {
@@ -52,7 +53,7 @@
       ],
       "artifact": "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json",
       "artifact_sha256": "df8c19b74cc173799e3894025fb8e72de72a786d4542a9aa5e67687298f482f5",
-      "current_workload_body_sha256": "a1d856dc6851035d80dd5fb15f3f0b83f3787f734b45974a12d1f3fba28aab88",
+      "current_workload_body_sha256": "a3dc424cd1c336cdfdfae793d6aca0752b371d1aee595cbc00ea10370ac17549",
       "note": "The only recorded multi-node MPS capacity completion was measured in a checkout whose revision is not in this repository's history, so its recorded commit cannot be resolved here, and it recorded a workload-body digest that differs from the body on disk. Two of its five sources, the raw log and the device telemetry, are absent. The premise producer therefore accepts the failure record it names, because that record and its digest are present and verified, and reports the rest as unverifiable rather than implying that it re-verified them. This drift is why the premise cannot be promoted on the strength of this artifact, and why a release run re-measures both legs at the digests frozen here.",
       "recorded_commit": "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708",
       "recorded_commit_present_in_repository": false,
@@ -82,10 +83,12 @@
         "max_bond_dimension",
         "measured_peak_memory_bytes",
         "n_sites",
+        "parameter_count",
         "raw_log_sha256",
-        "site_ownership",
         "single_device_oom_observed",
+        "site_ownership",
         "state_mode",
+        "workload_body_sha256",
         "workload_sha256"
       ],
       "results_path": "benchmarks/results/smoke/release_candidates/mps_single_gpu_capacity"
@@ -108,11 +111,11 @@
       {
         "path": "benchmarks/internal/evidence/general_mps_capacity_16.py",
         "role": "workload body: site count, bond schedule, rank boundary set and the circuit the capacity step trains",
-        "sha256": "a1d856dc6851035d80dd5fb15f3f0b83f3787f734b45974a12d1f3fba28aab88"
+        "sha256": "a3dc424cd1c336cdfdfae793d6aca0752b371d1aee595cbc00ea10370ac17549"
       }
     ],
     "workload_definition_sources_note": "The launcher pins the site count and the body builds the circuit, so both files define the frozen workload and both digests are checked. Digesting only the launcher would let the work the contract claims to have measured change under a stable filename.",
-    "workload_limitations": "The frozen workload parameterizes a small number of shared scalar angles on 17 wires of a 131,072-site MPS and trains one Adam step against a single-site Z observable. It is a systems workload: it measures whether one logical MPS state can be held and updated across ranks, and it is not an application-quality or expressivity claim. The probe blocker toy_circuit_parameters_only is a standing statement about this kind of parameterization and is disclosed, not retired, here.",
+    "workload_limitations": "The frozen workload carries one independent trainable leaf per gate: a rotation of its own on each of the 16 rank-owning wires and a coupling of its own on each of the 15 sharded boundaries, so 31 leaves rather than the two shared scalars an earlier revision of this contract declared. The count is frozen here and is what capacity_workload.parameter_count states; the workload body computes it from the same site count and world size the rest of the contract is derived from, and the producer refuses a run whose body or measured ownership disagrees with it. One leaf per gate is the minimum that makes the per-parameter ownership the release payload reports a measured property rather than a consequence of the circuit: the engine assigns parameter index to rank index modulo world size, so a circuit with fewer leaves than ranks would leave surplus ranks owning no parameter and no optimizer state while the payload still called the optimizer update sharded. The workload remains a systems workload: it trains one Adam step against a single-site Z observable, so it measures whether one logical MPS state can be held and updated across ranks, and it is not an application-quality or expressivity claim. The probe blocker toy_circuit_parameters_only is a standing statement about the fixed five-wire circuit of the two-node transport probe artifact named in frozen_evidence, which is unchanged and still disclosed; it is not a statement about this frozen capacity workload.",
     "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
     "workload_sha256_note": "The digest every capacity artifact must carry as workload_sha256. It is the digest of the frozen workload definition named by workload_definition_path, because that file is what fixes the site count, the bond dimension and the rank boundaries a completion artifact is compared against."
   },
@@ -167,6 +170,7 @@
     "node_count",
     "optimizer_update_ownership",
     "optimizer_update_ownership_semantics",
+    "parameter_count",
     "parameter_gradient_ownership",
     "parameter_ownership",
     "parameter_ownership_semantics",
@@ -175,11 +179,12 @@
     "rank_peak_memory_bytes",
     "rank_timings",
     "raw_log_sha256",
+    "single_gpu_expected_oom",
     "site_shard_ownership",
     "state_mode",
     "topology_scope",
     "training_step_count",
-    "single_gpu_expected_oom",
+    "workload_body_sha256",
     "workload_sha256",
     "world_size"
   ],

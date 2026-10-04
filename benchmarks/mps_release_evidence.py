@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib
+import importlib.util
 import json
 import os
 import socket
@@ -73,7 +73,6 @@ from flagquantum.testing import (
 
 SCHEMA = "flagquantum.mps_release_measurements.v1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
-WORKLOAD_MODULE = "benchmarks.internal.evidence.general_mps_capacity_16"
 ROLES = (
     "capacity-failure",
     "capacity-completion",
@@ -123,15 +122,46 @@ def _workload_digest(contract: Mapping[str, Any]) -> str:
     return _sha256(Path(str(contract["workload_definition_path"])))
 
 
+def _workload_body_source(contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return the frozen source entry for the body that builds the circuit.
+
+    The launcher pins the site count while the body builds the rank boundaries
+    and the parameterization, so a payload that carried only the launcher digest
+    could be produced by a body nobody froze. The two roles are separate entries
+    in ``workload_definition_sources``, and the one whose role names the workload
+    body is the one a payload has to repeat back.
+    """
+
+    for source in contract["workload_definition_sources"]:
+        if str(source["role"]).startswith("workload body"):
+            return source
+    raise SystemExit(
+        "the release manifest names no workload body among "
+        "capacity_workload.workload_definition_sources, so the circuit a payload "
+        "reports measuring is not bound by the contract"
+    )
+
+
+def _workload_body_digest(contract: Mapping[str, Any]) -> str:
+    """Return the digest of the body that builds the frozen circuit."""
+
+    return str(_workload_body_source(contract)["sha256"])
+
+
 def _frozen_workload(contract: Mapping[str, Any]) -> Any:
-    """Return the frozen workload module, patched to the contract's shape.
+    """Return the frozen workload module, built at the contract's shape.
 
     The manifest freezes a site count, a maximum bond dimension, a target world
-    size and a circuit; the module that builds the circuit carries the last
-    three as module constants, exactly as the ISSUE-092 launcher patches them.
-    The module is patched here and then asked for the arithmetic, so a contract
-    that disagrees with the code that builds the workload fails before anything
-    is measured.
+    size and a circuit; the body that builds the circuit carries the last three
+    as module constants, exactly as the ISSUE-092 launcher patches them. The body
+    named by the manifest is executed here in a namespace of its own, at the
+    frozen shape, and then asked for the arithmetic, so a contract that disagrees
+    with the code that builds the workload fails before anything is measured.
+
+    Executing the verified file rather than importing the module by name is what
+    ties the code that runs to the digest that was checked; sharing the imported
+    module would also let one leg's shape leak into every later reader of it,
+    because the shape is carried in module globals.
     """
 
     for source in (
@@ -147,7 +177,12 @@ def _frozen_workload(contract: Mapping[str, Any]) -> Any:
                 f"{path} is not the workload the release manifest froze; the "
                 "contract and the code that builds the workload have drifted apart"
             )
-    workload = importlib.import_module(WORKLOAD_MODULE)
+    body_path = Path(str(_workload_body_source(contract)["path"]))
+    spec = importlib.util.spec_from_file_location(f"{body_path.stem}_frozen", body_path)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"{body_path} is not an importable workload body")
+    workload = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(workload)
     workload.N_SITES = int(contract["n_sites"])
     workload.MAX_BOND = int(contract["trained_max_bond"])
     workload.TARGET_WORLD = int(contract["target_world_size"])
@@ -159,6 +194,14 @@ def _frozen_workload(contract: Mapping[str, Any]) -> Any:
             "the frozen workload definition computes "
             f"{measured_bytes} logical MPS bytes where the manifest declares "
             f"{int(contract['logical_mps_bytes'])}"
+        )
+    measured_parameters = int(workload.parameter_count())
+    if measured_parameters != int(contract["parameter_count"]):
+        raise SystemExit(
+            "the frozen workload definition builds "
+            f"{measured_parameters} trainable parameters where the manifest "
+            f"declares {int(contract['parameter_count'])}; a run at either count "
+            "trained a different circuit"
         )
     return workload
 
@@ -237,6 +280,7 @@ def _baseline_measurements(
     world_size: int,
     local_world_size: int,
     node_count: int,
+    parameter_count: int,
 ) -> dict[str, Any]:
     """Return the single-device capacity contract the failure role measured.
 
@@ -268,6 +312,7 @@ def _baseline_measurements(
         "batch_size": int(contract["batch_size"]),
         "dtype": str(contract["dtype"]),
         "logical_mps_bytes": int(contract["logical_mps_bytes"]),
+        "parameter_count": int(parameter_count),
         "site_ownership": {
             "policy": "single_device_owns_every_site",
             "sharded": False,
@@ -275,6 +320,7 @@ def _baseline_measurements(
         },
         "workload_sha256": digest,
         "workload_definition_sha256": str(contract["workload_definition_sha256"]),
+        "workload_body_sha256": _workload_body_digest(contract),
         "blockers": [
             "measured single-device capacity failure is baseline provenance only",
         ],
@@ -496,6 +542,18 @@ def _sharded_contract(
         [tuple(summary["optimizer_ownership"]) for summary in summaries],
         context="the optimizer ownership map",
     )
+    # The engine assigns parameter ``index`` to rank ``index % world_size`` and
+    # emits one ownership record per parameter it was given, so the length of
+    # that map is the number of trainable leaves the run measured rather than a
+    # number the payload repeats from the manifest. It is checked against the
+    # manifest here so a run whose circuit drifted from the frozen
+    # parameterization cannot report the contract's count while training another.
+    parameter_count = len(ownership_entries)
+    if parameter_count != int(contract["parameter_count"]):
+        raise SystemExit(
+            f"the sharded leg trained {parameter_count} parameters where the "
+            f"release manifest freezes {int(contract['parameter_count'])}"
+        )
     parameter_ownership = _ownership_map(ownership_entries, world_size=world_size)
     gradient_route = _routes(
         ownership_entries, "gradient_route", context="gradient route"
@@ -580,6 +638,8 @@ def _sharded_contract(
         "initial_max_bond": int(contract["initial_max_bond"]),
         "max_bond_dimension": int(contract["trained_max_bond"]),
         "logical_mps_bytes": int(contract["logical_mps_bytes"]),
+        "parameter_count": parameter_count,
+        "workload_body_sha256": _workload_body_digest(contract),
         "gradient_policy": str(contract["gradient_policy"]),
         "truncation_error_budget": float(contract["truncation_error_budget"]),
         "site_ownership_policy": str(summaries[0]["site_ownership_policy"]),
@@ -903,15 +963,17 @@ def _role_capacity_failure(arguments: argparse.Namespace) -> int:
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats(device)
     status, failure_reason = "completed", ""
+    # The leaves are built before the initial MPS so that the parameterization
+    # this role reports is the one the run was given even when the state
+    # allocation is what exhausts the device.
+    parameters = workload.frozen_parameters(device)
     started = time.perf_counter()
     try:
         initial = workload.rank_owned_initial_mps(
             workload.N_SITES, workload.MAX_BOND, device
         )
-        theta = torch.tensor(7e-5, device=device, requires_grad=True)
-        phi = torch.tensor(-1.1e-4, device=device, requires_grad=True)
         fqxd.train_distributed_mps(
-            workload.workload(theta, phi),
+            workload.workload(parameters),
             steps=int(contract["steps"]),
             observable={workload.N_SITES // 2: "z"},
             optimizer=str(contract["optimizer"]),
@@ -950,6 +1012,7 @@ def _role_capacity_failure(arguments: argparse.Namespace) -> int:
         world_size=world,
         local_world_size=1,
         node_count=1,
+        parameter_count=len(parameters),
     )
     measurements["elapsed_seconds"] = elapsed
     measurements["failure_elapsed_seconds"] = elapsed
@@ -1092,10 +1155,9 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
         initial = workload.rank_owned_initial_mps(
             workload.N_SITES, workload.MAX_BOND, device
         )
-        theta = torch.tensor(7e-5, device=device, requires_grad=True)
-        phi = torch.tensor(-1.1e-4, device=device, requires_grad=True)
+        parameters = workload.frozen_parameters(device)
         result = fqxd.train_distributed_mps(
-            workload.workload(theta, phi),
+            workload.workload(parameters),
             steps=int(contract["steps"]),
             observable={workload.N_SITES // 2: "z"},
             optimizer=str(contract["optimizer"]),

@@ -231,6 +231,24 @@ def _is_mps_evidence(evidence: Mapping[str, Any]) -> bool:
     return str(evidence.get("state_mode", "")).lower() in MPS_STATE_MODES
 
 
+def frozen_workload_body_sha256(capacity: Mapping[str, Any]) -> str:
+    """Return the digest of the body the manifest says builds the circuit.
+
+    The launcher entry fixes the site count; the entry whose role names the
+    workload body fixes the rank boundaries and the parameterization. A manifest
+    that named no such entry would leave the circuit unbound, so this is a
+    refusal rather than an empty string.
+    """
+
+    for source in capacity.get("workload_definition_sources", ()):
+        if str(source["role"]).startswith("workload body"):
+            return str(source["sha256"])
+    raise ValueError(
+        "capacity_workload.workload_definition_sources names no workload body, so "
+        "the circuit a payload measured is not bound by this manifest"
+    )
+
+
 def _world_is_carried_by_envelope(
     evidence: Mapping[str, Any], provenance: Mapping[str, Any]
 ) -> bool:
@@ -269,6 +287,14 @@ def _check_provenance_binding(
 
     if str(provenance.get("workload_sha256", "")) != str(capacity["workload_sha256"]):
         blockers.append("production_payload_provenance_workload_mismatch")
+    if str(evidence.get("workload_body_sha256", "")) != str(
+        frozen_workload_body_sha256(capacity)
+    ):
+        # The launcher digest pins the site count and nothing else. The body
+        # builds the rank boundaries and the parameterization, so a payload that
+        # named a launcher this manifest froze while measuring a different
+        # circuit is not evidence about the frozen workload either.
+        blockers.append("production_payload_workload_body_mismatch")
     declared_commit = evidence.get("commit")
     if not _is_absent(declared_commit) and str(provenance.get("commit", "")) != str(
         declared_commit
@@ -791,6 +817,15 @@ def evaluate_mps_release(
             blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
         if _as_int(evidence.get("device_total_memory_bytes")) != _as_int(
             capacity["single_device_total_memory_bytes"]
+        ):
+            blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
+        # The baseline has to have failed on the circuit the premise is about: a
+        # device exhausted by a different parameterization is a measurement of a
+        # different workload, whatever its site count and bond dimension say.
+        if str(evidence.get("workload_body_sha256", "")) != (
+            frozen_workload_body_sha256(capacity)
+        ) or _as_int(evidence.get("parameter_count")) != _as_int(
+            capacity["parameter_count"]
         ):
             blockers.append("single_gpu_baseline_disagrees_with_frozen_premise")
 

@@ -29,6 +29,7 @@ from benchmarks.internal.evidence.mps_release_gate import (
     baseline_results,
     envelope_carries_world,
     evaluate_mps_release,
+    frozen_workload_body_sha256,
     load_manifest,
 )
 from benchmarks.internal.evidence.mps_release_gate import main as gate_main
@@ -142,6 +143,8 @@ def _baseline_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
             "site_count": capacity["n_sites"],
         },
         "workload_sha256": capacity["workload_sha256"],
+        "workload_body_sha256": frozen_workload_body_sha256(capacity),
+        "parameter_count": capacity["parameter_count"],
         "blockers": [],
     }
 
@@ -268,6 +271,8 @@ def _sharded_evidence(
         "speedup_confidence_interval": [1.1, 1.3],
         "scaling_efficiency": 0.62,
         "workload_sha256": capacity["workload_sha256"],
+        "workload_body_sha256": frozen_workload_body_sha256(capacity),
+        "parameter_count": capacity["parameter_count"],
         "blockers": [],
     }
 
@@ -476,6 +481,16 @@ PAYLOAD_BLOCKERS: tuple[tuple[str, str], ...] = (
     ("missing_multinode_transport_scope", "topology_scope", "single_node_local"),
     ("missing_capacity_workload_shape_evidence", "n_sites", None),
     ("capacity_workload_shape_mismatch", "n_sites", 4096),
+    # The launcher digest carried by the signed provenance names the file that
+    # pins the site count; it does not name the file that builds the rank
+    # boundaries and the parameterization the payload reports. A payload that
+    # repeats a body digest the manifest never froze measured a circuit nobody
+    # released, however well its site count reads.
+    (
+        "production_payload_workload_body_mismatch",
+        "workload_body_sha256",
+        "0" * 64,
+    ),
     ("production_artifact_missing_required_fields", "collective_backend", ""),
     # A payload of another capability carries an artifact class and a release
     # flag of its own, so the state mode is what keeps it out of this contract.
@@ -1147,6 +1162,7 @@ GENERAL_RELEASE_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
         (
             "missing_capacity_workload_shape_evidence",
             "capacity_workload_shape_mismatch",
+            "production_payload_workload_body_mismatch",
         ),
     ),
 )

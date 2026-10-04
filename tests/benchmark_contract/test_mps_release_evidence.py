@@ -17,6 +17,7 @@ import argparse
 import ast
 import copy
 import hashlib
+import importlib
 import json
 from pathlib import Path
 
@@ -236,6 +237,38 @@ def test_the_frozen_workload_is_the_one_the_manifest_digest_binds() -> None:
     )
 
 
+def test_freezing_a_workload_leaves_the_importable_module_at_its_own_shape() -> None:
+    """A frozen leg is built in a namespace of its own, not by patching a global.
+
+    The shape the contract freezes lives in module constants, so a producer that
+    patched the imported module would leave the last leg's shape behind for every
+    later reader: a second leg at another shape would inherit the first one's
+    constants, and an unrelated test that reads the module would see a workload
+    nobody asked it for. The frozen leg is therefore executed from the verified
+    file into a module object of its own, and the importable module is not
+    touched.
+    """
+
+    module = "benchmarks.internal.evidence.general_mps_capacity_16"
+    imported = importlib.import_module(module)
+    before = (imported.N_SITES, imported.MAX_BOND, imported.TARGET_WORLD)
+    frozen = (
+        CAPACITY["n_sites"],
+        CAPACITY["trained_max_bond"],
+        CAPACITY["target_world_size"],
+    )
+    frozen_parameters = CAPACITY["parameter_count"]
+
+    workload = producer._frozen_workload(_contract())
+
+    after = (imported.N_SITES, imported.MAX_BOND, imported.TARGET_WORLD)
+    built = (workload.N_SITES, workload.MAX_BOND, workload.TARGET_WORLD)
+    assert after == before
+    assert workload is not imported
+    assert built == frozen
+    assert workload.parameter_count() == frozen_parameters
+
+
 def test_the_contract_and_the_code_that_builds_the_workload_cannot_drift() -> None:
     contract = _contract()
     drifted = copy.deepcopy(contract)
@@ -405,11 +438,18 @@ def test_the_capacity_baseline_states_single_device_semantics() -> None:
         world_size=1,
         local_world_size=1,
         node_count=1,
+        parameter_count=CAPACITY["parameter_count"],
     )
 
     assert baseline["distribution_semantics"] == "single_device_fast_path"
     assert baseline["mps_forward_distribution_semantics"] == "single_device_fast_path"
     assert baseline["site_ownership"]["sharded"] is False
+    # The circuit the device was exhausted by is named, not assumed: the digest
+    # of the launcher is not enough to identify a parameterization.
+    assert baseline["workload_body_sha256"] == producer._workload_body_digest(
+        _contract()
+    )
+    assert baseline["parameter_count"] == CAPACITY["parameter_count"]
     # A workload that fitted on one device is not a capacity premise, and the
     # payload carries that as a blocker rather than as a quantity.
     assert baseline["single_device_oom_observed"] is False
