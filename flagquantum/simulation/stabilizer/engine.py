@@ -279,7 +279,7 @@ def sample_stabilizer(
         program: A `~flagquantum.Circuit` or a validated
             `~flagquantum.CircuitIR` whose instructions are all Clifford.
         shots: Positive number of sampling repetitions.
-        qubits: Wires to measure, in output order. Defaults to every qubit.
+        qubits: Qubits to measure, in output order. Defaults to every qubit.
         seed: Seed for the sampling stream. The engine documents identical
             samples for an identical seed only on one engine version and one
             machine's instruction set, so a seed reproduces a run rather than
@@ -454,7 +454,7 @@ def sample_noisy_measurements(
             whose instructions are Clifford gates, single-qubit resets,
             single-qubit measurements, and single-qubit bit-flip channels.
         shots: Positive number of sampling repetitions.
-        terminal_qubits: Wires to measure once after the program has run, in
+        terminal_qubits: Qubits to measure once after the program has run, in
             record order. Defaults to no terminal measurement.
         seed: Seed for the sampling stream. The engine documents identical
             samples for an identical seed only on one engine version and one

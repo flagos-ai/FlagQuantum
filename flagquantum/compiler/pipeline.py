@@ -84,17 +84,17 @@ def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
 
 
 class _WireLocalProgram:
-    """Instructions in program order, indexed by the latest writer of each wire.
+    """Instructions in program order, indexed by the latest writer of each qubit.
 
-    Both merge passes need the most recent instruction that touches a wire set,
+    Both merge passes need the most recent instruction that touches a qubit set,
     and they need to remove or rewrite it. Scanning the output list for that
     instruction costs the length of the untouched prefix, which is quadratic on a
-    circuit whose gates share no wire -- the shape a routing pass produces on a
-    wide device. Indexing by wire instead makes a pass linear in the gates times
-    their wires.
+    circuit whose gates share no qubit -- the shape a routing pass produces on a
+    wide device. Indexing by qubit instead makes a pass linear in the gates times
+    their qubits.
 
     ``position`` is the insertion sequence number. Sequence numbers only
-    increase, so the largest live one touching a wire is also the latest one in
+    increase, so the largest live one touching a qubit is also the latest one in
     program order, and positions do not shift when an earlier instruction is
     removed.
     """
@@ -121,11 +121,11 @@ class _WireLocalProgram:
             self._last_by_wire.setdefault(wire, []).append(self._position)
 
     def pop(self, position: int) -> None:
-        """Remove the instruction at ``position``, a wire's latest writer.
+        """Remove the instruction at ``position``, a qubit's latest writer.
 
         Both passes only ever remove the instruction they just looked up, so the
-        removed one is by construction the latest writer of every wire it touches
-        and the per-wire stack needs no repair beyond dropping its top entry.
+        removed one is by construction the latest writer of every qubit it touches
+        and the per-qubit stack needs no repair beyond dropping its top entry.
         """
 
         instruction = self._instructions.pop(position)
@@ -135,7 +135,7 @@ class _WireLocalProgram:
             stack.pop()
 
     def rewrite(self, position: int, instruction: Instruction) -> None:
-        """Replace the instruction at ``position``, keeping the wires it touches."""
+        """Replace the instruction at ``position``, keeping the qubits it touches."""
 
         assert instruction.wires == self._instructions[position].wires
         self._instructions[position] = instruction
@@ -148,7 +148,7 @@ class _WireLocalProgram:
 
 
 def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
-    """Remove identical self-inverse gates adjacent on their wires."""
+    """Remove identical self-inverse gates adjacent on their qubits."""
 
     program = _WireLocalProgram()
     for instruction in ir:
@@ -170,7 +170,7 @@ def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
 
 
 def merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
-    """Merge rotations adjacent on their wires."""
+    """Merge rotations adjacent on their qubits."""
 
     program = _WireLocalProgram()
     for instruction in ir:
@@ -204,7 +204,7 @@ def merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
 
 
 def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
-    """ASAP-schedule instructions without reversing per-wire dependencies."""
+    """ASAP-schedule instructions without reversing per-qubit dependencies."""
 
     layers: list[list[Instruction]] = []
     last_layer_by_wire: dict[int, int] = {}

@@ -215,7 +215,7 @@ def _measure_instruction(
     noise_model: NoiseModel | None,
     generator: torch.Generator,
 ) -> tuple[torch.Tensor, int, int, int, int]:
-    """Measure one wire and apply its configured readout noise."""
+    """Measure one qubit and apply its configured readout noise."""
 
     state, true_bit = _measure_wire(
         state,
@@ -275,7 +275,7 @@ def _reset_instruction(
     n_wires: int,
     generator: torch.Generator,
 ) -> tuple[torch.Tensor, int]:
-    """Measure and return one wire to the zero state."""
+    """Measure and return one qubit to the zero state."""
 
     state, bit = _measure_wire(
         state,

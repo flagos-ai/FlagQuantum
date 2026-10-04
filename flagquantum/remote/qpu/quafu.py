@@ -511,8 +511,8 @@ class QuafuProvider(HttpQuantumProvider):
     ) -> ProviderTaskHandle:
         """Submit precompiled logical OpenQASM 2.0 to ordered physical qubits.
 
-        ``q[i]`` remains logical wire ``i``; ``target_qubits[i]`` identifies the
-        physical qubit selected for that wire. Quafu receives ``compiler=None``.
+        ``q[i]`` remains logical qubit ``i``; ``target_qubits[i]`` identifies the
+        physical qubit selected for that qubit. Quafu receives ``compiler=None``.
         """
 
         program = str(qasm)

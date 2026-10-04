@@ -290,7 +290,7 @@ class TwinRegionModel:
 
     @property
     def physical_qubits(self) -> tuple[int, ...]:
-        """Return the regional logical-wire to physical-qubit order."""
+        """Return the regional logical-qubit to physical-qubit order."""
 
         return self.region.physical_qubits
 

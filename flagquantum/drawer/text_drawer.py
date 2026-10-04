@@ -14,7 +14,7 @@ class _CurrentTotals:
     """Accumulated circuit strings"""
 
     finished_lines: list[str]  # Completed lines (used when wrapping)
-    qubit_totals: list[str]  # Accumulated quantum wire strings
+    qubit_totals: list[str]  # Accumulated quantum qubit strings
     bit_totals: list[str]  # Accumulated classical bit strings
 
 
@@ -22,12 +22,12 @@ class _CurrentTotals:
 class _Config:
     """Drawing configuration"""
 
-    qubit_map: dict[Any, int]  # Wire label -> display position
-    qubit_order: list[Any]  # Wire order (top to bottom)
+    qubit_map: dict[Any, int]  # Qubit label -> display position
+    qubit_order: list[Any]  # Qubit order (top to bottom)
     num_op_layers: int  # Number of operation layers
     cur_layer: int = -1  # Current layer index
     decimals: Optional[int] = None  # Parameter precision
-    show_qubit_labels: bool = True  # Whether to show wire labels
+    show_qubit_labels: bool = True  # Whether to show qubit labels
 
     @property
     def qubit_filler(self) -> str:
@@ -178,7 +178,7 @@ class TextDrawer:
 
         Multi-qubit gates occupy all qubits in between to prevent overlap with other operations
         """
-        last_layer: dict[int, int] = {}  # wire -> last_layer_index
+        last_layer: dict[int, int] = {}  # qubit -> last_layer_index
         layers: list[list[dict[str, Any]]] = []
 
         for op in self.op_history:

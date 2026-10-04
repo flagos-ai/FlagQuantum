@@ -97,7 +97,7 @@ def _apply_single_process_cpu_gate(
 def _pair_components(
     state: torch.Tensor, *, wire: int, n_wires: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the zero/one views for one wire of a contiguous state."""
+    """Return the zero/one views for one qubit of a contiguous state."""
 
     stride = 1 << (int(n_wires) - int(wire) - 1)
     paired = state.reshape(state.shape[0], -1, 2, stride)

@@ -197,7 +197,7 @@ def _triton_adjoint_vjp_tensor_decision(
     sharded: bool,
     runtime_supported: bool = True,
 ) -> KernelDecision:
-    """Use exact catalog identity for the wired one-qubit VJP kernels."""
+    """Use exact catalog identity for the connected one-qubit VJP kernels."""
 
     if wire_count == 1:
         selector = (

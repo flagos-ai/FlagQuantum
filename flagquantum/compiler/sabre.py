@@ -2,7 +2,7 @@
 
 The planner implements the SABRE heuristic (Li, Ding, and Xie, "Tackling the
 Qubit Mapping Problem for NISQ-Era Quantum Devices", ASPLOS 2019). It keeps a
-front layer of two-wire operations whose predecessors have already executed, and
+front layer of two-qubit operations whose predecessors have already executed, and
 when no front-layer operation is a coupling edge it inserts the SWAP that
 minimizes the mean front-layer hop distance plus a distance-decayed lookahead
 term over a bounded extended layer.
@@ -15,12 +15,12 @@ coupling map always produce the same plan without a seed.
 
 Unlike the shortest-path strategies, this planner moves the layout before an
 operation rather than immediately before it, which is what makes it effective on
-devices of 20 or more wires.
+devices of 20 or more qubits.
 
-The planner uses only the wires the program owns, so it plans on the coupling
-subgraph those wires induce rather than on the whole device. A padding wire of a
+The planner uses only the qubits the program owns, so it plans on the coupling
+subgraph those qubits induce rather than on the whole device. A padding qubit of a
 wider device is not an ancilla this planner may swap on, and a program the
-circuit's own wires cannot connect is refused rather than costed against a route
+circuit's own qubits cannot connect is refused rather than costed against a route
 the plan cannot express.
 
 The planner can start from a caller-supplied initial layout, and
@@ -29,7 +29,7 @@ route the program, route the reversed program from the resulting layout, and
 adopt that layout as the next candidate whenever it lowers the total number of
 inserted SWAPs. A layout that starts away from the identity cannot be undone by
 replaying the forward SWAPs in reverse, so ``restore_swaps`` plans the explicit
-restore that returns every logical wire to its own wire.
+restore that returns every logical qubit to its own qubit.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ LOOKAHEAD_EXTENDED_SIZE = 20
 LOOKAHEAD_WEIGHT = 0.5
 
 # A SWAP that executes no front-layer operation is only useful if it shortens
-# some blocked front-layer distance. On a connected topology of N wires a useful
+# some blocked front-layer distance. On a connected topology of N qubits a useful
 # SWAP always exists within the graph diameter, so this many consecutive
 # stalled SWAPs means the front layer cannot be unblocked.
 STALLED_SWAP_LIMIT_PER_WIRE = 4
@@ -70,7 +70,7 @@ class SabrePlan:
             them. A front-layer operation is emitted as soon as its
             predecessors are placed, so this differs from source order when two
             independent operations become executable at different times.
-        placements: Physical wires for every source instruction, indexed by
+        placements: Physical qubits for every source instruction, indexed by
             source instruction index.
         swaps: Forward SWAP pairs in the order the planner applied them.
         swap_placements: Number of instructions already placed when each forward
@@ -112,12 +112,12 @@ def _validated_layout(
 
 
 def _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:
-    """Return the coupling subgraph induced by the wires the program owns.
+    """Return the coupling subgraph induced by the qubits the program owns.
 
-    The planner emits SWAPs only on those wires, so the graph it plans on has to be
-    the same graph. A padding wire of a wider device is not an ancilla this planner
+    The planner emits SWAPs only on those qubits, so the graph it plans on has to be
+    the same graph. A padding qubit of a wider device is not an ancilla this planner
     can swap on, and scoring candidates against device distances that only such a
-    wire realizes would cost the plan against a route it cannot emit.
+    qubit realizes would cost the plan against a route it cannot emit.
     """
 
     if coupling.n_qubits == n_wires:
@@ -138,7 +138,7 @@ def _shifted_distance(
     logical_to_physical: list[int],
     distances: tuple[tuple[float, ...], ...],
 ) -> float:
-    """Return a two-wire hop distance as it would be after a candidate SWAP."""
+    """Return a two-qubit hop distance as it would be after a candidate SWAP."""
 
     first = logical_to_physical[wire_pair[0]]
     second = logical_to_physical[wire_pair[1]]
@@ -161,21 +161,21 @@ def plan_sabre_swaps(
 ) -> SabrePlan:
     """Plan a SABRE persistent layout for one program on one coupling map.
 
-    Only the wires owned by the program are used, and inserted SWAPs always join
-    two wires of the program, so no physical ancilla is required. Planning happens
-    on the coupling subgraph those wires induce, so a wider device is supported
-    exactly as far as its wires inside the circuit connect the program.
+    Only the qubits owned by the program are used, and inserted SWAPs always join
+    two qubits of the program, so no physical ancilla is required. Planning happens
+    on the coupling subgraph those qubits induce, so a wider device is supported
+    exactly as far as its qubits inside the circuit connect the program.
 
     Args:
         program: Circuit to place.
         coupling: Topology the placed circuit must respect.
-        initial_layout: Physical wire for each logical wire at the start. Defaults
+        initial_layout: Physical qubit for each logical qubit at the start. Defaults
             to the identity layout.
 
     Raises:
-        ValueError: If the coupling map has fewer wires than the program, if
-            ``initial_layout`` is not a permutation of the circuit wires, if a
-            two-wire operation is connected on the device only through wires the
+        ValueError: If the coupling map has fewer qubits than the program, if
+            ``initial_layout`` is not a permutation of the circuit qubits, if a
+            two-qubit operation is connected on the device only through qubits the
             circuit does not own, or if the front layer cannot be unblocked within
             the stalled-SWAP limit.
     """
@@ -207,16 +207,16 @@ def plan_sabre_swaps(
     )
     neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))
     wires = tuple(instruction.wires for instruction in instructions)
-    # A channel occupies its wires but must not be pulled onto a coupling edge,
+    # A channel occupies its qubits but must not be pulled onto a coupling edge,
     # so it never blocks the front layer.
     blocks = tuple(
         len(wire_pair) == 2 and not instruction.metadata.get("is_channel")
         for instruction, wire_pair in zip(instructions, wires, strict=True)
     )
-    # A SWAP along one coupling edge keeps each logical wire inside its own
-    # connected component, so a two-wire operation whose logical wires have no
+    # A SWAP along one coupling edge keeps each logical qubit inside its own
+    # connected component, so a two-qubit operation whose logical qubits have no
     # coupling path between them can never be legalized. Connectivity is a
-    # property of the physical wires, so the initial layout is applied first.
+    # property of the physical qubits, so the initial layout is applied first.
     for index, wire_pair in enumerate(wires):
         if not blocks[index]:
             continue
@@ -236,7 +236,7 @@ def plan_sabre_swaps(
             f"{wire_pair[1]} of two-wire instruction {index}"
         )
 
-    # One edge per (instruction, wire) pair, so an instruction whose two wires
+    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
     # share a predecessor still reaches zero pending predecessors.
     successors: list[list[int]] = [[] for _ in range(count)]
     pending = [0] * count
@@ -443,21 +443,21 @@ def restore_swaps(
     layout: tuple[int, ...],
     coupling: CouplingMap,
 ) -> tuple[tuple[int, int], ...]:
-    """Plan the SWAPs that move every logical wire of ``layout`` to its own wire.
+    """Plan the SWAPs that move every logical qubit of ``layout`` to its own qubit.
 
     Replaying a forward plan in reverse only returns the layout that plan started
     from, so a plan that started away from the identity layout needs an explicit
     restore. The coupling graph is reduced to a spanning forest and one tree leaf
-    at a time is walked to its home wire along the edges that are still active. A
-    leaf has at most one active edge, so a wire that has already reached home is
+    at a time is walked to its home qubit along the edges that are still active. A
+    leaf has at most one active edge, so a qubit that has already reached home is
     never displaced.
 
     Args:
-        layout: Physical wire for each logical wire.
+        layout: Physical qubit for each logical qubit.
         coupling: Topology the restore SWAPs must respect.
 
     Raises:
-        ValueError: If ``layout`` is not a permutation of the circuit wires, or if
+        ValueError: If ``layout`` is not a permutation of the circuit qubits, or if
             the coupling map has no spanning forest over them.
     """
 
@@ -546,7 +546,7 @@ def plan_restore_swaps(
 
     Raises:
         ValueError: If the coupling map has no spanning forest over the plan's
-            wires.
+            qubits.
     """
 
     replayed = tuple(
@@ -593,12 +593,12 @@ def plan_sabre_layout(
     only when it lowers the inserted-SWAP count of a fully restored route, so the
     returned layout never costs more than the identity layout.
 
-    Candidates are searched on the coupling subgraph the program's own wires
+    Candidates are searched on the coupling subgraph the program's own qubits
     induce, so a device wider than the program is searched exactly as far as those
-    wires connect it.
+    qubits connect it.
 
     Raises:
-        ValueError: If the coupling map has fewer wires than the program, if
+        ValueError: If the coupling map has fewer qubits than the program, if
             ``rounds`` is negative, or if the program cannot be routed.
     """
 

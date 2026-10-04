@@ -149,7 +149,7 @@ def _local_expectation_z_adjoint(
 def _local_expectation_z_sum(
     shard_state: Any, *, plan: Any, n_wires: int, wires: tuple[int, ...]
 ) -> torch.Tensor:
-    """Evaluate a sum of single-wire Z terms from one final shard state."""
+    """Evaluate a sum of single-qubit Z terms from one final shard state."""
 
     total = torch.zeros(
         (),

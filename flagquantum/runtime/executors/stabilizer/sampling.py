@@ -4,7 +4,7 @@ The numerical work lives in `flagquantum/simulation/stabilizer`; this module own
 the Runtime side of the same route -- binding a plan's sampling request to the
 engine, adapting the engine to the Runtime measurement contract, and keeping the
 tableau's cost visible against a declared memory limit. Nothing here builds a
-state, selects a seed stream, or decides a wire order.
+state, selects a seed stream, or decides a qubit order.
 """
 
 from __future__ import annotations
@@ -25,15 +25,15 @@ class StabilizerSamplingTarget:
 
     The Runtime measurement contract draws from any target exposing
     ``sample(shots, *, generator, format)``, which is what keeps postselection,
-    wire selection, counts, and shot statistics one implementation instead of one
-    per state representation. This target answers for every wire of the program in
-    wire order, so the contract's own wire selection produces the requested
+    qubit selection, counts, and shot statistics one implementation instead of one
+    per state representation. This target answers for every qubit of the program in
+    qubit order, so the contract's own qubit selection produces the requested
     columns, and it reads the seed the contract built from the request metadata
     rather than inventing a second seeding convention.
 
     Nothing is sampled at construction: the measurement contract decides how many
     drawings a request needs, and this target performs exactly one per call. The
-    program it holds carries no lowered measurement nodes, because the wires and
+    program it holds carries no lowered measurement nodes, because the qubits and
     shots are the request's, not the IR's. The returned tensor carries the leading
     batch axis the contract expects; a real batch would mean re-running one
     circuit rather than running a different one.

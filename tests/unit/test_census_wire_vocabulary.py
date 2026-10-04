@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -749,6 +750,324 @@ def test_the_generated_scoreboard_no_longer_teaches_a_retired_keyword() -> None:
     assert "(`wires=`) static injection" not in page
     parity = (_ROOT / "contracts/cudaq-parity-matrix.toml").read_text(encoding="utf-8")
     assert "(`wires=`)" not in parity
+
+
+def test_a_docstring_token_is_an_identifier_not_a_line() -> None:
+    """`help()` prints a sentence, but the unit is the name inside it.
+
+    A line-based count would let one reworded name hide behind another on the same
+    line. Splitting into identifier-shaped tokens means `n_wires - 1 - wire` is two
+    sites that have to be accounted for separately, and nothing inside a code span
+    can be reworded on the strength of the prose around it.
+    """
+
+    assert _CENSUS._wire_tokens("bit ``n_wires - 1 - wire``") == ("n_wires", "wire")
+    assert _CENSUS._wire_tokens("a five-wire circuit") == ("wire",)
+    assert _CENSUS._wire_tokens("no spelling here") == ()
+    # The hyphen does not start an identifier, so the compound adjective is one
+    # token rather than two.
+    assert _CENSUS._wire_tokens("single-wire term") == ("wire",)
+
+
+def test_a_comment_is_attributed_to_its_innermost_definition(tmp_path: Path) -> None:
+    """The key has to survive a line moving, so it names the scope and not the line."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/alpha.py": (
+                '"""Module prose about qubits."""\n'
+                "\n"
+                "\n"
+                "# a module-level note about a wire\n"
+                "def outer(n_wires: int) -> int:\n"
+                '    """Outer."""\n'
+                "    # a note inside outer about a wire\n"
+                "    def inner() -> int:\n"
+                '        """Inner."""\n'
+                "        # a note inside inner about a wire\n"
+                "        return n_wires\n"
+                "    return inner()\n"
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/alpha.py::<module>", "wire"),
+        ("flagquantum/alpha.py::outer", "wire"),
+        ("flagquantum/alpha.py::outer.inner", "wire"),
+    )
+
+
+def test_a_docstring_is_scanned_even_in_a_private_module(tmp_path: Path) -> None:
+    """`[boundary]` stops at the public surface; `help()` does not.
+
+    A docstring reaches whoever imports the module that holds it, so the scan reads
+    the whole package rather than the modules the keyword ledgers call public. A
+    private module's prose is still published.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/_helper.py": '"""A helper that talks about a wire."""\n',
+            "flagquantum/deep/_also.py": '"""Nested, and also about wires."""\n',
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/_helper.py::<module>", "wire"),
+        ("flagquantum/deep/_also.py::<module>", "wires"),
+    )
+
+
+def test_a_wire_token_is_reported_each_time_it_occurs(tmp_path: Path) -> None:
+    """A multiset, not a set: dropping one of two sites must move the reading."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/twice.py": (
+                '"""One wire here."""\n'
+                "\n"
+                "\n"
+                "def f() -> None:\n"
+                '    """And another wire here."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/twice.py::<module>", "wire"),
+        ("flagquantum/twice.py::f", "wire"),
+    )
+
+
+def test_two_definitions_sharing_a_bare_name_are_two_containers(tmp_path: Path) -> None:
+    """The key is a dotted qualname, and the exemption is per container.
+
+    `A._prepare` and `B._prepare` are different docstrings that reach different
+    readers. Keyed by the bare `_prepare` they would be one container holding two
+    tokens, and a single recorded row would then cover an occurrence in the other
+    class -- so the gate would pass on a docstring nobody had looked at.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/two.py": (
+                "class A:\n"
+                '    """A."""\n'
+                "\n"
+                "    def _prepare(self) -> None:\n"
+                '        """Bind each wire to one index."""\n'
+                "\n"
+                "\n"
+                "class B:\n"
+                '    """B."""\n'
+                "\n"
+                "    def _prepare(self) -> None:\n"
+                '        """Bind each wire to one index."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/two.py::A._prepare", "wire"),
+        ("flagquantum/two.py::B._prepare", "wire"),
+    )
+
+
+def test_a_nested_definition_is_keyed_by_its_whole_path(tmp_path: Path) -> None:
+    """A closure is not the method that holds it, and a reader can reach both."""
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/nested.py": (
+                "def outer() -> None:\n"
+                '    """Outer."""\n'
+                "\n"
+                "    def inner() -> None:\n"
+                '        """Reindex every wire."""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/nested.py::outer.inner", "wire"),
+    )
+
+
+def test_the_docstring_matcher_finds_wire_anywhere_in_the_name() -> None:
+    """`terminal_wires` is the same question as `wires`, as the keyword matcher is."""
+
+    assert _CENSUS._wire_tokens("terminal_wires and shardable_wires") == (
+        "terminal_wires",
+        "shardable_wires",
+    )
+    assert _CENSUS._wire_tokens("qubits only") == ()
+
+
+def test_the_docstring_exemptions_cover_exactly_the_live_tokens() -> None:
+    """The live reading, compared against the record rather than a hard-coded list.
+
+    Every wire-named token a docstring or comment still publishes is either gone or
+    named in `[docstring]` with a reason, and the comparison is per container: a
+    second occurrence inside an already-exempt docstring needs its own row rather
+    than being absorbed by the first. Comparing against the contract means a new site
+    cannot be absorbed by editing the test.
+    """
+
+    contract = _contract()
+    exempt: dict[str, list[str]] = {}
+    for row in contract["docstring"]["keep"]:
+        for identifier in row["identifier"]:
+            container, _, token = str(identifier).rpartition("::")
+            exempt.setdefault(container, []).append(token)
+    observed: dict[str, list[str]] = {}
+    for container, token in _CENSUS.docstring_census(_ROOT / "flagquantum"):
+        observed.setdefault(container, []).append(token)
+    assert observed, "the docstring census found nothing to reconcile"
+    assert {name: sorted(tokens) for name, tokens in observed.items()} == {
+        name: sorted(tokens) for name, tokens in exempt.items()
+    }
+    assert int(contract["docstring"]["measured_tokens"]) == sum(
+        len(tokens) for tokens in exempt.values()
+    )
+
+
+def test_the_docstring_example_surface_is_read_apart_from_the_prose(
+    tmp_path: Path,
+) -> None:
+    """A `>>>` block is code the doctest runner executes, not prose a reader reads.
+
+    Both live in a docstring, so a scan that read the whole string would hand a
+    rewriting pass a code token and call it a sentence. That is not hypothetical: it
+    turned `Instruction.wires` into `.qubits` in the `Circuit.compose` example, and
+    the example started raising `AttributeError`. So the two readings have to be
+    disjoint, and their union has to be the whole docstring.
+    """
+
+    root = _package(
+        tmp_path,
+        {
+            "flagquantum/example.py": (
+                '"""Prose about a wire.\n'
+                "\n"
+                "Examples:\n"
+                "    >>> Circuit(2).n_wires\n"
+                "    2\n"
+                '"""\n'
+            )
+        },
+    )
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+    assert _CENSUS.docstring_example_tokens(root) == (
+        ("flagquantum/example.py::<module>", "n_wires"),
+    )
+
+
+def test_the_live_example_tokens_match_the_pinned_record() -> None:
+    """The count is small, so an entry appearing here is a signal rather than noise.
+
+    Unlike the prose ledger, a token here is not debt the migration owes: the example
+    would still work if it had always been written in the qubit vocabulary. It is
+    pinned so that a pass cannot move one without saying so.
+    """
+
+    contract = _contract()
+    pinned: dict[str, list[str]] = {}
+    for row in contract["docstring_example"]["keep"]:
+        for identifier in row["identifier"]:
+            container, _, token = str(identifier).rpartition("::")
+            pinned.setdefault(container, []).append(token)
+    observed: dict[str, list[str]] = {}
+    for container, token in _CENSUS.docstring_example_tokens(_ROOT / "flagquantum"):
+        observed.setdefault(container, []).append(token)
+    assert observed, "the docstring example census found nothing to reconcile"
+    assert {name: sorted(tokens) for name, tokens in observed.items()} == {
+        name: sorted(tokens) for name, tokens in pinned.items()
+    }
+    assert int(contract["docstring_example"]["measured_tokens"]) == sum(
+        len(tokens) for tokens in pinned.values()
+    )
+
+
+def test_a_tree_that_changes_under_the_memo_is_rescanned(tmp_path: Path) -> None:
+    """The two surfaces are cached per tree, and the cache must not outlive the tree.
+
+    Deriving these two surfaces is the expensive half of the gate and the gate asks
+    for them repeatedly, over a tree that does not change between asks, so they are
+    memoized. That makes the memo the one place in this scanner that can answer a
+    question about a tree other than the one on disk -- which is precisely what the
+    gate's own fixtures do, rewriting a package under a path they have already
+    scanned. So the invalidation is pinned here in the two shapes that matter: a file
+    edited in place, and a file whose replacement is *byte-for-byte the same length*.
+    A stamp over sizes and timestamps would pass the first and is the reason the
+    second is here.
+    """
+
+    path = tmp_path / "flagquantum" / "example.py"
+    path.parent.mkdir(parents=True)
+    path.write_text('"""Prose about a wire."""\n', encoding="utf-8")
+    root = tmp_path / "flagquantum"
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+    # The repeat is the memo hit, and has to agree with the miss.
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+
+    # Same length, same path, same everything a stat stamp would read except the
+    # bytes: the sentence loses its full stop so that `wire` can grow into `wires`
+    # without the file changing size.
+    before = path.stat()
+    path.write_text('"""Prose about a wires"""\n', encoding="utf-8")
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    after = path.stat()
+    assert (after.st_size, after.st_mtime_ns) == (
+        before.st_size,
+        before.st_mtime_ns,
+    ), "this test is only meaningful while the rewrite is invisible to a stat stamp"
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wires"),
+    )
+
+
+def test_the_two_docstring_surfaces_are_read_in_one_pass() -> None:
+    """The split is one traversal, so the halves cannot be read off two different trees.
+
+    `docstring_census` and `docstring_example_tokens` are disjoint by construction --
+    an index is inside an executable block or it is not -- and they are memoized under
+    one key, which is what makes that visible: if both readings were taken separately,
+    a rewrite between the two calls could put the same line in both halves or in
+    neither, and the gate would reconcile a multiset that never existed on disk. So the
+    second reading must add no key of its own.
+    """
+
+    root = _ROOT / "flagquantum"
+    prose = _CENSUS.docstring_census(root)
+    entries = len(_CENSUS._DOCSTRING_SURFACES)
+    examples = _CENSUS.docstring_example_tokens(root)
+    assert set(prose).isdisjoint(examples)
+    assert prose and examples, "the live tree carries both surfaces"
+    assert (
+        len(_CENSUS._DOCSTRING_SURFACES) == entries
+    ), "the second surface came from a traversal of its own"
+    # Identity, not equality: `==` would hold for two traversals that agreed, so this
+    # is the assertion that fails if the memo is deleted rather than merely wrong.
+    assert _CENSUS.docstring_census(root) is prose
+
+
+def test_a_docstring_without_an_example_block_is_not_searched_for_one() -> None:
+    """`_example_lines` is the hot path, and no `>>>` means no executable line.
+
+    The fast return is a claim about the loop it replaces: `inside` can only become
+    true on a line that starts with `>>>`, so a docstring with none of those has an
+    empty example set whatever else it contains.
+    """
+
+    assert _CENSUS._example_lines("Prose about a wire.") == set()
+    assert _CENSUS._example_lines(">>> Circuit(2).n_wires\n2\n") == {0, 1}
 
 
 def _importable_package(tmp_path: Path, name: str, files: dict[str, str]) -> Path:

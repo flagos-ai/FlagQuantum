@@ -106,11 +106,14 @@ and `simulation/native_cpu/__init__.py` and `simulation/pauli.py` list it in
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
 import inspect
+import io
 import re
 import subprocess
 import sys
+import tokenize
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -1145,6 +1148,230 @@ def message_strings(package_root: Path | None = None) -> tuple[str, ...]:
     return tuple(found)
 
 
+WIRE_TOKEN = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
+
+
+def _wire_tokens(text: str) -> tuple[str, ...]:
+    """The wire-bearing identifier-shaped tokens in one line of prose."""
+
+    return tuple(word for word in WIRE_TOKEN.findall(text) if "wire" in word.lower())
+
+
+def _scope_names(tree: ast.Module) -> tuple[tuple[int, int, str], ...]:
+    """Every definition's line span and dotted qualname, innermost last."""
+
+    spans: list[tuple[int, int, str]] = []
+
+    def walk(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                name = f"{prefix}{child.name}"
+                end = getattr(child, "end_lineno", child.lineno)
+                spans.append((child.lineno, end, name))
+                walk(child, f"{name}.")
+            else:
+                walk(child, prefix)
+
+    walk(tree, "")
+    return tuple(spans)
+
+
+def _definition_names(tree: ast.Module) -> dict[int, str]:
+    """Every definition node's dotted qualname, keyed by the node's identity.
+
+    A docstring is keyed by the dotted name rather than the bare one for the same
+    reason a comment is: two classes may each define a method of the same name, and a
+    key that merged them would let one container's exemption pay for the other's
+    occurrence. Identity rather than position keeps the lookup independent of
+    ``ast.walk``'s order.
+    """
+
+    names: dict[int, str] = {}
+
+    def walk(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                name = f"{prefix}{child.name}"
+                names[id(child)] = name
+                walk(child, f"{name}.")
+            else:
+                walk(child, prefix)
+
+    walk(tree, "")
+    return names
+
+
+def _enclosing(spans: tuple[tuple[int, int, str], ...], line: int) -> str:
+    """The innermost definition containing a line, or `<module>` at file scope."""
+
+    best: tuple[int, str] | None = None
+    for start, end, name in spans:
+        if start <= line <= end and (best is None or start >= best[0]):
+            best = (start, name)
+    return "<module>" if best is None else best[1]
+
+
+def _example_lines(doc: str) -> set[int]:
+    """The zero-based docstring lines that lie inside an executable example block.
+
+    ``doctest`` starts an example at a line whose stripped form begins with ``>>>``
+    and ends it at the next blank line; the lines between are either the statement or
+    the output it is compared against. Both are read by ``doctest`` rather than by a
+    person, so neither is prose.
+
+    This distinction is load-bearing. ``tests/api_contract/test_public_docstring_examples.py``
+    runs every ``>>>`` the public entries carry, and a wire-named token on one of those
+    lines is a *code* token: a rewriting pass that could not tell the two apart turned
+    ``Instruction.wires`` into ``.qubits`` in the ``Circuit.compose`` example, and the
+    example that had resolved for years started raising ``AttributeError``. The doctest
+    runner is what governs those tokens, so they are counted apart from the prose ledger.
+    """
+
+    if ">>>" not in doc:
+        return set()
+    inside = False
+    lines: set[int] = set()
+    for index, line in enumerate(doc.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith(">>>"):
+            inside = True
+        elif not stripped:
+            inside = False
+        # An output line keeps the block open. A prose line cannot open one, because
+        # only `>>>` sets the flag.
+        if inside:
+            lines.add(index)
+    return lines
+
+
+def _tree_fingerprint(root: Path) -> str:
+    """A digest of every byte a docstring scan is about to read.
+
+    The contract gate re-derives the same two docstring surfaces once per assertion a
+    test makes, and on this package one derivation is seconds of parsing; a test module
+    that makes forty of them spends minutes re-reading a tree that has not changed. The
+    memo below is keyed by this digest rather than by the path alone, so a tree that is
+    rewritten in-process -- which is exactly what the gate's own negative tests do, into
+    a ``tmp_path`` -- cannot be served a scan of its previous contents.
+
+    The digest is over contents, not over timestamps and sizes: 624 files and 7 MB cost
+    34 ms to hash here against 1600 ms to parse, and a content digest cannot be fooled
+    by a rewrite that happens to restore an identical size and mtime.
+    """
+
+    digest = hashlib.blake2b(digest_size=16)
+    for path in sorted(root.rglob("*.py")):
+        digest.update(path.relative_to(root.parent).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+_DOCSTRING_SURFACES: dict[
+    tuple[str, str],
+    tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]],
+] = {}
+
+
+def _docstring_surfaces(
+    root: Path,
+) -> tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """Both docstring surfaces from one pass: the prose, and the executable examples.
+
+    They are read in the same traversal because they are disjoint halves of one
+    docstring, decided by ``_example_lines``: an index inside an executable block is an
+    example and every other index is prose. Reading them apart would parse every file
+    twice and would also mean the split had two chances to disagree with itself.
+
+    The result is memoized per process because the gate asks for it repeatedly and the
+    tree does not change between those asks. The key is a content digest, so the memo
+    is an optimization and never an answer about a tree other than the one on disk.
+    """
+
+    key = (str(root), _tree_fingerprint(root))
+    cached = _DOCSTRING_SURFACES.get(key)
+    if cached is not None:
+        return cached
+
+    prose: list[tuple[str, str]] = []
+    examples_found: list[tuple[str, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parent).as_posix()
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=relative)
+        spans = _scope_names(tree)
+        names = _definition_names(tree)
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                continue
+            doc = ast.get_docstring(node, clean=False)
+            if not doc or "wire" not in doc.lower():
+                continue
+            qualname = names.get(id(node), "<module>")
+            lines = doc.splitlines()
+            examples = _example_lines(doc)
+            for index, line in enumerate(lines):
+                target = examples_found if index in examples else prose
+                for token in _wire_tokens(line):
+                    target.append((f"{relative}::{qualname}", token))
+        for comment in tokenize.generate_tokens(io.StringIO(source).readline):
+            if comment.type != tokenize.COMMENT or "wire" not in comment.string.lower():
+                continue
+            scope = _enclosing(spans, comment.start[0])
+            for word in _wire_tokens(comment.string):
+                prose.append((f"{relative}::{scope}", word))
+
+    surfaces = tuple(sorted(prose)), tuple(sorted(examples_found))
+    _DOCSTRING_SURFACES[key] = surfaces
+    return surfaces
+
+
+def docstring_census(
+    package_root: Path | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """Every wire-bearing token a package docstring's prose or a comment publishes.
+
+    A docstring is what ``help()`` prints and what an editor shows on hover, and a
+    comment is what the next reader of the module is taught, so this surface reaches
+    a user exactly as a signature does -- while being invisible to every ledger that
+    reads an AST signature. It is the only surface here that is neither a name the
+    package declares nor a keyword it documents; it is the package *talking*.
+
+    A site is ``relative::Qualname::token``, and the gate reconciles the whole
+    multiset per container, so a second occurrence cannot hide behind the first. The
+    scope a comment belongs to is the innermost definition containing it, which keeps
+    the key stable when lines move inside that definition.
+
+    An executable example block inside a docstring is skipped, because those lines are
+    code that ``doctest`` runs rather than prose a reader reads; they are counted by
+    ``docstring_example_tokens`` instead. See ``_example_lines``.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    return _docstring_surfaces(root)[0]
+
+
+def docstring_example_tokens(
+    package_root: Path | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """Every wire-bearing token on a docstring line that ``doctest`` executes.
+
+    Reported rather than reconciled, for the same reason ``message_strings`` is: the
+    rule these obey is not a vocabulary rule but the one the doctest runner already
+    enforces -- the example has to keep working. A token here is a code token, so
+    rewording it is a rename, and a rename needs the authorization a rename needs.
+    Counting them apart is what makes that visible *before* a rewriting pass reaches
+    them, which is exactly what failed once: ``Instruction.wires`` in
+    ``Circuit.compose`` became ``.qubits``, a spelling no attribute carries.
+    """
+
+    root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
+    return _docstring_surfaces(root)[1]
+
+
 def main() -> int:
     scanned = census()
     print(
@@ -1167,26 +1394,32 @@ def main() -> int:
         f"({fields} fields and {members} members) and "
         f"{len(attributes.excluded)} persisted keys to leave alone"
     )
-    for site in attributes.excluded:
+    # Each loop below names its own variable. They used to share `site`, which forced
+    # mypy to pick the first binding's type and then reject the other three -- and
+    # `tools/` is outside the strict type check in CI, so the errors were real but
+    # invisible to the gate that would have caught them.
+    for excluded in attributes.excluded:
         print(
-            f"  persisted  {site.identifier}  ({site.evidence} by {site.witness}) "
-            f"-> {site.replacement}"
+            f"  persisted  {excluded.identifier}  "
+            f"({excluded.evidence} by {excluded.witness}) -> {excluded.replacement}"
         )
     definitions = definition_census()
     print(
         "definition surface: "
         f"{len(definitions.ledgered)} module-level public names to rename"
     )
-    for site in definitions.ledgered:
-        print(f"  {site.kind:8} {site.identifier} -> {site.replacement}")
+    for definition in definitions.ledgered:
+        print(
+            f"  {definition.kind:8} {definition.identifier} -> {definition.replacement}"
+        )
     documentation = documentation_census()
     print(
         "documentation surface: "
         f"{len(documentation.sites)} wire-named keyword arguments written into "
         f"{len(documentation_files())} tracked Markdown files"
     )
-    for site, count in sorted(documentation.counts().items()):
-        print(f"  {count:4d}  {site}")
+    for keyword, count in sorted(documentation.counts().items()):
+        print(f"  {count:4d}  {keyword}")
     print("reported but not ledgered:")
     print(f"  {len(message_strings()):4d}  string literals")
     # Printed after the enforced surfaces, and labelled as a reading rather than a
