@@ -118,6 +118,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector",),
         directions=("forward", "backward"),
         internal_fallback=True,
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-006-A",

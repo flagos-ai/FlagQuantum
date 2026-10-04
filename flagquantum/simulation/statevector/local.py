@@ -594,7 +594,6 @@ def _apply_cx_sequence(
             reverse_target_masks=reverse_target_masks,
             n_wires=circuit.n_wires,
         )
-
     if (
         _cpu_cx_sequence_gather_enabled()
         and len(step.controls) >= _CX_SEQUENCE_GATHER_MINIMUM_LENGTH
@@ -602,7 +601,6 @@ def _apply_cx_sequence(
         return _apply_cx_sequence_gather(
             state, step.controls, step.targets, circuit.n_wires
         )
-
     for control, target in zip(step.controls, step.targets, strict=True):
         state = _apply_cx_permutation(state, (control, target), circuit.n_wires)
     return state
