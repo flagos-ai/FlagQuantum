@@ -38,6 +38,39 @@ reduction is real. A run whose product is the identity is not re-spelled but
 deleted, so this decline does not apply to it even when its opcodes spell one
 pair; `_declines_vocabulary` states why and what that reaches.
 
+**A declared target basis cannot be served here, and the reason is arithmetic.**
+`Optimize1qGatesDecomposition` re-synthesizes each run straight into the target's
+basis and folds the leftover phase into `dag.global_phase`. A pass here cannot do
+that, and no amount of synthesis would let it: the determinant of a word over a
+target's arity-1 gates is the product of its factors' determinants, so a word over
+`{rz, sx, x}` — the three arity-1 gates of the `ibm-rz-sx-cx` snapshot — carries a
+determinant whose argument lies in `{0, pi/2, pi, 3*pi/2}` degrees, while a run
+containing `t`, `tdg`, `phase`, `u1`, or `u3` carries one outside that set. Such a
+run has *no* exact word over that basis at any length. Measured over 4000 seeded
+mixed runs drawn from all 18 declared arity-1 opcodes, a word that agrees only up
+to a global phase exists for every run and is three gates shorter on mean, while
+one that agrees entry for entry exists for 84 to 425 of them depending on the
+pair. The gap between those two columns is exactly the phase the IR has nowhere to
+put, which `benchmarks/compiler_one_qubit_decomposition.py` measures per basis and
+pins in `tests/benchmark_contract/test_compiler_one_qubit_decomposition.py`.
+
+That obstruction is already realized downstream, where `native_gate_legalization`
+reaches a target basis through `one_qubit_synthesis`: its result is documented as
+equal to the source up to one global phase, so it drops a phase the IR cannot
+record. The smallest witness is two instructions — `h` then the basis's entangler
+— and on `ibm-rz-sx-cx` the legalized statevector is the source's multiplied by
+`exp(-i*pi/4)`, an amplitude gap of `0.541` that no fold of many gates could be
+blamed for. Over 80 seeded entangled programs per basis, 77 or 78 of them shift
+by a phase that is neither `1` nor `-1`. A global phase is unobservable, so no
+measurement outcome changes; but this repository's own evidence instruments
+compare statevectors directly, and the exactness policy of this module exists
+precisely because that comparison is the acceptance test. The prerequisite is a
+global-phase field on the program, which `flagquantum/core/ir.py` does not have and
+which is a protected path. `docs/api-changes/FQ-IR-GLOBAL-PHASE-20261006.md`
+records the proposal for it; until it lands, this pass's vocabulary is `u3`,
+`phase`, and `rz`, and a caller's basis is reached by `native_gate_legalization`
+after the fold rather than by the fold itself.
+
 **No trainable angle is folded.** Composition reads numeric amplitudes, and a
 trainable angle has no numeric value to read; the same reason
 `one_qubit_synthesis` refuses to select a branch on one. A run that carries any

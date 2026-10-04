@@ -31,6 +31,7 @@ from flagquantum.qec import (
     RepetitionCode,
     RotatedSurfaceCode,
     SteaneCode,
+    ancilla_bands,
     css_code_matrices,
 )
 
@@ -63,6 +64,14 @@ class _Code:
     @property
     def num_ancilla_qubits(self) -> int:
         return len(self.ancillas)
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def data_qubits(self) -> tuple[int, ...]:

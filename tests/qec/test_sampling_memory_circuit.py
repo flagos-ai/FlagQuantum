@@ -45,7 +45,7 @@ from flagquantum.qec import (
     sample_memory_circuit,
 )
 from flagquantum.qec.circuit import MeasurementRef
-from flagquantum.qec.codes import CodeCheck
+from flagquantum.qec.codes import CodeCheck, ancilla_bands
 from flagquantum.qec.dem_construction import _check_rate_order
 from flagquantum.qec.pauli import Pauli
 from flagquantum.qec.sampling import _measurement_plan, _noise_locations, _noisy_program
@@ -736,6 +736,14 @@ class _OrphanAncilla:
     @property
     def num_ancilla_qubits(self) -> int:
         return self.inner.num_ancilla_qubits + 1
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def data_qubits(self) -> tuple[int, ...]:

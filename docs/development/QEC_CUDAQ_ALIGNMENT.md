@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Two families declared and both now feed the matrix route, but no named matrix record, no X-type logical readout, no Steane/colour/qLDPC. |
+| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name and each reporting its X-type and Z-type ancilla bands, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -76,6 +76,95 @@ name a symbol that resolves and may not sit on a matrix row that says
 argument for calling it aligned; the argument is in the sections below, where
 each row states what it closed and what it did not, and a row that still has a
 half to name stays `partial`.
+
+**What `qec_code_record` closed, and what it did not.** The row's target is a
+declared code record that yields its distance, its data wires, its ancilla
+wires, its checks, its stabilizers and its logical observables, so that a
+memory circuit and its layouts are derived from the code. Three records carry
+that much already — `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` —
+and what this round read is the rest of what the upstream record declares.
+
+The gap was an accessor. `cudaq::qec::code` declares `get_num_data_qubits`,
+`get_num_ancilla_qubits`, `get_num_ancilla_x_qubits` and
+`get_num_ancilla_z_qubits` as pure virtuals, and the last two are not decoration:
+a syndrome-extraction round visits the ancillas of one basis, and a detector band
+is the set of handles one basis produces, so a record that reports only a total
+cannot say which ancillas a round has to visit. `StabilizerCode` declared only
+the total, so a consumer typed against the protocol could not ask. It now
+declares `num_ancilla_x_qubits` and `num_ancilla_z_qubits` beside
+`num_ancilla_qubits`, on the protocol rather than on the three classes, because a
+member the consumers read has to be on the protocol or the next record is free to
+omit it and still be accepted.
+
+The two bands are derived rather than declared, and that is the decision worth
+recording. A check's ancilla measures exactly the basis the stabilizer's type
+fixes, so the split *is* a function of the checks; a record that stated both
+could state two answers, and every consumer reads one of them, so the drift would
+be silent. `flagquantum.qec.ancilla_bands` reads the split off the checks once,
+the three records take their two counts from it, and
+`build_memory_circuit` compares the stated counts against the derived bands and
+refuses a record where they disagree. That is the fail-closed convention applied
+to a quantity that is present rather than missing: the two statements are
+compared instead of the derived one being trusted and the stated one ignored. An
+ancilla that measures neither basis — a flag, or an idle ancilla — is in neither
+band, so the two bands are deliberately not a partition of the declared ancillas
+and the comparison is against the bands rather than against the total.
+
+The factory half of the upstream record is the other thing that landed. Upstream
+reaches a code two ways: `get_code(name, options)` builds one by name and
+`get_available_codes()` lists the names. `flagquantum.qec.get_code(name,
+**options)`, `flagquantum.qec.code_names()` and
+`flagquantum.qec.register_code(name, *, replace=False)` are the same three
+positions, and they are deliberately the same shape as this repository's decoder
+registry rather than a second idiom in the same package: registration refuses a
+duplicate name unless `replace=True`, an unregistered name raises and lists the
+registered ones, and the members a record must carry are read off the
+`StabilizerCode` protocol rather than restated, so a class that cannot answer one
+of them is refused where it enters the registry with the missing members named.
+What is registered is the class and not an instance, because the options are the
+caller's, and the options are the record's own fields, checked in the factory so
+an unknown field is a refusal that lists the ones the record takes rather than a
+traceback from inside the constructor.
+
+What did not land is upstream's second overload, `get_code(name, stabilizers,
+options)`, and it was left out rather than overlooked. A record built from an
+arbitrary stabilizer list has to decide each check's ancilla and its coupling
+direction on the caller's behalf, and a local `CodeCheck` states one ancilla and
+one CNOT direction fixed by the check's type — so a mixed X-and-Z stabilizer is
+refused rather than given a second ancilla, and the qLDPC, Reichardt and Floquet
+families upstream serves with that overload have no route in. A caller holding a
+parity-check matrix is already served by `DetectorErrorModel.from_code_matrices`,
+which reads the matrix rather than inventing a gadget for it, and that is the
+reason the omission is a gap in the code record and not a gap in the matrix
+route.
+
+The colour code is withdrawn from this row rather than kept as its gap, and
+reading upstream's headers is what settled it. There is no concrete code type
+there at all — only the abstract `cudaq::qec::code`, the `css_code_matrices` and
+`css_noise_params` records, an `operation` enum that includes `stabilizer_round`,
+and the factory whose own list is Steane, repetition and surface. This repository
+carries one code from each of those three families, so the row is not short a
+family. A search for a colour code upstream returns nothing, and a construction
+was attempted here before that was known: the honeycomb lattice as the dual of
+the triangular one gives a CSS code at every patch size tried, and it encodes
+many qubits at every one of them rather than the single one a colour code needs,
+so no distance was ever obtained. The absence is therefore recorded as an absence
+— `symbol:flagquantum.qec.color_code` — and not as work this row is waiting on.
+
+What stays open inside the row is the shape of the record rather than its
+declarations. Upstream's code *is* the map from an operation to the kernel that
+performs it: `get_operation<T>(op)`, `contains_operation(op)` and the protected
+`operation_encodings` map, over an `operation` enum that reaches from `x`, `y`,
+`z` and `cx` to `stabilizer_round`, `prep0`, `prep1`, `prepp` and `prepm`; and
+`get_stabilizer_schedule_x()/z()` carries a timestep-indexed interaction order,
+where entry 0 means no support and entry *k* means an interaction at timestep
+*k*, for hook-error-aware measurement orders. Here a record declares its checks
+and one source is built from them, so a code carrying its own preparation,
+measurement or logical-operation kernels, or its own schedule, would need a
+second shape; `symbol:flagquantum.qec.operation_encodings` states that absence.
+Note that this one is a decision about this repository's circuit model rather
+than a small addition, which is why the row stays `partial` with the gap named
+rather than being closed by widening the record.
 
 **What `qec_decoder_family` closed, and what it did not.** The row's order was
 "decoding graph with `log((1-p)/p)` edge weights and observable labels, a
@@ -322,9 +411,8 @@ lives: upstream folds it into the argument its matrix entry point takes, while
 here it is a standalone frozen dataclass whose vectors are resolved against a
 count the reader supplies rather than against a noise object that knows it. That
 limit is carried by `dem_code_capacity_noise`, which stays `reshaped`. The record
-set is the other thing the code-row target implies and does not yet have: a
-colour code has no record even though the CSS shape now admits one, which is the
-absence `symbol:flagquantum.qec.color_code` states.
+set is the other thing the code-row target implies, and what upstream's own
+headers say it contains is in the `qec_code_record` subsection below.
 
 **What `qec_dem_matrices_and_rates` closed.** This row is a data-shape row
 rather than a capability of its own, and it was the one that kept moving because

@@ -13,7 +13,7 @@ from flagquantum.qec.circuit import (
     MeasurementRef,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode, ancilla_bands
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
     _forced_signature,
@@ -109,6 +109,14 @@ class _IndexSwappedCode:
     @property
     def num_ancilla_qubits(self) -> int:
         return 2
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def data_qubits(self) -> tuple[int, ...]:
@@ -241,6 +249,14 @@ class _ThreeCheckCode:
         return 3
 
     @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
     def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
@@ -298,6 +314,14 @@ class _TwoObservableCode:
     @property
     def num_ancilla_qubits(self) -> int:
         return 2
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def data_qubits(self) -> tuple[int, ...]:
@@ -394,6 +418,14 @@ class _SpareAncillaCode(_TwoObservableCode):
     @property
     def num_ancilla_qubits(self) -> int:
         return 3
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def ancilla_qubits(self) -> tuple[int, ...]:
@@ -546,6 +578,14 @@ class _RepeatedAncillaCode(_TwoObservableCode):
     @property
     def num_ancilla_qubits(self) -> int:
         return 1
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
 
     @property
     def ancilla_qubits(self) -> tuple[int, ...]:
