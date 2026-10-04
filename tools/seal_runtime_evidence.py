@@ -109,7 +109,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    preflight_errors = environment_errors(world_size=args.world_size)
+    preflight_errors = environment_errors(
+        world_size=args.world_size, seal_destination=args.output
+    )
     if preflight_errors:
         raise SystemExit(
             "release evidence preflight failed: " + "; ".join(preflight_errors)
