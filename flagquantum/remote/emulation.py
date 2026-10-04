@@ -85,6 +85,11 @@ from ..core.target_capabilities import (
     TargetIdentity,
 )
 from ..deployment.cloud import CloudBackendProfile
+from ..ecosystem.extensions.sdk import Extension
+from ..ecosystem.extensions.target_sdk import (
+    TargetDescription,
+    check_target_description,
+)
 from ..errors import ExecutionError
 from ..noise import NoiseModel
 from ..noise.device_profile import DeviceNoiseProfile
@@ -110,6 +115,10 @@ _EMULATED_RESULT_FORMATS = ("counts", "samples")
 #: Request kinds this entry point can execute. The static text emission profile
 #: refuses every other measurement request, so the refusal is stated here first.
 _SUPPORTED_REQUEST_KINDS = frozenset({"samples", "counts"})
+#: Limits an emulation applies when the declaration states none of its own, so a
+#: declared target is evaluated against the limits it declared and nothing else.
+_EMULATED_DEFAULT_MAXIMUM_SHOTS = 1_000_000
+_EMULATED_DEFAULT_MAXIMUM_OPERATIONS = 4096
 #: Representation that truncates the state, so an execution record can say so.
 _APPROXIMATE_REPRESENTATION = "mps"
 #: Where a noisy record's channels came from. A caller's model and a device
@@ -358,6 +367,157 @@ def _select_emission_profile(
     raise TargetEmulationError(
         f"target {target.provider}:{target.name} declares neither OpenQASM nor "
         "QCIS emission, so there is no text profile to emulate"
+    )
+
+
+def _select_declared_device(
+    descriptions: tuple[TargetDescription, ...], *, device_id: str | None
+) -> TargetDescription:
+    """Return the one device an emulation is asked for, or refuse the request.
+
+    A provider listing may hold several devices, and emulating the wrong one
+    produces a plausible record for the wrong machine, so an ambiguous request
+    is refused instead of resolved by taking the first declaration.
+    """
+
+    if device_id is None:
+        if len(descriptions) != 1:
+            raise TargetEmulationError(
+                f"declared extension offers {len(descriptions)} devices "
+                f"({', '.join(item.device_id for item in descriptions)}); pass "
+                "device_id to choose the one to emulate"
+            )
+        return descriptions[0]
+    if not isinstance(device_id, str) or not device_id.strip():
+        raise TypeError("device_id must be a non-empty string or None")
+    wanted = device_id.strip()
+    for description in descriptions:
+        if description.device_id == wanted:
+            return description
+    raise TargetEmulationError(
+        f"declared extension offers no device {wanted!r}; it declares: "
+        + ", ".join(item.device_id for item in descriptions)
+    )
+
+
+def _declared_emission_profile(emission_profile: str | None) -> str:
+    """Return the one text profile this emulation will emit for a declaration.
+
+    A declaration states no emission dialect: ``artifacts.profiles`` is an open
+    collection of the profiles a device publishes, and reading a text dialect out
+    of it would turn a noise profile's name into a syntax claim. The dialect is
+    therefore the caller's request, defaulting to the same profile ``emulate``
+    defaults to.
+    """
+
+    if emission_profile is None:
+        return "openqasm-3.0"
+    if not isinstance(emission_profile, str) or not emission_profile.strip():
+        raise TypeError("emission_profile must be a non-empty string or None")
+    selected = emission_profile.strip().lower()
+    profile = EMISSION_PROFILES.get(selected)
+    if profile is None:
+        raise TargetEmulationError(
+            f"unsupported target emission profile {emission_profile!r}; "
+            "expected one of: " + ", ".join(sorted(EMISSION_PROFILES))
+        )
+    if profile.backend not in {"qasm", "qcis"}:
+        raise TargetEmulationError(
+            f"emission profile {selected!r} is not a text profile this local "
+            "emulation can execute; expected one of: "
+            + ", ".join(
+                name
+                for name, item in sorted(EMISSION_PROFILES.items())
+                if item.backend in {"qasm", "qcis"}
+            )
+        )
+    return selected
+
+
+def _require_declared_request_kinds(description: TargetDescription) -> None:
+    """Refuse a declaration whose result formats this emulation cannot honour.
+
+    A declaration that states no result format has not narrowed anything; one
+    that states formats, none of which the local text emission returns, has
+    declared a device this entry point cannot honestly execute for.
+    """
+
+    declared = tuple(
+        str(item) for item in description.declared_facts.get("measurements.results", ())
+    )
+    if declared and not _SUPPORTED_REQUEST_KINDS.intersection(declared):
+        raise TargetEmulationError(
+            f"declared target {description.device_id!r} declares measurement "
+            f"results {', '.join(declared)}, none of which this local emulation "
+            "returns (" + ", ".join(sorted(_SUPPORTED_REQUEST_KINDS)) + ")"
+        )
+
+
+def _declared_limits(description: TargetDescription) -> tuple[int, int]:
+    """Return the declaration's own shot and operation limits.
+
+    A limit the provider stated is the limit the emulation enforces, so a
+    declaration is not silently evaluated against this module's defaults. A
+    provider may state a limit as a declaration or as an observation of the
+    device it is describing, and both are its own statement about that device, so
+    the declaration is read first and the observation only fills what it omits.
+    """
+
+    maximum_shots = description.declared_facts.get("limits.maximum_shots")
+    if maximum_shots is None:
+        maximum_shots = description.observed_facts.get("limits.maximum_shots")
+    maximum_operations = description.declared_facts.get(
+        "limits.maximum_program_operations"
+    )
+    if maximum_operations is None:
+        maximum_operations = description.observed_facts.get(
+            "limits.maximum_program_operations"
+        )
+    return (
+        (
+            _EMULATED_DEFAULT_MAXIMUM_SHOTS
+            if maximum_shots is None
+            else int(maximum_shots)
+        ),
+        (
+            _EMULATED_DEFAULT_MAXIMUM_OPERATIONS
+            if maximum_operations is None
+            else int(maximum_operations)
+        ),
+    )
+
+
+def _declared_target_profile(
+    description: TargetDescription, *, emission_profile: str | None
+) -> CloudBackendProfile:
+    """Turn one validated device declaration into the profile emulation takes.
+
+    Only the facts that shape compilation and execution cross over: capacity,
+    native gates, connectivity, the program and shot limits, the emission
+    profile, and the result formats. The remaining declared facts stay on the
+    declaration, and the emulation's snapshot is the emulator's own, because the
+    record must not pass for a snapshot of the device that supplied them.
+    """
+
+    if not isinstance(description, TargetDescription):
+        raise TypeError("description must be a TargetDescription")
+    selected = _declared_emission_profile(emission_profile)
+    _require_declared_request_kinds(description)
+    return CloudBackendProfile(
+        provider=description.provider,
+        name=description.device_id,
+        n_qubits=description.n_qubits,
+        basis_gates=description.native_gates,
+        coupling_map=CouplingMap(description.n_qubits, description.coupling_edges),
+        supports_openqasm=EMISSION_PROFILES[selected].backend == "qasm",
+        supports_qcis=EMISSION_PROFILES[selected].backend == "qcis",
+        metadata={
+            "declared_target_class": description.target_class,
+            "declared_device_kind": description.device_kind,
+            "declared_target_revision": description.target_revision,
+            "declared_environment_id": description.environment_id,
+            "declared_provider_version": description.provider_version,
+        },
     )
 
 
@@ -791,6 +951,71 @@ def emulate(
     )
 
 
+def emulate_declared_target(
+    program: object,
+    *,
+    extension: Extension,
+    device_id: str | None = None,
+    shots: int = 1024,
+    seed: int | None = None,
+    emission_profile: str | None = None,
+    noise_model: NoiseModel | None = None,
+    device_profile: DeviceNoiseProfile | None = None,
+    routing_strategy: str = "auto",
+    initial_layout: tuple[int, ...] | None = None,
+    evaluated_at: datetime | None = None,
+    memory_limit_bytes: int | None = None,
+    allow_approximate: bool = False,
+) -> LocalTargetEmulation:
+    """Compile and run locally against a device a third party declared.
+
+    ``extension`` is the provider's own object: a device extension whose
+    declaration this call validates fail-closed, then turns into the same target
+    profile ``emulate`` already takes. The device's declared capacity, native
+    gates, connectivity, emission profile, and result formats are the target's
+    own statements, and its declared shot limit is the limit enforced here, so a
+    declaration is never silently evaluated against this module's defaults. Its
+    declared program-operation limit becomes the emulated target's own declared
+    limit, which is what the snapshot records rather than a claim about what this
+    machine accepts.
+
+    ``device_id`` selects one declaration when the extension publishes several;
+    it may be omitted only when the extension declares exactly one device, since
+    emulating a device other than the intended one would produce a plausible
+    record for the wrong machine.
+
+    Raises:
+        TargetDescriptionError: The declaration is malformed, mistyped, or
+            states a capability or fact a declaration may not state.
+        TargetEmulationError: No device matches ``device_id``, the choice is
+            ambiguous, or the declaration names neither an emittable text
+            profile nor any result format this local emulation returns.
+        ExecutionError: Compilation, topology legalization, native-gate
+            legalization, emission, or local execution refused the program.
+    """
+
+    descriptions = check_target_description(extension)
+    description = _select_declared_device(descriptions, device_id=device_id)
+    target = _declared_target_profile(description, emission_profile=emission_profile)
+    maximum_shots, maximum_operations = _declared_limits(description)
+    return emulate(
+        program,
+        target=target,
+        shots=shots,
+        seed=seed,
+        emission_profile=emission_profile,
+        noise_model=noise_model,
+        device_profile=device_profile,
+        routing_strategy=routing_strategy,
+        initial_layout=initial_layout,
+        evaluated_at=evaluated_at,
+        memory_limit_bytes=memory_limit_bytes,
+        allow_approximate=allow_approximate,
+        declared_maximum_program_operations=maximum_operations,
+        declared_maximum_shots=maximum_shots,
+    )
+
+
 __all__ = (
     "EMULATED_TARGET_ADAPTER_VERSION",
     "EMULATED_TARGET_CLASS",
@@ -805,4 +1030,5 @@ __all__ = (
     "TargetCompilationDiagnostic",
     "TargetEmulationError",
     "emulate",
+    "emulate_declared_target",
 )

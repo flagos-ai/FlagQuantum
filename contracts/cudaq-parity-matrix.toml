@@ -907,7 +907,7 @@ reason = "Absent, and it depends on both the logical layer and the QEC decoders.
 id = "hardware_and_cloud_targets"
 title = "Hardware and cloud targets"
 cudaq_surface = ["IonQ", "Quantinuum", "IQM", "neutral atom", "photonic", "quantum control systems", "Amazon Braket", "Scaleway QaaS", "qBraid", "emulate", "_experimental.CustomTarget", "RuntimeEndpoint"]
-evidence = ["flagquantum/remote", "flagquantum/deployment", "flagquantum/ecosystem/extensions/sdk.py", "search:no third-party target registration point and no provider-neutral endpoint object"]
+evidence = ["flagquantum/remote", "flagquantum/deployment", "flagquantum/ecosystem/extensions/sdk.py", "flagquantum/ecosystem/extensions/target_sdk.py", "search:no provider-neutral runtime endpoint object anywhere under flagquantum/"]
 
 [[domains.capabilities]]
 id = "third_party_target_sdk"
@@ -915,8 +915,9 @@ cudaq = "_experimental.CustomTarget letting a third party define and register a 
 status = "partial"
 priority = "now"
 dependency_class = "none"
-reason = "Partial. A third party declares its target in an extension manifest and FlagQuantum validates the declaration fail-closed and turns it into a capability snapshot (`flagquantum/ecosystem/extensions/target_sdk.py`, restored with 8 tests). What is absent is execution through that target: a registered description is not yet a runnable backend, so a provider still cannot be added end to end without changing FlagQuantum."
-evidence = ["flagquantum/ecosystem/extensions/target_sdk.py", "tests/test_third_party_target.py", "flagquantum/remote/qpu"]
+reason = "Partial. A third party declares its device in an extension manifest, FlagQuantum validates the declaration fail-closed into a capability snapshot, and `flagquantum.remote.emulation.emulate_declared_target` turns one validated declaration into the target profile the existing emulation entry already executes: the declared capacity, native gates, connectivity, result formats, and shot and operation limits are the device's own statements, and the compiled program is routed, legalized, emitted, re-parsed, and run locally with the caller's noise model or the device's own calibration. What is absent is a run on the provider's own hardware: execution through a declaration is local emulation of the declared device, and reaching the device itself still needs a provider adapter under the existing provider contract."
+baseline_gap = "Execution through a declaration is local emulation of the declared device, not a run on it. The record names the emulator rather than the device, and no hardware evidence exists: only the local CPU's device kind and precision are observed, while capacity, gates, connectivity, and limits stay the provider's declaration."
+evidence = ["flagquantum/ecosystem/extensions/target_sdk.py", "flagquantum/remote/emulation.py", "tests/test_third_party_target.py", "flagquantum/remote/qpu"]
 
 [[domains.capabilities]]
 id = "runtime_endpoint"

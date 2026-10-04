@@ -98,6 +98,37 @@ and [`contracts/backend-execution-admission-v1-candidate.json`](../../contracts/
 `examples/extensions/reference_backend_extension.py` is a complete reference
 implementation that imports only the extension namespace.
 
+## Target declaration and local execution
+
+A provider whose extension kind is `device` declares the machines it offers by
+returning their descriptions from `devices()`. `flagquantum.ecosystem.extensions.target_sdk`
+turns one declaration into a capability snapshot fail-closed: the declared capacity
+and native gates are checked against the Core capability vocabulary and the operator
+schemas, connectivity is normalised to undirected edges a `CouplingMap` can hold,
+and facts a provider may not state about its own product are rejected. A declaration
+is data, so nothing is registered and no FlagQuantum module changes to accept a device.
+
+`flagquantum.remote.emulation.emulate_declared_target(program, *, extension, ...)`
+is the one call that goes from that declaration to a result. It validates the
+declaration, selects the device, builds the same target profile `emulate` takes, and
+then compiles and runs locally: the provider's capacity, gate set, connectivity,
+result formats, and shot and operation limits are the device's own statements, and
+the compilation evidence covers routing, native-gate legalization, scheduling, and
+the emitted payload. The emission dialect is the caller's request rather than a fact
+read out of the declaration, because `artifacts.profiles` is an open collection of
+the profiles a device publishes and not a syntax claim.
+
+An extension that offers several devices is refused unless the caller names one, and
+a device that declares no result format this local emulation returns is refused
+before anything compiles. The execution is local emulation of the declared device
+rather than a run on it, so the record names the emulator and the caller should read
+`diagnostic` and the declared facts as the target's statements, not as observations
+of the hardware.
+
+See `examples/extensions/reference_target_extension.py` for the declaration and
+`examples/extensions/declared_target_execution.py` for the run. `tests/test_third_party_target.py`
+is the scenario suite covering both.
+
 ## Compiler pass admission
 
 A declared `compiler_pass` extension is admitted the same way, through

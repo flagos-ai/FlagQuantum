@@ -35,6 +35,10 @@ These examples do not use that alias:
   — a third-party target declaration that imports the published extension
   namespace and the Core capability vocabulary that describes evidence. It builds
   no circuit, so it needs no root alias either.
+  [`extensions/declared_target_execution.py`](extensions/declared_target_execution.py)
+  is the run that follows it: one call takes that declaration and locally executes a
+  circuit the declared device can actually run, so a provider sees the whole path
+  end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
 - [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
