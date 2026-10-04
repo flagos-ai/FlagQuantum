@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 275
+measured_private = 226
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -46,8 +46,8 @@ private_note = "private code keeps `wire` names; it is measured so the exclusion
 root_wire = "qubit"
 root_wires = "qubits"
 variadic_prefix_preserved = true
-forbidden = ["qubit_indices", "qubit_ids", "qubit_labels", "logical_qubits"]
-forbidden_note = "Circuit already says `qubits`, compose already says `qubits`; a second spelling would turn one rename into two vocabularies"
+forbidden = ["qubit_indices", "qubit_ids", "qubit_labels"]
+forbidden_note = "Circuit already says `qubits` and compose already says `qubits`, so a synonym for that list would turn one rename into two vocabularies; `logical_qubits` left the list when the substitution rule reached `logical_wires`, because an instruction's pre-routing operand list is a different fact from the circuit's qubit list"
 
 [exclusions]
 # Values the gate must accept even though they contain `wire`. Each is an
@@ -75,13 +75,13 @@ public_attribute_persisted = 22
 public_attribute_reproduce = "python -c \"from tools.census_wire_vocabulary import attribute_census as f; c = f(); print(len(c.ledgered), len(c.excluded))\""
 public_attribute_owner = "WQ-2"
 public_attribute_condition = "ledgered: [attribute_ledger] and [attribute_exclusions] are reconciled against the census on every run, so the split cannot drift and a name cannot be renamed while it is still a payload key"
-public_attribute_aliased = 3
+public_attribute_aliased = 5
 public_attribute_alias_condition = "aliases: a name here is renamed and still reachable through a deprecated forwarder until [attribute_aliases] removal_version; it is counted as remaining, so a slice cannot bank an alias as finished work"
 public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
 public_definition_owner = "WQ-2"
 public_definition_condition = "ledgered: every module-level public name is reconciled against [definition_ledger] on every run"
-message_strings = 1291
+message_strings = 634
 message_strings_reproduce = "python -c \"from tools.census_wire_vocabulary import message_strings as f; print(len(f()))\""
 message_strings_owner = "WQ-8"
 message_strings_condition = "message strings are reported by the census but not ledgered: a string-literal scan cannot separate a serialized key from a refusal sentence, and a ledger built on that heuristic would fail on legitimate rewording"
@@ -745,6 +745,61 @@ sites = [
     "flagquantum/simulation/tensor_network/local.py::run_local_tensor_network::dense_observable_wires",
     "flagquantum/simulation/tensor_network/state.py::TensorNetworkState.__init__::dense_observable_wires",
     "flagquantum/simulation/tensor_network/state.py::TensorNetworkState.expectation_z::wires",
+    "flagquantum/benchmarking/batched_statevector_corpus.py::build_parameter_batch::n_wires",
+    "flagquantum/benchmarking/batched_statevector_corpus.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/batched_statevector_corpus.py::run_case::n_wires",
+    "flagquantum/benchmarking/batched_statevector_memory.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/differentiable_simulator_corpus.py::build_workload::n_wires",
+    "flagquantum/benchmarking/differentiable_simulator_corpus.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/differentiable_simulator_corpus.py::run_case::n_wires",
+    "flagquantum/benchmarking/external_simulator_compare.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/external_simulator_compare.py::run_case::n_wires",
+    "flagquantum/benchmarking/simulator_compare.py::build_workload::n_wires",
+    "flagquantum/benchmarking/simulator_compare.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/simulator_compare.py::run_case::n_wires",
+    "flagquantum/benchmarking/simulator_workload_corpus.py::build_workload::n_wires",
+    "flagquantum/benchmarking/simulator_workload_corpus.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/simulator_workload_corpus.py::run_case::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_cx_chain::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_diagonal_chain::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_marginal_circuit::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_mixed_chain::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_rotation_chain::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_two_wire_diagonal_chain::n_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::run_benchmark::marginal_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::run_benchmark::n_wires",
+    "flagquantum/benchmarking/statevector_local.py::build_workload::n_wires",
+    "flagquantum/benchmarking/statevector_local.py::run_benchmark::n_wires",
+    "flagquantum/compiler/directed_topology.py::DirectedCouplingMap.__init__::n_wires",
+    "flagquantum/compiler/layout.py::Layout.map_wires::wires",
+    "flagquantum/compiler/layout.py::remove_layout_restore.rename::wires",
+    "flagquantum/compiler/one_qubit_synthesis.py::synthesize_one_qubit_matrix::wire",
+    "flagquantum/compiler/openqasm.py::emit_openqasm::result_wires",
+    "flagquantum/compiler/routing.py::CouplingMap.__init__::n_wires",
+    "flagquantum/compiler/routing.py::CouplingMap.line::n_wires",
+    "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
+    "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
+    "flagquantum/compiler/two_qubit_synthesis.py::synthesize_two_qubit::wires",
+    "flagquantum/deployment/cloud.py::expectation_z_from_counts::wires",
+    "flagquantum/deployment/routing_evidence.py::build_deployment_routing_evidence::n_wires",
+    "flagquantum/deployment/routing_evidence.py::validate_deployment_routing_plan::n_wires",
+    "flagquantum/kernels/triton/hva_forward_tangent.py::heisenberg_hva_forward_tangents::n_wires",
+    "flagquantum/kernels/triton/statevector_gates.py::cx_sequence::n_wires",
+    "flagquantum/kernels/triton/statevector_gates.py::ry_rz_pair::n_wires",
+    "flagquantum/kernels/triton/statevector_gates.py::ry_rz_pair::wire",
+    "flagquantum/kernels/triton/statevector_gates.py::single_qubit_matrix::n_wires",
+    "flagquantum/kernels/triton/statevector_gates.py::single_qubit_matrix::wire",
+    "flagquantum/noise/device_profile.py::DeviceNoiseProfile.calibration_for::wire",
+    "flagquantum/noise/device_profile.py::DeviceNoiseProfile.duration_for::wires",
+    "flagquantum/noise/model.py::NoiseModel.add::wires",
+    "flagquantum/noise/model.py::NoiseModel.add_correlated_readout::wires",
+    "flagquantum/noise/model.py::NoiseModel.add_readout::wires",
+    "flagquantum/noise/model.py::NoiseModel.apply_readout_probabilities::n_wires",
+    "flagquantum/remote/qpu/azure.py::AzureQuantumProvider.__init__::n_wires",
+    "flagquantum/remote/qpu/azure.py::azure_backend_profile::n_wires",
+    "flagquantum/remote/qpu/contracts.py::QuantumProvider.discover_backends::n_wires",
+    "flagquantum/remote/qpu/execution.py::counts_result::n_wires",
+    "flagquantum/remote/qpu/http.py::HttpQuantumProvider.__init__::default_n_wires",
 ]
 
 [[slices]]
@@ -1461,6 +1516,12 @@ replacement = "qubits"
 [[attribute_aliases.sites]]
 site = "flagquantum/runtime/result.py::MeasurementResult::wires"
 replacement = "qubits"
+[[attribute_aliases.sites]]
+site = "flagquantum/compiler/openqasm_import.py::OpenQASMImport::n_wires"
+replacement = "n_qubits"
+[[attribute_aliases.sites]]
+site = "flagquantum/deployment/cloud.py::CloudBackendProfile::n_wires"
+replacement = "n_qubits"
 
 
 # The third door: a module-level public function or class whose own name says
@@ -1772,6 +1833,67 @@ declaration = "instance"
 site = "flagquantum/simulation/tensor_network/state.py::TensorNetworkState::n_wires"
 replacement = "n_qubits"
 declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/directed_topology.py::DirectedCouplingMap::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/layout.py::Layout::map_wires"
+replacement = "map_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/layout.py::Layout::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/physical_plan.py::MappingTransition::physical_wires"
+replacement = "physical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/physical_plan.py::PhysicalCircuitPlan::coupling_n_wires"
+replacement = "coupling_n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/physical_plan.py::PhysicalCircuitPlan::logical_wire_count"
+replacement = "logical_qubit_count"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/physical_plan.py::PhysicalInstructionRecord::logical_wires"
+replacement = "logical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/physical_plan.py::PhysicalInstructionRecord::physical_wires"
+replacement = "physical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/qcis.py::QCISInstruction::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/routing.py::CouplingMap::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/compiler/topology_legalization.py::TopologyLegalizationResult::logical_wire_count"
+replacement = "logical_qubit_count"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/deployment/cloud.py::DeploymentPackage::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/noise/channels.py::KrausChannel::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/noise/model.py::CorrelatedReadoutError::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/remote/qpu/http.py::HttpQuantumProvider::default_n_wires"
+replacement = "default_n_qubits"
+declaration = "instance"
+
 [definition_ledger]
 measured_canonical = 10
 
@@ -1838,6 +1960,8 @@ sites = [
     "flagquantum/simulation/native_cpu/rotation.py::native_cpu_forward_rotation_tile_wires",
     "flagquantum/simulation/pauli.py::infer_n_wires_from_dense_state",
     "flagquantum/simulation/jax/statevector/kernels.py::jax_basis_indices_for_wires",
+    "flagquantum/benchmarking/statevector_cpu_paths.py::build_two_wire_diagonal_chain",
+    "flagquantum/kernels/triton/mps_wire_probabilities.py::fused_mps_wire_probabilities",
 ]
 
 [verification]
@@ -1852,5 +1976,6 @@ executor_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-EXECUTORS-2026100
 algorithms_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md"
 simulation_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-SIMULATION-CPU-20261009.md"
 accelerator_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ACCELERATORS-20261010.md"
+compiler_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

@@ -153,7 +153,7 @@ def _polar_angle(value: Any) -> float | None:
 def _pulse_leaf(
     opcode: str,
     *,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     metadata: Mapping[str, Any],
     angle: Any,
 ) -> Instruction | None:
@@ -161,11 +161,11 @@ def _pulse_leaf(
     schema = get_operator_schema(opcode)
     parameters = schema.parameters if schema is not None else ()
     if not parameters:
-        return Instruction(opcode, wires, metadata=metadata)
+        return Instruction(opcode, qubits, metadata=metadata)
     if _is_zero(angle):
         return None
     return Instruction(
-        opcode, wires, params=dict.fromkeys(parameters, angle), metadata=metadata
+        opcode, qubits, params=dict.fromkeys(parameters, angle), metadata=metadata
     )
 
 
@@ -311,7 +311,7 @@ def _is_supported_basis(*, z_rotation: str, pulse_opcode: str) -> bool:
 def _emit_leaves(
     leaves: tuple[tuple[str, Any], ...],
     *,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     metadata: Mapping[str, Any],
     z_rotation: str,
     pulse_opcode: str,
@@ -325,14 +325,14 @@ def _emit_leaves(
     for leaf_opcode, angle in leaves:
         if leaf_opcode == pulse_opcode:
             pulse = _pulse_leaf(
-                leaf_opcode, wires=wires, metadata=metadata, angle=_HALF_PI
+                leaf_opcode, qubits=qubits, metadata=metadata, angle=_HALF_PI
             )
             if pulse is not None:
                 replacement.append(pulse)
         elif not _is_zero(angle):
             replacement.append(
                 Instruction(
-                    z_rotation, wires, params={"theta": angle}, metadata=metadata
+                    z_rotation, qubits, params={"theta": angle}, metadata=metadata
                 )
             )
     return tuple(replacement)
@@ -348,7 +348,7 @@ def synthesize_one_qubit(
 
     `z_rotation` is the z-rotation opcode the target publishes and `pulse_opcode`
     the opcode it publishes for a pi/2 rotation about x. None is returned when
-    nothing here applies: a multi-wire or non-unitary instruction, an instruction
+    nothing here applies: a multi-qubit or non-unitary instruction, an instruction
     the operator schema does not describe, or an instruction that is already that
     same z-rotation, whose shortest form only the caller's native gate set can
     choose. None is also returned when `z_rotation` or `pulse_opcode` is not a
@@ -370,7 +370,7 @@ def synthesize_one_qubit(
         angles = source(instruction)
     return _emit_leaves(
         _leaves(*angles, z_rotation=z_rotation, pulse_opcode=pulse_opcode),
-        wires=instruction.wires,
+        qubits=instruction.wires,
         metadata=instruction.metadata,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,
@@ -380,7 +380,7 @@ def synthesize_one_qubit(
 def synthesize_one_qubit_matrix(
     matrix: Any,
     *,
-    wire: int,
+    qubit: int,
     z_rotation: str,
     pulse_opcode: str = "sx",
     metadata: Mapping[str, Any] | None = None,
@@ -398,19 +398,19 @@ def synthesize_one_qubit_matrix(
 
     Returns None when `z_rotation` or `pulse_opcode` is not a basis this module
     can synthesize over. Raises ValueError when `matrix` is not a 2x2 unitary or
-    `wire` is not a non-negative integer. An empty tuple, for the identity, is a
+    `qubit` is not a non-negative integer. An empty tuple, for the identity, is a
     correct answer.
     """
     if not _is_supported_basis(z_rotation=z_rotation, pulse_opcode=pulse_opcode):
         return None
-    if isinstance(wire, bool) or not isinstance(wire, int) or wire < 0:
-        raise ValueError("wire must be a non-negative integer")
+    if isinstance(qubit, bool) or not isinstance(qubit, int) or qubit < 0:
+        raise ValueError("qubit must be a non-negative integer")
     target = _as_complex_matrix(matrix, 2, what="matrix")
     if not _is_unitary(target):
         raise ValueError("matrix must be a 2x2 unitary")
     return _emit_leaves(
         _leaves(*_zyz_angles(target), z_rotation=z_rotation, pulse_opcode=pulse_opcode),
-        wires=(wire,),
+        qubits=(qubit,),
         metadata={} if metadata is None else metadata,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,

@@ -18,10 +18,10 @@ sequential dense-matrix application, which itself calls ``_apply_matrix``. It
 therefore detects fusion, routing, permutation, and composition errors, but not
 a defect inside ``_apply_matrix``. For the marginal case the reference
 re-simulates the program and reduces the probabilities of that state over the
-complement of the requested wires, so the reported ratio spans the whole program
+complement of the requested qubits, so the reported ratio spans the whole program
 on both sides and pins the reduction semantics rather than the statevector
 kernel; statevector kernels are pinned by the other cases. That reference and
-the shipped marginal now reduce a distribution the same way, so it pins the wire
+the shipped marginal now reduce a distribution the same way, so it pins the qubit
 ordering, the shape conventions and the public entry rather than the choice of
 arithmetic; the arithmetic is pinned against the parity reconstruction it
 replaced, in the unit test suite, which is also where the independent
@@ -68,9 +68,9 @@ from flagquantum.simulation.statevector.operations import (
 
 SCHEMA = "flagquantum.statevector.cpu_paths.v1"
 DEFAULT_SEED = 4417
-DEFAULT_N_WIRES = 20
+DEFAULT_N_QUBITS = 20
 DEFAULT_LAYERS = 8
-DEFAULT_MARGINAL_WIRES = 8
+DEFAULT_MARGINAL_QUBITS = 8
 STATEVECTOR_TOLERANCE = 2e-5
 MARGINAL_TOLERANCE = 1e-6
 # Gate on the standard error of the point estimate, not on the spread of the
@@ -120,7 +120,7 @@ CASES: tuple[PathCase, ...] = (
     ),
     PathCase(
         name="marginal_probabilities",
-        gate_family="joint marginal probabilities over k wires",
+        gate_family="joint marginal probabilities over k qubits",
         reference=(
             "resimulated_state_reduced_over_the_complement_of_the_requested_wires"
         ),
@@ -159,22 +159,22 @@ def cpu_kernel_switch_state() -> dict[str, dict[str, Any]]:
     return state
 
 
-def _angles(*, n_wires: int, layers: int) -> torch.Tensor:
+def _angles(*, n_qubits: int, layers: int) -> torch.Tensor:
     return torch.linspace(
         -0.37,
         0.41,
-        steps=layers * n_wires * 3,
+        steps=layers * n_qubits * 3,
         dtype=torch.float32,
-    ).reshape(layers, n_wires, 3)
+    ).reshape(layers, n_qubits, 3)
 
 
 def _normalized_initial_state(
-    *, n_wires: int, batch_size: int, seed: int
+    *, n_qubits: int, batch_size: int, seed: int
 ) -> torch.Tensor:
     generator = torch.Generator(device="cpu").manual_seed(seed)
     initial = torch.randn(
         batch_size,
-        2**n_wires,
+        2**n_qubits,
         dtype=torch.complex64,
         generator=generator,
     )
@@ -211,135 +211,135 @@ def _ir_gate_counts(circuit: fq.Circuit) -> dict[str, int]:
 
 
 def build_rotation_chain(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
-    """Non-diagonal single-qubit rotations, one per wire per layer."""
-    values = _angles(n_wires=n_wires, layers=layers)
+    """Non-diagonal single-qubit rotations, one per qubit per layer."""
+    values = _angles(n_qubits=n_qubits, layers=layers)
     circuit = fq.Circuit(
-        n_wires,
+        n_qubits,
         bsz=batch_size,
         device="cpu",
         inputs=_normalized_initial_state(
-            n_wires=n_wires, batch_size=batch_size, seed=seed
+            n_qubits=n_qubits, batch_size=batch_size, seed=seed
         ),
     )
     for layer in range(layers):
-        for wire in range(n_wires):
+        for qubit in range(n_qubits):
             if layer % 2 == 0:
-                circuit.ry(wire, values[layer, wire, 0])
+                circuit.ry(qubit, values[layer, qubit, 0])
             else:
-                circuit.rx(wire, values[layer, wire, 1])
+                circuit.rx(qubit, values[layer, qubit, 1])
     return circuit
 
 
 def build_diagonal_chain(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
-    """Diagonal single-qubit rotations, one per wire per layer."""
-    values = _angles(n_wires=n_wires, layers=layers)
+    """Diagonal single-qubit rotations, one per qubit per layer."""
+    values = _angles(n_qubits=n_qubits, layers=layers)
     circuit = fq.Circuit(
-        n_wires,
+        n_qubits,
         bsz=batch_size,
         device="cpu",
         inputs=_normalized_initial_state(
-            n_wires=n_wires, batch_size=batch_size, seed=seed
+            n_qubits=n_qubits, batch_size=batch_size, seed=seed
         ),
     )
     for layer in range(layers):
-        for wire in range(n_wires):
-            circuit.rz(wire, values[layer, wire, 2])
+        for qubit in range(n_qubits):
+            circuit.rz(qubit, values[layer, qubit, 2])
     return circuit
 
 
-def build_two_wire_diagonal_chain(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+def build_two_qubit_diagonal_chain(
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
     """``cz`` repeated on each adjacent pair, so consecutive gates fuse.
 
-    Two-qubit regions only fuse when consecutive steps share the identical wire
+    Two-qubit regions only fuse when consecutive steps share the identical qubit
     tuple, so a nearest-neighbour ladder does not fuse at all: ``(0, 1)``
     followed by ``(1, 2)`` never repeats. Repeating one pair before moving on is
-    what produces a fused two-wire region, and a product of diagonal gates is
+    what produces a fused two-qubit region, and a product of diagonal gates is
     diagonal, so this is the case that separates the diagonal kernel from the
-    dense one where the single-wire kernel cannot reach - which is why it is
+    dense one where the single-qubit kernel cannot reach - which is why it is
     here rather than left to ``diagonal_chain``.
     """
     circuit = fq.Circuit(
-        n_wires,
+        n_qubits,
         bsz=batch_size,
         device="cpu",
         inputs=_normalized_initial_state(
-            n_wires=n_wires, batch_size=batch_size, seed=seed
+            n_qubits=n_qubits, batch_size=batch_size, seed=seed
         ),
     )
-    for left in range(n_wires - 1):
+    for left in range(n_qubits - 1):
         for _ in range(layers):
             circuit.cz(left, left + 1)
     return circuit
 
 
 def build_cx_chain(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
     """A nearest-neighbour CX ladder repeated once per layer."""
     circuit = fq.Circuit(
-        n_wires,
+        n_qubits,
         bsz=batch_size,
         device="cpu",
         inputs=_normalized_initial_state(
-            n_wires=n_wires, batch_size=batch_size, seed=seed
+            n_qubits=n_qubits, batch_size=batch_size, seed=seed
         ),
     )
     for _ in range(layers):
-        for wire in range(n_wires - 1):
-            circuit.cx(wire, wire + 1)
+        for qubit in range(n_qubits - 1):
+            circuit.cx(qubit, qubit + 1)
     return circuit
 
 
 def build_mixed_chain(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
     """Rotations interleaved with a CX ladder, so fusion regions stay fragmented."""
-    values = _angles(n_wires=n_wires, layers=layers)
+    values = _angles(n_qubits=n_qubits, layers=layers)
     circuit = fq.Circuit(
-        n_wires,
+        n_qubits,
         bsz=batch_size,
         device="cpu",
         inputs=_normalized_initial_state(
-            n_wires=n_wires, batch_size=batch_size, seed=seed
+            n_qubits=n_qubits, batch_size=batch_size, seed=seed
         ),
     )
     for layer in range(layers):
-        for wire in range(n_wires):
-            circuit.ry(wire, values[layer, wire, 0])
-        for wire in range(n_wires - 1):
-            circuit.cx(wire, wire + 1)
+        for qubit in range(n_qubits):
+            circuit.ry(qubit, values[layer, qubit, 0])
+        for qubit in range(n_qubits - 1):
+            circuit.cx(qubit, qubit + 1)
     return circuit
 
 
 def build_marginal_circuit(
-    *, n_wires: int, layers: int, batch_size: int, seed: int
+    *, n_qubits: int, layers: int, batch_size: int, seed: int
 ) -> fq.Circuit:
-    """An entangled state whose joint marginals are recovered over k wires.
+    """An entangled state whose joint marginals are recovered over k qubits.
 
     The state is prepared with gates rather than an ``inputs`` tensor so that
     ``fq.run`` and ``circuit.state()`` agree; see the module docstring.
     """
-    values = _angles(n_wires=n_wires, layers=layers)
-    circuit = fq.Circuit(n_wires, bsz=batch_size, device="cpu")
+    values = _angles(n_qubits=n_qubits, layers=layers)
+    circuit = fq.Circuit(n_qubits, bsz=batch_size, device="cpu")
     for layer in range(layers):
-        for wire in range(n_wires):
-            circuit.h(wire)
-        for wire in range(n_wires - 1):
-            circuit.cx(wire, wire + 1)
-        circuit.rz(layer % n_wires, values[layer, layer % n_wires, 2])
+        for qubit in range(n_qubits):
+            circuit.h(qubit)
+        for qubit in range(n_qubits - 1):
+            circuit.cx(qubit, qubit + 1)
+        circuit.rz(layer % n_qubits, values[layer, layer % n_qubits, 2])
     return circuit
 
 
 _BUILDERS: dict[str, Callable[..., "fq.Circuit"]] = {
     "rotation_chain": build_rotation_chain,
     "diagonal_chain": build_diagonal_chain,
-    "two_wire_diagonal_chain": build_two_wire_diagonal_chain,
+    "two_wire_diagonal_chain": build_two_qubit_diagonal_chain,
     "cx_chain": build_cx_chain,
     "mixed_chain": build_mixed_chain,
     "marginal_probabilities": build_marginal_circuit,
@@ -401,8 +401,8 @@ def _measure_pair(
     same contention and the same clock state, so a slow iteration moves both
     sides. On the reference host this did *not* reduce the observed spread --
     measured coefficients of variation for the paired ratio were as large as
-    those of the candidate alone (0.02 to 0.99 at 6 wires, 0.24 to 0.44 at 20
-    wires), because the jitter here is per-call rather than drift over the run.
+    those of the candidate alone (0.02 to 0.99 at 6 qubits, 0.24 to 0.44 at 20
+    qubits), because the jitter here is per-call rather than drift over the run.
     The interleaving is kept because the pairwise ratio remains the more
     comparable quantity, and the spread it fails to cancel is handled by gating
     on the standard error instead; see ``_timing``.
@@ -442,25 +442,27 @@ def _speedup_samples(
 
 
 def _direct_marginal_probabilities(
-    state: torch.Tensor, wires: tuple[int, ...]
+    state: torch.Tensor, qubits: tuple[int, ...]
 ) -> torch.Tensor:
-    """Reduce probabilities over the complement of ``wires``, big-endian per wire.
+    """Reduce probabilities over the complement of ``qubits``, big-endian per qubit.
 
-    ``wires`` must be sorted; the surviving axes then come out in wire order,
+    ``qubits`` must be sorted; the surviving axes then come out in qubit order,
     which is the order the measurement path reports.
     """
-    n_wires = int(round(math.log2(state.shape[-1])))
+    n_qubits = int(round(math.log2(state.shape[-1])))
     probabilities = torch.abs(state) ** 2
-    unselected = tuple(index + 1 for index in range(n_wires) if index not in set(wires))
+    unselected = tuple(
+        index + 1 for index in range(n_qubits) if index not in set(qubits)
+    )
     if not unselected:
         return probabilities
-    expanded = probabilities.reshape(probabilities.shape[0], *([2] * n_wires))
+    expanded = probabilities.reshape(probabilities.shape[0], *([2] * n_qubits))
     return expanded.sum(dim=unselected).reshape(probabilities.shape[0], -1)
 
 
 def _case_arguments(
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     batch_size: int,
     seed: int,
@@ -468,7 +470,7 @@ def _case_arguments(
     iterations: int,
 ) -> dict[str, int]:
     return {
-        "n_wires": n_wires,
+        "n_wires": n_qubits,
         "layers": layers,
         "batch_size": batch_size,
         "seed": seed,
@@ -522,7 +524,7 @@ def _paired_measurement(
 def _run_statevector_case(
     case: PathCase,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     batch_size: int,
     seed: int,
@@ -530,7 +532,7 @@ def _run_statevector_case(
     iterations: int,
 ) -> dict[str, Any]:
     circuit = _BUILDERS[case.name](
-        n_wires=n_wires, layers=layers, batch_size=batch_size, seed=seed
+        n_qubits=n_qubits, layers=layers, batch_size=batch_size, seed=seed
     )
     reference = sequential_reference(circuit)
 
@@ -554,7 +556,7 @@ def _run_statevector_case(
         "reference": case.reference,
         "gate_count": len(circuit),
         "workload": {
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "batch_size": batch_size,
             "layers": layers,
             "dtype": "complex64",
@@ -578,35 +580,35 @@ def _run_statevector_case(
 def _run_marginal_case(
     case: PathCase,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     batch_size: int,
     seed: int,
     warmup: int,
     iterations: int,
-    marginal_wires: int,
+    marginal_qubits: int,
 ) -> dict[str, Any]:
     """Measure the shipped marginal request against a direct state reduction.
 
     Both sides run the whole program, so the ratio spans both the entry point and
     the reduction. The reference must re-simulate: ``circuit.state()`` is cached,
     and reading that cache made the reference a measurement of the reduction
-    alone (0.64 ms at 20 wires) against a candidate that re-ran the program,
+    alone (0.64 ms at 20 qubits) against a candidate that re-ran the program,
     which understated the candidate by the whole cost of the simulation.
 
     The reduction itself is nearly free once the state exists, and the shipped
     path now reaches the same marginal by reducing the state's own distribution
-    over the complement of the requested wires. It used to reach it through
+    over the complement of the requested qubits. It used to reach it through
     ``2**k - 1`` parity expectations, each a separate contraction over the whole
     state, which is where its time went.
     """
-    wires = tuple(range(marginal_wires))
+    qubits = tuple(range(marginal_qubits))
     circuit = _BUILDERS[case.name](
-        n_wires=n_wires, layers=layers, batch_size=batch_size, seed=seed
+        n_qubits=n_qubits, layers=layers, batch_size=batch_size, seed=seed
     )
     options = fq.ExecutionOptions(mode="statevector")
-    request = fq.probabilities(wires)
-    reference = _direct_marginal_probabilities(circuit.state(), wires)
+    request = fq.probabilities(qubits)
+    reference = _direct_marginal_probabilities(circuit.state(), qubits)
 
     def execute() -> torch.Tensor:
         result = fq.run(circuit, options=options, outputs=request)
@@ -614,7 +616,7 @@ def _run_marginal_case(
         return value
 
     def execute_reference() -> torch.Tensor:
-        return _direct_marginal_probabilities(circuit.state(refresh=True), wires)
+        return _direct_marginal_probabilities(circuit.state(refresh=True), qubits)
 
     deterministic = bool(torch.equal(execute(), execute()))
     timing, reference_timing, speedup, output, _ = _paired_measurement(
@@ -627,11 +629,11 @@ def _run_marginal_case(
         "reference": case.reference,
         "gate_count": len(circuit),
         "workload": {
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "batch_size": batch_size,
             "layers": layers,
             "dtype": "complex64",
-            "marginal_wires": marginal_wires,
+            "marginal_wires": marginal_qubits,
         },
         **timing,
         "reference_timing": reference_timing,
@@ -650,19 +652,19 @@ def _run_marginal_case(
 
 def run_benchmark(
     *,
-    n_wires: int = DEFAULT_N_WIRES,
+    n_qubits: int = DEFAULT_N_QUBITS,
     layers: int = DEFAULT_LAYERS,
     batch_size: int = 1,
     seed: int = DEFAULT_SEED,
     warmup: int = 2,
     iterations: int = 5,
     cases: Sequence[str] | None = None,
-    marginal_wires: int = DEFAULT_MARGINAL_WIRES,
+    marginal_qubits: int = DEFAULT_MARGINAL_QUBITS,
     threads: int | None = None,
 ) -> dict[str, Any]:
     """Measure every requested CPU path and return the evidence payload."""
-    if n_wires < 3:
-        raise ValueError("n_wires >= 3 required")
+    if n_qubits < 3:
+        raise ValueError("n_qubits >= 3 required")
     if layers < 1:
         raise ValueError("layers >= 1 required")
     if batch_size < 1:
@@ -671,8 +673,8 @@ def run_benchmark(
         raise ValueError("warmup must be non-negative")
     if iterations < MINIMUM_ITERATIONS:
         raise ValueError(f"iterations must be >= {MINIMUM_ITERATIONS}")
-    if marginal_wires < 1 or marginal_wires > n_wires:
-        raise ValueError("marginal_wires must be between 1 and n_wires")
+    if marginal_qubits < 1 or marginal_qubits > n_qubits:
+        raise ValueError("marginal_qubits must be between 1 and n_qubits")
     if threads is not None and threads < 1:
         raise ValueError("threads must be >= 1")
     requested = tuple(cases) if cases else tuple(case.name for case in CASES)
@@ -683,7 +685,7 @@ def run_benchmark(
         torch.set_num_threads(threads)
 
     arguments = _case_arguments(
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         layers=layers,
         batch_size=batch_size,
         seed=seed,
@@ -695,7 +697,7 @@ def run_benchmark(
         case = _CASE_BY_NAME[name]
         if case.executes_public_program:
             results.append(
-                _run_marginal_case(case, marginal_wires=marginal_wires, **arguments)
+                _run_marginal_case(case, marginal_qubits=marginal_qubits, **arguments)
             )
         else:
             results.append(_run_statevector_case(case, **arguments))
@@ -721,12 +723,12 @@ def run_benchmark(
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
         "workload": {
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "layers": layers,
             "batch_size": batch_size,
             "warmup": warmup,
             "iterations": iterations,
-            "marginal_wires": marginal_wires,
+            "marginal_wires": marginal_qubits,
             "cases": list(requested),
         },
         "execution_flags": cpu_kernel_switch_state(),
@@ -742,7 +744,7 @@ def run_benchmark(
             "host and the reference is another route in the same repository or a "
             "reduction computed from the same state. No cross-framework "
             "comparison was run, so none of these ratios is a claim about any "
-            "other library. Repeated 20-wire runs of this harness on the "
+            "other library. Repeated 20-qubit runs of this harness on the "
             "reference host produced coefficients of variation between 0.24 and "
             "0.44 for a candidate measured on its own, which is wider than some "
             "effects being tracked; each case therefore times its candidate and "
@@ -760,13 +762,13 @@ def run_benchmark(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--n-wires", type=int, default=DEFAULT_N_WIRES)
+    parser.add_argument("--n-wires", type=int, default=DEFAULT_N_QUBITS)
     parser.add_argument("--layers", type=int, default=DEFAULT_LAYERS)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--iterations", type=int, default=5)
-    parser.add_argument("--marginal-wires", type=int, default=DEFAULT_MARGINAL_WIRES)
+    parser.add_argument("--marginal-wires", type=int, default=DEFAULT_MARGINAL_QUBITS)
     parser.add_argument(
         "--cases",
         nargs="+",
@@ -781,14 +783,14 @@ def main() -> int:
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
-        n_wires=args.n_wires,
+        n_qubits=args.n_wires,
         layers=args.layers,
         batch_size=args.batch_size,
         seed=args.seed,
         warmup=args.warmup,
         iterations=args.iterations,
         cases=args.cases,
-        marginal_wires=args.marginal_wires,
+        marginal_qubits=args.marginal_wires,
         threads=args.threads,
     )
     if args.json_output is not None:

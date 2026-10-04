@@ -220,7 +220,7 @@ def test_a_matrix_entry_point_reaches_the_same_group_as_the_opcode_entry_point()
             continue
         source = Instruction(name, (0,), params=_angles_for(name))
         matrix = _unitary(source)
-        leaves = synthesize_one_qubit_matrix(matrix, wire=0, z_rotation="rz")
+        leaves = synthesize_one_qubit_matrix(matrix, qubit=0, z_rotation="rz")
         assert leaves is not None, name
         reached.append(name)
         assert {leaf.name for leaf in leaves} <= {"rz", "sx"}
@@ -234,7 +234,7 @@ def test_a_matrix_entry_point_reaches_the_same_group_as_the_opcode_entry_point()
         )
         nested = synthesize_one_qubit_matrix(
             [[complex(item) for item in row] for row in matrix.tolist()],
-            wire=0,
+            qubit=0,
             z_rotation="rz",
         )
         assert nested is not None
@@ -250,7 +250,7 @@ def test_a_matrix_entry_point_reaches_the_same_group_as_the_opcode_entry_point()
 def test_the_matrix_entry_point_accepts_an_rx_pulse_and_another_wire() -> None:
     source = Instruction("h", (3,))
     leaves = synthesize_one_qubit_matrix(
-        _unitary(source), wire=3, z_rotation="phase", pulse_opcode="rx"
+        _unitary(source), qubit=3, z_rotation="phase", pulse_opcode="rx"
     )
     assert leaves is not None
     assert {leaf.name for leaf in leaves} <= {"phase", "rx"}
@@ -265,15 +265,17 @@ def test_the_matrix_entry_point_refuses_what_it_cannot_express() -> None:
 
     identity = [[1.0, 0.0], [0.0, 1.0]]
 
-    assert synthesize_one_qubit_matrix(identity, wire=0, z_rotation="h") is None
+    assert synthesize_one_qubit_matrix(identity, qubit=0, z_rotation="h") is None
     assert (
-        synthesize_one_qubit_matrix(identity, wire=0, z_rotation="rz", pulse_opcode="h")
+        synthesize_one_qubit_matrix(
+            identity, qubit=0, z_rotation="rz", pulse_opcode="h"
+        )
         is None
     )
     # The identity and a phase-only diagonal both need no leaves at all.
-    assert synthesize_one_qubit_matrix(identity, wire=0, z_rotation="rz") == ()
+    assert synthesize_one_qubit_matrix(identity, qubit=0, z_rotation="rz") == ()
     assert (
-        synthesize_one_qubit_matrix([[1j, 0.0], [0.0, 1j]], wire=0, z_rotation="rz")
+        synthesize_one_qubit_matrix([[1j, 0.0], [0.0, 1j]], qubit=0, z_rotation="rz")
         == ()
     )
 
@@ -285,8 +287,8 @@ def test_the_matrix_entry_point_refuses_what_it_cannot_express() -> None:
         7,
     ):
         with pytest.raises(ValueError):
-            synthesize_one_qubit_matrix(bad, wire=0, z_rotation="rz")
+            synthesize_one_qubit_matrix(bad, qubit=0, z_rotation="rz")
 
     for wire in (-1, 1.5, True):
         with pytest.raises(ValueError):
-            synthesize_one_qubit_matrix(identity, wire=wire, z_rotation="rz")
+            synthesize_one_qubit_matrix(identity, qubit=wire, z_rotation="rz")

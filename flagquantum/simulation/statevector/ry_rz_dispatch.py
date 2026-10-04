@@ -61,8 +61,8 @@ def _apply_cataloged_ry_rz_pair(
         state,
         ry_angles,
         rz_angles,
-        wire=wire,
-        n_wires=n_wires,
+        qubit=wire,
+        n_qubits=n_wires,
     )
 
 

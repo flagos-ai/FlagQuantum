@@ -81,12 +81,12 @@ _WORKLOAD_LABELS: dict[WorkloadName, str] = {
 }
 
 
-def _truncated_qft(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
-    interaction_range = min(3, n_wires - 1)
-    for target in range(n_wires):
+def _truncated_qft(n_qubits: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
+    interaction_range = min(3, n_qubits - 1)
+    for target in range(n_qubits):
         circuit.h(target)
-        for distance in range(1, min(interaction_range, n_wires - target - 1) + 1):
+        for distance in range(1, min(interaction_range, n_qubits - target - 1) + 1):
             control = target + distance
             theta = math.pi / (2**distance)
             # A controlled phase expressed through the common portable gate subset.
@@ -95,85 +95,85 @@ def _truncated_qft(n_wires: int) -> fq.Circuit:
             circuit.cx(control, target)
             circuit.rz(target, -theta / 2)
             circuit.cx(control, target)
-    for left in range(n_wires // 2):
-        circuit.swap(left, n_wires - left - 1)
+    for left in range(n_qubits // 2):
+        circuit.swap(left, n_qubits - left - 1)
     return circuit
 
 
-def _random_clifford(n_wires: int, seed: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
-    generator = random.Random(seed + 10_007 * n_wires)
+def _random_clifford(n_qubits: int, seed: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
+    generator = random.Random(seed + 10_007 * n_qubits)
     single_qubit_gates = ("h", "s", "x")
     for _ in range(4):
-        for wire in range(n_wires):
-            getattr(circuit, generator.choice(single_qubit_gates))(wire)
-        wires = list(range(n_wires))
-        generator.shuffle(wires)
-        for index in range(0, n_wires - 1, 2):
+        for qubit in range(n_qubits):
+            getattr(circuit, generator.choice(single_qubit_gates))(qubit)
+        qubits = list(range(n_qubits))
+        generator.shuffle(qubits)
+        for index in range(0, n_qubits - 1, 2):
             getattr(circuit, generator.choice(("cx", "cz")))(
-                wires[index], wires[index + 1]
+                qubits[index], qubits[index + 1]
             )
     return circuit
 
 
-def _local_brickwork(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
+def _local_brickwork(n_qubits: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
     for layer in range(4):
-        for wire in range(n_wires):
-            angle = 0.07 * (layer + 1) * (wire + 1)
-            circuit.ry(wire, angle)
-            circuit.rz(wire, -0.6 * angle)
-        for left in range(layer % 2, n_wires - 1, 2):
+        for qubit in range(n_qubits):
+            angle = 0.07 * (layer + 1) * (qubit + 1)
+            circuit.ry(qubit, angle)
+            circuit.rz(qubit, -0.6 * angle)
+        for left in range(layer % 2, n_qubits - 1, 2):
             circuit.cx(left, left + 1)
     return circuit
 
 
-def _dense_nonlocal(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
-    for wire in range(n_wires):
-        circuit.h(wire)
-    for left in range(n_wires):
-        for right in range(left + 1, n_wires):
+def _dense_nonlocal(n_qubits: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
+    for qubit in range(n_qubits):
+        circuit.h(qubit)
+    for left in range(n_qubits):
+        for right in range(left + 1, n_qubits):
             circuit.cz(left, right)
-    for wire in range(n_wires):
-        circuit.ry(wire, 0.031 * (wire + 1))
+    for qubit in range(n_qubits):
+        circuit.ry(qubit, 0.031 * (qubit + 1))
     return circuit
 
 
-def _swap_routing(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
-    for wire in range(0, n_wires - 1, 2):
-        circuit.h(wire).cx(wire, wire + 1)
+def _swap_routing(n_qubits: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
+    for qubit in range(0, n_qubits - 1, 2):
+        circuit.h(qubit).cx(qubit, qubit + 1)
     for layer in range(4):
-        for wire in range(1, n_wires - 1, 2):
-            circuit.swap(wire, wire + 1)
-        for wire in range(n_wires):
-            circuit.ry(wire, 0.01 * (layer + 1) * (wire + 1))
+        for qubit in range(1, n_qubits - 1, 2):
+            circuit.swap(qubit, qubit + 1)
+        for qubit in range(n_qubits):
+            circuit.ry(qubit, 0.01 * (layer + 1) * (qubit + 1))
     return circuit
 
 
 def build_workload(
     name: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     seed: int = SEED,
 ) -> fq.Circuit:
     """Build one deterministic exact-statevector workload from the corpus."""
 
-    if n_wires < 4:
-        raise ValueError("n_wires must be at least 4")
+    if n_qubits < 4:
+        raise ValueError("n_qubits must be at least 4")
     if name == "hardware_efficient_statevector":
-        return build_hwe(n_wires=n_wires, layers=2)
+        return build_hwe(n_qubits=n_qubits, layers=2)
     if name == "truncated_qft_statevector":
-        return _truncated_qft(n_wires)
+        return _truncated_qft(n_qubits)
     if name == "random_clifford_statevector":
-        return _random_clifford(n_wires, seed)
+        return _random_clifford(n_qubits, seed)
     if name == "local_brickwork_statevector":
-        return _local_brickwork(n_wires)
+        return _local_brickwork(n_qubits)
     if name == "dense_nonlocal_statevector":
-        return _dense_nonlocal(n_wires)
+        return _dense_nonlocal(n_qubits)
     if name == "swap_routing_statevector":
-        return _swap_routing(n_wires)
+        return _swap_routing(n_qubits)
     raise ValueError(f"unsupported workload: {name}")
 
 
@@ -185,7 +185,7 @@ def _stable_hash(payload: Mapping[str, Any]) -> str:
 def extract_features(ir: CircuitIR) -> dict[str, Any]:
     """Extract deterministic, backend-neutral structural features from IR."""
 
-    wire_depth = [0] * ir.n_wires
+    qubit_depth = [0] * ir.n_wires
     histogram: Counter[str] = Counter()
     arity_histogram: Counter[int] = Counter()
     parameterized = 0
@@ -195,9 +195,9 @@ def extract_features(ir: CircuitIR) -> dict[str, Any]:
         arity_histogram[len(instruction.wires)] += 1
         if instruction.params or instruction.matrix is not None:
             parameterized += 1
-        depth = max(wire_depth[wire] for wire in instruction.wires) + 1
-        for wire in instruction.wires:
-            wire_depth[wire] = depth
+        depth = max(qubit_depth[qubit] for qubit in instruction.wires) + 1
+        for qubit in instruction.wires:
+            qubit_depth[qubit] = depth
         if len(instruction.wires) == 2:
             two_qubit_spans.append(abs(instruction.wires[0] - instruction.wires[1]))
 
@@ -208,7 +208,7 @@ def extract_features(ir: CircuitIR) -> dict[str, Any]:
         "dtype": ir.dtype,
         "batch_size": int(ir.metadata.get("batch_size", 1)),
         "gate_count": len(ir.instructions),
-        "logical_depth": max(wire_depth, default=0),
+        "logical_depth": max(qubit_depth, default=0),
         "single_qubit_gate_count": arity_histogram[1],
         "two_qubit_gate_count": arity_histogram[2],
         "multi_qubit_gate_count": sum(
@@ -315,7 +315,7 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
 def run_case(
     *,
     workload: WorkloadName,
-    n_wires: int,
+    n_qubits: int,
     engines: Sequence[EngineName],
     warmup: int,
     iterations: int,
@@ -336,7 +336,7 @@ def run_case(
     if unknown:
         raise ValueError("unsupported engine(s): " + ", ".join(unknown))
 
-    circuit = build_workload(workload, n_wires=n_wires, seed=seed)
+    circuit = build_workload(workload, n_qubits=n_qubits, seed=seed)
     ir = circuit.to_ir()
     functions = {
         engine: _engine_callable(engine, circuit, seed=seed, threads=threads)
@@ -402,7 +402,7 @@ def run_case(
     return {
         "workload": {
             "name": workload,
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "seed": seed,
             "batch_size": 1,
             "dtype": "complex128",
@@ -434,7 +434,7 @@ def run_case(
 def run_benchmark(
     *,
     workloads: Sequence[WorkloadName],
-    n_wires: Sequence[int],
+    n_qubits: Sequence[int],
     engines: Sequence[EngineName],
     threads: int,
     warmup: int,
@@ -446,8 +446,8 @@ def run_benchmark(
 
     if threads < 1:
         raise ValueError("threads must be positive")
-    if not workloads or not n_wires:
-        raise ValueError("workloads and n_wires must each contain at least one item")
+    if not workloads or not n_qubits:
+        raise ValueError("workloads and n_qubits must each contain at least one item")
     if len(set(workloads)) != len(workloads):
         raise ValueError("workloads must be unique")
     unknown = sorted(set(workloads) - set(WORKLOAD_NAMES))
@@ -457,7 +457,7 @@ def run_benchmark(
     cases = tuple(
         run_case(
             workload=workload,
-            n_wires=width,
+            n_qubits=width,
             engines=engines,
             warmup=warmup,
             iterations=iterations,
@@ -466,7 +466,7 @@ def run_benchmark(
             seed=seed,
         )
         for workload in workloads
-        for width in n_wires
+        for width in n_qubits
     )
     passed = all(bool(case["correctness"]["passed"]) for case in cases)
     all_measurements_stable = all(bool(case["stability"]["passed"]) for case in cases)
@@ -508,7 +508,7 @@ def run_benchmark(
             "feature_schema": FEATURE_SCHEMA,
         },
         workloads=tuple(workloads),
-        n_wires=tuple(n_wires),
+        n_qubits=tuple(n_qubits),
         engines=tuple(engines),
         cases=cases,
     )
@@ -519,10 +519,10 @@ def _case_key(case: Mapping[str, Any]) -> tuple[str, int]:
     if not isinstance(workload, Mapping):
         raise ValueError("corpus case requires workload metadata")
     name = workload.get("name")
-    n_wires = workload.get("n_wires")
-    if not isinstance(name, str) or not isinstance(n_wires, int):
-        raise ValueError("corpus case requires workload name and integer n_wires")
-    return name, n_wires
+    n_qubits = workload.get("n_wires")
+    if not isinstance(name, str) or not isinstance(n_qubits, int):
+        raise ValueError("corpus case requires workload name and integer n_qubits")
+    return name, n_qubits
 
 
 def _recompute_case_summary(case: dict[str, Any]) -> None:
@@ -629,8 +629,8 @@ def _refresh_benchmark(
                 engine for engine in baseline_engines if engine != "flagquantum_native"
             ],
             "cases": [
-                {"workload": workload, "n_wires": n_wires}
-                for workload, n_wires in refreshed_keys
+                {"workload": workload, "n_wires": n_qubits}
+                for workload, n_qubits in refreshed_keys
             ],
             "workloads": list(measured["workloads"]),
             "n_wires": list(measured["n_wires"]),
@@ -810,7 +810,7 @@ def main() -> int:
         parser.error("--refresh-from requires --engines flagquantum_native")
     measured = run_benchmark(
         workloads=tuple(args.workloads),
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         engines=tuple(args.engines),
         threads=args.threads,
         warmup=args.warmup,

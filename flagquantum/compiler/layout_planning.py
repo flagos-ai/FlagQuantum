@@ -6,7 +6,7 @@ does not join. This module is the first half. It answers "where should this
 program start" before any SWAP is considered.
 
 A placement here is ``logical_to_physical[logical]``, one physical slot per
-logical wire, with distinct slots drawn from ``range(coupling_map.n_wires)``.
+logical wire, with distinct slots drawn from ``range(coupling_map.n_qubits)``.
 These functions return it as a bare tuple, which is the argument
 ``route_to_directed_topology`` takes and the entry the routed program later
 reports through :func:`~flagquantum.compiler.layout.final_layout`.
@@ -76,9 +76,9 @@ def _validated_device(
 
     if not isinstance(coupling_map, (CouplingMap, DirectedCouplingMap)):
         raise TypeError("coupling_map must be a Compiler coupling map")
-    if coupling_map.n_wires < n_wires:
+    if coupling_map.n_qubits < n_wires:
         raise LayoutPlanningError(
-            f"coupling map has {coupling_map.n_wires} physical wires but the "
+            f"coupling map has {coupling_map.n_qubits} physical wires but the "
             f"program has {n_wires} logical wires; a placement needs at least as "
             "many physical wires as logical wires"
         )
@@ -95,7 +95,7 @@ def _weak_adjacency(
     operation may point.
     """
 
-    neighbours: list[set[int]] = [set() for _ in range(coupling_map.n_wires)]
+    neighbours: list[set[int]] = [set() for _ in range(coupling_map.n_qubits)]
     for left, right in coupling_map.edges:
         neighbours[left].add(right)
         neighbours[right].add(left)
@@ -207,7 +207,7 @@ def plan_dense_layout(
 
     ir = ensure_circuit_ir(circuit_or_ir)
     device = _validated_device(coupling_map, ir.n_wires)
-    if device.n_wires == ir.n_wires:
+    if device.n_qubits == ir.n_wires:
         return tuple(range(ir.n_wires))
     window = _densest_window(_weak_adjacency(device), ir.n_wires)
     return tuple(sorted(window))

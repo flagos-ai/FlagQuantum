@@ -120,7 +120,7 @@ def _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:
     wire realizes would cost the plan against a route it cannot emit.
     """
 
-    if coupling.n_wires == n_wires:
+    if coupling.n_qubits == n_wires:
         return coupling
     # ``routing`` imports this module, so the value type is imported here.
     from .routing import CouplingMap as _CouplingMap
@@ -181,7 +181,7 @@ def plan_sabre_swaps(
     """
 
     n_wires = program.n_wires
-    if coupling.n_wires < n_wires:
+    if coupling.n_qubits < n_wires:
         raise ValueError("Coupling map has fewer wires than the circuit.")
     placement = _validated_layout(initial_layout, n_wires)
     instructions = program.instructions
@@ -603,7 +603,7 @@ def plan_sabre_layout(
     """
 
     n_wires = program.n_wires
-    if coupling.n_wires < n_wires:
+    if coupling.n_qubits < n_wires:
         raise ValueError("Coupling map has fewer wires than the circuit.")
     if rounds < 0:
         raise ValueError("rounds must be non-negative")

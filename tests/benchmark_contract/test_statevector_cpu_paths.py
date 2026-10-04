@@ -235,9 +235,9 @@ def test_cpu_paths_rejects_unknown_cases_and_unusable_dimensions():
         _small_run(cases=["not_a_case"])
     with pytest.raises(ValueError, match="iterations must be >= 2"):
         _small_run(iterations=1)
-    with pytest.raises(ValueError, match="n_wires >= 3 required"):
+    with pytest.raises(ValueError, match="n_qubits >= 3 required"):
         _small_run(n_wires=2)
-    with pytest.raises(ValueError, match="marginal_wires must be between"):
+    with pytest.raises(ValueError, match="marginal_qubits must be between"):
         _small_run(marginal_wires=9)
     with pytest.raises(ValueError, match="threads must be >= 1"):
         _small_run(threads=0)
@@ -249,7 +249,7 @@ def test_cpu_paths_rejects_unknown_cases_and_unusable_dimensions():
 
 def test_marginal_reference_matches_the_state_reduction_it_replaces():
     """The reference must agree with an independent reshape-and-sum reduction."""
-    circuit = build_marginal_circuit(n_wires=4, layers=2, batch_size=1, seed=4417)
+    circuit = build_marginal_circuit(n_qubits=4, layers=2, batch_size=1, seed=4417)
     state = circuit.state()
     for wires in ((0,), (1, 2), (0, 1), (0, 2, 3)):
         reduced = _direct_marginal_probabilities(state, wires)
@@ -313,7 +313,7 @@ def test_marginal_case_reference_reads_a_freshly_simulated_state(
 
 def test_marginal_case_does_not_depend_on_the_circuit_inputs_tensor():
     """``fq.run`` ignores ``circuit_param['inputs']``, so the case must not use it."""
-    circuit = build_marginal_circuit(n_wires=4, layers=2, batch_size=1, seed=4417)
+    circuit = build_marginal_circuit(n_qubits=4, layers=2, batch_size=1, seed=4417)
     assert circuit.circuit_param.get("inputs") is None
 
 

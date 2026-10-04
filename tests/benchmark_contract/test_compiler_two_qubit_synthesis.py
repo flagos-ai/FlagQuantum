@@ -296,7 +296,7 @@ def test_the_rotation_entangler_is_applied_at_the_supercontrolled_angle() -> Non
     for entangler, angle in SUPERCONTROLLED_ENTANGLERS.items():
         emitted = synthesize_two_qubit(
             two_qubit_instruction("swap", matrix=True).matrix,
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler=entangler,
             z_rotation="rz",
         )

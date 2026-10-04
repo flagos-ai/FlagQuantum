@@ -241,7 +241,7 @@ def _matrix_replacement(
     if len(instruction.wires) == 1:
         return synthesize_one_qubit_matrix(
             instruction.matrix,
-            wire=instruction.wires[0],
+            qubit=instruction.wires[0],
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=instruction.metadata,
@@ -249,7 +249,7 @@ def _matrix_replacement(
     if len(instruction.wires) == 2 and entangler is not None:
         return synthesize_two_qubit(
             instruction.matrix,
-            wires=instruction.wires,
+            qubits=instruction.wires,
             entangler=entangler,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,

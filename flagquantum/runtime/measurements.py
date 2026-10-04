@@ -95,7 +95,7 @@ class _DensityMatrixTarget:
                 torch.Tensor,
                 self.noise_model.apply_readout_probabilities(
                     probabilities,
-                    n_wires=self.n_wires,
+                    n_qubits=self.n_wires,
                 ),
             )
             indices = torch.arange(
@@ -257,7 +257,7 @@ def _joint_marginal_probabilities(
     if noise_model is not None:
         probabilities = noise_model.apply_readout_probabilities(
             probabilities,
-            n_wires=n_wires,
+            n_qubits=n_wires,
         )
     return _reduced_joint_marginal(probabilities, wires, n_wires=n_wires)
 

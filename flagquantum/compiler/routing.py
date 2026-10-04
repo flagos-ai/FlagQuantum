@@ -11,7 +11,7 @@ from typing import Any
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
-# Dense distance-matrix entry for a physical wire pair with no coupling path.
+# Dense distance-matrix entry for a physical qubit pair with no coupling path.
 # A coupling map is a graph, so most pairs of a production device are far
 # apart but still reachable; this value is reserved for genuine disconnection.
 UNREACHABLE_DISTANCE = -1
@@ -31,16 +31,16 @@ ROUTING_STRATEGIES = (
 # The two strategies that plan SWAPs from a search rather than estimating them.
 SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
 
-# The physical couplings a multi-wire instruction needs, as operand index pairs.
-# This is the authoritative vocabulary for multi-wire locality in the Compiler:
-# the pairs are the instruction's real two-wire interactions, taken from Core's
+# The physical couplings a multi-qubit instruction needs, as operand index pairs.
+# This is the authoritative vocabulary for multi-qubit locality in the Compiler:
+# the pairs are the instruction's real two-qubit interactions, taken from Core's
 # operand order (`ccx` is control1/control2/target and conjugates on the target;
 # `cswap` is control/target1/target2 and exchanges under the control), so the
 # requirement is not that the operands form a chain. The opcodes are Core's
 # arity-three operands, and
 # `tests/team/compiler/test_multi_wire_routing_locality.py` fails when a Core
 # arity of three or more has no entry here.
-_MULTI_WIRE_OPERAND_PAIRS: dict[str, tuple[tuple[int, int], ...]] = {
+_MULTI_QUBIT_OPERAND_PAIRS: dict[str, tuple[tuple[int, int], ...]] = {
     "ccx": ((0, 2), (1, 2)),
     "cswap": ((0, 1), (0, 2)),
 }
@@ -50,15 +50,15 @@ def _breadth_first_distances(
     adjacency: tuple[tuple[int, ...], ...],
     source: int,
 ) -> tuple[int, ...]:
-    """Return undirected hop counts from one wire to every wire."""
+    """Return undirected hop counts from one qubit to every qubit."""
 
     distances = [UNREACHABLE_DISTANCE] * len(adjacency)
     distances[source] = 0
     queue: deque[int] = deque((source,))
     while queue:
-        wire = queue.popleft()
-        level = distances[wire] + 1
-        for neighbor in adjacency[wire]:
+        qubit = queue.popleft()
+        level = distances[qubit] + 1
+        for neighbor in adjacency[qubit]:
             if distances[neighbor] == UNREACHABLE_DISTANCE:
                 distances[neighbor] = level
                 queue.append(neighbor)
@@ -69,7 +69,7 @@ def _breadth_first_distances(
 class CouplingMap:
     """Undirected hardware connectivity used by native routing passes."""
 
-    n_wires: int
+    n_qubits: int
     edges: tuple[tuple[int, int], ...]
     _adjacency: tuple[tuple[int, ...], ...] = field(
         init=False,
@@ -135,15 +135,15 @@ class CouplingMap:
 
     def __init__(
         self,
-        n_wires: int,
+        n_qubits: int,
         edges: Iterable[tuple[int, int]],
         *,
         path_cache_capacity: int = 4096,
     ) -> None:
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
-        if n_wires <= 0:
-            raise ValueError("Coupling map requires a positive wire count.")
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
+        if n_qubits <= 0:
+            raise ValueError("Coupling map requires a positive qubit count.")
         if type(path_cache_capacity) is not int:
             raise ValueError("Path cache capacity must be an integer.")
         if path_cache_capacity == 1 or path_cache_capacity < 0:
@@ -153,17 +153,17 @@ class CouplingMap:
         for left, right in edges:
             if type(left) is not int or type(right) is not int:
                 raise ValueError("Coupling edge endpoints must be integers.")
-            if left < 0 or right < 0 or left >= n_wires or right >= n_wires:
-                raise ValueError("Coupling edge contains a wire outside the device.")
+            if left < 0 or right < 0 or left >= n_qubits or right >= n_qubits:
+                raise ValueError("Coupling edge contains a qubit outside the device.")
             if left == right:
                 continue
             edge = (min(left, right), max(left, right))
             if edge not in seen:
                 normalized.append(edge)
                 seen.add(edge)
-        object.__setattr__(self, "n_wires", int(n_wires))
+        object.__setattr__(self, "n_qubits", int(n_qubits))
         object.__setattr__(self, "edges", tuple(normalized))
-        adjacency: list[set[int]] = [set() for _ in range(n_wires)]
+        adjacency: list[set[int]] = [set() for _ in range(n_qubits)]
         for left, right in normalized:
             adjacency[left].add(right)
             adjacency[right].add(left)
@@ -186,32 +186,32 @@ class CouplingMap:
     @classmethod
     def line(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
         return cls(
-            n_wires,
-            ((wire, wire + 1) for wire in range(n_wires - 1)),
+            n_qubits,
+            ((qubit, qubit + 1) for qubit in range(n_qubits - 1)),
             path_cache_capacity=path_cache_capacity,
         )
 
     @classmethod
     def ring(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
-        edges = [(wire, wire + 1) for wire in range(n_wires - 1)]
-        if n_wires > 2:
-            edges.append((n_wires - 1, 0))
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
+        edges = [(qubit, qubit + 1) for qubit in range(n_qubits - 1)]
+        if n_qubits > 2:
+            edges.append((n_qubits - 1, 0))
         return cls(
-            n_wires,
+            n_qubits,
             edges,
             path_cache_capacity=path_cache_capacity,
         )
@@ -231,38 +231,38 @@ class CouplingMap:
         edges = []
         for row in range(rows):
             for col in range(cols):
-                wire = row * cols + col
+                qubit = row * cols + col
                 if col + 1 < cols:
-                    edges.append((wire, wire + 1))
+                    edges.append((qubit, qubit + 1))
                 if row + 1 < rows:
-                    edges.append((wire, wire + cols))
+                    edges.append((qubit, qubit + cols))
         return cls(
             rows * cols,
             edges,
             path_cache_capacity=path_cache_capacity,
         )
 
-    def _validate_wire(self, wire: int) -> int:
-        if type(wire) is not int:
-            raise ValueError("Coupling wire index must be an integer.")
-        if wire < 0 or wire >= self.n_wires:
+    def _validate_qubit(self, qubit: int) -> int:
+        if type(qubit) is not int:
+            raise ValueError("Coupling qubit index must be an integer.")
+        if qubit < 0 or qubit >= self.n_qubits:
             raise ValueError(
-                f"Coupling wire {wire} is outside [0, {self.n_wires - 1}]."
+                f"Coupling qubit {qubit} is outside [0, {self.n_qubits - 1}]."
             )
-        return wire
+        return qubit
 
-    def neighbors(self, wire: int) -> tuple[int, ...]:
-        wire = self._validate_wire(wire)
-        return self._adjacency[wire]
+    def neighbors(self, qubit: int) -> tuple[int, ...]:
+        qubit = self._validate_qubit(qubit)
+        return self._adjacency[qubit]
 
     def has_edge(self, left: int, right: int) -> bool:
-        left = self._validate_wire(left)
-        right = self._validate_wire(right)
+        left = self._validate_qubit(left)
+        right = self._validate_qubit(right)
         return right in self._adjacency[left]
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
-        start = self._validate_wire(start)
-        goal = self._validate_wire(goal)
+        start = self._validate_qubit(start)
+        goal = self._validate_qubit(goal)
         cache_key = (start, goal)
         with self._path_cache_lock:
             cached = self._path_cache.get(cache_key)
@@ -282,11 +282,11 @@ class CouplingMap:
         parents = {start: -1}
         queue: deque[int] = deque([start])
         while queue:
-            wire = queue.popleft()
-            for neighbor in self.neighbors(wire):
+            qubit = queue.popleft()
+            for neighbor in self.neighbors(qubit):
                 if neighbor in parents:
                     continue
-                parents[neighbor] = wire
+                parents[neighbor] = qubit
                 if neighbor == goal:
                     path_nodes = [goal]
                     while path_nodes[-1] != start:
@@ -298,7 +298,7 @@ class CouplingMap:
                     )
                     return resolved
                 queue.append(neighbor)
-        raise ValueError(f"No coupling path between wires {start} and {goal}.")
+        raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 
     def _cache_paths(
         self,
@@ -319,31 +319,31 @@ class CouplingMap:
                     )
 
     def distance(self, left: int, right: int) -> int:
-        """Return the undirected hop count between two physical wires.
+        """Return the undirected hop count between two physical qubits.
 
         Raises:
-            ValueError: If either wire is outside the device or the two wires
+            ValueError: If either qubit is outside the device or the two qubits
                 are not connected by any coupling path.
         """
 
-        left = self._validate_wire(left)
-        right = self._validate_wire(right)
+        left = self._validate_qubit(left)
+        right = self._validate_qubit(right)
         distance = self._distance_row(left)[right]
         if distance == UNREACHABLE_DISTANCE:
-            raise ValueError(f"No coupling path between wires {left} and {right}.")
+            raise ValueError(f"No coupling path between qubits {left} and {right}.")
         return distance
 
     def distance_matrix(self) -> tuple[tuple[int, ...], ...]:
-        """Return the dense hop-count matrix over every ordered wire pair.
+        """Return the dense hop-count matrix over every ordered qubit pair.
 
-        Row and column indices are physical wire indices, so entry
+        Row and column indices are physical qubit indices, so entry
         ``matrix[left][right]`` is the undirected distance used by
         :meth:`distance`. Entries equal to :data:`UNREACHABLE_DISTANCE` mean
         the pair has no coupling path. The matrix is symmetric with a zero
-        diagonal, and building it costs one breadth-first search per wire.
+        diagonal, and building it costs one breadth-first search per qubit.
         """
 
-        return tuple(self._distance_row(source) for source in range(self.n_wires))
+        return tuple(self._distance_row(source) for source in range(self.n_qubits))
 
     def distance_cache_info(self) -> dict[str, int]:
         """Return bounded-cache diagnostics for the distance index."""
@@ -358,7 +358,7 @@ class CouplingMap:
             }
 
     def _distance_row(self, source: int) -> tuple[int, ...]:
-        """Return the cached all-wire distance row rooted at one wire."""
+        """Return the cached all-qubit distance row rooted at one qubit."""
 
         with self._path_cache_lock:
             cached = self._distance_rows.get(source)
@@ -463,8 +463,8 @@ def estimate_routing_cost(
         if isinstance(coupling_map, CouplingMap)
         else CouplingMap(ir.n_wires, coupling_map)
     )
-    if coupling.n_wires < ir.n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+    if coupling.n_qubits < ir.n_wires:
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
 
     cache_before = coupling.path_cache_info()
     logical_to_physical = list(range(ir.n_wires))
@@ -480,13 +480,13 @@ def estimate_routing_cost(
             skipped_channel_count += 1
             continue
         topology_gate_count += 1
-        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
-        if coupling.has_edge(*mapped_wires):
+        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
+        if coupling.has_edge(*mapped_qubits):
             continue
-        path = coupling.shortest_path(*mapped_wires)
-        if any(wire >= ir.n_wires for wire in path):
+        path = coupling.shortest_path(*mapped_qubits)
+        if any(qubit >= ir.n_wires for qubit in path):
             raise ValueError(
-                "Routing through physical ancilla wires outside the circuit IR "
+                "Routing through physical ancilla qubits outside the circuit IR "
                 "is not supported; provide an explicit layout/lowering step."
             )
         routed_gate_count += 1
@@ -612,7 +612,7 @@ def _routing_metadata(
     return {
         "schema": "flagquantum_routing_plan_v1",
         "strategy": strategy,
-        "coupling_n_wires": coupling.n_wires,
+        "coupling_n_wires": coupling.n_qubits,
         "coupling_edges": coupling.edges,
         "initial_logical_to_physical": initial_layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
@@ -637,61 +637,61 @@ def _routing_metadata(
     }
 
 
-def _require_multi_wire_device_local(
+def _require_multi_qubit_device_local(
     instruction: Instruction,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     has_edge: Callable[[int, int], bool],
 ) -> None:
-    """Fail closed unless a multi-wire instruction is executable on the device.
+    """Fail closed unless a multi-qubit instruction is executable on the device.
 
-    No router in this package synthesizes a three-or-more-wire instruction onto
+    No router in this package synthesizes a three-or-more-qubit instruction onto
     physical couplings, and a routing strategy cannot insert SWAPs for one, so a
-    multi-wire instruction has to be decomposable where it stands. The required
-    couplings are read from `_MULTI_WIRE_OPERAND_PAIRS` rather than inferred from
-    the operand order, because the two known multi-wire instructions do not
+    multi-qubit instruction has to be decomposable where it stands. The required
+    couplings are read from `_MULTI_QUBIT_OPERAND_PAIRS` rather than inferred from
+    the operand order, because the two known multi-qubit instructions do not
     interact on consecutive operands; an instruction with no entry is refused
-    instead of assumed local. Two-wire instructions keep their existing
+    instead of assumed local. Two-qubit instructions keep their existing
     SWAP-based handling.
     """
 
-    if len(wires) < 3:
+    if len(qubits) < 3:
         return
-    required = _MULTI_WIRE_OPERAND_PAIRS.get(instruction.name)
+    required = _MULTI_QUBIT_OPERAND_PAIRS.get(instruction.name)
     if required is None:
         raise ValueError(
-            f"multi-wire instruction {instruction.name!r} has no verified physical "
-            f"connectivity rule: physical wires {wires}; decompose multi-wire "
+            f"multi-qubit instruction {instruction.name!r} has no verified physical "
+            f"connectivity rule: physical qubits {qubits}; decompose multi-qubit "
             "instructions onto device couplings before routing"
         )
     missing = tuple(
-        (wires[left], wires[right])
+        (qubits[left], qubits[right])
         for left, right in required
-        if not has_edge(wires[left], wires[right])
+        if not has_edge(qubits[left], qubits[right])
     )
     if missing:
         raise ValueError(
-            f"multi-wire instruction {instruction.name!r} requires physical "
-            f"couplings {missing} the device does not carry: physical wires "
-            f"{wires}; decompose multi-wire instructions onto device couplings "
+            f"multi-qubit instruction {instruction.name!r} requires physical "
+            f"couplings {missing} the device does not carry: physical qubits "
+            f"{qubits}; decompose multi-qubit instructions onto device couplings "
             "before routing"
         )
 
 
 def _remap_instruction(
     instruction: Instruction,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     *,
     strategy: str,
     source_instruction_index: int,
 ) -> Instruction:
     return Instruction(
         name=instruction.name,
-        wires=wires,
+        wires=qubits,
         params=instruction.params,
         matrix=instruction.matrix,
         metadata=dict(instruction.metadata)
         | {
-            "layout_mapped": wires != instruction.wires,
+            "layout_mapped": qubits != instruction.wires,
             "logical_wires": instruction.wires,
             "routing_strategy": strategy,
             "source_instruction_index": source_instruction_index,
@@ -742,15 +742,15 @@ def _route_persistent_layout(
         logical_to_physical[right_logical] = left
 
     for source_index, instruction in enumerate(ir):
-        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
+        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
         if len(instruction.wires) != 2:
-            _require_multi_wire_device_local(
-                instruction, mapped_wires, coupling.has_edge
+            _require_multi_qubit_device_local(
+                instruction, mapped_qubits, coupling.has_edge
             )
             routed.append(
                 _remap_instruction(
                     instruction,
-                    mapped_wires,
+                    mapped_qubits,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
@@ -761,7 +761,7 @@ def _route_persistent_layout(
             routed.append(
                 _remap_instruction(
                     instruction,
-                    mapped_wires,
+                    mapped_qubits,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
@@ -769,12 +769,12 @@ def _route_persistent_layout(
             continue
 
         topology_gate_count += 1
-        left, right = mapped_wires
+        left, right = mapped_qubits
         if not coupling.has_edge(left, right):
             path = coupling.shortest_path(left, right)
-            if any(wire >= ir.n_wires for wire in path):
+            if any(qubit >= ir.n_wires for qubit in path):
                 raise ValueError(
-                    "Routing through physical ancilla wires outside the circuit IR "
+                    "Routing through physical ancilla qubits outside the circuit IR "
                     "is not supported; provide an explicit layout/lowering step."
                 )
             routed_gate_count += 1
@@ -793,13 +793,13 @@ def _route_persistent_layout(
                     source_instruction_index=source_index,
                 )
                 routing_swaps.append(swap)
-            mapped_wires = tuple(
-                logical_to_physical[wire] for wire in instruction.wires
+            mapped_qubits = tuple(
+                logical_to_physical[qubit] for qubit in instruction.wires
             )
         routed.append(
             _remap_instruction(
                 instruction,
-                mapped_wires,
+                mapped_qubits,
                 strategy=strategy,
                 source_instruction_index=source_index,
             )
@@ -844,15 +844,15 @@ def _route_sabre(
     """Materialize one SABRE persistent layout, then restore the output layout.
 
     Instructions are emitted in the order the planner placed them, not in source
-    order. The planner introduces a SWAP when a two-wire operation becomes
-    reachable, and every operation keeps its planned physical wires, so a source
+    order. The planner introduces a SWAP when a two-qubit operation becomes
+    reachable, and every operation keeps its planned physical qubits, so a source
     order that disagrees with the plan would replay a different layout than the
     one the plan was costed against.
 
     The ``sabre`` strategy starts from the identity layout, so replaying its
     forward SWAPs in reverse restores the output layout. ``sabre_layout`` first
     searches for a shorter initial layout; replaying its forward SWAPs in reverse
-    would only return that initial layout, so it routes every logical wire home
+    would only return that initial layout, so it routes every logical qubit home
     with an explicit restore instead.
     """
 
@@ -864,7 +864,7 @@ def _route_sabre(
     plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
     topology_gate_count = 0
-    # Counted against the source wires, exactly as the shortest-path strategies
+    # Counted against the source qubits, exactly as the shortest-path strategies
     # do, so the number describes the work the topology forces rather than the
     # work this layout happened to arrange for free.
     routed_gate_count = 0
@@ -891,17 +891,17 @@ def _route_sabre(
             swap_index += 1
         placed_so_far += 1
         instruction = ir.instructions[source_index]
-        placed_wires = plan.placements[source_index]
+        placed_qubits = plan.placements[source_index]
         if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
-            _require_multi_wire_device_local(
-                instruction, placed_wires, coupling.has_edge
+            _require_multi_qubit_device_local(
+                instruction, placed_qubits, coupling.has_edge
             )
             if instruction.metadata.get("is_channel"):
                 skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
-                    placed_wires,
+                    placed_qubits,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
@@ -913,7 +913,7 @@ def _route_sabre(
         routed.append(
             _remap_instruction(
                 instruction,
-                placed_wires,
+                placed_qubits,
                 strategy=strategy,
                 source_instruction_index=source_index,
             )
@@ -968,8 +968,8 @@ def route_to_topology(
         if isinstance(coupling_map, CouplingMap)
         else CouplingMap(ir.n_wires, coupling_map)
     )
-    if coupling.n_wires < ir.n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+    if coupling.n_qubits < ir.n_wires:
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
     path_cache_before = coupling.path_cache_info()
     if strategy == "persistent_layout":
         return _route_persistent_layout(
@@ -992,7 +992,7 @@ def route_to_topology(
     skipped_channel_count = 0
     for source_index, instruction in enumerate(ir):
         if len(instruction.wires) != 2:
-            _require_multi_wire_device_local(
+            _require_multi_qubit_device_local(
                 instruction, instruction.wires, coupling.has_edge
             )
             routed.append(
@@ -1030,9 +1030,9 @@ def route_to_topology(
             continue
 
         path = coupling.shortest_path(left, right)
-        if any(wire >= ir.n_wires for wire in path):
+        if any(qubit >= ir.n_wires for qubit in path):
             raise ValueError(
-                "Routing through physical ancilla wires outside the circuit IR "
+                "Routing through physical ancilla qubits outside the circuit IR "
                 "is not supported; provide an explicit layout/lowering step."
             )
         forward_swaps = [

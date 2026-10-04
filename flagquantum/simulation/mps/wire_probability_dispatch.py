@@ -102,10 +102,10 @@ def _apply_cataloged_mps_wire_probabilities(tensor: torch.Tensor) -> torch.Tenso
         dtype=str(tensor.dtype).removeprefix("torch."),
     )
     from ...kernels.triton.mps_wire_probabilities import (
-        fused_mps_wire_probabilities,
+        fused_mps_qubit_probabilities,
     )
 
-    return fused_mps_wire_probabilities(tensor)
+    return fused_mps_qubit_probabilities(tensor)
 
 
 def _try_apply_cataloged_mps_wire_probabilities(

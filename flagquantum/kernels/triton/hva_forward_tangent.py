@@ -148,29 +148,29 @@ def heisenberg_hva_forward_tangents(
     initial_state: torch.Tensor,
     parameters: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     depth: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Execute the complete bond-resolved-phase HVA with forward tangents."""
 
-    count = (3 * (n_wires - 1) + n_wires) * depth
+    count = (3 * (n_qubits - 1) + n_qubits) * depth
     if not initial_state.is_cuda or initial_state.dtype != torch.complex64:
         raise ValueError("the experimental HVA tangent runtime requires CUDA complex64")
-    if initial_state.numel() != 1 << n_wires or parameters.shape != (count,):
+    if initial_state.numel() != 1 << n_qubits or parameters.shape != (count,):
         raise ValueError("initial state or parameter shape does not match HVA")
-    dimension, lanes = 1 << n_wires, count + 1
+    dimension, lanes = 1 << n_qubits, count + 1
     augmented = torch.zeros(
         lanes, dimension, dtype=torch.complex64, device=initial_state.device
     )
     augmented[0] = initial_state.reshape(-1)
     scratch = torch.empty_like(augmented)
     block_groups, block_pairs = 128, 256
-    per_layer = 3 * (n_wires - 1) + n_wires
+    per_layer = 3 * (n_qubits - 1) + n_qubits
     for layer in range(depth):
         offset = layer * per_layer
         for family in range(3):
-            for left in range(n_wires - 1):
-                parameter = offset + family * (n_wires - 1) + left
+            for left in range(n_qubits - 1):
+                parameter = offset + family * (n_qubits - 1) + left
                 grid = (triton.cdiv(dimension // 4, block_groups), lanes)
                 _two_qubit_forward_tangent_kernel[grid](
                     torch.view_as_real(augmented),
@@ -179,16 +179,16 @@ def heisenberg_hva_forward_tangents(
                     dimension=dimension,
                     lanes=lanes,
                     parameter_lane=parameter + 1,
-                    bit_left=n_wires - 1 - left,
-                    bit_right=n_wires - 2 - left,
+                    bit_left=n_qubits - 1 - left,
+                    bit_right=n_qubits - 2 - left,
                     family=family,
                     block_groups=block_groups,
                     num_warps=4,
                     num_stages=2,
                 )
                 augmented, scratch = scratch, augmented
-        for wire in range(n_wires):
-            parameter = offset + 3 * (n_wires - 1) + wire
+        for qubit in range(n_qubits):
+            parameter = offset + 3 * (n_qubits - 1) + qubit
             grid = (triton.cdiv(dimension // 2, block_pairs), lanes)
             _rz_forward_tangent_kernel[grid](
                 torch.view_as_real(augmented),
@@ -197,7 +197,7 @@ def heisenberg_hva_forward_tangents(
                 dimension=dimension,
                 lanes=lanes,
                 parameter_lane=parameter + 1,
-                bit=n_wires - 1 - wire,
+                bit=n_qubits - 1 - qubit,
                 block_pairs=block_pairs,
                 num_warps=8,
                 num_stages=2,

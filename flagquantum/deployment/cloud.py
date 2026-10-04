@@ -71,12 +71,12 @@ class CloudBackendProfile:
         n_wires: int | None = None,
     ) -> None:
         if n_qubits is not None and n_wires is not None:
-            raise TypeError("Pass n_qubits or n_wires, not both")
+            raise TypeError("Pass n_qubits or n_qubits, not both")
         if n_qubits is None:
             if n_wires is None:
                 raise TypeError("CloudBackendProfile requires n_qubits")
             warnings.warn(
-                "CloudBackendProfile(n_wires=...) is deprecated; use "
+                "CloudBackendProfile(n_qubits=...) is deprecated; use "
                 "n_qubits=.... Removal is planned for 0.4.0 after the 0.3.x "
                 "migration window.",
                 DeprecationWarning,
@@ -111,12 +111,12 @@ class CloudBackendProfile:
         n_wires: int | None = None,
     ) -> "CloudBackendProfile":
         if n_qubits is not None and n_wires is not None:
-            raise TypeError("Pass n_qubits or n_wires, not both")
+            raise TypeError("Pass n_qubits or n_qubits, not both")
         if n_qubits is None:
             if n_wires is None:
                 raise TypeError("CloudBackendProfile.simulator requires n_qubits")
             warnings.warn(
-                "CloudBackendProfile.simulator(n_wires=...) is deprecated; use "
+                "CloudBackendProfile.simulator(n_qubits=...) is deprecated; use "
                 "n_qubits=.... Removal is planned for 0.4.0 after the 0.3.x "
                 "migration window.",
                 DeprecationWarning,
@@ -146,7 +146,7 @@ class DeploymentPackage:
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         return int(self.ir.n_wires)
 
 
@@ -245,7 +245,7 @@ def validate_deployment_package(
     validated_plan = build_deployment_routing_evidence(
         routing_plan,
         routing_reused=routing_reused,
-        n_wires=package.n_wires,
+        n_qubits=package.n_qubits,
         coupling_map=package.backend.coupling_map,
     )
     if dict(evidence) != validated_plan:
@@ -328,7 +328,9 @@ def create_deployment_package(
         else:
             backend = CloudBackendProfile.simulator(ir.n_wires)
     if ir.n_wires > backend.n_qubits:
-        raise ValueError("Circuit uses more wires than the deployment backend exposes.")
+        raise ValueError(
+            "Circuit uses more qubits than the deployment backend exposes."
+        )
     target_bound = bool(
         execution_target
         and execution_target.get("provider") == backend.provider
@@ -346,7 +348,7 @@ def create_deployment_package(
             or isinstance(target_qubits, (str, bytes))
             or len(target_qubits) != ir.n_wires
         ):
-            raise ValueError("compiled target must map every logical wire")
+            raise ValueError("compiled target must map every logical qubit")
         required_options = {
             "compiler": execution_target.get("compiler"),
             "target_qubits": list(target_qubits),
@@ -396,7 +398,7 @@ def create_deployment_package(
     routing_evidence = build_deployment_routing_evidence(
         routing_plan,
         routing_reused=routing_reused,
-        n_wires=compiled_ir.n_wires,
+        n_qubits=compiled_ir.n_wires,
         coupling_map=backend.coupling_map,
     )
     package_metadata["routing_evidence"] = routing_evidence
@@ -454,22 +456,22 @@ def create_pauli_measurement_plan(
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("Pauli measurement planning requires Circuit or CircuitIR")
     if hamiltonian.n_qubits > source_ir.n_wires:
-        raise ValueError("Hamiltonian references wires outside the source circuit")
+        raise ValueError("Hamiltonian references qubits outside the source circuit")
     if int(shots) <= 0:
         raise ValueError("shots must be a positive integer")
     groups = group_observables(hamiltonian.terms)
     packages: list[DeploymentPackage] = []
-    all_wires = tuple(range(source_ir.n_wires))
+    all_qubits = tuple(range(source_ir.n_wires))
     for group_index, group in enumerate(groups):
         rotations: list[Instruction] = []
-        for wire, basis in group.basis:
+        for qubit, basis in group.basis:
             if basis == "x":
-                rotations.append(Instruction("h", (wire,)))
+                rotations.append(Instruction("h", (qubit,)))
             elif basis == "y":
                 rotations.extend(
                     (
-                        Instruction("rz", (wire,), params={"theta": -math.pi / 2}),
-                        Instruction("h", (wire,)),
+                        Instruction("rz", (qubit,), params={"theta": -math.pi / 2}),
+                        Instruction("h", (qubit,)),
                     )
                 )
             elif basis != "z":
@@ -485,7 +487,7 @@ def create_pauli_measurement_plan(
         rotated_ir = replace(
             source_ir,
             instructions=source_ir.instructions + tuple(rotations),
-            measurements=(MeasurementNode("sample", all_wires, shots=int(shots)),),
+            measurements=(MeasurementNode("sample", all_qubits, shots=int(shots)),),
             metadata=group_metadata,
         )
         package_metadata = {
@@ -548,17 +550,17 @@ def deploy_circuit(
 
 
 def _validate_count_histogram(counts: Mapping[str, int]) -> tuple[int, int]:
-    """Validate an ungrouped histogram and return its wire and shot counts."""
+    """Validate an ungrouped histogram and return its qubit and shot counts."""
 
     if not counts:
         raise ValueError("Counts cannot be empty.")
-    n_wires = len(str(next(iter(counts))))
-    if n_wires == 0:
+    n_qubits = len(str(next(iter(counts))))
+    if n_qubits == 0:
         raise ValueError("Count bitstrings cannot be empty.")
     shots = 0
     for bitstring, count in counts.items():
         bits = str(bitstring)
-        if len(bits) != n_wires:
+        if len(bits) != n_qubits:
             raise ValueError("Count bitstrings must have the same width.")
         if any(bit not in "01" for bit in bits):
             raise ValueError("Count bitstrings must be binary.")
@@ -569,31 +571,31 @@ def _validate_count_histogram(counts: Mapping[str, int]) -> tuple[int, int]:
         shots += int(count)
     if shots == 0:
         raise ValueError("Counts must contain at least one shot.")
-    return n_wires, shots
+    return n_qubits, shots
 
 
 def expectation_z_from_counts(
     counts: Mapping[str, int],
-    wires: int | Sequence[int] | None = None,
+    qubits: int | Sequence[int] | None = None,
 ) -> torch.Tensor:
     """Estimate Z expectations from cloud measurement counts."""
 
-    n_wires, shot_count = _validate_count_histogram(counts)
-    if wires is None:
-        wire_tuple = tuple(range(n_wires))
-    elif isinstance(wires, int):
-        wire_tuple = (wires,)
+    n_qubits, shot_count = _validate_count_histogram(counts)
+    if qubits is None:
+        qubit_tuple = tuple(range(n_qubits))
+    elif isinstance(qubits, int):
+        qubit_tuple = (qubits,)
     else:
-        wire_tuple = tuple(int(wire) for wire in wires)
+        qubit_tuple = tuple(int(qubit) for qubit in qubits)
 
-    if any(wire < 0 or wire >= n_wires for wire in wire_tuple):
-        raise ValueError("Requested wires are outside the measured register.")
+    if any(qubit < 0 or qubit >= n_qubits for qubit in qubit_tuple):
+        raise ValueError("Requested qubits are outside the measured register.")
     shots = float(shot_count)
     values = []
-    for wire in wire_tuple:
+    for qubit in qubit_tuple:
         total = 0.0
         for bitstring, count in counts.items():
-            bit = int(str(bitstring)[wire])
+            bit = int(str(bitstring)[qubit])
             total += (1.0 if bit == 0 else -1.0) * int(count)
         values.append(total / shots)
     return torch.tensor([values], dtype=torch.float32)
@@ -618,9 +620,9 @@ def hamiltonian_expectation_from_counts(
 ) -> torch.Tensor:
     """Estimate an I/Z-only Hamiltonian from computational-basis counts."""
 
-    n_wires, shot_count = _validate_count_histogram(counts)
-    if hamiltonian.n_qubits > n_wires:
-        raise ValueError("Hamiltonian references wires outside the measured register.")
+    n_qubits, shot_count = _validate_count_histogram(counts)
+    if hamiltonian.n_qubits > n_qubits:
+        raise ValueError("Hamiltonian references qubits outside the measured register.")
     shots = float(shot_count)
     total = 0.0
     for term in hamiltonian.terms:
@@ -628,13 +630,13 @@ def hamiltonian_expectation_from_counts(
         term_total = 0.0
         for bitstring, count in counts.items():
             parity = 1.0
-            for wire, name in term.ops:
+            for qubit, name in term.ops:
                 if name != "z":
                     raise ValueError(
                         "Counts-based Hamiltonian estimation currently supports only I/Z terms. "
                         "Use basis-rotated deployment packages for X/Y observables."
                     )
-                parity *= 1.0 if str(bitstring)[wire] == "0" else -1.0
+                parity *= 1.0 if str(bitstring)[qubit] == "0" else -1.0
             term_total += parity * int(count)
         total += coeff * term_total / shots
     return torch.tensor([total], dtype=torch.float32)
@@ -683,7 +685,7 @@ def _grouped_hamiltonian_statistics(
                 f"expected {package.shots}"
             )
         for bitstring in counts:
-            if len(str(bitstring)) != package.n_wires:
+            if len(str(bitstring)) != package.n_qubits:
                 raise ValueError(
                     f"measurement group {group_index} bitstring width does not "
                     "match its deployment package"
@@ -703,8 +705,8 @@ def _grouped_hamiltonian_statistics(
             sample_value = 0.0
             for coefficient, ops in coefficients:
                 parity = 1.0
-                for wire, _name in ops:
-                    parity *= 1.0 if str(bitstring)[wire] == "0" else -1.0
+                for qubit, _name in ops:
+                    parity *= 1.0 if str(bitstring)[qubit] == "0" else -1.0
                 sample_value += coefficient * parity
             probability = int(count) / shots
             mean += probability * sample_value
