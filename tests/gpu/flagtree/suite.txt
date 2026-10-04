@@ -27,6 +27,7 @@ tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py
 tests/unit/test_statevector_pauli_expectation_triton.py
 tests/unit/test_statevector_probability_catalog_dispatch.py
 tests/unit/test_statevector_forward.py
+tests/unit/test_statevector_reverse.py
 tests/unit/test_statevector_probabilities_triton.py
 tests/unit/test_statevector_triton.py
 tests/unit/test_triton_complex_bmm.py
