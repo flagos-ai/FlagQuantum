@@ -184,6 +184,20 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "benchmarks/results/comparison/differentiable-corpus.json"
         ),
     ),
+    "numa_memory_traffic": RunnerSpec(
+        name="numa_memory_traffic",
+        module="flagquantum.benchmarking.numa_memory_traffic",
+        attribute="main",
+        category="statevector",
+        summary="Measure adjoint latency and Intel DRAM traffic across NUMA policies.",
+        hardware="Linux x86-64 with Intel uncore IMC CAS performance counters",
+        example=(
+            "flagquantum-benchmark run numa_memory_traffic "
+            "--n-wires 22 --threads 64 --cpu-list 0-63 "
+            "--nodes 0,1 --socket-cpus 0,32 --calls 7 "
+            "--json-output results/numa-memory-traffic.json"
+        ),
+    ),
     "cpu_performance_gate": RunnerSpec(
         name="cpu_performance_gate",
         module="flagquantum.benchmarking.cpu_performance_gate",

@@ -163,6 +163,12 @@ records the two-node 32-thread rotation-tile scheduling A/B, the absolute
 PennyLane Lightning comparison, and the single-socket versus dual-socket NUMA
 boundary on 64 physical Xeon cores.
 
+[`NUMA_MEMORY_TRAFFIC_LINUX_X86_20261004.md`](NUMA_MEMORY_TRAFFIC_LINUX_X86_20261004.md)
+measures complete 22-qubit value-and-gradient latency and Intel IMC DRAM
+traffic for default first-touch, forced bind, and forced interleave on both
+sockets. It includes a same-semantics PennyLane Lightning comparison and the
+evidence for retaining first-touch instead of adding an automatic NUMA policy.
+
 [`LINUX_X86_CPU_SCORECARD_20261003.md`](LINUX_X86_CPU_SCORECARD_20261003.md)
 establishes the formal Linux x86-64 forward and adjoint baseline. It records
 complete 18/22-qubit absolute times for FlagQuantum, Qiskit Aer, and PennyLane
