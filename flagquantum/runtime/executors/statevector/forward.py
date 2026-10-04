@@ -214,12 +214,11 @@ def communication_aware_qubit_layout(
 ) -> tuple[CircuitIR, tuple[int, ...]]:
     """Relabel qubits to minimize forward or full-training-step communication.
 
-    ``local_world_size`` is the placement the plan resolved. It is passed rather
-    than read from ``LOCAL_WORLD_SIZE``: that variable describes the world
-    torchrun was handed, so a subgroup run reports a two-node world as
-    single-node, and an unlaunched process would let ambient environment decide
-    which qubit carries the rank bit. When it is omitted the world is assumed to
-    be one node, which is the placement-free choice.
+    ``local_world_size`` is the placement the plan resolved, passed rather than
+    read from ``LOCAL_WORLD_SIZE``: that variable describes the world torchrun
+    was handed, so a subgroup run reports a two-node world as single-node, and an
+    unlaunched process would let ambient environment decide which qubit carries
+    the rank bit. Omitting it assumes one node, the placement-free choice.
     """
 
     rank_bits = int(world_size).bit_length() - 1
@@ -321,14 +320,12 @@ def communication_aware_qubit_layout(
         mapping = [0] * ir.n_wires
         for physical, logical in enumerate(local_logical):
             mapping[logical] = physical
-        ordered_sharded = sorted(
-            sharded_logical,
-            key=(
-                lambda qubit: (
-                    (qubit_activity[qubit], qubit) if topology_aware else (qubit,)
-                )
-            ),
-        )
+        if topology_aware:
+            ordered_sharded = sorted(
+                sharded_logical, key=lambda qubit: (qubit_activity[qubit], qubit)
+            )
+        else:
+            ordered_sharded = sorted(sharded_logical)
         for offset, logical in enumerate(ordered_sharded):
             mapping[logical] = ir.n_wires - rank_bits + offset
         permutation = tuple(mapping)
@@ -666,9 +663,7 @@ def _vectorized_local_gate(
             amplitudes.numel() * amplitudes.element_size(),
         )
     if triton_decision.accelerated:
-        from ....kernels.triton.statevector_gates import (
-            apply_complex64_local_1q,
-        )
+        from ....kernels.triton.statevector_gates import apply_complex64_local_1q
 
         bit_position = plan.n_qubits - qubits[0] - 1 - rank_bits
         amplitudes = apply_complex64_local_1q(
@@ -938,9 +933,7 @@ def _vectorized_cross_shard_cx(
     control_sharded = control in plan.sharded_qubits
     target_sharded = target in plan.sharded_qubits
     if control_sharded == target_sharded:
-        raise ValueError(
-            "specialized cross-shard CX requires exactly one sharded qubit"
-        )
+        raise ValueError("cross-shard CX requires exactly one sharded qubit")
 
     if control_sharded:
         position = plan.sharded_qubits.index(control)
