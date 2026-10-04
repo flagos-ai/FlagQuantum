@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -988,6 +989,85 @@ def test_the_live_example_tokens_match_the_pinned_record() -> None:
     assert int(contract["docstring_example"]["measured_tokens"]) == sum(
         len(tokens) for tokens in pinned.values()
     )
+
+
+def test_a_tree_that_changes_under_the_memo_is_rescanned(tmp_path: Path) -> None:
+    """The two surfaces are cached per tree, and the cache must not outlive the tree.
+
+    Deriving these two surfaces is the expensive half of the gate and the gate asks
+    for them repeatedly, over a tree that does not change between asks, so they are
+    memoized. That makes the memo the one place in this scanner that can answer a
+    question about a tree other than the one on disk -- which is precisely what the
+    gate's own fixtures do, rewriting a package under a path they have already
+    scanned. So the invalidation is pinned here in the two shapes that matter: a file
+    edited in place, and a file whose replacement is *byte-for-byte the same length*.
+    A stamp over sizes and timestamps would pass the first and is the reason the
+    second is here.
+    """
+
+    path = tmp_path / "flagquantum" / "example.py"
+    path.parent.mkdir(parents=True)
+    path.write_text('"""Prose about a wire."""\n', encoding="utf-8")
+    root = tmp_path / "flagquantum"
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+    # The repeat is the memo hit, and has to agree with the miss.
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wire"),
+    )
+
+    # Same length, same path, same everything a stat stamp would read except the
+    # bytes: the sentence loses its full stop so that `wire` can grow into `wires`
+    # without the file changing size.
+    before = path.stat()
+    path.write_text('"""Prose about a wires"""\n', encoding="utf-8")
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    after = path.stat()
+    assert (after.st_size, after.st_mtime_ns) == (
+        before.st_size,
+        before.st_mtime_ns,
+    ), "this test is only meaningful while the rewrite is invisible to a stat stamp"
+    assert _CENSUS.docstring_census(root) == (
+        ("flagquantum/example.py::<module>", "wires"),
+    )
+
+
+def test_the_two_docstring_surfaces_are_read_in_one_pass() -> None:
+    """The split is one traversal, so the halves cannot be read off two different trees.
+
+    `docstring_census` and `docstring_example_tokens` are disjoint by construction --
+    an index is inside an executable block or it is not -- and they are memoized under
+    one key, which is what makes that visible: if both readings were taken separately,
+    a rewrite between the two calls could put the same line in both halves or in
+    neither, and the gate would reconcile a multiset that never existed on disk. So the
+    second reading must add no key of its own.
+    """
+
+    root = _ROOT / "flagquantum"
+    prose = _CENSUS.docstring_census(root)
+    entries = len(_CENSUS._DOCSTRING_SURFACES)
+    examples = _CENSUS.docstring_example_tokens(root)
+    assert set(prose).isdisjoint(examples)
+    assert prose and examples, "the live tree carries both surfaces"
+    assert (
+        len(_CENSUS._DOCSTRING_SURFACES) == entries
+    ), "the second surface came from a traversal of its own"
+    # Identity, not equality: `==` would hold for two traversals that agreed, so this
+    # is the assertion that fails if the memo is deleted rather than merely wrong.
+    assert _CENSUS.docstring_census(root) is prose
+
+
+def test_a_docstring_without_an_example_block_is_not_searched_for_one() -> None:
+    """`_example_lines` is the hot path, and no `>>>` means no executable line.
+
+    The fast return is a claim about the loop it replaces: `inside` can only become
+    true on a line that starts with `>>>`, so a docstring with none of those has an
+    empty example set whatever else it contains.
+    """
+
+    assert _CENSUS._example_lines("Prose about a wire.") == set()
+    assert _CENSUS._example_lines(">>> Circuit(2).n_wires\n2\n") == {0, 1}
 
 
 def _importable_package(tmp_path: Path, name: str, files: dict[str, str]) -> Path:

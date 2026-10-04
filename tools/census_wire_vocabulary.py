@@ -106,6 +106,7 @@ and `simulation/native_cpu/__init__.py` and `simulation/pauli.py` list it in
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
 import inspect
 import io
@@ -1226,6 +1227,8 @@ def _example_lines(doc: str) -> set[int]:
     runner is what governs those tokens, so they are counted apart from the prose ledger.
     """
 
+    if ">>>" not in doc:
+        return set()
     inside = False
     lines: set[int] = set()
     for index, line in enumerate(doc.splitlines()):
@@ -1239,6 +1242,91 @@ def _example_lines(doc: str) -> set[int]:
         if inside:
             lines.add(index)
     return lines
+
+
+def _tree_fingerprint(root: Path) -> str:
+    """A digest of every byte a docstring scan is about to read.
+
+    The contract gate re-derives the same two docstring surfaces once per assertion a
+    test makes, and on this package one derivation is seconds of parsing; a test module
+    that makes forty of them spends minutes re-reading a tree that has not changed. The
+    memo below is keyed by this digest rather than by the path alone, so a tree that is
+    rewritten in-process -- which is exactly what the gate's own negative tests do, into
+    a ``tmp_path`` -- cannot be served a scan of its previous contents.
+
+    The digest is over contents, not over timestamps and sizes: 624 files and 7 MB cost
+    34 ms to hash here against 1600 ms to parse, and a content digest cannot be fooled
+    by a rewrite that happens to restore an identical size and mtime.
+    """
+
+    digest = hashlib.blake2b(digest_size=16)
+    for path in sorted(root.rglob("*.py")):
+        digest.update(path.relative_to(root.parent).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+_DOCSTRING_SURFACES: dict[
+    tuple[str, str],
+    tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]],
+] = {}
+
+
+def _docstring_surfaces(
+    root: Path,
+) -> tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """Both docstring surfaces from one pass: the prose, and the executable examples.
+
+    They are read in the same traversal because they are disjoint halves of one
+    docstring, decided by ``_example_lines``: an index inside an executable block is an
+    example and every other index is prose. Reading them apart would parse every file
+    twice and would also mean the split had two chances to disagree with itself.
+
+    The result is memoized per process because the gate asks for it repeatedly and the
+    tree does not change between those asks. The key is a content digest, so the memo
+    is an optimization and never an answer about a tree other than the one on disk.
+    """
+
+    key = (str(root), _tree_fingerprint(root))
+    cached = _DOCSTRING_SURFACES.get(key)
+    if cached is not None:
+        return cached
+
+    prose: list[tuple[str, str]] = []
+    examples_found: list[tuple[str, str]] = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parent).as_posix()
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=relative)
+        spans = _scope_names(tree)
+        names = _definition_names(tree)
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+            ):
+                continue
+            doc = ast.get_docstring(node, clean=False)
+            if not doc or "wire" not in doc.lower():
+                continue
+            qualname = names.get(id(node), "<module>")
+            lines = doc.splitlines()
+            examples = _example_lines(doc)
+            for index, line in enumerate(lines):
+                target = examples_found if index in examples else prose
+                for token in _wire_tokens(line):
+                    target.append((f"{relative}::{qualname}", token))
+        for comment in tokenize.generate_tokens(io.StringIO(source).readline):
+            if comment.type != tokenize.COMMENT or "wire" not in comment.string.lower():
+                continue
+            scope = _enclosing(spans, comment.start[0])
+            for word in _wire_tokens(comment.string):
+                prose.append((f"{relative}::{scope}", word))
+
+    surfaces = tuple(sorted(prose)), tuple(sorted(examples_found))
+    _DOCSTRING_SURFACES[key] = surfaces
+    return surfaces
 
 
 def docstring_census(
@@ -1263,35 +1351,7 @@ def docstring_census(
     """
 
     root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
-    found: list[tuple[str, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        relative = path.relative_to(root.parent).as_posix()
-        source = path.read_text(encoding="utf-8")
-        tree = ast.parse(source, filename=relative)
-        spans = _scope_names(tree)
-        names = _definition_names(tree)
-        for node in ast.walk(tree):
-            if not isinstance(
-                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
-            ):
-                continue
-            doc = ast.get_docstring(node, clean=False)
-            if not doc or "wire" not in doc.lower():
-                continue
-            qualname = names.get(id(node), "<module>")
-            examples = _example_lines(doc)
-            for index, line in enumerate(doc.splitlines()):
-                if index in examples:
-                    continue
-                for token in _wire_tokens(line):
-                    found.append((f"{relative}::{qualname}", token))
-        for comment in tokenize.generate_tokens(io.StringIO(source).readline):
-            if comment.type != tokenize.COMMENT or "wire" not in comment.string.lower():
-                continue
-            scope = _enclosing(spans, comment.start[0])
-            for word in _wire_tokens(comment.string):
-                found.append((f"{relative}::{scope}", word))
-    return tuple(sorted(found))
+    return _docstring_surfaces(root)[0]
 
 
 def docstring_example_tokens(
@@ -1309,25 +1369,7 @@ def docstring_example_tokens(
     """
 
     root = DEFAULT_PACKAGE_ROOT if package_root is None else package_root
-    found: list[tuple[str, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        relative = path.relative_to(root.parent).as_posix()
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=relative)
-        names = _definition_names(tree)
-        for node in ast.walk(tree):
-            if not isinstance(
-                node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
-            ):
-                continue
-            doc = ast.get_docstring(node, clean=False)
-            if not doc or "wire" not in doc.lower():
-                continue
-            qualname = names.get(id(node), "<module>")
-            lines = doc.splitlines()
-            for index in sorted(_example_lines(doc)):
-                for token in _wire_tokens(lines[index]):
-                    found.append((f"{relative}::{qualname}", token))
-    return tuple(sorted(found))
+    return _docstring_surfaces(root)[1]
 
 
 def main() -> int:
