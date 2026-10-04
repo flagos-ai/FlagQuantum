@@ -608,10 +608,17 @@ def test_the_checked_in_completion_artifact_resolves_as_the_capacity_premise() -
         producer._frozen_workload(contract).topology_fingerprint()
     )
     baseline = premise["baseline"]
-    assert (
-        baseline["single_gpu_peak_memory_bytes"]
-        == CAPACITY["measured_single_device_peak_memory_bytes"]
-    )
+    # The premise's own reading is whatever the artifact it cites recorded. That
+    # artifact was measured in a checkout this repository does not contain and
+    # before the frozen body was redesigned, so the manifest discloses its peak
+    # separately and freezes the reading the frozen body reaches where the
+    # contract is measured now. An inherited number from another environment is
+    # not a shape a freshly sealed baseline could reproduce.
+    recorded_peak = CAPACITY["premise_provenance"][
+        "recorded_single_gpu_peak_memory_bytes"
+    ]
+    assert baseline["single_gpu_peak_memory_bytes"] == recorded_peak
+    assert recorded_peak != CAPACITY["measured_single_device_peak_memory_bytes"]
     assert (
         baseline["single_gpu_device_total_memory_bytes"]
         == CAPACITY["single_device_total_memory_bytes"]

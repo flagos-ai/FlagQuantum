@@ -129,7 +129,9 @@ def _baseline_evidence(manifest: dict[str, Any]) -> dict[str, Any]:
         "single_gpu_expected_oom": True,
         "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
         "capacity_failure_reason": "CUDA out of memory",
-        "measured_peak_memory_bytes": 75148300800,
+        "measured_peak_memory_bytes": capacity[
+            "measured_single_device_peak_memory_bytes"
+        ],
         "device_total_memory_bytes": capacity["single_device_total_memory_bytes"],
         "n_sites": capacity["n_sites"],
         "initial_max_bond": capacity["trained_max_bond"],
