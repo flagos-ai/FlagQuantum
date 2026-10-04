@@ -122,12 +122,33 @@ _PINNED_REACHABILITY = {
 #: *length* of the best word is a property of the run rather than of the pair:
 #: `_leaves` picks its branch from the run's own Euler triple, so the same runs
 #: give the same word length under every pair.
+#:
+#: The entry-for-entry column is a *reference* rather than an equality, and
+#: `_PLATFORM_MARGIN` below is why: which runs land in it is decided by the
+#: exact-equality branch tests inside `one_qubit_synthesis._leaves` and
+#: `._pulse_leaf` (`polar == _HALF_PI`, `_is_zero(angle)`) plus `_emit`'s
+#: `abs(anchor) > 1.0e-15`, all evaluated on `cmath`/`math` results that a
+#: different C library may return one unit in the last place away. The same tree
+#: measures 247 runs here and 241 on the x86-64 CI runner, while the column the
+#: claim rests on -- every run has a phase-blind word -- is 4000 out of 4000 on
+#: both. Pinning these two digits as an equality would make the contract a
+#: property of the platform's libm instead of the mathematics.
 _PINNED_REACH = {
     ("rz", "sx"): (True, 247, 188),
     ("rz", "rx"): (True, 230, 193),
     ("phase", "sx"): (False, 267, 489),
     ("u1", "rx"): (False, 425, 529),
 }
+
+#: How far the entry-for-entry column may move from its reference and still be the
+#: same measurement. The observed platform spread is 6 runs of 4000; the margin is
+#: twice that, and it is small enough that a real regression -- the column growing
+#: toward the phase-blind one, or collapsing -- still fails.
+_PLATFORM_MARGIN = 12
+
+#: The same allowance for the 80-circuit legalization population, where 12 would
+#: be a sixth of the population. Three circuits is the same few-percent band.
+_PLATFORM_MARGIN_SMALL = 3
 
 #: The phase each shipped basis multiplies the statevector by when it legalizes a
 #: program, over the seeded entangled population. ``phase_is_not_a_sign`` is the
@@ -215,9 +236,13 @@ def test_every_run_has_a_word_but_almost_none_has_an_exact_one(payload: dict) ->
 
     A word that agrees only up to a global phase exists for every run, and it is
     three gates shorter on mean; a word that agrees entry for entry exists for
-    between 84 and 425 of 4000 runs. The gap is not an implementation shortfall
-    where the basis is phase-free -- the reachability test above bounds it -- so a
+    fewer than one run in ten. The gap is not an implementation shortfall where
+    the basis is phase-free -- the reachability test above bounds it -- so a
     regression here would be a claim that the port is cheaper than it is.
+
+    The entry-for-entry column is held to its reference within `_PLATFORM_MARGIN`,
+    for the reason recorded there; the phase-blind column is 4000 of 4000 and is
+    not a platform quantity.
     """
 
     for row in payload["declared_basis_reach"]:
@@ -230,8 +255,8 @@ def test_every_run_has_a_word_but_almost_none_has_an_exact_one(payload: dict) ->
         assert phase_blind["words_shorter"] > 0
         assert phase_blind["gates_saved"] > 0
         exact = row["entry_for_entry"]
-        assert exact["words_found"] == exact_words
-        assert exact["gates_saved"] == exact_saved
+        assert abs(exact["words_found"] - exact_words) <= _PLATFORM_MARGIN
+        assert abs(exact["gates_saved"] - exact_saved) <= _PLATFORM_MARGIN
         # The two columns must stay far apart, and in this direction. An exact
         # word is also a phase-blind one, so this can never invert.
         assert exact["words_found"] < phase_blind["words_found"] // 4
@@ -257,10 +282,16 @@ def test_legalization_already_drops_a_phase_that_is_not_a_sign(payload: dict) ->
     ) in _PINNED_LEGALIZATION_PHASE.items():
         row = rows[label]
         assert row["circuit_count"] == circuits
-        assert row["statevector_unchanged"] == unchanged
-        assert row["statevector_phased"] == phased
-        assert row["phase_is_not_a_sign"] == not_a_sign
+        # Three counts of one 80-circuit population, and the two that are not
+        # structural are decided by an equality test on a statevector entry that a
+        # different C library may round on the other side. They are held to their
+        # references within the margin below rather than exactly; the claim is that
+        # almost every program is phased, not that exactly 76 are.
+        assert abs(row["statevector_unchanged"] - unchanged) <= _PLATFORM_MARGIN_SMALL
+        assert abs(row["statevector_phased"] - phased) <= _PLATFORM_MARGIN_SMALL
+        assert abs(row["phase_is_not_a_sign"] - not_a_sign) <= _PLATFORM_MARGIN_SMALL
         assert row["statevector_unchanged"] + row["statevector_phased"] == circuits
+        assert row["phase_is_not_a_sign"] >= circuits - 2 * _PLATFORM_MARGIN_SMALL
         # No program is ever non-proportional: the phase is global, so the
         # legalized program computes the same state up to that one scalar.
         assert row["worst_non_proportional_gap"] < 1e-9
@@ -275,9 +306,16 @@ def test_the_witness_is_two_instructions_and_still_loses_the_phase(
 
     `h` followed by the basis's own entangler is two instructions. On every basis
     that publishes a z-rotation the statevector is still multiplied by a phase of
-    45 or 90 degrees, which no sequence of gates could have folded away; on
-    `clifford-t`, which publishes `h`, it is unchanged. A basis that has the gate
-    keeps the phase, and one that does not loses it -- which is the whole point.
+    minus 45 or minus 90 degrees, which no sequence of gates could have folded
+    away; on `clifford-t`, which publishes `h`, it is unchanged. A basis that has
+    the gate keeps the phase, and one that does not loses it -- which is the whole
+    point.
+
+    The sign is part of the assertion on purpose. The phase is the one legalization
+    *introduced*, so it is the reciprocal of the ratio the other way round, and a
+    measurement that reported the wrong direction would look just as plausible: a
+    convention with no sign pinned in it flips silently when the implementation
+    changes.
     """
 
     assert len(payload["phase_witness"]) == len(payload["legalization_phase"])
@@ -294,6 +332,7 @@ def test_the_witness_is_two_instructions_and_still_loses_the_phase(
             continue
         assert math.isclose(degrees % 45.0, 0.0, abs_tol=1e-9)
         assert degrees % 360.0 != 0.0
+        assert -180.0 < degrees < 0.0
         # The gap is a real amplitude difference, not a rounding residue: a phase
         # of a quarter turn moves a `1/sqrt(2)` amplitude by more than `0.5`.
         assert row["max_amplitude_gap"] > 0.5

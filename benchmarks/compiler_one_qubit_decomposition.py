@@ -448,12 +448,22 @@ def _statevector(program: CircuitIR) -> Any:
 def _phase_of_legalization(
     source: CircuitIR, basis: Basis
 ) -> tuple[complex | None, float]:
+    """The phase legalization *introduced*, and the largest amplitude gap.
+
+    The quotient is `after / before`, so the returned scalar is the factor the
+    legalized program multiplies the source by, and not its reciprocal. The
+    direction is part of the measurement: both quotients are proportional and both
+    are non-trivial, so a report that carried the other one would look just as
+    plausible while stating the opposite rotation. The sign is pinned in the
+    contract test for that reason.
+    """
+
     legalized = legalize_native_gates(
         source, snapshot=snapshot(basis), evaluated_at=_NOW
     )
     before = _statevector(source)
     after = _statevector(legalized.program)
-    return _quotient(before, after), float((before - after).abs().max())
+    return _quotient(after, before), float((before - after).abs().max())
 
 
 def legalization_phase(basis: Basis) -> dict[str, Any]:
@@ -517,6 +527,10 @@ def phase_witness(basis: Basis) -> dict[str, Any]:
 
     `h` followed by `cx` is two instructions, so the phase cannot be attributed to
     a fold of many gates: it is the single `h` the target has no `h` for.
+
+    `global_phase_degrees` is the signed phase legalization introduced, in
+    `(-180, 180]`, so a program whose legalized state is `exp(-i*pi/4)` times the
+    source reads `-45.0` and not `315.0`. It is the sign the contract test pins.
     """
 
     source = CircuitIR(
