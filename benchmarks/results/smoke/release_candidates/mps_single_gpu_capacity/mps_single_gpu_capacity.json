@@ -38,15 +38,15 @@
   "evidence_scope": "one_gpu_local",
   "integrity": {
     "algorithm": "hmac-sha256",
-    "content_sha256": "d57364178a73ba774e720fbb2b934fb8ab39437741c194ad39f04c1c2debe7cf",
-    "signature": "aee57bbcdfaa741f35d2d3a754f8e33486506465a7df7e5a86eee4447483c2dc"
+    "content_sha256": "5117ed45c225f1d47cdeff33fb511bc8fe385ac0f3f32cb4089cce895dec7de1",
+    "signature": "7a90077099794c7b78a6989f8d9889673303b031d7b2ddd134f8c7fbc219df5b"
   },
   "provenance": {
     "collective_backend": "nccl",
     "command": [
       "torchrun --standalone --nproc_per_node=1 benchmarks/mps_release_evidence.py --role capacity-failure --release-manifest benchmarks/manifests/mps_release_v1.json"
     ],
-    "commit": "cd5a77b5ffc6ccd66cffe01766f6eecf4598ae5e",
+    "commit": "039ea5b22bfad4cb130b807ce92bf4ae48fe1b84",
     "devices": [
       "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49"
     ],
@@ -61,7 +61,7 @@
     ],
     "topology": "\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201",
     "warmup": 0,
-    "workload_sha256": "738fa81c53605a29b5464d7e252abb279424b7ef87891d95d41c9f378cdc5e34"
+    "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae"
   },
   "schema": "flagquantum_runtime_evidence_v1"
 }
