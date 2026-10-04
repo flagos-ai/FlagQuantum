@@ -16,33 +16,35 @@ class DynamicCircuit(Circuit):
     """Circuit builder for mid-circuit measurement and classical feedback."""
 
     def _append_dynamic(self, instruction: Instruction) -> DynamicCircuit:
-        if any(wire < 0 or wire >= self.n_wires for wire in instruction.wires):
-            raise ValidationError("dynamic instruction wire is outside the circuit")
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in instruction.wires):
+            raise ValidationError("dynamic instruction qubit is outside the circuit")
         self._instructions.append(instruction)
         self._invalidate_execution_cache(instructions_changed=True)
         return self
 
-    def measure(self, wire: int, *, classical_bit: int | None = None) -> DynamicCircuit:
-        bit = int(wire if classical_bit is None else classical_bit)
+    def measure(
+        self, qubit: int, *, classical_bit: int | None = None
+    ) -> DynamicCircuit:
+        bit = int(qubit if classical_bit is None else classical_bit)
         if bit < 0:
             raise ValidationError("classical_bit must be non-negative")
         return self._append_dynamic(
             Instruction(
                 "measure",
-                (int(wire),),
+                (int(qubit),),
                 metadata={"is_dynamic": True, "classical_bit": bit},
             )
         )
 
-    def reset(self, wire: int) -> DynamicCircuit:
+    def reset(self, qubit: int) -> DynamicCircuit:
         return self._append_dynamic(
-            Instruction("reset", (int(wire),), metadata={"is_dynamic": True})
+            Instruction("reset", (int(qubit),), metadata={"is_dynamic": True})
         )
 
     def conditional(
         self,
         name: str,
-        wires: Iterable[int] | int,
+        qubits: Iterable[int] | int,
         *,
         classical_bit: int | None = None,
         equals: int = 1,
@@ -65,15 +67,15 @@ class DynamicCircuit(Circuit):
             raise ValidationError(
                 "conditions require non-negative bits and values 0 or 1"
             )
-        wire_tuple = (
-            (int(wires),)
-            if isinstance(wires, int)
-            else tuple(int(wire) for wire in wires)
+        qubit_tuple = (
+            (int(qubits),)
+            if isinstance(qubits, int)
+            else tuple(int(qubit) for qubit in qubits)
         )
         return self._append_dynamic(
             Instruction(
                 name,
-                wire_tuple,
+                qubit_tuple,
                 params=dict(params or {}),
                 matrix=matrix,
                 metadata={"conditions": tuple(sorted(raw_conditions.items()))},

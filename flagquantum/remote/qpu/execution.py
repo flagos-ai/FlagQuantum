@@ -280,7 +280,7 @@ def _execute_expectation(
         measurements=(
             MeasurementResult(
                 kind="expectation",
-                wires=observable_wires or (0,),
+                qubits=observable_wires or (0,),
                 value=value,
                 shots=sum(measurement_plan.shots_per_group),
                 metadata={
@@ -382,7 +382,7 @@ def counts_result(
         measurements=(
             MeasurementResult(
                 kind="counts",
-                wires=tuple(range(n_wires)),
+                qubits=tuple(range(n_wires)),
                 value=[counts],
                 shots=native.shots,
                 metadata={

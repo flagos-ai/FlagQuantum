@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
 import torch
 
+from ..core._qubit_aliases import warn_qubit_alias
 from ..core.contracts import AccuracyContract, RuntimePlanContract
 from ..errors import ExecutionError
 from .result_adapters import LiveRuntimeSummary
@@ -28,7 +29,7 @@ class MeasurementResult:
     """One backend-neutral result produced from a ``MeasurementNode``."""
 
     kind: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     value: MeasurementValue
     shots: int | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
@@ -37,6 +38,12 @@ class MeasurementResult:
     @property
     def schema_version(self) -> str:
         return "1.0"
+
+    @property
+    def wires(self) -> tuple[int, ...]:
+        """Deprecated accessor for results created before qubit naming."""
+        warn_qubit_alias("wires", "qubits")
+        return self.qubits
 
 
 @dataclass(frozen=True)
@@ -67,7 +74,7 @@ class ExecutionResult:
             measurements=tuple(
                 MeasurementResult(
                     kind=item.kind,
-                    wires=item.wires,
+                    qubits=item.qubits,
                     value=(
                         item.value.to(*args, **kwargs)
                         if isinstance(item.value, torch.Tensor)
@@ -110,7 +117,7 @@ class ExecutionResult:
             measurements=tuple(
                 MeasurementResult(
                     kind=item.kind,
-                    wires=item.wires,
+                    qubits=item.qubits,
                     value=(
                         detach(item.value)
                         if isinstance(item.value, torch.Tensor)

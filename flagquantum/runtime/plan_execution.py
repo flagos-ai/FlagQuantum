@@ -303,7 +303,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     execution_ir = plan_execution_program(execution_plan)
     noise_model = plan_noise_model(execution_plan)
     requests = tuple(source_ir.measurements)
-    validate_measurements(requests, n_wires=source_ir.n_wires)
+    validate_measurements(requests, n_qubits=source_ir.n_wires)
     mode = str(decision["mode"])
     noisy_plan = execution_plan.noisy_execution_plan
     # The plan, not the argument, says what the program needs: an inline channel

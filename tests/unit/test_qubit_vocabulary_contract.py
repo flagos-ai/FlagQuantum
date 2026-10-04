@@ -937,8 +937,8 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     contract["other_surfaces"]["public_attribute_aliased"] = 3
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
-    assert "16 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
-    assert "26 of 122 attribute sites retired, 3 kept as deprecated aliases" in lines[8]
+    assert "30 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+    assert "27 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
     assert "0 of 10 definition names retired" in lines[16]
 
 

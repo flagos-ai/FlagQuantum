@@ -14,6 +14,26 @@ explicit None. Positional selection and the Observable overload are unchanged.
 The proposed schedule is deprecation in 0.3.x and removal in 0.4.0, subject to
 release-owner review; this PR does not bump the package version.
 
+The runtime helpers that are importable but not reachable from `fq.*` are renamed
+outright, with no forwarder, because no documented `fq.*` path reaches them:
+
+| Before | After |
+|---|---|
+| `runtime.planner.estimates.estimate_state_bytes(n_wires=…)` and its five siblings | `n_qubits=` |
+| `runtime.planner.execution_policy.estimate_execution_state_bytes(n_wires=…)` | `n_qubits=` |
+| `runtime.planner.noise_calibration.NoiseSelectorCalibration.estimate_seconds(n_wires=…)` | `n_qubits=` |
+| `runtime.planner.topology.rank_ownership(n_wires=…)` | `n_qubits=` |
+| `runtime.measurements.validate_measurements(requests, n_wires=…)` | `n_qubits=` |
+| `runtime.measurements.execute_measurements(output, requests, n_wires=…)` | `n_qubits=` |
+| `runtime.dynamic.circuit.DynamicCircuit.measure(wire=…)` / `.reset(wire=…)` | `qubit=` |
+| `runtime.dynamic.circuit.DynamicCircuit.conditional(wires=…)` | `qubits=` |
+
+`fq.MeasurementResult.wires` is a result field of an exported class, so it is the
+one runtime name that keeps a forwarder: the field is `qubits`, and `wires` is a
+deprecated property that warns and returns it. `fq.MeasurementResult` is also why
+`execute_measurements` builds `MeasurementResult(qubits=…)` rather than a keyword
+the dataclass no longer declares.
+
 RuntimePolicy writes schema `flagquantum.runtime_policy`, version `2.0`, with
 `observable_qubits`. Its reader accepts the prior unversioned payload with
 `observable_wires`, including module state dictionaries. Conflicting selection
@@ -59,8 +79,8 @@ surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`, and
 ## Spellings the census cannot see
 
 The scanner reads names — parameters, attributes, definitions — and reports
-string literals without judging them. Two further user-visible spellings are
-reachable exactly the way a parameter is, and neither is on a ledger. Both are
+string literals without judging them. Six further user-visible spellings are
+reachable exactly the way a parameter is, and none is on a ledger. They are
 listed here so that "the ledger is clean" is not read as "no user-visible `wire`
 is left":
 
@@ -68,9 +88,15 @@ is left":
 |---|---|---|
 | `wire_options`, `show_wire_labels`, `active_wire_notches`, `n_wires` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | open; the drawer docstrings document the accepted spelling, which is still the old one |
 | `wires` | the keyword a captured hybrid program must use — `qp.H(wires=...)`, `qp.measure(wires=...)`, `qp.reset(wires=...)` — required by the capture layer, which rejects any other keyword | open; renaming it changes the source language, not a signature |
+| `wire_start`, `wire_end`, `owned_wires` | dictionary keys returned by `runtime.planner.topology.rank_ownership` | kept; no reader in the package builds them into a qubit-named contract, and the parameter the caller passes is already `n_qubits` |
+| `max_marginal_wires` | a measurement-metadata key: written by `observables` into a request and read by `runtime.measurements` out of it | kept; it crosses a request boundary, so it moves only with a request-schema version |
+| `per_sharded_wire_gate` | the value of `communication_frequency` in a candidate-plan scoring payload | kept; no reader anywhere in the package, so renaming it would change evidence without a consumer to migrate |
+| `n_wires` | the metric key in `ExecutionResult(metrics={"n_wires": …})` built by the backend adapters | kept; a metric key is part of a comparison payload |
 
-Neither is renamed here. Renaming the first would make the drawer docstrings
-describe keywords the code does not accept; renaming the second would break every
-hybrid program the capture layer can read. Both are candidates for their own
-change, and the capture keyword is a decision for the hybrid-language owner
-rather than for this migration.
+The first two rows are open work. Renaming the drawer keywords would make the
+drawer docstrings describe keywords the code does not accept; renaming the capture
+keyword would break every hybrid program the capture layer can read. Both are
+candidates for their own change, and the capture keyword is a decision for the
+hybrid-language owner rather than for this migration. The last four rows are
+payload keys the census reports as literals, and they move only when the payload
+that carries them is versioned.

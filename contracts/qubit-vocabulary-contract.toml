@@ -75,7 +75,7 @@ public_attribute_persisted = 22
 public_attribute_reproduce = "python -c \"from tools.census_wire_vocabulary import attribute_census as f; c = f(); print(len(c.ledgered), len(c.excluded))\""
 public_attribute_owner = "WQ-2"
 public_attribute_condition = "ledgered: [attribute_ledger] and [attribute_exclusions] are reconciled against the census on every run, so the split cannot drift and a name cannot be renamed while it is still a payload key"
-public_attribute_aliased = 2
+public_attribute_aliased = 3
 public_attribute_alias_condition = "aliases: a name here is renamed and still reachable through a deprecated forwarder until [attribute_aliases] removal_version; it is counted as remaining, so a slice cannot bank an alias as finished work"
 public_definition_names = 10
 public_definition_reproduce = "python -c \"from tools.census_wire_vocabulary import definition_census as f; print(len(f().ledgered))\""
@@ -473,6 +473,20 @@ sites = [
     "flagquantum/ecosystem/simulators/advisor.py::recommend::n_wires",
     "flagquantum/observables/__init__.py::lower_outputs::n_wires",
     "flagquantum/qec/pauli.py::Pauli.from_label::wire",
+    "flagquantum/runtime/dynamic/circuit.py::DynamicCircuit.conditional::wires",
+    "flagquantum/runtime/dynamic/circuit.py::DynamicCircuit.measure::wire",
+    "flagquantum/runtime/dynamic/circuit.py::DynamicCircuit.reset::wire",
+    "flagquantum/runtime/measurements.py::execute_measurements::n_wires",
+    "flagquantum/runtime/measurements.py::validate_measurements::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_density_bytes::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_mps_bytes::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_stabilizer_bytes::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_state_bytes::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_tensor_network_bytes::n_wires",
+    "flagquantum/runtime/planner/estimates.py::estimate_tensor_network_working_set_bytes::n_wires",
+    "flagquantum/runtime/planner/execution_policy.py::estimate_execution_state_bytes::n_wires",
+    "flagquantum/runtime/planner/noise_calibration.py::NoiseSelectorCalibration.estimate_seconds::n_wires",
+    "flagquantum/runtime/planner/topology.py::rank_ownership::n_wires",
     "flagquantum/testing/correctness.py::generate_circuit_ir::n_wires",
     "flagquantum/testing/remote.py::InMemoryRemoteTarget.discover_backends::n_wires",
 ]
@@ -514,8 +528,8 @@ title = "runtime topology and planner estimates"
 owner_team = "runtime + hardware"
 canonical_count = 14
 attribute_count = 2
-attribute_field_count = 1
-attribute_member_count = 1
+attribute_field_count = 0
+attribute_member_count = 2
 attribute_instance_count = 0
 persisted_attribute_count = 6
 definition_count = 0
@@ -1172,6 +1186,10 @@ declaration = "field"
 site = "flagquantum/qec/types.py::PauliFrame::x_wires"
 replacement = "x_qubits"
 declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/planner/candidate_plans.py::CircuitAnalysisView::n_wires"
+replacement = "n_qubits"
+declaration = "member"
 
 # Names that are renamed and still reachable. They stay in [attribute_ledger],
 # so the slice still counts them as remaining work: a deprecated alias is a
@@ -1183,6 +1201,9 @@ site = "flagquantum/circuit.py::Circuit::n_wires"
 replacement = "n_qubits"
 [[attribute_aliases.sites]]
 site = "flagquantum/observables/__init__.py::OutputRequest::wires"
+replacement = "qubits"
+[[attribute_aliases.sites]]
+site = "flagquantum/runtime/result.py::MeasurementResult::wires"
 replacement = "qubits"
 
 
@@ -1259,5 +1280,6 @@ gate = "tools/check_qubit_vocabulary.py"
 census_tests = "tests/unit/test_census_wire_vocabulary.py"
 attribute_proposal = "docs/development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_ATTRIBUTES.md"
 attribute_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md"
+runtime_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-RUNTIME-20261007.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"
