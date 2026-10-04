@@ -29,7 +29,7 @@ def test_mps_wire_probability_dispatch_binds_exact_catalog_implementation() -> N
 
     assert implementation.semantic_id == "mps.measurement.wire_probabilities.local"
     assert implementation.implementation_id == "FQKI-TRITON-MPS-007-A"
-    assert implementation.symbol == "fused_mps_wire_probabilities"
+    assert implementation.symbol == "fused_mps_qubit_probabilities"
     assert implementation.directions == ("forward",)
 
 

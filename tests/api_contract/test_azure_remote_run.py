@@ -12,13 +12,16 @@ pytestmark = pytest.mark.unit
 class _AzureTestTarget(InMemoryRemoteTarget):
     provider = "azure-quantum"
 
-    def __init__(self, resource_id: str, target_id: str, *, n_wires: int) -> None:
+    # This class stands in for AzureQuantumProvider, whose constructor this
+    # slice renamed, so the stub's own keyword has to move with it: the
+    # production call site in remote/qpu/execution.py now passes n_qubits.
+    def __init__(self, resource_id: str, target_id: str, *, n_qubits: int) -> None:
         super().__init__()
         self.resource_id = resource_id
         self.backend = CloudBackendProfile(
             provider=self.provider,
             name=target_id,
-            n_qubits=n_wires,
+            n_qubits=n_qubits,
             metadata={
                 "target_id": target_id,
                 "device_provider": "test",

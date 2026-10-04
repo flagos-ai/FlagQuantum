@@ -54,7 +54,7 @@ class RepetitionNoiseProfile:
         if self.data_bit_flip_probability:
             channel = bit_flip_channel(self.data_bit_flip_probability)
             for wire in range(3):
-                model.add("cx", channel, wires=wire)
+                model.add("cx", channel, qubits=wire)
         if self.syndrome_readout_error_probability:
             error = _symmetric_readout_error(self.syndrome_readout_error_probability)
             model.add_readout((3, 4), error)

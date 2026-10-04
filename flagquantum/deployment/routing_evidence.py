@@ -29,7 +29,7 @@ def _non_negative_int(plan: Mapping[str, Any], key: str) -> int:
 def validate_deployment_routing_plan(
     routing_plan: Mapping[str, Any],
     *,
-    n_wires: int,
+    n_qubits: int,
     coupling_map: CouplingMap | None,
 ) -> dict[str, Any]:
     """Validate and normalize a routing plan for provider serialization."""
@@ -47,7 +47,7 @@ def validate_deployment_routing_plan(
     if strategy not in {"restore_after_each_gate", "persistent_layout"}:
         raise DeploymentRoutingEvidenceError("unsupported routing strategy")
 
-    expected_identity = tuple(range(int(n_wires)))
+    expected_identity = tuple(range(int(n_qubits)))
     initial = tuple(plan.get("initial_logical_to_physical", ()))
     final = tuple(plan.get("final_logical_to_physical", ()))
     pre_restore = tuple(plan.get("pre_restore_logical_to_physical", ()))
@@ -69,15 +69,15 @@ def validate_deployment_routing_plan(
         )
 
     plan_edges = tuple(
-        tuple(int(wire) for wire in edge) for edge in plan.get("coupling_edges", ())
+        tuple(int(qubit) for qubit in edge) for edge in plan.get("coupling_edges", ())
     )
     if coupling_map is not None and plan_edges != coupling_map.edges:
         raise DeploymentRoutingEvidenceError(
             "routing coupling edges do not match the deployment backend"
         )
-    if int(plan.get("coupling_n_wires", -1)) < int(n_wires):
+    if int(plan.get("coupling_n_wires", -1)) < int(n_qubits):
         raise DeploymentRoutingEvidenceError(
-            "routing coupling exposes fewer wires than the circuit"
+            "routing coupling exposes fewer qubits than the circuit"
         )
 
     planned = _non_negative_int(plan, "planned_inserted_swap_count")
@@ -132,14 +132,14 @@ def build_deployment_routing_evidence(
     routing_plan: Mapping[str, Any],
     *,
     routing_reused: bool,
-    n_wires: int,
+    n_qubits: int,
     coupling_map: CouplingMap | None,
 ) -> dict[str, Any]:
     """Build the stable provider-facing deployment evidence envelope."""
 
     validated = validate_deployment_routing_plan(
         routing_plan,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         coupling_map=coupling_map,
     )
     return {

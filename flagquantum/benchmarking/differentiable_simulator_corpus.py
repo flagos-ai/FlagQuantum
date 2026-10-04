@@ -111,76 +111,76 @@ def _require_scalar_tensor(value: Any, *, engine: str) -> torch.Tensor:
 
 
 def _parameters(
-    name: WorkloadName, n_wires: int, layers: int, seed: int
+    name: WorkloadName, n_qubits: int, layers: int, seed: int
 ) -> torch.Tensor:
-    generator = torch.Generator(device="cpu").manual_seed(seed + 1009 * n_wires)
-    shape = (layers, n_wires, 3) if name == "hardware_efficient_vqe" else (layers, 2)
+    generator = torch.Generator(device="cpu").manual_seed(seed + 1009 * n_qubits)
+    shape = (layers, n_qubits, 3) if name == "hardware_efficient_vqe" else (layers, 2)
     return (
         0.05 + 0.45 * torch.rand(shape, dtype=torch.float64, generator=generator)
     ).requires_grad_()
 
 
-def _vqe_hamiltonian(n_wires: int) -> fqa.Hamiltonian:
+def _vqe_hamiltonian(n_qubits: int) -> fqa.Hamiltonian:
     terms = [
-        fqa.HamiltonianTerm(0.7, {wire: "z", wire + 1: "z"})
-        for wire in range(n_wires - 1)
+        fqa.HamiltonianTerm(0.7, {qubit: "z", qubit + 1: "z"})
+        for qubit in range(n_qubits - 1)
     ]
-    terms.extend(fqa.HamiltonianTerm(0.2, "z", wire) for wire in range(n_wires))
+    terms.extend(fqa.HamiltonianTerm(0.2, "z", qubit) for qubit in range(n_qubits))
     return fqa.Hamiltonian(terms)
 
 
-def _maxcut_hamiltonian(n_wires: int) -> fqa.Hamiltonian:
+def _maxcut_hamiltonian(n_qubits: int) -> fqa.Hamiltonian:
     return fqa.Hamiltonian(
-        fqa.HamiltonianTerm(-0.5, {wire: "z", wire + 1: "z"})
-        for wire in range(n_wires - 1)
+        fqa.HamiltonianTerm(-0.5, {qubit: "z", qubit + 1: "z"})
+        for qubit in range(n_qubits - 1)
     )
 
 
 def build_workload(
     name: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int = 1,
     seed: int = SEED,
 ) -> _Workload:
     """Build one deterministic differentiable workload."""
 
-    if n_wires < 4:
-        raise ValueError("n_wires must be at least 4")
+    if n_qubits < 4:
+        raise ValueError("n_qubits must be at least 4")
     if layers < 1:
         raise ValueError("layers must be positive")
     if name not in WORKLOAD_NAMES:
         raise ValueError(f"unsupported workload: {name}")
-    parameters = _parameters(name, n_wires, layers, seed)
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
+    parameters = _parameters(name, n_qubits, layers, seed)
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
     if name == "hardware_efficient_vqe":
         for layer in range(layers):
-            for wire in range(n_wires):
-                circuit.rx(wire, parameters[layer, wire, 0])
-                circuit.ry(wire, parameters[layer, wire, 1])
-                circuit.rz(wire, parameters[layer, wire, 2])
-            for wire in range(n_wires - 1):
-                circuit.cx(wire, wire + 1)
+            for qubit in range(n_qubits):
+                circuit.rx(qubit, parameters[layer, qubit, 0])
+                circuit.ry(qubit, parameters[layer, qubit, 1])
+                circuit.rz(qubit, parameters[layer, qubit, 2])
+            for qubit in range(n_qubits - 1):
+                circuit.cx(qubit, qubit + 1)
         return _Workload(
             circuit=circuit,
             parameters=parameters,
             constant=0.0,
-            hamiltonian=_vqe_hamiltonian(n_wires),
+            hamiltonian=_vqe_hamiltonian(n_qubits),
             observable="0.7 * sum(Z_i Z_{i+1}) + 0.2 * sum(Z_i)",
         )
 
-    for wire in range(n_wires):
-        circuit.h(wire)
+    for qubit in range(n_qubits):
+        circuit.h(qubit)
     for layer in range(layers):
-        for wire in range(n_wires - 1):
-            circuit.rzz(wire, wire + 1, parameters[layer, 0])
-        for wire in range(n_wires):
-            circuit.rx(wire, parameters[layer, 1])
+        for qubit in range(n_qubits - 1):
+            circuit.rzz(qubit, qubit + 1, parameters[layer, 0])
+        for qubit in range(n_qubits):
+            circuit.rx(qubit, parameters[layer, 1])
     return _Workload(
         circuit=circuit,
         parameters=parameters,
-        constant=0.5 * (n_wires - 1),
-        hamiltonian=_maxcut_hamiltonian(n_wires),
+        constant=0.5 * (n_qubits - 1),
+        hamiltonian=_maxcut_hamiltonian(n_qubits),
         observable="sum((1 - Z_i Z_{i+1}) / 2)",
     )
 
@@ -269,47 +269,50 @@ def _flagquantum_executor(
 def _pennylane_executor(
     name: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     seed: int,
     device_name: Literal["default.qubit", "lightning.qubit"],
     diff_method: Literal["backprop", "adjoint"],
 ) -> Callable[[], _Execution]:
     qml = import_module("pennylane")
-    parameters = _parameters(name, n_wires, layers, seed)
-    device = qml.device(device_name, wires=n_wires, shots=None)
+    parameters = _parameters(name, n_qubits, layers, seed)
+    device = qml.device(device_name, wires=n_qubits, shots=None)
     if name == "hardware_efficient_vqe":
-        coefficients = [0.7] * (n_wires - 1) + [0.2] * n_wires
+        coefficients = [0.7] * (n_qubits - 1) + [0.2] * n_qubits
         operators = [
-            qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in range(n_wires - 1)
+            qml.PauliZ(qubit) @ qml.PauliZ(qubit + 1) for qubit in range(n_qubits - 1)
         ]
-        operators.extend(qml.PauliZ(wire) for wire in range(n_wires))
+        operators.extend(qml.PauliZ(qubit) for qubit in range(n_qubits))
         observable = qml.Hamiltonian(coefficients, operators)
         constant = 0.0
     else:
         observable = qml.Hamiltonian(
-            [-0.5] * (n_wires - 1),
-            [qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in range(n_wires - 1)],
+            [-0.5] * (n_qubits - 1),
+            [
+                qml.PauliZ(qubit) @ qml.PauliZ(qubit + 1)
+                for qubit in range(n_qubits - 1)
+            ],
         )
-        constant = 0.5 * (n_wires - 1)
+        constant = 0.5 * (n_qubits - 1)
 
     def circuit(values: torch.Tensor) -> Any:
         if name == "hardware_efficient_vqe":
             for layer in range(layers):
-                for wire in range(n_wires):
-                    qml.RX(values[layer, wire, 0], wires=wire)
-                    qml.RY(values[layer, wire, 1], wires=wire)
-                    qml.RZ(values[layer, wire, 2], wires=wire)
-                for wire in range(n_wires - 1):
-                    qml.CNOT(wires=(wire, wire + 1))
+                for qubit in range(n_qubits):
+                    qml.RX(values[layer, qubit, 0], wires=qubit)
+                    qml.RY(values[layer, qubit, 1], wires=qubit)
+                    qml.RZ(values[layer, qubit, 2], wires=qubit)
+                for qubit in range(n_qubits - 1):
+                    qml.CNOT(wires=(qubit, qubit + 1))
         else:
-            for wire in range(n_wires):
-                qml.Hadamard(wires=wire)
+            for qubit in range(n_qubits):
+                qml.Hadamard(wires=qubit)
             for layer in range(layers):
-                for wire in range(n_wires - 1):
-                    qml.IsingZZ(values[layer, 0], wires=(wire, wire + 1))
-                for wire in range(n_wires):
-                    qml.RX(values[layer, 1], wires=wire)
+                for qubit in range(n_qubits - 1):
+                    qml.IsingZZ(values[layer, 0], wires=(qubit, qubit + 1))
+                for qubit in range(n_qubits):
+                    qml.RX(values[layer, 1], wires=qubit)
         return qml.expval(observable)
 
     qnode = qml.qnode(device, interface="torch", diff_method=diff_method)(circuit)
@@ -338,38 +341,38 @@ def _engine_callable(
     engine: EngineName,
     workload: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     seed: int,
 ) -> Callable[[], _Execution]:
     if engine == "flagquantum_native":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="autograd",
         )
     if engine == "flagquantum_adjoint":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
         )
     if engine == "flagquantum_adjoint_python_fallback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=False,
         )
     if engine == "flagquantum_adjoint_gather_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=False,
         )
     if engine == "flagquantum_adjoint_forward_cx_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -377,7 +380,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_observable_cache_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -385,7 +388,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_rotation_tile_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -393,7 +396,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_euler_triple_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -401,7 +404,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_observable_boundary_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -409,7 +412,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_observable_rotation_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -417,7 +420,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_shared_rzz_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -425,7 +428,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_forward_rzz_rotation_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -435,7 +438,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_forward_wide_tile_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -443,7 +446,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_flat_pair_simd_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -451,7 +454,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_cx_rotation_fusion_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -459,7 +462,7 @@ def _engine_callable(
         )
     if engine == "flagquantum_adjoint_terminal_no_restore_rollback":
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -468,7 +471,7 @@ def _engine_callable(
     rollback_options = ADJOINT_ROLLBACK_OPTIONS.get(engine)
     if rollback_options is not None:
         return _flagquantum_executor(
-            build_workload(workload, n_wires=n_wires, layers=layers, seed=seed),
+            build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed),
             differentiation="adjoint",
             cpu_direct=True,
             native_cpu_adjoint=True,
@@ -477,7 +480,7 @@ def _engine_callable(
     if engine == "pennylane_default_qubit":
         return _pennylane_executor(
             workload,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             layers=layers,
             seed=seed,
             device_name="default.qubit",
@@ -486,7 +489,7 @@ def _engine_callable(
     if engine == "pennylane_lightning_adjoint":
         return _pennylane_executor(
             workload,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             layers=layers,
             seed=seed,
             device_name="lightning.qubit",
@@ -544,7 +547,7 @@ def _isolated_peak_rss(
     engine: EngineName,
     workload: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     threads: int,
     seed: int,
@@ -560,7 +563,7 @@ def _isolated_peak_rss(
         "--engines",
         engine,
         "--n-wires",
-        str(n_wires),
+        str(n_qubits),
         "--layers",
         str(layers),
         "--threads",
@@ -589,7 +592,7 @@ def _isolated_peak_rss(
 def run_case(
     *,
     workload: WorkloadName,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     engines: Sequence[EngineName],
     warmup: int,
@@ -615,11 +618,11 @@ def run_case(
     if case_timeout_seconds <= 0:
         raise ValueError("case_timeout_seconds must be positive")
 
-    descriptor = build_workload(workload, n_wires=n_wires, layers=layers, seed=seed)
+    descriptor = build_workload(workload, n_qubits=n_qubits, layers=layers, seed=seed)
     ir = descriptor.circuit.to_ir()
     functions = {
         engine: _engine_callable(
-            engine, workload, n_wires=n_wires, layers=layers, seed=seed
+            engine, workload, n_qubits=n_qubits, layers=layers, seed=seed
         )
         for engine in engines
     }
@@ -674,7 +677,7 @@ def run_case(
             _isolated_peak_rss(
                 engine,
                 workload,
-                n_wires=n_wires,
+                n_qubits=n_qubits,
                 layers=layers,
                 threads=threads,
                 seed=seed,
@@ -736,7 +739,7 @@ def run_case(
     return {
         "workload": {
             "name": workload,
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "layers": layers,
             "seed": seed,
             "dtype": "complex128",
@@ -745,7 +748,7 @@ def run_case(
             "observable": descriptor.observable,
             "observable_term_count": descriptor.hamiltonian.n_terms
             + int(descriptor.constant != 0.0),
-            "logical_statevector_bytes": 16 * (2**n_wires),
+            "logical_statevector_bytes": 16 * (2**n_qubits),
             "ir_content_hash": ir.content_hash,
         },
         "features": extract_features(ir),
@@ -778,7 +781,7 @@ def run_case(
 def run_benchmark(
     *,
     workloads: Sequence[WorkloadName],
-    n_wires: Sequence[int],
+    n_qubits: Sequence[int],
     layers: int,
     engines: Sequence[EngineName],
     threads: int,
@@ -795,8 +798,8 @@ def run_benchmark(
         raise ValueError("threads must be positive")
     if layers < 1:
         raise ValueError("layers must be positive")
-    if not workloads or not n_wires:
-        raise ValueError("workloads and n_wires must each contain at least one item")
+    if not workloads or not n_qubits:
+        raise ValueError("workloads and n_qubits must each contain at least one item")
     if len(set(workloads)) != len(workloads):
         raise ValueError("workloads must be unique")
     unknown = sorted(set(workloads) - set(WORKLOAD_NAMES))
@@ -809,7 +812,7 @@ def run_benchmark(
         cases = tuple(
             run_case(
                 workload=workload,
-                n_wires=width,
+                n_qubits=width,
                 layers=layers,
                 engines=engines,
                 warmup=warmup,
@@ -821,7 +824,7 @@ def run_benchmark(
                 case_timeout_seconds=case_timeout_seconds,
             )
             for workload in workloads
-            for width in n_wires
+            for width in n_qubits
         )
     finally:
         torch.set_default_dtype(prior_default_dtype)
@@ -876,7 +879,7 @@ def run_benchmark(
         },
         support_matrix=build_support_matrix(engines),
         workloads=tuple(workloads),
-        n_wires=tuple(n_wires),
+        n_qubits=tuple(n_qubits),
         layers=layers,
         engines=tuple(engines),
         cases=cases,
@@ -1119,16 +1122,16 @@ def _render_markdown(payload: Mapping[str, Any], *, artifact_name: str) -> str:
             "",
             "theta = torch.full((4, 3), 0.2, dtype=torch.float64, requires_grad=True)",
             "circuit = fq.Circuit(4, dtype=torch.complex128)",
-            "for wire in range(4):",
-            "    circuit.rx(wire, theta[wire, 0])",
-            "    circuit.ry(wire, theta[wire, 1])",
-            "    circuit.rz(wire, theta[wire, 2])",
-            "for wire in range(3):",
-            "    circuit.cx(wire, wire + 1)",
+            "for qubit in range(4):",
+            "    circuit.rx(qubit, theta[qubit, 0])",
+            "    circuit.ry(qubit, theta[qubit, 1])",
+            "    circuit.rz(qubit, theta[qubit, 2])",
+            "for qubit in range(3):",
+            "    circuit.cx(qubit, qubit + 1)",
             "",
             "hamiltonian = fqa.Hamiltonian(",
-            '    fqa.HamiltonianTerm(0.7, {wire: "z", wire + 1: "z"})',
-            "    for wire in range(3)",
+            '    fqa.HamiltonianTerm(0.7, {qubit: "z", qubit + 1: "z"})',
+            "    for qubit in range(3)",
             ")",
             "energy = hamiltonian.expectation(circuit.state(refresh=True)).sum()",
             "energy.backward()",
@@ -1163,7 +1166,7 @@ def _memory_worker(args: argparse.Namespace) -> int:
     function = _engine_callable(
         engine,
         workload,
-        n_wires=args.n_wires[0],
+        n_qubits=args.n_wires[0],
         layers=args.layers,
         seed=args.seed,
     )
@@ -1201,7 +1204,7 @@ def main() -> int:
         return _memory_worker(args)
     payload = run_benchmark(
         workloads=tuple(args.workloads),
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         layers=args.layers,
         engines=tuple(args.engines),
         threads=args.threads,

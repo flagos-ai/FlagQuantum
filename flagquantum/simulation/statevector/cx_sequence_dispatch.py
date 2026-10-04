@@ -66,7 +66,7 @@ def _apply_cataloged_cx_sequence(
         target_masks=target_masks,
         reverse_control_masks=reverse_control_masks,
         reverse_target_masks=reverse_target_masks,
-        n_wires=n_wires,
+        n_qubits=n_wires,
     )
 
 

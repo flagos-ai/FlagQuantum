@@ -50,14 +50,14 @@ def test_deferred_qft_swaps_match_eager_materialization_and_parameter_gradient(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     eager_angle = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
-    eager = build_workload("truncated_qft_statevector", n_wires=18)
+    eager = build_workload("truncated_qft_statevector", n_qubits=18)
     eager.ry(0, eager_angle)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_DEFER_SWAP", "0")
     expected = eager.state(refresh=True)
     expected_gradient = torch.autograd.grad(expected.real.sum(), eager_angle)[0]
 
     deferred_angle = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
-    deferred = build_workload("truncated_qft_statevector", n_wires=18)
+    deferred = build_workload("truncated_qft_statevector", n_qubits=18)
     deferred.ry(0, deferred_angle)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_DEFER_SWAP", "1")
     actual = deferred.state(refresh=True)

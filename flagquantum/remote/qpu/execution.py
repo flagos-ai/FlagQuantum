@@ -60,7 +60,7 @@ def execute_quafu(
                 "service_compiler": "quarkcircuit",
             },
         }
-    # Quafu reports c[N-1]...c[0]; the direct path exposes logical wires 0...N-1.
+    # Quafu reports c[N-1]...c[0]; the direct path exposes logical qubits 0...N-1.
     provider = (
         QuafuProvider(reverse_result_bits=True) if compiler is None else QuafuProvider()
     )
@@ -106,7 +106,7 @@ def validate_quafu_output(
         len(requested) == 1
         and requested[0].kind == "counts"
         and requested[0].observable is None
-        and requested[0].wires in {(), tuple(range(source_ir.n_wires))}
+        and requested[0].qubits in {(), tuple(range(source_ir.n_wires))}
     )
     expectation_output = (
         len(requested) == 1
@@ -121,11 +121,11 @@ def validate_quafu_output(
 
     observable = requested[0].observable
     if observable is not None and any(
-        wire >= source_ir.n_wires
+        qubit >= source_ir.n_wires
         for term in observable.terms
-        for wire, _axis in term.factors
+        for qubit, _axis in term.factors
     ):
-        raise ValueError("Hamiltonian references wires outside the source circuit")
+        raise ValueError("Hamiltonian references qubits outside the source circuit")
 
     return requested[0]
 
@@ -149,7 +149,7 @@ def validate_azure_output(
         len(requested) == 1
         and requested[0].kind == "counts"
         and requested[0].observable is None
-        and requested[0].wires in {(), tuple(range(source_ir.n_wires))}
+        and requested[0].qubits in {(), tuple(range(source_ir.n_wires))}
     )
     if not full_counts:
         raise ValueError(
@@ -196,7 +196,7 @@ def execute_azure(
     provider = AzureQuantumProvider(
         resource_id,
         target_id,
-        n_wires=_azure_target_width(),
+        n_qubits=_azure_target_width(),
     )
     deployment_name = name.strip() if name is not None else "flagquantum_job"
     package = create_deployment_package(
@@ -209,7 +209,7 @@ def execute_azure(
     native = provider.run(package)
     return counts_result(
         native,
-        n_wires=source.n_wires,
+        n_qubits=source.n_wires,
         output_name=output.name,
         compiler="qdk",
         target=target,
@@ -233,7 +233,7 @@ def _execute_expectation(
     hamiltonian = Hamiltonian(
         HamiltonianTerm(
             term.coefficient,
-            {wire: axis for wire, axis in term.factors},
+            {qubit: axis for qubit, axis in term.factors},
         )
         for term in output.observable.terms
     )
@@ -271,16 +271,16 @@ def _execute_expectation(
             zip(measurement_plan.packages, native_results, strict=True)
         )
     )
-    observable_wires = tuple(
+    observable_qubits = tuple(
         sorted(
-            {wire for term in output.observable.terms for wire, _axis in term.factors}
+            {qubit for term in output.observable.terms for qubit, _axis in term.factors}
         )
     )
     result = ExecutionResult(
         measurements=(
             MeasurementResult(
                 kind="expectation",
-                qubits=observable_wires or (0,),
+                qubits=observable_qubits or (0,),
                 value=value,
                 shots=sum(measurement_plan.shots_per_group),
                 metadata={
@@ -349,7 +349,7 @@ def _execute_counts(
         )
     return counts_result(
         native,
-        n_wires=compiled.n_wires,
+        n_qubits=compiled.n_wires,
         output_name=output.name,
         compiler=compiler,
         target=target,
@@ -367,7 +367,7 @@ def _execute_counts(
 def counts_result(
     native: DeploymentResult,
     *,
-    n_wires: int,
+    n_qubits: int,
     output_name: str | None,
     compiler: str | None,
     target: str,
@@ -382,7 +382,7 @@ def counts_result(
         measurements=(
             MeasurementResult(
                 kind="counts",
-                qubits=tuple(range(n_wires)),
+                qubits=tuple(range(n_qubits)),
                 value=[counts],
                 shots=native.shots,
                 metadata={

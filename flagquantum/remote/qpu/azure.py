@@ -62,13 +62,13 @@ def _attribute(value: Any, *names: str, default: Any = None) -> Any:
 def azure_backend_profile(
     target: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     basis_gates: Sequence[str] = (),
     coupling_map: CouplingMap | None = None,
 ) -> CloudBackendProfile:
     """Build a fail-closed backend profile from an Azure target-like object."""
 
-    width = int(n_wires)
+    width = int(n_qubits)
     if width <= 0:
         raise ValueError("Azure Quantum target width must be positive")
     name = str(_attribute(target, "name", "id", "target_id", default="")).strip()
@@ -173,7 +173,7 @@ class AzureQuantumProvider(QuantumProvider):
         workspace: Any,
         target: str | Any,
         *,
-        n_wires: int,
+        n_qubits: int,
         basis_gates: Sequence[str] = (),
         coupling_map: CouplingMap | None = None,
         program_factory: Callable[[str], Any] | None = None,
@@ -193,7 +193,7 @@ class AzureQuantumProvider(QuantumProvider):
         )
         self.backend = azure_backend_profile(
             self.target,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             basis_gates=basis_gates,
             coupling_map=coupling_map,
         )

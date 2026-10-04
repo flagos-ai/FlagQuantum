@@ -19,10 +19,16 @@ from typing import Any
 
 import pytest
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
+    import tomli as tomllib
+
 pytestmark = pytest.mark.unit
 
 _ROOT = Path(__file__).resolve().parents[2]
 _CENSUS_PATH = _ROOT / "tools" / "census_wire_vocabulary.py"
+_CONTRACT_PATH = _ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 
 _SPEC = importlib.util.spec_from_file_location("census_wire_vocabulary", _CENSUS_PATH)
 assert _SPEC is not None and _SPEC.loader is not None
@@ -43,6 +49,12 @@ def _package(tmp_path: Path, files: dict[str, str]) -> Path:
 
 def _identifiers(sites: tuple[Any, ...]) -> set[str]:
     return {site.identifier for site in sites}
+
+
+def _contract() -> dict[str, Any]:
+    """The frozen baseline, so a live count can be read against its record."""
+
+    return tomllib.loads(_CONTRACT_PATH.read_text(encoding="utf-8"))
 
 
 def test_variadic_parameters_are_counted_with_their_prefix(tmp_path: Path) -> None:
@@ -174,17 +186,18 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    # The scan is live, not frozen: the first seven slices renamed 286 of the
-    # 341 baseline sites, so 55 wire-named parameters are still on screen. The
-    # frozen number lives in the contract's `[ledger]`, and the two agree through
-    # `[retirement]`.
-    assert len(scanned.canonical) == 55
+    # The scan is live, not frozen: the eight slices renamed all 341 baseline
+    # sites, and the 11 names still on screen are aliases rather than unfinished
+    # work -- each is a forwarding keyword that only the 0.4.0 removal deletes.
+    # The frozen numbers live in the contract's `[ledger]` and `[aliases]`, and
+    # the two agree through `[retirement]`.
+    assert len(scanned.canonical) == 0
     assert len(scanned.aliases) == 11
     # The private bucket moves only as a side effect: `WQ-5` renamed the 41,
-    # `WQ-6` the 23 and `WQ-7` the 18 `wire`-named parameters of their own
-    # private helpers, which no ledger counts.
-    assert len(scanned.internal) == 275
-    assert scanned.canonical and scanned.aliases and scanned.internal
+    # `WQ-6` the 23, `WQ-7` the 18 and `WQ-8` the 49 `wire`-named parameters of
+    # their own private helpers, which no ledger counts.
+    assert len(scanned.internal) == 226
+    assert scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"
     assert (
@@ -388,12 +401,12 @@ def test_a_class_name_alone_is_not_evidence_of_containment(tmp_path: Path) -> No
 
 def test_the_repository_split_accounts_for_every_wire_named_attribute() -> None:
     scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
-    # Live, like the parameter scan: the first seven slices retired 102 of the
-    # 122 ledgered names and kept 3 of them as deprecated forwarders, so 20 are
-    # still on screen.
-    assert len(scanned.ledgered) == 20
+    # Live, like the parameter scan: the eight slices retired 117 of the 122
+    # ledgered names and kept 5 of them as deprecated forwarders, so 5 are still
+    # on screen.
+    assert len(scanned.ledgered) == 5
     assert len(scanned.excluded) == 22
-    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 42
+    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 27
     assert _CENSUS.public_attribute_names(_ROOT / "flagquantum") == tuple(
         sorted(site.identifier for site in (*scanned.ledgered, *scanned.excluded))
     )
@@ -409,36 +422,42 @@ def test_every_declaration_kind_is_on_the_attribute_ledger() -> None:
     """
 
     scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
-    kinds = {site.declaration for site in (*scanned.ledgered, *scanned.excluded)}
-    assert kinds == set(_CENSUS.DECLARATION_KINDS)
     owned = {
         kind: {site.identifier for site in scanned.ledgered if site.declaration == kind}
         for kind in _CENSUS.DECLARATION_KINDS
     }
+    # Every kind is proved on a fixture rather than on the repository, because
+    # `WQ-8` renamed the last live `field` and `instance` example the scan could
+    # name and `WQ-2`, `WQ-4`, `WQ-5`, `WQ-6` and `WQ-7` had already taken the
+    # ones before it. The retired examples are gone from the scan rather than
+    # from the record: `[attribute_retirement]` still carries each of them with
+    # the declaration kind it discharged.
+    assert set(owned) == set(_CENSUS.DECLARATION_KINDS)
+    assert {site.declaration for site in scanned.ledgered} == {"member"}
+    assert owned["field"] == set()
+    assert owned["instance"] == set()
     assert "flagquantum/circuit.py::Circuit::n_wires" in owned["member"]
-    # `WQ-2`, `WQ-4`, `WQ-5` and now `WQ-7` renamed the examples this test used
-    # to name, so the live instance kind is down to the one site a later slice
-    # owes. The renamed ones are gone from the scan rather than from the record,
-    # which is what `[attribute_retirement]` carries.
     assert (
-        "flagquantum/remote/qpu/http.py::HttpQuantumProvider::default_n_wires"
-    ) in owned["instance"]
-    assert (
-        "flagquantum/runtime/executors/mps/distributed_state.py"
-        "::ShardedMPSState::n_wires" not in owned["instance"]
+        "flagquantum/compiler/openqasm_import.py::OpenQASMImport::n_wires"
+        in owned["member"]
     )
+    # The retirement table is where the exhausted kinds still live: `WQ-8`'s own
+    # rows discharge a `field` and an `instance`, so both kinds are exercised end
+    # to end and the ledger is not merely declared to cover them.
+    contract = _contract()
+    retired = {
+        (row["site"], row["declaration"])
+        for row in contract["attribute_retirement"]["sites"]
+    }
     assert (
-        "flagquantum/drawer/text_drawer.py::TextDrawer::wire_order"
-        not in owned["instance"]
-    )
-    assert "flagquantum/compiler/routing.py::CouplingMap::n_wires" in owned["field"]
-    # `WQ-5` owned the algorithms file this test used to name, so the field
-    # example is now the alphabetically first field a later slice still owes.
-    assert not [
-        identifier
-        for identifier in owned["field"]
-        if identifier.startswith("flagquantum/algorithms/")
-    ]
+        "flagquantum/compiler/routing.py::CouplingMap::n_wires",
+        "field",
+    ) in retired
+    assert (
+        "flagquantum/remote/qpu/http.py::HttpQuantumProvider::default_n_wires",
+        "instance",
+    ) in retired
+    assert "flagquantum/compiler/routing.py::CouplingMap::n_wires" not in owned["field"]
     # The exclusion list is split across two of the three kinds, and an instance
     # attribute is the one kind that has never reached a payload.
     assert {site.declaration for site in scanned.excluded} == {"field", "member"}

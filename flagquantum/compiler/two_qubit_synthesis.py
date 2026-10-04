@@ -21,26 +21,26 @@ Listing `rzz` matters because a trapped-ion or flux-tunable-coupler target
 publishes a rotation and no `cx` at all, and refusing it would leave those bases
 unsynthesizable.
 
-**Index convention.** Every 4x4 matrix here is read with ``index = 2 * bit(wire
-of wires[0]) + bit(wire of wires[1])``: ``wires[0]`` is the most significant
+**Index convention.** Every 4x4 matrix here is read with ``index = 2 * bit(qubit
+of qubits[0]) + bit(qubit of qubits[1])``: ``qubits[0]`` is the most significant
 index bit, which is how `flagquantum.Circuit` orders its statevector
 (``fq.Circuit(2).x(0).state().argmax() == 2``). Qiskit orders the other way
 round, with its qubit 0 least significant, so Qiskit's ``q0`` is this module's
-``wires[1]``. The 4x4 matrices themselves need no reordering under that match,
+``qubits[1]``. The 4x4 matrices themselves need no reordering under that match,
 but Qiskit's ``K*l`` factors act on its ``q1`` and its ``K*r`` factors on its
 ``q0``, which is why the factors handed back for a basis use are emitted on
-``wires[0]`` and ``wires[1]`` in Qiskit's own order.
+``qubits[0]`` and ``qubits[1]`` in Qiskit's own order.
 
 **Weyl coordinates are computed in the kron convention, then the register is
 swapped.** Qiskit's algorithm decomposes a matrix written as ``(L (x) R) E (M (x)
 N)`` where ``E`` is the entangler with its control on the *low* index bit. This
-module wants the control on ``wires[0]``, the high bit, so that a caller asking
-for ``wires=(0, 1)`` gets ``Instruction("cx", (0, 1))`` -- control on wire 0 --
+module wants the control on ``qubits[0]``, the high bit, so that a caller asking
+for ``qubits=(0, 1)`` gets ``Instruction("cx", (0, 1))`` -- control on qubit 0 --
 rather than a reversed entangler. Swapping the two index bits is conjugation by
-the wire-exchange permutation ``P``, which maps ``A (x) B`` to ``B (x) A`` and
+the qubit-exchange permutation ``P``, which maps ``A (x) B`` to ``B (x) A`` and
 maps a low-control entangler to a high-control one. So the input is conjugated
 with ``P``, decomposed in Qiskit's convention, and the pairs come out in
-Qiskit's order over the caller's own wires. The two conventions agree on the
+Qiskit's order over the caller's own qubits. The two conventions agree on the
 4x4 matrix itself; only the factor labels and the entangler's control move.
 
 **Global phase is dropped**, exactly as in `one_qubit_synthesis`: FlagQuantum IR
@@ -145,7 +145,7 @@ _M2_FIRST_TRIAL = (1.2602066112249388, 0.22317849046722027)
 #: Golden-angle step for the retry sweep, in radians.
 _M2_RETRY_STEP = 2.399963229728653
 
-#: Swaps the two index bits, i.e. conjugates a matrix by the wire exchange.
+#: Swaps the two index bits, i.e. conjugates a matrix by the qubit exchange.
 _SWAP_INDEX = (0, 2, 1, 3)
 
 
@@ -212,7 +212,7 @@ def _swap_register(matrix: Matrix) -> Matrix:
 def _named_entangler_matrix(opcode: str) -> Matrix:
     """The basis matrix of ``opcode`` at its supercontrolled angle.
 
-    Read with ``wires[0]`` on the most significant index bit, then exchanged into
+    Read with ``qubits[0]`` on the most significant index bit, then exchanged into
     the low-control convention the algebra below is derived in -- the same
     exchange `_weyl_decomposition` applies to the target. The parameter-free
     opcodes are written out because their entries are small exact integers or
@@ -262,7 +262,7 @@ def _rotation_entangler_matrix(opcode: str, angle: float) -> Matrix:
     """``exp(-i * angle/2 * P)`` for ``P`` one of ``XX``, ``YY``, ``ZZ``.
 
     `rzz` is diagonal. `rxx` and `ryy` differ only in the relative sign of the
-    two off-diagonal blocks, because `YY` is `XX` with the second wire
+    two off-diagonal blocks, because `YY` is `XX` with the second qubit
     conjugated by `Z`.
     """
 
@@ -278,7 +278,7 @@ def _rotation_entangler_matrix(opcode: str, angle: float) -> Matrix:
         ]
     # `rxx` is `exp(-i*angle/2 * XX)` and `ryy` is `exp(-i*angle/2 * YY)`. The two
     # differ only in the relative sign of their off-diagonal blocks, because `YY`
-    # is `XX` with the second wire conjugated by `Z`.
+    # is `XX` with the second qubit conjugated by `Z`.
     off_diagonal = 1j * sine if opcode == "ryy" else -1j * sine
     second_block = -off_diagonal if opcode == "ryy" else off_diagonal
     return [
@@ -814,7 +814,7 @@ def _is_unitary(matrix: Matrix) -> bool:
 def synthesize_two_qubit(
     matrix: Any,
     *,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     entangler: str,
     z_rotation: str,
     pulse_opcode: str = "sx",
@@ -822,7 +822,7 @@ def synthesize_two_qubit(
 ) -> tuple[Instruction, ...] | None:
     """Return `matrix` as entanglers plus one-qubit leaves, or None.
 
-    `matrix` is a 4x4 unitary read with `wires[0]` on the most significant index
+    `matrix` is a 4x4 unitary read with `qubits[0]` on the most significant index
     bit, in the same order `flagquantum.Circuit` uses. `entangler` is a
     supercontrolled two-qubit opcode from `SUPERCONTROLLED_ENTANGLERS`,
     `z_rotation` a z-rotation opcode the target publishes, and `pulse_opcode` the
@@ -832,26 +832,26 @@ def synthesize_two_qubit(
 
     Returns None when this module does not apply: an entangler or z-rotation the
     caller did not publish, or a pulse opcode `one_qubit_synthesis` cannot emit.
-    Raises ValueError when the input itself is not a two-wire unitary.
+    Raises ValueError when the input itself is not a two-qubit unitary.
 
     The result is equal to `matrix` up to one global phase, which FlagQuantum IR
-    cannot record. An empty tuple, for the two-wire identity, is a correct answer.
+    cannot record. An empty tuple, for the two-qubit identity, is a correct answer.
     A matrix already in the entangler's own class, such as `cx` read with
-    `wires=(0, 1)`, comes back as the entangler alone.
+    `qubits=(0, 1)`, comes back as the entangler alone.
     """
 
     if entangler not in SUPERCONTROLLED_ENTANGLERS:
         return None
-    wire_list = list(wires)
-    if len(wire_list) != 2:
-        raise ValueError("wires must name exactly two wires")
+    qubit_list = list(qubits)
+    if len(qubit_list) != 2:
+        raise ValueError("qubits must name exactly two qubits")
     if any(
-        isinstance(wire, bool) or not isinstance(wire, int) or wire < 0
-        for wire in wire_list
+        isinstance(qubit, bool) or not isinstance(qubit, int) or qubit < 0
+        for qubit in qubit_list
     ):
-        raise ValueError("wires must be non-negative integers")
-    if wire_list[0] == wire_list[1]:
-        raise ValueError("wires must name two distinct wires")
+        raise ValueError("qubits must be non-negative integers")
+    if qubit_list[0] == qubit_list[1]:
+        raise ValueError("qubits must name two distinct qubits")
     target_matrix = _as_complex_matrix(matrix, 4, what="matrix")
     if not _is_unitary(target_matrix):
         raise ValueError("matrix must be unitary")
@@ -861,13 +861,13 @@ def synthesize_two_qubit(
         return None
 
     # Decompose in the low-control kron convention, then read the result back on
-    # the caller's own wires; see the module docstring.
+    # the caller's own qubits; see the module docstring.
     target = _weyl_decomposition(_swap_register(target_matrix))
     decomposer = _BasisDecomposer(entangler)
     count = decomposer.entangler_count(target)
     factors = decomposer.decomposition(target, count)
 
-    left_wire, right_wire = wire_list
+    left_qubit, right_qubit = qubit_list
     annotations: Mapping[str, Any] = {} if metadata is None else metadata
     entangler_params: Mapping[str, Any] = (
         {} if decomposer.angle is None else {"theta": decomposer.angle}
@@ -877,7 +877,7 @@ def synthesize_two_qubit(
         leaves.extend(
             _local_leaves(
                 factors[2 * index],
-                left_wire,
+                left_qubit,
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
                 metadata=annotations,
@@ -886,7 +886,7 @@ def synthesize_two_qubit(
         leaves.extend(
             _local_leaves(
                 factors[2 * index + 1],
-                right_wire,
+                right_qubit,
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
                 metadata=annotations,
@@ -895,7 +895,7 @@ def synthesize_two_qubit(
         leaves.append(
             Instruction(
                 entangler,
-                (left_wire, right_wire),
+                (left_qubit, right_qubit),
                 params=entangler_params,
                 metadata=annotations,
             )
@@ -903,7 +903,7 @@ def synthesize_two_qubit(
     leaves.extend(
         _local_leaves(
             factors[2 * count],
-            left_wire,
+            left_qubit,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=annotations,
@@ -912,7 +912,7 @@ def synthesize_two_qubit(
     leaves.extend(
         _local_leaves(
             factors[2 * count + 1],
-            right_wire,
+            right_qubit,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=annotations,
@@ -923,7 +923,7 @@ def synthesize_two_qubit(
 
 def _local_leaves(
     factor: Matrix,
-    wire: int,
+    qubit: int,
     *,
     z_rotation: str,
     pulse_opcode: str,
@@ -934,7 +934,7 @@ def _local_leaves(
     return (
         synthesize_one_qubit_matrix(
             factor,
-            wire=wire,
+            qubit=qubit,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=metadata,

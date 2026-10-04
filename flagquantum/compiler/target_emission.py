@@ -50,7 +50,7 @@ def _emit_openqasm2(program: object) -> str:
     return emit_openqasm(
         program,
         version=2.0,
-        result_wires=_allocated_result_wires(program),
+        result_qubits=_allocated_result_wires(program),
     )
 
 
@@ -58,7 +58,7 @@ def _emit_openqasm3(program: object) -> str:
     return emit_openqasm(
         program,
         version=3.0,
-        result_wires=_allocated_result_wires(program),
+        result_qubits=_allocated_result_wires(program),
     )
 
 

@@ -98,7 +98,7 @@ class KrausChannel:
             )
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         size = int(self.kraus[0].shape[-1])
         return size.bit_length() - 1
 

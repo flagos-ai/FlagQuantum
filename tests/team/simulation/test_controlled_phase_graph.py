@@ -169,7 +169,7 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
 def test_product_state_graph_cache_isolated_by_dtype(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    circuit = build_workload("truncated_qft_statevector", n_wires=16)
+    circuit = build_workload("truncated_qft_statevector", n_qubits=16)
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "1")
 
     circuit.dtype = torch.complex64
@@ -188,9 +188,9 @@ def test_truncated_qft_graph_uses_product_state_and_matches_rollback(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
 ) -> None:
-    graph_circuit = build_workload("truncated_qft_statevector", n_wires=18)
+    graph_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     graph_circuit.dtype = dtype
-    rollback_circuit = build_workload("truncated_qft_statevector", n_wires=18)
+    rollback_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     rollback_circuit.dtype = dtype
 
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "0")

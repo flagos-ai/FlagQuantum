@@ -117,7 +117,7 @@ class QPUDigitalTwin:
             torch.diagonal(density, dim1=-2, dim2=-1).real.detach().cpu().reshape(-1)
         )
         predicted_tensor = self.noise_model.apply_readout_probabilities(
-            predicted_tensor, n_wires=ir.n_wires
+            predicted_tensor, n_qubits=ir.n_wires
         )
         ideal = tuple(float(value) for value in ideal_tensor)
         predicted = tuple(float(value) for value in predicted_tensor)
