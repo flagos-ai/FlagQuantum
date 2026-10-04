@@ -703,6 +703,11 @@ value = "f8e4df19a474b370d5825fbc49442e2a29d150a6"
 origin = "unreferenced_object"
 
 
+[[artifact.revision]]
+value = "51adb0a04f52745c0e019fa9f9ec402d7f9f6033"
+origin = "unreferenced_object"
+
+
 [[artifact]]
 path = "benchmarks/results/local/mps_observable_adjoint_dispatch_a800.json"
 
