@@ -192,6 +192,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   to image ID `sha256:3aea769f...` on `jp-a800-171` and
   `sha256:fd2afb63...` on `jp-a800-172`. The development runner therefore now
   requires and records the full per-host image ID and refuses mutable tags.
+- A 2026-10-06 read-only recheck found the same system state on both aliases:
+  Python 3.10.12, eight A800-SXM4-80GB devices with driver 580.126.20, Docker
+  29.1.3, and no system Torch or Kaiwu module. No remote files were changed;
+  the pinned execution lane remains an external provisioning prerequisite.
 - Read-only filesystem reconnaissance found no transferred QBoson integration
   archive, pinned Kaiwu PyTorch Plugin checkout, Kaiwu 1.3.1 wheel, or isolated
   Kaiwu installation on either validation host. The existing checkout on
@@ -230,6 +234,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   round-half-to-even policy. Final validation rejects absent, nonfinite,
   inverted, or substituted normalization metadata rather than relying on an
   implementation comment to describe the lossy conversion.
+- Precision evidence now also retains the original plugin object type and
+  dtype. Every sampler transfer carries both the original-matrix and submitted
+  matrix digests, and system validation requires the complete
+  `(original, submitted, type, dtype)` identity set to equal the precision
+  evidence set. A receipt-linked submission can no longer conceal a substituted
+  plugin input at the A800-to-CPU boundary.
 - The Phase 5 runbook now covers frozen inputs, approved source transfer,
   development rehearsal, SDK-lane verification, quota-guarded smoke and system
   execution, interruption and same-identity resume, independent two-host runs,

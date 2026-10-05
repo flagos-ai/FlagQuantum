@@ -154,6 +154,10 @@ def test_identical_matrix_is_deduplicated_and_returns_a_copy() -> None:
         sampler.transfer_records[0].submission_matrix_sha256
         == sampler.receipts[0].matrix_sha256
     )
+    assert (
+        sampler.transfer_records[0].original_matrix_sha256
+        == sampler.transfer_records[1].original_matrix_sha256
+    )
     assert sampler.transfer_records[0].returned_shape == (10, 3)
     assert sampler.transfer_records[0].cache_hit is False
     assert sampler.transfer_records[1].cache_hit is True
@@ -266,6 +270,9 @@ def test_precision_reports_cover_distinct_inputs_that_share_one_remote_matrix() 
     assert {
         evidence.submission_matrix_sha256 for evidence in sampler.precision_evidence
     } == {sampler.receipts[0].matrix_sha256}
+    assert {record.original_matrix_sha256 for record in sampler.transfer_records} == {
+        evidence.original_matrix_sha256 for evidence in sampler.precision_evidence
+    }
 
 
 def test_result_identity_failure_is_not_replaced_by_fallback() -> None:

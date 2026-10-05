@@ -27,7 +27,10 @@ Public entry points currently live in `flagquantum.ecosystem.kaiwu`:
   report per distinct original matrix, including separate reports when multiple
   inputs quantize to one shared remote matrix. `precision_evidence` additionally
   binds each report to its original and submitted matrix digests, normalized
-  coefficient range, and exact symmetry-normalization and rounding rules. Its read-only
+  coefficient range, original plugin object type and dtype, and exact
+  symmetry-normalization and rounding rules. Transfer records retain the same
+  original and submitted digests so final evidence can reconcile both sides of
+  the CPU boundary. Its read-only
   `client` property exposes the already-bound Remote client solely so evidence
   builders can prove transport provenance; task ownership remains in
   `remote.kaiwu`.

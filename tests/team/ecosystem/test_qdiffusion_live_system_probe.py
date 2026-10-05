@@ -148,6 +148,23 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         evidence["submission_matrix_sha256"]
         for evidence in record["precision_evidence"]
     } == {receipt["matrix_sha256"] for receipt in record["task_receipts"]}
+    assert {
+        (
+            evidence["original_matrix_sha256"],
+            evidence["submission_matrix_sha256"],
+            evidence["source_type"],
+            evidence["source_dtype"],
+        )
+        for evidence in record["precision_evidence"]
+    } == {
+        (
+            boundary["original_matrix_sha256"],
+            boundary["submission_matrix_sha256"],
+            boundary["input_type"],
+            boundary["input_dtype"],
+        )
+        for boundary in record["transfer_accounting"]["sampler_boundaries"]
+    }
     assert precision["matrix_count"] >= record["remote_call_count"]
     assert 0 < precision["scale_factor_min"] <= precision["scale_factor_max"]
     assert 0 <= precision["mean_of_matrix_mean_abs_error"] <= precision["max_abs_error"]

@@ -37,6 +37,7 @@ class KaiwuTransferRecord:
     input_device: str
     input_dtype: str
     matrix_shape: tuple[int, int]
+    original_matrix_sha256: str
     submission_matrix_sha256: str
     canonical_device: str
     canonical_dtype: str
@@ -53,6 +54,8 @@ class KaiwuPrecisionEvidence:
 
     original_matrix_sha256: str
     submission_matrix_sha256: str
+    source_type: str
+    source_dtype: str
     normalized_dtype: str
     normalized_min: float
     normalized_max: float
@@ -234,13 +237,20 @@ class KaiwuSampler:
         if cached is not None:
             if report is not None:
                 self._precision_reports.setdefault(original_key, report)
-                self._retain_precision_evidence(original_key, cache_key, report)
+                self._retain_precision_evidence(
+                    original_key,
+                    cache_key,
+                    source_type=input_type,
+                    source_dtype=input_dtype,
+                    report=report,
+                )
             output: np.ndarray = np.asarray(cached, dtype=np.int8).copy()
             self._record_transfer(
                 input_type=input_type,
                 input_device=input_device,
                 input_dtype=input_dtype,
                 canonical=canonical,
+                original_matrix_sha256=original_key,
                 submission_matrix_sha256=cache_key,
                 output=output,
                 cache_hit=True,
@@ -266,7 +276,13 @@ class KaiwuSampler:
             self._receipts.append(job.receipt)
         if report is not None:
             self._precision_reports.setdefault(original_key, report)
-            self._retain_precision_evidence(original_key, cache_key, report)
+            self._retain_precision_evidence(
+                original_key,
+                cache_key,
+                source_type=input_type,
+                source_dtype=input_dtype,
+                report=report,
+            )
         self._last_job = job
         result = job.wait(timeout=self._timeout, poll_interval=self._poll_interval)
         self._last_result = result
@@ -277,6 +293,7 @@ class KaiwuSampler:
             input_device=input_device,
             input_dtype=input_dtype,
             canonical=canonical,
+            original_matrix_sha256=original_key,
             submission_matrix_sha256=cache_key,
             output=output,
             cache_hit=False,
@@ -287,6 +304,9 @@ class KaiwuSampler:
         self,
         original_matrix_sha256: str,
         submission_matrix_sha256: str,
+        *,
+        source_type: str,
+        source_dtype: str,
         report: IntegerPrecisionReport,
     ) -> None:
         self._precision_evidence.setdefault(
@@ -294,6 +314,8 @@ class KaiwuSampler:
             KaiwuPrecisionEvidence(
                 original_matrix_sha256=original_matrix_sha256,
                 submission_matrix_sha256=submission_matrix_sha256,
+                source_type=source_type,
+                source_dtype=source_dtype,
                 normalized_dtype=report.normalized_dtype,
                 normalized_min=report.normalized_min,
                 normalized_max=report.normalized_max,
@@ -314,6 +336,7 @@ class KaiwuSampler:
         input_device: str,
         input_dtype: str,
         canonical: torch.Tensor,
+        original_matrix_sha256: str,
         submission_matrix_sha256: str,
         output: np.ndarray,
         cache_hit: bool,
@@ -326,6 +349,7 @@ class KaiwuSampler:
                 input_device=input_device,
                 input_dtype=input_dtype,
                 matrix_shape=canonical_shape,
+                original_matrix_sha256=original_matrix_sha256,
                 submission_matrix_sha256=submission_matrix_sha256,
                 canonical_device=str(canonical.device),
                 canonical_dtype=str(canonical.dtype),

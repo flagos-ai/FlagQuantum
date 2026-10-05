@@ -103,6 +103,8 @@ def _complete_precision_record() -> dict[str, Any]:
             {
                 "original_matrix_sha256": "6" * 64,
                 "submission_matrix_sha256": "7" * 64,
+                "source_type": "numpy.ndarray",
+                "source_dtype": "float32",
                 "normalized_dtype": "torch.float64",
                 "normalized_min": -63.5,
                 "normalized_max": 63.5,
@@ -133,6 +135,12 @@ def _complete_precision_record() -> dict[str, Any]:
                 "rounding_policy", "truncate"
             ),
             "rounding policy is unsupported",
+        ),
+        (
+            lambda record: record["precision_evidence"][0].__setitem__(
+                "source_type", "torch.Tensor"
+            ),
+            "source type is not numpy.ndarray",
         ),
         (
             lambda record: record["precision_evidence"][0].__setitem__(
@@ -278,6 +286,7 @@ def _record(
         "input_device": "cpu",
         "input_dtype": "float32",
         "matrix_shape": [3, 3],
+        "original_matrix_sha256": "6" * 64,
         "submission_matrix_sha256": "7" * 64,
         "canonical_device": "cpu",
         "canonical_dtype": "torch.float64",

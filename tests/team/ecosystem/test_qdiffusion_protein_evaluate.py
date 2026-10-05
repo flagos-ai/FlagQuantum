@@ -56,6 +56,8 @@ def _provider_training_record() -> dict[str, Any]:
             {
                 "original_matrix_sha256": "b" * 64,
                 "submission_matrix_sha256": "a" * 64,
+                "source_type": "numpy.ndarray",
+                "source_dtype": "float32",
                 "normalized_dtype": "torch.float64",
                 "normalized_min": -127.0,
                 "normalized_max": 127.0,

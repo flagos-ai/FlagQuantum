@@ -52,6 +52,8 @@ PRECISION_EVIDENCE_FIELDS = frozenset(
     {
         "original_matrix_sha256",
         "submission_matrix_sha256",
+        "source_type",
+        "source_dtype",
         "normalized_dtype",
         "normalized_min",
         "normalized_max",
@@ -214,6 +216,13 @@ def _validate_precision_evidence(
             errors.append(f"{entry_label} has no submitted matrix digest")
         else:
             submission_digests.append(submission)
+        if entry.get("source_type") != "numpy.ndarray":
+            errors.append(f"{entry_label} source type is not numpy.ndarray")
+        if (
+            not isinstance(entry.get("source_dtype"), str)
+            or not entry["source_dtype"].strip()
+        ):
+            errors.append(f"{entry_label} source dtype is missing")
         if entry.get("target_min") != precision.get("target_min") or entry.get(
             "target_max"
         ) != precision.get("target_max"):
@@ -301,6 +310,42 @@ def _validate_precision_evidence(
             )
         ):
             errors.append(f"{label}: precision aggregate {field} differs from evidence")
+
+
+def _validate_precision_transfer_origins(
+    record: dict[str, Any],
+    *,
+    label: str,
+    boundaries: list[dict[str, Any]],
+    errors: list[str],
+) -> None:
+    """Require precision reports and sampler transfers to name one input set."""
+
+    precision_entries = record.get("precision_evidence")
+    if not isinstance(precision_entries, list) or not all(
+        isinstance(entry, dict) for entry in precision_entries
+    ):
+        return
+    precision_origins = {
+        (
+            entry.get("original_matrix_sha256"),
+            entry.get("submission_matrix_sha256"),
+            entry.get("source_type"),
+            entry.get("source_dtype"),
+        )
+        for entry in precision_entries
+    }
+    transfer_origins = {
+        (
+            boundary.get("original_matrix_sha256"),
+            boundary.get("submission_matrix_sha256"),
+            boundary.get("input_type"),
+            boundary.get("input_dtype"),
+        )
+        for boundary in boundaries
+    }
+    if precision_origins != transfer_origins:
+        errors.append(f"{label}: precision origins differ from sampler transfers")
 
 
 def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
@@ -829,7 +874,13 @@ def _validate_system_record(
                         f"{field}: expected {expected}"
                     )
             matrix_shape = boundary.get("matrix_shape")
+            original_digest = boundary.get("original_matrix_sha256")
             submission_digest = boundary.get("submission_matrix_sha256")
+            if (
+                not isinstance(original_digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", original_digest) is None
+            ):
+                errors.append(f"{label}: transferred original matrix digest is invalid")
             if (
                 not isinstance(submission_digest, str)
                 or re.fullmatch(r"[0-9a-f]{64}", submission_digest) is None
@@ -858,6 +909,14 @@ def _validate_system_record(
             errors.append(
                 f"{label}: transfer accounting differs from remote-call count"
             )
+        _validate_precision_transfer_origins(
+            record,
+            label=label,
+            boundaries=[
+                boundary for boundary in boundaries if isinstance(boundary, dict)
+            ],
+            errors=errors,
+        )
     acceptance = _mapping(record.get("acceptance"), f"{label}.acceptance", errors)
     if acceptance.get("system") != "pass":
         errors.append(f"{label}: system acceptance did not pass")
@@ -1078,6 +1137,12 @@ def _validate_remote_sampling_component_evidence(
                             f"{label}: transfer {index} returned shape differs "
                             "from its receipt"
                         )
+            _validate_precision_transfer_origins(
+                record,
+                label=label,
+                boundaries=boundaries,
+                errors=errors,
+            )
 
     returned_samples = record.get("returned_samples")
     if (
