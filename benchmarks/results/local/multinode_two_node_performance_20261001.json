@@ -2,8 +2,8 @@
   "benchmark": "cuda_multinode_two_node_performance",
   "benchmark_evidence_class": "local_non_release",
   "claim_evidence_type": "development_smoke",
-  "commit": "fe00cdc7d45affbd8982e2be1bf9d6e33f6620e4",
-  "communication_bytes": 1616,
+  "commit": "be04365f7a78c5361635b712184f8abe53b47f51",
+  "communication_bytes": 939538320,
   "derivation": "Each latency is copied from the recorded artifact named in the matching workloads[] entry, whose digest is recorded there as artifact_sha256. rank_shards[].local_memory_bytes is the largest local footprint that rank recorded across the three measured workloads, and communication_bytes sums the recorded per-rank traffic of all three.",
   "distribution_semantics": "sharded_across_ranks",
   "environment": {
@@ -19,47 +19,47 @@
     "route": "infiniband",
     "sample_count_maximum": 5,
     "sample_count_minimum": 5,
-    "slowest_sample_seconds": 0.022771131247282028,
+    "slowest_sample_seconds": 0.17168224789202213,
     "torch": "2.13.0+cu130",
     "warmup_iterations": 2,
     "world_size": 2
   },
   "generated_by": "benchmarks/build_multinode_performance_claim.py",
   "latency_seconds": {
-    "mps_forward_maximum": 0.022771131247282028,
-    "mps_forward_median": 0.021611005067825317,
-    "mps_forward_minimum": 0.019213194027543068,
-    "statevector_forward_maximum": 0.0036599822342395782,
-    "statevector_forward_median": 0.003256462514400482,
-    "statevector_forward_minimum": 0.0029465332627296448,
-    "tensor_network_amplitudes_maximum": 0.004355102777481079,
-    "tensor_network_amplitudes_median": 0.004278808832168579,
-    "tensor_network_amplitudes_minimum": 0.004253959283232689
+    "mps_forward_maximum": 0.04858272708952427,
+    "mps_forward_median": 0.04769292660057545,
+    "mps_forward_minimum": 0.047420911490917206,
+    "statevector_forward_maximum": 0.17168224789202213,
+    "statevector_forward_median": 0.17129501700401306,
+    "statevector_forward_minimum": 0.17127478122711182,
+    "tensor_network_amplitudes_maximum": 0.045254115015268326,
+    "tensor_network_amplitudes_median": 0.045244375243783,
+    "tensor_network_amplitudes_minimum": 0.045134514570236206
   },
   "local_world_size": 1,
   "node_count": 2,
   "non_release_evidence": true,
   "rank_shards": [
     {
-      "communication_bytes": 808,
-      "local_memory_bytes": 320,
+      "communication_bytes": 469769160,
+      "local_memory_bytes": 33554432,
       "local_rank": 0,
       "node_rank": 0,
       "owned_work": {
         "mps": "sites 0,1,2",
-        "statevector": "0 + k*2, 0 <= k < 16",
+        "statevector": "0 + k*2, 0 <= k < 2097152",
         "tensor_network": "2 of 4 slice tasks"
       },
       "rank": 0
     },
     {
-      "communication_bytes": 808,
-      "local_memory_bytes": 320,
+      "communication_bytes": 469769160,
+      "local_memory_bytes": 33554432,
       "local_rank": 0,
       "node_rank": 1,
       "owned_work": {
         "mps": "sites 3,4,5",
-        "statevector": "1 + k*2, 0 <= k < 16",
+        "statevector": "1 + k*2, 0 <= k < 2097152",
         "tensor_network": "2 of 4 slice tasks"
       },
       "rank": 1
@@ -68,7 +68,6 @@
   "release_gate_allowed": false,
   "scalability_blockers": [
     "host_staging_in_measured_region",
-    "toy_circuit_parameters_only",
     "two_node_pair_only_no_wider_topology"
   ],
   "scalability_claim_allowed": false,
@@ -77,10 +76,9 @@
   "workloads": [
     {
       "artifact": "artifacts/cuda_multinode_statevector_a800_jp171_jp172_20260930.json",
-      "artifact_sha256": "29bd5eaf0ad2276b5db9a4182b55ff259bf81da86deb0e442a23b0ef550b23c2",
-      "captured_at": "2026-10-05T10:45:43.607567+00:00",
+      "artifact_sha256": "741a02ee5c7989cd12fc78cf65f43862dc02604230968d1b4d1410e7838936c2",
+      "captured_at": "2026-10-05T14:09:28.003630+00:00",
       "claim_blockers": [
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology"
       ],
       "cuda_runtime": "13.0",
@@ -89,40 +87,40 @@
       "dtype": "complex128",
       "local_world_size": 1,
       "max_bond": null,
-      "maximum_seconds": 0.0036599822342395782,
+      "maximum_seconds": 0.17168224789202213,
       "measured": true,
       "measured_iterations": 5,
       "measurement": "sharded_statevector_forward",
-      "median_seconds": 0.003256462514400482,
-      "minimum_seconds": 0.0029465332627296448,
-      "n_wires": 5,
+      "median_seconds": 0.17129501700401306,
+      "minimum_seconds": 0.17127478122711182,
+      "n_wires": 22,
       "name": "statevector",
       "nccl": "2.29.7",
       "node_count": 2,
       "python": "3.12.13",
       "rank_evidence": [
         {
-          "communication_bytes": 384,
-          "local_memory_bytes": 256,
-          "owned_work": "0 + k*2, 0 <= k < 16",
+          "communication_bytes": 469762048,
+          "local_memory_bytes": 33554432,
+          "owned_work": "0 + k*2, 0 <= k < 2097152",
           "rank": 0
         },
         {
-          "communication_bytes": 384,
-          "local_memory_bytes": 256,
-          "owned_work": "1 + k*2, 0 <= k < 16",
+          "communication_bytes": 469762048,
+          "local_memory_bytes": 33554432,
+          "owned_work": "1 + k*2, 0 <= k < 2097152",
           "rank": 1
         }
       ],
       "route": "infiniband",
       "seconds": [
-        0.0036599822342395782,
-        0.0029465332627296448,
-        0.0031051449477672577,
-        0.003256462514400482,
-        0.0032670069485902786
+        0.17168224789202213,
+        0.17128617875277996,
+        0.17164606973528862,
+        0.17129501700401306,
+        0.17127478122711182
       ],
-      "source_revision": "fe00cdc7d45affbd8982e2be1bf9d6e33f6620e4",
+      "source_revision": "be04365f7a78c5361635b712184f8abe53b47f51",
       "synchronized": true,
       "torch": "2.13.0+cu130",
       "warmup_iterations": 2,
@@ -130,11 +128,10 @@
     },
     {
       "artifact": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
-      "artifact_sha256": "790b02702b3a41871147917873b3617b613a6c389e30e64f1f5a6bd427f43fd6",
-      "captured_at": "2026-10-05T10:47:46.572822+00:00",
+      "artifact_sha256": "0c7952f26345f98980f2906ff0aab9498500ed1869ca73a18a71a0f2bc3434db",
+      "captured_at": "2026-10-05T14:14:39.082659+00:00",
       "claim_blockers": [
         "host_staging_in_measured_region",
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology"
       ],
       "cuda_runtime": "13.0",
@@ -143,12 +140,12 @@
       "dtype": "complex128",
       "local_world_size": 1,
       "max_bond": 64,
-      "maximum_seconds": 0.022771131247282028,
+      "maximum_seconds": 0.04858272708952427,
       "measured": true,
       "measured_iterations": 5,
       "measurement": "sharded_mps_forward",
-      "median_seconds": 0.021611005067825317,
-      "minimum_seconds": 0.019213194027543068,
+      "median_seconds": 0.04769292660057545,
+      "minimum_seconds": 0.047420911490917206,
       "n_wires": 6,
       "name": "mps",
       "nccl": "2.29.7",
@@ -156,27 +153,27 @@
       "python": "3.12.13",
       "rank_evidence": [
         {
-          "communication_bytes": 360,
-          "local_memory_bytes": 320,
+          "communication_bytes": 7048,
+          "local_memory_bytes": 1344,
           "owned_work": "sites 0,1,2",
           "rank": 0
         },
         {
-          "communication_bytes": 360,
-          "local_memory_bytes": 320,
+          "communication_bytes": 7048,
+          "local_memory_bytes": 1344,
           "owned_work": "sites 3,4,5",
           "rank": 1
         }
       ],
       "route": "infiniband",
       "seconds": [
-        0.022771131247282028,
-        0.020904872566461563,
-        0.022539807483553886,
-        0.021611005067825317,
-        0.019213194027543068
+        0.04769151099026203,
+        0.04777742736041546,
+        0.047420911490917206,
+        0.04769292660057545,
+        0.04858272708952427
       ],
-      "source_revision": "fe00cdc7d45affbd8982e2be1bf9d6e33f6620e4",
+      "source_revision": "be04365f7a78c5361635b712184f8abe53b47f51",
       "synchronized": true,
       "torch": "2.13.0+cu130",
       "warmup_iterations": 2,
@@ -184,10 +181,9 @@
     },
     {
       "artifact": "artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json",
-      "artifact_sha256": "518afbabd9230cd7fec371186b0142e396c61df5bbf8e12171fdd461141b1bca",
-      "captured_at": "2026-10-05T10:46:39.144175+00:00",
+      "artifact_sha256": "b30943d3e99c7a6ddde548bb403530aebe8d7ba8017b818c2f47d903f349cc5a",
+      "captured_at": "2026-10-05T14:13:31.871959+00:00",
       "claim_blockers": [
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology"
       ],
       "cuda_runtime": "13.0",
@@ -196,13 +192,13 @@
       "dtype": "complex128",
       "local_world_size": 1,
       "max_bond": null,
-      "maximum_seconds": 0.004355102777481079,
+      "maximum_seconds": 0.045254115015268326,
       "measured": true,
       "measured_iterations": 5,
       "measurement": "sharded_tensor_network_amplitudes",
-      "median_seconds": 0.004278808832168579,
-      "minimum_seconds": 0.004253959283232689,
-      "n_wires": 5,
+      "median_seconds": 0.045244375243783,
+      "minimum_seconds": 0.045134514570236206,
+      "n_wires": 14,
       "name": "tensor_network",
       "nccl": "2.29.7",
       "node_count": 2,
@@ -223,13 +219,13 @@
       ],
       "route": "infiniband",
       "seconds": [
-        0.004355102777481079,
-        0.004278808832168579,
-        0.004255061969161034,
-        0.004253959283232689,
-        0.004308899864554405
+        0.045247387140989304,
+        0.045254115015268326,
+        0.045244375243783,
+        0.04519618861377239,
+        0.045134514570236206
       ],
-      "source_revision": "fe00cdc7d45affbd8982e2be1bf9d6e33f6620e4",
+      "source_revision": "be04365f7a78c5361635b712184f8abe53b47f51",
       "synchronized": true,
       "torch": "2.13.0+cu130",
       "warmup_iterations": 2,

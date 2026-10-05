@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -170,7 +171,9 @@ def test_the_checked_bitstrings_are_distinct_and_non_zero() -> None:
     assert len({complex(value) for value in amplitudes}) == len(amplitudes)
 
 
-def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -> None:
+def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent(
+    manifest_digest_at: Callable[[str, str], str],
+) -> None:
     payload = _artifact()
     evidence = payload["evidence"]
     encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
@@ -225,12 +228,23 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert frozen["depth"] == _MODULE.DEPTH == 6
     assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 84
     assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
-    assert frozen == _ARTIFACT_FROZEN_CIRCUIT
-    assert (
-        frozen["manifest_sha256"]
-        == hashlib.sha256(
-            (_ROOT / frozen["manifest"]).read_bytes(),
-        ).hexdigest()
+    # Every field but the digest, which is scoped to the revision the probe
+    # ran at and is resolved below, still has to be what the probe observes
+    # from the contract checked out here.
+    assert {
+        key: value for key, value in frozen.items() if key != "manifest_sha256"
+    } == {
+        key: value
+        for key, value in _ARTIFACT_FROZEN_CIRCUIT.items()
+        if key != "manifest_sha256"
+    }
+    # The recorded digest is the contract as of the revision the probe ran at,
+    # which is the file it actually read, rather than whatever happens to be
+    # checked out beside it now. The current contract is checked separately:
+    # loading this module runs the probe's own observation of it, which
+    # cross-checks the frozen ladder against the ladder file it names.
+    assert frozen["manifest_sha256"] == manifest_digest_at(
+        evidence["environment"]["source_revision"], frozen["manifest"]
     )
 
     observations = evidence["observations"]

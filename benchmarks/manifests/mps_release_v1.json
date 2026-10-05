@@ -408,12 +408,6 @@
       "statement": "The two-node transport probe staged ranks through host memory inside the measured region, so its timing is not device-to-device transport. A later transfer measurement can retire this blocker."
     },
     {
-      "name": "toy_circuit_parameters_only",
-      "retractable_by_measurement": false,
-      "source": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
-      "statement": "The probe exercised a toy parameterization rather than an application circuit. No measurement of this probe retires the statement, so it is recorded as a standing limitation of the transport evidence rather than as an outstanding task."
-    },
-    {
       "name": "two_node_pair_only_no_wider_topology",
       "retractable_by_measurement": false,
       "source": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",

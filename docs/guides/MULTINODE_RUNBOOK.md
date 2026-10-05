@@ -495,9 +495,15 @@ Every numerical metric in it is at round-off, both ranks own half the
 amplitudes, and the communication it reports is inter-node with none
 intra-node. Its route was read from the NCCL debug log as RoCE rather than the
 socket fallback, on the interface the plan was given, and it carries five
-synchronized forward samples taken after two warmups. It carries two blockers
--- `toy_circuit_parameters_only` and `two_node_pair_only_no_wider_topology` --
-and reports `scalability_claim_allowed` and `release_gate_allowed` false.
+synchronized forward samples taken after two warmups. It carries one blocker --
+`two_node_pair_only_no_wider_topology` -- and reports
+`scalability_claim_allowed` and `release_gate_allowed` false. The
+toy-circuit blocker it used to carry is gone, and it went the way the
+others did: the probe's forward circuit is now the narrowest rung of the
+workload manifest it names -- twenty-two wires over eight layers, one
+hundred and seventy-six bound leaves -- and the artifact records that
+count against the count the manifold declares, so the blocker's own
+premise no longer holds rather than being dropped from the list.
 
 Two blockers were retired by observation rather than by declaration. The staging
 audit now profiles the measured region and finds no explicit host transfer in
@@ -544,9 +550,13 @@ are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
 exchanging anything for it. The artifact is checked against that arithmetic. Its
 route was read from the NCCL debug log as RoCE, and it carries five
-synchronized forward samples taken after two warmups. It carries three blockers
--- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology` and
-`host_staging_in_measured_region` -- and reports both claim flags false. The
+synchronized forward samples taken after two warmups. It carries two blockers --
+`two_node_pair_only_no_wider_topology` and `host_staging_in_measured_region`
+-- and reports both claim flags false. The toy-circuit blocker is gone: the
+measured circuit is now the contract's own accepted rung, eight thousand one
+hundred and ninety-two sites at bond sixty-four, read from the ladder file
+the manifest names, and the artifact records the thirty-one leaves it bound
+against the thirty-one that rung declares. The
 staging blocker is the audit's finding that host transfers sit inside the
 measured region. The full-state gather blocker is gone, because the probe now
 exports the whole MPS as the product of a leg of its own rather than gathering
@@ -657,9 +667,12 @@ evidence rather than a CPU collective. Its route was read from the NCCL debug
 log as RoCE, and it carries five synchronized amplitude samples taken after two
 warmups. The cut width was swept across both labels of the declared cut, which
 retired `inter_node_cut_width_not_swept` and
-`slice_count_fixed_at_world_size`. It carries two blockers --
-`toy_circuit_parameters_only` and `two_node_pair_only_no_wider_topology` -- and
-reports both claim flags false. Two further blockers were retired by observation
+`slice_count_fixed_at_world_size`. It carries one blocker --
+`two_node_pair_only_no_wider_topology` -- and reports both claim flags false.
+The toy-circuit blocker is gone: the probe's circuit is now this contract's
+own narrowest matched-speed rung, fourteen wires over six layers and
+eighty-four bound leaves, and the artifact records those counts against the
+rung it names. Two further blockers were retired by observation
 rather than by declaration. The staging audit now profiles the measured region
 and finds no explicit host transfer in it, so each sample is device work end to
 end. And the probe exports the whole distributed state as the product of a leg
@@ -718,16 +731,20 @@ completes on one device at four sliced labels completes on the pair too. Slicing
 reduces the forward peak and not the reverse one, so a pair cannot train a
 tensor-network workload that one device cannot.
 
-Two further blockers are also not closable by a run. `toy_circuit_parameters_only`
-attaches to the five-wire hardware artifact itself and is not retractable by any
-measurement, and `two_node_pair_only_no_wider_topology` is permanent because this
-cluster has two hosts. The host-staging blocker the statevector lane closed was
+One further blocker is also not closable by a run:
+`two_node_pair_only_no_wider_topology` is permanent because this cluster has
+two hosts. `toy_circuit_parameters_only` no longer attaches to this artifact,
+and it was retired by measurement rather than by argument: the circuit the
+probe contracts is the contract's own narrowest released rung, and the
+observation that binds it reports both the count the rung declares and the
+count the built circuit bound, which is the check whose absence produced the
+blocker. The host-staging blocker the statevector lane closed was
 never attached to this artifact, and the validation-only-gather blocker is now
 closed the same way the statevector lane closed its own: by measuring a
 production full-state readout leg. Both closures are recorded above as
 observations, not as declarations.
 
-The lane therefore holds at `production_supported` with two blockers and both
+The lane therefore holds at `production_supported` with one blocker and both
 claim flags false. That is the honest ceiling for this capability on this pair,
 and it is a measured one.
 
