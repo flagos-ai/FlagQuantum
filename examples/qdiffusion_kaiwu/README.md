@@ -213,4 +213,5 @@ uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed
 copies of every component record, so deleting or replacing a source record
 makes the final manifest invalid. Revalidation also rejects public permissions
-and symlinks in any manifest member path.
+and symlinks in any manifest member path, duplicate or non-normalized paths, and
+files that are present in the bundle but absent from its manifest.

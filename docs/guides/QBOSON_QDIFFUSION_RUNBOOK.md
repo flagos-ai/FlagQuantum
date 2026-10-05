@@ -520,7 +520,9 @@ sibling staging directory and is atomically published only after final
 validation; a failed run does not leave the requested evidence directory.
 Subsequent validation repeats the private-file check for the manifest, config,
 host records, and every component, and rejects a symlink anywhere in a member
-path rather than following it.
+path rather than following it. Member paths must be unique normalized relative
+POSIX paths, and the on-disk file tree must exactly equal the manifest's declared
+set; unlisted files are rejected.
 Missing, extra, replaced, or selectively omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence

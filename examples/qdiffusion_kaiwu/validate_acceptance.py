@@ -6,9 +6,10 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from statistics import fmean
 from typing import Any, cast
 
@@ -1029,14 +1030,26 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     if manifest.get("schema") != MANIFEST_SCHEMA or manifest.get("version") != "1.0":
         errors.append("manifest: unsupported schema or version")
 
+    declared_member_paths = {manifest_path.name}
+
     def resolve_member(value: Any, label: str) -> Path | None:
         if not isinstance(value, str) or not value:
             errors.append(f"{label}: expected a relative path")
             return None
-        relative = Path(value)
-        if relative.is_absolute():
-            errors.append(f"{label}: path escapes the evidence directory")
+        posix_path = PurePosixPath(value)
+        if (
+            "\\" in value
+            or posix_path.is_absolute()
+            or any(part in ("", ".", "..") for part in posix_path.parts)
+            or str(posix_path) != value
+        ):
+            errors.append(f"{label}: path is not a normalized relative POSIX path")
             return None
+        if value in declared_member_paths:
+            errors.append(f"{label}: path is declared more than once")
+            return None
+        declared_member_paths.add(value)
+        relative = Path(value)
         candidate = root / relative
         cursor = root
         for part in relative.parts:
@@ -1055,6 +1068,36 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             errors.append(f"{label}: file is accessible by group or others")
             return None
         return member
+
+    def validate_exact_tree() -> None:
+        actual_files: set[str] = set()
+        for current_root, directory_names, file_names in os.walk(
+            root, followlinks=False
+        ):
+            current = Path(current_root)
+            for name in directory_names:
+                directory = current / name
+                if directory.is_symlink():
+                    errors.append(
+                        "manifest: evidence directory contains an unlisted symlink"
+                    )
+            for name in file_names:
+                member = current / name
+                relative_name = member.relative_to(root).as_posix()
+                if member.is_symlink():
+                    errors.append(
+                        f"manifest: evidence tree contains a symlink: {relative_name}"
+                    )
+                elif not member.is_file():
+                    errors.append(
+                        f"manifest: evidence tree contains a special file: {relative_name}"
+                    )
+                else:
+                    actual_files.add(relative_name)
+        if actual_files != declared_member_paths:
+            errors.append(
+                "manifest: evidence files differ from the exact declared member set"
+            )
 
     config_entry = _mapping(manifest.get("config"), "manifest.config", errors)
     config_path = resolve_member(config_entry.get("path"), "manifest.config.path")
@@ -1119,6 +1162,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         records.append(record)
     if len(records) != 2:
         return errors
+    validate_exact_tree()
 
     by_host = {str(record.get("execution_host")): record for record in records}
     if set(by_host) != HOSTS:

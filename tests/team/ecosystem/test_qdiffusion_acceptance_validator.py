@@ -340,6 +340,24 @@ def test_validator_rejects_symlinked_or_public_bundle_members(tmp_path: Path) ->
     )
 
 
+def test_validator_rejects_extra_or_duplicate_declared_members(tmp_path: Path) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    _write_json(tmp_path / "unlisted.json", {"not": "evidence"})
+    assert any(
+        "exact declared member set" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    (tmp_path / "unlisted.json").unlink()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["records"][1]["path"] = manifest["records"][0]["path"]
+    _write_json(manifest_path, manifest)
+    assert any(
+        "path is declared more than once" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+
 def test_component_validator_rejects_different_host_transfer_manifests() -> None:
     config = _config()
     component_payloads = {

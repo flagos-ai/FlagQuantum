@@ -230,6 +230,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - Revalidation now rejects a symlink anywhere in a manifest member path and
   requires the manifest, config, host records, and copied components to remain
   inaccessible to group and other users.
+- Final evidence validation now applies a closed-world file-tree check: member
+  paths must be unique normalized relative POSIX paths, and unlisted files are
+  rejected instead of being silently ignored beside declared evidence.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
