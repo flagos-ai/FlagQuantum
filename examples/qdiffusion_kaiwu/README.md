@@ -195,8 +195,9 @@ training record rather than inheriting those claims. System, training,
 evaluation, and replay recompute the executing FlagQuantum tree and actual
 plugin-root file count and content-set digests before importing the workflow.
 System, training, and replay additionally reject the core QDiffusion modules
-when their resolved files are outside that plugin root. The evaluator loads
-ESM2 exclusively through
+when their resolved files are outside that plugin root. All loaded
+`kaiwu.torch_plugin.*` and `dplm.*` transitive modules are checked as well. The
+evaluator loads ESM2 exclusively through
 `load_model_and_alphabet_local`, checks aligned headers and exact sequence counts,
 then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen

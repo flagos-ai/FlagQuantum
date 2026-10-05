@@ -189,6 +189,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   resolve `kaiwu.torch_plugin` and its QDiffusion module from that reviewed root
   and fail closed if an installed or preloaded module comes from a different
   source tree.
+- Training, evaluation, and replay also reject any loaded `dplm.*` module, and
+  every bounded path rejects any `kaiwu.torch_plugin.*` module, whose source or
+  namespace path escapes the reviewed plugin tree.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

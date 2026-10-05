@@ -31,6 +31,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
+    _validate_imported_module_tree,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
@@ -79,6 +80,11 @@ def _load_pinned_modules(
     for name, module in modules.items():
         if Path(str(module.__file__)).resolve() != expected[name].resolve():
             raise RuntimeError(f"imported DPLM {name} module is outside --plugin-root")
+    _validate_imported_module_tree(
+        module_prefix="dplm",
+        expected_root=case_root / "dplm",
+        label="DPLM",
+    )
     return modules["builder"], modules["runtime"], modules["io"]
 
 

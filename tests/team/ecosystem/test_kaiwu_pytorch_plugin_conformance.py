@@ -13,6 +13,7 @@ import torch
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
     _run_qdiffusion_slice,
+    _validate_imported_module_tree,
 )
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
@@ -166,3 +167,61 @@ def test_qdiffusion_slice_rejects_preloaded_plugin_outside_reviewed_root(
 
     with pytest.raises(RuntimeError, match="outside --plugin-root"):
         _load_pinned_qdiffusion_api(plugin_root)
+
+
+def test_qdiffusion_slice_rejects_transitive_module_outside_reviewed_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    plugin_root = tmp_path / "reviewed-plugin"
+    package_root = plugin_root / "src" / "kaiwu" / "torch_plugin"
+    package_root.mkdir(parents=True)
+    package_init = package_root / "__init__.py"
+    qdiffusion_source = package_root / "qdiffusion.py"
+    package_init.write_text("", encoding="utf-8")
+    qdiffusion_source.write_text("", encoding="utf-8")
+    namespace = ModuleType("kaiwu")
+    namespace.__path__ = [str(package_root.parent)]  # type: ignore[attr-defined]
+    torch_plugin = ModuleType("kaiwu.torch_plugin")
+    torch_plugin.__file__ = str(package_init)
+    qdiffusion = ModuleType("kaiwu.torch_plugin.qdiffusion")
+    qdiffusion.__file__ = str(qdiffusion_source)
+    wrong_transitive = ModuleType("kaiwu.torch_plugin.abstract_boltzmann_machine")
+    wrong_transitive.__file__ = str(tmp_path / "unreviewed" / "abstract.py")
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    for name in tuple(sys.modules):
+        if name == "kaiwu.torch_plugin" or name.startswith("kaiwu.torch_plugin."):
+            monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, "kaiwu", namespace)
+    monkeypatch.setitem(sys.modules, "kaiwu.torch_plugin", torch_plugin)
+    monkeypatch.setitem(sys.modules, "kaiwu.torch_plugin.qdiffusion", qdiffusion)
+    monkeypatch.setitem(
+        sys.modules,
+        "kaiwu.torch_plugin.abstract_boltzmann_machine",
+        wrong_transitive,
+    )
+
+    with pytest.raises(RuntimeError, match="abstract_boltzmann_machine.*outside"):
+        _load_pinned_qdiffusion_api(plugin_root)
+
+
+def test_module_tree_validates_namespace_and_every_transitive_source(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    expected_root = tmp_path / "reviewed" / "dplm"
+    expected_root.mkdir(parents=True)
+    namespace = ModuleType("dplm")
+    namespace.__path__ = [str(expected_root)]  # type: ignore[attr-defined]
+    workflow = ModuleType("dplm.workflows.train")
+    workflow.__file__ = str(expected_root / "workflows" / "train.py")
+    monkeypatch.setitem(sys.modules, "dplm", namespace)
+    monkeypatch.setitem(sys.modules, "dplm.workflows.train", workflow)
+
+    _validate_imported_module_tree(
+        module_prefix="dplm", expected_root=expected_root, label="DPLM"
+    )
+
+    workflow.__file__ = str(tmp_path / "unreviewed" / "train.py")
+    with pytest.raises(RuntimeError, match="dplm.workflows.train.*outside"):
+        _validate_imported_module_tree(
+            module_prefix="dplm", expected_root=expected_root, label="DPLM"
+        )

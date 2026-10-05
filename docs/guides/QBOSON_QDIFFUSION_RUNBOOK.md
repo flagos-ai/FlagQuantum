@@ -441,7 +441,8 @@ replay recompute the executing FlagQuantum tree plus the actual `--plugin-root`
 file count and content-set digest against the host extraction preflight before
 importing the plugin workflow. The system probe, protein training, and replay
 also verify the resolved `kaiwu.torch_plugin` and QDiffusion module files are
-inside that root:
+inside that root. Every loaded `kaiwu.torch_plugin.*` and `dplm.*` transitive
+module must resolve inside the corresponding reviewed plugin subtree:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \

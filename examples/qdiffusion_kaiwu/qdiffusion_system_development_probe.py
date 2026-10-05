@@ -95,6 +95,41 @@ class _ToyProposal(nn.Module):
         return self.output(torch.tanh(self.hidden(self.embedding(input_ids))))
 
 
+def _validate_imported_module_tree(
+    *, module_prefix: str, expected_root: Path, label: str
+) -> None:
+    root = expected_root.resolve()
+    matches = 0
+    for name, module in tuple(sys.modules.items()):
+        if name != module_prefix and not name.startswith(f"{module_prefix}."):
+            continue
+        matches += 1
+        module_file = getattr(module, "__file__", None)
+        locations: tuple[str, ...]
+        if isinstance(module_file, str) and module_file:
+            locations = (module_file,)
+        else:
+            module_paths = getattr(module, "__path__", None)
+            if module_paths is None:
+                raise RuntimeError(
+                    f"loaded {label} module {name!r} has no source location"
+                )
+            locations = tuple(str(path) for path in module_paths)
+            if not locations:
+                raise RuntimeError(
+                    f"loaded {label} module {name!r} has no source location"
+                )
+        try:
+            for location in locations:
+                Path(location).resolve().relative_to(root)
+        except ValueError:
+            raise RuntimeError(
+                f"loaded {label} module {name!r} is outside --plugin-root"
+            ) from None
+    if matches == 0:
+        raise RuntimeError(f"no loaded {label} modules were available to validate")
+
+
 def _load_pinned_qdiffusion_api(plugin_root: Path) -> tuple[Any, Any, Any, Any]:
     root = plugin_root.resolve()
     source_root = root / "src"
@@ -122,6 +157,11 @@ def _load_pinned_qdiffusion_api(plugin_root: Path) -> tuple[Any, Any, Any, Any]:
         raise RuntimeError("imported Kaiwu Torch Plugin is outside --plugin-root")
     if Path(str(qdiffusion.__file__)).resolve() != qdiffusion_source.resolve():
         raise RuntimeError("imported QDiffusion API is outside --plugin-root")
+    _validate_imported_module_tree(
+        module_prefix="kaiwu.torch_plugin",
+        expected_root=package_init.parent,
+        label="Kaiwu Torch Plugin",
+    )
     return (
         torch_plugin.EnergyModel,
         torch_plugin.QDiffusion,

@@ -25,6 +25,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
+    _validate_imported_module_tree,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
@@ -65,6 +66,11 @@ def _load_pinned_workflow(plugin_root: Path) -> ModuleType:
     module_path = Path(str(module.__file__)).resolve()
     if module_path != expected.resolve():
         raise RuntimeError("imported QDiffusion workflow is outside --plugin-root")
+    _validate_imported_module_tree(
+        module_prefix="dplm",
+        expected_root=case_root / "dplm",
+        label="DPLM",
+    )
     return module
 
 

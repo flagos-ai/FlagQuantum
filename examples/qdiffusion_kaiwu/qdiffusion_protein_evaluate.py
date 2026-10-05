@@ -22,6 +22,9 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
     _artifact_identity,
 )
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _validate_imported_module_tree,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _load_frozen_config,
     _validate_lane,
@@ -55,6 +58,11 @@ def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleTyp
     expected_helpers = expected.with_name("esm2_eval_helpers.py").resolve()
     if Path(str(helpers.__file__)).resolve() != expected_helpers:
         raise RuntimeError("imported ESM2 helpers are outside --plugin-root")
+    _validate_imported_module_tree(
+        module_prefix="dplm",
+        expected_root=case_root / "dplm",
+        label="DPLM",
+    )
     return workflow, helpers
 
 
