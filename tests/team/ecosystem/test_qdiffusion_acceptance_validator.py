@@ -8,7 +8,10 @@ from typing import Any
 
 import pytest
 
-from examples.qdiffusion_kaiwu.validate_acceptance import validate_acceptance
+from examples.qdiffusion_kaiwu.validate_acceptance import (
+    _validate_config,
+    validate_acceptance,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -38,8 +41,13 @@ def _config() -> dict[str, Any]:
         "dataset": {
             "name": "frozen",
             "revision": "v1",
-            "split": "test",
+            "split": "deterministic-shuffle-v1",
             "sha256": "c" * 64,
+            "min_length": 50,
+            "max_length": 256,
+            "max_records": 640,
+            "validation_ratio": 0.05,
+            "test_ratio": 0.05,
         },
         "checkpoint": {"name": "dplm", "revision": "v1", "sha256": "d" * 64},
         "tokenizer": {"name": "dplm", "revision": "v1", "sha256": "e" * 64},
@@ -49,9 +57,11 @@ def _config() -> dict[str, Any]:
             "sha256": "f" * 64,
         },
         "training": {
+            "freeze_proposal": True,
             "epochs": 20,
             "min_epochs": 3,
             "batch_size": 4,
+            "num_candidates": 4,
             "learning_rate": 0.00005,
             "weight_decay": 0.01,
             "grad_clip_norm": 1.0,
@@ -60,7 +70,18 @@ def _config() -> dict[str, Any]:
             "scheduler_patience": 1,
             "early_stop_patience": 4,
         },
-        "generation": {"sequence_count": 32, "max_steps": 64, "num_candidates": 4},
+        "generation": {
+            "sequence_count": 32,
+            "max_steps": 64,
+            "num_candidates": 4,
+            "proposal_temperature": 0.3,
+            "proposal_noise_scale": 1.0,
+            "energy_temperature": 1.25,
+            "disable_resample": False,
+            "resample_ratio": 0.2,
+            "resample_top_p": 0.9,
+        },
+        "evaluation": {"pair_mode": "order", "pooling": "mean", "batch_size": 1},
         "seeds": [1701, 1702, 1703],
         "remote_call_budget": 128,
         "precision_policy": {
@@ -275,3 +296,39 @@ def test_manifest_requires_same_trained_energy_checkpoint(tmp_path: Path) -> Non
         "same trained energy checkpoint" in error
         for error in validate_acceptance(manifest_path)
     )
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "value", "message"),
+    (
+        (
+            "dataset",
+            "split",
+            "ad-hoc",
+            "expected deterministic-shuffle-v1",
+        ),
+        (
+            "generation",
+            "sequence_count",
+            31,
+            "differs from the frozen test split",
+        ),
+        (
+            "generation",
+            "disable_resample",
+            "false",
+            "expected a boolean",
+        ),
+        ("evaluation", "pair_mode", "nearest", "expected order"),
+    ),
+)
+def test_config_rejects_workflow_parameter_drift(
+    section: str, field: str, value: object, message: str
+) -> None:
+    config = _config()
+    config[section][field] = value
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any(message in error for error in errors)

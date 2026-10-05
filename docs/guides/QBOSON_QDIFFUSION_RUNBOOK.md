@@ -270,7 +270,19 @@ python examples/qdiffusion_kaiwu/preflight_protein_artifacts.py \
 ```
 
 Run with network access disabled. The mode-0600 output deliberately declares
-itself preflight-only and is not evidence of a successful QBoson run.
+itself preflight-only and is not evidence of a successful QBoson run. It also
+parses the frozen FASTA, rejects empty or duplicate records and unsupported
+residue symbols, applies the declared length filter and record cap, and proves
+that the deterministic validation/test split produces exactly the configured
+generation sequence count.
+
+The frozen configuration includes every plugin knob that changes the selected
+corpus or generated sequences: record-length bounds, record cap, validation and
+test ratios, proposal/noise/energy temperatures, candidate count, generation
+steps, resampling policy, ESM2 pairing/pooling, and evaluation batch size. The
+current values select 640 eligible records and therefore 32 test sequences at a
+0.05 test ratio. Changing any of these values creates a different experiment
+and requires a new preregistered configuration identity.
 
 The pinned plugin's complete workflow imports `build_qdiffusion` once and then
 uses it for structural validation, training, proposal-only baseline, and guided

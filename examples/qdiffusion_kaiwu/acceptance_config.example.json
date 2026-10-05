@@ -14,8 +14,13 @@
   "dataset": {
     "name": "<required>",
     "revision": "<required>",
-    "split": "<required>",
-    "sha256": "<required>"
+    "split": "deterministic-shuffle-v1",
+    "sha256": "<required>",
+    "min_length": 50,
+    "max_length": 256,
+    "max_records": 640,
+    "validation_ratio": 0.05,
+    "test_ratio": 0.05
   },
   "checkpoint": {
     "name": "<required>",
@@ -33,9 +38,11 @@
     "sha256": "<required>"
   },
   "training": {
+    "freeze_proposal": true,
     "epochs": 20,
     "min_epochs": 3,
     "batch_size": 4,
+    "num_candidates": 4,
     "learning_rate": 0.00005,
     "weight_decay": 0.01,
     "grad_clip_norm": 1.0,
@@ -47,7 +54,18 @@
   "generation": {
     "sequence_count": 32,
     "max_steps": 64,
-    "num_candidates": 4
+    "num_candidates": 4,
+    "proposal_temperature": 0.3,
+    "proposal_noise_scale": 1.0,
+    "energy_temperature": 1.25,
+    "disable_resample": false,
+    "resample_ratio": 0.2,
+    "resample_top_p": 0.9
+  },
+  "evaluation": {
+    "pair_mode": "order",
+    "pooling": "mean",
+    "batch_size": 1
   },
   "seeds": [1701, 1702, 1703],
   "remote_call_budget": 128,

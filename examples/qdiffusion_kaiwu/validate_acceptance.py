@@ -75,6 +75,7 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         "evaluation_model",
         "training",
         "generation",
+        "evaluation",
     ):
         section = _mapping(config.get(name), f"config.{name}", errors)
         if not section or any(
@@ -90,11 +91,80 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
     for field in ("sequence_count", "max_steps", "num_candidates"):
         if type(generation.get(field)) is not int or generation.get(field, 0) <= 0:
             errors.append(f"config.generation.{field}: expected a positive integer")
+    for field in (
+        "proposal_temperature",
+        "proposal_noise_scale",
+        "energy_temperature",
+        "resample_ratio",
+        "resample_top_p",
+    ):
+        value = _finite_number(
+            generation.get(field), f"config.generation.{field}", errors
+        )
+        if value is not None and value < 0:
+            errors.append(f"config.generation.{field}: expected a non-negative value")
+    if type(generation.get("disable_resample")) is not bool:
+        errors.append("config.generation.disable_resample: expected a boolean")
+    for field in ("resample_ratio", "resample_top_p"):
+        value = generation.get(field)
+        if (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and value > 1
+        ):
+            errors.append(f"config.generation.{field}: expected a value at most one")
+    evaluation = _mapping(config.get("evaluation"), "config.evaluation", errors)
+    if evaluation.get("pair_mode") != "order":
+        errors.append("config.evaluation.pair_mode: expected order")
+    if evaluation.get("pooling") != "mean":
+        errors.append("config.evaluation.pooling: expected mean")
+    if (
+        type(evaluation.get("batch_size")) is not int
+        or evaluation.get("batch_size", 0) <= 0
+    ):
+        errors.append("config.evaluation.batch_size: expected a positive integer")
+    dataset = _mapping(config.get("dataset"), "config.dataset", errors)
+    if dataset.get("split") != "deterministic-shuffle-v1":
+        errors.append("config.dataset.split: expected deterministic-shuffle-v1")
+    for field in ("min_length", "max_length", "max_records"):
+        if type(dataset.get(field)) is not int or dataset.get(field, 0) <= 0:
+            errors.append(f"config.dataset.{field}: expected a positive integer")
+    if (
+        type(dataset.get("min_length")) is int
+        and type(dataset.get("max_length")) is int
+        and dataset["min_length"] > dataset["max_length"]
+    ):
+        errors.append("config.dataset.min_length: cannot exceed max_length")
+    split_ratios: list[float] = []
+    for field in ("validation_ratio", "test_ratio"):
+        value = _finite_number(dataset.get(field), f"config.dataset.{field}", errors)
+        if value is not None:
+            split_ratios.append(value)
+            if not 0 < value < 1:
+                errors.append(
+                    f"config.dataset.{field}: expected a value between zero and one"
+                )
+    if len(split_ratios) == 2 and sum(split_ratios) >= 1:
+        errors.append("config.dataset: validation and test ratios must sum below one")
+    if (
+        type(dataset.get("max_records")) is int
+        and isinstance(dataset.get("test_ratio"), (int, float))
+        and not isinstance(dataset.get("test_ratio"), bool)
+        and type(generation.get("sequence_count")) is int
+    ):
+        expected_count = max(1, int(dataset["max_records"] * dataset["test_ratio"]))
+        if generation["sequence_count"] != expected_count:
+            errors.append(
+                "config.generation.sequence_count: differs from the frozen test split"
+            )
     training = _mapping(config.get("training"), "config.training", errors)
+    if type(training.get("freeze_proposal")) is not bool:
+        errors.append("config.training.freeze_proposal: expected a boolean")
     for field in (
         "epochs",
         "min_epochs",
         "batch_size",
+        "num_candidates",
         "validation_steps",
         "scheduler_patience",
         "early_stop_patience",

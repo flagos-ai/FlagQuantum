@@ -27,7 +27,10 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
         "tokenizer": tmp_path / "tokenizer",
         "evaluation_model": tmp_path / "evaluation-model",
     }
-    dataset_hash = _write(paths["dataset"], b">p1\nACDE\n")
+    dataset_hash = _write(
+        paths["dataset"],
+        b">p1\nACDE\n>p2\nFGHI\n>p3\nKLMN\n>p4\nPQRS\n",
+    )
     checkpoint_hash = _write(paths["base_checkpoint"], b"weights")
     _write(paths["tokenizer"] / "tokenizer.json", b"tokens")
     _write(paths["evaluation_model"] / "weights.pt", b"esm2")
@@ -36,10 +39,18 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
     config = {
         "schema": "flagquantum.qboson_qdiffusion_config",
         "version": "1.0",
-        "dataset": {"sha256": dataset_hash},
+        "dataset": {
+            "sha256": dataset_hash,
+            "min_length": 4,
+            "max_length": 4,
+            "max_records": 4,
+            "validation_ratio": 0.25,
+            "test_ratio": 0.25,
+        },
         "checkpoint": {"sha256": checkpoint_hash},
         "tokenizer": {"sha256": tokenizer_hash},
         "evaluation_model": {"sha256": evaluation_hash},
+        "generation": {"sequence_count": 1},
     }
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
@@ -57,6 +68,14 @@ def test_preflight_verifies_files_and_trees_without_recording_paths(
     assert record["offline_preflight_only"] is True
     assert record["acceptance_evidence"] is False
     assert record["artifacts"]["dataset"]["algorithm"] == "file-sha256-v1"
+    assert record["artifacts"]["dataset"]["profile"] == {
+        "record_count": 4,
+        "eligible_count": 4,
+        "selected_count": 4,
+        "train_count": 2,
+        "validation_count": 1,
+        "test_count": 1,
+    }
     assert record["artifacts"]["tokenizer"]["algorithm"] == "tree-sha256-v1"
     assert str(tmp_path) not in output.read_text(encoding="utf-8")
     assert output.stat().st_mode & 0o777 == 0o600
@@ -100,3 +119,28 @@ def test_tree_identity_rejects_symlinks(tmp_path: Path) -> None:
 def test_artifact_path_must_be_absolute(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="must be absolute"):
         _artifact_identity(Path("relative.bin"))
+
+
+def test_preflight_rejects_insufficient_eligible_dataset_records(
+    tmp_path: Path,
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["dataset"]["min_length"] = 5
+    config["dataset"]["sha256"] = hashlib.sha256(
+        paths["dataset"].read_bytes()
+    ).hexdigest()
+    config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="fewer eligible records"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_preflight_rejects_test_split_count_drift(tmp_path: Path) -> None:
+    config_path, paths = _fixture(tmp_path)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["generation"]["sequence_count"] = 2
+    config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="differs from computed test split"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")

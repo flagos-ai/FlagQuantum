@@ -131,6 +131,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - An offline protein-artifact preflight now verifies exact file/tree identities,
   rejects symlinks and implicit path ambiguity, and emits a private record that
   cannot be mistaken for acceptance evidence.
+- The frozen experiment now covers the plugin's corpus filtering, deterministic
+  split, generation/resampling, and ESM2 evaluation knobs. FASTA preflight also
+  proves that 640 eligible frozen records yield the declared 32-sequence test
+  set before any A800 or QBoson quota is consumed.
 - A QDiffusion builder binding now forces the pinned plugin's validation,
   training, baseline, and guided-generation branches to share the bounded
   FlagQuantum sampler. It rejects competing sampler injection and verifies the

@@ -18,6 +18,7 @@ ARTIFACT_FIELDS = {
     "tokenizer": "tokenizer",
     "evaluation_model": "evaluation_model",
 }
+AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWYBXZJUO")
 
 
 def _file_sha256(path: Path) -> str:
@@ -72,6 +73,100 @@ def _read_config(path: Path) -> tuple[dict[str, Any], str]:
     return value, hashlib.sha256(raw).hexdigest()
 
 
+def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
+    if not path.is_file():
+        raise ValueError("dataset artifact must be one FASTA file")
+    section = config.get("dataset")
+    generation = config.get("generation")
+    if not isinstance(section, dict) or not isinstance(generation, dict):
+        raise ValueError("config must contain dataset and generation objects")
+    integers: dict[str, int] = {}
+    for field in ("min_length", "max_length", "max_records"):
+        value = section.get(field)
+        if type(value) is not int or value <= 0:
+            raise ValueError(f"config.dataset.{field} must be a positive integer")
+        integers[field] = value
+    ratios: dict[str, float] = {}
+    for field in ("validation_ratio", "test_ratio"):
+        value = section.get(field)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not 0 < float(value) < 1
+        ):
+            raise ValueError(f"config.dataset.{field} must be between zero and one")
+        ratios[field] = float(value)
+
+    records: list[tuple[str, str]] = []
+    header: str | None = None
+    sequence: list[str] = []
+
+    def finish_record() -> None:
+        if header is None:
+            return
+        joined = "".join(sequence).upper()
+        if not joined:
+            raise ValueError(f"FASTA record has no sequence: {header}")
+        unsupported = sorted(set(joined) - AMINO_ACIDS)
+        if unsupported:
+            raise ValueError(
+                f"FASTA record {header} contains unsupported residues: "
+                + "".join(unsupported)
+            )
+        records.append((header, joined))
+
+    with path.open("r", encoding="utf-8") as stream:
+        for line_number, raw_line in enumerate(stream, start=1):
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(">"):
+                finish_record()
+                header = line[1:].strip()
+                sequence = []
+                if not header:
+                    raise ValueError(f"FASTA header is empty at line {line_number}")
+            else:
+                if header is None:
+                    raise ValueError(
+                        f"FASTA sequence appears before a header at line {line_number}"
+                    )
+                sequence.append(line)
+    finish_record()
+    if not records:
+        raise ValueError("dataset FASTA contains no records")
+    headers = [item[0] for item in records]
+    if len(set(headers)) != len(headers):
+        raise ValueError("dataset FASTA contains duplicate headers")
+
+    eligible = sum(
+        integers["min_length"] <= len(item[1]) <= integers["max_length"]
+        for item in records
+    )
+    selected = min(eligible, integers["max_records"])
+    if selected < integers["max_records"]:
+        raise ValueError(
+            "dataset has fewer eligible records than config.dataset.max_records"
+        )
+    validation_count = max(1, int(selected * ratios["validation_ratio"]))
+    test_count = max(1, int(selected * ratios["test_ratio"]))
+    train_count = selected - validation_count - test_count
+    if train_count <= 0:
+        raise ValueError("frozen dataset split leaves no training records")
+    if generation.get("sequence_count") != test_count:
+        raise ValueError(
+            "frozen generation sequence_count differs from computed test split"
+        )
+    return {
+        "record_count": len(records),
+        "eligible_count": eligible,
+        "selected_count": selected,
+        "train_count": train_count,
+        "validation_count": validation_count,
+        "test_count": test_count,
+    }
+
+
 def _write_private_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -117,6 +212,10 @@ def preflight_artifacts(
             "algorithm": algorithm,
             "file_count": file_count,
         }
+        if artifact_name == "dataset" and digest == expected:
+            artifacts[artifact_name]["profile"] = _dataset_profile(
+                artifact_paths[artifact_name], config
+            )
     if errors:
         raise ValueError("artifact preflight failed:\n- " + "\n- ".join(errors))
 
