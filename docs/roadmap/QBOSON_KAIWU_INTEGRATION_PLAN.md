@@ -103,6 +103,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   image contains Python 3.12.3, Torch 2.13.0+cu129, and no Kaiwu package. A
   bounded runner now injects the observed host identity and mounts FlagQuantum
   and the public plugin source read-only for development-only execution.
+- The bounded container runner now executes the pinned plugin's actual
+  QDiffusion proposal, conditioned Boltzmann energy, FlagQuantum sampler,
+  objective, backward, optimizer update, and one-step guided generation path.
+  Its transport remains an explicit in-memory fake and its schema hard-codes
+  `system_acceptance=false`; this is a rehearsal for, not evidence of, Phase 4.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

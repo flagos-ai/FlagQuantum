@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 import torch
 
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _run_qdiffusion_slice,
+)
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuTaskReceipt,
@@ -104,3 +109,15 @@ def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> N
     assert client.submit_calls == 2
     assert sampler.remote_call_count == 2
     assert len(sampler.receipts) == 2
+
+
+def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None:
+    record = _run_qdiffusion_slice(torch.device("cpu"))
+
+    assert math.isfinite(record["objective"])
+    assert record["gradient_norm"] > 0
+    assert record["parameter_delta_max"] > 0
+    assert record["token_constraints_passed"] is True
+    assert 0 < record["remote_call_count"] <= record["remote_call_budget"]
+    assert record["task_count"] == record["remote_call_count"]
+    assert record["fallback_occurred"] is False

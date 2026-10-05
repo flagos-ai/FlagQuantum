@@ -27,8 +27,11 @@ bash examples/qdiffusion_kaiwu/run_a800_development_probe.sh \
   f047bce7b1077449967bbe9e9fab5741542b48d4
 ```
 
-The output is a new mode-0600 file and is never an acceptance record because
-the transport is explicitly the in-memory development fake. The runner exposes
+The runner executes `qdiffusion_system_development_probe.py`, covering proposal
+forward, conditioned Boltzmann sampling through `KaiwuSampler`, energy
+objective, backward, optimizer update, and one guided generation step. The
+output is a new mode-0600 file and is never an acceptance record because the
+transport is explicitly the in-memory development fake. The runner exposes
 only GPU 0, disables networking, mounts both code trees read-only, uses a
 read-only container filesystem, and persists only the requested evidence file.
 

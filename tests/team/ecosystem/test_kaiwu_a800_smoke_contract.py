@@ -49,3 +49,19 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert ":/workspace/flagquantum:ro" in source
     assert ":/workspace/kaiwu-plugin:ro" in source
     assert "flagquantum/flagtree:0.7.0-validation" in source
+    assert "qdiffusion_system_development_probe.py" in source
+
+
+def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_system_development_probe.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"evidence_class": "development_fake_transport"' in source
+    assert '"system_acceptance": False' in source
+    assert '"qboson_hardware_used": False' in source
+    assert '"real_provider_evidence": False' in source
+    assert '"transport": "in_memory_fake"' in source

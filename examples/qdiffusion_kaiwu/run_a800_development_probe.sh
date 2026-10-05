@@ -55,7 +55,7 @@ docker run --rm \
   --volume "$plugin_dir:/workspace/kaiwu-plugin:ro" \
   --volume "$output_dir:/evidence:rw" \
   flagquantum/flagtree:0.7.0-validation \
-  python3 /workspace/flagquantum/examples/qdiffusion_kaiwu/a800_sampler_smoke.py \
+  python3 /workspace/flagquantum/examples/qdiffusion_kaiwu/qdiffusion_system_development_probe.py \
   --device cuda:0 \
   --execution-host "$execution_host" \
   --expected-hostname "$expected_hostname" \
