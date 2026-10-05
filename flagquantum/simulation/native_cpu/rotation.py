@@ -143,9 +143,9 @@ def native_cpu_static_clifford_layer_available() -> bool:
 def fused_static_clifford_layer_(
     state: torch.Tensor,
     gate_codes: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> bool:
     """Apply one disjoint H/S/Sdg/X/Y/Z layer in place."""
 
@@ -153,22 +153,22 @@ def fused_static_clifford_layer_(
         not native_cpu_static_clifford_layer_available()
         or state.device.type != "cpu"
         or gate_codes.device.type != "cpu"
-        or wires.device.type != "cpu"
+        or qubits.device.type != "cpu"
         or state.dtype not in {torch.complex64, torch.complex128}
         or gate_codes.dtype != torch.int8
-        or wires.dtype != torch.int64
+        or qubits.dtype != torch.int64
         or state.ndim != 2
         or gate_codes.ndim != 1
-        or wires.shape != gate_codes.shape
-        or not 2 <= wires.numel() <= 62
-        or not all(item.is_contiguous() for item in (state, gate_codes, wires))
+        or qubits.shape != gate_codes.shape
+        or not 2 <= qubits.numel() <= 62
+        or not all(item.is_contiguous() for item in (state, gate_codes, qubits))
     ):
         return False
     with torch.no_grad():
         cast(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_static_clifford_layer_(
-                state, gate_codes, wires, n_wires
+                state, gate_codes, qubits, n_qubits
             ),
         )
     return True
@@ -195,10 +195,10 @@ def native_cpu_specialized_forward_rotations_available() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
-def native_cpu_forward_rotation_tile_wires(n_wires: int) -> int:
+def native_cpu_forward_rotation_tile_qubits(n_qubits: int) -> int:
     """Return the bounded forward tile width with an explicit rollback."""
 
-    if n_wires < 16:
+    if n_qubits < 16:
         return 4
     enabled = os.getenv(
         "FQ_NATIVE_CPU_FORWARD_WIDE_ROTATION_TILES", "1"
@@ -219,12 +219,12 @@ def native_cpu_hadamard_block_adjoint_available() -> bool:
 def fused_rotation_block_forward_(
     state: torch.Tensor,
     matrices: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     rzz_angles: torch.Tensor | None = None,
-    rzz_first_wires: torch.Tensor | None = None,
-    rzz_second_wires: torch.Tensor | None = None,
+    rzz_first_qubits: torch.Tensor | None = None,
+    rzz_second_qubits: torch.Tensor | None = None,
     cx_controls: torch.Tensor | None = None,
     cx_targets: torch.Tensor | None = None,
 ) -> bool:
@@ -234,25 +234,25 @@ def fused_rotation_block_forward_(
     PyTorch path when the extension is disabled, unavailable, or unsupported.
     """
 
-    rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
+    rzz_tensors = (rzz_angles, rzz_first_qubits, rzz_second_qubits)
     cx_tensors = (cx_controls, cx_targets)
     real_dtype = torch.float32 if state.dtype == torch.complex64 else torch.float64
     if (
         not native_cpu_rotation_available()
         or state.device.type != "cpu"
         or matrices.device.type != "cpu"
-        or wires.device.type != "cpu"
+        or qubits.device.type != "cpu"
         or state.dtype not in {torch.complex64, torch.complex128}
         or matrices.dtype != state.dtype
-        or wires.dtype != torch.int64
+        or qubits.dtype != torch.int64
         or state.ndim != 2
         or matrices.ndim not in {3, 4}
         or (matrices.ndim == 4 and matrices.shape[0] != state.shape[0])
         or not 2 <= matrices.shape[-3] <= 11
         or matrices.shape[-2:] != (2, 2)
-        or wires.shape != (matrices.shape[-3],)
+        or qubits.shape != (matrices.shape[-3],)
         or (torch.is_grad_enabled() and matrices.requires_grad)
-        or not all(item.is_contiguous() for item in (state, matrices, wires))
+        or not all(item.is_contiguous() for item in (state, matrices, qubits))
         or (
             any(item is None for item in rzz_tensors)
             and any(item is not None for item in rzz_tensors)
@@ -267,27 +267,27 @@ def fused_rotation_block_forward_(
                 not native_cpu_shared_rzz_forward_fusion_available()
                 or rzz_angles.device.type != "cpu"
                 or rzz_angles.dtype != real_dtype
-                or rzz_first_wires is None
-                or rzz_second_wires is None
-                or rzz_first_wires.device.type != "cpu"
-                or rzz_second_wires.device.type != "cpu"
-                or rzz_first_wires.dtype != torch.int64
-                or rzz_second_wires.dtype != torch.int64
+                or rzz_first_qubits is None
+                or rzz_second_qubits is None
+                or rzz_first_qubits.device.type != "cpu"
+                or rzz_second_qubits.device.type != "cpu"
+                or rzz_first_qubits.dtype != torch.int64
+                or rzz_second_qubits.dtype != torch.int64
                 or rzz_angles.ndim != 1
                 or rzz_angles.numel() < 2
-                or rzz_first_wires.shape != rzz_angles.shape
-                or rzz_second_wires.shape != rzz_angles.shape
+                or rzz_first_qubits.shape != rzz_angles.shape
+                or rzz_second_qubits.shape != rzz_angles.shape
                 or not torch.equal(rzz_angles, rzz_angles[0].expand_as(rzz_angles))
                 or not bool(
-                    torch.all(torch.abs(rzz_first_wires - rzz_second_wires) == 1)
+                    torch.all(torch.abs(rzz_first_qubits - rzz_second_qubits) == 1)
                 )
                 or torch.unique(
-                    torch.minimum(rzz_first_wires, rzz_second_wires)
+                    torch.minimum(rzz_first_qubits, rzz_second_qubits)
                 ).numel()
                 != rzz_angles.numel()
                 or not rzz_angles.is_contiguous()
-                or not rzz_first_wires.is_contiguous()
-                or not rzz_second_wires.is_contiguous()
+                or not rzz_first_qubits.is_contiguous()
+                or not rzz_second_qubits.is_contiguous()
             )
         )
         or (
@@ -313,11 +313,11 @@ def fused_rotation_block_forward_(
             torch.ops.flagquantum_native.fused_rotation_block_forward_(
                 state,
                 matrices,
-                wires,
-                n_wires,
+                qubits,
+                n_qubits,
                 rzz_angles,
-                rzz_first_wires,
-                rzz_second_wires,
+                rzz_first_qubits,
+                rzz_second_qubits,
                 native_cpu_specialized_forward_rotations_available(),
                 cx_controls,
                 cx_targets,
@@ -330,15 +330,15 @@ def fused_rotation_block_adjoint_(
     ket: torch.Tensor,
     adjoint: torch.Tensor,
     matrices: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> bool:
     """Apply one legacy fixed block to ket and adjoint separately."""
 
-    if not fused_rotation_block_forward_(ket, matrices, wires, n_wires=n_wires):
+    if not fused_rotation_block_forward_(ket, matrices, qubits, n_qubits=n_qubits):
         return False
-    if not fused_rotation_block_forward_(adjoint, matrices, wires, n_wires=n_wires):
+    if not fused_rotation_block_forward_(adjoint, matrices, qubits, n_qubits=n_qubits):
         raise RuntimeError("native fixed block rejected a matching adjoint state")
     return True
 
@@ -346,9 +346,9 @@ def fused_rotation_block_adjoint_(
 def fused_hadamard_block_adjoint_(
     ket: torch.Tensor,
     adjoint: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> bool:
     """Apply a disjoint Hadamard block to ket and adjoint in place."""
 
@@ -356,22 +356,22 @@ def fused_hadamard_block_adjoint_(
         not native_cpu_hadamard_block_adjoint_available()
         or ket.device.type != "cpu"
         or adjoint.device.type != "cpu"
-        or wires.device.type != "cpu"
+        or qubits.device.type != "cpu"
         or ket.dtype not in {torch.complex64, torch.complex128}
         or adjoint.dtype != ket.dtype
-        or wires.dtype != torch.int64
+        or qubits.dtype != torch.int64
         or ket.ndim != 2
         or adjoint.shape != ket.shape
-        or not 2 <= wires.numel() <= 11
-        or wires.ndim != 1
-        or not all(item.is_contiguous() for item in (ket, adjoint, wires))
+        or not 2 <= qubits.numel() <= 11
+        or qubits.ndim != 1
+        or not all(item.is_contiguous() for item in (ket, adjoint, qubits))
     ):
         return False
     with torch.no_grad():
         cast(
             torch.Tensor,
             torch.ops.flagquantum_native.fused_hadamard_block_adjoint_(
-                ket, adjoint, wires, n_wires
+                ket, adjoint, qubits, n_qubits
             ),
         )
     return True

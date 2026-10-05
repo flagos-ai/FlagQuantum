@@ -181,7 +181,7 @@ class DistributedTensorNetworkState:
 
     @property
     def n_qubits(self) -> int:
-        return self.local_state.n_wires
+        return self.local_state.n_qubits
 
     @property
     def bsz(self) -> int:

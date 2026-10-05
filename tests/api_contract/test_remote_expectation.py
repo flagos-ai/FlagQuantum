@@ -90,7 +90,7 @@ def test_quafu_rejects_out_of_range_observable_before_compilation(
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(api, "compile", compile_program)
     monkeypatch.setattr(execution, "QuafuProvider", provider)
-    with pytest.raises(ValueError, match="Hamiltonian references wires outside"):
+    with pytest.raises(ValueError, match="Hamiltonian references qubits outside"):
         fq.run(
             fq.Circuit(2),
             outputs=fq.expectation(fq.Z(2)),

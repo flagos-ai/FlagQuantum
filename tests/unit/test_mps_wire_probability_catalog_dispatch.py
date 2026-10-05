@@ -30,7 +30,7 @@ def test_mps_wire_probability_dispatch_binds_exact_catalog_implementation() -> N
 
     assert implementation.semantic_id == "mps.measurement.wire_probabilities.local"
     assert implementation.implementation_id == "FQKI-TRITON-MPS-007-A"
-    assert implementation.symbol == "fused_mps_wire_probabilities"
+    assert implementation.symbol == "fused_mps_qubit_probabilities"
     assert implementation.directions == ("forward",)
     assert implementation.maturity == "provisional"
 
@@ -107,12 +107,12 @@ def test_mps_wire_probability_reference_path_reports_fallback(monkeypatch) -> No
     state = MPSState.zero(1, bsz=3, dtype=torch.complex64)
     reset_site_kernel_stats(clear_cache=True)
 
-    actual = state._wire_probabilities(0)
+    actual = state._qubit_probabilities(0)
 
     torch.testing.assert_close(actual, torch.tensor([[1.0, 0.0]]).expand(3, -1))
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 0
-    assert stats["wire_probability_fallback_calls"] == 1
+    assert stats["triton_qubit_probability_calls"] == 0
+    assert stats["qubit_probability_fallback_calls"] == 1
     assert site_kernel_cache_events() == ()
 
 
@@ -161,12 +161,12 @@ def test_mps_wire_probability_runtime_uses_catalog(monkeypatch) -> None:
     state = MPSState([tensor])
     reset_site_kernel_stats(clear_cache=True)
 
-    actual = state._wire_probabilities(0)
+    actual = state._qubit_probabilities(0)
     expected = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
 
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-6)
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 1
+    assert stats["triton_qubit_probability_calls"] == 1
     assert stats["wire_probability_fallback_calls"] == 0
     assert catalog_routes == ["FQKI-TRITON-MPS-007-A"]
     (route_event,) = site_kernel_cache_events()
@@ -201,7 +201,7 @@ def test_mps_wire_probability_kill_switch_uses_reference(monkeypatch) -> None:
 
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-6)
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 0
+    assert stats["triton_qubit_probability_calls"] == 0
     assert stats["wire_probability_fallback_calls"] == 1
     assert site_kernel_cache_events() == ()
 
@@ -218,5 +218,5 @@ def test_public_mps_sampling_routes_each_wire(monkeypatch) -> None:
 
     assert torch.equal(samples, torch.zeros_like(samples))
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 3
+    assert stats["triton_qubit_probability_calls"] == 3
     assert stats["wire_probability_fallback_calls"] == 0

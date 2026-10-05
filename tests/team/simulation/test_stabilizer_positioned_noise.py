@@ -133,10 +133,10 @@ def test_terminal_wires_follow_the_program_measurements_in_the_requested_order()
     program = _ir(3, _gate("x", 2), _measure(0), _reset(0))
 
     ascending = sample_noisy_measurements(
-        program, shots=2, terminal_wires=(1, 2), seed=1
+        program, shots=2, terminal_qubits=(1, 2), seed=1
     )
     descending = sample_noisy_measurements(
-        program, shots=2, terminal_wires=(2, 1), seed=1
+        program, shots=2, terminal_qubits=(2, 1), seed=1
     )
 
     assert ascending.tolist() == [[0, 0, 1]] * 2
@@ -186,7 +186,7 @@ def test_a_repeated_seed_reproduces_the_same_record() -> None:
 def test_the_record_is_an_integer_tensor_with_one_column_per_readout() -> None:
     program = _ir(2, _gate("h", 0), _measure(0), _flip(1, 0.5), _measure(1))
 
-    record = sample_noisy_measurements(program, shots=5, terminal_wires=(0,), seed=3)
+    record = sample_noisy_measurements(program, shots=5, terminal_qubits=(0,), seed=3)
 
     assert record.dtype == torch.int64
     assert record.shape == (5, 3)
@@ -205,7 +205,7 @@ def test_the_planned_entry_point_still_refuses_a_channel() -> None:
 
     assert sample_noisy_measurements(program, shots=2, seed=1).shape == (2, 1)
     with pytest.raises(CapabilityError, match="noise channel"):
-        sample_stabilizer(program, shots=2, wires=[0], seed=1)
+        sample_stabilizer(program, shots=2, qubits=[0], seed=1)
 
 
 @pytest.mark.parametrize(
@@ -353,7 +353,7 @@ def test_a_reset_naming_more_than_one_wire_is_refused() -> None:
         Instruction(name="reset", wires=(0, 1), metadata={"is_dynamic": True}),
     )
 
-    with pytest.raises(CapabilityError, match="one wire"):
+    with pytest.raises(CapabilityError, match="one qubit"):
         sample_noisy_measurements(program, shots=2, seed=1)
 
 
@@ -400,7 +400,7 @@ def test_a_terminal_wire_outside_the_circuit_is_refused(wires: list[int]) -> Non
     program = _ir(2, _measure(0))
 
     with pytest.raises(ValidationError, match="outside circuit range"):
-        sample_noisy_measurements(program, shots=2, terminal_wires=wires, seed=1)
+        sample_noisy_measurements(program, shots=2, terminal_qubits=wires, seed=1)
 
 
 def test_a_missing_engine_names_the_extra_that_provides_it(

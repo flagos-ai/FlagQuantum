@@ -20,7 +20,7 @@ from ..circuit import Circuit
 from ..core.runtime_config import get_runtime_config
 from ..simulation.mps.state import MPSState
 from ..simulation.pauli import (
-    infer_n_wires_from_dense_state,
+    infer_n_qubits_from_dense_state,
     pauli_product_density_expectation,
     pauli_product_operator,
     pauli_product_statevector_expectation,
@@ -146,7 +146,7 @@ class HamiltonianTerm:
 
         tensor = target
         if tensor.ndim >= 2 and tensor.shape[-1] == tensor.shape[-2]:
-            n_qubits = infer_n_wires_from_dense_state(tensor)
+            n_qubits = infer_n_qubits_from_dense_state(tensor)
             base = (
                 tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 3 else 1,
@@ -155,7 +155,7 @@ class HamiltonianTerm:
                 else pauli_product_density_expectation(tensor, self.ops, n_qubits)
             )
         else:
-            n_qubits = infer_n_wires_from_dense_state(tensor)
+            n_qubits = infer_n_qubits_from_dense_state(tensor)
             base = (
                 tensor.real.new_ones(
                     tensor.shape[0] if tensor.ndim == 2 else 1,

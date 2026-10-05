@@ -26,7 +26,7 @@ def test_runner_is_registered_and_lazy() -> None:
 
 def test_independent_parameter_batch_matches_scalar_rows() -> None:
     batched, scalar = build_parameter_batch(
-        "hardware_efficient_statevector", n_wires=4, batch_size=3
+        "hardware_efficient_statevector", n_qubits=4, batch_size=3
     )
 
     expected = torch.cat(tuple(circuit.state() for circuit in scalar), dim=0)
@@ -37,7 +37,7 @@ def test_independent_parameter_batch_matches_scalar_rows() -> None:
 def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
     payload = run_benchmark(
         workloads=("hardware_efficient_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         batch_sizes=(1, 3),
         engines=(
             "flagquantum_native_batch",
@@ -174,7 +174,7 @@ def test_pennylane_native_batch_matches_flagquantum_batch() -> None:
     pytest.importorskip("pennylane")
     payload = run_benchmark(
         workloads=("hardware_efficient_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         batch_sizes=(3,),
         engines=(
             "flagquantum_native_batch",
@@ -204,11 +204,13 @@ def test_pennylane_native_batch_matches_flagquantum_batch() -> None:
 
 def test_invalid_batch_contract_fails_closed() -> None:
     with pytest.raises(ValueError, match="batch_size must be positive"):
-        build_parameter_batch("hardware_efficient_statevector", n_wires=4, batch_size=0)
+        build_parameter_batch(
+            "hardware_efficient_statevector", n_qubits=4, batch_size=0
+        )
     with pytest.raises(ValueError, match="iterations at least 3"):
         run_benchmark(
             workloads=("hardware_efficient_statevector",),
-            n_wires=(4,),
+            n_qubits=(4,),
             batch_sizes=(1,),
             engines=("flagquantum_native_batch",),
             threads=1,

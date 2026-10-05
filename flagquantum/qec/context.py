@@ -233,7 +233,7 @@ def _measurement_columns(
     One syndrome round records one measurement per check, in the code's declared
     check order, so round ``r``'s check at position ``p`` is column
     ``r * n_checks + p``. The terminal data readout follows the last round and
-    is column ``rounds * n_checks + q`` for the data wire at position ``q``.
+    is column ``rounds * n_checks + q`` for the data qubit at position ``q``.
 
     Both halves are read from the circuit's declaration rather than from a
     lowered program, which is what makes a context cheap; that the sampler's
@@ -419,7 +419,7 @@ class DecoderContext:
 
         This is upstream's ``num_measurements``: the width of the buffer the
         component maps index, one measurement per check per round plus one
-        terminal readout per data wire.
+        terminal readout per data qubit.
         """
 
         return len(self.circuit.code.checks) * self.circuit.rounds + len(

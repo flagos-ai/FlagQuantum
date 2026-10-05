@@ -100,7 +100,7 @@ def _mps_observable_adjoint_kernel_match(
 def _require_mps_observable_adjoint_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired MPS-006 implementation or fail closed."""
+    """Return the connected MPS-006 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _mps_observable_adjoint_kernel_match(

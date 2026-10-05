@@ -1,16 +1,16 @@
 """Cancel self-inverse instructions that a commuting gap was hiding.
 
 `pipeline.merge_self_inverse` removes two identical self-inverse gates when the
-second immediately follows the first on its wires. "Immediately" is measured on
-*wires*, so a gate on another wire in between is already no obstacle, but a gate
-that touches one of the same wires is:
+second immediately follows the first on its qubits. "Immediately" is measured on
+*qubits*, so a gate on another qubit in between is already no obstacle, but a gate
+that touches one of the same qubits is:
 
     cx(0, 1)  rz(0)  cx(0, 1)
 
 is a bare `rz(0)`, and `merge_self_inverse` cannot see it, because the latest
-writer of wire 0 is the `rz` rather than the first `cx`. `rz` on the *control* of
+writer of qubit 0 is the `rz` rather than the first `cx`. `rz` on the *control* of
 a `cx` commutes with it -- the `cx` is `sum_a |a><a|_0 (x) X^a`, and a diagonal
-gate on wire 0 only rescales each term -- so the pair annihilates across the gap.
+gate on qubit 0 only rescales each term -- so the pair annihilates across the gap.
 This pass is the consumer of `commutation.analyze_commutation`, which is what
 proves that.
 
@@ -18,8 +18,8 @@ Three properties make a cancellation admissible.
 
 **The gap must be proven, not assumed.** Two occurrences of one self-inverse
 instruction are removed only when every instruction between them that shares a
-wire with them is in the same commuting block on that wire. Instructions between
-them that share no wire commute by disjointness, so that condition is exactly
+qubit with them is in the same commuting block on that qubit. Instructions between
+them that share no qubit commute by disjointness, so that condition is exactly
 "every instruction between them commutes with them", which is what makes the pair
 reduce to `G G = I`. The proof does not care how many other pairs are removed at
 the same time: an intervening instruction a pair relies on has already been proven
@@ -43,7 +43,7 @@ superset of that one rather than a second opinion about it.
 is limited to gates that are their own inverse, which leaves the larger family of
 *runs* untouched: `rz(0.3) cx(0.1) rz(0.4)` on the control is one `rz(0.7)` and
 `cx(0.1)`, because a diagonal gate on the control of a `cx` commutes with it, and
-`merge_adjacent_rotations` cannot see it because the latest writer of wire 0 is the
+`merge_adjacent_rotations` cannot see it because the latest writer of qubit 0 is the
 second `rz` rather than the first. This is the rule Qiskit's
 `CommutativeCancellation` applies through the same analysis. Nothing new is
 assumed: the group is the same group, the proof is the same proof, and the sum is
@@ -71,9 +71,9 @@ from .pipeline import (
     _replace_param,
 )
 
-#: A group key: the instruction's name, its wires, and its commuting block on
-#: each of those wires. Two positions sharing one are the same operator on the
-#: same wires with a proven commuting gap between them.
+#: A group key: the instruction's name, its qubits, and its commuting block on
+#: each of those qubits. Two positions sharing one are the same operator on the
+#: same qubits with a proven commuting gap between them.
 GroupKey = tuple[str, tuple[int, ...], tuple[int, ...]]
 
 
@@ -111,9 +111,9 @@ def cancellable_positions(
 ) -> Mapping[GroupKey, tuple[int, ...]]:
     """Group the cancellable positions of a program, keyed by block membership.
 
-    The key is the opcode, the wires, and the block index on each of those wires.
+    The key is the opcode, the qubits, and the block index on each of those qubits.
     Two positions sharing a key are therefore the same self-inverse instruction on
-    the same wires, with a proven commuting gap between them -- which is exactly
+    the same qubits, with a proven commuting gap between them -- which is exactly
     the precondition `cancel_commuting_self_inverse` removes on. Exposed so that a
     benchmark can report how many groups a circuit offered, which is the only way
     to tell a pass that found nothing from a pass that was never asked.
@@ -137,7 +137,7 @@ def rotation_groups(
     """Group the positions whose rotation parameters may be added together.
 
     The keying is `cancellable_positions`'s, and for the same reason: one key
-    means one operator on one set of wires, with a proven commuting gap between
+    means one operator on one set of qubits, with a proven commuting gap between
     every pair of members. A member may be merged into the group's first position
     because everything the group spans commutes with all of it, so the block the
     group forms is applied where the earliest member already sat.
@@ -156,10 +156,10 @@ def rotation_groups(
 
 
 def _repeats_an_opcode(instructions: Sequence[Instruction]) -> bool:
-    """Whether some self-inverse opcode appears twice on the same wires.
+    """Whether some self-inverse opcode appears twice on the same qubits.
 
     A short circuit, not a semantic one. A circuit that does not repeat one of
-    these opcodes on one set of wires has no pair for this pass to remove, so
+    these opcodes on one set of qubits has no pair for this pass to remove, so
     answering ``False`` here is final; the analysis behind the removal is
     quadratic in the length of a commuting block, so it is not worth running to
     learn that. The converse does not hold, and the direction matters: a repeat
@@ -181,11 +181,11 @@ def _repeats_an_opcode(instructions: Sequence[Instruction]) -> bool:
 
 
 def _repeats_a_rotation(instructions: Sequence[Instruction]) -> bool:
-    """Whether some rotation opcode appears twice on the same wires.
+    """Whether some rotation opcode appears twice on the same qubits.
 
     `_repeats_an_opcode`'s short circuit for `merge_commuting_rotations`, with
     the same one-sided reading: ``False`` is final, because a circuit that does
-    not repeat one of these opcodes on one set of wires has no group of two to
+    not repeat one of these opcodes on one set of qubits has no group of two to
     add up, and ``True`` is permission to look rather than a promise that
     anything will merge.
     """
@@ -207,7 +207,7 @@ def merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
     Returns ``ir`` unchanged when no group holds two members, which keeps the
     pass cheap on a circuit that has nothing to give and makes it idempotent in
     the sense `_optimize_to_fixed_point` needs: a merge lowers the number of
-    rotation instructions on those wires, so a second application finds every
+    rotation instructions on those qubits, so a second application finds every
     group at one member and adds nothing.
 
     A group whose angles add to zero loses its first position as well, which is

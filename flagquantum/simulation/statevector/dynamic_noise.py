@@ -11,19 +11,19 @@ from .operations import _apply_fixed_permutation
 def apply_dynamic_bit_flip(
     state: torch.Tensor,
     channel: KrausChannel,
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
     *,
     generator: torch.Generator,
 ) -> tuple[torch.Tensor, int]:
     """Sample one bit-flip channel independently for each trajectory row."""
 
-    if channel.name != "bit_flip" or channel.n_wires != 1:
-        raise ValueError("dynamic noise kernel supports one-wire bit-flip channels")
+    if channel.name != "bit_flip" or channel.n_qubits != 1:
+        raise ValueError("dynamic noise kernel supports one-qubit bit-flip channels")
     if state.ndim != 2:
         raise ValueError("dynamic noise state must have trajectory and amplitude axes")
-    if wire < 0 or wire >= n_wires:
-        raise ValueError("dynamic noise wire is outside the statevector")
+    if qubit < 0 or qubit >= n_qubits:
+        raise ValueError("dynamic noise qubit is outside the statevector")
     operators = tuple(
         torch.as_tensor(item, device=state.device, dtype=state.dtype)
         for item in channel.kraus
@@ -40,7 +40,7 @@ def apply_dynamic_bit_flip(
     )
     if not bool(torch.any(events)):
         return state, 0
-    flipped = _apply_fixed_permutation(state, "x", (wire,), n_wires)
+    flipped = _apply_fixed_permutation(state, "x", (qubit,), n_qubits)
     return torch.where(events[:, None], flipped, state), int(events.sum().item())
 
 

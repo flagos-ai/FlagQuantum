@@ -1,4 +1,4 @@
-"""Collapse a same-wire run of single-qubit gates into one exact instruction.
+"""Collapse a same-qubit run of single-qubit gates into one exact instruction.
 
 `pipeline` already removes identities, cancels self-inverse pairs, and adds up
 adjacent rotations that share one opcode. None of those touch a run that *mixes*
@@ -331,7 +331,7 @@ def _is_foldable(instruction: Instruction) -> bool:
 
     False for anything else — a wider gate, a measurement, a barrier, or an
     opcode no Euler table covers — and such an instruction *ends* the run on each
-    wire it touches rather than joining it.
+    qubit it touches rather than joining it.
     """
 
     if len(instruction.wires) != 1:
@@ -400,7 +400,7 @@ def _declines_vocabulary(
 
 
 def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None:
-    """The exact replacement of one same-wire run, or None to leave it.
+    """The exact replacement of one same-qubit run, or None to leave it.
 
     None covers refusal as well as no gain: a run a single z-rotation/pulse
     vocabulary already spells, and a run whose replacement would not be shorter.
@@ -423,12 +423,12 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
 
 
 def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
-    """Collapse each same-wire run of single-qubit gates into one exact sequence.
+    """Collapse each same-qubit run of single-qubit gates into one exact sequence.
 
-    A run is maximal: it ends at a gate that shares the wire, and it continues
-    across gates on other wires, which commute with it. The replacement is
+    A run is maximal: it ends at a gate that shares the qubit, and it continues
+    across gates on other qubits, which commute with it. The replacement is
     written at the run's own positions, so the emitted gates keep their order on
-    the wire and land in the same place in program order.
+    the qubit and land in the same place in program order.
 
     A run is left untouched when it carries a trainable angle, when a single
     z-rotation/pulse vocabulary already spells it and the replacement has gates

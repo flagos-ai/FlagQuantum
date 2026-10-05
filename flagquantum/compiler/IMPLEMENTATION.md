@@ -12,11 +12,11 @@ for the whole program, and `routing.py` materializes that plan into Core
 the SABRE layout pass of routing the reversed program, and therefore restores the
 output layout with an explicit SWAP sequence instead of replaying the forward
 SWAPs in reverse.
-The planner swaps only between wires the program owns, so it plans on the
-coupling subgraph those wires induce rather than on the whole device. A device
+The planner swaps only between qubits the program owns, so it plans on the
+coupling subgraph those qubits induce rather than on the whole device. A device
 wider than the program is therefore supported exactly as far as the program's own
-wires connect it, and a program that the device connects only through a padding
-wire is refused rather than costed against a route the plan cannot emit. Routing
+qubits connect it, and a program that the device connects only through a padding
+qubit is refused rather than costed against a route the plan cannot emit. Routing
 through a physical ancilla remains the unsupported case it is for the
 shortest-path strategies.
 The beam search Qiskit ships as `LookaheadSwap` was ported and measured against
@@ -28,7 +28,7 @@ measurement, so the search does not need to be rebuilt to re-test the decision.
 The randomized layer-permutation search Qiskit shipped as `StochasticSwap` and
 removed in 2.0 was ported and measured the same way, and rejected on cost too. It
 is a correct planner -- the placements it records are the replay of its own SWAPs,
-and every two-wire operation it places sits on a device edge -- but it retains
+and every two-qubit operation it places sits on a device edge -- but it retains
 1.617 times the SWAPs `sabre_layout` retains and beats that strategy on none of the
 140 measured programs. Raising the trial count does not close the gap, and
 Qiskit's own compiled implementation of the same algorithm retains 0.5% fewer
@@ -36,7 +36,7 @@ SWAPs on the same basis -- effectively the same count -- so the shortfall belong
 to the algorithm rather than to the port. `benchmarks/compiler_stochastic_swap.py` holds that measurement, including
 the independent replay of every plan it produces.
 `layout.py` owns the logical-to-physical `Layout` value and the two
-transformations over it: applying a layout to a program by relabelling its wires,
+transformations over it: applying a layout to a program by relabelling its qubits,
 and removing the trailing restore SWAPs a routed program ends with. A routing
 strategy always returns a program that ends on the identity layout, because
 target legalization and the deployment routing evidence both require that
@@ -91,7 +91,7 @@ target is missing; the two paths are ordered, not alternative.
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
 `schedule_legalization.py` constructs deterministic logical ASAP layers with
-explicit wire and classical-data dependencies. Dynamic operations and channels
+explicit qubit and classical-data dependencies. Dynamic operations and channels
 remain conservative barriers; this is not target timing or pulse scheduling.
 `target_emission.py` gates the existing OpenQASM and QCIS text emitters behind
 completed target legalization and binds deterministic emission audit facts. Its

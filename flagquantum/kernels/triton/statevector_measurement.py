@@ -707,7 +707,7 @@ def statevector_marginal_probabilities(
 ) -> torch.Tensor:
     """Return the joint marginal probability tensor for selected qubits.
 
-    Wire zero addresses the most-significant statevector bit, and output bits
+    Qubit zero addresses the most-significant statevector bit, and output bits
     follow the exact order supplied in ``qubits``. The CUDA complex64 path fuses
     magnitude generation, basis projection, and complement reduction. Inputs
     outside its bounded support matrix retain an exact differentiable PyTorch
@@ -747,7 +747,7 @@ def statevector_pauli_expectation(
 ) -> torch.Tensor:
     """Return one exact Pauli-product expectation per flat statevector batch.
 
-    Wire zero addresses the most-significant statevector bit, matching the
+    Qubit zero addresses the most-significant statevector bit, matching the
     simulation package. The CUDA complex64 path fuses Pauli permutation, phase,
     and inner-product work. Unsupported devices, dtypes, or layouts retain an
     exact differentiable PyTorch implementation.

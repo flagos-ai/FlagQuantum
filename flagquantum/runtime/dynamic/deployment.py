@@ -126,7 +126,7 @@ def create_dynamic_deployment_package(
     routing_evidence = build_deployment_routing_evidence(
         dict(deployment_ir.metadata.get("routing", {}) or {}),
         routing_reused=routing_reused,
-        n_wires=circuit.n_qubits,
+        n_qubits=circuit.n_qubits,
         coupling_map=backend.coupling_map,
     )
     routing_hash = stable_payload_sha256(routing_evidence)

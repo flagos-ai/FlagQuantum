@@ -140,12 +140,12 @@ def test_native_clifford_matching_reuses_owned_output_with_exact_rollback(
         state: torch.Tensor,
         cx_mapping: torch.Tensor,
         cz_edges: Sequence[tuple[int, int]] | None,
-        n_wires: int,
+        n_qubits: int,
         *,
         output: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         requested_outputs.append(output)
-        return implementation(state, cx_mapping, cz_edges, n_wires, output=output)
+        return implementation(state, cx_mapping, cz_edges, n_qubits, output=output)
 
     monkeypatch.setattr(clifford_matching, "fused_clifford_matching_out", record_output)
     monkeypatch.setenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "1")

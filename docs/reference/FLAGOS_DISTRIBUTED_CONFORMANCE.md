@@ -41,8 +41,8 @@ This proves logical tensor residency at the public ProcessGroup boundary; it
 does not inspect provider-native buffers or prove the absence of staging inside
 Torch-FL or its native communication implementation.
 
-The harness also executes a three-wire statevector containing gates on the
-rank-address-sharded wire. Each process retains only its strict amplitude shard
+The harness also executes a three-qubit statevector containing gates on the
+rank-address-sharded qubit. Each process retains only its strict amplitude shard
 and compares that shard with the matching indices from a bounded CPU reference.
 No distributed result reconstructs or gathers the full state. The report must
 record positive distributed-gate, communication-count, and communication-byte

@@ -117,7 +117,7 @@ jobs:
         run: python tools/check_interop_capability_gap_matrix.py
       - name: Verify OpenQASM import contract
         run: python tools/check_openqasm_import_contract.py
-      - name: Verify the qubit-vocabulary ledger
+      - name: Verify the qubit-vocabulary ledgers
         run: python tools/check_qubit_vocabulary.py
       - name: Verify CUDA-Q parity matrix and its generated scoreboard
         run: python tools/parity_matrix.py --check

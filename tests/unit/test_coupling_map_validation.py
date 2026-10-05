@@ -72,5 +72,5 @@ def test_topology_factories_validate_count_before_generating_edges(
     shape: str, value: object
 ) -> None:
     factory = CouplingMap.line if shape == "line" else CouplingMap.ring
-    with pytest.raises(ValueError, match="wire count must be an integer"):
+    with pytest.raises(ValueError, match="qubit count must be an integer"):
         factory(value)

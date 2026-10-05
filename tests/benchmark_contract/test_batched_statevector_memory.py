@@ -26,7 +26,7 @@ def test_memory_runner_is_registered_and_lazy() -> None:
 def test_small_isolated_memory_probe_records_time_rss_and_correctness() -> None:
     payload = run_benchmark(
         workloads=("hardware_efficient_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         batch_sizes=(3,),
         engines=("flagquantum_native_batch", "flagquantum_native_monolithic_batch"),
         threads=1,

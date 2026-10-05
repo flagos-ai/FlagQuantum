@@ -75,7 +75,7 @@ def _statevector_probability_kernel_match(
 def _require_statevector_probability_kernel(
     *, device_type: str, dtype: str, direction: KernelDirection
 ) -> KernelImplementation:
-    """Return the wired MEAS-001 implementation or fail closed."""
+    """Return the connected MEAS-001 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _statevector_probability_kernel_match(

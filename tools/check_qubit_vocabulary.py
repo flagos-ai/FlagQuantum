@@ -26,17 +26,27 @@ carried by `[[attribute_retirement.sites]]` when it is gone, and by
 `[[attribute_aliases.sites]]` when it is still reachable and deprecated. A name
 in neither table has to be gone, which is what stops a slice from retiring a
 name it never renamed.
+
+One surface is checked here that no ledger in the contract holds, and it is the one
+the migration is most likely to fail on. Every other check reads a *declaration*, so
+whether `observable_wire` is still in a signature is a question the contract can
+answer. Whether the caller thirty files away still writes `observable_wire=` is not:
+a keyword argument at a call site is not a name the package declares, so no ledger
+row can cover it, and Python raises nothing until that branch runs. The gate
+therefore also resolves every wire- or qubit-named keyword against its callee and
+requires the set to be empty. See `qubit_keyword_mismatches` in the census module
+for why an undecidable call site is skipped rather than reported.
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover
+else:  # pragma: no cover - Python 3.10
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,7 +58,11 @@ from census_wire_vocabulary import (  # noqa: E402
     attribute_census,
     census,
     definition_census,
+    docstring_census,
+    docstring_example_tokens,
+    documentation_census,
     public_parameter_names,
+    qubit_keyword_mismatches,
     supersedes,
 )
 
@@ -75,7 +89,7 @@ EXPECTED_HEADER = {
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
-    return cast(dict[str, Any], tomllib.loads(path.read_text(encoding="utf-8")))
+    return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
 def _duplicates(values: list[str]) -> list[str]:
@@ -243,6 +257,10 @@ def contract_errors(
 
     errors.extend(_attribute_errors(contract, scanned_attributes))
     errors.extend(_definition_errors(contract, package_root))
+    errors.extend(_documentation_errors(contract))
+    errors.extend(_docstring_errors(contract))
+    errors.extend(_docstring_example_errors(contract))
+    errors.extend(_call_site_errors(contract))
 
     slices = list(contract.get("slices", ()))
     if not slices:
@@ -540,16 +558,20 @@ def _attribute_errors(
             "qubit vocabulary attribute ledger entries are neither live nor "
             f"retired: {missing[:3]}"
         )
-    for site in sorted(kept):
-        if site not in live_names:
+    # `alias` and not `site`: the loop below binds `site` to an `AttributeSite`, and a
+    # shared name made this loop's `str` the only type mypy could see for it, so
+    # neither loop was checked. `tools/` is outside the strict check in CI, which is
+    # why the error sat here instead of failing a build.
+    for alias in sorted(kept):
+        if alias not in live_names:
             errors.append(
-                f"qubit vocabulary attribute alias {site} is not a live attribute "
+                f"qubit vocabulary attribute alias {alias} is not a live attribute "
                 "name, so the deprecation cannot forward from it"
             )
 
     for identifier, site in sorted(live_persisted.items()):
-        row = by_site.get(identifier)
-        if row is None:
+        record = by_site.get(identifier)
+        if record is None:
             if identifier not in retired:
                 errors.append(
                     "qubit vocabulary attribute reaches a payload but is not "
@@ -557,16 +579,16 @@ def _attribute_errors(
                 )
             continue
         if (
-            row.get("witness") != site.witness
-            or row.get("evidence") != site.evidence
-            or row.get("declaration") != site.declaration
+            record.get("witness") != site.witness
+            or record.get("evidence") != site.evidence
+            or record.get("declaration") != site.declaration
         ):
             errors.append(
                 f"qubit vocabulary exclusion {identifier} no longer matches the "
                 f"scan: witness {site.witness!r}, evidence {site.evidence!r}, "
                 f"declaration {site.declaration!r}"
             )
-        declared = str(row.get("replacement", ""))
+        declared = str(record.get("replacement", ""))
         if declared != site.replacement or not supersedes(site.attribute, declared):
             errors.append(
                 f"qubit vocabulary attribute {identifier} must be replaced by "
@@ -605,6 +627,235 @@ def _retired_attribute_kinds(contract: dict[str, Any]) -> dict[str, str]:
         for row in contract.get("attribute_retirement", {}).get("sites", ())
         if isinstance(row, dict)
     }
+
+
+def _documentation_errors(contract: dict[str, Any]) -> list[str]:
+    """Reconcile the keywords the documentation tells a reader to write.
+
+    A documented keyword argument is an instruction: a reader copies it into a
+    script and expects it to run. Nothing else in this gate can see one. The
+    Python-side ledgers read signatures, so a guide that shows `n_wires=` after the
+    parameter was renamed to `n_qubits` is invisible to all of them, and the
+    documentation's own generated pages cannot see it either -- they render from
+    the code, so they never quote an example by hand.
+
+    The check is the same shape as the other three surfaces: a live scan, a frozen
+    measurement, and a list of exemptions that has to stay exactly as small as the
+    reason for it. The exemptions are per *file* and pin the whole multiset of
+    spellings that file is allowed to show, so a fourth example cannot appear
+    inside an already-exempt plan without someone recording it. Two documents are
+    exempt and for opposite reasons: the hybrid plan quotes the source language a
+    captured program is written in, and the API reference documents a deprecated
+    alias that still works. A spelling is therefore never exempt on its own -- only
+    a file is, and only up to a count.
+
+    Only keyword arguments are counted. The bare noun cannot be: the documentation
+    has to be able to say "CUDA-Q orders wire zero as the least-significant bit"
+    and to describe a `--n-wires` flag, and both of those are correct as written.
+    """
+
+    errors: list[str] = []
+    section = contract.get("documentation", {})
+    for name in ("owner", "condition"):
+        if not isinstance(section.get(name), str) or not section[name]:
+            errors.append(f"qubit vocabulary documentation {name} is unowned")
+
+    exempt: dict[str, list[str]] = {}
+    for row in section.get("exempt", ()):
+        relative = str(row.get("file", ""))
+        if not relative:
+            errors.append("qubit vocabulary documentation exemption is missing a file")
+            continue
+        if relative in exempt:
+            errors.append(f"qubit vocabulary documentation exempts {relative} twice")
+        if not (ROOT / relative).is_file():
+            errors.append(f"qubit vocabulary documentation exempts missing {relative}")
+        if not isinstance(row.get("reason"), str) or not row["reason"]:
+            errors.append(
+                f"qubit vocabulary documentation exemption {relative} states no reason"
+            )
+        keywords = sorted(str(keyword) for keyword in row.get("keywords", ()))
+        if not keywords:
+            errors.append(
+                f"qubit vocabulary documentation exemption {relative} allows nothing"
+            )
+        exempt[relative] = keywords
+
+    scanned = documentation_census()
+    reported: dict[str, list[str]] = {}
+    for site in scanned.sites:
+        relative, _, keyword = site.partition("::")
+        reported.setdefault(relative, []).append(keyword)
+
+    for relative, keywords in sorted(reported.items()):
+        allowed = exempt.get(relative)
+        if allowed is None:
+            errors.append(
+                "qubit vocabulary documentation tells users to write a wire-named "
+                f"keyword: {relative} {sorted(set(keywords))}"
+            )
+        elif sorted(keywords) != allowed:
+            errors.append(
+                f"qubit vocabulary documentation in {relative} shows "
+                f"{sorted(keywords)}, but only {allowed} is exempt"
+            )
+    for relative in sorted(set(exempt) - set(reported)):
+        errors.append(f"qubit vocabulary documentation exemption {relative} is stale")
+
+    measured = int(section.get("measured_keywords", -1))
+    if measured != len(scanned.sites):
+        errors.append(
+            "qubit vocabulary documentation measured_keywords must equal the live scan"
+        )
+    return errors
+
+
+def _docstring_errors(contract: dict[str, Any]) -> list[str]:
+    """Reconcile the wire vocabulary the package's own docstrings and comments publish.
+
+    A docstring is what `help()` prints and what an editor shows on hover; a comment is
+    what the next reader of the module is taught. Both reach a user exactly as a
+    signature does, and both are invisible to every other check here, because those
+    read an AST signature and a docstring is not one. Rewording a parameter and leaving
+    the sentence that explains it untouched leaves the package describing a name it no
+    longer has, which is the failure this surface exists to catch.
+
+    The unit is a token, and the comparison is per container, not per total: an entry
+    names one `relative::Qualname` and the multiset of tokens that container may show,
+    so a second occurrence inside an already-exempt docstring has to be recorded rather
+    than absorbed. Every wire-named token in a docstring or comment is therefore either
+    gone or listed here with a reason.
+    """
+
+    errors: list[str] = []
+    section = contract.get("docstring", {})
+    for name in ("owner", "condition"):
+        if not isinstance(section.get(name), str) or not section[name]:
+            errors.append(f"qubit vocabulary docstring {name} is unowned")
+
+    exempt: dict[str, list[str]] = {}
+    for row in section.get("keep", ()):
+        identifiers = [str(entry) for entry in row.get("identifier", ())]
+        if not identifiers:
+            errors.append(
+                "qubit vocabulary docstring exemption is missing an identifier"
+            )
+            continue
+        if not isinstance(row.get("reason"), str) or not row["reason"]:
+            errors.append(
+                f"qubit vocabulary docstring exemption {identifiers[0]} states no reason"
+            )
+        for identifier in identifiers:
+            container, separator, token = identifier.rpartition("::")
+            if not separator or not container or not token:
+                errors.append(
+                    f"qubit vocabulary docstring exemption {identifier} is not a "
+                    "container::token key"
+                )
+                continue
+            exempt.setdefault(container, []).append(token)
+
+    reported: dict[str, list[str]] = {}
+    for container, token in docstring_census():
+        reported.setdefault(container, []).append(token)
+
+    for container, tokens in sorted(reported.items()):
+        allowed = exempt.get(container)
+        if allowed is None:
+            errors.append(
+                "qubit vocabulary docstring publishes a wire-named token: "
+                f"{container} {sorted(set(tokens))}"
+            )
+        elif sorted(tokens) != sorted(allowed):
+            errors.append(
+                f"qubit vocabulary docstring in {container} shows {sorted(tokens)}, "
+                f"but {sorted(allowed)} is exempt"
+            )
+    for container in sorted(set(exempt) - set(reported)):
+        errors.append(f"qubit vocabulary docstring exemption {container} is stale")
+
+    measured = int(section.get("measured_tokens", -1))
+    if measured != len(docstring_census()):
+        errors.append(
+            "qubit vocabulary docstring measured_tokens must equal the live scan"
+        )
+    return errors
+
+
+def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
+    """Reconcile the wire vocabulary on docstring lines that `doctest` executes.
+
+    The prose ledger above skips `>>>` blocks, because those lines are a program
+    rather than a sentence. `tests/api_contract/test_public_docstring_examples.py`
+    runs every `>>>` block the public entries carry, so a token on one of those
+    lines is a code token: `.wires` in the `Circuit.compose` example is
+    `Instruction.wires`, and rewording it is a rename rather than a rephrasing.
+
+    The check is the same shape as the prose one -- per container, as a multiset --
+    but its meaning is different and the condition says so: this list is not debt
+    the migration owes, because the example would still work if it had always been
+    written in the qubit vocabulary. It is pinned so that a rewriting pass cannot
+    quietly move a token here and leave a doctest that raises `AttributeError`,
+    which is what happened once in this slice and went unnoticed by every other
+    check.
+    """
+
+    errors: list[str] = []
+    section = contract.get("docstring_example", {})
+    for name in ("owner", "condition"):
+        if not isinstance(section.get(name), str) or not section[name]:
+            errors.append(f"qubit vocabulary docstring example {name} is unowned")
+
+    exempt: dict[str, list[str]] = {}
+    for row in section.get("keep", ()):
+        identifiers = [str(entry) for entry in row.get("identifier", ())]
+        if not identifiers:
+            errors.append(
+                "qubit vocabulary docstring example exemption is missing an identifier"
+            )
+            continue
+        if not isinstance(row.get("reason"), str) or not row["reason"]:
+            errors.append(
+                "qubit vocabulary docstring example exemption "
+                f"{identifiers[0]} states no reason"
+            )
+        for identifier in identifiers:
+            container, separator, token = identifier.rpartition("::")
+            if not separator or not container or not token:
+                errors.append(
+                    f"qubit vocabulary docstring example exemption {identifier} is "
+                    "not a container::token key"
+                )
+                continue
+            exempt.setdefault(container, []).append(token)
+
+    reported: dict[str, list[str]] = {}
+    for container, token in docstring_example_tokens():
+        reported.setdefault(container, []).append(token)
+
+    for container, tokens in sorted(reported.items()):
+        allowed = exempt.get(container)
+        if allowed is None:
+            errors.append(
+                "qubit vocabulary docstring example shows a wire-named token: "
+                f"{container} {sorted(set(tokens))}"
+            )
+        elif sorted(tokens) != sorted(allowed):
+            errors.append(
+                f"qubit vocabulary docstring example in {container} shows "
+                f"{sorted(tokens)}, but {sorted(allowed)} is exempt"
+            )
+    for container in sorted(set(exempt) - set(reported)):
+        errors.append(
+            f"qubit vocabulary docstring example exemption {container} is stale"
+        )
+
+    measured = int(section.get("measured_tokens", -1))
+    if measured != len(docstring_example_tokens()):
+        errors.append(
+            "qubit vocabulary docstring example measured_tokens must equal the live scan"
+        )
+    return errors
 
 
 def _definition_errors(
@@ -747,6 +998,37 @@ def aliased_sites(contract: dict[str, Any], surface: str) -> set[str]:
     }
 
 
+def _call_site_errors(contract: dict[str, Any]) -> list[str]:
+    """Refuse a call site that passes a wire- or qubit-named keyword its callee rejects.
+
+    The one surface with no baseline to reconcile against. Every other ledger here
+    answers "how much is left"; this one answers "does the defect exist", and the
+    answer has to be zero, so the contract's own allowance is checked first. A slice
+    that lowered the standard to make its own change pass would otherwise be
+    indistinguishable from one that met it.
+    """
+
+    errors: list[str] = []
+    surfaces = contract.get("other_surfaces", {})
+    expected = surfaces.get("call_site_mismatches")
+    if expected != 0:
+        errors.append(
+            "qubit vocabulary other_surfaces.call_site_mismatches is an invariant and "
+            f"must be 0, not {expected!r}: a call site passing a retired keyword is "
+            "broken code, not a budget to spend"
+        )
+    surface = surfaces.get("call_site_surface")
+    if not isinstance(surface, str) or not surface:
+        errors.append("qubit vocabulary contract must name the call-site surface")
+    for finding in qubit_keyword_mismatches():
+        relative, _, rest = finding.partition("::")
+        errors.append(
+            f"qubit vocabulary call site passes a keyword its callee rejects: {relative} "
+            f"({rest.replace('::', ' -> ')})"
+        )
+    return errors
+
+
 def _report(contract: dict[str, Any]) -> None:
     for surface, label in (
         ("parameter", "baseline sites"),
@@ -769,6 +1051,47 @@ def _report(contract: dict[str, Any]) -> None:
         )
         for slice_id, done, left in rows:
             print(f"  {slice_id:5s} retired {done:3d}  remaining {left:3d}")
+
+    scanned = documentation_census()
+    exempted = sum(
+        1
+        for row in contract.get("documentation", {}).get("exempt", ())
+        for _ in row.get("keywords", ())
+    )
+    print(
+        "Qubit vocabulary documentation: "
+        f"{exempted} of {len(scanned.sites)} documented wire-named keywords "
+        f"exempt as recorded ({len(scanned.sites) - exempted} to reword)"
+    )
+
+    docstring_section = contract.get("docstring", {})
+    kept = sum(
+        len(row.get("identifier", ())) for row in docstring_section.get("keep", ())
+    )
+    print(
+        "Qubit vocabulary docstrings and comments: "
+        f"{kept} of {len(docstring_census())} wire-named tokens kept as recorded "
+        f"({len(docstring_census()) - kept} to reword)"
+    )
+
+    example_section = contract.get("docstring_example", {})
+    pinned = sum(
+        len(row.get("identifier", ())) for row in example_section.get("keep", ())
+    )
+    print(
+        "Qubit vocabulary docstring examples: "
+        f"{pinned} of {len(docstring_example_tokens())} executable wire-named tokens "
+        "pinned by name rather than owed as debt"
+    )
+
+    # The only line that reports an invariant rather than progress. It is printed
+    # even at zero, so that a reader can see the surface is scanned rather than
+    # assume a silent gate means an absent one.
+    print(
+        "Qubit vocabulary call sites: "
+        f"{len(qubit_keyword_mismatches())} keywords passed that their callee rejects "
+        "(invariant: 0)"
+    )
 
 
 def main() -> int:

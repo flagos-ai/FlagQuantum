@@ -378,7 +378,7 @@ The refusal happens before the launch, and the probe refuses the same shapes
 again before it builds a process group, because a shape mismatch found after
 that reports as a collective that never completes rather than as the shape that
 was refused. The two widths the launcher has to know before a launch -- the MPS
-circuit's wire count and the tensor-network slice count -- are declared in both
+circuit's qubit count and the tensor-network slice count -- are declared in both
 `tools/multinode_launch_plan.py` and the probe that enforces them, and a unit
 test reads both copies and fails if they drift apart.
 
@@ -498,7 +498,7 @@ profiled, so part of each measured sample is host staging rather than device
 work.
 
 `artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json` covers the
-site-sharded MPS workload. Six wires at two ranks gives three owned sites per
+site-sharded MPS workload. Six qubits at two ranks gives three owned sites per
 rank, so the middle adjacent gate straddles the ownership boundary and an
 ordinary gate exercises the exchange:
 
@@ -562,7 +562,7 @@ height and would report the one crossed width, which the blocker's own rule
 declines to count as a sweep.
 
 `artifacts/cuda_multinode_tn_a800_jp171_jp172_20260930.json` covers the
-slice-sharded tensor-network workload. Five wires are contracted along a cut of
+slice-sharded tensor-network workload. Five qubits are contracted along a cut of
 two labels, which the workload declares rather than leaving to the automatic
 slicer:
 

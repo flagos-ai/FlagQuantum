@@ -41,7 +41,7 @@ def run_local_mps(
 
     instructions = tuple(ir)
     signature = (
-        mps.n_wires,
+        mps.n_qubits,
         mps.bsz,
         str(mps.device),
         mps.dtype,
@@ -72,9 +72,9 @@ def run_local_mps(
             # per program so a long circuit does not flood the caller.
             if not warned_dense_fallback:
                 warnings.warn(
-                    f"MPS execution applies {len(instruction.wires)}-wire "
+                    f"MPS execution applies {len(instruction.wires)}-qubit "
                     f"instruction {instruction.name!r} by expanding the state to "
-                    f"the full 2**{mps.n_wires} dense vector and re-factorising; "
+                    f"the full 2**{mps.n_qubits} dense vector and re-factorising; "
                     "bond dimension does not bound this step.",
                     RuntimeWarning,
                     stacklevel=2,

@@ -141,7 +141,7 @@ def _static_product_state_initialization_enabled() -> bool:
 def _native_zero_state_prefix_length(
     program: Sequence[_StatevectorProgramStep], width: int
 ) -> int:
-    """Return the native prefix that prepares every wire from ``|0>`` once."""
+    """Return the native prefix that prepares every qubit from ``|0>`` once."""
 
     occupied: set[int] = set()
     expected = set(range(width))

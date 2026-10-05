@@ -290,12 +290,12 @@ def _use_elementwise_single_wire(
     what keeps an unmeasured device off the route; this host has no CUDA device,
     so no circuit can reach the branch it guards, and as a named predicate the
     condition is still an expression a test can evaluate on a ``meta`` tensor.
-    The wire count is the kernel's whole domain: it combines the two amplitudes
-    that differ in one wire, and it has no meaning for a gate spanning more.
+    The qubit count is the kernel's whole domain: it combines the two amplitudes
+    that differ in one qubit, and it has no meaning for a gate spanning more.
 
-    A diagonal one-wire matrix is in the domain too. The kernel is the general
-    one-wire kernel, so a diagonal matrix is a case it handles, and on this host
-    it is the faster of the two: at 20 wires a diagonal single-qubit region takes
+    A diagonal single-qubit matrix is in the domain too. The kernel is the general
+    single-qubit kernel, so a diagonal matrix is a case it handles, and on this host
+    it is the faster of the two: at 20 qubits a diagonal single-qubit region takes
     1.211 ms here against 1.392 ms through ``_apply_diagonal_matrix``.
     """
 
@@ -317,14 +317,14 @@ def _apply_gate_matrix(
 ) -> torch.Tensor:
     """Apply one already-built gate matrix with the kernel that fits it.
 
-    ``_apply_matrix`` lays the state out, permutes the gate's wires to the front
-    and permutes back, which a one-wire gate does not need.
+    ``_apply_matrix`` lays the state out, permutes the gate's qubits to the front
+    and permutes back, which a single-qubit gate does not need.
     ``_apply_diagonal_matrix`` keeps the layout but replaces the batched matmul
     with an elementwise multiply, which only a diagonal matrix may take.
 
     ``uses_diagonal_kernel`` says the matrix is known to be diagonal, so the
     diagonal kernel is available here. It is not a preference: where the
-    elementwise single-wire kernel applies as well, that kernel wins, because it
+    elementwise single-qubit kernel applies as well, that kernel wins, because it
     drops the layout permutation the diagonal kernel still pays for, and it
     agrees with both of them to under an ulp on every shape measured. It is not
     bitwise equal to either, which is why the switch licensing it is off by
@@ -591,7 +591,7 @@ def _apply_cross_wire_diagonal_step(
     state: torch.Tensor,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
 ) -> torch.Tensor:
-    """Build wire-disjoint diagonals, then broadcast their product once."""
+    """Build qubit-disjoint diagonals, then broadcast their product once."""
 
     wire_groups: list[tuple[int, ...]] = []
     diagonals: list[torch.Tensor] = []
@@ -684,7 +684,7 @@ def _execute_statevector_program(
             native_output, clifford_scratch = apply_native_clifford_matching(
                 step,
                 output,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 scratch=clifford_scratch,
                 reuse_output=reuse_clifford_output,
                 owns_state=owns_output,
@@ -742,7 +742,7 @@ def _execute_statevector_program(
             native_output = apply_native_fixed_one_qubit_layer(
                 step,
                 output,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 owns_state=owns_output,
                 parameter_bindings=parameter_bindings,
                 matrix_builder=lambda region, state: _dense_region_matrix(
@@ -917,7 +917,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             )
             output = execute_product_state_program(
                 product_program,
-                n_wires=circuit.n_qubits,
+                n_qubits=circuit.n_qubits,
                 device=device,
                 dtype=circuit.dtype,
                 parameter_bindings=parameter_bindings,
@@ -1102,11 +1102,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
 
 
 def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
-    """Evaluate per-wire Z expectations for a local statevector circuit."""
+    """Evaluate per-qubit Z expectations for a local statevector circuit."""
 
-    # The sign of a wire is read from bit ``n_wires - 1 - wire``.  A wire outside
+    # The sign of a qubit is read from bit ``n_wires - 1 - wire``.  A qubit outside
     # the statevector makes that shift negative, and torch yields all ones for a
-    # negative shift, so the wire silently reported +1 at every step instead of
+    # negative shift, so the qubit silently reported +1 at every step instead of
     # being refused.  The range is knowable here, before the state is built.
     for wire in wires:
         if not 0 <= wire < circuit.n_qubits:
@@ -1160,8 +1160,8 @@ def _expectation_pauli_string(
             dtype=current_state.dtype,
         )
         for wire in wires:
-            # Every term is a one-wire matrix, which is exactly what the
-            # elementwise kernel is for: a full string costs one pass per wire.
+            # Every term is a single-qubit matrix, which is exactly what the
+            # elementwise kernel is for: a full string costs one pass per qubit.
             # The shipped code sent Z through ``_apply_matrix`` as well rather
             # than through the diagonal kernel, and that is kept.
             transformed = _apply_gate_matrix(

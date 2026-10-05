@@ -75,14 +75,14 @@ def _plans() -> tuple[TensorNetworkContractionPlan, TensorNetworkExpectationPlan
     nodes = _nodes()
     return (
         TensorNetworkContractionPlan(
-            n_wires=2, bsz=1, nodes=nodes, output_labels=(), path=()
+            n_qubits=2, bsz=1, nodes=nodes, output_labels=(), path=()
         ),
         TensorNetworkExpectationPlan(
-            n_wires=2,
+            n_qubits=2,
             bsz=1,
             nodes=nodes,
             output_labels=(),
-            observable_wires=(0,),
+            observable_qubits=(0,),
             path=(),
         ),
     )
@@ -139,7 +139,7 @@ def test_plans_remain_frozen_records_with_their_declared_fields():
 
     expected = {
         TensorNetworkContractionPlan: (
-            "n_wires",
+            "n_qubits",
             "bsz",
             "nodes",
             "output_labels",
@@ -147,11 +147,11 @@ def test_plans_remain_frozen_records_with_their_declared_fields():
             "program_cache",
         ),
         TensorNetworkExpectationPlan: (
-            "n_wires",
+            "n_qubits",
             "bsz",
             "nodes",
             "output_labels",
-            "observable_wires",
+            "observable_qubits",
             "path",
         ),
     }

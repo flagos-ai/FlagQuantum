@@ -87,7 +87,7 @@ def _statevector_marginal_kernel_match(
 def _require_statevector_marginal_kernel(
     *, device_type: str, dtype: str, direction: KernelDirection
 ) -> KernelImplementation:
-    """Return the wired MEAS-003 implementation or fail closed."""
+    """Return the connected MEAS-003 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _statevector_marginal_kernel_match(

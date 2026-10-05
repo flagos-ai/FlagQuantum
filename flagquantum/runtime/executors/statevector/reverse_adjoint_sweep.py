@@ -85,7 +85,7 @@ def _local_expectation_z_hamiltonian_adjoint(
             _, chunk = z_hamiltonian_chunk(
                 shard_state.amplitudes[:, start:end],
                 indices,
-                n_wires=n_wires,
+                n_qubits=n_wires,
                 terms=terms,
             )
             adjoint[:, start:end].copy_(chunk)
@@ -242,7 +242,7 @@ class _ReversibleAdjointSweep:
             angles,
             first_wires,
             second_wires,
-            n_wires=self.plan.n_qubits,
+            n_qubits=self.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter and adjacent_unique,
         )
         if gradients is None:
@@ -827,7 +827,7 @@ class _ReversibleAdjointSweep:
                     self.reversible_state.amplitudes,
                     self.adjoint,
                     wire_block,
-                    n_wires=self.plan.n_qubits,
+                    n_qubits=self.plan.n_qubits,
                 )
             else:
                 applied = fused_rotation_block_adjoint_(
@@ -835,7 +835,7 @@ class _ReversibleAdjointSweep:
                     self.adjoint,
                     matrix_block,
                     wire_block,
-                    n_wires=self.plan.n_qubits,
+                    n_qubits=self.plan.n_qubits,
                 )
             if applied:
                 self.evidence.peak_scratch_bytes = max(

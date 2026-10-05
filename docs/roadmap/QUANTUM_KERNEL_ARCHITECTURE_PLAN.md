@@ -459,8 +459,8 @@ native result summary to verify the selected route. The ordinary single-GPU
 `fq.run(..., mode="statevector")` path currently uses the local simulator and
 does not call this distributed-statevector kernel. The kernel requires a
 contiguous CUDA `complex64` statevector, an available `triton` module, a
-non-portable runtime mode, and a one-qubit gate on a local wire. Every wire is
-local on a one-rank run. With a sharded statevector, a wire is local only when
+non-portable runtime mode, and a one-qubit gate on a local qubit. Every qubit is
+local on a one-rank run. With a sharded statevector, a qubit is local only when
 both amplitudes in each affected pair are owned by the same rank.
 
 ## 12. Fallback Rules

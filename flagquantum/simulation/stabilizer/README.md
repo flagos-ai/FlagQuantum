@@ -2,21 +2,21 @@
 
 This package owns Clifford stabilizer sampling: circuits whose gates all
 normalize the Pauli group have a tableau representation whose storage grows
-quadratically with the wire count, so the wire counts this package reaches are
+quadratically with the qubit count, so the qubit counts this package reaches are
 the ones no amplitude store can hold.
 
 - Start in `engine.py`. It owns the three things this package does: translating
   validated Circuit IR into the engine's circuit form, sampling measurement
-  outcomes for a requested wire list, and sampling measurement outcomes from a
+  outcomes for a requested qubit list, and sampling measurement outcomes from a
   circuit that already carries noise channels at explicit positions.
-- Call `sample_stabilizer(program, shots=..., wires=..., seed=...)`. It accepts
+- Call `sample_stabilizer(program, shots=..., qubits=..., seed=...)`. It accepts
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
-  `(shots, len(wires))`.
-- Call `sample_noisy_measurements(program, shots=..., terminal_wires=..., seed=...)`
+  `(shots, len(qubits))`.
+- Call `sample_noisy_measurements(program, shots=..., terminal_qubits=..., seed=...)`
   when the caller has placed noise itself. It executes a bit-flip channel at the
   position it finds it, which means the *caller* owns the Pauli-frame attribution
   and this entry point owns only the execution; the recorded measurement columns
-  come back in program order and the terminal wires are appended in the order the
+  come back in program order and the terminal qubits are appended in the order the
   caller names them. It is deliberately not reachable from the planner or the
   executor, so `mode='stabilizer'` keeps refusing a noisy program.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
@@ -37,7 +37,7 @@ the ones no amplitude store can hold.
 Device selection, backend dispatch, shot policy, seed streams, job lifecycle,
 result assembly, and public execution evidence. Runtime owns those; this package
 is a numerical primitive. It also must not import Runtime, and it does not read
-lowered `MeasurementNode`s, because reconciling a caller's requested wires with
+lowered `MeasurementNode`s, because reconciling a caller's requested qubits with
 an already-lowered output request is a Runtime decision.
 
 ## Why the engine is an external distribution

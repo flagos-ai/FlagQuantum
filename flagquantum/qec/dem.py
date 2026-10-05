@@ -1096,7 +1096,7 @@ class DetectorErrorModel:
         The matrices are read directly rather than simulated, so an arbitrary code
         reaches a model without a circuit record standing for it: a code whose
         checks and logical operators are known as matrices needs no gadget, no
-        wire layout, and no statevector. See
+        qubit layout, and no statevector. See
         :func:`~flagquantum.qec.dem_construction._code_matrix_entries` for the row
         and column conventions and for the detector geometry, which is the
         code-capacity one and not the geometry
@@ -1108,11 +1108,11 @@ class DetectorErrorModel:
         what a fault's signature is read from. A circuit's detectors are laid out
         for the basis it measures in, so the circuit route reads a fault's
         signature off the program it forces and a Z fault is enumerated only in
-        the rounds and at the wires where it reaches a detector. Matrices have no
+        the rounds and at the qubits where it reaches a detector. Matrices have no
         such layout, so here a fault's signature is its support read against the
         matrices and every family is enumerated with the rate the record states
         for it. A per-element rate vector is read against these matrices, so the
-        per-qubit vectors are indexed by column -- the code's own ``data_wires``
+        per-qubit vectors are indexed by column -- the code's own ``data_qubits``
         order -- and the per-check vector by row, Z-type checks first.
         """
 

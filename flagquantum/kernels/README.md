@@ -87,7 +87,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
-| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
+| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_qubit_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
 | FQK-MEAS-003 | `measurement.probabilities.marginal.statevector` | `statevector_marginal_probabilities` |
@@ -832,7 +832,7 @@ artifact preserves 30 synchronized groups of 100 invocations for each case on
 Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
 `2.14x` to `3.42x` faster than the equivalent PyTorch reduction, with maximum
 absolute error `8.94e-8`. After removing redundant normalization and replacing
-per-wire host synchronization with device-side asynchronous validation, the
+per-qubit host synchronization with device-side asynchronous validation, the
 complete public dispatch path is `1.27x` to `1.40x` faster across all 16
 host/compiler/shape cases. The canonical aggregate records
 `eligible_for_default`, and MPS-007 is now a `provisional` implementation with

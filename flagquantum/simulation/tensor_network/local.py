@@ -22,7 +22,7 @@ def _initial_state_tensors(
     circuit_or_ir: Any,
     *,
     bsz: int,
-    n_wires: int,
+    n_qubits: int,
     device: torch.device | str,
     dtype: torch.dtype,
 ) -> tuple[tuple[torch.Tensor, ...], bool]:
@@ -32,11 +32,11 @@ def _initial_state_tensors(
         state = circuit_or_ir.initial_state().to(device=device, dtype=dtype)
         if state.ndim == 1:
             state = state.reshape(1, -1)
-        reshaped = state.reshape((state.shape[0],) + (2,) * n_wires)
+        reshaped = state.reshape((state.shape[0],) + (2,) * n_qubits)
         return (reshaped,), True
     zero = torch.zeros(int(bsz), 2, dtype=dtype, device=device)
     zero[:, 0] = 1
-    return tuple(zero for _ in range(n_wires)), False
+    return tuple(zero for _ in range(n_qubits)), False
 
 
 def _build_tensor_network_plan(
@@ -52,7 +52,7 @@ def _build_tensor_network_plan(
     ir = _as_ir(circuit_or_ir)
     dtype = dtype or torch.complex64
     initial_tensors, joint_initial_state = _initial_state_tensors(
-        circuit_or_ir, bsz=bsz, n_wires=ir.n_wires, device=device, dtype=dtype
+        circuit_or_ir, bsz=bsz, n_qubits=ir.n_wires, device=device, dtype=dtype
     )
     bsz = int(initial_tensors[0].shape[0]) if initial_tensors else int(bsz)
     batch_label = 0
@@ -94,10 +94,10 @@ def _build_tensor_network_plan(
             nodes.extend(
                 TensorNetworkNode(
                     tensor=tensor,
-                    labels=(batch_label, current_labels[wire]),
-                    name=f"init_{wire}",
+                    labels=(batch_label, current_labels[qubit]),
+                    name=f"init_{qubit}",
                 )
-                for wire, tensor in enumerate(initial_tensors)
+                for qubit, tensor in enumerate(initial_tensors)
             )
 
     for index, instruction in enumerate(ir.instructions):
@@ -114,7 +114,7 @@ def _build_tensor_network_plan(
         )
         if matrix.ndim == 2:
             tensor = matrix.reshape((2,) * len(instruction.wires) * 2)
-            input_labels = tuple(current_labels[wire] for wire in instruction.wires)
+            input_labels = tuple(current_labels[qubit] for qubit in instruction.wires)
             output_labels = tuple(
                 range(next_label, next_label + len(instruction.wires))
             )
@@ -122,14 +122,14 @@ def _build_tensor_network_plan(
             labels = output_labels + input_labels
         else:
             tensor = matrix.reshape((bsz,) + (2,) * len(instruction.wires) * 2)
-            input_labels = tuple(current_labels[wire] for wire in instruction.wires)
+            input_labels = tuple(current_labels[qubit] for qubit in instruction.wires)
             output_labels = tuple(
                 range(next_label, next_label + len(instruction.wires))
             )
             next_label += len(instruction.wires)
             labels = (batch_label,) + output_labels + input_labels
-        for wire, label in zip(instruction.wires, output_labels, strict=True):
-            current_labels[wire] = label
+        for qubit, label in zip(instruction.wires, output_labels, strict=True):
+            current_labels[qubit] = label
         dynamic_tensors.append(tensor)
         if active_structure is None:
             nodes.append(
@@ -137,7 +137,7 @@ def _build_tensor_network_plan(
                     tensor=tensor,
                     labels=labels,
                     name=f"{index}:{instruction.name}",
-                    metadata={"wires": instruction.wires},
+                    metadata={"qubits": instruction.wires},
                 )
             )
 
@@ -155,7 +155,7 @@ def _build_tensor_network_plan(
         for index, node in enumerate(nodes)
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         nodes=tuple(nodes),
         output_labels=output_labels,
@@ -278,7 +278,7 @@ def run_local_tensor_network(
     contraction_strategy: str,
     max_intermediate_size: int | None,
     sliced_labels: Sequence[int] | None,
-    dense_observable_wires: int,
+    dense_observable_qubits: int,
     max_intermediate_bytes: int | None = None,
 ) -> TensorNetworkState:
     """Build and return one local tensor-network numerical state.
@@ -301,6 +301,6 @@ def run_local_tensor_network(
         contraction_strategy=contraction_strategy,
         max_intermediate_size=max_intermediate_size,
         sliced_labels=sliced_labels,
-        dense_observable_wires=dense_observable_wires,
+        dense_observable_qubits=dense_observable_qubits,
         max_intermediate_bytes=max_intermediate_bytes,
     )

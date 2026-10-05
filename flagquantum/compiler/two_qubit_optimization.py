@@ -1,7 +1,7 @@
-"""Collapse a block over one ordered wire pair into one exact gate.
+"""Collapse a block over one ordered qubit pair into one exact gate.
 
 `pipeline` already removes identities, cancels self-inverse and declared inverse
-pairs, adds up adjacent rotations that share one opcode, and folds a same-wire run
+pairs, adds up adjacent rotations that share one opcode, and folds a same-qubit run
 of *single*-qubit gates. None of those compose two-qubit gates, which is where a
 routed program spends its budget: a conjugation (`swap cz swap` is exactly `cz`, so
 a router's swap that only moves a control is removable), an accumulation
@@ -17,25 +17,25 @@ and `optimize` is target-independent.
 
 Five properties make the fold admissible.
 
-**The block is one ordered wire pair.** A member's wires must be a subset of the
-pair's, so the control/target roles are the same for every two-wire member and one
-matrix convention describes all of them. `wires=(0, 1)` and `wires=(1, 0)` are
-different blocks even though they share both wires.
+**The block is one ordered qubit pair.** A member's qubits must be a subset of the
+pair's, so the control/target roles are the same for every two-qubit member and one
+matrix convention describes all of them. The operand orders `(0, 1)` and `(1, 0)` are
+different blocks even though they share both qubits.
 
-**A single-qubit gate on one of the pair's wires is a member.** That is the
+**A single-qubit gate on one of the pair's qubits is a member.** That is the
 difference from a run, and it is what reaches `h(1) cz(0, 1) h(1)`, which is exactly
-`cx(0, 1)`: a conjugation by a gate one of the pair's own wires carries, rather than
-by a two-qubit gate alone. Which wire carries the conjugation is a property of the
+`cx(0, 1)`: a conjugation by a gate one of the pair's own qubits carries, rather than
+by a two-qubit gate alone. Which qubit carries the conjugation is a property of the
 pair's *order* and not of the gate -- the same three gates with the `h`s on `0`
 compose to `cx(1, 0)`, a gate on the other ordered pair, and are declined, which is
 what keeps this a rewrite by matrix equality rather than by relabelling. Such a
 member is lifted by a Kronecker product on the side the pair gives it, so the block's
 product is the 4x4 operator the program computes and not a phase-free shadow of it. A
-one-wire instruction never *opens* a block, because `h(0)` alone does not say whether
+one-qubit instruction never *opens* a block, because `h(0)` alone does not say whether
 it belongs to `(0, 1)` or `(0, 2)`; it is instead drawn into a block at the moment a
-two-wire gate opens one, out of the contiguous single-qubit gates immediately to the
+two-qubit gate opens one, out of the contiguous single-qubit gates immediately to the
 left, and it joins a block that is already open. Two open blocks can never share a
-wire, which is what makes that assignment unambiguous without a general dependency
+qubit, which is what makes that assignment unambiguous without a general dependency
 graph.
 
 **The replacement is one declared opcode or nothing, and it is verified.** A
@@ -65,14 +65,14 @@ A block carrying a trainable angle is left to `merge_adjacent_rotations`, which 
 angles with the caller's own objects and keeps them in the autograd graph.
 
 The module also owns the fold's inverse, `split_two_qubit_blocks`, which is the
-parity counterpart of Qiskit's `Split2QUnitaries`. It rewrites one two-wire
+parity counterpart of Qiskit's `Split2QUnitaries`. It rewrites one two-qubit
 instruction that carries a matrix *and* whose opcode no operator schema declares --
 an opaque unitary a caller or an adapter produced, which is exactly the shape Qiskit's
 pass targets, because a declared two-qubit opcode is a name whose meaning the schema
-already fixes and whose arity the two one-wire halves would contradict -- into its two
+already fixes and whose arity the two one-qubit halves would contradict -- into its two
 single-qubit factors. The split is a strict lengthening and is therefore not a
 simplification in itself; it is what makes an entangling-free two-qubit operator
-visible to the single-qubit passes beside this one, which cannot read a two-wire
+visible to the single-qubit passes beside this one, which cannot read a two-qubit
 matrix at all. See the function for the two properties that make it admissible.
 """
 
@@ -156,7 +156,7 @@ _IDENTITY: Matrix = [
 def _fixed_matrix(opcode: str) -> Matrix:
     """The runtime matrix of one parameter-free two-qubit opcode.
 
-    Read with ``wires[0]`` on the most significant index bit, which is the
+    Read with the first operand on the most significant index bit, which is the
     convention `simulation.gate_matrix` uses and this module may not import.
     `tests/unit/test_compilation_two_qubit_optimization.py` pins every entry
     against that table, which is the authority on what these gate names compute.
@@ -196,11 +196,11 @@ def _fixed_matrix(opcode: str) -> Matrix:
 def _rotation_matrix(opcode: str, theta: float) -> Matrix:
     """The runtime matrix of one rotation family at ``theta``.
 
-    Three shapes, one per way a family couples its wires. A **controlled** rotation
+    Three shapes, one per way a family couples its qubits. A **controlled** rotation
     is the identity on the control-off half and a single-qubit rotation on the
     control-on half. An **entangler** rotation is ``exp(-i theta/2 P)`` for `P` one
     of `XX`, `YY`, `ZZ`, and `rxx`/`ryy` differ only in the relative sign of their
-    two off-diagonal blocks, because `YY` is `XX` with the second wire conjugated by
+    two off-diagonal blocks, because `YY` is `XX` with the second qubit conjugated by
     `Z`. `cphase` is diagonal and carries the global phase ``exp(i theta/2)`` that
     makes it `cphase` rather than `cp`: at ``theta = pi`` it is exactly `cz`, which
     is why `cz` is offered first.
@@ -385,7 +385,7 @@ def _kron(
     ]
 
 
-#: The factor a lifted single-qubit member puts on the wire of the pair it does not
+#: The factor a lifted single-qubit member puts on the qubit of the pair it does not
 #: touch.
 _IDENTITY_FACTOR: list[list[complex]] = [[1.0 + 0.0j, 0.0j], [0.0j, 1.0 + 0.0j]]
 
@@ -393,12 +393,12 @@ _IDENTITY_FACTOR: list[list[complex]] = [[1.0 + 0.0j, 0.0j], [0.0j, 1.0 + 0.0j]]
 def _lifted_matrix(instruction: Instruction, pair: tuple[int, ...]) -> Matrix | None:
     """One block member's exact 4x4 matrix on `pair`, or None.
 
-    None means the instruction cannot take part in a block: its wires are not a
+    None means the instruction cannot take part in a block: its qubits are not a
     subset of the pair's, it is not a declared unitary at its own arity, one of its
     angles is trainable and therefore has no number to compose with, or one of them
     is a batch rather than one value.
 
-    A two-wire member spans the pair and is read by `_instruction_matrix`. A one-wire
+    A two-qubit member spans the pair and is read by `_instruction_matrix`. A one-qubit
     member is read as a single-qubit gate -- by `one_qubit_optimization`'s reader, so
     that the convention phase the runtime applies to `rz`, `phase` and `u1` is part
     of the factor -- and lifted by a Kronecker product on the side the pair gives it:
@@ -444,8 +444,8 @@ def _is_foldable(instruction: Instruction) -> bool:
     False for anything else -- a wider or narrower gate, a measurement, a barrier, a
     channel, an opcode no family covers, an unreadable matrix, or a trainable angle,
     which has no number to compose with -- and such an instruction *ends* every block
-    on each wire it reaches rather than joining one. Only a two-wire instruction can
-    open a block: a single-qubit gate on one of a block's wires is a member of it,
+    on each qubit it reaches rather than joining one. Only a two-qubit instruction can
+    open a block: a single-qubit gate on one of a block's qubits is a member of it,
     but `h(0)` alone does not say whether it belongs to `(0, 1)` or `(0, 2)`.
     """
 
@@ -462,10 +462,10 @@ def _is_foldable(instruction: Instruction) -> bool:
 def _draws_in_as_leading_member(
     instruction: Instruction, pair: tuple[int, ...]
 ) -> bool:
-    """Whether a one-wire instruction may be a member of a block on `pair`.
+    """Whether a one-qubit instruction may be a member of a block on `pair`.
 
     This is the whole of what the block rule here has that the two-qubit-run rule it
-    replaces did not: a readable single-qubit gate on either wire of the pair. It is a
+    replaces did not: a readable single-qubit gate on either qubit of the pair. It is a
     module-level function because it is the seam
     `benchmarks/compiler_two_qubit_optimization.py` patches to measure the pass against
     the narrower rule that had no single-qubit members at all -- patching one
@@ -480,8 +480,8 @@ def _draws_in_as_leading_member(
 def _joins_pair(instruction: Instruction, pair: tuple[int, ...]) -> bool:
     """Whether `instruction` is a member of the block open on `pair`.
 
-    `pair` is an ordered pair, so a two-wire member has to match it exactly and keep
-    the control/target roles the block was opened with. A one-wire member is decided by
+    `pair` is an ordered pair, so a two-qubit member has to match it exactly and keep
+    the control/target roles the block was opened with. A one-qubit member is decided by
     `_draws_in_as_leading_member`. Nothing else joins.
     """
 
@@ -610,16 +610,16 @@ def _two_qubit_sub_runs(
 
 
 def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
-    """Collapse each block over one ordered wire pair into one exact gate.
+    """Collapse each block over one ordered qubit pair into one exact gate.
 
-    A block is maximal over one ordered wire pair. A two-qubit gate opens one, and
+    A block is maximal over one ordered qubit pair. A two-qubit gate opens one, and
     draws in the contiguous single-qubit gates immediately to its left that sit on
-    one of its wires -- which is what lets a conjugation by a *single*-qubit gate be
+    one of its qubits -- which is what lets a conjugation by a *single*-qubit gate be
     folded, `h(1) cz(0, 1) h(1)` being exactly `cx(0, 1)`. A gate that reaches a
-    block's wires and is not readable as a member ends it, because a controlled gate
+    block's qubits and is not readable as a member ends it, because a controlled gate
     does not commute past an arbitrary single-qubit gate; a gate that touches neither
-    of its wires commutes with it and leaves it open. Two open blocks can never share a wire,
-    because the second gate to reach a wire joins the block already there.
+    of its qubits commutes with it and leaves it open. Two open blocks can never share a qubit,
+    because the second gate to reach a qubit joins the block already there.
 
     Every instruction belongs to **at most one** block, which the draw-in has to be
     told rather than derive: a single-qubit gate between two blocks on different
@@ -787,7 +787,7 @@ def _split_instruction(
 ) -> tuple[Instruction, Instruction] | None:
     """One instruction re-spelled as its two single-qubit factors, or None.
 
-    None means the instruction is not two-wire, carries no matrix, is declared by an
+    None means the instruction is not two-qubit, carries no matrix, is declared by an
     operator schema, or is not a product of two single-qubit unitaries at all.
     """
 
@@ -795,7 +795,7 @@ def _split_instruction(
         return None
     # A declared opcode is never split. Its name and parameter contract already say
     # what it computes, `collapse_two_qubit_blocks` is the pass that re-spells those,
-    # and two one-wire instructions carrying the same opcode would contradict the
+    # and two one-qubit instructions carrying the same opcode would contradict the
     # arity the schema declares.
     if get_operator_schema(canonical_opcode(instruction.name)) is not None:
         return None
@@ -830,18 +830,18 @@ def split_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
 
     This is the inverse direction of `collapse_two_qubit_blocks` and the counterpart
     of Qiskit's `Split2QUnitaries`. An operator that is exactly ``left (x) right``
-    acts on the two wires independently, so one instruction that carries it computes
-    what two one-wire instructions compute, and this pass writes those two.
+    acts on the two qubits independently, so one instruction that carries it computes
+    what two one-qubit instructions compute, and this pass writes those two.
 
     It is a lengthening pass -- one instruction becomes two -- so it is not an
     optimization by itself, and it is admissible for two different reasons.
 
-    **It is the only route by which a two-wire matrix reaches the single-qubit
+    **It is the only route by which a two-qubit matrix reaches the single-qubit
     passes.** `collapse_one_qubit_runs` reads a matrix-carrying instruction as a run
-    member, but only on one wire: a two-wire matrix spans two and is not readable
+    member, but only on one qubit: a two-qubit matrix spans two and is not readable
     there, so an entangling-free two-qubit operator blocks every single-qubit
     simplification around it. After this split each factor joins the run on its own
-    wire, and the run fold re-spells the sum. That is also what lets
+    qubit, and the run fold re-spells the sum. That is also what lets
     `native_gate_legalization` reach such an instruction at all on a target that
     publishes no entangler, where the two-qubit route fails closed.
 

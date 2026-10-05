@@ -50,7 +50,7 @@ def test_create_deployment_package_exports_qasm_and_metadata():
 
     assert package.name == "bell_inference"
     assert package.shots == 128
-    assert package.n_wires == 2
+    assert package.n_qubits == 2
     assert package.metadata["stage"] == "inference"
     assert "OPENQASM 2.0;" in package.qasm
     assert "cx q[0], q[1];" in package.qasm

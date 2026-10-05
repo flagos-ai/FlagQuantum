@@ -96,7 +96,7 @@ def append_multi_controlled_x(
             ``|1>``, or in any state other than ``|0>``, makes the target silently wrong on
             a large fraction of operand patterns and raises nothing; the ancilla's own
             value is still left unchanged by the ladder, so the fault cannot be seen from
-            the ancilla either. These must be wired in the order the ladder computes them:
+            the ancilla either. These must be connected in the order the ladder computes them:
             ``ancillas[i]`` carries the conjunction of ``controls[:i + 2]``.
 
     Raises:
@@ -379,7 +379,7 @@ def append_bit_oracle(
         target: The qubit XORed with the predicate's value. It must not be a register qubit.
         ancillas: The qubits the ladder folds onto, ``max(len(qubits) - 2, 0)`` of them, none
             at all at two qubits or fewer. **Each must be in ``|0>`` on entry** and each is
-            restored to ``|0>`` on exit. They must be wired in the order the ladder computes
+            restored to ``|0>`` on exit. They must be ordered in the order the ladder computes
             them: ``ancillas[i]`` carries the conjunction of ``qubits[:i + 2]``.
 
     Raises:

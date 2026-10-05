@@ -30,25 +30,25 @@ SEED = 7319
 ABSOLUTE_TOLERANCE = 1e-10
 
 
-def build_workload(*, n_wires: int, layers: int) -> fq.Circuit:
+def build_workload(*, n_qubits: int, layers: int) -> fq.Circuit:
     """Build one deterministic dense statevector workload in FlagQuantum IR."""
 
-    if n_wires < 4 or layers < 1:
-        raise ValueError("n_wires must be at least 4 and layers must be positive")
-    circuit = fq.Circuit(n_wires, dtype=torch.complex128)
-    parameter_count = layers * n_wires * 3
+    if n_qubits < 4 or layers < 1:
+        raise ValueError("n_qubits must be at least 4 and layers must be positive")
+    circuit = fq.Circuit(n_qubits, dtype=torch.complex128)
+    parameter_count = layers * n_qubits * 3
     values = torch.linspace(-0.43, 0.37, steps=parameter_count).reshape(
-        layers, n_wires, 3
+        layers, n_qubits, 3
     )
     for layer in range(layers):
-        for wire in range(n_wires):
-            circuit.rx(wire, float(values[layer, wire, 0]))
-            circuit.ry(wire, float(values[layer, wire, 1]))
-            circuit.rz(wire, float(values[layer, wire, 2]))
-        for wire in range(n_wires - 1):
-            circuit.cx(wire, wire + 1)
-        circuit.rzz(0, n_wires - 1, float(values[layer, 0, 0] * 0.25))
-        circuit.swap(1, n_wires - 2)
+        for qubit in range(n_qubits):
+            circuit.rx(qubit, float(values[layer, qubit, 0]))
+            circuit.ry(qubit, float(values[layer, qubit, 1]))
+            circuit.rz(qubit, float(values[layer, qubit, 2]))
+        for qubit in range(n_qubits - 1):
+            circuit.cx(qubit, qubit + 1)
+        circuit.rzz(0, n_qubits - 1, float(values[layer, 0, 0] * 0.25))
+        circuit.swap(1, n_qubits - 2)
     return circuit
 
 
@@ -173,7 +173,7 @@ def _interleaved_samples(
 
 def run_case(
     *,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     threads: int,
     warmup: int,
@@ -195,7 +195,7 @@ def run_case(
             "warmup must be non-negative and iterations at least 3"
         )
     torch.set_num_threads(threads)
-    circuit = build_workload(n_wires=n_wires, layers=layers)
+    circuit = build_workload(n_qubits=n_qubits, layers=layers)
     setup, qiskit_execute, _compiled = _qiskit_runtime(
         circuit, threads=threads, setup_iterations=setup_iterations
     )
@@ -221,11 +221,11 @@ def run_case(
     )
     assert native_output is not None and qiskit_output is not None
     native_state = native_output[0].detach().cpu().to(torch.complex128)
-    qiskit_state = qiskit_statevector_to_flagquantum(qiskit_output.data, n_wires).to(
+    qiskit_state = qiskit_statevector_to_flagquantum(qiskit_output.data, n_qubits).to(
         torch.complex128
     )
     cold_qiskit_state = qiskit_statevector_to_flagquantum(
-        qiskit_cold_output.data, n_wires
+        qiskit_cold_output.data, n_qubits
     ).to(torch.complex128)
     max_error = max(
         float(torch.max(torch.abs(native_state - qiskit_state)).item()),
@@ -241,7 +241,7 @@ def run_case(
     return {
         "workload": {
             "name": "hardware_efficient_statevector",
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "layers": layers,
             "gate_count": len(circuit),
             "batch_size": 1,
@@ -307,7 +307,7 @@ def run_case(
 
 def run_benchmark(
     *,
-    n_wires: Sequence[int],
+    n_qubits: Sequence[int],
     layers: int,
     threads: int,
     warmup: int,
@@ -317,11 +317,11 @@ def run_benchmark(
 ) -> dict[str, Any]:
     """Run all requested sizes and return the comparison evidence payload."""
 
-    if not n_wires:
-        raise ValueError("n_wires must contain at least one workload size")
+    if not n_qubits:
+        raise ValueError("n_qubits must contain at least one workload size")
     cases = tuple(
         run_case(
-            n_wires=width,
+            n_qubits=width,
             layers=layers,
             threads=threads,
             warmup=warmup,
@@ -329,7 +329,7 @@ def run_benchmark(
             setup_iterations=setup_iterations,
             calls_per_sample=calls_per_sample,
         )
-        for width in n_wires
+        for width in n_qubits
     )
     correctness_passed = all(bool(case["correctness"]["passed"]) for case in cases)
     all_measurements_stable = all(bool(case["stability"]["passed"]) for case in cases)
@@ -384,7 +384,7 @@ def main() -> int:
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         layers=args.layers,
         threads=args.threads,
         warmup=args.warmup,

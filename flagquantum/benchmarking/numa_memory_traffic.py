@@ -279,7 +279,7 @@ def _worker(payload_text: str) -> int:
     execute = _engine_callable(
         engine,
         workload,
-        n_wires=int(payload["n_wires"]),
+        n_qubits=int(payload["n_wires"]),
         layers=int(payload["layers"]),
         seed=int(payload["seed"]),
     )

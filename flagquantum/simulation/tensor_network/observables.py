@@ -64,11 +64,11 @@ def _compress_pauli_sum_mpo(
         )
 
     term_count = len(local_products)
-    n_wires = len(local_products[0])
+    n_qubits = len(local_products[0])
     physical_dim = 4
     local_by_wire = tuple(
-        torch.stack(tuple(product[wire] for product in local_products))
-        for wire in range(n_wires)
+        torch.stack(tuple(product[qubit] for product in local_products))
+        for qubit in range(n_qubits)
     )
     cores = [
         (coefficients[:, None, None] * local_by_wire[0]).reshape(
@@ -78,25 +78,25 @@ def _compress_pauli_sum_mpo(
     diagonal = torch.eye(
         term_count, dtype=coefficients.dtype, device=coefficients.device
     )
-    for wire in range(1, n_wires - 1):
-        core = diagonal[:, :, None, None] * local_by_wire[wire][:, None, :, :]
+    for qubit in range(1, n_qubits - 1):
+        core = diagonal[:, :, None, None] * local_by_wire[qubit][:, None, :, :]
         cores.append(core.reshape(term_count, term_count, physical_dim))
     cores.append(local_by_wire[-1].reshape(term_count, 1, physical_dim))
 
-    for wire in range(n_wires - 1):
-        left_rank, right_rank, _ = cores[wire].shape
+    for qubit in range(n_qubits - 1):
+        left_rank, right_rank, _ = cores[qubit].shape
         matrix = (
-            cores[wire].permute(0, 2, 1).reshape(left_rank * physical_dim, right_rank)
+            cores[qubit].permute(0, 2, 1).reshape(left_rank * physical_dim, right_rank)
         )
         left, singular, right = torch.linalg.svd(matrix, full_matrices=False)
         threshold = relative_tolerance * singular[0]
         rank = max(1, int(torch.count_nonzero(singular > threshold)))
         left = left[:, :rank]
         transfer = singular[:rank, None] * right[:rank, :]
-        cores[wire] = left.reshape(left_rank, physical_dim, rank).permute(0, 2, 1)
-        next_right = cores[wire + 1].shape[1]
-        cores[wire + 1] = torch.matmul(
-            transfer, cores[wire + 1].reshape(right_rank, -1)
+        cores[qubit] = left.reshape(left_rank, physical_dim, rank).permute(0, 2, 1)
+        next_right = cores[qubit + 1].shape[1]
+        cores[qubit + 1] = torch.matmul(
+            transfer, cores[qubit + 1].reshape(right_rank, -1)
         ).reshape(rank, next_right, physical_dim)
     return tuple(
         core.reshape(core.shape[0], core.shape[1], 2, 2).to(output_device)
@@ -160,7 +160,7 @@ def build_tensor_network_expectation(
     ket_plan = ensure_local_tensor_network_plan(plan_or_circuit)
     x_set, y_set, z_set = set(x or ()), set(y or ()), set(z or ())
     if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
-        raise ValueError("A wire can appear in only one of x, y, or z.")
+        raise ValueError("A qubit can appear in only one of x, y, or z.")
 
     max_label = max(
         (label for node in ket_plan.nodes for label in node.labels), default=0
@@ -184,12 +184,12 @@ def build_tensor_network_expectation(
             name="batch_identity",
         )
     )
-    observable_wires = tuple(sorted(x_set | y_set | z_set))
-    for wire in range(ket_plan.n_wires):
+    observable_qubits = tuple(sorted(x_set | y_set | z_set))
+    for qubit in range(ket_plan.n_qubits):
         name = (
             "x"
-            if wire in x_set
-            else "y" if wire in y_set else "z" if wire in z_set else None
+            if qubit in x_set
+            else "y" if qubit in y_set else "z" if qubit in z_set else None
         )
         matrix = (
             _identity_matrix_like(reference)
@@ -199,17 +199,17 @@ def build_tensor_network_expectation(
         nodes.append(
             TensorNetworkNode(
                 tensor=matrix,
-                labels=(bra_outputs[wire + 1], ket_outputs[wire + 1]),
-                name=f"obs_{wire}",
-                metadata={"wire": wire},
+                labels=(bra_outputs[qubit + 1], ket_outputs[qubit + 1]),
+                name=f"obs_{qubit}",
+                metadata={"qubit": qubit},
             )
         )
     return TensorNetworkExpectationPlan(
-        n_wires=ket_plan.n_wires,
+        n_qubits=ket_plan.n_qubits,
         bsz=ket_plan.bsz,
         nodes=tuple(nodes),
         output_labels=(batch_label,),
-        observable_wires=observable_wires,
+        observable_qubits=observable_qubits,
         path=_path(nodes),
     )
 
@@ -249,14 +249,14 @@ def build_tensor_network_hamiltonian_expectation(
         name: _fixed_gate_matrix_like(name, reference) for name in ("x", "y", "z")
     }
     local_products = []
-    observable_wires: set[int] = set()
+    observable_qubits: set[int] = set()
     for term in terms:
-        by_wire = {int(wire): str(name).lower() for wire, name in term.ops}
-        observable_wires.update(by_wire)
+        by_wire = {int(qubit): str(name).lower() for qubit, name in term.ops}
+        observable_qubits.update(by_wire)
         local_products.append(
             tuple(
-                pauli_matrices.get(by_wire.get(wire, "i"), identity)
-                for wire in range(ket_plan.n_wires)
+                pauli_matrices.get(by_wire.get(qubit, "i"), identity)
+                for qubit in range(ket_plan.n_qubits)
             )
         )
     coefficients = tuple(
@@ -265,7 +265,7 @@ def build_tensor_network_hamiltonian_expectation(
         )
         for term in terms
     )
-    if ket_plan.n_wires == 1:
+    if ket_plan.n_qubits == 1:
         matrix = torch.stack(
             tuple(
                 coefficient * product[0]
@@ -283,18 +283,18 @@ def build_tensor_network_hamiltonian_expectation(
         )
     else:
         next_label = max((*bra_outputs, *ket_outputs)) + 1
-        bond_labels = tuple(range(next_label, next_label + ket_plan.n_wires - 1))
+        bond_labels = tuple(range(next_label, next_label + ket_plan.n_qubits - 1))
         cores = _cached_pauli_sum_mpo(
             torch.stack(coefficients),
             local_products,
             compression_device=compression_device,
             signature=(
-                ket_plan.n_wires,
+                ket_plan.n_qubits,
                 tuple(
                     (
                         complex(term.coefficient),
                         tuple(
-                            (int(wire), str(name).lower()) for wire, name in term.ops
+                            (int(qubit), str(name).lower()) for qubit, name in term.ops
                         ),
                     )
                     for term in terms
@@ -308,32 +308,32 @@ def build_tensor_network_hamiltonian_expectation(
                 name="hamiltonian_mpo_0",
             )
         )
-        for wire in range(1, ket_plan.n_wires - 1):
+        for qubit in range(1, ket_plan.n_qubits - 1):
             nodes.append(
                 TensorNetworkNode(
-                    tensor=cores[wire],
+                    tensor=cores[qubit],
                     labels=(
-                        bond_labels[wire - 1],
-                        bond_labels[wire],
-                        bra_outputs[wire + 1],
-                        ket_outputs[wire + 1],
+                        bond_labels[qubit - 1],
+                        bond_labels[qubit],
+                        bra_outputs[qubit + 1],
+                        ket_outputs[qubit + 1],
                     ),
-                    name=f"hamiltonian_mpo_{wire}",
+                    name=f"hamiltonian_mpo_{qubit}",
                 )
             )
         nodes.append(
             TensorNetworkNode(
                 tensor=cores[-1].squeeze(1),
                 labels=(bond_labels[-1], bra_outputs[-1], ket_outputs[-1]),
-                name=f"hamiltonian_mpo_{ket_plan.n_wires - 1}",
+                name=f"hamiltonian_mpo_{ket_plan.n_qubits - 1}",
             )
         )
     return TensorNetworkExpectationPlan(
-        n_wires=ket_plan.n_wires,
+        n_qubits=ket_plan.n_qubits,
         bsz=ket_plan.bsz,
         nodes=tuple(nodes),
         output_labels=(batch_label,),
-        observable_wires=tuple(sorted(observable_wires)),
+        observable_qubits=tuple(sorted(observable_qubits)),
         path=_path(nodes),
     )
 
@@ -352,7 +352,7 @@ def build_tensor_network_hamiltonian_expectations(
     term_index: dict[tuple[tuple[int, str], ...], int] = {}
     for observable in observables:
         for term in tuple(getattr(observable, "terms", ())):
-            key = tuple((int(wire), str(name).lower()) for wire, name in term.ops)
+            key = tuple((int(qubit), str(name).lower()) for qubit, name in term.ops)
             if key not in term_index:
                 term_index[key] = len(term_keys)
                 term_keys.append(key)
@@ -382,7 +382,7 @@ def build_tensor_network_hamiltonian_expectations(
     )
     for observable_index, observable in enumerate(observables):
         for term in tuple(getattr(observable, "terms", ())):
-            key = tuple((int(wire), str(name).lower()) for wire, name in term.ops)
+            key = tuple((int(qubit), str(name).lower()) for qubit, name in term.ops)
             coefficients[observable_index, term_index[key]] += torch.as_tensor(
                 term.coefficient, dtype=reference.dtype, device=reference.device
             )
@@ -396,13 +396,13 @@ def build_tensor_network_hamiltonian_expectations(
         by_wire = dict(key)
         local_products.append(
             tuple(
-                matrices.get(by_wire.get(wire, "i"), identity)
-                for wire in range(ket_plan.n_wires)
+                matrices.get(by_wire.get(qubit, "i"), identity)
+                for qubit in range(ket_plan.n_qubits)
             )
         )
-    observable_wires = tuple(sorted({wire for key in term_keys for wire, _ in key}))
+    observable_qubits = tuple(sorted({qubit for key in term_keys for qubit, _ in key}))
     observable_label = max((*bra_outputs, *ket_outputs)) + 1
-    if ket_plan.n_wires == 1:
+    if ket_plan.n_qubits == 1:
         local = torch.stack(tuple(product[0] for product in local_products))
         matrix = torch.einsum("ot,tij->oij", coefficients, local)
         nodes.append(
@@ -414,7 +414,7 @@ def build_tensor_network_hamiltonian_expectations(
         )
     else:
         bond_labels = tuple(
-            range(observable_label + 1, observable_label + ket_plan.n_wires)
+            range(observable_label + 1, observable_label + ket_plan.n_qubits)
         )
         local = torch.stack(tuple(product[0] for product in local_products))
         first = coefficients[:, :, None, None] * local[None, :, :, :]
@@ -433,19 +433,19 @@ def build_tensor_network_hamiltonian_expectations(
         diagonal = torch.eye(
             len(term_keys), dtype=reference.dtype, device=reference.device
         )
-        for wire in range(1, ket_plan.n_wires - 1):
-            local = torch.stack(tuple(product[wire] for product in local_products))
+        for qubit in range(1, ket_plan.n_qubits - 1):
+            local = torch.stack(tuple(product[qubit] for product in local_products))
             core = diagonal[:, :, None, None] * local[:, None, :, :]
             nodes.append(
                 TensorNetworkNode(
                     tensor=core,
                     labels=(
-                        bond_labels[wire - 1],
-                        bond_labels[wire],
-                        bra_outputs[wire + 1],
-                        ket_outputs[wire + 1],
+                        bond_labels[qubit - 1],
+                        bond_labels[qubit],
+                        bra_outputs[qubit + 1],
+                        ket_outputs[qubit + 1],
                     ),
-                    name=f"hamiltonian_block_mpo_{wire}",
+                    name=f"hamiltonian_block_mpo_{qubit}",
                 )
             )
         last = torch.stack(tuple(product[-1] for product in local_products))
@@ -453,15 +453,15 @@ def build_tensor_network_hamiltonian_expectations(
             TensorNetworkNode(
                 tensor=last,
                 labels=(bond_labels[-1], bra_outputs[-1], ket_outputs[-1]),
-                name=f"hamiltonian_block_mpo_{ket_plan.n_wires - 1}",
+                name=f"hamiltonian_block_mpo_{ket_plan.n_qubits - 1}",
             )
         )
     return TensorNetworkExpectationPlan(
-        n_wires=ket_plan.n_wires,
+        n_qubits=ket_plan.n_qubits,
         bsz=ket_plan.bsz,
         nodes=tuple(nodes),
         output_labels=(batch_label, observable_label),
-        observable_wires=observable_wires,
+        observable_qubits=observable_qubits,
         path=_path(nodes),
     )
 
@@ -511,7 +511,7 @@ def _expectation_batch_projection(
         if unknown:
             raise ValueError(f"unsupported Pauli axes: {sorted(unknown)}")
         axes = {
-            axis: set(int(wire) for wire in observable.get(axis, ()))
+            axis: set(int(qubit) for qubit in observable.get(axis, ()))
             for axis in ("x", "y", "z")
         }
         if (
@@ -519,13 +519,13 @@ def _expectation_batch_projection(
             or (axes["x"] & axes["z"])
             or (axes["y"] & axes["z"])
         ):
-            raise ValueError("a wire can appear in only one Pauli axis")
+            raise ValueError("a qubit can appear in only one Pauli axis")
         if any(
-            wire < 0 or wire >= plan.n_wires
-            for wires in axes.values()
-            for wire in wires
+            qubit < 0 or qubit >= plan.n_qubits
+            for qubits in axes.values()
+            for qubit in qubits
         ):
-            raise ValueError("observable wire is outside the circuit")
+            raise ValueError("observable qubit is outside the circuit")
         normalized.append(axes)
 
     max_label = max((label for node in plan.nodes for label in node.labels), default=0)
@@ -544,13 +544,13 @@ def _expectation_batch_projection(
             name="batch_identity",
         )
     )
-    for wire in range(plan.n_wires):
+    for qubit in range(plan.n_qubits):
         operators = []
         for axes in normalized:
             name = (
                 "x"
-                if wire in axes["x"]
-                else "y" if wire in axes["y"] else "z" if wire in axes["z"] else None
+                if qubit in axes["x"]
+                else "y" if qubit in axes["y"] else "z" if qubit in axes["z"] else None
             )
             operators.append(
                 _identity_matrix_like(reference)
@@ -560,9 +560,9 @@ def _expectation_batch_projection(
         nodes.append(
             TensorNetworkNode(
                 tensor=torch.stack(operators),
-                labels=(target_label, bra_outputs[wire + 1], ket_outputs[wire + 1]),
-                name=f"observable_batch_{wire}",
-                metadata={"wire": wire, "targets": len(normalized)},
+                labels=(target_label, bra_outputs[qubit + 1], ket_outputs[qubit + 1]),
+                name=f"observable_batch_{qubit}",
+                metadata={"qubit": qubit, "targets": len(normalized)},
             )
         )
     return tuple(nodes), (ket_outputs[0], target_label)

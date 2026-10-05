@@ -25,12 +25,12 @@ class QCISInstruction:
     """A single QCIS-native instruction."""
 
     name: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     args: tuple[float | int, ...] = ()
 
     def __str__(self) -> str:
         parts = [self.name.upper()]
-        parts.extend(f"Q{wire}" for wire in self.wires)
+        parts.extend(f"Q{qubit}" for qubit in self.qubits)
         for value in self.args:
             if (
                 isinstance(value, float)
@@ -75,8 +75,8 @@ def _param(params: Mapping[str, Any], *names: str) -> tuple[float, ...]:
     return tuple(values)
 
 
-def _one(name: str, wire: int, *args: float | int) -> list[QCISInstruction]:
-    return [QCISInstruction(name, (wire,), tuple(args))]
+def _one(name: str, qubit: int, *args: float | int) -> list[QCISInstruction]:
+    return [QCISInstruction(name, (qubit,), tuple(args))]
 
 
 def _cx(control: int, target: int) -> list[QCISInstruction]:
@@ -88,106 +88,112 @@ def _cx(control: int, target: int) -> list[QCISInstruction]:
 
 
 def _decompose(
-    name: str, wires: tuple[int, ...], params: Mapping[str, Any]
+    name: str, qubits: tuple[int, ...], params: Mapping[str, Any]
 ) -> list[QCISInstruction]:
     if name in {"measure", "measure_allz", "barrier"}:
         return []
     if name in {"i", "id"}:
-        return _one("i", wires[0], 60)
+        return _one("i", qubits[0], 60)
     if name == "x":
-        return _one("x2p", wires[0]) + _one("x2p", wires[0])
+        return _one("x2p", qubits[0]) + _one("x2p", qubits[0])
     if name == "y":
-        return _one("y2p", wires[0]) + _one("y2p", wires[0])
+        return _one("y2p", qubits[0]) + _one("y2p", qubits[0])
     if name == "z":
-        return _one("rz", wires[0], _PI)
+        return _one("rz", qubits[0], _PI)
     if name == "h":
-        return _one("y2m", wires[0]) + _one("rz", wires[0], _PI)
+        return _one("y2m", qubits[0]) + _one("rz", qubits[0], _PI)
     if name == "sx":
-        return _one("x2p", wires[0])
+        return _one("x2p", qubits[0])
     if name == "sxdg":
-        return _one("x2m", wires[0])
+        return _one("x2m", qubits[0])
     if name == "s":
-        return _one("rz", wires[0], _PI / 2)
+        return _one("rz", qubits[0], _PI / 2)
     if name == "sdg":
-        return _one("rz", wires[0], -_PI / 2)
+        return _one("rz", qubits[0], -_PI / 2)
     if name == "t":
-        return _one("rz", wires[0], _PI / 4)
+        return _one("rz", qubits[0], _PI / 4)
     if name == "tdg":
-        return _one("rz", wires[0], -_PI / 4)
+        return _one("rz", qubits[0], -_PI / 4)
     if name == "rx":
         (theta,) = _param(params, "theta")
         return (
-            _one("y2m", wires[0]) + _one("rz", wires[0], theta) + _one("y2p", wires[0])
+            _one("y2m", qubits[0])
+            + _one("rz", qubits[0], theta)
+            + _one("y2p", qubits[0])
         )
     if name == "ry":
         (theta,) = _param(params, "theta")
         return (
-            _one("x2p", wires[0]) + _one("rz", wires[0], theta) + _one("x2m", wires[0])
+            _one("x2p", qubits[0])
+            + _one("rz", qubits[0], theta)
+            + _one("x2m", qubits[0])
         )
     if name == "rz":
         (theta,) = _param(params, "theta")
-        return _one("rz", wires[0], theta)
+        return _one("rz", qubits[0], theta)
     if name == "phase":
         (theta,) = _param(params, "theta")
-        return _one("rz", wires[0], theta)
+        return _one("rz", qubits[0], theta)
     if name in {"u", "u3"}:
         theta, phi, lbd = _param(params, "theta", "phi", "lbd")
         return (
-            _one("rz", wires[0], lbd)
-            + _one("x2p", wires[0])
-            + _one("rz", wires[0], theta)
-            + _one("x2m", wires[0])
-            + _one("rz", wires[0], phi)
+            _one("rz", qubits[0], lbd)
+            + _one("x2p", qubits[0])
+            + _one("rz", qubits[0], theta)
+            + _one("x2m", qubits[0])
+            + _one("rz", qubits[0], phi)
         )
     if name == "u1":
         (theta,) = _param(params, "theta")
-        return _one("rz", wires[0], theta)
+        return _one("rz", qubits[0], theta)
     if name == "u2":
         phi, lbd = _param(params, "phi", "lbd")
-        return _decompose("u3", wires, {"theta": math.pi / 2, "phi": phi, "lbd": lbd})
+        return _decompose("u3", qubits, {"theta": math.pi / 2, "phi": phi, "lbd": lbd})
     if name == "cx":
-        return _cx(wires[0], wires[1])
+        return _cx(qubits[0], qubits[1])
     if name == "cy":
         return (
-            _one("x2p", wires[1])
-            + [QCISInstruction("cz", wires)]
-            + _one("x2m", wires[1])
+            _one("x2p", qubits[1])
+            + [QCISInstruction("cz", qubits)]
+            + _one("x2m", qubits[1])
         )
     if name == "cz":
-        return [QCISInstruction("cz", wires)]
+        return [QCISInstruction("cz", qubits)]
     if name == "swap":
         return (
-            _cx(wires[0], wires[1]) + _cx(wires[1], wires[0]) + _cx(wires[0], wires[1])
+            _cx(qubits[0], qubits[1])
+            + _cx(qubits[1], qubits[0])
+            + _cx(qubits[0], qubits[1])
         )
     if name == "rzz":
         (theta,) = _param(params, "theta")
         return (
-            _cx(wires[0], wires[1])
-            + _one("rz", wires[1], theta)
-            + _cx(wires[0], wires[1])
+            _cx(qubits[0], qubits[1])
+            + _one("rz", qubits[1], theta)
+            + _cx(qubits[0], qubits[1])
         )
     if name == "rxx":
         (theta,) = _param(params, "theta")
         return (
-            _decompose("h", (wires[0],), {})
-            + _decompose("h", (wires[1],), {})
-            + _decompose("rzz", wires, {"theta": theta})
-            + _decompose("h", (wires[0],), {})
-            + _decompose("h", (wires[1],), {})
+            _decompose("h", (qubits[0],), {})
+            + _decompose("h", (qubits[1],), {})
+            + _decompose("rzz", qubits, {"theta": theta})
+            + _decompose("h", (qubits[0],), {})
+            + _decompose("h", (qubits[1],), {})
         )
     if name == "ryy":
         (theta,) = _param(params, "theta")
         return (
-            _decompose("rx", (wires[0],), {"theta": math.pi / 2})
-            + _decompose("rx", (wires[1],), {"theta": math.pi / 2})
-            + _decompose("rzz", wires, {"theta": theta})
-            + _decompose("rx", (wires[0],), {"theta": -math.pi / 2})
-            + _decompose("rx", (wires[1],), {"theta": -math.pi / 2})
+            _decompose("rx", (qubits[0],), {"theta": math.pi / 2})
+            + _decompose("rx", (qubits[1],), {"theta": math.pi / 2})
+            + _decompose("rzz", qubits, {"theta": theta})
+            + _decompose("rx", (qubits[0],), {"theta": -math.pi / 2})
+            + _decompose("rx", (qubits[1],), {"theta": -math.pi / 2})
         )
     if name == "ccx":
-        q0, q1, q2 = wires
+        q0, q1, q2 = qubits
         out: list[QCISInstruction] = []
-        for gate, gate_wires, gate_params in (
+        for gate, gate_qubits, gate_params in (
             ("h", (q2,), {}),
             ("cx", (q1, q2), {}),
             ("tdg", (q2,), {}),
@@ -204,7 +210,7 @@ def _decompose(
             ("tdg", (q1,), {}),
             ("cx", (q0, q1), {}),
         ):
-            out.extend(_decompose(gate, gate_wires, gate_params))
+            out.extend(_decompose(gate, gate_qubits, gate_params))
         return out
     raise NotImplementedError(f"Gate {name!r} has no QCIS decomposition.")
 

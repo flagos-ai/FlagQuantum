@@ -37,7 +37,7 @@ What they show:
 - [`qarm.py`](qarm.py): the fraction of a database's items whose support meets a
   threshold, by amplitude estimation over a support register.
 - [`svd.py`](svd.py): a matrix's singular values read off the phase of its
-  Hermitian embedding's exponential, plus the boundary of a one-wire counting
+  Hermitian embedding's exponential, plus the boundary of a one-qubit counting
   register.
 - [`error_mitigation.py`](error_mitigation.py): an observable continued to zero
   noise by polynomial least squares and by Richardson extrapolation over four

@@ -158,7 +158,7 @@ def test_the_split_reproduces_the_source_statevector_exactly() -> None:
         dtype="complex128",
     )
     leaves = synthesize_two_qubit(
-        matrix, wires=(0, 1), entangler="cx", z_rotation="rz", pulse_opcode="sx"
+        matrix, qubits=(0, 1), entangler="cx", z_rotation="rz", pulse_opcode="sx"
     )
     assert leaves is not None
     blind = CircuitIR(2, (Instruction("h", (0,)), *leaves), dtype="complex128")

@@ -26,14 +26,14 @@ if TYPE_CHECKING:
     from ...circuit import Circuit
 
 
-# The Apple-arm64 18-wire/batch-32 corpus measured this budget at 1.05x-1.27x
+# The Apple-arm64 18-qubit/batch-32 corpus measured this budget at 1.05x-1.27x
 # over one monolithic batch across all five representative workloads. This is a
 # logical state budget, not a process-RSS promise; individual kernels still own
 # their temporary storage.
 _CPU_STATEVECTOR_BATCH_CHUNK_BUDGET_BYTES = 64 * 1024 * 1024
 
-# The 18-wire/batch-32 complex128 memory corpus measured 32 MiB windows as a
-# lower-RSS win for preallocated CX-sequence, cross-wire-diagonal, and
+# The 18-qubit/batch-32 complex128 memory corpus measured 32 MiB windows as a
+# lower-RSS win for preallocated CX-sequence, cross-qubit-diagonal, and
 # controlled-phase-graph programs. Direct-assembly programs retain the general
 # budget because smaller windows regressed their end-to-end timing.
 _CPU_STATEVECTOR_BATCH_REDUCED_CHUNK_BUDGET_BYTES = 32 * 1024 * 1024

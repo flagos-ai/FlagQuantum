@@ -4,7 +4,7 @@ A rewrite is chosen from two sources: the exact named-gate equivalences in
 `basis_translation`, composed recursively until every leaf is native, and the
 one-qubit Euler and two-qubit KAK syntheses for a matrix-carrying instruction,
 which no operator schema describes. A synthesis applies only when the target
-publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one wire,
+publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one qubit,
 plus a supercontrolled entangler for two. Among the rewrites that reach the
 native set the shortest wins, so a basis that can carry a gate exactly keeps its
 exact form instead of paying for the general one. A synthesized rewrite is equal
@@ -233,10 +233,10 @@ def _matrix_replacement(
 ) -> tuple[Instruction, ...] | None:
     """Rewrite a matrix-carrying instruction, which no schema table describes.
 
-    One wire goes through Euler synthesis, two through KAK synthesis, and
+    One qubit goes through Euler synthesis, two through KAK synthesis, and
     anything wider is refused because the entangler basis reaches exactly two.
 
-    A two-wire matrix that is a product of two single-qubit unitaries is answered
+    A two-qubit matrix that is a product of two single-qubit unitaries is answered
     from the single-qubit route instead, and it is asked first. That route needs a
     z-rotation and a pulse and no entangler at all, so it reaches an operator the
     KAK route has to refuse on a target that publishes no entangler, and
@@ -249,7 +249,7 @@ def _matrix_replacement(
     if len(instruction.wires) == 1:
         return synthesize_one_qubit_matrix(
             instruction.matrix,
-            wire=instruction.wires[0],
+            qubit=instruction.wires[0],
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=instruction.metadata,
@@ -264,7 +264,7 @@ def _matrix_replacement(
     if entangler is not None:
         return synthesize_two_qubit(
             instruction.matrix,
-            wires=instruction.wires,
+            qubits=instruction.wires,
             entangler=entangler,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
@@ -279,7 +279,7 @@ def _local_replacement(
     z_rotation: str,
     pulse_opcode: str,
 ) -> tuple[Instruction, ...] | None:
-    """Synthesize a two-wire matrix that acts on its two wires independently.
+    """Synthesize a two-qubit matrix that acts on its two qubits independently.
 
     None when the matrix is not such a product, which is the case the KAK route
     owns. The two factors are each one single-qubit unitary, so each is served by
@@ -293,7 +293,7 @@ def _local_replacement(
     for half in halves:
         leaves = synthesize_one_qubit_matrix(
             half.matrix,
-            wire=half.wires[0],
+            qubit=half.wires[0],
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=half.metadata,
