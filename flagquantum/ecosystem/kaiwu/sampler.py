@@ -47,6 +47,19 @@ class KaiwuTransferRecord:
     cache_hit: bool
 
 
+@dataclass(frozen=True, slots=True)
+class KaiwuPrecisionEvidence:
+    """One original matrix's explicit reduction and submitted identity."""
+
+    original_matrix_sha256: str
+    submission_matrix_sha256: str
+    scale_factor: float
+    target_min: int
+    target_max: int
+    max_abs_error: float
+    mean_abs_error: float
+
+
 class KaiwuSampler:
     """Expose ``solve(ising_matrix)`` while delegating tasks to Remote.
 
@@ -124,6 +137,7 @@ class KaiwuSampler:
         self._last_result: KaiwuTaskResult | None = None
         self._last_precision_report: IntegerPrecisionReport | None = None
         self._precision_reports: dict[str, IntegerPrecisionReport] = {}
+        self._precision_evidence: dict[str, KaiwuPrecisionEvidence] = {}
         self._transfer_records: list[KaiwuTransferRecord] = []
 
     @property
@@ -157,6 +171,12 @@ class KaiwuSampler:
         """Return one report for each distinct original matrix encountered."""
 
         return tuple(self._precision_reports.values())
+
+    @property
+    def precision_evidence(self) -> tuple[KaiwuPrecisionEvidence, ...]:
+        """Return identity-bound precision evidence for each original matrix."""
+
+        return tuple(self._precision_evidence.values())
 
     @property
     def transfer_records(self) -> tuple[KaiwuTransferRecord, ...]:
@@ -209,6 +229,7 @@ class KaiwuSampler:
         if cached is not None:
             if report is not None:
                 self._precision_reports.setdefault(original_key, report)
+                self._retain_precision_evidence(original_key, cache_key, report)
             output: np.ndarray = np.asarray(cached, dtype=np.int8).copy()
             self._record_transfer(
                 input_type=input_type,
@@ -240,6 +261,7 @@ class KaiwuSampler:
             self._receipts.append(job.receipt)
         if report is not None:
             self._precision_reports.setdefault(original_key, report)
+            self._retain_precision_evidence(original_key, cache_key, report)
         self._last_job = job
         result = job.wait(timeout=self._timeout, poll_interval=self._poll_interval)
         self._last_result = result
@@ -255,6 +277,25 @@ class KaiwuSampler:
             cache_hit=False,
         )
         return output
+
+    def _retain_precision_evidence(
+        self,
+        original_matrix_sha256: str,
+        submission_matrix_sha256: str,
+        report: IntegerPrecisionReport,
+    ) -> None:
+        self._precision_evidence.setdefault(
+            original_matrix_sha256,
+            KaiwuPrecisionEvidence(
+                original_matrix_sha256=original_matrix_sha256,
+                submission_matrix_sha256=submission_matrix_sha256,
+                scale_factor=report.scale_factor,
+                target_min=report.target_min,
+                target_max=report.target_max,
+                max_abs_error=report.max_abs_error,
+                mean_abs_error=report.mean_abs_error,
+            ),
+        )
 
     def _record_transfer(
         self,

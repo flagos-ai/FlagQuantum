@@ -143,6 +143,11 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert client.submissions == record["remote_call_count"]
     precision = record["precision_policy"]
     assert record["precision_evidence_complete"] is True
+    assert len(record["precision_evidence"]) == precision["matrix_count"]
+    assert {
+        evidence["submission_matrix_sha256"]
+        for evidence in record["precision_evidence"]
+    } == {receipt["matrix_sha256"] for receipt in record["task_receipts"]}
     assert precision["matrix_count"] >= record["remote_call_count"]
     assert 0 < precision["scale_factor_min"] <= precision["scale_factor_max"]
     assert 0 <= precision["mean_of_matrix_mean_abs_error"] <= precision["max_abs_error"]

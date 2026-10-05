@@ -17,13 +17,14 @@ from .matrix import (
     prepare_integer_precision,
 )
 from .qdiffusion import bind_qdiffusion_builder, bound_qdiffusion_workflow
-from .sampler import KaiwuSampler, KaiwuTransferRecord
+from .sampler import KaiwuPrecisionEvidence, KaiwuSampler, KaiwuTransferRecord
 
 __all__ = (
     "IntegerPrecisionReport",
     "KaiwuInteropError",
     "KaiwuMatrixValidationError",
     "KaiwuPrecisionError",
+    "KaiwuPrecisionEvidence",
     "KaiwuSampler",
     "KaiwuTransferRecord",
     "QuboIsingEncoding",

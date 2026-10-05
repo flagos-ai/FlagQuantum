@@ -219,6 +219,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   remote task while retaining separate error reports; the acceptance validator
   rejects missing reports, invalid scale ranges, and negative or inconsistent
   aggregate errors.
+- Per-matrix precision evidence now serializes both the original and submitted
+  matrix digests with its scale and error values. System, training, and replay
+  validation require unique original identities, exact aggregate
+  recomputation, and complete equality between submitted precision identities
+  and Remote receipt matrix identities; a report count alone cannot establish
+  coverage.
 - The Phase 5 runbook now covers frozen inputs, approved source transfer,
   development rehearsal, SDK-lane verification, quota-guarded smoke and system
   execution, interruption and same-identity resume, independent two-host runs,

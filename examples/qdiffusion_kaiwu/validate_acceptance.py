@@ -48,6 +48,17 @@ TASK_RECEIPT_FIELDS = frozenset(
         "provider_target",
     }
 )
+PRECISION_EVIDENCE_FIELDS = frozenset(
+    {
+        "original_matrix_sha256",
+        "submission_matrix_sha256",
+        "scale_factor",
+        "target_min",
+        "target_max",
+        "max_abs_error",
+        "mean_abs_error",
+    }
+)
 METRIC_NAMES = (
     "mean_cosine_distance",
     "median_cosine_distance",
@@ -139,6 +150,108 @@ def _validate_sampling_receipt(
         errors.append(f"{label}: receipt has no provider_target")
         target = None
     return task_id, target, matrix_digest
+
+
+def _validate_precision_evidence(
+    record: dict[str, Any],
+    *,
+    label: str,
+    receipt_matrix_digests: list[str],
+    errors: list[str],
+) -> None:
+    """Bind every original-matrix reduction report to submitted receipts."""
+
+    precision = record.get("precision_policy")
+    entries = record.get("precision_evidence")
+    if not isinstance(precision, dict):
+        errors.append(f"{label}: precision policy is missing")
+        return
+    if not isinstance(entries, list) or not entries:
+        errors.append(f"{label}: per-matrix precision evidence is missing")
+        return
+    if precision.get("matrix_count") != len(entries):
+        errors.append(f"{label}: precision matrix count differs from evidence")
+
+    original_digests: list[str] = []
+    submission_digests: list[str] = []
+    scales: list[float] = []
+    maximum_errors: list[float] = []
+    mean_errors: list[float] = []
+    for index, entry in enumerate(entries):
+        entry_label = f"{label}: precision evidence {index}"
+        if not isinstance(entry, dict):
+            errors.append(f"{entry_label} is not an object")
+            continue
+        if set(entry) != PRECISION_EVIDENCE_FIELDS:
+            errors.append(f"{entry_label} field set differs from schema")
+        original = entry.get("original_matrix_sha256")
+        submission = entry.get("submission_matrix_sha256")
+        if (
+            not isinstance(original, str)
+            or re.fullmatch(r"[0-9a-f]{64}", original) is None
+        ):
+            errors.append(f"{entry_label} has no original matrix digest")
+        else:
+            original_digests.append(original)
+        if (
+            not isinstance(submission, str)
+            or re.fullmatch(r"[0-9a-f]{64}", submission) is None
+        ):
+            errors.append(f"{entry_label} has no submitted matrix digest")
+        else:
+            submission_digests.append(submission)
+        if entry.get("target_min") != precision.get("target_min") or entry.get(
+            "target_max"
+        ) != precision.get("target_max"):
+            errors.append(f"{entry_label} target range differs from policy")
+        scale = _finite_number(
+            entry.get("scale_factor"), f"{entry_label}.scale_factor", errors
+        )
+        maximum = _finite_number(
+            entry.get("max_abs_error"), f"{entry_label}.max_abs_error", errors
+        )
+        mean = _finite_number(
+            entry.get("mean_abs_error"), f"{entry_label}.mean_abs_error", errors
+        )
+        if scale is not None:
+            scales.append(scale)
+            if scale <= 0:
+                errors.append(f"{entry_label} scale factor is not positive")
+        if maximum is not None:
+            maximum_errors.append(maximum)
+            if maximum < 0:
+                errors.append(f"{entry_label} maximum error is negative")
+        if mean is not None:
+            mean_errors.append(mean)
+            if mean < 0:
+                errors.append(f"{entry_label} mean error is negative")
+        if maximum is not None and mean is not None and mean > maximum:
+            errors.append(f"{entry_label} mean error exceeds maximum")
+
+    if len(original_digests) != len(set(original_digests)):
+        errors.append(f"{label}: original precision matrix identities are not unique")
+    if set(submission_digests) != set(receipt_matrix_digests):
+        errors.append(f"{label}: precision submissions differ from task receipts")
+    aggregates = (
+        ("scale_factor_min", min(scales) if scales else None),
+        ("scale_factor_max", max(scales) if scales else None),
+        ("max_abs_error", max(maximum_errors) if maximum_errors else None),
+        (
+            "mean_of_matrix_mean_abs_error",
+            fmean(mean_errors) if mean_errors else None,
+        ),
+    )
+    for field, recomputed in aggregates:
+        observed = precision.get(field)
+        if (
+            recomputed is None
+            or isinstance(observed, bool)
+            or not isinstance(observed, (int, float))
+            or not math.isclose(
+                float(observed), recomputed, rel_tol=1e-12, abs_tol=1e-12
+            )
+        ):
+            errors.append(f"{label}: precision aggregate {field} differs from evidence")
 
 
 def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
@@ -865,6 +978,12 @@ def _validate_remote_sampling_component_evidence(
         errors.append(f"{label}: provider task IDs are not unique")
     if len(receipt_matrix_digests) != len(set(receipt_matrix_digests)):
         errors.append(f"{label}: receipt matrix identities are not unique")
+    _validate_precision_evidence(
+        record,
+        label=label,
+        receipt_matrix_digests=receipt_matrix_digests,
+        errors=errors,
+    )
 
     if record.get("schema") == SYSTEM_COMPONENT_SCHEMA:
         transfers = record.get("transfer_accounting")
@@ -1027,6 +1146,12 @@ def _validate_training_provider_evidence(
             errors.append(f"{label}: training provider task IDs are not unique")
         if len(receipt_matrix_digests) != len(set(receipt_matrix_digests)):
             errors.append(f"{label}: training receipt matrix identities are not unique")
+        _validate_precision_evidence(
+            record,
+            label=label,
+            receipt_matrix_digests=receipt_matrix_digests,
+            errors=errors,
+        )
 
     if record.get("sampling_mode") != "sampling":
         errors.append(f"{label}: training sampling mode is not sampling")

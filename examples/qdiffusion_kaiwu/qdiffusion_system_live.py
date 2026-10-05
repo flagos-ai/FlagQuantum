@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import platform
 import socket
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -187,8 +188,12 @@ def run_live_system_probe(
     }
     run_completed = failure is None
     precision_reports = sampler.precision_reports
-    precision_complete = bool(precision_reports) and len(precision_reports) >= len(
-        receipts
+    precision_evidence = sampler.precision_evidence
+    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
+    precision_complete = bool(precision_reports) and (
+        len(precision_evidence) == len(precision_reports)
+        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
+        == receipt_matrix_digests
     )
     verified_provider_transport = real_provider_transport and isinstance(
         client, KaiwuSDKClient
@@ -277,6 +282,7 @@ def run_live_system_probe(
             ),
         },
         "precision_evidence_complete": precision_complete,
+        "precision_evidence": [asdict(evidence) for evidence in precision_evidence],
         "fallback_occurred": False,
         "retrieval_resubmitted": retrieval_resubmitted,
         "secrets_redacted": True,

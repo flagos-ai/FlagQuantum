@@ -11,6 +11,7 @@ import pytest
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_component_bundle,
     _validate_config,
+    _validate_precision_evidence,
     _validate_sampling_receipt,
     validate_acceptance,
 )
@@ -85,6 +86,62 @@ def test_complete_sampling_receipt_rejects_missing_or_extra_fields() -> None:
             errors=errors,
         )
         assert any("field set is incomplete" in error for error in errors)
+
+
+def _complete_precision_record() -> dict[str, Any]:
+    return {
+        "precision_policy": {
+            "target_min": -127,
+            "target_max": 127,
+            "matrix_count": 1,
+            "scale_factor_min": 2.0,
+            "scale_factor_max": 2.0,
+            "max_abs_error": 0.25,
+            "mean_of_matrix_mean_abs_error": 0.125,
+        },
+        "precision_evidence": [
+            {
+                "original_matrix_sha256": "6" * 64,
+                "submission_matrix_sha256": "7" * 64,
+                "scale_factor": 2.0,
+                "target_min": -127,
+                "target_max": 127,
+                "max_abs_error": 0.25,
+                "mean_abs_error": 0.125,
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        (lambda record: record["precision_evidence"].clear(), "evidence is missing"),
+        (
+            lambda record: record["precision_evidence"][0].__setitem__(
+                "submission_matrix_sha256", "8" * 64
+            ),
+            "submissions differ from task receipts",
+        ),
+        (
+            lambda record: record["precision_policy"].__setitem__("max_abs_error", 0.5),
+            "aggregate max_abs_error differs",
+        ),
+    ),
+)
+def test_per_matrix_precision_evidence_fails_closed(mutation, message: str) -> None:
+    record = _complete_precision_record()
+    mutation(record)
+    errors: list[str] = []
+
+    _validate_precision_evidence(
+        record,
+        label="precision",
+        receipt_matrix_digests=["7" * 64],
+        errors=errors,
+    )
+
+    assert any(message in error for error in errors)
 
 
 def _write_json(path: Path, payload: object) -> str:

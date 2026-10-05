@@ -96,6 +96,17 @@ def _system(
             "max_abs_error": 0.0,
             "mean_of_matrix_mean_abs_error": 0.0,
         },
+        "precision_evidence": [
+            {
+                "original_matrix_sha256": "6" * 64,
+                "submission_matrix_sha256": "7" * 64,
+                "scale_factor": 1.0,
+                "target_min": -127,
+                "target_max": 127,
+                "max_abs_error": 0.0,
+                "mean_abs_error": 0.0,
+            }
+        ],
         "training": {
             "objective": -0.5,
             "gradient_norm": 1.0,
@@ -255,6 +266,17 @@ def _components(
                         "max_abs_error": 0.0,
                         "mean_of_matrix_mean_abs_error": 0.0,
                     },
+                    "precision_evidence": [
+                        {
+                            "original_matrix_sha256": str(index + 5) * 64,
+                            "submission_matrix_sha256": str(index) * 64,
+                            "scale_factor": 1.0,
+                            "target_min": -127,
+                            "target_max": 127,
+                            "max_abs_error": 0.0,
+                            "mean_abs_error": 0.0,
+                        }
+                    ],
                     "precision_evidence_complete": True,
                     "task_receipts": [
                         {
@@ -390,7 +412,27 @@ def _portability(
         "returned_samples": 10,
         "remote_call_budget": 128,
         "remote_call_count": 1,
-        "precision_policy": {"matrix_count": 1},
+        "precision_policy": {
+            "name": "explicit-int8",
+            "target_min": -127,
+            "target_max": 127,
+            "matrix_count": 1,
+            "scale_factor_min": 1.0,
+            "scale_factor_max": 1.0,
+            "max_abs_error": 0.0,
+            "mean_of_matrix_mean_abs_error": 0.0,
+        },
+        "precision_evidence": [
+            {
+                "original_matrix_sha256": "9" * 64,
+                "submission_matrix_sha256": "8" * 64,
+                "scale_factor": 1.0,
+                "target_min": -127,
+                "target_max": 127,
+                "max_abs_error": 0.0,
+                "mean_abs_error": 0.0,
+            }
+        ],
         "fallback_occurred": False,
         "retrieval_resubmitted": False,
         "secrets_redacted": True,

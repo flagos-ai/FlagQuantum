@@ -13,6 +13,7 @@ import os
 import platform
 import socket
 import sys
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
@@ -272,9 +273,13 @@ def run_training_seed(
         if type(receipt["requested_samples"]) is int
     }
     precision_reports = sampler.precision_reports
-    precision_evidence_complete = bool(precision_reports) and len(
-        precision_reports
-    ) >= len(receipts)
+    precision_evidence = sampler.precision_evidence
+    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
+    precision_evidence_complete = bool(precision_reports) and (
+        len(precision_evidence) == len(precision_reports)
+        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
+        == receipt_matrix_digests
+    )
     verified_provider_transport = type(sampler.client) is KaiwuSDKClient
     qboson_hardware_used = bool(
         failure is None
@@ -353,6 +358,7 @@ def run_training_seed(
             ),
         },
         "precision_evidence_complete": precision_evidence_complete,
+        "precision_evidence": [asdict(evidence) for evidence in precision_evidence],
         "run_directory_name": run_directory.name if run_directory else None,
         "trained_energy_checkpoint_name": checkpoint_name,
         "trained_energy_checkpoint_sha256": checkpoint_sha256,

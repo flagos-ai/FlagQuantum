@@ -221,7 +221,13 @@ def test_integer_precision_is_applied_only_when_explicit() -> None:
     assert plain.last_precision_report is None
     assert scaled.last_precision_report is not None
     assert plain.precision_reports == ()
+    assert plain.precision_evidence == ()
     assert len(scaled.precision_reports) == 1
+    assert len(scaled.precision_evidence) == 1
+    assert (
+        scaled.precision_evidence[0].submission_matrix_sha256
+        == scaled.receipts[0].matrix_sha256
+    )
 
 
 def test_precision_reports_cover_distinct_inputs_that_share_one_remote_matrix() -> None:
@@ -245,6 +251,16 @@ def test_precision_reports_cover_distinct_inputs_that_share_one_remote_matrix() 
         pytest.approx(0.4),
         pytest.approx(0.49),
     ]
+    assert len(sampler.precision_evidence) == 2
+    assert (
+        len(
+            {evidence.original_matrix_sha256 for evidence in sampler.precision_evidence}
+        )
+        == 2
+    )
+    assert {
+        evidence.submission_matrix_sha256 for evidence in sampler.precision_evidence
+    } == {sampler.receipts[0].matrix_sha256}
 
 
 def test_result_identity_failure_is_not_replaced_by_fallback() -> None:

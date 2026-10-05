@@ -43,7 +43,26 @@ def _provider_training_record() -> dict[str, Any]:
         "remote_call_count": 1,
         "protein_remote_call_budget_per_seed": 10,
         "precision_report_count": 1,
-        "precision_policy": {"matrix_count": 1},
+        "precision_policy": {
+            "matrix_count": 1,
+            "target_min": -127,
+            "target_max": 127,
+            "scale_factor_min": 1.0,
+            "scale_factor_max": 1.0,
+            "max_abs_error": 0.0,
+            "mean_of_matrix_mean_abs_error": 0.0,
+        },
+        "precision_evidence": [
+            {
+                "original_matrix_sha256": "b" * 64,
+                "submission_matrix_sha256": "a" * 64,
+                "scale_factor": 1.0,
+                "target_min": -127,
+                "target_max": 127,
+                "max_abs_error": 0.0,
+                "mean_abs_error": 0.0,
+            }
+        ],
         "precision_evidence_complete": True,
         "task_receipts": [
             {

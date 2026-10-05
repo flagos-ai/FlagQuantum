@@ -14,6 +14,7 @@ import os
 import platform
 import socket
 import sys
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
@@ -248,6 +249,8 @@ def run_portability_replay(
         if isinstance(receipt["provider_target"], str)
     }
     precision_reports = sampler.precision_reports
+    precision_evidence = sampler.precision_evidence
+    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
     verified_transport = real_provider_transport and isinstance(client, KaiwuSDKClient)
     run_completed = failure is None
     portability_pass = bool(
@@ -258,7 +261,9 @@ def run_portability_replay(
         and token_constraints_passed
         and generated_device == "cuda:0"
         and precision_reports
-        and len(precision_reports) >= len(receipts)
+        and len(precision_evidence) == len(precision_reports)
+        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
+        == receipt_matrix_digests
     )
     return {
         "schema": SCHEMA,
@@ -326,6 +331,7 @@ def run_portability_replay(
                 else None
             ),
         },
+        "precision_evidence": [asdict(evidence) for evidence in precision_evidence],
         "trained_energy_checkpoint_sha256": trained_checkpoint_sha256,
         "artifacts": {
             "dataset_sha256": config["dataset"]["sha256"],

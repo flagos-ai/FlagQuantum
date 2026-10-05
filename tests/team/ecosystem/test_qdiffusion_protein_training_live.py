@@ -13,7 +13,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _workflow_artifact_identities,
     run_training_seed,
 )
-from flagquantum.ecosystem.kaiwu import KaiwuSampler
+from flagquantum.ecosystem.kaiwu import KaiwuPrecisionEvidence, KaiwuSampler
 
 pytestmark = pytest.mark.unit
 
@@ -246,6 +246,17 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     )
     precision_report = SimpleNamespace(
         scale_factor=2.0,
+        target_min=-127,
+        target_max=127,
+        max_abs_error=0.25,
+        mean_abs_error=0.125,
+    )
+    precision_evidence = KaiwuPrecisionEvidence(
+        original_matrix_sha256="2" * 64,
+        submission_matrix_sha256="1" * 64,
+        scale_factor=2.0,
+        target_min=-127,
+        target_max=127,
         max_abs_error=0.25,
         mean_abs_error=0.125,
     )
@@ -256,6 +267,7 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
             remote_call_count=1,
             receipts=(receipt,),
             precision_reports=(precision_report,),
+            precision_evidence=(precision_evidence,),
         ),
     )
 
@@ -293,6 +305,17 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["qboson_task_ids"] == ["provider-task"]
     assert record["requested_samples"] == 10
     assert record["precision_evidence_complete"] is True
+    assert record["precision_evidence"] == [
+        {
+            "original_matrix_sha256": "2" * 64,
+            "submission_matrix_sha256": "1" * 64,
+            "scale_factor": 2.0,
+            "target_min": -127,
+            "target_max": 127,
+            "max_abs_error": 0.25,
+            "mean_abs_error": 0.125,
+        }
+    ]
     assert record["precision_policy"] == {
         "name": "explicit-int8",
         "target_min": -127,
