@@ -130,6 +130,14 @@ python -m examples.compiler_optimize
 python -m examples.target_aware_compilation
 ```
 
+`examples/compiler_optimize.py` is the Compiler domain's ten-minute golden path.
+It reads the level vocabulary from `optimization_levels.py` and reports the gate
+count at every implemented level, shows level `2` reaching two gates on a circuit
+where level `1` stops at three, forwards a level through `compile`, and prints a
+reserved level failing closed with its reason. Re-run it after changing a pass
+set or a level's composition: it re-measures rather than re-asserting, so a
+level whose contract changed shows up as a changed count.
+
 Individual canonicalization functions are pipeline implementation details, not
 expert-facing entry points. Change or compose them through `optimize`.
 

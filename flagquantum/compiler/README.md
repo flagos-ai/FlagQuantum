@@ -18,11 +18,13 @@ python -m examples.target_aware_compilation
 python -m examples.compiler_synthesis
 ```
 
-The first example checks optimization against the original circuit. The second
-checks routing legality and numerical equivalence on a concrete topology. The
-third spells gates a target cannot run in the gates that target publishes, and
-checks each rewrite against the original on the shipped statevector engine; run
-it before changing an Euler form, an entangler cost, or a ladder. Use
+The first example checks optimization against the original circuit, prints the
+gate count at every implemented optimization level, and shows a reserved level
+failing closed. The second checks routing legality and numerical equivalence on a
+concrete topology. The third spells gates a target cannot run in the gates that
+target publishes, and checks each rewrite against the original on the shipped
+statevector engine; run it before changing an Euler form, an entangler cost, or a
+ladder. Use
 `optimize(program)` for target-independent optimization and
 `compile(program, coupling_map=...)` for target-aware compilation. Both take
 `optimization_level=`, which selects how much of the pass library runs and
