@@ -138,6 +138,27 @@ def _normalize_bitstring(
     return bits
 
 
+def _basis_projectors(
+    bits: Sequence[Sequence[int]],
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """One-hot projectors for a batch of basis states, built on the device.
+
+    The target table is lifted once and every projector is then a device
+    comparison against it. Writing each selected element from a host scalar
+    instead lifts one device scalar per target per projected wire, and those
+    lifts sit inside whatever region the caller is timing even though they are
+    plan construction rather than contraction. The returned tensor is indexed
+    `[target, wire]`.
+    """
+
+    targets = torch.as_tensor(bits, dtype=torch.int64, device=device)
+    columns = torch.arange(2, dtype=torch.int64, device=device)
+    return (columns.reshape(1, 1, 2) == targets.reshape(*targets.shape, 1)).to(dtype)
+
+
 def _amplitude_projection(
     plan: TensorNetworkContractionPlan,
     bitstring: int | str | Sequence[int],
@@ -147,14 +168,15 @@ def _amplitude_projection(
     bits = _normalize_bitstring(bitstring, plan.n_wires)
     reference = plan.nodes[0].tensor
     nodes = list(plan.nodes)
+    projectors = _basis_projectors(
+        [bits], device=reference.device, dtype=reference.dtype
+    )
     for wire, (label, bit) in enumerate(
         zip(plan.output_labels[1:], bits, strict=False)
     ):
-        projector = torch.zeros(2, dtype=reference.dtype, device=reference.device)
-        projector[bit] = 1
         nodes.append(
             TensorNetworkNode(
-                tensor=projector,
+                tensor=projectors[0, wire].contiguous(),
                 labels=(label,),
                 name=f"amplitude_projector_{wire}_{bit}",
                 metadata={"wire": wire, "bit": bit},
@@ -179,17 +201,11 @@ def _amplitude_batch_projection(
         max((label for node in plan.nodes for label in node.labels), default=0) + 1
     )
     nodes = list(plan.nodes)
+    projectors = _basis_projectors(bits, device=reference.device, dtype=reference.dtype)
     for wire, label in enumerate(plan.output_labels[1:]):
-        projector = torch.zeros(
-            (len(bits), 2),
-            dtype=reference.dtype,
-            device=reference.device,
-        )
-        for target, target_bits in enumerate(bits):
-            projector[target, target_bits[wire]] = 1
         nodes.append(
             TensorNetworkNode(
-                tensor=projector,
+                tensor=projectors[:, wire].contiguous(),
                 labels=(target_label, label),
                 name=f"amplitude_batch_projector_{wire}",
                 metadata={"wire": wire, "targets": len(bits)},
