@@ -189,6 +189,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         gradient_tests=(
             "tests/unit/test_hva_forward_tangent_triton.py::test_hva_forward_tangents_match_statevector_jacobian",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/heisenberg_hva_forward_tangent_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-MPS-001-A",
