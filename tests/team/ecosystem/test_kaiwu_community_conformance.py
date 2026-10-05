@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import itertools
+import os
 from typing import Any
 
 import numpy as np
@@ -12,15 +14,18 @@ from flagquantum.ecosystem.kaiwu import (
     ising_energy,
 )
 
-kaiwu_core = pytest.importorskip(
-    "kaiwu.core",
-    reason="Kaiwu Community is an optional conformance dependency",
-)
-
 pytestmark = pytest.mark.integration
+SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
+
+
+def _require_source_conformance() -> Any:
+    if os.environ.get(SOURCE_CONFORMANCE) != "1":
+        pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
+    return importlib.import_module("kaiwu.core")
 
 
 def test_energy_convention_matches_kaiwu_community() -> None:
+    kaiwu_core = _require_source_conformance()
     matrix = np.array([[0.5, 1.25, -0.5], [1.25, -1.0, 0.75], [-0.5, 0.75, 2.0]])
     solutions = np.array(list(itertools.product((-1, 1), repeat=3)))
 
@@ -37,6 +42,7 @@ def test_energy_convention_matches_kaiwu_community() -> None:
 
 
 def test_qubo_encoding_matches_kaiwu_community_gauge() -> None:
+    kaiwu_core = _require_source_conformance()
     qubo = np.array([[1.5, -2.0, 0.25], [-2.0, 3.0, 1.0], [0.25, 1.0, -0.5]])
 
     expected_matrix, expected_bias = kaiwu_core.qubo_matrix_to_ising_matrix(qubo.copy())
@@ -44,12 +50,6 @@ def test_qubo_encoding_matches_kaiwu_community_gauge() -> None:
 
     np.testing.assert_allclose(actual.matrix.numpy(), expected_matrix)
     assert actual.bias == pytest.approx(expected_bias)
-
-
-class _ExhaustiveKaiwuSolver(kaiwu_core.IsingSolver):  # type: ignore[misc]
-    def _solve(self, ising_matrix: np.ndarray | None = None) -> np.ndarray:
-        assert ising_matrix is not None
-        return np.array(list(itertools.product((-1, 1), repeat=ising_matrix.shape[0])))
 
 
 class _FlagQuantumExactFake:
@@ -68,9 +68,18 @@ def _minimum_energy(solver: Any, matrix: np.ndarray) -> float:
 
 
 def test_fake_and_kaiwu_solver_are_replaceable_for_consumer() -> None:
+    kaiwu_core = _require_source_conformance()
+
+    class ExhaustiveKaiwuSolver(kaiwu_core.IsingSolver):
+        def _solve(self, ising_matrix: np.ndarray | None = None) -> np.ndarray:
+            assert ising_matrix is not None
+            return np.array(
+                list(itertools.product((-1, 1), repeat=ising_matrix.shape[0]))
+            )
+
     matrix = np.array([[0.0, 2.0, -1.0], [2.0, 0.0, 0.5], [-1.0, 0.5, 0.0]])
 
     fake_energy = _minimum_energy(_FlagQuantumExactFake(), matrix)
-    kaiwu_energy = _minimum_energy(_ExhaustiveKaiwuSolver(), matrix)
+    kaiwu_energy = _minimum_energy(ExhaustiveKaiwuSolver(), matrix)
 
     assert fake_energy == kaiwu_energy

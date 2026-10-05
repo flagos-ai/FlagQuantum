@@ -22,6 +22,11 @@ ARTIFACT_PREFIXES = (
     "kaiwu-plugin-",
     "kaiwu-community-",
 )
+ARCHIVE_ROOT_PREFIXES = {
+    "flagquantum-qboson-": "FlagQuantum-",
+    "kaiwu-plugin-": "kaiwu-pytorch-plugin-",
+    "kaiwu-community-": "kaiwu-community-",
+}
 MAX_COMPRESSED_BYTES = 1024 * 1024 * 1024
 MAX_UNPACKED_BYTES = 5 * 1024 * 1024 * 1024
 MAX_MEMBERS = 250_000
@@ -31,7 +36,7 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _safe_archive_summary(path: Path) -> dict[str, int]:
+def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
     names: set[str] = set()
     file_count = 0
     directory_count = 0
@@ -53,6 +58,16 @@ def _safe_archive_summary(path: Path) -> dict[str, int]:
                 ):
                     raise ValueError(
                         f"archive member escapes its extraction root: {member.name!r}"
+                    )
+                if not member_path.parts or member_path.parts[0] != expected_root:
+                    raise ValueError(
+                        "archive member is outside its revision-bound root: "
+                        f"{member.name!r}"
+                    )
+                if len(member_path.parts) == 1 and not member.isdir():
+                    raise ValueError(
+                        "archive revision-bound root is not a directory: "
+                        f"{member.name!r}"
                     )
                 normalized = str(member_path)
                 if normalized in names:
@@ -176,7 +191,10 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
                 "revision": revision,
                 "sha256": observed_digest,
                 "compressed_bytes": artifact_path.stat().st_size,
-                **_safe_archive_summary(artifact_path),
+                **_safe_archive_summary(
+                    artifact_path,
+                    expected_root=(f"{ARCHIVE_ROOT_PREFIXES[prefix]}{revision[:10]}"),
+                ),
             }
         )
 

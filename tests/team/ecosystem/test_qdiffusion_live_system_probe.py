@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import json
+import os
 import platform
 from pathlib import Path
 
@@ -18,11 +20,14 @@ from flagquantum.remote.kaiwu import (
 )
 from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
-pytest.importorskip(
-    "kaiwu.torch_plugin",
-    reason="Kaiwu PyTorch Plugin is an optional conformance dependency",
-)
 pytestmark = pytest.mark.integration
+SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
+
+
+def _require_plugin_source() -> None:
+    if os.environ.get(SOURCE_CONFORMANCE) != "1":
+        pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
+    importlib.import_module("kaiwu.torch_plugin")
 
 
 class _IdentityClient:
@@ -93,6 +98,7 @@ def _config() -> dict[str, object]:
 
 
 def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
+    _require_plugin_source()
     client = _IdentityClient()
 
     record = run_live_system_probe(

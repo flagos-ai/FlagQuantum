@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import math
+import os
 
 import pytest
 import torch
@@ -19,12 +21,14 @@ from flagquantum.remote.kaiwu.contracts import (
     KaiwuTaskMode,
 )
 
-kaiwu_plugin = pytest.importorskip(
-    "kaiwu.torch_plugin",
-    reason="Kaiwu PyTorch Plugin is an optional conformance dependency",
-)
-
 pytestmark = pytest.mark.integration
+SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
+
+
+def _require_plugin_source() -> object:
+    if os.environ.get(SOURCE_CONFORMANCE) != "1":
+        pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
+    return importlib.import_module("kaiwu.torch_plugin")
 
 
 class _ExactShapeClient:
@@ -75,6 +79,7 @@ class _ExactShapeClient:
 
 
 def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> None:
+    kaiwu_plugin = _require_plugin_source()
     torch.manual_seed(7)
     machine = kaiwu_plugin.BoltzmannMachine(num_nodes=4, device="cpu")
     with torch.no_grad():
@@ -112,6 +117,7 @@ def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> N
 
 
 def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None:
+    _require_plugin_source()
     record = _run_qdiffusion_slice(torch.device("cpu"))
 
     assert math.isfinite(record["objective"])

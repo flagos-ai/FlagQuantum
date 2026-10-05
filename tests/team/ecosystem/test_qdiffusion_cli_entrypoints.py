@@ -21,6 +21,7 @@ ENTRYPOINTS = (
     "qdiffusion_system_development_probe",
     "qdiffusion_system_live",
     "validate_acceptance",
+    "verify_extracted_bundle",
     "verify_transfer_bundle",
 )
 

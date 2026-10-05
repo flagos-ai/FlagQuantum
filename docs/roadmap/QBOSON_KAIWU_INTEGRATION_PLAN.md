@@ -186,9 +186,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   validator; selective seed reporting and component replacement are rejected.
 - A credential-free local golden-path script now verifies clean checkouts at the
   pinned Kaiwu Community and Kaiwu PyTorch Plugin revisions, clears provider
-  credential variables, and runs conversion, lifecycle, sampler, plugin, and
-  live-probe contract tests without network access or provider quota. It is
-  explicitly local conformance evidence rather than A800 or QBoson evidence.
+  credential variables, explicitly gates source-only conformance without
+  declaring an unapproved dependency extra, and runs conversion, lifecycle,
+  sampler, plugin, and live-probe contract tests without network access or
+  provider quota. It is explicitly local conformance evidence rather than A800
+  or QBoson evidence.
 - Sampler calls now retain explicit transfer accounting for the plugin-produced
   CPU NumPy Ising matrix, canonical CPU float64 tensor, submitted host tuple,
   returned CPU int8 NumPy samples, cache use, and result shape. System evidence
@@ -207,9 +209,14 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   preventing an extra archive from bypassing manifest review.
 - Every documented QDiffusion Python entry point is now invoked as a module
   from the reviewed checkout with the user-site directory disabled. A
-  parameterized subprocess test starts all twelve commands from an unrelated
+  parameterized subprocess test starts all thirteen commands from an unrelated
   working directory with only the reviewed root on `PYTHONPATH`, preventing an
   older installed FlagQuantum from silently satisfying imports.
+- Transfer verification now binds each archive's internal top-level directory
+  to its declared revision. A separate post-extraction verifier compares every
+  regular file and the exact file/directory set with the reviewed archives,
+  rejecting mutation, omission, additions, symlinks, and special entries before
+  the source trees are used on either validation host.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

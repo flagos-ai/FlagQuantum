@@ -11,8 +11,8 @@ installed FlagQuantum cannot silently replace the current source tree.
 precision, remote-lifecycle, sampler, pinned Kaiwu Community, and pinned Kaiwu
 PyTorch Plugin contracts. It performs no network or provider operation, removes
 QBoson credential variables from the child environment, requires clean source
-checkouts at the reviewed revisions, and normally completes in under ten
-minutes:
+checkouts at the reviewed revisions, explicitly enables only those source-based
+conformance tests, and normally completes in under ten minutes:
 
 ```bash
 bash examples/qdiffusion_kaiwu/run_local_conformance.sh \
@@ -27,8 +27,13 @@ acceptance bundle.
 
 `verify_transfer_bundle.py` is the pre-extraction gate for approved host
 transfers. It verifies the three colocated source archives against their
-reviewed manifest and rejects unsafe tar members. Its output is a private
-transfer-preflight record, not execution or acceptance evidence.
+reviewed manifest, binds their internal roots to declared revisions, and rejects
+unsafe tar members. Its output is a private transfer-preflight record, not
+execution or acceptance evidence. After extraction,
+`verify_extracted_bundle.py` compares the otherwise empty extraction tree
+file-for-file with those archives and rejects changes, omissions, additions,
+links, and special entries. Run it with `python -B -s -m ...` before any other
+import from the extracted tree so Python cannot add bytecode first.
 Use `build_transfer_bundle.py` to create those three archives and the manifest
 from clean pinned Git checkouts in one new private directory. The builder runs
 the same verifier for both target aliases and refuses dirty or wrong-revision

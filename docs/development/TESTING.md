@@ -320,6 +320,23 @@ so the wrapper is where a tool that started overclaiming gets caught.
 variable this table does not name, so a new opt-in run shows up here rather than
 skipping quietly.
 
+### Opt-In External Source Conformance
+
+The Kaiwu integration is not a declared FlagQuantum dependency while its API
+proposal remains unapproved. Its conformance tests therefore run only through
+the pinned, credential-free source runner, which validates both Git revisions,
+places their `src` directories on `PYTHONPATH`, and sets the following explicit
+gate:
+
+| Variable | Tests | What it runs |
+| --- | --- | --- |
+| `FLAGQUANTUM_TEST_KAIWU_SOURCE` | `tests/team/ecosystem/test_kaiwu_community_conformance.py`, `test_kaiwu_pytorch_plugin_conformance.py`, and `test_qdiffusion_live_system_probe.py` | `examples/qdiffusion_kaiwu/run_local_conformance.sh` against the reviewed Kaiwu Community and Kaiwu PyTorch Plugin source revisions; it does not install or invoke the proprietary SDK |
+
+An ordinary test lane must not set this variable or resolve an arbitrary public
+package named `kaiwu`. If the integration is approved as an installable extra,
+replace this source-only gate with the reviewed dependency and CI lane rather
+than keeping two paths.
+
 ### Multi-Node Work
 
 Use this tier only on the launch host, which is the node that can reach its

@@ -125,15 +125,31 @@ python -s -m examples.qdiffusion_kaiwu.verify_transfer_bundle \
 
 Repeat with `jp-a800-172` on the other host. The verifier requires the exact
 three reviewed artifact roles, checks each revision-derived filename and
-SHA-256 digest, and scans gzip-tar members without extraction. Absolute or
-parent-traversing names, duplicate names, links, devices, FIFOs, and other
-special members fail closed. Its mode-0600 output records the machine hostname
-and target alias but is only transfer-preflight evidence; it proves neither A800
-execution nor QBoson use.
+SHA-256 digest, binds each archive's internal root to its declared revision, and
+scans gzip-tar members without extraction. Absolute or parent-traversing names,
+duplicate names, links, devices, FIFOs, and other special members fail closed.
+Its mode-0600 output records the machine hostname and target alias but is only
+transfer-preflight evidence; it proves neither A800 execution nor QBoson use.
 
-Confirm the source identities from the extracted trees and preserve the bundle
-manifest with the run evidence. Public Kaiwu Community source is conformance
-input, not a substitute for the proprietary SDK.
+Extract all three reviewed archives into one new, otherwise empty, private
+directory. Before importing or running any extracted source, use `-B` to prevent
+bytecode creation and bind every extracted file to the reviewed archives:
+
+```bash
+cd /absolute/private/extracted/FlagQuantum-REVIEWED_REVISION_PREFIX
+python -B -s -m examples.qdiffusion_kaiwu.verify_extracted_bundle \
+  --manifest /absolute/transfer/flagquantum-qboson-a800-bundle.manifest.json \
+  --extraction-root /absolute/private/extracted \
+  --target-host jp-a800-171 \
+  --output /absolute/private-evidence/extraction-preflight.json
+```
+
+Repeat with the other target alias. The extracted-tree verifier rejects changed,
+missing, extra, linked, or special filesystem entries, and records the exact
+manifest and source revisions. Preserve both preflight records and the bundle
+manifest with the run evidence. These records remain preflight-only evidence.
+Public Kaiwu Community source is conformance input, not a substitute for the
+proprietary SDK.
 
 ## 3. Run the development-only A800 rehearsal
 
