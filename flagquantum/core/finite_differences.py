@@ -34,8 +34,8 @@ from collections.abc import Callable
 
 import torch
 
+# A scalar-valued function of a parameter tensor shaped like the base.
 DifferenceEvaluator = Callable[[torch.Tensor], torch.Tensor]
-"""A scalar-valued function of a parameter tensor shaped like the base."""
 
 
 def default_difference_step(sample: torch.Tensor) -> float:
