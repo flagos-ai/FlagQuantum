@@ -190,6 +190,13 @@ class KaiwuSDKClient:
     def _solve_identity(
         self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
     ) -> tuple[tuple[int, ...], ...] | None:
+        stored = self._load_recovery_receipt(
+            self.recovery_receipt_path(receipt), receipt, matrix
+        )
+        if stored != receipt:
+            raise KaiwuSDKError(
+                "Kaiwu task receipt differs from its authoritative recovery bundle"
+            )
         key = self._identity_key(receipt)
         cached = self._solutions.get(key)
         if cached is not None:

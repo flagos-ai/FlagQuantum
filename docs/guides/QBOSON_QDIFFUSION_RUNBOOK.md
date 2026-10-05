@@ -335,6 +335,12 @@ To resume:
    digest;
 5. retain both the failed attempt record and resumed record.
 
+The separately saved job receipt is not a replacement for the SDK checkpoint
+directory. Every solve, status, and result operation reopens the deterministic
+recovery bundle there and requires an exact receipt match before contacting the
+SDK. Missing or edited checkpoint state must fail; never create a replacement
+receipt to continue a run.
+
 Do not delete or edit recovery bundles. Do not change the task prefix to bypass
 an identity conflict. Do not infer that timeout means cancellation. A corrupt
 or conflicting bundle must fail before SDK access and requires investigation,

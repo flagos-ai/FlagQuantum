@@ -100,6 +100,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   submission timestamp, and absent provider task/target identities. Local
   receipt editing therefore cannot fabricate the provider evidence that the
   documented SDK mapping does not expose.
+- Every SDK solve, poll, and result operation reopens the deterministic
+  recovery bundle and requires the in-memory receipt to match it exactly. The
+  generic job-restore API cannot bypass checkpoint validation, and a separately
+  saved receipt cannot replace missing authoritative SDK state.
 - A cross-layer integration test now composes the ecosystem sampler, Remote
   lifecycle, pinned SDK client, checkpoint scoping, independent energy
   validation, recovery persistence, and deduplication. Only the final vendor

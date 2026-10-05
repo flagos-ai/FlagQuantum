@@ -153,6 +153,56 @@ def test_restore_queries_same_identity_without_client_submit(
     assert _FakeOptimizer.created_options[0] == original_options
 
 
+def test_restore_rejects_receipt_that_differs_from_authoritative_recovery(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    first_client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=first_client,
+        task_name="forged-explicit-receipt",
+        mode="sampling",
+        requested_samples=10,
+    )
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+    payload["receipt"]["provider_task_id"] = "forged-provider-task"
+    receipt_path.write_text(json.dumps(payload), encoding="utf-8")
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restored_client, _ = _client(monkeypatch, tmp_path)
+    restored = restore_kaiwu_job(receipt_path, client=restored_client)
+    with pytest.raises(KaiwuSDKError, match="authoritative recovery bundle"):
+        restored.status()
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
+def test_restore_requires_authoritative_sdk_recovery_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    first_client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=first_client,
+        task_name="missing-sdk-recovery",
+        mode="sampling",
+        requested_samples=10,
+    )
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    first_client.recovery_receipt_path(job.receipt).unlink()
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restored_client, _ = _client(monkeypatch, tmp_path)
+    restored = restore_kaiwu_job(receipt_path, client=restored_client)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        restored.status()
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
 def test_new_client_reuses_preexisting_recovery_receipt(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
