@@ -161,6 +161,7 @@ def _final_host_record(
             "token_constraints_passed": generation.get("token_constraints_passed"),
             "invalid_sequence_count": 0,
         },
+        "transfer_accounting": system.get("transfer_accounting"),
         "acceptance": {"system": "pass", "application": application},
         "component_bundle_required": True,
     }

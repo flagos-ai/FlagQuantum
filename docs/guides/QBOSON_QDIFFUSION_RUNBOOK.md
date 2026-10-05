@@ -191,6 +191,12 @@ It records every distinct original-matrix precision report, all returned task
 receipts, the training update, generation constraints, and repeat retrieval of
 the last task.
 
+It also records the explicit host/device boundary: the energy model's CUDA
+device, the plugin-produced CPU NumPy Ising matrices, FlagQuantum's canonical
+CPU float64 matrices and submitted host tuples, returned CPU int8 samples,
+cache hits, and the CUDA target used when the plugin reconstructs tensors. The
+number of non-cached transfer records must equal the remote-call count.
+
 The current adapter deliberately fails the system gate when provider task or
 target fields are unavailable. Do not edit the output to make it pass. Inspect
 an approved, redacted real SDK response and update the provider mapping with

@@ -17,7 +17,7 @@ from .matrix import (
     prepare_integer_precision,
 )
 from .qdiffusion import bind_qdiffusion_builder, bound_qdiffusion_workflow
-from .sampler import KaiwuSampler
+from .sampler import KaiwuSampler, KaiwuTransferRecord
 
 __all__ = (
     "IntegerPrecisionReport",
@@ -25,6 +25,7 @@ __all__ = (
     "KaiwuMatrixValidationError",
     "KaiwuPrecisionError",
     "KaiwuSampler",
+    "KaiwuTransferRecord",
     "QuboIsingEncoding",
     "canonicalize_ising_matrix",
     "bind_qdiffusion_builder",

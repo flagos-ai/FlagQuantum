@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 from ...remote.kaiwu import (
@@ -24,6 +25,24 @@ from .matrix import (
 
 if TYPE_CHECKING:
     import numpy as np
+    import torch
+
+
+@dataclass(frozen=True, slots=True)
+class KaiwuTransferRecord:
+    """One observed host-side matrix/sample transfer through the sampler."""
+
+    input_type: str
+    input_device: str
+    input_dtype: str
+    matrix_shape: tuple[int, int]
+    canonical_device: str
+    canonical_dtype: str
+    submission_storage: str
+    returned_storage: str
+    returned_dtype: str
+    returned_shape: tuple[int, int]
+    cache_hit: bool
 
 
 class KaiwuSampler:
@@ -80,6 +99,7 @@ class KaiwuSampler:
         self._last_result: KaiwuTaskResult | None = None
         self._last_precision_report: IntegerPrecisionReport | None = None
         self._precision_reports: dict[str, IntegerPrecisionReport] = {}
+        self._transfer_records: list[KaiwuTransferRecord] = []
 
     @property
     def remote_call_count(self) -> int:
@@ -107,6 +127,12 @@ class KaiwuSampler:
 
         return tuple(self._precision_reports.values())
 
+    @property
+    def transfer_records(self) -> tuple[KaiwuTransferRecord, ...]:
+        """Return completed CPU-side matrix and sample boundary observations."""
+
+        return tuple(self._transfer_records)
+
     def solve(self, ising_matrix: object) -> np.ndarray:
         """Submit one unique matrix and return an ``int8`` NumPy spin array."""
 
@@ -120,6 +146,11 @@ class KaiwuSampler:
             ) from exc
 
         canonical = canonicalize_ising_matrix(cast(MatrixLike, ising_matrix))
+        input_device = str(getattr(ising_matrix, "device", "cpu"))
+        input_dtype = str(getattr(ising_matrix, "dtype", type(ising_matrix).__name__))
+        input_type = (
+            f"{type(ising_matrix).__module__}.{type(ising_matrix).__qualname__}"
+        )
         self._last_precision_report = None
         report: IntegerPrecisionReport | None = None
         if self._integer_target_range is not None:
@@ -147,7 +178,16 @@ class KaiwuSampler:
         if cached is not None:
             if report is not None:
                 self._precision_reports.setdefault(original_key, report)
-            return np.asarray(cached, dtype=np.int8).copy()
+            output: np.ndarray = np.asarray(cached, dtype=np.int8).copy()
+            self._record_transfer(
+                input_type=input_type,
+                input_device=input_device,
+                input_dtype=input_dtype,
+                canonical=canonical,
+                output=output,
+                cache_hit=True,
+            )
+            return output
         job = self._jobs.get(cache_key)
         if job is None:
             if self._remote_call_count >= self._max_remote_calls:
@@ -172,4 +212,41 @@ class KaiwuSampler:
         result = job.wait(timeout=self._timeout, poll_interval=self._poll_interval)
         self._last_result = result
         self._cache[cache_key] = result.samples
-        return np.asarray(result.samples, dtype=np.int8).copy()
+        output = cast("np.ndarray", np.asarray(result.samples, dtype=np.int8).copy())
+        self._record_transfer(
+            input_type=input_type,
+            input_device=input_device,
+            input_dtype=input_dtype,
+            canonical=canonical,
+            output=output,
+            cache_hit=False,
+        )
+        return output
+
+    def _record_transfer(
+        self,
+        *,
+        input_type: str,
+        input_device: str,
+        input_dtype: str,
+        canonical: torch.Tensor,
+        output: np.ndarray,
+        cache_hit: bool,
+    ) -> None:
+        canonical_shape = cast(tuple[int, int], tuple(canonical.shape))
+        output_shape = cast(tuple[int, int], tuple(output.shape))
+        self._transfer_records.append(
+            KaiwuTransferRecord(
+                input_type=input_type,
+                input_device=input_device,
+                input_dtype=input_dtype,
+                matrix_shape=canonical_shape,
+                canonical_device=str(canonical.device),
+                canonical_dtype=str(canonical.dtype),
+                submission_storage="cpu_python_tuple",
+                returned_storage="cpu_numpy",
+                returned_dtype=str(output.dtype),
+                returned_shape=output_shape,
+                cache_hit=cache_hit,
+            )
+        )

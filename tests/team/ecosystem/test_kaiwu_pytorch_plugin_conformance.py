@@ -121,3 +121,14 @@ def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None
     assert 0 < record["remote_call_count"] <= record["remote_call_budget"]
     assert record["task_count"] == record["remote_call_count"]
     assert record["fallback_occurred"] is False
+    transfers = record["transfer_accounting"]
+    assert transfers["matrix_origin_device"] == "cpu"
+    assert transfers["returned_sample_target_device"] == "cpu"
+    assert len(transfers["sampler_boundaries"]) >= record["remote_call_count"]
+    assert all(
+        boundary["input_type"] == "numpy.ndarray"
+        and boundary["input_device"] == "cpu"
+        and boundary["canonical_device"] == "cpu"
+        and boundary["returned_storage"] == "cpu_numpy"
+        for boundary in transfers["sampler_boundaries"]
+    )

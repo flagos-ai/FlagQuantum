@@ -14,6 +14,7 @@ import os
 import platform
 import re
 import socket
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -207,6 +208,17 @@ def _execute_qdiffusion_slice(
         "proposal_device": str(next(generator.proposal_model.parameters()).device),
         "energy_device": str(next(generator.energy_model.parameters()).device),
         "generated_device": str(generated.device),
+        "transfer_accounting": {
+            "matrix_origin_device": str(
+                next(generator.energy_model.parameters()).device
+            ),
+            "sampler_boundaries": [
+                asdict(record) for record in sampler.transfer_records
+            ],
+            "returned_sample_target_device": str(
+                next(generator.energy_model.parameters()).device
+            ),
+        },
         "fallback_occurred": False,
     }
 

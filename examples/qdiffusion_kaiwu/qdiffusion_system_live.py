@@ -268,6 +268,7 @@ def run_live_system_probe(
             "generated_tokens": slice_record.get("generated_tokens"),
             "token_constraints_passed": slice_record.get("token_constraints_passed"),
         },
+        "transfer_accounting": slice_record.get("transfer_accounting"),
         "acceptance": {
             "system": "pass" if system_acceptance else "fail",
             "application": "not_run",

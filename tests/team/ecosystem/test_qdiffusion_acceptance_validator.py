@@ -120,6 +120,19 @@ def _metrics(*, cosine: float, uniqueness: float, repeat: float) -> dict[str, fl
 
 
 def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
+    transfer_boundary = {
+        "input_type": "numpy.ndarray",
+        "input_device": "cpu",
+        "input_dtype": "float32",
+        "matrix_shape": [3, 3],
+        "canonical_device": "cpu",
+        "canonical_dtype": "torch.float64",
+        "submission_storage": "cpu_python_tuple",
+        "returned_storage": "cpu_numpy",
+        "returned_dtype": "int8",
+        "returned_shape": [10, 3],
+        "cache_hit": False,
+    }
     record = {
         "schema": "flagquantum.qboson_qdiffusion_acceptance",
         "version": "1.0",
@@ -171,6 +184,11 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
             "parameter_delta_max": 0.01,
         },
         "generation": {"token_constraints_passed": True, "invalid_sequence_count": 0},
+        "transfer_accounting": {
+            "matrix_origin_device": "cuda:0",
+            "sampler_boundaries": [transfer_boundary, dict(transfer_boundary)],
+            "returned_sample_target_device": "cuda:0",
+        },
         "attempted_seeds": [1701, 1702, 1703],
         "baseline_metrics": _metrics(cosine=0.5, uniqueness=1.0, repeat=0.0),
         "guided_metrics": _metrics(cosine=0.4, uniqueness=0.96, repeat=0.04),

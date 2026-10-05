@@ -527,6 +527,66 @@ def _validate_system_record(
         errors.append(f"{label}: token constraints did not pass")
     if generation.get("invalid_sequence_count") != 0:
         errors.append(f"{label}: invalid generated sequences were observed")
+    transfers = _mapping(
+        record.get("transfer_accounting"), f"{label}.transfer_accounting", errors
+    )
+    requested_device = record.get("requested_cuda_device")
+    if transfers.get("matrix_origin_device") != requested_device:
+        errors.append(f"{label}: matrix origin was not the requested CUDA device")
+    if transfers.get("returned_sample_target_device") != requested_device:
+        errors.append(f"{label}: returned samples did not target the CUDA device")
+    boundaries = transfers.get("sampler_boundaries")
+    if not isinstance(boundaries, list) or not boundaries:
+        errors.append(f"{label}: sampler transfer accounting is missing")
+    else:
+        non_cached = 0
+        for index, raw_boundary in enumerate(boundaries):
+            boundary = _mapping(
+                raw_boundary,
+                f"{label}.transfer_accounting.sampler_boundaries[{index}]",
+                errors,
+            )
+            if boundary.get("cache_hit") is False:
+                non_cached += 1
+            expected_fields = {
+                "input_type": "numpy.ndarray",
+                "input_device": "cpu",
+                "canonical_device": "cpu",
+                "canonical_dtype": "torch.float64",
+                "submission_storage": "cpu_python_tuple",
+                "returned_storage": "cpu_numpy",
+                "returned_dtype": "int8",
+            }
+            for field, expected in expected_fields.items():
+                if boundary.get(field) != expected:
+                    errors.append(
+                        f"{label}.transfer_accounting.sampler_boundaries[{index}]."
+                        f"{field}: expected {expected}"
+                    )
+            matrix_shape = boundary.get("matrix_shape")
+            returned_shape = boundary.get("returned_shape")
+            if (
+                not isinstance(matrix_shape, list)
+                or len(matrix_shape) != 2
+                or matrix_shape[0] != matrix_shape[1]
+                or any(type(size) is not int or size <= 0 for size in matrix_shape)
+            ):
+                errors.append(f"{label}: invalid transferred matrix shape")
+            if (
+                not isinstance(returned_shape, list)
+                or len(returned_shape) != 2
+                or any(type(size) is not int or size <= 0 for size in returned_shape)
+                or (
+                    isinstance(matrix_shape, list)
+                    and len(matrix_shape) == 2
+                    and returned_shape[1] != matrix_shape[0]
+                )
+            ):
+                errors.append(f"{label}: invalid returned sample shape")
+        if type(call_count) is int and non_cached != call_count:
+            errors.append(
+                f"{label}: transfer accounting differs from remote-call count"
+            )
     acceptance = _mapping(record.get("acceptance"), f"{label}.acceptance", errors)
     if acceptance.get("system") != "pass":
         errors.append(f"{label}: system acceptance did not pass")
@@ -709,6 +769,7 @@ def _validate_component_bundle(
             "retrieval_resubmitted",
             "secrets_redacted",
             "precision_policy",
+            "transfer_accounting",
         )
         for field in copied_fields:
             if component.get(field) != final.get(field):

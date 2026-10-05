@@ -129,6 +129,16 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert precision["matrix_count"] >= record["remote_call_count"]
     assert 0 < precision["scale_factor_min"] <= precision["scale_factor_max"]
     assert 0 <= precision["mean_of_matrix_mean_abs_error"] <= precision["max_abs_error"]
+    transfers = record["transfer_accounting"]
+    assert transfers["matrix_origin_device"] == "cpu"
+    assert transfers["returned_sample_target_device"] == "cpu"
+    assert (
+        sum(
+            boundary["cache_hit"] is False
+            for boundary in transfers["sampler_boundaries"]
+        )
+        == record["remote_call_count"]
+    )
 
 
 def test_private_writer_rejects_credentials_before_creating_file(

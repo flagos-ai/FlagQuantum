@@ -67,6 +67,25 @@ def _system(host: str, role: str, task_id: str) -> dict[str, Any]:
             "parameter_delta_max": 0.01,
         },
         "generation": {"token_constraints_passed": True},
+        "transfer_accounting": {
+            "matrix_origin_device": "cuda:0",
+            "sampler_boundaries": [
+                {
+                    "input_type": "numpy.ndarray",
+                    "input_device": "cpu",
+                    "input_dtype": "float32",
+                    "matrix_shape": [3, 3],
+                    "canonical_device": "cpu",
+                    "canonical_dtype": "torch.float64",
+                    "submission_storage": "cpu_python_tuple",
+                    "returned_storage": "cpu_numpy",
+                    "returned_dtype": "int8",
+                    "returned_shape": [10, 3],
+                    "cache_hit": False,
+                }
+            ],
+            "returned_sample_target_device": "cuda:0",
+        },
         "acceptance": {"system": "pass", "application": "not_run"},
     }
 

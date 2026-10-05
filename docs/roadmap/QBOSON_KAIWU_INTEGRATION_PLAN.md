@@ -169,6 +169,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   credential variables, and runs conversion, lifecycle, sampler, plugin, and
   live-probe contract tests without network access or provider quota. It is
   explicitly local conformance evidence rather than A800 or QBoson evidence.
+- Sampler calls now retain explicit transfer accounting for the plugin-produced
+  CPU NumPy Ising matrix, canonical CPU float64 tensor, submitted host tuple,
+  returned CPU int8 NumPy samples, cache use, and result shape. System evidence
+  also records the A800 device that originated the matrix and received the
+  reconstructed samples; the final validator rejects missing or inconsistent
+  A800-to-CPU and CPU-to-A800 boundary records.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

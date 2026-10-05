@@ -112,6 +112,18 @@ def test_identical_matrix_is_deduplicated_and_returns_a_copy() -> None:
     assert second[0, 0] == 1
     assert sampler.remote_call_count == 1
     assert len(client.submitted) == 1
+    assert len(sampler.transfer_records) == 2
+    assert sampler.transfer_records[0].input_type == "builtins.list"
+    assert sampler.transfer_records[0].input_device == "cpu"
+    assert sampler.transfer_records[0].canonical_device == "cpu"
+    assert sampler.transfer_records[0].canonical_dtype == "torch.float64"
+    assert sampler.transfer_records[0].submission_storage == "cpu_python_tuple"
+    assert sampler.transfer_records[0].returned_storage == "cpu_numpy"
+    assert sampler.transfer_records[0].returned_dtype == "int8"
+    assert sampler.transfer_records[0].matrix_shape == (3, 3)
+    assert sampler.transfer_records[0].returned_shape == (10, 3)
+    assert sampler.transfer_records[0].cache_hit is False
+    assert sampler.transfer_records[1].cache_hit is True
 
 
 def test_remote_call_budget_fails_before_second_unique_submission() -> None:
