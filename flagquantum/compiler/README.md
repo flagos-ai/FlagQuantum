@@ -409,6 +409,45 @@ entanglers, up to one global phase.
 holds the reach, cost, and phase measurement, and cross-checks the entangler
 count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.
 
+An operator no target vocabulary names reaches this stage as an instruction
+carrying a matrix, and four implementations answer it: the KAK route above, the
+product-first `_local_replacement`, the `_matrix_replacement` that chooses
+between them, and `split_two_qubit_blocks`, which re-spells such a matrix as its
+two single-qubit factors. They are one boundary with several implementations, so
+[test_two_qubit_decomposition_conformance.py](../../tests/team/compiler/test_two_qubit_decomposition_conformance.py)
+states their shared postconditions once and drives all four through every one of
+them. The routes do not share an observable convention, and the suite asserts two
+rules rather than one: the synthesis routes preserve the source unitary up to one
+global phase -- the instrument is the overlap, which cannot see one, and every
+route's worst deviation over the 41-case family is below `1.8e-14` -- while the
+fold route is exact entrywise, at `1.2e-16`, because `_product_factors` reads the
+Kronecker scale into the emitted factors and records no phase at all. The same
+input also shows why the phase assertion is an arc rather than an equality: the
+phase of the KAK answer genuinely depends on the entangler, spreading over an arc
+of up to `5.71` radians across the six of them, and 40 of the 41 cases move by at
+least a quarter turn. The floor is a quarter turn and not a half turn because every
+such difference is a whole number of quarter turns while which multiple a case
+lands on is not portable: one point of the family spreads by two quarter turns on
+arm64 and by one on x86-64, since the phase it is read from sits on a grid
+boundary and the two `libm`s round it either way. Reach is asserted as a count per
+route per entangler arm rather than as a capability, because a product of two
+single-qubit unitaries is answered by the product route on a target that publishes
+no entangler, while the KAK route refuses every one of them.
+
+The suite also records one diagnosed refusal rather than a passing test. A
+two-qubit unitary whose Weyl coordinates have `b == c` makes `m2` in
+`_weyl_decomposition` exactly degenerate, and `_diagonalize_m2`'s acceptance
+tolerance of `1e-13` sits below that class's intrinsic reconstruction residual of
+about `2.3e-9`, so the diagonalizer fails on all 100 attempts and raises the
+two-qubit Weyl decomposition error rather than a decomposition. Which matrices hit
+it depends on the local frames a degenerate Weyl point is dressed in, not on the
+point alone, and `legalize_native_gates` propagates that bare `ValueError` where
+every other failure it can reach a caller with is wrapped in
+`NativeGateLegalizationError`. The suite therefore pins a family measured to be
+refusal-free under a ten-frame sweep per point, and
+`test_the_near_product_band_is_refused_by_both_routes` documents the escape as a
+limitation rather than endorsing it.
+
 The ten passes are one boundary with ten implementations of the same task --
 delete work that cannot change an observable -- so a new or rewritten pass is
 accepted only when it satisfies the same postconditions as the rest.
