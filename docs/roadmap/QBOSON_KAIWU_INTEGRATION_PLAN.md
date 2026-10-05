@@ -128,6 +128,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   weights are not in the Git tree. The acceptance config now freezes tokenizer
   and ESM2 content hashes plus training settings, and both host records must
   share the trained primary-host energy-checkpoint digest.
+- An offline protein-artifact preflight now verifies exact file/tree identities,
+  rejects symlinks and implicit path ambiguity, and emits a private record that
+  cannot be mistaken for acceptance evidence.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

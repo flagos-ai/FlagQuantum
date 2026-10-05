@@ -253,6 +253,25 @@ energy backbones in the first acceptance scope. The guided energy checkpoint is
 then produced by the frozen training procedure. Record its digest in both host
 records; the replay host must load that exact primary-host artifact.
 
+Before either host run, verify the four staged inputs offline. File artifacts
+use ordinary SHA-256; directory snapshots use the path-aware
+`tree-sha256-v1` algorithm implemented by the preflight tool. The tool rejects
+relative paths, symlinks, special files, digest mismatches, and existing output
+records:
+
+```bash
+python examples/qdiffusion_kaiwu/preflight_protein_artifacts.py \
+  --config /absolute/evidence/acceptance-config.json \
+  --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --base-checkpoint /absolute/artifacts/dplm_150m \
+  --tokenizer /absolute/artifacts/dplm_150m \
+  --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D \
+  --output /absolute/evidence/artifact-preflight.json
+```
+
+Run with network access disabled. The mode-0600 output deliberately declares
+itself preflight-only and is not evidence of a successful QBoson run.
+
 ## 10. Assemble and validate final evidence
 
 The live-system probe record is an attempt record, not by itself the final
