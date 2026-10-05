@@ -22,10 +22,7 @@ from .factorization import (
     _split_pair_matrix_bucket,
     _z_sum_dense_weights,
 )
-from .models import (
-    MPSConfig,
-    MPSTruncationRecord,
-)
+from .models import MPSConfig, MPSTruncationRecord
 from .one_site_dispatch import _apply_mps_one_site, _mps_two_site_rollout_enabled
 from .planning import MPSPlanningMixin
 
