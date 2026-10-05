@@ -988,12 +988,14 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. SV-001-A
-through SV-008-A, GR-001-A through GR-002-A, MPS-001, MPS-003 through MPS-007,
-and MEAS-001 through MEAS-003 are provisional after evidenced support-window
-validation; MPS-001 remains opt-in for the end-to-end reason above, while the
-other listed routes have evidenced default-dispatch promotions;
-the other 14 implementations remain experimental.
+The current 26 semantics and 33 implementations are implemented. The 24 direct
+Triton `-A` implementations from SV-001 through SV-008, GR-001 through GR-006,
+MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
+evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
+reason above, while the other listed routes have evidenced default-dispatch
+promotions. The two generic-autograd Triton `-B` implementations, the two NUM
+implementations, and the five explicit FlagTree implementations remain
+experimental, for nine experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
