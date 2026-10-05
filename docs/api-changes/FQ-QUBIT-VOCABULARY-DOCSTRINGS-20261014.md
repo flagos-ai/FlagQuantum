@@ -540,23 +540,24 @@ only for `branches: [main]` and this pull request's base is a feature branch, so
 four are local runs of the selection expression rather than CI results — the same
 distinction this record's Evidence section was corrected for once already.
 
-The fix is in the last two of this slice's eight commits — the first six are the
-surface and the ledger, the seventh reads the docstring's two halves once and memoizes
-them, the eighth fixes the loop-variable reuse that made both vocabulary tools
-type-check for the first time. It is described where it lives rather than here: the two
-halves of a docstring are now read in one traversal and memoized under a content digest
-of the tree, with three tests that fail if the digest is weakened to a size-and-mtime
-stamp, if the memo is deleted, or if the `_example_lines` early return stops matching
-the loop it replaces.
+The fix is in the seventh and eighth of the nine commits on the head branch — the first
+six are the surface and the ledger, the seventh reads the docstring's two halves once
+and memoizes them, the eighth fixes the loop-variable reuse that made both vocabulary
+tools type-check for the first time, and the ninth is this record. It is described where
+it lives rather than here: the two halves of a docstring are now read in one traversal
+and memoized under a content digest of the tree, with three tests that fail if the
+digest is weakened to a size-and-mtime stamp, if the memo is deleted, or if the
+`_example_lines` early return stops matching the loop it replaces.
 
-"Eight commits" is the shape of the head branch, and it is worth saying which shape the
-content has *after* landing, because the two are different and the difference is not
-recoverable from the stack branch alone. The slice was squash-merged onto
-`feat/qubit-vocabulary-algorithms` as `0e617c1d`, whose tree is byte-identical to this
-branch's eighth commit; the eight messages above are in the merged commit's pull
-request and in this branch, and the stack branch carries their content as one commit.
-That is also why this record is committed separately from the two fixes it describes:
-its own file changes in none of them, so it can be read against either shape.
+Which shape the content has *after* landing is worth stating, because the head branch
+and the stack branch no longer agree about it and the stack branch alone does not record
+the difference. The first eight commits were squash-merged onto
+`feat/qubit-vocabulary-algorithms` as `0e617c1d`, whose tree is byte-identical to the
+eighth commit's; the ninth is this record, committed separately precisely because its
+own file changes in none of the preceding eight, so it can be read against either shape.
+The stack branch therefore carries eight commits' content as one commit and this record
+as a second, while the head branch carries all nine separately — the same content, two
+histories, and `git rev-parse <ref>^{tree}` at the two tips is what shows it.
 
 The lane readings above were taken after the eighth, so they are the cost of the slice
 as it will land rather than the cost it had when the surface was added. That
