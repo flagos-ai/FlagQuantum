@@ -112,7 +112,9 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # beside one.
     frozen = evidence["observations"]["frozen_circuit"]
     assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
-    assert frozen["manifest"] == "benchmarks/manifests/statevector_speed_workload_v2.json"
+    assert (
+        frozen["manifest"] == "benchmarks/manifests/statevector_speed_workload_v2.json"
+    )
     assert frozen["n_wires"] == _MODULE.N_WIRES == 22
     assert frozen["depth"] == _MODULE.DEPTH == 8
     assert frozen["cross_shard_gate_fraction"] == _MODULE.CROSS_SHARD_GATE_FRACTION

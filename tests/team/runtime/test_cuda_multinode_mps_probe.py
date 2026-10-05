@@ -434,6 +434,79 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
         assert resolved not in json.dumps(evidence)
 
 
+def test_the_frozen_rung_is_checked_against_the_ladder_file_it_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rung is a copy, so it is verified against the file it was copied from.
+
+    A check that cannot fail is decoration, so each way the copy could drift
+    from the ladder is exercised here: a fingerprint that covers every rung
+    shape, an acceptance name, and the shape of the rung this probe reads.
+    """
+
+    ladder = _MODULE._contract_module(
+        "internal/evidence/general_mps_speed_ladder_v1.py",
+        "flagquantum_probe_mps_speed_ladder_for_test",
+    )
+    real = _MODULE._contract_module
+
+    def with_ladder(replacement: object) -> None:
+        def loader(relative_path: str, module_name: str):
+            if relative_path.endswith("general_mps_speed_ladder_v1.py"):
+                return replacement
+            return real(relative_path, module_name)
+
+        monkeypatch.setattr(_MODULE, "_contract_module", loader)
+
+    # Unmodified, it agrees -- otherwise everything below would pass trivially.
+    assert _MODULE._frozen_circuit_observation() == _ARTIFACT_FROZEN_CIRCUIT
+
+    class Drifted:
+        ACCEPTANCE = ladder.ACCEPTANCE
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return "0" * 64
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return ladder.rung(name)
+
+    with_ladder(Drifted())
+    with pytest.raises(RuntimeError, match="frozen ladder disagrees"):
+        _MODULE._frozen_circuit_observation()
+
+    class Renamed:
+        ACCEPTANCE = "matched_speed_16384sites_chi64"
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return ladder.ladder_fingerprint()
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return ladder.rung(name)
+
+    with_ladder(Renamed())
+    with pytest.raises(RuntimeError, match="publishes its speedup at"):
+        _MODULE._frozen_circuit_observation()
+
+    class Moved:
+        ACCEPTANCE = ladder.ACCEPTANCE
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return ladder.ladder_fingerprint()
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return {**ladder.rung(name), "n_sites": 4096}
+
+    with_ladder(Moved())
+    with pytest.raises(RuntimeError, match="declares n_sites=4096"):
+        _MODULE._frozen_circuit_observation()
+
+
 def _artifact_kwargs(**overrides: object) -> dict:
     """The shape `_artifact` needs, with every observation retracted by default."""
 

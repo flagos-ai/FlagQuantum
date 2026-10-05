@@ -456,6 +456,37 @@ def _frozen_circuit_observation() -> dict[str, Any]:
             "the contract's own workload builder derives "
             f"{builder_count} parameters where its manifest declares {declared}"
         )
+    # The rung is a copy inside the manifest, so it is checked against the
+    # ladder file the manifest names: the recomputed fingerprint covers every
+    # rung shape, the acceptance name and the step count, which is what makes
+    # the number below a fact about a committed file rather than a table beside
+    # one. The shape is then read from that file rather than from the copy.
+    ladder = _contract_module(
+        "internal/evidence/general_mps_speed_ladder_v1.py",
+        "flagquantum_probe_mps_speed_ladder",
+    )
+    recomputed = ladder.ladder_fingerprint()
+    if recomputed != speed["ladder_fingerprint"]:
+        raise RuntimeError(
+            "the contract's frozen ladder disagrees with the ladder file it "
+            f"names: {recomputed} against {speed['ladder_fingerprint']}"
+        )
+    if ladder.ACCEPTANCE != RELEASE_CONFIGURATION:
+        raise RuntimeError(
+            f"the frozen ladder publishes its speedup at {ladder.ACCEPTANCE!r}, "
+            f"but this probe reads {RELEASE_CONFIGURATION!r}"
+        )
+    measured_rung = ladder.rung(RELEASE_CONFIGURATION)
+    for field, expected in (
+        ("n_sites", RELEASE_N_SITES),
+        ("trained_max_bond", RELEASE_MAX_BOND),
+    ):
+        if int(measured_rung[field]) != expected:
+            raise RuntimeError(
+                f"the ladder's own rung {RELEASE_CONFIGURATION!r} declares "
+                f"{field}={measured_rung[field]!r}, but this probe reads "
+                f"{expected!r}"
+            )
     circuit = _forward_circuit()
     bound = len(
         {
@@ -477,30 +508,37 @@ def _frozen_circuit_observation() -> dict[str, Any]:
     }
 
 
+def _contract_module(relative_path: str, module_name: str):
+    """Load one file the release contract names, without touching `sys.path`.
+
+    Loaded under a private module name so it cannot shadow, or be shadowed by,
+    anything else that happens to be on the path.
+    """
+
+    source = RELEASE_MANIFEST.parent.parent / relative_path
+    if not source.exists():
+        raise RuntimeError(f"the contract names a file that is missing: {source}")
+    spec = importlib.util.spec_from_file_location(module_name, source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"the contract names a file that is not importable: {source}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _capacity_workload_parameter_count() -> int:
     """The leaf count the contract's own workload builder derives.
 
     The builder is the file the manifest names as its workload, so importing it
     and asking for the count checks the manifest against its source rather than
-    against this probe. It is loaded under a private module name so it cannot
-    shadow or be shadowed by anything else on the path.
+    against this probe.
     """
 
-    source = (
-        RELEASE_MANIFEST.parent.parent / "internal/evidence/general_mps_capacity_16.py"
+    builder = _contract_module(
+        "internal/evidence/general_mps_capacity_16.py",
+        "flagquantum_probe_mps_capacity_builder",
     )
-    if not source.exists():
-        raise RuntimeError(f"the contract's workload builder is missing: {source}")
-    spec = importlib.util.spec_from_file_location(
-        "flagquantum_probe_mps_capacity_builder", source
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError(
-            f"the contract's workload builder is not importable: {source}"
-        )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return int(module.parameter_count())
+    return int(builder.parameter_count())
 
 
 def _bind_trainable(
