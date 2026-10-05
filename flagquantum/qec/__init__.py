@@ -36,6 +36,10 @@ from .decoders import (
 )
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
+from .dem_circuit import (
+    circuit_from_detector_error_model,
+    detector_error_model_from_circuit,
+)
 from .dem_construction import CssCodeMatrices, css_code_matrices
 from .logical import certify_logical_product, derive_anticommuting_logical_product
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
@@ -119,10 +123,12 @@ __all__ = (
     "StreamingDecoder",
     "build_memory_circuit",
     "certify_logical_product",
+    "circuit_from_detector_error_model",
     "derive_anticommuting_logical_product",
     "decoder_context_from_memory_circuit",
     "css_code_matrices",
     "decoder_names",
+    "detector_error_model_from_circuit",
     "get_decoder",
     "register_decoder",
     "run_repetition_memory_experiment",

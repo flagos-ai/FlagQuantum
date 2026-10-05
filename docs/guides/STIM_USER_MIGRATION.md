@@ -264,6 +264,37 @@ back as the identical double — where Stim's own printer uses the platform's
 digit; the writer's own precision check is in
 [`flagquantum/qec/IMPLEMENTATION.md`](../../flagquantum/qec/IMPLEMENTATION.md).
 
+## Read a model back into a circuit
+
+Stim's `compile_detector_sampler` turns a detector error model into something
+that draws shots from it, and the same route exists on this side. A model built
+here is not a dead end: `circuit_from_detector_error_model` writes it as the
+circuit it already is — one wire per detector, one per observable, one
+Pauli-frame channel per fault — and `detector_error_model_from_circuit` reads it
+back.
+
+```python
+from flagquantum.qec import (
+    circuit_from_detector_error_model,
+    detector_error_model_from_circuit,
+)
+
+realization = circuit_from_detector_error_model(built)
+print(realization.n_wires, len(realization.instructions))
+# 9 24  -- one wire per detector and observable, one frame per mechanism
+same = detector_error_model_from_circuit(realization, num_detectors=built.num_detectors)
+print(same.num_detectors, same.num_observables, same.num_errors, same == built)
+# 8 1 15 True  -- the model this began from rather than one like it
+```
+
+What comes back is the model the trip started from, error ids included, because
+the two halves of a frame are read from different parts of the instruction: the
+wire list and the operators say which targets a fault flips, and the mass of each
+branch is declared rather than recovered by squaring a square root. The
+realization is a Clifford program, so it samples on the stabilizer engine and no
+statevector enters it: a distance-7 rotated surface patch's model is 49 wires and
+43 mechanisms, and it draws 20000 shots in 0.02 seconds.
+
 ## What this migration does not cover
 
 These are stated as boundaries rather than left for a caller to discover.
@@ -271,6 +302,14 @@ These are stated as boundaries rather than left for a caller to discover.
 - **No circuit-level reader.** `from_stim_text` reads detector error models only.
   Every circuit instruction, `X_ERROR` included, is refused by name. Stim stays
   the circuit reader and the circuit sampler.
+- **A realization is not the experiment the model came from.** A detector error
+  model states which detector parities a fault flips and never which measurements
+  compose a detector, so the syndrome-extraction circuit, its gate sequence, its
+  depth and its ancilla layout are outside it: two different memory experiments of
+  the same distance under the same noise record define the same model, and the
+  reader returns the canonical detector-level circuit rather than either
+  experiment. The detector count is the caller's to state, because a wire index
+  does not say which side of the split it falls on.
 - **No block expansion.** A `repeat` block is refused, not expanded; the repair
   is `flattened()` on the Stim side.
 - **No comment handling.** Comments are not part of the format this reader
@@ -287,11 +326,13 @@ These are stated as boundaries rather than left for a caller to discover.
   circuit-level samples keeps `compile_detector_sampler`, and a study that needs
   FlagQuantum's own noisy circuit execution uses the noise models in
   [`docs/guides/NOISY_SIMULATION.md`](NOISY_SIMULATION.md).
-- **Neither the construction route nor the reading route is bounded by the patch's
-  width.** Reading a large patch's text costs one parse, and building a model from
-  a memory circuit derives each signature from the circuit's own layouts, so a
-  distance-7 rotated surface patch is 97 wires and reaches a model in under a
-  quarter of a second. The scope that does remain is recorded in
+- **Neither the construction route, the reading route nor the realization is
+  bounded by the patch's width.** Reading a large patch's text costs one parse,
+  building a model from a memory circuit derives each signature from the circuit's
+  own layouts, and the realization is a Clifford program on one wire per detector
+  and observable, so a distance-7 rotated surface patch is 97 wires and one
+  observable and reaches a model in under a quarter of a second. The scope that
+  does remain is recorded in
   [`docs/reference/KNOWN_LIMITATIONS.md`](../reference/KNOWN_LIMITATIONS.md).
 
 The runnable, gate-checked version of every block above is

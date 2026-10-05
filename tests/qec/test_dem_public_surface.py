@@ -54,3 +54,20 @@ def test_frozen_names_are_unchanged() -> None:
         "run_repetition_memory_noise_sweep",
     ):
         assert name in qec.__all__
+
+
+def test_realization_names_are_published() -> None:
+    """A model and an executable circuit are one pair of readings.
+
+    A model can be derived from a circuit and written as stim text, and the
+    direction back is what makes the pair usable: the realization is the reading a
+    sampler other than ``DemSample`` consumes, so both names are package surface
+    rather than one of them being the other's helper.
+    """
+
+    for name in (
+        "circuit_from_detector_error_model",
+        "detector_error_model_from_circuit",
+    ):
+        assert name in qec.__all__
+        assert hasattr(qec, name)

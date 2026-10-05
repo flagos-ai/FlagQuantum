@@ -429,6 +429,50 @@ lowered program, this module derives them from the circuit's own declaration, an
 a decoder fed a sampled syndrome has to be matching detectors against the
 measurements that actually compose them.
 
+## Move between a model and a realization
+
+`dem_circuit.py` goes the other way from construction: a model is written as the
+circuit it already is — one wire per detector, one per observable, one
+Pauli-frame channel per fault — and read back. That makes a model something a
+simulator can draw from, on the stabilizer engine, without a statevector.
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    circuit_from_detector_error_model,
+    detector_error_model_from_circuit,
+)
+from flagquantum.simulation.stabilizer import sample_noisy_measurements
+
+model = DetectorErrorModel.from_memory_circuit(
+    build_memory_circuit(RepetitionCode(distance=3), rounds=3),
+    noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+)
+realization = circuit_from_detector_error_model(model)
+shots = sample_noisy_measurements(realization, shots=100, seed=0)
+back = detector_error_model_from_circuit(
+    realization, num_detectors=model.num_detectors
+)
+print(shots.shape, back == model)
+```
+
+The two readings are exact in both directions, error ids included, because a
+frame's operators say which targets a fault flips and its declared masses say how
+often, so the mass is never recovered by squaring a square root. What the reader
+returns is not the circuit the model was built from and cannot be: a model states
+which detector parities a fault flips and never which measurements compose a
+detector, so the syndrome-extraction circuit, its gate sequence and its depth are
+outside it, and two different memory experiments of the same distance under the
+same noise record define the same model. The realization is the canonical
+detector-level circuit the model does determine, the detector count is the
+caller's because a wire index does not say which side of the split it is on, and a
+mechanism at probability zero is refused rather than dropped, because dropping it
+would leave a realization standing for a model with fewer mechanisms than the one
+it was read from.
+
 ## Come from Stim
 
 A Stim user already has the circuit layer. What this package offers is the half
@@ -469,9 +513,10 @@ Use [repetition.py](repetition.py) for experiment composition,
 and [matching.py](matching.py) for the detector-error-model decoder,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
-[noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
-code records, [circuit.py](circuit.py) for detector and observable layouts, and
-[types.py](types.py) for records. Run from the repository root:
+[dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
+back, [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py)
+for code records, [circuit.py](circuit.py) for detector and observable layouts,
+and [types.py](types.py) for records. Run from the repository root:
 
 ```bash
 python -m pytest tests/qec -q

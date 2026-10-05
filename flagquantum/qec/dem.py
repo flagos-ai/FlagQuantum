@@ -53,6 +53,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import Enum
 from numbers import Integral, Real
+from typing import Any
 
 import torch
 
@@ -1106,6 +1107,33 @@ class DetectorErrorModel:
         return cls.from_code_matrices(
             css_code_matrices(code), noise=noise, num_rounds=num_rounds
         )
+
+    @classmethod
+    def from_circuit(cls, circuit: Any, *, num_detectors: int) -> DetectorErrorModel:
+        """Read a realization back into the model it stands for.
+
+        This is the inverse of
+        :func:`~flagquantum.qec.dem_circuit.circuit_from_detector_error_model`, and
+        the two readings divide the work rather than duplicating it: a frame's
+        branches say which detectors and observables a fault flips, and the
+        masses the instruction declares say how often. The reading itself and its
+        refusals live in
+        :mod:`flagquantum.qec.dem_circuit`, which is where the meaning of a
+        realization is stated; this method is the route to it from the class, so a
+        model can be read back the way it was built.
+
+        Args:
+            circuit: A realization, or any program that normalizes to executable IR.
+            num_detectors: How many of the circuit's wires are detectors, because a
+                wire index does not say which side of the split it falls on.
+
+        Returns:
+            The model the realization stands for.
+        """
+
+        from .dem_circuit import detector_error_model_from_circuit
+
+        return detector_error_model_from_circuit(circuit, num_detectors=num_detectors)
 
     def to_stim_text(self) -> str:
         """Render the model as stim text.

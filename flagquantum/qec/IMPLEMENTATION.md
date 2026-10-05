@@ -456,6 +456,93 @@ Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distance
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
 style `to_stim_text()` emits.
 
+## Reading a model back
+
+`dem_construction.py` answers what model a circuit and a noise record define.
+`dem_circuit.py` answers the other direction, and it can, because a model is
+already a circuit's worth of arithmetic stated in another vocabulary: a mechanism
+is a set of detectors and observables it flips together with a probability, and
+mechanisms are independent unless an error id says otherwise, so a model is a
+register of detector wires and observable wires carrying one Pauli frame per
+fault. `circuit_from_detector_error_model(model)` returns that register as a
+`CircuitIR` — one wire per detector followed by one per observable, one
+Pauli-frame channel per fault group, one measurement per wire — and
+`detector_error_model_from_circuit(circuit, num_detectors=...)`, published as
+`DetectorErrorModel.from_circuit`, reads it back.
+
+What it returns is not the circuit the model came from, and no reading of a model
+can produce that circuit, because the model does not contain it. A detector error
+model is a quotient: it states which detector parities a fault flips and never
+which measurements compose a detector, so the syndrome-extraction circuit, its
+gate sequence, its depth and its ancilla layout are all outside what the model
+says. Two different memory experiments of the same distance and the same noise
+record produce the same model, and a reader that returned a circuit for one of
+them would be asserting a fact the model never carried. What the reader returns
+instead is the canonical detector-level circuit every model *does* determine. The
+detector and observable split is outside it for the same reason — a wire index
+says nothing about which side of the split it falls on — so the detector count is
+the caller's to state, and a caller who states the wrong count gets a model whose
+mechanisms are right and whose split is not rather than an error. The two
+functions are meant to be read as a pair.
+
+The round trip is exact, including the numbering of the error ids, and it is
+exact rather than approximate because the two halves of a frame are read from
+different parts of the instruction. A frame's wire list and its branch operators
+say which targets a fault flips; the mass of each branch is declared in the
+instruction's `probabilities` parameter. That division is not a convenience.
+A branch is written `sqrt(p) * U`, so recovering the mass from the operators
+means squaring a square root, and squaring a square root is not the identity on a
+double: over 200000 uniform draws it returned a different double for 47.1% of
+them, by about one binary unit in the last place (a measured worst relative
+difference of `2.2e-16`, inside the one-part-in-`10**15` bound the stim
+interchange already carries), and `0.01`, `0.5` and `0.9` are among the values
+this domain actually uses. The declared mass is therefore the statement of record
+and the operator is checked against it, which is what makes the round trip return
+the model it started from rather than one a rounding away from it; a program
+whose two halves disagree beyond their stated precision is refused instead of
+averaged. This is the division `sampling.py` already writes its noise
+instructions with, where a channel states its rate and carries the operators that
+rate was turned into.
+
+The realization executes. Every instruction is a Pauli-frame channel, which is
+what `flagquantum.simulation.stabilizer` samples, so a model reaches a second
+route to the same rates that shares no arithmetic with `dem_sampling`: the
+model's own route draws one uniform per mechanism and exclusive-ors the
+signatures that fired, and this one goes through a stabilizer engine. Held
+against the rates the model *states* — not against a second sample of the same
+route — the realization's sampled detector and observable rates departed by at
+most 2.01 standard errors over the hand-written models and the memory-circuit
+models of the three codes together, at 100000 shots with one seed, and a group
+whose masses sum to exactly one flips the detector its members share on every one
+of those shots rather than on 99.99% of them. At probability one the check is
+exact instead of statistical, so a frame placed at the wrong wire fails as a
+wrong bit rather than averaging into a rate.
+
+Two things are refused rather than dropped. A mechanism at probability zero has
+no branch: every branch mass of its channel is zero, so the operator it would
+apply is zero and no shot fires it, and a reader could not tell it from the
+identity. Dropping it would silently make the realization stand for a model with
+fewer mechanisms than the one it was read from, so `circuit_from_detector_error_model`
+names the mechanism and refuses. And exclusivity is executable rather than
+merely stated: the members of an id-carrying group are the branches of one
+channel, so a realization draws at most one of them per shot, which is the same
+statement `dem_alternatives.py` makes in the model's own arithmetic. The
+realization does not make a correlated model transcribable — `to_stim_text()`
+refuses an id-carrying model here exactly as it does anywhere else, because the
+format reads every error instruction as an independent mechanism.
+
+The evidence is `tests/qec/test_dem_circuit_round_trip.py`, which asserts the
+round trip on every hand-written model and on the memory-circuit models of a
+repetition code, a Steane code and a rotated surface patch at one round and at
+three; holds the realization's sampled rates against the rates the model states;
+pins the `sqrt`-then-square loss as the number that forced the declared mass
+rather than describing it; and exercises each refusal by constructing the program
+that would provoke it. The chain to the external reference is transitive rather
+than repeated there: `test_dem_stim_interop.py` pins the text these models are
+written to against stim's own reader, and `test_dem_stim_reference_rates.py` pins
+the model's rates to a stim reference circuit, so the realization-to-model edge
+is the one this file adds.
+
 `DemSample` carries tensors and defines content equality, and it is deliberately
 unhashable: it must not be used as a set member or a dict key.
 
