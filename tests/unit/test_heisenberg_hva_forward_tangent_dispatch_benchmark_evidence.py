@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -26,6 +28,10 @@ from benchmarks.heisenberg_hva_forward_tangent_dispatch import (
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/heisenberg_hva_forward_tangent_dispatch_a800.json"
+)
 
 
 def _run(host: str, lane: str, *, speedup: float = 1.2) -> dict[str, Any]:
@@ -204,3 +210,15 @@ def test_aggregate_selects_only_the_declared_default_window() -> None:
     ] == pytest.approx(1.3)
     assert payload["default_window_passed"]
     assert payload["dispatch_decision"] == "eligible_for_default"
+
+
+def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+    validate_evidence(payload)
+    assert payload["source_revision"] == (
+        "55dc84d4da2a15166a1a954604b85a363d004504"
+    )
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
+    assert payload["minimum_default_window_speedup_over_pytorch_eager"] > 1.0
+    assert payload["minimum_default_window_speedup_over_torch_compile"] > 1.0
