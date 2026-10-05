@@ -205,6 +205,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   archives the exact commits, hashes them into the manifest, and self-verifies
   for both target aliases. Verification rejects any unlisted colocated tarball,
   preventing an extra archive from bypassing manifest review.
+- Every documented QDiffusion Python entry point is now invoked as a module
+  from the reviewed checkout with the user-site directory disabled. A
+  parameterized subprocess test starts all twelve commands from an unrelated
+  working directory with only the reviewed root on `PYTHONPATH`, preventing an
+  older installed FlagQuantum from silently satisfying imports.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

@@ -1,6 +1,9 @@
 # QDiffusion with Kaiwu
 
 This directory separates development checks from acceptance evidence.
+Run the documented Python module commands from the reviewed FlagQuantum
+checkout root. The `-s` flag disables the user-site package directory so an old
+installed FlagQuantum cannot silently replace the current source tree.
 
 ## Credential-free local golden path
 
@@ -81,7 +84,7 @@ records:
 4. Validate the finished bundle:
 
 ```bash
-python examples/qdiffusion_kaiwu/validate_acceptance.py path/to/manifest.json
+python -s -m examples.qdiffusion_kaiwu.validate_acceptance path/to/manifest.json
 ```
 
 The validator recomputes the decision from evidence. It requires an observed
@@ -105,7 +108,7 @@ checkpoint directory, and an explicitly selected project. The acknowledgement
 must be typed exactly so an ordinary test run cannot spend provider quota:
 
 ```bash
-python examples/qdiffusion_kaiwu/qboson_live_smoke.py \
+python -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir private-kaiwu-checkpoints \
   --output private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \

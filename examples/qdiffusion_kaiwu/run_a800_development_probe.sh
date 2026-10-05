@@ -60,12 +60,13 @@ docker run --rm \
   --user "$(id -u):$(id -g)" \
   --tmpfs /tmp:rw,noexec,nosuid,size=256m \
   --env HOME=/tmp \
+  --env PYTHONNOUSERSITE=1 \
   --env PYTHONPATH=/workspace/kaiwu-plugin/src:/workspace/flagquantum \
   --volume "$flagquantum_dir:/workspace/flagquantum:ro" \
   --volume "$plugin_dir:/workspace/kaiwu-plugin:ro" \
   --volume "$output_dir:/evidence:rw" \
   "$validation_image_id" \
-  python3 /workspace/flagquantum/examples/qdiffusion_kaiwu/qdiffusion_system_development_probe.py \
+  python3 -s -m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe \
   --device cuda:0 \
   --execution-host "$execution_host" \
   --expected-hostname "$expected_hostname" \

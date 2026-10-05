@@ -51,7 +51,8 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert "VALIDATION_IMAGE_ID" in source
     assert "docker image inspect" in source
     assert '"$validation_image_id"' in source
-    assert "qdiffusion_system_development_probe.py" in source
+    assert "PYTHONNOUSERSITE=1" in source
+    assert "-m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe" in source
 
 
 def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:
