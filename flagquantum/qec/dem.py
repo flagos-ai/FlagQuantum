@@ -1082,7 +1082,7 @@ class DetectorErrorModel:
         documents it as handing the model to Stim, which is why no pairing rule
         exists in its sources to read; this route decomposes the only composite
         thing the program itself states, forcing each part at the parent's round
-        and wire through the same injector the single-Pauli families use, so a part
+        and qubit through the same injector the single-Pauli families use, so a part
         is graphlike exactly where the single-Pauli fault at that location is.
 
         The reading is not an equivalent statement of the model and is not offered
