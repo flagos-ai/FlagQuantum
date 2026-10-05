@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from functools import wraps
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from .sampler import KaiwuSampler
 
@@ -41,3 +42,26 @@ def bind_qdiffusion_builder(
         return result
 
     return bound
+
+
+@contextmanager
+def bound_qdiffusion_workflow(
+    workflow_module: object,
+    sampler: KaiwuSampler,
+) -> Iterator[None]:
+    """Temporarily bind a pinned plugin workflow's imported model factory.
+
+    This context is intended for a single, non-concurrent workflow process. It
+    restores the plugin module even when training raises, so later local runs
+    cannot accidentally inherit the remote sampler.
+    """
+
+    original = getattr(workflow_module, "build_qdiffusion", None)
+    if not callable(original):
+        raise TypeError("workflow module must expose callable build_qdiffusion")
+    bound = bind_qdiffusion_builder(cast(Callable[..., Any], original), sampler)
+    setattr(workflow_module, "build_qdiffusion", bound)
+    try:
+        yield
+    finally:
+        setattr(workflow_module, "build_qdiffusion", original)

@@ -274,12 +274,14 @@ itself preflight-only and is not evidence of a successful QBoson run.
 
 The pinned plugin's complete workflow imports `build_qdiffusion` once and then
 uses it for structural validation, training, proposal-only baseline, and guided
-generation. Before invoking that workflow, replace that imported callable with
-`bind_qdiffusion_builder(original_builder, kaiwu_sampler)`. The binding removes
-the workflow's local `sa`/`cim` construction hints, injects the same bounded
-`KaiwuSampler` into every generator, and fails if a returned energy model does
-not retain that exact sampler. Merely setting `sampler_type="cim"` does not test
-the FlagQuantum `remote/kaiwu` boundary and is outside this acceptance lane.
+generation. Invoke that workflow inside
+`bound_qdiffusion_workflow(workflow_module, kaiwu_sampler)`. The context wraps
+and later restores the imported factory, removes the workflow's local `sa`/`cim`
+construction hints, injects the same bounded `KaiwuSampler` into every
+generator, and fails if a returned energy model does not retain that exact
+sampler. Use a single non-concurrent process. Merely setting
+`sampler_type="cim"` does not test the FlagQuantum `remote/kaiwu` boundary and
+is outside this acceptance lane.
 
 ## 10. Assemble and validate final evidence
 

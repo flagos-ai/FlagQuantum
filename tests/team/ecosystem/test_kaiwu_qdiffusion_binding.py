@@ -5,7 +5,11 @@ from typing import Any, cast
 
 import pytest
 
-from flagquantum.ecosystem.kaiwu import KaiwuSampler, bind_qdiffusion_builder
+from flagquantum.ecosystem.kaiwu import (
+    KaiwuSampler,
+    bind_qdiffusion_builder,
+    bound_qdiffusion_workflow,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -82,3 +86,43 @@ def test_binding_reuses_one_sampler_across_all_workflow_builds() -> None:
         bound()
 
     assert observed == [sampler] * 4
+
+
+def test_workflow_context_binds_and_restores_imported_factory() -> None:
+    sampler = _sampler()
+
+    class Workflow:
+        @staticmethod
+        def build_qdiffusion(**kwargs: Any) -> _Generator:
+            return _Generator(_EnergyModel(kwargs["bm_sampler"]), kwargs)
+
+    original = Workflow.build_qdiffusion
+    with bound_qdiffusion_workflow(Workflow, sampler):
+        generator = Workflow.build_qdiffusion(bm_sampler_type="sa")
+        assert generator.energy_model.sampler is sampler
+    assert Workflow.build_qdiffusion is original
+
+
+def test_workflow_context_restores_factory_after_failure() -> None:
+    sampler = _sampler()
+
+    class Workflow:
+        @staticmethod
+        def build_qdiffusion(**kwargs: Any) -> _Generator:
+            return _Generator(_EnergyModel(kwargs["bm_sampler"]), kwargs)
+
+    original = Workflow.build_qdiffusion
+    with (
+        pytest.raises(RuntimeError, match="training failed"),
+        bound_qdiffusion_workflow(Workflow, sampler),
+    ):
+        raise RuntimeError("training failed")
+    assert Workflow.build_qdiffusion is original
+
+
+def test_workflow_context_requires_expected_plugin_seam() -> None:
+    with (
+        pytest.raises(TypeError, match="callable build_qdiffusion"),
+        bound_qdiffusion_workflow(object(), _sampler()),
+    ):
+        pass

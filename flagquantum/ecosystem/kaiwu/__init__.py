@@ -16,7 +16,7 @@ from .matrix import (
     ising_energy,
     prepare_integer_precision,
 )
-from .qdiffusion import bind_qdiffusion_builder
+from .qdiffusion import bind_qdiffusion_builder, bound_qdiffusion_workflow
 from .sampler import KaiwuSampler
 
 __all__ = (
@@ -28,6 +28,7 @@ __all__ = (
     "QuboIsingEncoding",
     "canonicalize_ising_matrix",
     "bind_qdiffusion_builder",
+    "bound_qdiffusion_workflow",
     "decode_qubo_spins",
     "encode_qubo_as_ising",
     "ising_energy",
