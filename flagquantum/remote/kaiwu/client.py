@@ -8,6 +8,7 @@ import math
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
+from datetime import datetime, timedelta
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -110,12 +111,21 @@ class KaiwuSDKClient:
     ) -> KaiwuTaskReceipt:
         try:
             raw = _read_private_json(path)
+            if not isinstance(raw, dict) or set(raw) != {"receipt", "matrix"}:
+                raise ValueError("unexpected recovery bundle fields")
             stored = KaiwuTaskReceipt(**raw["receipt"])
             stored_matrix = tuple(
                 tuple(float(value) for value in row) for row in raw["matrix"]
             )
+            submitted_at = datetime.fromisoformat(stored.submitted_at)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise KaiwuSDKError("Existing Kaiwu recovery receipt is invalid") from None
+        if (
+            submitted_at.utcoffset() != timedelta(0)
+            or stored.provider_task_id is not None
+            or stored.provider_target is not None
+        ):
+            raise KaiwuSDKError("Existing Kaiwu recovery receipt is invalid")
         comparable = (
             "task_name",
             "matrix_sha256",

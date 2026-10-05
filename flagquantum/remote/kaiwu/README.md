@@ -48,7 +48,10 @@ to query the same documented task after restart without exposing a partial
 final receipt. Existing bundles are opened without following symlinks and are
 reused only when they are private regular files whose task, matrix, mode,
 sample count, project, and schema all match. Explicit job `save` and `restore`
-use the same private-file rules.
+use the same private-file rules. The pinned 1.3.1 recovery schema also requires
+an aware UTC submission timestamp, exact top-level fields, and absent provider
+task/target identities; those identities cannot be injected through a local
+checkpoint while the approved SDK mapping remains unavailable.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

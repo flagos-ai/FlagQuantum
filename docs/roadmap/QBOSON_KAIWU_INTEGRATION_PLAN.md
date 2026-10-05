@@ -96,6 +96,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   before atomic no-overwrite publication and reopened without following
   symlinks; public, non-regular, partial, or replaced files fail before an SDK
   task operation.
+- Pinned 1.3.1 recovery also enforces an exact top-level schema, an aware UTC
+  submission timestamp, and absent provider task/target identities. Local
+  receipt editing therefore cannot fabricate the provider evidence that the
+  documented SDK mapping does not expose.
 - A cross-layer integration test now composes the ecosystem sampler, Remote
   lifecycle, pinned SDK client, checkpoint scoping, independent energy
   validation, recovery persistence, and deduplication. Only the final vendor

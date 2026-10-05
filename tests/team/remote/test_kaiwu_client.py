@@ -244,6 +244,78 @@ def test_unsafe_recovery_receipt_fails_before_sdk_operation(
     assert _FakeOptimizer.solve_calls == solve_calls
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("provider_task_id", "forged-provider-task"),
+        ("provider_target", "forged-provider-target"),
+        ("submitted_at", "not-a-timestamp"),
+        ("submitted_at", "2026-10-05T12:00:00+08:00"),
+    ),
+)
+def test_recovery_receipt_rejects_forged_provider_evidence_before_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name=f"forged-{field}",
+        mode="sampling",
+        requested_samples=10,
+    )
+    path = client.recovery_receipt_path(first.receipt)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["receipt"][field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restarted, _ = _client(monkeypatch, tmp_path)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=restarted,
+            task_name=f"forged-{field}",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
+def test_recovery_receipt_rejects_undeclared_top_level_fields(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="extra-recovery-field",
+        mode="sampling",
+        requested_samples=10,
+    )
+    path = client.recovery_receipt_path(first.receipt)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["credentials"] = "must-not-be-accepted"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restarted, _ = _client(monkeypatch, tmp_path)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=restarted,
+            task_name="extra-recovery-field",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
 def test_result_is_independently_scored_and_marks_evidence_gaps(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
