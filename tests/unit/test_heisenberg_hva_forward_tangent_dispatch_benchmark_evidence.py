@@ -113,7 +113,9 @@ def _matrix(*, speedup: float = 1.2) -> list[dict[str, Any]]:
 def test_analytic_reference_tangents_match_finite_differences() -> None:
     n_wires, depth = 3, 2
     generator = torch.Generator().manual_seed(53)
-    initial_state = torch.randn(1 << n_wires, dtype=torch.complex128, generator=generator)
+    initial_state = torch.randn(
+        1 << n_wires, dtype=torch.complex128, generator=generator
+    )
     initial_state = initial_state / torch.linalg.vector_norm(initial_state)
     parameter_count = (4 * n_wires - 3) * depth
     parameters = torch.randn(parameter_count, dtype=torch.float64, generator=generator)

@@ -80,7 +80,9 @@ def _pauli_actions(
         for left in range(n_wires - 1):
             bit_left = n_wires - 1 - left
             bit_right = n_wires - 2 - left
-            left_value = torch.bitwise_and(torch.bitwise_right_shift(basis, bit_left), 1)
+            left_value = torch.bitwise_and(
+                torch.bitwise_right_shift(basis, bit_left), 1
+            )
             right_value = torch.bitwise_and(
                 torch.bitwise_right_shift(basis, bit_right), 1
             )
