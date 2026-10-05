@@ -60,7 +60,7 @@ from flagquantum.observables.fermion import (
     parity_encoding,
 )
 from flagquantum.operators import SuperOperator
-from flagquantum.qec import CssCodeMatrices
+from flagquantum.qec import CssCode, CssCodeMatrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -113,6 +113,7 @@ ENTRIES = (
     amplitude_encode,
     angular_encode,
     BosonOperator,
+    CssCode,
     CssCodeMatrices,
     FermionOperator,
     Layout,

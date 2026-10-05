@@ -16,6 +16,7 @@ from .circuit import (
 )
 from .codes import (
     CodeCheck,
+    CssCode,
     RepetitionCode,
     RotatedSurfaceCode,
     StabilizerCode,
@@ -78,6 +79,7 @@ __all__ = (
     "BeliefPropagationOsdDecoder",
     "CROSS_CHECK_NAME",
     "CodeCheck",
+    "CssCode",
     "CssCodeMatrices",
     "Correction",
     "DecodeResult",

@@ -253,6 +253,48 @@ the other. The rates are read against these matrices: the per-qubit vectors are
 indexed by column, in the code's own `data_wires` order, and the per-check vector
 by row, with the Z-type checks first.
 
+## Declare a code this package does not ship
+
+The other direction of the same record: `CssCode` takes the four blocks a caller
+writes and returns the same kind of code record the three declared families
+return, so a code no record here declares reaches the memory circuit, the model,
+the sampler and the decoder through the same `StabilizerCode` protocol.
+
+```python
+from flagquantum.qec import CssCode
+
+checks = [
+    [0, 0, 0, 1, 1, 1, 1],
+    [0, 1, 1, 0, 0, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+]
+steane = CssCode(
+    hz=checks, hx=checks, lz=[[1, 1, 1, 0, 0, 0, 0]], lx=[[1, 1, 1, 0, 0, 0, 0]]
+)
+print(steane.num_data_qubits, steane.num_ancilla_qubits, steane.distance)  # 7 6 3
+```
+
+The blocks are plain sequences of `0`/`1` rows, so this module needs no array
+dependency; a tensor block is refused with the `.tolist()` that reads it named.
+Everything is checked rather than assumed: the two check families must commute,
+each declared logical operator must commute with the opposite check family while
+not lying in the span of its own, the declared operators of a family must pair up
+non-degenerately, the blocks must agree on a width that leaves at least one
+logical qubit, and an all-zero row is refused because it acts on no data qubit.
+
+The distance is the part worth stating carefully. It is **computed by searching
+the code**, not read off the operator the caller wrote down, so the same Steane
+code reports three whether its logical operator is declared at weight three or at
+weight seven. The search is bounded by `distance_search_weight`, which defaults to
+three; a code whose lightest logical operator is heavier than the bound is refused
+with the bound named rather than answered with the best weight it happened to
+reach. Raise the bound for a code that needs it, and expect the cost to grow with
+the data-qubit count.
+
+A check still states one ancilla and one CNOT direction chosen by the check's
+type, so the CSS class is what this route admits: a mixed X-and-Z stabilizer has
+no row here, exactly as it has no check in the declared records.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per

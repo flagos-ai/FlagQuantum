@@ -1098,6 +1098,25 @@ focused_tests = "tests/qec/test_surface_code.py"
 integration_tests = "tests/qec/test_memory_circuit_execution.py"
 development_artifact = "flagquantum/qec/IMPLEMENTATION.md"
 
+[capabilities.css_code_from_matrices]
+title = "Stabilizer code stated as parity-check matrices"
+summary = "State a Calderbank-Shor-Steane code as its Z-type checks, its X-type checks and its logical operators, and get back the code record the declared families produce, with a distance computed from the matrices rather than read off the logical operator that was written down."
+category = "simulation_and_training"
+user_goals = ["State a stabilizer code this package does not declare, as parity-check matrices", "Have the code's distance computed from its matrices rather than declared", "Run a code stated as matrices through the memory circuit, detector error model, sampling and matching path", "Read the matrices back out of a code record the package already ships"]
+public_apis = ["flagquantum.qec.CssCode", "flagquantum.qec.css_code_matrices", "flagquantum.qec.CssCodeMatrices"]
+runtime_modes = ["local_statevector_dynamic_hybrid"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_process"
+quick_start = "examples/qec/css_code_from_matrices.py"
+documentation = "flagquantum/qec/README.md"
+level = "development_evidence"
+owner = "QEC maintainers"
+limitations = "A declaration route, not a code library. It admits a code whose checks and logical operators can be written as 0-or-1 rows over the data wires, which is the CSS class and nothing outside it: a mixed X-and-Z stabilizer has no row, and a code needing a second ancilla per stabilizer still requires the protocol's record to grow, because a check states one ancilla and one CNOT direction chosen by the check's type. The matrices are Python sequences of sequences, because this module holds no array dependency and states none; a tensor block reaches the route only through the `.tolist()` the refusal names. Every invariant is checked rather than assumed: the two check families commute, each declared logical operator commutes with the opposite check family while not lying in the span of its own, the declared logical operators of a family pair up non-degenerately, the blocks agree on a width that leaves at least one logical qubit, no row acts on no data qubit, and each family declares as many operators as the width and the two ranks leave logical qubits. The distance is searched for rather than read off the representative the caller wrote down, which is what makes it a property of the code: the same Steane record reports three whether its logical operator is written at weight three or at weight seven. That search is bounded, and the bound is the caller's to accept: it tries wire subsets in increasing weight up to `distance_search_weight`, which defaults to three, and refuses when the bound is exhausted instead of reporting the best it found. The cost of the bound grows with the data-qubit count, and the route is demonstrated at eight and eighteen data qubits rather than claimed as a distance algorithm for a large code. Nothing here decodes, protects a logical qubit, or states a threshold, a logical-suppression figure or a family's error rate; the toric code the golden path walks through is built by that example rather than shipped as a record, so the qLDPC, Reichardt and Floquet families remain absent as records even though a matrix now has a route in. Two refusals belong to the sibling routes rather than to this one and are inherited: a declared product that is not pure X or pure Z is refused by the memory circuit, and a model whose mechanisms flip three or more detectors is refused by the matching decoder, which is what a code whose lightest logical operator is not the lightest fault looks like from the decoder's side."
+focused_tests = "tests/qec/test_css_code.py"
+integration_tests = "tests/qec/test_css_code_memory.py"
+development_artifact = "flagquantum/qec/codes.py"
+
 [capabilities.detector_error_model]
 title = "Detector error model and stim text interchange"
 summary = "Build the exact Pauli-noise detector error model of a memory circuit or of a code-capacity CSS record, sample it, and exchange it with stim as text in both directions."

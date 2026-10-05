@@ -69,6 +69,62 @@ and a round count into circuit source plus a detector layout and an observable
 layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
 implement it.
 
+`CssCode` is the second way into that protocol, and it is the way in for a code
+this package does not declare. It takes the four CSS blocks as plain sequences of
+`0`/`1` rows -- `hz`, `hx`, `lz`, `lx` -- validates them, and exposes the same
+protocol attributes the declared families expose, so everything downstream reads
+it without knowing which route produced it. The route is the mirror of
+`css_code_matrices`, which reads a declared record *out* into the same four
+blocks; the two directions are inverse on the declared records and
+`tests/qec/test_css_code.py` asserts that round trip rather than asserting it in
+prose.
+
+What `__post_init__` establishes, in the order it establishes it: the blocks are
+rectangular and binary, no row is all zero because such a row acts on no data
+qubit, the non-empty blocks agree on one width, the Z-type and X-type check
+families commute (through `Pauli.commutes_with`, which is the same overlap test
+the rest of the layer uses), each declared logical operator commutes with the
+opposite check family and does not lie in the span of its own (through
+`gf2.in_span`), the declared operators of a family pair up non-degenerately
+rather than degenerately, the width minus the two family ranks leaves at least one
+logical qubit, and each family declares exactly as many operators as that count.
+`gf2.py` is the new shared piece: `reduce_rows` puts a row set into row-echelon
+form once and returns its pivots, `reduce_vector` reduces one vector against those
+pivots, and `rank` and `in_span` are the two readings of that. The pivots come back
+in the order they were found rather than sorted, and that order is load-bearing
+rather than incidental: a pivot is reduced against the pivots kept before it, so it
+carries a zero at each of their leading positions, which is what makes one pass over
+the list enough. `tests/qec/test_gf2.py` pins that clearance, pins that a reordered
+basis is *not* reduced correctly by the same one pass, and pins that the pivots are
+reported in the order they were built. It holds bit-per-column integers, so GF(2)
+addition is `^` over Python integers and no array dependency enters the module;
+`logical.py` previously carried private copies of the same two operations and now
+reads them from here.
+
+The distance is computed rather than declared, which is what makes it a property
+of the code instead of a property of the operator the caller happened to write
+down: the same Steane code reports three whether its logical operator is stated at
+weight three or at weight seven. `_minimum_logical_weight` reduces the stabilizer
+span to its pivots once, then tries wire subsets in increasing weight and returns
+the first weight at which some subset commutes with every check, is outside the
+span, and is not a stabilizer. The search is bounded by
+`distance_search_weight`, which defaults to three, and a code whose lightest
+logical operator is heavier than the bound is refused with the bound named rather
+than answered with the best weight the search reached. The bound is a stated cost
+bound and not a distance algorithm: at the default it costs 0.004 s at thirty data
+qubits and 1.3 s at a hundred and forty, and raising it to four costs 0.021 s and
+37.5 s at the same two sizes, which is why three is the default and why the route
+is demonstrated at eight and eighteen data qubits.
+
+Two limits survive the new route because they belong to the protocol rather than
+to it, and saying so is the honest boundary: a `CodeCheck` states one ancilla and
+one CNOT direction chosen by the check's type, so a mixed X-and-Z stabilizer still
+has no row here, and `build_memory_circuit` still refuses a declared product that
+is neither pure X nor pure Z. The named qLDPC, Reichardt, Floquet and colour
+families remain absent as *records* -- a matrix has a route in, but no such matrix
+is shipped -- and that is now a question of which codes are written down here
+rather than of whether one can be.
+
 Detector semantics are fixed. A detector is a measurement parity that is
 deterministic in the noiseless circuit. Which parity that is depends on the
 check's type, because both the initial state and the terminal data readout are in
@@ -156,14 +212,20 @@ is the one place the two descriptions genuinely diverge; that divergence is
 pinned as the exact relation between the two mechanism sets rather than as a
 tolerance.
 
-Both routes carry the same single fault family: a data wire's bit flip and a
-check's syndrome bit flipped at readout. The phase-flip family an `hx`/`lx` pair
-describes, and the independent `px`/`py`/`pz`/`pm` rates upstream states, are not
-expressible through one data-flip scalar and one measurement-flip scalar; that
-limit is recorded against the entry point in the alignment contract rather than
-approximated here. On the matrix route an X-type check and an X-type logical
-operator therefore contribute no row at all, rather than an all-zero row that
-would declare an observable no mechanism ever reports.
+Both routes read the same four families the noise record states, because both read
+supports rather than executing anything: an X fault reaches the Z-type checks, a Z
+fault reaches the X-type checks, a Y fault is the two of them at once and reaches
+both, and a check's syndrome bit flipped at readout reaches that check's detector.
+An earlier revision of this document said both routes carried one fault family and
+that an X-type check therefore contributed no row; that was true when the matrix
+route landed and stopped being true when `PhenomenologicalNoise` gained its
+`phase_flip` and `both_flip` families, and it is corrected here rather than left
+standing. What remains narrower than the model is the **sampler**, and the
+narrowness is the stabilizer engine's channel set rather than the record's:
+`sampling.py` places a data flip and a measurement flip, and the phase and Y data
+rates reach a detector error model without reaching a sampled record. That gap is
+recorded in the sampling entry's own limitations rather than approximated here, and
+it is a defect in the sampler rather than a boundary anyone chose.
 
 Merging is also an operation a caller asks for, not only a step construction
 performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every

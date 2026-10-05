@@ -51,6 +51,9 @@ These examples do not use that alias:
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
+- [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
+  the QEC subpackage surface, because the code record built from parity-check
+  matrices lives there and has no root-level `fq.` name.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -158,6 +161,7 @@ boundaries are listed in the capability catalog.
 | Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |
 | Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
 | Decode a Stim detector error model here | [`qec/stim_user_migration.py`](qec/stim_user_migration.py) | Experimental QEC surface |
+| State a stabilizer code as matrices | [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) | Experimental QEC surface |
 
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.
@@ -195,6 +199,25 @@ runs locally in one process, contacts nothing, and establishes no threshold. The
 route it follows, the four reader refusals, and the tradeoff between the two
 readings are documented in
 [Migrating a Stim workflow](../docs/guides/STIM_USER_MIGRATION.md).
+
+## Declare a code this package does not ship
+
+Three code records ship here. This example takes the other route, writing a code
+down as parity-check matrices, and runs the result end to end:
+
+```bash
+python -m examples.qec.css_code_from_matrices
+```
+
+It states the Steane code as matrices and holds the record it builds against the
+record this package ships, then builds the toric code -- which no record here
+declares -- on two lattices, derives its distance from the matrices rather than
+from a declared logical operator, and runs it through a memory circuit, a
+detector error model, sampling, and the matcher. It prints the matrices that are
+refused beside the ones that are admitted. It runs locally in one process,
+contacts nothing, and establishes no threshold and no scalability claim. The
+record it demonstrates is documented in
+[FlagQuantum QEC](../flagquantum/qec/README.md).
 
 ## Run on remote resources
 

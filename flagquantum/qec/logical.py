@@ -18,6 +18,7 @@ from __future__ import annotations
 from numbers import Integral
 from typing import TYPE_CHECKING
 
+from .gf2 import in_span
 from .pauli import Pauli
 
 if TYPE_CHECKING:
@@ -31,26 +32,6 @@ def _mask(pauli: Pauli, positions: dict[int, int]) -> int:
     for wire in pauli.support:
         bits |= 1 << positions[wire]
     return bits
-
-
-def _rank(rows: list[int]) -> int:
-    """Return the GF(2) rank of ``rows`` read as bit vectors."""
-
-    pivots: list[int] = []
-    for row in rows:
-        current = row
-        for pivot in pivots:
-            current = min(current, current ^ pivot)
-        if current:
-            pivots.append(current)
-            pivots.sort(reverse=True)
-    return len(pivots)
-
-
-def _in_span(vector: int, rows: list[int]) -> bool:
-    """Whether ``vector`` is a GF(2) combination of ``rows``."""
-
-    return _rank([*rows, vector]) == _rank(rows)
 
 
 def _solve(rows: list[int], rhs: list[int]) -> int | None:
@@ -127,7 +108,7 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
         for check in code.checks
         if bool(check.stabilizer.x_wires) == wanted_x_type
     ]
-    if _in_span(_mask(product, positions), rows):
+    if in_span(_mask(product, positions), rows):
         raise ValueError(
             "logical product must not lie in the code's stabilizer span, because "
             "a stabilizer outcome is fixed and the terminal readout would report "
