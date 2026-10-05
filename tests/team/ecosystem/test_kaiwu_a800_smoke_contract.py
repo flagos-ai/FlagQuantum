@@ -48,7 +48,9 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert '--hostname "$expected_hostname"' in source
     assert ":/workspace/flagquantum:ro" in source
     assert ":/workspace/kaiwu-plugin:ro" in source
-    assert "flagquantum/flagtree:0.7.0-validation" in source
+    assert "VALIDATION_IMAGE_ID" in source
+    assert "docker image inspect" in source
+    assert '"$validation_image_id"' in source
     assert "qdiffusion_system_development_probe.py" in source
 
 
@@ -65,6 +67,7 @@ def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:
     assert '"qboson_hardware_used": False' in source
     assert '"real_provider_evidence": False' in source
     assert '"transport": "in_memory_fake"' in source
+    assert '"validation_image_id": validation_image_id' in source
 
 
 def test_qdiffusion_live_source_requires_cost_and_provider_identity() -> None:

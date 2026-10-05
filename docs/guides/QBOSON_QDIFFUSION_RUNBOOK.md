@@ -127,6 +127,10 @@ source, plugin, and output paths. Supply the stable SSH alias as
 `EXECUTION_HOST` and the separately observed machine hostname as
 `EXPECTED_HOSTNAME`. The runner disables networking, exposes only GPU 0, mounts
 both code trees read-only, and writes one exclusive mode-0600 record.
+Pass the host's full reviewed `sha256:...` image ID as the final argument. Do
+not use the mutable `flagquantum/flagtree:0.7.0-validation` tag directly: the
+tag currently resolves to different image IDs on `jp-a800-171` and
+`jp-a800-172`. The runner verifies and records the exact ID before execution.
 
 The record must retain all of these values:
 

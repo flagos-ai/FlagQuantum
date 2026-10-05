@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "$#" -ne 7 ]]; then
-  echo "usage: $0 EXECUTION_HOST EXPECTED_HOSTNAME FLAGQUANTUM_DIR PLUGIN_DIR OUTPUT SOURCE_REVISION PLUGIN_REVISION" >&2
+if [[ "$#" -ne 8 ]]; then
+  echo "usage: $0 EXECUTION_HOST EXPECTED_HOSTNAME FLAGQUANTUM_DIR PLUGIN_DIR OUTPUT SOURCE_REVISION PLUGIN_REVISION VALIDATION_IMAGE_ID" >&2
   exit 2
 fi
 
@@ -13,6 +13,7 @@ plugin_dir=$4
 output_path=$5
 source_revision=$6
 plugin_revision=$7
+validation_image_id=$8
 
 case "$execution_host" in
   jp-a800-171|jp-a800-172) ;;
@@ -34,6 +35,15 @@ if [[ -e "$output_path" ]]; then
   echo "refusing to overwrite existing evidence: $output_path" >&2
   exit 2
 fi
+if [[ ! "$validation_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+  echo "validation image ID must be a full sha256 identity" >&2
+  exit 2
+fi
+observed_image_id=$(docker image inspect "$validation_image_id" --format '{{.Id}}')
+if [[ "$observed_image_id" != "$validation_image_id" ]]; then
+  echo "validation image identity mismatch: $observed_image_id" >&2
+  exit 1
+fi
 
 output_dir=$(dirname "$output_path")
 output_name=$(basename "$output_path")
@@ -54,11 +64,12 @@ docker run --rm \
   --volume "$flagquantum_dir:/workspace/flagquantum:ro" \
   --volume "$plugin_dir:/workspace/kaiwu-plugin:ro" \
   --volume "$output_dir:/evidence:rw" \
-  flagquantum/flagtree:0.7.0-validation \
+  "$validation_image_id" \
   python3 /workspace/flagquantum/examples/qdiffusion_kaiwu/qdiffusion_system_development_probe.py \
   --device cuda:0 \
   --execution-host "$execution_host" \
   --expected-hostname "$expected_hostname" \
   --source-revision "$source_revision" \
   --plugin-revision "$plugin_revision" \
+  --validation-image-id "$validation_image_id" \
   --output "/evidence/$output_name"

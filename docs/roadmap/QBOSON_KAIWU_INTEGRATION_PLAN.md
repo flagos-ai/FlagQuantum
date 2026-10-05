@@ -103,6 +103,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   image contains Python 3.12.3, Torch 2.13.0+cu129, and no Kaiwu package. A
   bounded runner now injects the observed host identity and mounts FlagQuantum
   and the public plugin source read-only for development-only execution.
+- A subsequent read-only host recheck confirmed eight A800-SXM4-80GB devices,
+  driver 580.126.20, Python 3.10.12, Docker 29.1.3, and no system Torch or Kaiwu
+  package on both hosts. It also found that the same validation-image tag maps
+  to image ID `sha256:3aea769f...` on `jp-a800-171` and
+  `sha256:fd2afb63...` on `jp-a800-172`. The development runner therefore now
+  requires and records the full per-host image ID and refuses mutable tags.
 - The bounded container runner now executes the pinned plugin's actual
   QDiffusion proposal, conditioned Boltzmann energy, FlagQuantum sampler,
   objective, backward, optimizer update, and one-step guided generation path.

@@ -248,6 +248,7 @@ def run_probe(
     expected_hostname: str,
     source_revision: str,
     plugin_revision: str,
+    validation_image_id: str,
 ) -> dict[str, Any]:
     if execution_host not in HOSTS:
         raise ValueError("execution_host must be one of the two declared A800 hosts")
@@ -255,6 +256,8 @@ def run_probe(
         raise ValueError("source_revision must be a full lowercase Git revision")
     if FULL_REVISION.fullmatch(plugin_revision) is None:
         raise ValueError("plugin_revision must be a full lowercase Git revision")
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", validation_image_id) is None:
+        raise ValueError("validation_image_id must be a full SHA-256 image identity")
     observed_hostname = socket.gethostname()
     if observed_hostname != expected_hostname:
         raise RuntimeError(
@@ -281,6 +284,7 @@ def run_probe(
         "system_acceptance": False,
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "validation_image_id": validation_image_id,
         "python_version": platform.python_version(),
         "torch_version": torch.__version__,
         "torch_cuda_version": torch.version.cuda,
@@ -317,6 +321,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--validation-image-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
     payload = run_probe(
@@ -325,6 +330,7 @@ def main() -> None:
         expected_hostname=arguments.expected_hostname,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
+        validation_image_id=arguments.validation_image_id,
     )
     _write_private_json(arguments.output, payload)
     print(f"Private QDiffusion development record written to {arguments.output}")
