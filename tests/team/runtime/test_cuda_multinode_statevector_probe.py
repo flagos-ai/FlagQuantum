@@ -20,6 +20,12 @@ assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement check, so a probe constant that drifted from the committed
+#: manifest fails at import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
+
 
 def test_the_launched_shape_is_the_only_one_the_probe_runs(
     monkeypatch: pytest.MonkeyPatch,
@@ -244,6 +250,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
         "export": {
             "measurement": _MODULE.EXPORT_MEASUREMENT,
             "product": "full_amplitude_vector",
@@ -280,20 +287,30 @@ def test_every_retracted_blocker_needs_its_own_observation(
         return set(payload["evidence"]["claim_blockers"])
 
     complete = blockers()
-    # The pair and the circuit are declared boundaries, so nothing this run does
-    # can retract them.
-    assert {
-        "two_node_pair_only_no_wider_topology",
-        "toy_circuit_parameters_only",
-    } <= complete
-    assert (
-        complete
-        - {
-            "two_node_pair_only_no_wider_topology",
-            "toy_circuit_parameters_only",
-        }
-        == set()
-    )
+    # The pair of hosts is a declared boundary, so nothing this run does can
+    # retract it. The circuit used to be declared the same way; it is now a
+    # measured fact, because the run records the configuration it bound and the
+    # leaf count the built circuit reported.
+    assert "two_node_pair_only_no_wider_topology" in complete
+    assert complete - {"two_node_pair_only_no_wider_topology"} == set()
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 175},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 176.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in complete
 
     # The full-state gather blocker turns on whether a materialization the
     # workload needs was recorded. A validation gather is not one, so an absent

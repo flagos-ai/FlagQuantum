@@ -82,6 +82,21 @@ BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY = "toy_circuit_parameters_only"
 #: and however much it exchanges, is the single point the blocker names.
 MINIMUM_SWEPT_WIDTHS = 2
 
+#: The smallest parameterization any frozen release workload in this repository
+#: declares. It is derived from the contracts rather than chosen here: the
+#: statevector release path's narrowest accepted matched-speed configuration is
+#: 22 wires at depth 8 (176 leaves), the tensor-network path's is 14 wires at
+#: six layers (84), and the MPS path's is 31 trainable leaves at every rung of
+#: its matched-speed ladder, so 31 is the minimum. The floor is what keeps
+#: `toy_circuit_claim_blockers` from being satisfied by a hand-written circuit
+#: that agrees with a hand-written declaration; it is deliberately the loosest
+#: value the three contracts allow, because a floor taken from one lane's
+#: contract would make another lane's own frozen workload unreachable.
+#: `tests/benchmark_contract/test_multinode_probe_parameterization.py` recomputes
+#: the minimum from the three committed manifests, so a refrozen contract that
+#: moves it fails the suite instead of silently rotting this number.
+MINIMUM_RELEASE_CIRCUIT_PARAMETERS = 31
+
 
 class ClaimBoundaryError(ValueError):
     """An observation that cannot support the claim it is being recorded under."""
@@ -92,7 +107,13 @@ def _mapping(value: Any) -> Mapping[str, Any]:
 
 
 def _count(value: Any, *, floor: int) -> int | None:
-    """A whole number of iterations, or `None` when it is not one."""
+    """A whole number at or above `floor`, or `None` when it is not one.
+
+    `True` is rejected rather than read as 1, because a boolean is a flag about
+    a count and not the count, and a JSON artefact that carried `true` where a
+    number belongs is a producer defect to fail closed on rather than a value to
+    arithmetic with.
+    """
 
     if isinstance(value, bool) or not isinstance(value, int):
         return None
@@ -306,7 +327,8 @@ def measurement_claim_blockers(observations: Mapping[str, Any]) -> tuple[str, ..
 
     This is a positive existence claim and not a claim about scale: a workload
     that is too small to be a production one says so through
-    `toy_circuit_parameters_only`, which no measurement here can retract.
+    `toy_circuit_parameters_only`, which `toy_circuit_claim_blockers` retires
+    only on the parameterization the circuit itself bound.
     """
 
     if _measured_seconds(observations) is None:
@@ -396,6 +418,44 @@ def staging_claim_blockers(observations: Mapping[str, Any]) -> tuple[str, ...]:
     return ()
 
 
+def toy_circuit_claim_blockers(observations: Mapping[str, Any]) -> tuple[str, ...]:
+    """`toy_circuit_parameters_only` stands until the circuit bound real leaves.
+
+    The blocker is a statement about the parameterization, so the observation
+    that retires it is the parameterization: the frozen configuration the
+    workload ran, the leaf count the release contract declares for it, and the
+    leaf count the built circuit reported. A probe that ran the contract's own
+    workload binds the declared count at the declared width; a probe that ran a
+    hand-written few-leaf circuit binds neither and keeps the blocker.
+
+    The floor is the project's own smallest accepted released circuit rather than
+    a number chosen here, so a small circuit cannot retire the blocker by naming
+    a small manifest. The one thing this cannot see through is a probe that
+    builds a large circuit and reports a declared count that does not match it,
+    which is why the artifact also records the manifest it read and the count it
+    bound: the declaration is checkable against the file it names.
+    """
+
+    circuit = _mapping(observations.get("frozen_circuit"))
+    configuration = circuit.get("configuration")
+    digest = circuit.get("manifest_sha256")
+    declared = _count(
+        circuit.get("declared_parameter_count"),
+        floor=MINIMUM_RELEASE_CIRCUIT_PARAMETERS,
+    )
+    bound = _count(
+        circuit.get("bound_parameter_count"),
+        floor=MINIMUM_RELEASE_CIRCUIT_PARAMETERS,
+    )
+    if not isinstance(configuration, str) or not configuration:
+        return (BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,)
+    if not isinstance(digest, str) or len(digest) != 64:
+        return (BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,)
+    if declared is None or bound is None or declared != bound:
+        return (BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,)
+    return ()
+
+
 def claim_blockers(*groups: Sequence[str]) -> list[str]:
     """One sorted, de-duplicated blocker list from every group that applies."""
 
@@ -416,6 +476,7 @@ __all__ = (
     "CONFIGURED_TRANSPORT_UNSPECIFIED",
     "DEBUG_LOG_SCOPES",
     "MINIMUM_MEASURED_ITERATIONS",
+    "MINIMUM_RELEASE_CIRCUIT_PARAMETERS",
     "MINIMUM_SWEPT_WIDTHS",
     "MINIMUM_WARMUP_ITERATIONS",
     "TRANSPORT_ROUTE_FABRIC",
@@ -432,5 +493,6 @@ __all__ = (
     "observed_network_route",
     "slice_count_claim_blockers",
     "staging_claim_blockers",
+    "toy_circuit_claim_blockers",
     "transport_claim_blockers",
 )
