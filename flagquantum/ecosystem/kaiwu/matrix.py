@@ -16,6 +16,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from math import isfinite
+from numbers import Real
 
 import torch
 
@@ -67,6 +68,15 @@ MatrixLike = torch.Tensor | Sequence[Sequence[float]]
 SpinLike = torch.Tensor | Sequence[float] | Sequence[Sequence[float]]
 
 
+def _finite_real_scalar(value: object, *, description: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise KaiwuMatrixValidationError(f"{description} must be a real number")
+    numeric = float(value)
+    if not isfinite(numeric):
+        raise KaiwuMatrixValidationError(f"{description} must be finite")
+    return numeric
+
+
 def _as_tensor(value: object, *, description: str) -> torch.Tensor:
     try:
         if isinstance(value, torch.Tensor):
@@ -101,7 +111,10 @@ def canonicalize_ising_matrix(
     energy values even though it would not change the minimizer.
     """
 
-    if not isfinite(symmetry_tolerance) or symmetry_tolerance < 0:
+    tolerance = _finite_real_scalar(
+        symmetry_tolerance, description="symmetry_tolerance"
+    )
+    if tolerance < 0:
         raise KaiwuMatrixValidationError(
             "symmetry_tolerance must be a finite non-negative number"
         )
@@ -119,12 +132,12 @@ def canonicalize_ising_matrix(
         canonical,
         canonical.transpose(0, 1),
         rtol=0.0,
-        atol=symmetry_tolerance,
+        atol=tolerance,
     ):
         raise KaiwuMatrixValidationError(
             "Ising matrix must be symmetric within symmetry_tolerance"
         )
-    return canonical
+    return (canonical + canonical.transpose(0, 1)) / 2.0
 
 
 def encode_qubo_as_ising(
@@ -145,8 +158,7 @@ def encode_qubo_as_ising(
         matrix,
         symmetry_tolerance=symmetry_tolerance,
     )
-    if not isfinite(offset):
-        raise KaiwuMatrixValidationError("QUBO offset must be finite")
+    finite_offset = _finite_real_scalar(offset, description="QUBO offset")
 
     width = qubo.shape[0]
     encoded = torch.zeros((width + 1, width + 1), dtype=torch.float64)
@@ -155,7 +167,7 @@ def encode_qubo_as_ising(
     auxiliary_couplings = -qubo.sum(dim=1) / 4.0
     encoded[:width, width] = auxiliary_couplings
     encoded[width, :width] = auxiliary_couplings
-    bias = float(offset) + float((qubo.sum() + qubo.diagonal().sum()).item()) / 4.0
+    bias = finite_offset + float((qubo.sum() + qubo.diagonal().sum()).item()) / 4.0
     return QuboIsingEncoding(matrix=encoded, bias=bias)
 
 
@@ -199,8 +211,7 @@ def ising_energy(
     """
 
     canonical = canonicalize_ising_matrix(matrix)
-    if not isfinite(bias):
-        raise KaiwuMatrixValidationError("bias must be finite")
+    finite_bias = _finite_real_scalar(bias, description="bias")
 
     spin_tensor = _as_tensor(spins, description="spins").to(
         device="cpu", dtype=torch.float64
@@ -219,9 +230,9 @@ def ising_energy(
     if not bool(((spin_tensor == -1) | (spin_tensor == 1)).all()):
         raise KaiwuMatrixValidationError("spins must contain only -1 or +1")
 
-    energies = -torch.einsum(
-        "bi,ij,bj->b", spin_tensor, canonical, spin_tensor
-    ) + float(bias)
+    energies = (
+        -torch.einsum("bi,ij,bj->b", spin_tensor, canonical, spin_tensor) + finite_bias
+    )
     return energies[0] if was_vector else energies
 
 

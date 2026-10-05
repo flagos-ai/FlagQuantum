@@ -18,12 +18,21 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   capability probe and all live submissions therefore remain blocked by that
   explicit prerequisite. Kaiwu authentication uses `user_id` and `sdk_code` to
   initialize a local license; `sdk_code` must be handled as a secret.
-- Phase 1 pure-data work is in progress under `flagquantum/ecosystem/kaiwu`.
-  Ising validation, independent Kaiwu-convention energy evaluation, symmetric
-  QUBO-to-Ising encoding with auxiliary-spin decoding, and an explicit integer
-  precision policy have focused tests. Optional conformance tests match Kaiwu
-  Community 1.0.7 at revision
+- The Phase 1 pure-data boundary is implemented under
+  `flagquantum/ecosystem/kaiwu`. Ising validation, independent
+  Kaiwu-convention energy evaluation, symmetric QUBO-to-Ising encoding with
+  auxiliary-spin decoding, and an explicit integer precision policy have
+  focused tests. Explicit symmetry tolerance is now a normalization rule: it
+  decides whether an input may be accepted, but every returned matrix is
+  exactly symmetric for the stricter Remote boundary. Boolean, complex,
+  string, nonfinite, and negative scalar controls fail with owned boundary
+  errors. Optional conformance tests match Kaiwu Community 1.0.7 at revision
   `b648b531c034bd6ae9b7a34fed994c717967cc72` for energy and QUBO conversion.
+- The public Kaiwu Community tree does not contain a simulated-annealing
+  optimizer; the replacement test therefore uses its real `IsingSolver`
+  contract with an exhaustive implementation. Conformance against the
+  provider-distributed local annealer remains part of the proprietary SDK lane
+  and cannot be claimed from the public source test.
 - The first Phase 2 security boundary is implemented under
   `flagquantum/remote/kaiwu`: credentials are explicit, redacted, and
   non-serializable, and environment discovery requires the complete dedicated

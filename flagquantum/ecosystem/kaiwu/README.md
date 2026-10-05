@@ -34,6 +34,12 @@ implementation of Kaiwu `PrecisionReducer`. Before using it for real-machine
 submission, run version-pinned conformance tests against the installed Kaiwu
 SDK and record the resulting coefficient and energy-order evidence.
 
+`symmetry_tolerance` controls acceptance only. Any matrix accepted under a
+nonzero tolerance is averaged with its transpose so the returned value is
+exactly symmetric and can pass the stricter Remote receipt identity boundary.
+Scalar tolerance, offset, and bias arguments must be finite real numbers;
+booleans, strings, and complex values are rejected rather than coerced.
+
 `KaiwuSampler` never enables integer scaling implicitly. Set its
 `integer_target_range` only after choosing and recording a precision policy.
 Exhausting the remote-call budget raises before submission; there is no local

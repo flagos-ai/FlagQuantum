@@ -65,7 +65,23 @@ def test_canonicalize_accepts_only_explicit_symmetry_tolerance() -> None:
         canonicalize_ising_matrix(matrix)
 
     result = canonicalize_ising_matrix(matrix, symmetry_tolerance=0.001)
-    assert result.tolist() == matrix
+    assert result.tolist() == [
+        [0.0, pytest.approx(1.00005)],
+        [pytest.approx(1.00005), 0.0],
+    ]
+    assert torch.equal(result, result.T)
+
+
+@pytest.mark.parametrize(
+    "tolerance",
+    (True, "0.1", 1 + 0j, float("nan"), float("inf"), -0.1),
+)
+def test_canonicalize_rejects_invalid_symmetry_tolerance(tolerance: object) -> None:
+    with pytest.raises(KaiwuMatrixValidationError):
+        canonicalize_ising_matrix(
+            [[0.0, 1.0], [1.0, 0.0]],
+            symmetry_tolerance=tolerance,  # type: ignore[arg-type]
+        )
 
 
 def test_ising_energy_matches_independent_reference_and_bias() -> None:
@@ -80,6 +96,15 @@ def test_ising_energy_matches_independent_reference_and_bias() -> None:
 
     torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
     assert ising_energy(matrix, spins[0]).ndim == 0
+
+
+@pytest.mark.parametrize(
+    "bias",
+    (True, "1.0", 1 + 0j, float("nan"), float("inf")),
+)
+def test_ising_energy_rejects_invalid_bias(bias: object) -> None:
+    with pytest.raises(KaiwuMatrixValidationError):
+        ising_energy([[0.0]], [1], bias=bias)  # type: ignore[arg-type]
 
 
 def test_qubo_auxiliary_encoding_has_exhaustive_energy_parity() -> None:
@@ -106,6 +131,15 @@ def test_qubo_auxiliary_encoding_has_exhaustive_energy_parity() -> None:
 
             assert actual.item() == pytest.approx(source)
             assert decode_qubo_spins(encoded_spins).tolist() == list(binary)
+
+
+@pytest.mark.parametrize(
+    "offset",
+    (True, "1.0", 1 + 0j, float("nan"), float("inf")),
+)
+def test_qubo_encoding_rejects_invalid_offset(offset: object) -> None:
+    with pytest.raises(KaiwuMatrixValidationError):
+        encode_qubo_as_ising([[0.0]], offset=offset)  # type: ignore[arg-type]
 
 
 def test_decode_qubo_spins_is_batch_safe_and_gauge_invariant() -> None:
