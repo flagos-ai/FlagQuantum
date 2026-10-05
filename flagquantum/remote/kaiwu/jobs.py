@@ -45,6 +45,17 @@ def _validate_private_directory(path: Path, *, description: str) -> None:
         )
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build one JSON object while rejecting ambiguous duplicate fields."""
+
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Kaiwu receipt JSON contains duplicate object keys")
+        result[key] = value
+    return result
+
+
 def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
     destination = Path(path)
     parent = destination.parent
@@ -62,6 +73,14 @@ def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
             stream.flush()
             os.fsync(stream.fileno())
         os.link(temporary, destination, follow_symlinks=False)
+        directory_descriptor = os.open(
+            parent,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -84,7 +103,7 @@ def _read_private_json(path: str | Path) -> Any:
             )
         with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
             descriptor = -1
-            return json.load(stream)
+            return json.load(stream, object_pairs_hook=_reject_duplicate_json_keys)
     finally:
         if descriptor >= 0:
             os.close(descriptor)

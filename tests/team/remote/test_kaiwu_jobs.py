@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 from dataclasses import replace
 from pathlib import Path
 
@@ -162,6 +164,25 @@ def test_save_never_overwrites_receipt(tmp_path: Path) -> None:
         job.save(receipt_path)
 
 
+def test_save_syncs_file_and_parent_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="durable-save")
+    synced_types: list[int] = []
+    real_fsync = os.fsync
+
+    def record_fsync(descriptor: int) -> None:
+        synced_types.append(os.fstat(descriptor).st_mode)
+        real_fsync(descriptor)
+
+    monkeypatch.setattr("flagquantum.remote.kaiwu.jobs.os.fsync", record_fsync)
+
+    job.save(tmp_path / "receipt.json")
+
+    assert any(stat.S_ISREG(mode) for mode in synced_types)
+    assert any(stat.S_ISDIR(mode) for mode in synced_types)
+
+
 @pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
 def test_save_rejects_unsafe_parent_directory(tmp_path: Path, unsafe_kind: str) -> None:
     job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="unsafe-parent")
@@ -203,6 +224,22 @@ def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
     receipt_path.write_text(json.dumps(payload))
 
     with pytest.raises(ValueError, match="matrix identity"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    (
+        '{"matrix": [[0, 1], [1, 0]], "matrix": [[0, 2], [2, 0]], "receipt": {}}',
+        '{"matrix": [[0, 1], [1, 0]], "receipt": {"task_name": "a", "task_name": "b"}}',
+    ),
+)
+def test_restore_rejects_duplicate_json_keys(tmp_path: Path, encoded: str) -> None:
+    receipt_path = tmp_path / "duplicate.json"
+    receipt_path.write_text(encoded)
+    receipt_path.chmod(0o600)
+
+    with pytest.raises(ValueError, match="duplicate object keys"):
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 

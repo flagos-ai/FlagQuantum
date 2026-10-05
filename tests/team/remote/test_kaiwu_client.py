@@ -203,6 +203,39 @@ def test_restore_requires_authoritative_sdk_recovery_bundle(
     assert _FakeOptimizer.solve_calls == solve_calls
 
 
+def test_restore_rejects_duplicate_keys_in_authoritative_recovery_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    first_client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=first_client,
+        task_name="duplicate-sdk-recovery",
+        mode="sampling",
+        requested_samples=10,
+    )
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    recovery_path = first_client.recovery_receipt_path(job.receipt)
+    encoded = recovery_path.read_text(encoding="utf-8")
+    recovery_path.write_text(
+        encoded.replace(
+            '"matrix":',
+            '"matrix": [[0.0, 1.0], [1.0, 0.0]], "matrix":',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restored_client, _ = _client(monkeypatch, tmp_path)
+    restored = restore_kaiwu_job(receipt_path, client=restored_client)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        restored.status()
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
 def test_new_client_reuses_preexisting_recovery_receipt(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
