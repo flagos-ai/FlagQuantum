@@ -58,7 +58,7 @@ class Liouvillian:
     ``L^dag L`` appear once as shared factors of the two one-sided terms.
     """
 
-    __slots__ = ("_dimension", "_superoperator")
+    __slots__ = ("_adjoint", "_dimension", "_superoperator")
 
     def __init__(
         self,
@@ -70,13 +70,27 @@ class Liouvillian:
         self._dimension = int(hilbert_dimension)
         generator = SuperOperator.left_multiply(hamiltonian) * (-1j)
         generator += SuperOperator.right_multiply(hamiltonian) * (1j)
+        # The Hilbert--Schmidt adjoint of the generator differs from it in
+        # exactly two places: its Hamiltonian part changes sign, because the
+        # adjoint of ``-i [H, .]`` is ``+i [H, .]``, and the dissipator's
+        # sandwich is applied the other way round, because the adjoint of
+        # ``rho -> L rho L^dag`` is ``sigma -> L^dag sigma L``. The
+        # anticommutator is its own adjoint, since ``L^dag L`` is Hermitian.
+        # Both are accumulated in one loop so that a change to the generator
+        # cannot silently miss the adjoint that differentiates it.
+        adjoint = SuperOperator.left_multiply(hamiltonian) * (1j)
+        adjoint += SuperOperator.right_multiply(hamiltonian) * (-1j)
         for operator in collapse:
             dagger = torch.conj(operator).T
             product = dagger @ operator
             generator += SuperOperator.left_right_multiply(operator, dagger)
             generator += SuperOperator.left_multiply(product) * (-0.5)
             generator += SuperOperator.right_multiply(product) * (-0.5)
+            adjoint += SuperOperator.left_right_multiply(dagger, operator)
+            adjoint += SuperOperator.left_multiply(product) * (-0.5)
+            adjoint += SuperOperator.right_multiply(product) * (-0.5)
         self._superoperator = generator
+        self._adjoint = adjoint
 
     @property
     def hilbert_dimension(self) -> int:
@@ -99,6 +113,19 @@ class Liouvillian:
         """
 
         return self._superoperator.apply(state)
+
+    def adjoint_derivative(self, state: torch.Tensor) -> torch.Tensor:
+        """Return ``L^dag sigma``, the generator read through the adjoint.
+
+        The adjoint is taken with respect to the Hilbert--Schmidt inner product
+        ``<sigma, L rho> = trace(sigma^dag L rho)``, which is the inner product a
+        real cost over density matrices differentiates through. Applying it is
+        what propagates a cost gradient backwards across one output interval;
+        it is the same superoperator algebra as :meth:`derivative`, with the
+        Hamiltonian part sign-flipped and the dissipator's sandwich reversed.
+        """
+
+        return self._adjoint.apply(state)
 
     def dense(self, *, max_bytes: int = DEFAULT_DENSE_GENERATOR_BYTES) -> torch.Tensor:
         """Return the ``4**n x 4**n`` vectorized generator.

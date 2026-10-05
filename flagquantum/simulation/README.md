@@ -87,8 +87,12 @@ an operator with a physical rate; the named `amplitude_damping` operator is
 `sqrt(rate) * |0><1|`, so its rate is never confused with the dimensionless
 probability accepted by the instruction-level noise channel.
 
-The deterministic CPU implementation uses two fourth-order Runge--Kutta steps
-per output interval. Results report the actual method, order, maximum internal
+The integrator is selectable with `method`, and the choice is validated rather
+than silently replaced: `runge-kutta` (the default), `crank-nicolson` and
+`krylov-exponential`. The two order-`p` schemes take two substeps per output
+interval and report that order; the exponential scheme takes each interval whole
+because the exponential of a time-independent generator is exact on the grid, so
+it reports no order and `solve_tolerance` sets its accuracy instead. Results report the actual method, order, maximum internal
 step, precision, basis populations, requested observables, maximum trace drift,
 and whether populations stayed within the documented tolerance (`1e-9` for
 complex128 and `2e-5` for complex64). Density matrices are returned only when
@@ -140,6 +144,51 @@ assert result.plan is restored
 
 Set `return_density_matrices=True` when the complete density trajectory is
 needed. Otherwise it is omitted from the returned result.
+
+### Differentiating the initial state without retaining the sweep
+
+`fql.adjoint_gradient` returns the gradient of a scalar cost with respect to the
+initial density matrix, propagated by the adjoint equation on the same grid with
+the same scheme. Its reason to exist is retention rather than speed: the forward
+sweep runs under `torch.no_grad()`, so the only thing the reverse pass holds is
+the trajectory the forward pass already returned, and
+`tests/unit/test_lindblad_adjoint_gradient.py` measures that as 0 retained
+tensors against 180 for the recorded forward graph of the same fixture, at the
+same cost and the same step. `torch.autograd` through `fql.run` remains the route
+to use when the gradient is with respect to the Hamiltonian or a gate parameter.
+
+```python
+import torch
+import flagquantum as fq
+import flagquantum.lindblad as fql
+
+gradient = fql.adjoint_gradient(
+    0.5 * fq.X(0) + 0.1 * fq.Z(0),
+    [[1.0, 0.0], [0.0, 0.0]],
+    torch.linspace(0.0, 1.0, 5, dtype=torch.float64),
+    lambda trajectory: torch.real(trajectory[-1, 1, 1]),
+    collapse_operators=[fql.amplitude_damping(rate=0.1, qubit=0)],
+)
+print(gradient.shape)                    # torch.Size([2, 2])
+```
+
+`cost` reads the whole trajectory -- one density matrix per time, stacked along a
+leading axis -- and must return a scalar. `options.require_gradients` is refused,
+because the route deliberately produces no differentiable trajectory to honour
+it; use `run` when that is what is wanted.
+
+The cotangent is the exact transpose of the discretized scheme the caller named,
+which is verified against that scheme's dense transpose and by the pairing
+identity between the generator and its Hilbert--Schmidt adjoint. One property of
+the forward path is disclosed here rather than repaired: at the base point where
+the two routes differ most, the adjoint route agrees with the dense transpose of
+the scheme it was given to roundoff, while autograd's backward pass through the
+matrix-free solve is `3.5e-06` (Crank--Nicolson) and `1.7e-05`
+(krylov-exponential) from a five-point stencil of that same scheme. That is a
+measured statement about the current matrix-free backward pass at one base
+point, not a general accuracy claim about either route: the explicit scheme,
+which takes no solve, is at roundoff on both, and at a second base point all
+three agree to `2.5e-14`.
 
 ## Clifford sampling beyond an amplitude store
 

@@ -2,10 +2,10 @@
 
 from typing import Any
 
-from . import lindblad, unitary
+from . import lindblad, lindblad_adjoint, unitary
 from .statevector import small as small_statevector
 
-_EXPORT_MODULES = (small_statevector, lindblad, unitary)
+_EXPORT_MODULES = (small_statevector, lindblad, lindblad_adjoint, unitary)
 __all__ = list(
     dict.fromkeys(name for module in _EXPORT_MODULES for name in module.__all__)
 )

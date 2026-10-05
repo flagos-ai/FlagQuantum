@@ -59,6 +59,7 @@ from flagquantum.qec import CssCodeMatrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
+from flagquantum.simulation.lindblad_adjoint import adjoint_gradient
 from flagquantum.simulation.pauli import exponential_pauli_operator
 from flagquantum.simulation.unitary import get_unitary
 
@@ -91,10 +92,15 @@ pytestmark = pytest.mark.unit
 # groups that census is read through. The Nelder-Mead optimizer contributes
 # one: its example is the same two-qubit Pauli energy the SPSA entry beside it
 # minimizes, so the two optimizer units are compared on one objective rather
-# than each being merely present.
+# than each being merely present. The adjoint route into the Lindblad engine is
+# listed beside the forward integrator because its example is the same kind of
+# statement about a different capability: the cotangent's shape is the shape of
+# the state the trajectory started from, which is what distinguishes a reverse
+# pass over the trajectory from a derivative of a returned trajectory.
 ENTRIES = (
     adder_circuit,
     adder_wires,
+    adjoint_gradient,
     amplitude_encode,
     angular_encode,
     BosonOperator,

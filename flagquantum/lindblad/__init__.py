@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Any
 
@@ -20,6 +20,9 @@ from ..simulation.lindblad import (
 )
 from ..simulation.lindblad import (
     amplitude_damping as _amplitude_damping,
+)
+from ..simulation.lindblad_adjoint import (
+    adjoint_gradient as _adjoint_gradient,
 )
 from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR, INTEGRATOR_NAMES
 from ._plan import LindbladPlan, build_lindblad_plan
@@ -254,11 +257,73 @@ def plan(
     )
 
 
+def adjoint_gradient(
+    hamiltonian: Any,
+    initial_state: Any,
+    times: Any,
+    cost: Callable[[torch.Tensor], torch.Tensor],
+    *,
+    collapse_operators: Sequence[Any] | None = None,
+    n_qubits: int | None = None,
+    options: ExecutionOptions | None = None,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+) -> torch.Tensor:
+    """Return the gradient of ``cost`` with respect to the initial state.
+
+    ``cost`` reads the whole trajectory -- one density matrix per time, stacked
+    along a leading axis -- and returns a scalar. The gradient is propagated by
+    the adjoint method, so the forward sweep records no graph and the reverse
+    pass holds the trajectory instead of it; the value returned is the exact
+    transpose of the same discretized scheme ``run`` would have applied, and it
+    is the cotangent of the normalized initial density matrix rather than of
+    ``initial_state`` as written.
+
+    There is no ``outputs`` argument here: the cost is the readout, so naming a
+    second one would be a second source of truth for what is being measured.
+
+    ``options.require_gradients`` is refused, because it asks for a
+    differentiable trajectory and this route deliberately produces none; use
+    ``run`` when the gradient must come from autograd instead of the adjoint.
+
+    Examples:
+        >>> import torch
+        >>> from flagquantum.lindblad import adjoint_gradient, amplitude_damping
+        >>> gradient = adjoint_gradient(
+        ...     torch.eye(2, dtype=torch.complex128),
+        ...     [[1.0, 0.0], [0.0, 0.0]],
+        ...     torch.linspace(0, 1, 5, dtype=torch.float64),
+        ...     lambda trajectory: torch.real(trajectory[-1, 1, 1]),
+        ...     collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
+        ... )
+        >>> gradient.shape
+        torch.Size([2, 2])
+    """
+
+    resolved_n_qubits = _infer_n_qubits(initial_state) if n_qubits is None else n_qubits
+    device, dtype, batch_size, require_gradients = _execution_settings(options)
+    return _adjoint_gradient(
+        hamiltonian,
+        initial_state,
+        resolved_n_qubits,
+        times,
+        cost,
+        collapse_operators,
+        device=device,
+        dtype=dtype,
+        method=method,
+        solve_tolerance=solve_tolerance,
+        batch_size=batch_size,
+        require_gradients=require_gradients,
+    )
+
+
 __all__ = (
     "CollapseOperator",
     "EvolutionResult",
     "INTEGRATOR_NAMES",
     "LindbladPlan",
+    "adjoint_gradient",
     "amplitude_damping",
     "plan",
     "run",
