@@ -4,7 +4,7 @@ A classical amplitude vector is prepared by a ladder of uniformly controlled
 rotations, following Möttönen, Vartiainen, Bergholm, and Salomaa, "Transformation
 of quantum states using uniformly controlled rotations", *Quantum Information and
 Computation* **5**, 467 (2005), arXiv:quant-ph/0407010. The register is walked one
-wire at a time: level `j` acts on wire `j` and is controlled by wires `0` to
+qubit at a time: level `j` acts on qubit `j` and is controlled by qubits `0` to
 `j-1`, so a level with `k` controls carries `2**k` branch angles and is emitted as
 a Gray-code walk of `2**k` control flips with one leaf between consecutive
 branches. Two passes are needed, all magnitude ladders first and then all phase
@@ -78,7 +78,7 @@ __all__ = ("synthesize_state_preparation",)
 #: its own angle, which is what a ladder needs; see the module docstring.
 _LADDER_Z_ROTATION = "rz"
 
-#: `CX` read with the first wire on the most significant index bit, which is the
+#: `CX` read with the first qubit on the most significant index bit, which is the
 #: order `synthesize_two_qubit` reads a matrix. `two_qubit_synthesis` owns the
 #: `cx` reading, `_named_entangler_matrix` hands it back in the low-control
 #: convention that module's algebra is derived in, and `_swap_register` is that
@@ -155,29 +155,29 @@ def _norm(values: Sequence[complex]) -> float:
     return total
 
 
-def _wires(qubits: Any, n_qubits: int) -> tuple[int, ...]:
-    """Return the wires the register occupies, most significant bit first.
+def _register(qubits: Any, n_qubits: int) -> tuple[int, ...]:
+    """Return the qubits the register occupies, most significant bit first.
 
     Raises ValueError when `qubits` does not name `n_qubits` distinct
     non-negative integers. `bool` is rejected even though it is an `int`, because
-    a wire index is not a truth value.
+    a qubit index is not a truth value.
     """
     if qubits is None:
         return tuple(range(n_qubits))
     try:
         named = list(qubits)
     except TypeError as error:
-        raise ValueError("qubits must be a sequence of wire indices") from error
-    for wire in named:
-        if isinstance(wire, bool) or not isinstance(wire, int) or wire < 0:
+        raise ValueError("qubits must be a sequence of qubit indices") from error
+    for qubit in named:
+        if isinstance(qubit, bool) or not isinstance(qubit, int) or qubit < 0:
             raise ValueError("qubits must be non-negative integers")
     if len(named) != n_qubits:
         raise ValueError(
-            f"qubits must name {n_qubits} wires for this amplitude vector, got"
+            f"qubits must name {n_qubits} qubits for this amplitude vector, got"
             f" {len(named)}"
         )
     if len(set(named)) != len(named):
-        raise ValueError("qubits must name distinct wires")
+        raise ValueError("qubits must name distinct qubits")
     return tuple(named)
 
 
@@ -187,7 +187,7 @@ def _magnitude_angles(
     """Return the `ry` angle of every branch of one level of the magnitude pass.
 
     Level `j` splits the register into `2**j` blocks of `2**(n-j)` amplitudes.
-    Inside a block the wire `j` bit picks the half, and `2 * atan2` of the two
+    Inside a block the qubit `j` bit picks the half, and `2 * atan2` of the two
     half-norms is the rotation that gives the halves their relative weight.
     """
     block = 2 ** (n_qubits - level)
@@ -206,7 +206,7 @@ def _phase_angles(data: Sequence[complex], n_qubits: int) -> list[list[float]]:
     """Return the `rz` angle of every branch of every level of the phase pass.
 
     Each uniformly controlled `rz` at level `j` shifts the phase of a basis state
-    by `0.5 * eps_j * gamma`, where `eps_j` is `+1` when the wire `j` bit is set
+    by `0.5 * eps_j * gamma`, where `eps_j` is `+1` when the qubit `j` bit is set
     and `-1` otherwise, and `gamma` is that branch's angle. The state whose bits
     are all zero is not exempt -- every ladder contributes its `-gamma/2` term
     there -- so the phases are reachable only up to one additive constant per
@@ -298,7 +298,7 @@ def _ry_euler_leaves(
     pulse_opcode: str,
     metadata: Mapping[str, Any],
 ) -> list[Instruction]:
-    """Return `RY(theta)` on one wire as a z-rotation and pi/2 pulses.
+    """Return `RY(theta)` on one qubit as a z-rotation and pi/2 pulses.
 
     The general form of `one_qubit_synthesis` is emitted unconditionally, with
     `(theta, phi, lam) = (theta, 0, 0)`, because its short forms depend on the
@@ -329,7 +329,7 @@ def _ry_euler_leaves(
 def _z_leaf(
     angle: float, *, target: int, z_rotation: str, metadata: Mapping[str, Any]
 ) -> list[Instruction]:
-    """Return `RZ(angle)` on one wire, or nothing when it is the identity.
+    """Return `RZ(angle)` on one qubit, or nothing when it is the identity.
 
     Unlike a magnitude leaf, dropping this one is exact rather than a change of
     global phase: a phase ladder applies exactly one such leaf per branch, so its
@@ -449,7 +449,7 @@ def _control_flips(
         for control in register[:index]:
             leaves = synthesize_two_qubit(
                 _CONTROL_FLIP,
-                wires=(control, target),
+                qubits=(control, target),
                 entangler=entangler,
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
@@ -474,9 +474,9 @@ def synthesize_state_preparation(
 
     `amplitudes` is a one-dimensional sequence of at least two numbers, or any
     object exposing `tolist`, in the same order `flagquantum.Circuit` reads a
-    state: entry `k` is the amplitude of the basis state whose wire-`qubits[0]`
-    bit is the most significant. It is normalised, so a vector that is not a unit
-    vector is prepared with the direction it names. `qubits` names the wires the
+    state: entry `k` is the amplitude of the basis state whose `qubits[0]` bit is
+    the most significant. It is normalised, so a vector that is not a unit vector
+    is prepared with the direction it names. `qubits` names the qubits the
     register occupies, most significant first, and defaults to `0..n-1`.
 
     `z_rotation` is the z-rotation the target publishes and must be `rz`; `phase`
@@ -491,7 +491,7 @@ def synthesize_state_preparation(
     an entangler `synthesize_two_qubit` cannot spell `CX` with. Raises ValueError
     for an amplitude vector that is not one-dimensional, is shorter than two
     entries, is not a power of two long, or is the zero vector, and for a `qubits`
-    that does not name as many distinct non-negative wires as the vector needs.
+    that does not name as many distinct non-negative qubits as the vector needs.
 
     The result is equal to the requested state up to one global phase, which
     FlagQuantum IR cannot record and which depends on the basis as well as on the
@@ -505,10 +505,10 @@ def synthesize_state_preparation(
         return None
     data = _normalised(amplitudes)
     n_qubits = len(data).bit_length() - 1
-    wires = _wires(qubits, n_qubits)
+    register = _register(qubits, n_qubits)
     annotations = {} if metadata is None else metadata
     flips = _control_flips(
-        wires,
+        register,
         entangler=entangler,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,
@@ -522,8 +522,8 @@ def synthesize_state_preparation(
         emitted.extend(
             _magnitude_ladder(
                 _magnitude_angles(data, n_qubits, level),
-                target=wires[level],
-                controls=wires[:level],
+                target=register[level],
+                controls=register[:level],
                 flips=flips,
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
@@ -534,8 +534,8 @@ def synthesize_state_preparation(
         emitted.extend(
             _phase_ladder(
                 angles,
-                target=wires[level],
-                controls=wires[:level],
+                target=register[level],
+                controls=register[:level],
                 flips=flips,
                 z_rotation=z_rotation,
                 metadata=annotations,

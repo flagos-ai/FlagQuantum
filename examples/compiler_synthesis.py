@@ -140,7 +140,7 @@ def two_qubit_case() -> None:
 
     leaves = synthesize_two_qubit(
         matrix,
-        wires=(0, 1),
+        qubits=(0, 1),
         entangler=ENTANGLER,
         z_rotation=Z_ROTATION,
         pulse_opcode=PULSE,
@@ -201,7 +201,7 @@ def refusal_case() -> None:
     )
     refused_entangler = synthesize_two_qubit(
         [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
-        wires=(0, 1),
+        qubits=(0, 1),
         entangler="ecr",
         z_rotation=Z_ROTATION,
         pulse_opcode=PULSE,

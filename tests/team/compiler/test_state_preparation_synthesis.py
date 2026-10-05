@@ -376,7 +376,7 @@ def _flip_cost(entangler: str) -> int:
     """
     leaves = synthesize_two_qubit(
         _CONTROL_FLIP,
-        wires=(0, 1),
+        qubits=(0, 1),
         entangler=entangler,
         z_rotation=_Z_ROTATION,
         pulse_opcode=_PULSE,
@@ -662,7 +662,7 @@ def test_the_control_flip_cost_is_the_rosters_own_measurement() -> None:
     for entangler in _ENTANGLERS:
         leaves = synthesize_two_qubit(
             _CONTROL_FLIP,
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler=entangler,
             z_rotation=_Z_ROTATION,
             pulse_opcode=_PULSE,
@@ -878,7 +878,7 @@ def test_the_short_euler_forms_cannot_carry_a_ladder_phase() -> None:
     general: list[float] = []
     for theta in angles:
         leaves = synthesize_one_qubit_matrix(
-            _ry_matrix(theta), wire=0, z_rotation=_Z_ROTATION
+            _ry_matrix(theta), qubit=0, z_rotation=_Z_ROTATION
         )
         assert leaves is not None
         short.append(_dropped_phase(leaves, theta))
@@ -1084,11 +1084,11 @@ def test_the_amplitude_validation_errors_are_typed() -> None:
     assert len(_prepared([0.5, 0.5])) == 4
 
 
-def test_the_wire_validation_errors_are_typed() -> None:
-    """`ValueError` for a wire map that does not fit the vector, by name."""
+def test_the_register_validation_errors_are_typed() -> None:
+    """`ValueError` for a qubit map that does not fit the vector, by name."""
     cases = (
-        ((0,), "qubits must name 2 wires for this amplitude vector, got 1"),
-        ((0, 0), "qubits must name distinct wires"),
+        ((0,), "qubits must name 2 qubits for this amplitude vector, got 1"),
+        ((0, 0), "qubits must name distinct qubits"),
         ((-1, 0), "qubits must be non-negative integers"),
         ((True, 0), "qubits must be non-negative integers"),
         ((0, 1.0), "qubits must be non-negative integers"),
