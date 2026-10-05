@@ -1,0 +1,50 @@
+{
+  "schema": "flagquantum.qboson_qdiffusion_config",
+  "version": "1.0",
+  "preregistered_at": "<required>",
+  "primary_host": "jp-a800-171",
+  "replay_host": "jp-a800-172",
+  "software": {
+    "source_revision": "<required>",
+    "kaiwu_pytorch_plugin_revision": "<required>",
+    "python_version": "3.10.<required>",
+    "torch_version": "2.7.0",
+    "kaiwu_sdk_version": "1.3.1"
+  },
+  "dataset": {
+    "name": "<required>",
+    "revision": "<required>",
+    "split": "<required>",
+    "sha256": "<required>"
+  },
+  "checkpoint": {
+    "name": "<required>",
+    "revision": "<required>",
+    "sha256": "<required>"
+  },
+  "tokenizer": {
+    "name": "<required>",
+    "revision": "<required>"
+  },
+  "generation": {
+    "sequence_count": 32,
+    "max_steps": 64,
+    "num_candidates": 4
+  },
+  "seeds": [1701, 1702, 1703],
+  "remote_call_budget": 128,
+  "precision_policy": {
+    "name": "explicit-int8",
+    "target_min": -127,
+    "target_max": 127
+  },
+  "primary_metric": {
+    "name": "mean_cosine_distance",
+    "direction": "lower"
+  },
+  "thresholds": {
+    "uniqueness_baseline_fraction_min": 0.95,
+    "repeat_ratio_absolute_increase_max": 0.05,
+    "invalid_sequence_count_max": 0
+  }
+}

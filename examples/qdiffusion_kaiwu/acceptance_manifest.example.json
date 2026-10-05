@@ -1,0 +1,18 @@
+{
+  "schema": "flagquantum.qboson_qdiffusion_manifest",
+  "version": "1.0",
+  "config": {
+    "path": "acceptance_config.json",
+    "sha256": "<required>"
+  },
+  "records": [
+    {
+      "path": "jp-a800-171.json",
+      "sha256": "<required>"
+    },
+    {
+      "path": "jp-a800-172.json",
+      "sha256": "<required>"
+    }
+  ]
+}

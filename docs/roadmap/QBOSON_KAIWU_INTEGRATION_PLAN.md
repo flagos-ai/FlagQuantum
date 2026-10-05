@@ -55,6 +55,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   public package index during a download-only probe. The proprietary wheel or
   an approved platform download is still required to inspect and implement its
   provider-state mapping without guessing.
+- The QDiffusion acceptance decision is now executable rather than narrative:
+  a frozen experiment-config template, two-host manifest template, and
+  fail-closed validator recompute system and application gates. Fake transport,
+  CPU execution, reused task identities, fallback, resubmission, over-budget
+  calls, changed software or precision lanes, missing seeds, and post-hoc metric
+  failures are rejected. No real acceptance record has been produced yet.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
