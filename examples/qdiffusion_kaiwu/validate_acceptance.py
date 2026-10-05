@@ -725,6 +725,58 @@ def _validate_application(
         errors.append("primary: application acceptance did not pass")
 
 
+def _validate_training_provider_evidence(
+    record: dict[str, Any], label: str, errors: list[str]
+) -> None:
+    if record.get("transport") != "kaiwu_cim":
+        errors.append(f"{label}: training transport is not kaiwu_cim")
+    for field in (
+        "pinned_sdk_client",
+        "real_provider_evidence",
+        "qboson_hardware_used",
+        "provider_identity_complete",
+        "secrets_redacted",
+    ):
+        if record.get(field) is not True:
+            errors.append(f"{label}: training {field} is not proven")
+    if record.get("fallback_occurred") is not False:
+        errors.append(f"{label}: training fallback is not explicitly false")
+
+    remote_calls = record.get("remote_call_count")
+    budget = record.get("protein_remote_call_budget_per_seed")
+    if type(remote_calls) is not int or remote_calls <= 0:
+        errors.append(f"{label}: training remote_call_count must be positive")
+    if type(budget) is not int or budget <= 0:
+        errors.append(f"{label}: training per-seed call budget must be positive")
+    elif type(remote_calls) is int and remote_calls > budget:
+        errors.append(f"{label}: training remote calls exceed the per-seed budget")
+
+    receipts = record.get("task_receipts")
+    if not isinstance(receipts, list) or not receipts:
+        errors.append(f"{label}: training task receipts are missing")
+    else:
+        if type(remote_calls) is int and len(receipts) != remote_calls:
+            errors.append(f"{label}: training receipt count differs from remote calls")
+        for index, receipt in enumerate(receipts):
+            if not isinstance(receipt, dict):
+                errors.append(f"{label}: training receipt {index} is not an object")
+                continue
+            for field in ("provider_task_id", "provider_target"):
+                value = receipt.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(f"{label}: training receipt {index} has no {field}")
+            if receipt.get("mode") != "sampling":
+                errors.append(f"{label}: training receipt {index} is not sampling")
+
+    precision_count = record.get("precision_report_count")
+    if (
+        type(precision_count) is not int
+        or precision_count <= 0
+        or (type(remote_calls) is int and precision_count < remote_calls)
+    ):
+        errors.append(f"{label}: training precision evidence is incomplete")
+
+
 def _validate_component_bundle(
     component_payloads: dict[str, dict[str, Any]],
     *,
@@ -951,6 +1003,9 @@ def _validate_component_bundle(
                 evaluation_by_seed[seed] = (digest, payload)
     if list(training_by_seed) != seeds or list(evaluation_by_seed) != seeds:
         errors.append("manifest: component seed order differs from the frozen seed set")
+
+    for seed, (_, training) in training_by_seed.items():
+        _validate_training_provider_evidence(training, f"seed {seed}", errors)
 
     for evidence in evidence_records:
         if not isinstance(evidence, dict) or type(evidence.get("seed")) is not int:

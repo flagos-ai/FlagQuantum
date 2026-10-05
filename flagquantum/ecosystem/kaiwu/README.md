@@ -25,7 +25,9 @@ Public entry points currently live in `flagquantum.ecosystem.kaiwu`:
   `flagquantum.remote.kaiwu`. It deduplicates identical matrices and enforces an
   explicit remote-call budget and timeout. Its `precision_reports` retain one
   report per distinct original matrix, including separate reports when multiple
-  inputs quantize to one shared remote matrix.
+  inputs quantize to one shared remote matrix. Its read-only `client` property
+  exposes the already-bound Remote client solely so evidence builders can prove
+  transport provenance; task ownership remains in `remote.kaiwu`.
 
 The integer preparation policy is FlagQuantum-owned and is not presented as an
 implementation of Kaiwu `PrecisionReducer`. Before using it for real-machine

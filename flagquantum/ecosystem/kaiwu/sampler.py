@@ -106,6 +106,12 @@ class KaiwuSampler:
         return self._remote_call_count
 
     @property
+    def client(self) -> KaiwuTaskClient:
+        """Return the Remote client bound to this draft interoperability adapter."""
+
+        return self._client
+
+    @property
     def receipts(self) -> tuple[KaiwuTaskReceipt, ...]:
         return tuple(self._receipts)
 

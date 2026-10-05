@@ -95,6 +95,7 @@ def test_sampler_returns_plugin_compatible_numpy_spins() -> None:
     assert result.shape == (10, 3)
     assert result.dtype == np.int8
     assert set(np.unique(result)) == {-1, 1}
+    assert sampler.client is client
     assert sampler.remote_call_count == 1
     assert sampler.last_result is not None
     assert sampler.last_result.metadata["fallback_occurred"] is False

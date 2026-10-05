@@ -188,6 +188,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   preflight before credential resolution, forces local-only Transformers model
   loading, persists task receipts, and hashes the best trained energy
   checkpoint. Its record explicitly leaves both acceptance gates unevaluated.
+- Protein-training provenance is now derived from the sampler's bound Remote
+  client rather than a hard-coded transport label. Final assembly and
+  independent revalidation require the exact SDK client, real-provider and
+  QBoson-use flags, nonempty sampling receipts with provider identities,
+  positive in-budget call counts, no fallback, and complete precision evidence
+  for every frozen seed.
 - System-probe and protein-training call budgets are now separate. A validator
   derives a conservative per-seed submission bound from the pinned plugin's
   actual positive/negative energy and generation loops; the illustrative full

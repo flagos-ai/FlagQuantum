@@ -472,7 +472,14 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
 
 Repeat with a new exclusive preflight and training-record path for every frozen
 seed. A training record is not system or application acceptance; do not promote
-it until ESM2 evaluation and both host gates pass.
+it until ESM2 evaluation and both host gates pass. Each completed training
+component must also prove that its sampler is bound to the exact pinned SDK
+client, contain at least one sampling receipt with provider task and target
+identities, retain complete precision evidence, and stay within its per-seed
+call budget. The assembler and independent final validator reject injected
+clients, zero-call records, missing identities, fallback, and incomplete receipt
+or precision sets even if the workflow artifacts and hash links are otherwise
+valid.
 
 Do not reuse the bounded system probe's `remote_call_budget` for this command.
 The plugin invokes the sampler once per conditioned example for positive energy,

@@ -203,6 +203,23 @@ def _components(
                     "seed": seed,
                     "run_completed": True,
                     "execution_host": "jp-a800-171",
+                    "transport": "kaiwu_cim",
+                    "pinned_sdk_client": True,
+                    "real_provider_evidence": True,
+                    "qboson_hardware_used": True,
+                    "provider_identity_complete": True,
+                    "fallback_occurred": False,
+                    "secrets_redacted": True,
+                    "remote_call_count": 1,
+                    "protein_remote_call_budget_per_seed": 71269,
+                    "precision_report_count": 1,
+                    "task_receipts": [
+                        {
+                            "mode": "sampling",
+                            "provider_task_id": f"protein-task-{seed}",
+                            "provider_target": "SPQC-provider",
+                        }
+                    ],
                     "source_preflight_sha256": source_preflight_sha256,
                     "transfer_manifest_sha256": transfer_manifest_sha256,
                     "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
@@ -365,6 +382,49 @@ def test_assembler_rejects_evaluation_linked_to_another_training_record() -> Non
     }
 
     with pytest.raises(ValueError, match="not linked to its training record"):
+        assemble_records(
+            config=config,
+            config_sha256="9" * 64,
+            primary_system=(
+                _system("jp-a800-171", "primary", "primary-task"),
+                "a" * 64,
+            ),
+            replay_system=(
+                _system("jp-a800-172", "portability_replay", "replay-task"),
+                "b" * 64,
+            ),
+            primary_source_preflight=(
+                _source_preflight("jp-a800-171"),
+                PRIMARY_SOURCE_PREFLIGHT_SHA,
+            ),
+            replay_source_preflight=(
+                _source_preflight("jp-a800-172"),
+                REPLAY_SOURCE_PREFLIGHT_SHA,
+            ),
+            transfer_manifest=(_transfer_manifest(), TRANSFER_MANIFEST_SHA),
+            portability=(portability, "c" * 64),
+            training_records=training,
+            evaluation_records=evaluations,
+        )
+
+
+def test_assembler_rejects_training_without_real_provider_evidence() -> None:
+    config = _config()
+    training, evaluations = _components()
+    training[0][0]["real_provider_evidence"] = False
+    portability = {
+        "execution_host": "jp-a800-172",
+        "acceptance": {"portability": "pass"},
+        "training_record_sha256": training[0][1],
+        "trained_energy_checkpoint_sha256": training[0][0][
+            "trained_energy_checkpoint_sha256"
+        ],
+        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
+        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
+    }
+
+    with pytest.raises(ValueError, match="real_provider_evidence is not proven"):
         assemble_records(
             config=config,
             config_sha256="9" * 64,
@@ -600,6 +660,19 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     primary_sha = _write_json(primary_path, primary)
     manifest["records"][0]["sha256"] = primary_sha
     manifest["component_records"][0]["sha256"] = primary_system_sha
+
+    tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_training["real_provider_evidence"] = False
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training real_provider_evidence is not proven" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
+    manifest["component_records"][5]["sha256"] = restored_training_sha
 
     tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
     tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99

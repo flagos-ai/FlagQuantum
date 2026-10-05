@@ -39,6 +39,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     RECORD_SCHEMA,
     _validate_application,
     _validate_system_record,
+    _validate_training_provider_evidence,
     validate_acceptance,
 )
 
@@ -264,6 +265,12 @@ def assemble_records(
             raise ValueError(f"training seed {seed} did not complete")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"training seed {seed} is from the wrong host")
+        provider_errors: list[str] = []
+        _validate_training_provider_evidence(
+            record, f"training seed {seed}", provider_errors
+        )
+        if provider_errors:
+            raise ValueError("; ".join(provider_errors))
         for field in (
             "source_preflight_sha256",
             "transfer_manifest_sha256",

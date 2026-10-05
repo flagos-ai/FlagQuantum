@@ -260,6 +260,13 @@ def run_training_seed(
         for receipt in receipts
     )
     precision_reports = sampler.precision_reports
+    verified_provider_transport = type(sampler.client) is KaiwuSDKClient
+    qboson_hardware_used = bool(
+        failure is None
+        and verified_provider_transport
+        and provider_identity_complete
+        and sampler.remote_call_count > 0
+    )
     return {
         "schema": SCHEMA,
         "version": "1.0",
@@ -279,7 +286,10 @@ def run_training_seed(
         "observed_gpu_model": observed_gpu,
         "requested_cuda_device": "cuda:0",
         "seed": seed,
-        "transport": "kaiwu_cim",
+        "transport": ("kaiwu_cim" if verified_provider_transport else "injected_test"),
+        "pinned_sdk_client": verified_provider_transport,
+        "real_provider_evidence": qboson_hardware_used,
+        "qboson_hardware_used": qboson_hardware_used,
         "fallback_occurred": False,
         "secrets_redacted": True,
         "run_completed": failure is None,

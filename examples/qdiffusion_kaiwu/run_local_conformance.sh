@@ -62,6 +62,7 @@ export PYTHONPATH="$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
 cd -- "$REPOSITORY_ROOT"
 "$PYTHON_BIN" -B -m pytest -q \
   tests/team/ecosystem/test_boundary_inventory.py \
+  tests/team/ecosystem/test_kaiwu_a800_smoke_contract.py \
   tests/team/ecosystem/test_kaiwu_draft_boundary.py \
   tests/team/ecosystem/test_kaiwu_matrix_boundary.py \
   tests/team/ecosystem/test_kaiwu_community_conformance.py \
@@ -69,8 +70,18 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_kaiwu_qdiffusion_binding.py \
   tests/team/ecosystem/test_kaiwu_pytorch_plugin_conformance.py \
   tests/team/ecosystem/test_qdiffusion_live_system_probe.py \
+  tests/team/ecosystem/test_qdiffusion_acceptance_assembler.py \
+  tests/team/ecosystem/test_qdiffusion_acceptance_validator.py \
+  tests/team/ecosystem/test_qdiffusion_artifact_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_cli_entrypoints.py \
   tests/team/ecosystem/test_qdiffusion_environment_lock.py \
   tests/team/ecosystem/test_qdiffusion_environment_lock_builder.py \
+  tests/team/ecosystem/test_qdiffusion_portability_replay_live.py \
+  tests/team/ecosystem/test_qdiffusion_protein_evaluate.py \
+  tests/team/ecosystem/test_qdiffusion_protein_training_live.py \
+  tests/team/ecosystem/test_qdiffusion_source_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_transfer_builder.py \
+  tests/team/ecosystem/test_qdiffusion_transfer_bundle.py \
   tests/team/remote/test_kaiwu_credentials.py \
   tests/team/remote/test_kaiwu_jobs.py \
   tests/team/remote/test_kaiwu_live_smoke.py \

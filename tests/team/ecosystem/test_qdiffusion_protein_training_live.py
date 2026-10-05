@@ -228,7 +228,12 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     workflow.main = interrupted
     sampler = cast(
         KaiwuSampler,
-        SimpleNamespace(remote_call_count=0, receipts=(), precision_reports=()),
+        SimpleNamespace(
+            client=object(),
+            remote_call_count=0,
+            receipts=(),
+            precision_reports=(),
+        ),
     )
 
     record = run_training_seed(
@@ -257,6 +262,10 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["transfer_manifest_sha256"] == "f" * 64
     assert record["environment_lock_sha256"] == "0" * 64
     assert record["failure"]["type"] == "KeyboardInterrupt"
+    assert record["transport"] == "injected_test"
+    assert record["pinned_sdk_client"] is False
+    assert record["real_provider_evidence"] is False
+    assert record["qboson_hardware_used"] is False
     assert record["acceptance"] == {
         "system": "not_evaluated",
         "application": "not_evaluated",
