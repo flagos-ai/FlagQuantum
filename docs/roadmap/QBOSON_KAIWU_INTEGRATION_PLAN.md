@@ -89,6 +89,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   validation, recovery persistence, and deduplication. Only the final vendor
   module is replaced with a deterministic fake, so this proves the FlagQuantum
   boundary composition but is not provider or hardware evidence.
+- A separately invoked Phase 2 live-smoke command is prepared for the approved
+  Python 3.10 SDK lane. It requires an exact quota-cost acknowledgement before
+  submitting one optimization and one sampling task, has no local fallback,
+  writes a private credential-free record, and keeps hardware acceptance closed
+  when provider task or target identity is unavailable.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

@@ -32,3 +32,27 @@ thresholds. A record that uses the development fake, CPU tensors, one host, or
 post-hoc metric thresholds fails closed.
 
 Credentials never belong in the frozen configuration or evidence bundle.
+
+## Live provider smoke test
+
+`qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
+It submits one fixed optimization task and one fixed sampling task, uses the
+same identity for bounded polling, and writes a new mode-0600 record without
+credentials or raw vendor exception text. It has no simulator fallback.
+
+The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private
+checkpoint directory, and an explicitly selected project. The acknowledgement
+must be typed exactly so an ordinary test run cannot spend provider quota:
+
+```bash
+python examples/qdiffusion_kaiwu/qboson_live_smoke.py \
+  --checkpoint-dir private-kaiwu-checkpoints \
+  --output private-evidence/qboson-smoke.json \
+  --project-no CPQC-your-project \
+  --task-prefix flagquantum-smoke-20261005 \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
+```
+
+Successful tasks alone do not make this an acceptance record. The script keeps
+`hardware_acceptance=false` until the pinned SDK mapping supplies both a stable
+provider task ID and a provider-reported target for every task.
