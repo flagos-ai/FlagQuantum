@@ -124,7 +124,7 @@ def two_qubit_case() -> None:
     """Spell a gate outside the entangler's class as entanglers and leaves."""
 
     # `swap` is neither a `cx` nor a local factor, so it exercises the whole KAK
-    # path instead of the entangler-alone shortcut. It is read with `wires[0]` on
+    # path instead of the entangler-alone shortcut. It is read with `qubits[0]` on
     # the most significant index bit, the order `fq.Circuit` itself uses.
     matrix = [
         [1, 0, 0, 0],
@@ -147,7 +147,7 @@ def two_qubit_case() -> None:
     )
     assert leaves is not None
     source = input_state().any(0, 1, unitary=matrix)
-    print("two-qubit synthesis: swap on wires (0, 1)")
+    print("two-qubit synthesis: swap on qubits (0, 1)")
     report(
         "  swap on h(0) ry(0.7)(1)",
         leaves,
@@ -176,7 +176,7 @@ def refusal_case() -> None:
     Two entries in this family look alike and are not: `synthesize_one_qubit`
     accepts `phase` and `u1` as its z-rotation, because a single gate may carry
     any global phase, while `synthesize_state_preparation` refuses them, because
-    a uniformly controlled ladder is built from a rotation about one wire and
+    a uniformly controlled ladder is built from a rotation about one qubit and
     `phase` is exactly `exp(i*theta/2)` times `rz` -- a different constant on
     every branch. The ladder therefore requires the entrywise-exact form.
     """
