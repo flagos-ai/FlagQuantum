@@ -657,10 +657,22 @@ evidence rather than a CPU collective. Its route was read from the NCCL debug
 log as RoCE, and it carries five synchronized amplitude samples taken after two
 warmups. The cut width was swept across both labels of the declared cut, which
 retired `inter_node_cut_width_not_swept` and
-`slice_count_fixed_at_world_size`. It carries four blockers --
-`toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_state_gather` and
-`host_staging_in_measured_region` -- and reports both claim flags false.
+`slice_count_fixed_at_world_size`. It carries two blockers --
+`toy_circuit_parameters_only` and `two_node_pair_only_no_wider_topology` -- and
+reports both claim flags false. Two further blockers were retired by observation
+rather than by declaration. The staging audit now profiles the measured region
+and finds no explicit host transfer in it, so each sample is device work end to
+end. And the probe exports the whole distributed state as the product of a leg
+of its own: the leg runs `run_distributed_tensor_network`, which all-reduces the
+rank partials and reshapes them into the full state, and it asserts the
+placement that leg ran under -- two nodes, accelerator evidence, replicated
+after the all-reduce -- before it reports anything. It refuses a state it did
+not materialize, so the export cannot be satisfied by a summary that merely
+claims one, and it re-asserts that no scalability claim was made. That is a
+materialization the workload needs, not a full-object gather taken to check an
+answer, so `validation_only_tiny_full_state_gather` is gone. The two blockers
+that remain are the pair's own scope and the circuit's own size; no measurement
+on this hardware can retract either.
 
 The cut is declared because the automatic slicer selects by peak memory, and on
 this circuit the cheapest cut is a label carried only by state-copy nodes: a
@@ -709,14 +721,15 @@ tensor-network workload that one device cannot.
 Two further blockers are also not closable by a run. `toy_circuit_parameters_only`
 attaches to the five-wire hardware artifact itself and is not retractable by any
 measurement, and `two_node_pair_only_no_wider_topology` is permanent because this
-cluster has two hosts. The host-staging and validation-only-gather blockers are
-in principle closable -- the statevector lane closed both with a production
-full-state readout leg -- but the tensor-network producer has no such leg, so
-they stand as recorded.
+cluster has two hosts. The host-staging blocker the statevector lane closed was
+never attached to this artifact, and the validation-only-gather blocker is now
+closed the same way the statevector lane closed its own: by measuring a
+production full-state readout leg. Both closures are recorded above as
+observations, not as declarations.
 
-The lane therefore holds at `production_supported` with all four blockers and
-both claim flags false. That is the honest ceiling for this capability on this
-pair, and it is a measured one.
+The lane therefore holds at `production_supported` with two blockers and both
+claim flags false. That is the honest ceiling for this capability on this pair,
+and it is a measured one.
 
 #### The frozen capacity workload does not contract at its own slicing
 

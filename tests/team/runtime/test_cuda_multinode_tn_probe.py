@@ -178,6 +178,10 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
         "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
+        # The product the export leg materializes. It is named in the scope so a
+        # reader can see which object the leg exported rather than having to
+        # infer it from the observation block.
+        "exported_product": "full_tensor_network_state",
         "local_world_size": 1,
         "n_wires": 5,
         "node_count": 2,
@@ -215,9 +219,16 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # An optimizer that did not move the expectation would make every resume
     # comparison agree for the wrong reason.
     assert abs(metrics["training_loss_decrease"]) > 0
-    # A sliced contraction is not a reconstructed one: the whole point of the
-    # probe is the partition, so the full-state flag has to be false.
-    assert observations["production_full_state_materialization"] is False
+    # A sliced contraction is not a reconstructed one: the amplitude legs and
+    # the single-amplitude projection report their own summaries, and neither
+    # materializes the whole state. The full-state flag is true in this artifact
+    # because the export leg is a separate leg that does, which is exactly the
+    # distinction the gather blocker turns on.
+    for rank_record in observations["rank_records"]:
+        assert rank_record["amplitudes"]["full_state_materialized"] is False
+        assert rank_record["single_amplitude"]["full_state_materialized"] is False
+    assert observations["production_full_state_materialization"] is True
+    assert observations["export"]["product"] == _MODULE.EXPORTED_PRODUCT
     # The returned expectation is all-reduced, while the global gradient is the
     # sum of per-rank partials the probe gathered itself. An artifact that
     # confused the two would be claiming a gradient reduction the runtime did
@@ -448,13 +459,12 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         assert shard["node_count"] == 2
 
     # The boundary is exactly these blockers. The fabric, the measured workload,
-    # the audited staging path and the swept cut are each retired by the
-    # observation that justifies them, so a reader cannot find one here and
-    # cannot find one silently missing either.
+    # the audited staging path, the swept cut and the full-state gather are each
+    # retired by the observation that justifies them, so a reader cannot find one
+    # here and cannot find one silently missing either.
     assert sorted(evidence["claim_blockers"]) == [
         "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_state_gather",
     ]
     # The blockers this probe exists to remove must be gone: an artifact that
     # still carried them would not support the training claim it makes.
