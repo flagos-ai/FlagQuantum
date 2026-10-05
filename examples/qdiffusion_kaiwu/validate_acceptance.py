@@ -16,8 +16,10 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.source_preflight import (
+    TRANSFER_MANIFEST_SCHEMA,
     validate_common_transfer_manifest,
     validate_source_preflight_record,
+    validate_transfer_manifest_record,
 )
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
@@ -721,6 +723,7 @@ def _validate_component_bundle(
     seeds = config.get("seeds", [])
     expected_schema_counts = {
         SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
+        TRANSFER_MANIFEST_SCHEMA: 1,
         SYSTEM_COMPONENT_SCHEMA: 2,
         PORTABILITY_COMPONENT_SCHEMA: 1,
         TRAINING_COMPONENT_SCHEMA: len(seeds),
@@ -740,7 +743,8 @@ def _validate_component_bundle(
         if payload.get("version") != "1.0":
             errors.append(f"component {digest}: unsupported version")
         if (
-            payload.get("schema") != SOURCE_PREFLIGHT_COMPONENT_SCHEMA
+            payload.get("schema")
+            not in (SOURCE_PREFLIGHT_COMPONENT_SCHEMA, TRANSFER_MANIFEST_SCHEMA)
             and payload.get("experiment_config_sha256") != config_sha256
         ):
             errors.append(
@@ -779,8 +783,32 @@ def _validate_component_bundle(
         except ValueError as exc:
             errors.append(f"manifest: {exc}")
 
+    transfer_manifests = [
+        (digest, payload)
+        for digest, payload in component_payloads.items()
+        if payload.get("schema") == TRANSFER_MANIFEST_SCHEMA
+    ]
+    if len(transfer_manifests) == 1:
+        transfer_manifest_digest, transfer_manifest = transfer_manifests[0]
+        try:
+            validate_transfer_manifest_record(
+                transfer_manifest,
+                source_revision=software.get("source_revision", ""),
+                plugin_revision=software.get("kaiwu_pytorch_plugin_revision", ""),
+            )
+        except ValueError as exc:
+            errors.append(f"transfer manifest: {exc}")
+        if source_preflights and any(
+            preflight[1].get("manifest_sha256") != transfer_manifest_digest
+            for preflight in source_preflights.values()
+        ):
+            errors.append("manifest: copied transfer manifest identity mismatch")
+
     for digest, payload in component_payloads.items():
-        if payload.get("schema") == SOURCE_PREFLIGHT_COMPONENT_SCHEMA:
+        if payload.get("schema") in (
+            SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
+            TRANSFER_MANIFEST_SCHEMA,
+        ):
             continue
         host = payload.get("execution_host")
         source_entry = source_preflights.get(host) if isinstance(host, str) else None
@@ -1084,7 +1112,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     primary = by_host[primary_host]
     replay = by_host[replay_host]
     if primary.get("component_bundle_required") is True:
-        expected_component_count = 5 + 2 * len(config.get("seeds", []))
+        expected_component_count = 6 + 2 * len(config.get("seeds", []))
         if len(component_payloads) != expected_component_count:
             errors.append(
                 "manifest: component bundle does not contain every source record"
@@ -1164,6 +1192,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         referenced_component_hashes = {
             primary.get("source_preflight_sha256"),
             replay.get("source_preflight_sha256"),
+            primary.get("transfer_manifest_sha256"),
             primary.get("system_evidence_sha256"),
             replay.get("system_evidence_sha256"),
             portability_evidence.get("record_sha256"),

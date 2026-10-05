@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = "flagquantum.qboson_a800_extracted_bundle_verification"
+TRANSFER_MANIFEST_SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
 EVIDENCE_CLASS = "extraction_preflight_only"
+TRANSFER_MANIFEST_CLASSIFICATION = "local_preparation_only_not_execution_evidence"
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 COMMUNITY_REVISION = "b648b531c034bd6ae9b7a34fed994c717967cc72"
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
@@ -167,3 +169,44 @@ def validate_common_transfer_manifest(
     if digests[0] != digests[1]:
         raise ValueError("source preflights do not share one transfer manifest")
     return digests[0]
+
+
+def validate_transfer_manifest_record(
+    record: dict[str, Any],
+    *,
+    source_revision: str,
+    plugin_revision: str,
+) -> None:
+    """Validate the reviewed transfer manifest copied into final evidence."""
+
+    if (
+        record.get("schema") != TRANSFER_MANIFEST_SCHEMA
+        or record.get("version") != "1.0"
+    ):
+        raise ValueError("unsupported transfer manifest schema or version")
+    if record.get("classification") != TRANSFER_MANIFEST_CLASSIFICATION:
+        raise ValueError("transfer manifest has an unsafe classification")
+    if record.get("created_for_hosts") != ["jp-a800-171", "jp-a800-172"]:
+        raise ValueError("transfer manifest does not cover both validation hosts")
+    artifacts = record.get("artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != 3:
+        raise ValueError("transfer manifest must contain exactly three artifacts")
+    expected_revisions = {
+        "flagquantum-qboson-": source_revision,
+        "kaiwu-plugin-": plugin_revision,
+        "kaiwu-community-": COMMUNITY_REVISION,
+    }
+    for filename_prefix, expected_revision in expected_revisions.items():
+        if FULL_REVISION.fullmatch(expected_revision) is None:
+            raise ValueError(
+                "expected source revisions must be full lowercase revisions"
+            )
+        artifact = _artifact_for(artifacts, filename_prefix=filename_prefix)
+        filename = artifact.get("filename")
+        if artifact.get("revision") != expected_revision:
+            raise ValueError(f"transfer manifest {filename_prefix} revision mismatch")
+        if filename != f"{filename_prefix}{expected_revision[:10]}.tar.gz":
+            raise ValueError(f"transfer manifest {filename_prefix} filename mismatch")
+        digest = artifact.get("sha256")
+        if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
+            raise ValueError(f"transfer manifest {filename_prefix} digest is invalid")

@@ -220,8 +220,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - System, training, evaluation, portability-replay, and development records now
   retain the host-specific post-extraction preflight digest and common transfer
   manifest digest. Final assembly requires both host preflight files, copies
-  them as immutable components, and revalidates every execution record's link
-  to the correct host preflight and the shared manifest.
+  them and the exact shared transfer manifest as immutable components, and
+  revalidates every execution record's link to the correct host preflight and
+  that self-contained manifest.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

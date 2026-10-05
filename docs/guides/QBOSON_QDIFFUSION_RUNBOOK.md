@@ -497,6 +497,7 @@ python -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --replay-system /absolute/evidence/jp-a800-172-system.json \
   --primary-source-preflight /absolute/evidence/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /absolute/evidence/jp-a800-172-extraction-preflight.json \
+  --transfer-manifest /absolute/evidence/flagquantum-qboson-a800-bundle.manifest.json \
   --portability /absolute/evidence/jp-a800-172-portability.json \
   --training-record /absolute/evidence/seed-1701-training.json \
   --training-record /absolute/evidence/seed-1702-training.json \
@@ -508,12 +509,13 @@ python -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
 ```
 
 The target directory must not exist. The assembler verifies component schemas,
-config identities, both revision-bound extraction preflights, host roles, seed
-coverage, training/evaluation links, and the selected portability checkpoint
-before averaging metrics. It copies every source record into a private component
-directory, hashes those copies, creates the two final host records and manifest,
-then runs `validate_acceptance.py` on the result. Missing, extra, replaced, or
-selectively omitted source or seed records fail.
+config identities, both revision-bound extraction preflights, their exact shared
+transfer manifest, host roles, seed coverage, training/evaluation links, and the
+selected portability checkpoint before averaging metrics. It copies every
+source record and the transfer manifest into a private component directory,
+hashes those copies, creates the two final host records and manifest, then runs
+`validate_acceptance.py` on the result. Missing, extra, replaced, or selectively
+omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence
 

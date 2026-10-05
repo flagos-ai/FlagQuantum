@@ -28,8 +28,10 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.source_preflight import (
+    TRANSFER_MANIFEST_SCHEMA,
     validate_common_transfer_manifest,
     validate_source_preflight_record,
+    validate_transfer_manifest_record,
 )
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
@@ -184,6 +186,7 @@ def assemble_records(
     replay_system: tuple[dict[str, Any], str],
     primary_source_preflight: tuple[dict[str, Any], str],
     replay_source_preflight: tuple[dict[str, Any], str],
+    transfer_manifest: tuple[dict[str, Any], str],
     portability: tuple[dict[str, Any], str],
     training_records: list[tuple[dict[str, Any], str]],
     evaluation_records: list[tuple[dict[str, Any], str]],
@@ -192,6 +195,7 @@ def assemble_records(
     replay_system_record, replay_system_sha = replay_system
     primary_preflight_record, primary_preflight_sha = primary_source_preflight
     replay_preflight_record, replay_preflight_sha = replay_source_preflight
+    transfer_manifest_record, transfer_manifest_sha = transfer_manifest
     portability_record, portability_sha = portability
     if primary_system_record.get("execution_host") != config["primary_host"]:
         raise ValueError("primary system record is from the wrong host")
@@ -226,9 +230,16 @@ def assemble_records(
             raise ValueError(f"system record source preflight differs for {host}")
         if system.get("transfer_manifest_sha256") != preflight.get("manifest_sha256"):
             raise ValueError(f"system record transfer manifest differs for {host}")
-    validate_common_transfer_manifest(
+    common_manifest_sha = validate_common_transfer_manifest(
         (primary_preflight_record, replay_preflight_record)
     )
+    validate_transfer_manifest_record(
+        transfer_manifest_record,
+        source_revision=software["source_revision"],
+        plugin_revision=software["kaiwu_pytorch_plugin_revision"],
+    )
+    if transfer_manifest_sha != common_manifest_sha:
+        raise ValueError("copied transfer manifest differs from source preflights")
 
     training_by_seed: dict[int, tuple[dict[str, Any], str]] = {}
     for record, digest in training_records:
@@ -365,6 +376,7 @@ def main() -> None:
     parser.add_argument("--replay-system", required=True, type=Path)
     parser.add_argument("--primary-source-preflight", required=True, type=Path)
     parser.add_argument("--replay-source-preflight", required=True, type=Path)
+    parser.add_argument("--transfer-manifest", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
     parser.add_argument("--training-record", action="append", required=True, type=Path)
     parser.add_argument(
@@ -378,6 +390,7 @@ def main() -> None:
         args.replay_system,
         args.primary_source_preflight,
         args.replay_source_preflight,
+        args.transfer_manifest,
         args.portability,
         *args.training_record,
         *args.evaluation_record,
@@ -397,6 +410,9 @@ def main() -> None:
     replay_source_preflight = _load_component(
         args.replay_source_preflight, SOURCE_PREFLIGHT_SCHEMA
     )
+    transfer_manifest = _load_component(
+        args.transfer_manifest, TRANSFER_MANIFEST_SCHEMA
+    )
     portability = _load_component(args.portability, PORTABILITY_SCHEMA)
     training = [_load_component(path, TRAINING_SCHEMA) for path in args.training_record]
     evaluations = [
@@ -409,6 +425,7 @@ def main() -> None:
         replay_system=replay_system,
         primary_source_preflight=primary_source_preflight,
         replay_source_preflight=replay_source_preflight,
+        transfer_manifest=transfer_manifest,
         portability=portability,
         training_records=training,
         evaluation_records=evaluations,
@@ -425,6 +442,7 @@ def main() -> None:
         "replay-system.json": args.replay_system,
         "primary-source-preflight.json": args.primary_source_preflight,
         "replay-source-preflight.json": args.replay_source_preflight,
+        "transfer-manifest.json": args.transfer_manifest,
         "portability.json": args.portability,
     }
     for index, path in enumerate(args.training_record):

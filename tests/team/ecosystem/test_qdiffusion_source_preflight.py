@@ -9,6 +9,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     COMMUNITY_REVISION,
     load_source_preflight,
     validate_common_transfer_manifest,
+    validate_transfer_manifest_record,
 )
 
 pytestmark = pytest.mark.unit
@@ -137,3 +138,42 @@ def test_both_hosts_must_share_one_transfer_manifest() -> None:
     replay["manifest_sha256"] = "e" * 64
     with pytest.raises(ValueError, match="share one transfer manifest"):
         validate_common_transfer_manifest((primary, replay))
+
+
+def _transfer_manifest() -> dict[str, object]:
+    revisions = (
+        ("flagquantum-qboson-", SOURCE_REVISION),
+        ("kaiwu-plugin-", PLUGIN_REVISION),
+        ("kaiwu-community-", COMMUNITY_REVISION),
+    )
+    return {
+        "schema": "flagquantum.qboson_a800_transfer_bundle",
+        "version": "1.0",
+        "created_for_hosts": ["jp-a800-171", "jp-a800-172"],
+        "classification": "local_preparation_only_not_execution_evidence",
+        "artifacts": [
+            {
+                "filename": f"{prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "sha256": "f" * 64,
+            }
+            for prefix, revision in revisions
+        ],
+    }
+
+
+def test_transfer_manifest_component_binds_all_source_revisions() -> None:
+    record = _transfer_manifest()
+    validate_transfer_manifest_record(
+        record,
+        source_revision=SOURCE_REVISION,
+        plugin_revision=PLUGIN_REVISION,
+    )
+
+    record["artifacts"][1]["revision"] = "e" * 40  # type: ignore[index]
+    with pytest.raises(ValueError, match="revision mismatch"):
+        validate_transfer_manifest_record(
+            record,
+            source_revision=SOURCE_REVISION,
+            plugin_revision=PLUGIN_REVISION,
+        )

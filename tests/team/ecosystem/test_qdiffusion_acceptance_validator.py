@@ -288,6 +288,28 @@ def _source_preflight(host: str, manifest_sha256: str) -> dict[str, Any]:
     }
 
 
+def _transfer_manifest() -> dict[str, Any]:
+    revisions = (
+        ("flagquantum-qboson-", _REVISION),
+        ("kaiwu-plugin-", _PLUGIN_REVISION),
+        ("kaiwu-community-", "b648b531c034bd6ae9b7a34fed994c717967cc72"),
+    )
+    return {
+        "schema": "flagquantum.qboson_a800_transfer_bundle",
+        "version": "1.0",
+        "created_for_hosts": ["jp-a800-171", "jp-a800-172"],
+        "classification": "local_preparation_only_not_execution_evidence",
+        "artifacts": [
+            {
+                "filename": f"{prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "sha256": "f" * 64,
+            }
+            for prefix, revision in revisions
+        ],
+    }
+
+
 def test_complete_two_host_real_provider_bundle_passes(tmp_path: Path) -> None:
     manifest_path, _ = _bundle(tmp_path)
 
@@ -299,6 +321,7 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
     component_payloads = {
         "1" * 64: _source_preflight("jp-a800-171", "a" * 64),
         "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
+        "a" * 64: _transfer_manifest(),
     }
     schemas = (
         "flagquantum.qboson_qdiffusion_system_live_probe",

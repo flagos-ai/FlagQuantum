@@ -27,7 +27,12 @@ def _config() -> dict[str, Any]:
     return _full_config()
 
 
-def _system(host: str, role: str, task_id: str) -> dict[str, Any]:
+def _system(
+    host: str,
+    role: str,
+    task_id: str,
+    transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
+) -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_qdiffusion_system_live_probe",
         "version": "1.0",
@@ -38,7 +43,7 @@ def _system(host: str, role: str, task_id: str) -> dict[str, Any]:
             if host == "jp-a800-171"
             else REPLAY_SOURCE_PREFLIGHT_SHA
         ),
-        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
@@ -100,7 +105,9 @@ def _system(host: str, role: str, task_id: str) -> dict[str, Any]:
     }
 
 
-def _source_preflight(host: str) -> dict[str, Any]:
+def _source_preflight(
+    host: str, manifest_sha256: str = TRANSFER_MANIFEST_SHA
+) -> dict[str, Any]:
     revisions = (
         ("flagquantum-qboson-", "FlagQuantum-", "a" * 40),
         ("kaiwu-plugin-", "kaiwu-pytorch-plugin-", "b" * 40),
@@ -116,7 +123,7 @@ def _source_preflight(host: str) -> dict[str, Any]:
         "evidence_class": "extraction_preflight_only",
         "verification_hostname": f"hostname-{host}",
         "verified_for_target_host": host,
-        "manifest_sha256": TRANSFER_MANIFEST_SHA,
+        "manifest_sha256": manifest_sha256,
         "extracted_content_verified": True,
         "artifacts": [
             {
@@ -131,6 +138,28 @@ def _source_preflight(host: str) -> dict[str, Any]:
         "qboson_hardware_used": False,
         "a800_execution_verified": False,
         "acceptance_evidence": False,
+    }
+
+
+def _transfer_manifest() -> dict[str, Any]:
+    revisions = (
+        ("flagquantum-qboson-", "a" * 40),
+        ("kaiwu-plugin-", "b" * 40),
+        ("kaiwu-community-", "b648b531c034bd6ae9b7a34fed994c717967cc72"),
+    )
+    return {
+        "schema": "flagquantum.qboson_a800_transfer_bundle",
+        "version": "1.0",
+        "created_for_hosts": ["jp-a800-171", "jp-a800-172"],
+        "classification": "local_preparation_only_not_execution_evidence",
+        "artifacts": [
+            {
+                "filename": f"{prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "sha256": "8" * 64,
+            }
+            for prefix, revision in revisions
+        ],
     }
 
 
@@ -154,6 +183,7 @@ def _metrics(cosine: float) -> dict[str, float]:
 def _components(
     config_sha256: str = "9" * 64,
     source_preflight_sha256: str = PRIMARY_SOURCE_PREFLIGHT_SHA,
+    transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
 ) -> tuple[
     list[tuple[dict[str, Any], str]],
     list[tuple[dict[str, Any], str]],
@@ -171,7 +201,7 @@ def _components(
                     "run_completed": True,
                     "execution_host": "jp-a800-171",
                     "source_preflight_sha256": source_preflight_sha256,
-                    "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+                    "transfer_manifest_sha256": transfer_manifest_sha256,
                     "experiment_config_sha256": config_sha256,
                     "trained_energy_checkpoint_sha256": str(index + 3) * 64,
                 },
@@ -188,7 +218,7 @@ def _components(
                     "experiment_config_sha256": config_sha256,
                     "execution_host": "jp-a800-171",
                     "source_preflight_sha256": source_preflight_sha256,
-                    "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+                    "transfer_manifest_sha256": transfer_manifest_sha256,
                     "baseline_metrics": _metrics(0.6 + index * 0.01),
                     "guided_metrics": _metrics(0.4 + index * 0.01),
                 },
@@ -235,6 +265,7 @@ def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:
             _source_preflight("jp-a800-172"),
             REPLAY_SOURCE_PREFLIGHT_SHA,
         ),
+        transfer_manifest=(_transfer_manifest(), TRANSFER_MANIFEST_SHA),
         portability=(portability, "c" * 64),
         training_records=training,
         evaluation_records=evaluations,
@@ -287,6 +318,7 @@ def test_assembler_rejects_evaluation_linked_to_another_training_record() -> Non
                 _source_preflight("jp-a800-172"),
                 REPLAY_SOURCE_PREFLIGHT_SHA,
             ),
+            transfer_manifest=(_transfer_manifest(), TRANSFER_MANIFEST_SHA),
             portability=(portability, "c" * 64),
             training_records=training,
             evaluation_records=evaluations,
@@ -327,6 +359,7 @@ def test_assembler_rejects_different_host_transfer_manifests() -> None:
                 replay_preflight,
                 REPLAY_SOURCE_PREFLIGHT_SHA,
             ),
+            transfer_manifest=(_transfer_manifest(), TRANSFER_MANIFEST_SHA),
             portability=(portability, "c" * 64),
             training_records=training,
             evaluation_records=evaluations,
@@ -338,10 +371,16 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     config_path = tmp_path / "acceptance_config.json"
     config_sha = _write_json(config_path, config)
 
+    transfer_manifest_path = tmp_path / "components" / "transfer-manifest.json"
+    transfer_manifest_record = _transfer_manifest()
+    transfer_manifest_sha = _write_json(
+        transfer_manifest_path, transfer_manifest_record
+    )
+
     primary_preflight_path = tmp_path / "components" / "primary-source-preflight.json"
     replay_preflight_path = tmp_path / "components" / "replay-source-preflight.json"
-    primary_preflight_record = _source_preflight("jp-a800-171")
-    replay_preflight_record = _source_preflight("jp-a800-172")
+    primary_preflight_record = _source_preflight("jp-a800-171", transfer_manifest_sha)
+    replay_preflight_record = _source_preflight("jp-a800-172", transfer_manifest_sha)
     primary_preflight_sha = _write_json(
         primary_preflight_path, primary_preflight_record
     )
@@ -349,8 +388,12 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     primary_system_path = tmp_path / "components" / "primary-system.json"
     replay_system_path = tmp_path / "components" / "replay-system.json"
-    primary_system_record = _system("jp-a800-171", "primary", "primary-task")
-    replay_system_record = _system("jp-a800-172", "portability_replay", "replay-task")
+    primary_system_record = _system(
+        "jp-a800-171", "primary", "primary-task", transfer_manifest_sha
+    )
+    replay_system_record = _system(
+        "jp-a800-172", "portability_replay", "replay-task", transfer_manifest_sha
+    )
     primary_system_record["source_preflight_sha256"] = primary_preflight_sha
     replay_system_record["source_preflight_sha256"] = replay_preflight_sha
     primary_system_record["experiment_config_sha256"] = config_sha
@@ -359,7 +402,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     replay_system_sha = _write_json(replay_system_path, replay_system_record)
 
     training_templates, evaluation_templates = _components(
-        config_sha, primary_preflight_sha
+        config_sha, primary_preflight_sha, transfer_manifest_sha
     )
     training_entries: list[tuple[dict[str, Any], str]] = []
     evaluation_entries: list[tuple[dict[str, Any], str]] = []
@@ -368,6 +411,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         replay_system_path,
         primary_preflight_path,
         replay_preflight_path,
+        transfer_manifest_path,
     ]
     for index, (training_record, _) in enumerate(training_templates):
         path = tmp_path / "components" / f"training-{index}.json"
@@ -391,7 +435,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         "training_record_sha256": training_entries[0][1],
         "trained_energy_checkpoint_sha256": selected_checkpoint,
         "source_preflight_sha256": replay_preflight_sha,
-        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+        "transfer_manifest_sha256": transfer_manifest_sha,
     }
     portability_path = tmp_path / "components" / "portability.json"
     portability_sha = _write_json(portability_path, portability_record)
@@ -407,6 +451,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
             primary_preflight_sha,
         ),
         replay_source_preflight=(replay_preflight_record, replay_preflight_sha),
+        transfer_manifest=(transfer_manifest_record, transfer_manifest_sha),
         portability=(portability_record, portability_sha),
         training_records=training_entries,
         evaluation_records=evaluation_entries,
@@ -437,7 +482,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     assert validate_acceptance(manifest_path) == []
 
     loaded_training, loaded_sha = _load_component(
-        component_paths[4], "flagquantum.qboson_qdiffusion_protein_training"
+        component_paths[5], "flagquantum.qboson_qdiffusion_protein_training"
     )
     assert loaded_training["seed"] == 1701
     assert loaded_sha == training_entries[0][1]
@@ -461,15 +506,15 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["records"][0]["sha256"] = primary_sha
     manifest["component_records"][0]["sha256"] = primary_system_sha
 
-    tampered_evaluation = json.loads(component_paths[7].read_text(encoding="utf-8"))
+    tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
     tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99
-    tampered_evaluation_sha = _write_json(component_paths[7], tampered_evaluation)
+    tampered_evaluation_sha = _write_json(component_paths[8], tampered_evaluation)
     primary["application_evidence"]["records"][0][
         "evaluation_record_sha256"
     ] = tampered_evaluation_sha
     primary_sha = _write_json(primary_path, primary)
     manifest["records"][0]["sha256"] = primary_sha
-    manifest["component_records"][7]["sha256"] = tampered_evaluation_sha
+    manifest["component_records"][8]["sha256"] = tampered_evaluation_sha
     _write_json(manifest_path, manifest)
 
     assert any(

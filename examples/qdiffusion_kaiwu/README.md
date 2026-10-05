@@ -206,6 +206,8 @@ arithmetic means across all seed metrics, and reruns the fail-closed acceptance
 validator. It also requires and copies the primary- and replay-host
 post-extraction preflight records, then verifies that every execution record
 links to the correct host preflight and their common transfer manifest. The
+manifest itself is a required copied component, so the final evidence remains
+self-contained after the temporary transfer directory is unavailable. The
 output directory is new and mode-restricted; it includes hashed copies of every
 component record so deleting or replacing a source record makes the final
 manifest invalid.
