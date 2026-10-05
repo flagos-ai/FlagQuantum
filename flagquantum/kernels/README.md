@@ -514,6 +514,15 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+[`benchmarks/complex_bmm_dispatch.py`](../../benchmarks/complex_bmm_dispatch.py)
+defines that promotion gate directly against `torch.bmm`, rather than against
+the older `torch.einsum` development comparison. It records a fixed matrix of
+canonical-transfer shapes, counterbalances baseline and candidate order, and
+measures forward and forward-plus-backward paths independently. The canonical
+aggregate authorizes runtime dispatch only when every shape wins on both
+`jp-a800-171` and `jp-a800-172` under both stock Triton and FlagTree compiler
+lanes. A partial forward win is diagnostic evidence, not dispatch authority.
+
 `FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
 and its first-order complex gradient. Runtime dispatch is enabled by default
 only for contiguous CUDA `complex64` statevectors with shape `(1, 2**24)`, no
