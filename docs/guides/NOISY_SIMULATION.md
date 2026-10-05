@@ -233,10 +233,18 @@ print(sampled_sv.standard_error)
 The state layout is
 `[trajectory_batch, circuit_batch, 2**n_wires]`. Seeded random streams belong
 to global trajectory IDs, so changing `trajectory_batch_size` preserves every
-sampled trajectory. Pauli channels use a state-independent branch fast path;
-amplitude damping uses a branch-state-free specialized kernel, and other Kraus
-channels use batched probability, sampling, application, and normalization.
-Multi-wire Kraus channels are supported by the generic path.
+sampled trajectory. A channel whose operators are non-negative real scales times
+unitaries is a probability distribution over unitary branches, and the kernel
+reads that classification rather than the channel's opcode: it draws one branch
+per trajectory row against the channel's own weights and applies only the
+branches it drew, which is what makes a sixteen-branch two-qubit channel cost
+the two branches a small ensemble actually selected rather than all sixteen.
+Amplitude damping uses a branch-state-free specialized kernel, and every other
+Kraus channel uses batched probability, sampling, application, and
+normalization. The three routes are counted separately in
+`BatchedStatevectorTrajectoryResult`, so which kernel ran a channel is read from
+the result rather than inferred from its name. Multi-wire Kraus channels are
+supported by both the branch route and the generic path.
 
 With `mode="auto"`, specifying `trajectories` selects this path when its
 trajectory block satisfies the supplied memory budget. `max_bond` or `cutoff`

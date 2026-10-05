@@ -32,7 +32,7 @@ class BatchedStatevectorTrajectoryResult:
     trajectory_batch_size: int
     base_seed: int
     noise_model_identity: str
-    pauli_fast_path_events: int
+    unitary_branch_fast_path_events: int
     amplitude_damping_fast_path_events: int
     generic_kraus_events: int
     retained_states: torch.Tensor | None = None
@@ -64,7 +64,7 @@ class BatchedStatevectorTrajectoryResult:
             "trajectory_batch_size": self.trajectory_batch_size,
             "base_seed": self.base_seed,
             "noise_model_identity": self.noise_model_identity,
-            "pauli_fast_path_events": self.pauli_fast_path_events,
+            "unitary_branch_fast_path_events": (self.unitary_branch_fast_path_events),
             "amplitude_damping_fast_path_events": (
                 self.amplitude_damping_fast_path_events
             ),
@@ -139,11 +139,11 @@ def _execute_trajectory_batch(
         trajectory_generator(seed, trajectory_id, device=device)
         for trajectory_id in ids
     ]
-    state, expectation, pauli_events, amplitude_events, generic_events = (
+    state, expectation, unitary_events, amplitude_events, generic_events = (
         run_noisy_trajectory_batch(initial, ir, generators)
     )
     expectation = noise_model.apply_readout_expectation_z(expectation)
-    return state, expectation, pauli_events, amplitude_events, generic_events
+    return state, expectation, unitary_events, amplitude_events, generic_events
 
 
 def run_noisy_statevector(
@@ -371,7 +371,7 @@ def _run_lowered_noisy_statevector(
         trajectory_ids = owned_ids
         failures = []
     retained: list[torch.Tensor] = []
-    pauli_events = 0
+    unitary_events = 0
     amplitude_events = 0
     generic_events = 0
     converged = False
@@ -401,7 +401,7 @@ def _run_lowered_noisy_statevector(
         successful_expectations: list[torch.Tensor] = []
         successful_ids: list[int] = []
         try:
-            state, expectation, batch_pauli, batch_amplitude, batch_generic = (
+            state, expectation, batch_unitary, batch_amplitude, batch_generic = (
                 _execute_trajectory_batch(
                     initial,
                     ids,
@@ -414,7 +414,7 @@ def _run_lowered_noisy_statevector(
             successful_states.extend(state)
             successful_expectations.extend(expectation)
             successful_ids.extend(ids)
-            pauli_events += batch_pauli
+            unitary_events += batch_unitary
             amplitude_events += batch_amplitude
             generic_events += batch_generic
         except Exception:
@@ -423,7 +423,7 @@ def _run_lowered_noisy_statevector(
                 raise
             for trajectory_id in ids:
                 try:
-                    state, expectation, item_pauli, item_amplitude, item_generic = (
+                    state, expectation, item_unitary, item_amplitude, item_generic = (
                         _execute_trajectory_batch(
                             initial,
                             (trajectory_id,),
@@ -448,7 +448,7 @@ def _run_lowered_noisy_statevector(
                 successful_states.extend(state)
                 successful_expectations.extend(expectation)
                 successful_ids.append(trajectory_id)
-                pauli_events += item_pauli
+                unitary_events += item_unitary
                 amplitude_events += item_amplitude
                 generic_events += item_generic
         for value in successful_expectations:
@@ -504,7 +504,7 @@ def _run_lowered_noisy_statevector(
         trajectory_batch_size=trajectory_batch_size,
         base_seed=seed,
         noise_model_identity=noise_model.identity,
-        pauli_fast_path_events=pauli_events,
+        unitary_branch_fast_path_events=unitary_events,
         amplitude_damping_fast_path_events=amplitude_events,
         generic_kraus_events=generic_events,
         retained_states=torch.cat(retained) if retained else None,
@@ -529,7 +529,7 @@ def _collective_reduce_result(
     global_statistics = _collective_statistics(statistics)
     events = torch.tensor(
         [
-            result.pauli_fast_path_events,
+            result.unitary_branch_fast_path_events,
             result.amplitude_damping_fast_path_events,
             result.generic_kraus_events,
         ],
@@ -564,7 +564,7 @@ def _collective_reduce_result(
         trajectory_batch_size=result.trajectory_batch_size,
         base_seed=result.base_seed,
         noise_model_identity=result.noise_model_identity,
-        pauli_fast_path_events=int(events[0].item()),
+        unitary_branch_fast_path_events=int(events[0].item()),
         amplitude_damping_fast_path_events=int(events[1].item()),
         generic_kraus_events=int(events[2].item()),
         retained_states=None,
@@ -656,7 +656,9 @@ def merge_noisy_statevector_results(
         trajectory_batch_size=max(item.trajectory_batch_size for item in items),
         base_seed=base_seeds.pop(),
         noise_model_identity=identities.pop(),
-        pauli_fast_path_events=sum(item.pauli_fast_path_events for item in items),
+        unitary_branch_fast_path_events=sum(
+            item.unitary_branch_fast_path_events for item in items
+        ),
         amplitude_damping_fast_path_events=sum(
             item.amplitude_damping_fast_path_events for item in items
         ),

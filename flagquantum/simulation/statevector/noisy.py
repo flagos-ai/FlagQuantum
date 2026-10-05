@@ -1,12 +1,38 @@
-"""Numerical kernels for batched statevector quantum trajectories."""
+"""Numerical kernels for batched statevector quantum trajectories.
+
+**Why a channel's operators decide which kernel runs it.** A channel is either a
+probability distribution over unitary branches or it is not, and which one it is
+follows from the operators: every Kraus operator is a non-negative real scale
+times a unitary exactly when the channel is a mixture. A mixture can be sampled
+once per trajectory row against the channel's own weights and the drawn branch
+applied as a unitary, so no branch state is materialized to measure weights from,
+and only the branches a draw actually selected are applied. A channel that is not
+a mixture has no such reading, and its branch weights only exist relative to the
+state being evolved, so that route has to apply every operator to the state before
+it can normalize. The two are different estimators over the same channel only in
+cost: for a mixture the state-dependent weights the generic route measures are the
+channel's weights, which is what :func:`run_noisy_trajectory_batch` reports as the
+mixture and the generic route agreeing, and on this box the two routes return
+bit-identical states at the same seeds.
+
+**What is not here.** This module reads the classification and does not define
+it: :attr:`flagquantum.noise.KrausChannel.unitary_mixture` owns the verdict, and
+the same answer decides what the stabilizer engine can track. A channel that is
+not a mixture is not thereby refused -- it reaches the generic route, or the
+amplitude-damping kernel when it is that channel at one wire. Amplitude damping
+is deliberately still selected by its opcode rather than by the structure of its
+operators, because that kernel's saving comes from the triangular form of the
+jump operator rather than from a mixture, and no structural test for it is stated
+here.
+"""
 
 from __future__ import annotations
 
 import torch
 
 from ...core.ir import CircuitIR
+from ...noise import KrausChannel, UnitaryMixture
 from ..gate_matrix import gate_matrix
-from ..matrices import GATE_MAT_DICT
 from .operations import _environment_flag
 
 
@@ -208,23 +234,49 @@ def expectation_z(state: torch.Tensor, n_wires: int) -> torch.Tensor:
     return torch.matmul(torch.abs(state) ** 2, signs.to(dtype=state.real.dtype))
 
 
+def _branch_mixture(
+    name: str, operators: tuple[torch.Tensor, ...]
+) -> UnitaryMixture | None:
+    """Return this channel instruction's branches, or ``None`` if it has none.
+
+    The question is asked of the operators, so a channel reaches the branch
+    route because of what it holds rather than because of what it is called. The
+    verdict itself belongs to :attr:`KrausChannel.unitary_mixture`, and asking
+    there is what keeps this route and the stabilizer engine from answering the
+    same question twice with two rules.
+
+    An operator set that is not a trace-preserving channel is left to the routes
+    that already carry one rather than becoming a new refusal here: this kernel
+    is not where a malformed channel is judged, and a set that does not define a
+    channel has no mixture to report either way.
+    """
+
+    try:
+        channel = KrausChannel(name, operators)
+    except ValueError:
+        return None
+    return channel.unitary_mixture
+
+
 def run_noisy_trajectory_batch(
     initial: torch.Tensor,
     ir: CircuitIR,
     generators: list[torch.Generator],
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, int]:
-    """Evolve one batch of already-lowered noisy trajectories."""
+    """Evolve one batch of already-lowered noisy trajectories.
+
+    The third count is the events that took the branch route and the fifth the
+    events that took the generic Kraus route; they are separate because they are
+    the two different estimators over a channel described in the module
+    docstring, and a caller reading only the result cannot otherwise tell which
+    one produced it.
+    """
 
     circuit_batch = initial.shape[0]
     state = initial.unsqueeze(0).expand(len(generators), -1, -1).clone()
-    pauli_events = 0
+    unitary_events = 0
     amplitude_events = 0
     generic_events = 0
-    pauli_matrices = {
-        name: torch.as_tensor(matrix, device=initial.device, dtype=initial.dtype)
-        for name, matrix in GATE_MAT_DICT.items()
-        if name in {"i", "x", "y", "z"}
-    }
     for instruction in ir.instructions:
         if not instruction.metadata.get("is_channel"):
             matrix = gate_matrix(
@@ -243,40 +295,35 @@ def run_noisy_trajectory_batch(
             torch.as_tensor(operator, device=initial.device, dtype=initial.dtype)
             for operator in instruction.matrix
         )
-        if instruction.name in {"bit_flip", "phase_flip", "depolarizing"}:
-            probabilities = torch.tensor(
-                [
-                    float((torch.real(torch.trace(op.mH @ op)) / 2).item())
-                    for op in operators
-                ],
-                device=state.device,
-                dtype=state.real.dtype,
-            ).expand(state.shape[0], state.shape[1], -1)
+        mixture = _branch_mixture(instruction.name, operators)
+        if mixture is not None:
+            # One draw per trajectory row against the channel's own weights, and
+            # one application per branch that draw actually selected, so the
+            # sixteen-branch two-qubit channel pays for the branches it drew
+            # rather than for all sixteen. Applying every branch and gathering
+            # the drawn one is the same estimator at a higher cost, which is why
+            # the drawn branch is the one that is applied.
+            probabilities = mixture.probabilities.to(dtype=state.real.dtype).expand(
+                state.shape[0], state.shape[1], -1
+            )
             choices = sample_rows(probabilities, generators)
-            names = (
-                ("i", "x")
-                if instruction.name == "bit_flip"
-                else (
-                    ("i", "z")
-                    if instruction.name == "phase_flip"
-                    else ("i", "x", "y", "z")
+            # ``mixture`` carries no zero-weight branch -- the classifier drops an
+            # operator of scale zero rather than offering it -- so every row draws
+            # exactly one index and every row is written exactly once. The base
+            # value of ``selected`` is therefore never read, and it is the state
+            # being evolved rather than a copy of it.
+            selected = state
+            for index, unitary in enumerate(mixture.unitaries):
+                rows = (choices == index)[..., None]
+                if not bool(rows.any()):
+                    continue
+                selected = torch.where(
+                    rows,
+                    apply_matrix_batched(state, unitary, instruction.wires, ir.n_wires),
+                    selected,
                 )
-            )
-            branches = torch.stack(
-                [
-                    apply_matrix_batched(
-                        state, pauli_matrices[name], instruction.wires, ir.n_wires
-                    )
-                    for name in names
-                ],
-                dim=2,
-            )
-            state = torch.gather(
-                branches,
-                2,
-                choices[..., None, None].expand(-1, -1, 1, state.shape[-1]),
-            ).squeeze(2)
-            pauli_events += state.shape[0] * circuit_batch
+            state = selected
+            unitary_events += state.shape[0] * circuit_batch
         elif instruction.name == "amplitude_damping" and len(instruction.wires) == 1:
             state = apply_amplitude_damping_batched(
                 state, operators, instruction.wires[0], ir.n_wires, generators
@@ -290,7 +337,7 @@ def run_noisy_trajectory_batch(
     return (
         state,
         expectation_z(state, ir.n_wires),
-        pauli_events,
+        unitary_events,
         amplitude_events,
         generic_events,
     )
