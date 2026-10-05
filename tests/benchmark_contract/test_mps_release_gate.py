@@ -424,12 +424,16 @@ def _candidate_set(root: Path, manifest: dict[str, Any]) -> tuple[Path, Path, Pa
     )
     return (
         manifest_path,
-        _write(root / "candidates", sharded)
-        if sealable
-        else _stage(root / "candidates", sharded),
-        _write(root / "baseline", baseline)
-        if sealable
-        else _stage(root / "baseline", baseline),
+        (
+            _write(root / "candidates", sharded)
+            if sealable
+            else _stage(root / "candidates", sharded)
+        ),
+        (
+            _write(root / "baseline", baseline)
+            if sealable
+            else _stage(root / "baseline", baseline)
+        ),
     )
 
 
@@ -588,9 +592,8 @@ def test_the_frozen_workload_definition_is_digest_bound() -> None:
     capacity = load_manifest()["capacity_workload"]
     launcher = Path(capacity["workload_definition_path"])
 
-    assert (
-        hashlib.sha256(launcher.read_bytes()).hexdigest()
-        == (capacity["workload_definition_sha256"])
+    assert hashlib.sha256(launcher.read_bytes()).hexdigest() == (
+        capacity["workload_definition_sha256"]
     )
     assert capacity["workload_sha256"] == capacity["workload_definition_sha256"]
     # The body is bound as well as the launcher: the launcher pins the site count

@@ -38,15 +38,22 @@ def test_the_families_do_not_share_a_state_mode() -> None:
     names = sorted(FAMILIES)
     for index, left in enumerate(names):
         for right in names[index + 1 :]:
-            assert FAMILIES[left].isdisjoint(FAMILIES[right]), (
-                f"{left} and {right} must not both claim one state mode"
-            )
+            assert FAMILIES[left].isdisjoint(
+                FAMILIES[right]
+            ), f"{left} and {right} must not both claim one state mode"
 
 
 def test_the_tensor_network_vocabulary_names_the_canonical_modes() -> None:
-    assert frozenset(
-        {"distributed_tensor_network", "jax_sharded_tensor_network", "tensor_network"}
-    ) == vocabulary.TENSOR_NETWORK_STATE_MODES
+    assert (
+        frozenset(
+            {
+                "distributed_tensor_network",
+                "jax_sharded_tensor_network",
+                "tensor_network",
+            }
+        )
+        == vocabulary.TENSOR_NETWORK_STATE_MODES
+    )
     # The abbreviation is recognized by the classifier because tracked artifacts
     # and comparison payloads use it, but every vocabulary names canonical modes
     # and leaves abbreviations to the classifier, as the sibling sets do.
