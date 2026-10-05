@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
@@ -20,7 +19,7 @@ from .contracts import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
 )
-from .jobs import new_receipt
+from .jobs import _read_private_json, _write_private_json_exclusive, new_receipt
 from .sdk import (
     KaiwuSDKEnvironment,
     KaiwuSDKError,
@@ -54,9 +53,14 @@ class KaiwuSDKClient:
         expected_version: str = "1.3.1",
         interval_minutes: int = 1,
     ) -> None:
-        path = Path(checkpoint_dir).expanduser().resolve()
-        if not path.is_dir():
-            raise ValueError("checkpoint_dir must be an existing directory")
+        candidate = Path(checkpoint_dir).expanduser()
+        if candidate.is_symlink() or not candidate.is_dir():
+            raise ValueError(
+                "checkpoint_dir must be an existing, non-symlink directory"
+            )
+        if candidate.stat().st_mode & 0o077:
+            raise ValueError("checkpoint_dir must not be accessible by group or others")
+        path = candidate.resolve()
         if type(interval_minutes) is not int or interval_minutes < 1:
             raise ValueError("interval_minutes must be an integer of at least one")
         environment = initialize_kaiwu_license(
@@ -89,48 +93,45 @@ class KaiwuSDKClient:
         self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
     ) -> KaiwuTaskReceipt:
         path = self.recovery_receipt_path(receipt)
-        if path.exists():
+        with self._checkpoint_lock:
+            if path.exists() or path.is_symlink():
+                return self._load_recovery_receipt(path, receipt, matrix)
             try:
-                raw = json.loads(path.read_text(encoding="utf-8"))
-                stored = KaiwuTaskReceipt(**raw["receipt"])
-                stored_matrix = tuple(
-                    tuple(float(value) for value in row) for row in raw["matrix"]
+                _write_private_json_exclusive(
+                    path, {"receipt": asdict(receipt), "matrix": matrix}
                 )
-            except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-                raise KaiwuSDKError(
-                    "Existing Kaiwu recovery receipt is invalid"
-                ) from None
-            comparable = (
-                "task_name",
-                "matrix_sha256",
-                "matrix_size",
-                "mode",
-                "requested_samples",
-                "project_no",
-                "schema",
-            )
-            if stored_matrix != matrix or any(
-                getattr(stored, field) != getattr(receipt, field)
-                for field in comparable
-            ):
-                raise KaiwuSDKError(
-                    "Existing Kaiwu recovery receipt conflicts with the request"
-                )
-            return stored
+                return receipt
+            except FileExistsError:
+                return self._load_recovery_receipt(path, receipt, matrix)
 
-        encoded = (
-            json.dumps(
-                {"receipt": asdict(receipt), "matrix": matrix},
-                indent=2,
-                sort_keys=True,
-                allow_nan=False,
+    @staticmethod
+    def _load_recovery_receipt(
+        path: Path, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> KaiwuTaskReceipt:
+        try:
+            raw = _read_private_json(path)
+            stored = KaiwuTaskReceipt(**raw["receipt"])
+            stored_matrix = tuple(
+                tuple(float(value) for value in row) for row in raw["matrix"]
             )
-            + "\n"
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            raise KaiwuSDKError("Existing Kaiwu recovery receipt is invalid") from None
+        comparable = (
+            "task_name",
+            "matrix_sha256",
+            "matrix_size",
+            "mode",
+            "requested_samples",
+            "project_no",
+            "schema",
         )
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
-        return receipt
+        if stored_matrix != matrix or any(
+            getattr(stored, field) != getattr(receipt, field) for field in comparable
+        ):
+            raise KaiwuSDKError(
+                "Existing Kaiwu recovery receipt conflicts with the request"
+            )
+        return stored
 
     @contextmanager
     def _checkpoint_context(self) -> Iterator[None]:

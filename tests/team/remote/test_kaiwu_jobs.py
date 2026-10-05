@@ -132,6 +132,7 @@ def test_save_and_restore_are_credential_free_and_do_not_submit(tmp_path: Path) 
     assert "sdk_code" not in encoded.lower()
     assert "credential" not in encoded.lower()
     assert receipt_path.stat().st_mode & 0o777 == 0o600
+    assert not list(tmp_path.glob(f".{receipt_path.name}.*.tmp"))
 
 
 def test_save_never_overwrites_receipt(tmp_path: Path) -> None:
@@ -153,6 +154,22 @@ def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
     receipt_path.write_text(json.dumps(payload))
 
     with pytest.raises(ValueError, match="matrix identity"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_restore_rejects_unsafe_receipt_file(tmp_path: Path, unsafe_kind: str) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="unsafe-restore")
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    if unsafe_kind == "public":
+        receipt_path.chmod(0o644)
+    else:
+        target = tmp_path / "receipt-target.json"
+        receipt_path.rename(target)
+        receipt_path.symlink_to(target.name)
+
+    with pytest.raises(ValueError, match="private, regular, non-symlink"):
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 

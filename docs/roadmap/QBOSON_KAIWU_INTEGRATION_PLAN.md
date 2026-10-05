@@ -91,6 +91,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   This closes the ambiguous-submission window: a process restart reuses the
   original timestamp and task/matrix identity, while corrupt or conflicting
   bundles fail before any SDK operation.
+- Checkpoint directories now fail before license initialization unless they are
+  private, regular directories. Recovery and explicit job receipts are synced
+  before atomic no-overwrite publication and reopened without following
+  symlinks; public, non-regular, partial, or replaced files fail before an SDK
+  task operation.
 - A cross-layer integration test now composes the ecosystem sampler, Remote
   lifecycle, pinned SDK client, checkpoint scoping, independent energy
   validation, recovery persistence, and deduplication. Only the final vendor

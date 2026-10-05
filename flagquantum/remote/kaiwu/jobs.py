@@ -6,6 +6,8 @@ import hashlib
 import json
 import math
 import os
+import stat
+import tempfile
 import time
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -22,6 +24,51 @@ from .contracts import (
     KaiwuTaskResult,
     MatrixInput,
 )
+
+
+def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
+    destination = Path(path)
+    parent = destination.parent
+    if not parent.is_dir():
+        raise ValueError("Kaiwu receipt parent directory does not exist")
+    encoded = (
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode()
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(encoded)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, destination, follow_symlinks=False)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _read_private_json(path: str | Path) -> Any:
+    source = Path(path)
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(source, flags)
+    except OSError:
+        raise ValueError(
+            "Kaiwu receipt must be a private, regular, non-symlink file"
+        ) from None
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+            raise ValueError(
+                "Kaiwu receipt must be a private, regular, non-symlink file"
+            )
+        with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
+            descriptor = -1
+            return json.load(stream)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
 
 
 def _freeze_matrix(matrix: MatrixInput) -> FrozenIsingMatrix:
@@ -212,10 +259,7 @@ class KaiwuRemoteJob:
             "receipt": asdict(self._receipt),
             "matrix": self._matrix,
         }
-        encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(encoded)
+        _write_private_json_exclusive(path, payload)
 
 
 def submit_kaiwu_task(
@@ -263,7 +307,10 @@ def submit_kaiwu_task(
 def restore_kaiwu_job(path: str | Path, *, client: KaiwuTaskClient) -> KaiwuRemoteJob:
     """Restore a task without submitting a replacement."""
 
-    raw: Any = json.loads(Path(path).read_text(encoding="utf-8"))
+    try:
+        raw = _read_private_json(path)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Invalid Kaiwu task receipt bundle") from exc
     if not isinstance(raw, dict) or set(raw) != {"matrix", "receipt"}:
         raise ValueError("Invalid Kaiwu task receipt bundle")
     if not isinstance(raw["receipt"], dict):

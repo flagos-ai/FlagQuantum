@@ -39,11 +39,16 @@ for idempotent execution but not for a provider task ID or provider-reported
 target; hardware acceptance remains closed until a real pinned response
 establishes those mappings.
 
-Before the first SDK task operation, the client atomically saves a mode-0600
-FlagQuantum recovery bundle in the configured checkpoint directory. An
-ambiguous network failure therefore leaves enough non-secret identity to query
-the same documented task after restart. Existing bundles are reused only when
-their task, matrix, mode, sample count, project, and schema all match.
+Before license initialization, the client requires the configured checkpoint
+directory to be an existing private, non-symlink directory. Before the first
+SDK task operation, it writes and syncs a complete mode-0600 temporary recovery
+bundle, then publishes it without overwriting through an atomic same-filesystem
+link. An ambiguous network failure therefore leaves enough non-secret identity
+to query the same documented task after restart without exposing a partial
+final receipt. Existing bundles are opened without following symlinks and are
+reused only when they are private regular files whose task, matrix, mode,
+sample count, project, and schema all match. Explicit job `save` and `restore`
+use the same private-file rules.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

@@ -78,6 +78,28 @@ def _client(
     return KaiwuSDKClient(checkpoint_dir=checkpoint_dir), manager
 
 
+def test_client_rejects_unsafe_checkpoint_directory_before_license(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    initializer = Mock()
+    monkeypatch.setattr(client_module, "initialize_kaiwu_license", initializer)
+    public = tmp_path / "public"
+    public.mkdir(mode=0o755)
+    public.chmod(0o755)
+
+    with pytest.raises(ValueError, match="group or others"):
+        KaiwuSDKClient(checkpoint_dir=public)
+
+    target = tmp_path / "private"
+    target.mkdir(mode=0o700)
+    link = tmp_path / "linked"
+    link.symlink_to(target, target_is_directory=True)
+    with pytest.raises(ValueError, match="non-symlink"):
+        KaiwuSDKClient(checkpoint_dir=link)
+
+    initializer.assert_not_called()
+
+
 def test_submit_and_poll_reuse_documented_task_identity(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -181,6 +203,40 @@ def test_conflicting_recovery_receipt_fails_before_sdk_operation(
             _MATRIX,
             client=restarted,
             task_name="conflict",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_unsafe_recovery_receipt_fails_before_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unsafe_kind: str
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name=f"unsafe-{unsafe_kind}",
+        mode="sampling",
+        requested_samples=10,
+    )
+    path = client.recovery_receipt_path(first.receipt)
+    if unsafe_kind == "public":
+        path.chmod(0o644)
+    else:
+        target = path.with_name(f"{path.name}.target")
+        path.rename(target)
+        path.symlink_to(target.name)
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restarted, _ = _client(monkeypatch, tmp_path)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=restarted,
+            task_name=f"unsafe-{unsafe_kind}",
             mode="sampling",
             requested_samples=10,
         )

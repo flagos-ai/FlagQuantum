@@ -80,6 +80,12 @@ cp examples/qdiffusion_kaiwu/acceptance_config.example.json \
   private-evidence/acceptance_config.json
 ```
 
+The SDK client rejects a checkpoint directory that is a symlink or is
+accessible by group or other users before it initializes the license. Recovery
+receipts are synced to a private temporary file and atomically published
+without replacement; resume rejects public, non-regular, or symlinked receipt
+files before any SDK task operation.
+
 Review the completed JSON and record its digest:
 
 ```bash
