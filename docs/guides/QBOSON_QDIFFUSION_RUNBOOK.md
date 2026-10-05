@@ -188,22 +188,34 @@ Create an isolated Python 3.10 environment from the approved wheel set. Verify
 package files and versions before setting credentials. Do not install an
 unreviewed package merely because it shares the name `kaiwu`.
 
-Copy `examples/qdiffusion_kaiwu/environment_lock.example.json` to a private
-mode-0600 file and replace the illustrative rows with the complete, sorted
-distribution inventory of the isolated environment. Every row requires the
-exact installed version and SHA-256 of its approved wheel or installation
-artifact; the three example rows are not a complete lock. Verify the finished
-lock offline before credentials are present:
+After separately reviewing every installation artifact's source, license, and
+terms, place exactly one wheel for every installed distribution in a private
+wheelhouse. Build the mode-0600 lock from that complete set while the isolated
+environment is active. Shell expansion is safe only when that directory
+contains the exact reviewed set; extra, missing, duplicate, or version-mismatched
+wheels fail closed:
+
+```bash
+python3 -B -s -m examples.qdiffusion_kaiwu.build_environment_lock \
+  --artifact /absolute/private-reviewed-wheelhouse/*.whl \
+  --output /absolute/private-evidence/environment-lock.json
+```
+
+The builder reads bounded wheel METADATA and hashes the wheel bytes without
+installing or executing them. `environment_lock.example.json` documents the
+schema only; its three illustrative rows are not a complete lock. Independently
+verify the generated lock offline before credentials are present:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.verify_environment_lock \
   --lock /absolute/private-evidence/environment-lock.json
 ```
 
-The verifier rejects a different Python patch version, missing or additional
-distributions, version drift, duplicate names, placeholders, symlinks, and
-non-private permissions. It does not download, install, or approve packages;
-artifact review and installation remain separate controlled steps.
+The builder and verifier reject a different Python patch version, missing or
+additional distributions or wheels, version drift, duplicate names,
+placeholders, symlinks, and non-private lock permissions. They do not download,
+install, or approve packages; artifact review and installation remain separate
+controlled steps.
 Record the verified lock's SHA-256 as
 `software.environment_lock_sha256` in `acceptance_config.json` before freezing
 the configuration. Every live, training, evaluation, and replay command below

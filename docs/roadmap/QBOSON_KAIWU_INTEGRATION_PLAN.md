@@ -196,6 +196,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   version and a complete, sorted installed-distribution inventory with exact
   versions and reviewed artifact digests. It rejects missing, extra, duplicate,
   placeholder, public, or symlinked inputs without installing anything.
+- An offline lock builder now derives package names and versions from bounded
+  wheel METADATA, hashes the reviewed wheel bytes, and requires an exact
+  one-wheel-per-installed-distribution inventory. It never installs or executes
+  an artifact and does not substitute for source, license, or terms approval.
 - System, training, evaluation, and replay verify that exact runtime inventory
   and bind its lock digest to the frozen config before credentials are resolved.
   Final assembly copies and independently revalidates the lock as a closed-world

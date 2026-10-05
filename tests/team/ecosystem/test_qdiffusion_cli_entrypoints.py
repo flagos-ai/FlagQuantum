@@ -12,6 +12,7 @@ pytestmark = pytest.mark.unit
 ENTRYPOINTS = (
     "a800_sampler_smoke",
     "assemble_acceptance",
+    "build_environment_lock",
     "build_transfer_bundle",
     "preflight_protein_artifacts",
     "qboson_live_smoke",

@@ -106,15 +106,16 @@ post-hoc metric thresholds fails closed.
 
 Credentials never belong in the frozen configuration or evidence bundle.
 
-`verify_environment_lock.py` provides the offline dependency-lane gate. Start
-from `environment_lock.example.json`, replace its illustrative rows with every
-distribution in the isolated Python 3.10 environment, and record each exact
-version plus the approved installation-artifact SHA-256. The private lock is
-accepted only when its Python version and complete distribution inventory match
-the running environment exactly and its file digest matches the frozen config.
-Every quota-consuming path verifies it before credential resolution. The
-verifier never installs or downloads a package and does not turn an unreviewed
-artifact into an approved one.
+`build_environment_lock.py` builds the private dependency-lane lock directly
+from an explicitly reviewed wheel set. It reads each wheel's bounded METADATA,
+hashes its bytes, and requires an exact one-to-one name/version match with every
+distribution in the running isolated Python environment. The generated lock is
+then checked by `verify_environment_lock.py`; its Python version and complete
+distribution inventory must match the runtime exactly and its file digest must
+match the frozen config. `environment_lock.example.json` documents the schema
+only and is not a complete lock. Every quota-consuming path verifies the real
+lock before credential resolution. Neither command installs or downloads a
+package, and supplying a wheel does not turn it into an approved artifact.
 
 ## Live provider smoke test
 
