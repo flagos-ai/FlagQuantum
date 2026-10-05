@@ -287,6 +287,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     assert loaded_training["seed"] == 1701
     assert loaded_sha == training_entries[0][1]
 
+    tampered_system = json.loads(component_paths[0].read_text(encoding="utf-8"))
+    tampered_system["transport"] = "in_memory_fake"
+    tampered_system_sha = _write_json(component_paths[0], tampered_system)
+    primary["system_evidence_sha256"] = tampered_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = tampered_system_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "system component transport differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    primary_system_sha = _write_json(component_paths[0], primary_system_record)
+    primary["system_evidence_sha256"] = primary_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = primary_system_sha
+
     tampered_evaluation = json.loads(component_paths[5].read_text(encoding="utf-8"))
     tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99
     tampered_evaluation_sha = _write_json(component_paths[5], tampered_evaluation)

@@ -683,11 +683,69 @@ def _validate_component_bundle(
                 f"{label}: system evidence does not identify a system component"
             )
             continue
-        for field in ("execution_host", "run_role"):
+        copied_fields = (
+            "source_revision",
+            "kaiwu_pytorch_plugin_revision",
+            "python_version",
+            "torch_version",
+            "kaiwu_sdk_version",
+            "execution_host",
+            "run_role",
+            "requested_cuda_device",
+            "observed_tensor_device",
+            "observed_gpu_model",
+            "transport",
+            "qboson_hardware_used",
+            "real_provider_evidence",
+            "provider_reported_target",
+            "qboson_target",
+            "qboson_task_ids",
+            "sampling_mode",
+            "requested_samples",
+            "returned_samples",
+            "remote_call_budget",
+            "remote_call_count",
+            "fallback_occurred",
+            "retrieval_resubmitted",
+            "secrets_redacted",
+            "precision_policy",
+        )
+        for field in copied_fields:
             if component.get(field) != final.get(field):
                 errors.append(
                     f"{label}: system component {field} differs from final record"
                 )
+        component_training = _mapping(
+            component.get("training"), f"{label}.system_component.training", errors
+        )
+        final_training = _mapping(final.get("training"), f"{label}.training", errors)
+        training_fields = {
+            "objective": "energy_objective",
+            "gradient_norm": "gradient_norm",
+            "parameter_delta_max": "parameter_delta_max",
+        }
+        for component_field, final_field in training_fields.items():
+            if component_training.get(component_field) != final_training.get(
+                final_field
+            ):
+                errors.append(
+                    f"{label}: system component training.{component_field} "
+                    "differs from final record"
+                )
+        component_generation = _mapping(
+            component.get("generation"),
+            f"{label}.system_component.generation",
+            errors,
+        )
+        final_generation = _mapping(
+            final.get("generation"), f"{label}.generation", errors
+        )
+        if component_generation.get("token_constraints_passed") != final_generation.get(
+            "token_constraints_passed"
+        ):
+            errors.append(
+                f"{label}: system component generation result differs from final record"
+            )
         if component.get("acceptance") != {"system": "pass", "application": "not_run"}:
             errors.append(f"{label}: system component did not pass its isolated gate")
 
