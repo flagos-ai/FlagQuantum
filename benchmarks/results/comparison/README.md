@@ -31,6 +31,12 @@ records the 22-qubit Linux x86 follow-up that routes wide product-state mixed
 Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
 public usage, boundaries, stop conditions, and reproduction commands.
 
+[`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](LINUX_X86_CPU_REGRESSION_GATE_20261004.md)
+establishes the fixed-host 22-qubit Random Clifford regression gate. It records
+the CPU model and affinity, absolute FlagQuantum/Aer/Lightning times, internal
+slowdown and external-framework floors, workflow behavior, public usage,
+boundaries, stop conditions, and reproduction commands.
+
 [`SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md`](SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md)
 records the exact Truncated QFT comparison and the deferred product-state SWAP
 materialization rollback A/B.

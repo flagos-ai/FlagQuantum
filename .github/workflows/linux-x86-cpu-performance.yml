@@ -1,0 +1,67 @@
+name: Linux x86 CPU performance
+
+on:
+  schedule:
+    - cron: "43 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  random-clifford-regression:
+    runs-on: [self-hosted, linux, x64, flagquantum-local, a800-172]
+    concurrency:
+      group: flagquantum-accelerator
+      queue: max
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "32"
+      MKL_NUM_THREADS: "32"
+      OPENBLAS_NUM_THREADS: "32"
+    steps:
+      - name: Clear a sparse checkout a previous job left in this clone
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+      - name: Validate the maintained benchmark environment
+        run: |
+          python -c "import pennylane, qiskit, qiskit_aer, torch"
+          python -m pip install --no-deps --no-build-isolation -e .
+      - name: Measure the pinned Linux x86 corpus
+        run: |
+          mkdir -p hardware-run
+          python tools/run_with_watchdog.py \
+            --phase linux-x86-cpu-corpus \
+            --stall-seconds 180 \
+            --timeout-seconds 900 \
+            --diagnostics hardware-run/watchdog-corpus \
+            -- taskset -c 0-31 python -m flagquantum.benchmarking \
+              simulator_workload_corpus \
+              --workloads random_clifford_statevector \
+              --n-wires 22 \
+              --engines flagquantum_native qiskit_aer \
+                pennylane_lightning_qubit \
+              --threads 32 --warmup 2 --iterations 7 \
+              --calls-per-sample 1 \
+              --json-output hardware-run/current.json
+      - name: Enforce the internal and external performance floors
+        run: |
+          baseline=benchmarks/results/comparison/linux_x86_cpu_regression_baseline_20261004.json
+          for engine in qiskit_aer pennylane_lightning_qubit; do
+            python -m flagquantum.benchmarking cpu_performance_gate \
+              "$baseline" hardware-run/current.json \
+              --max-slowdown 1.20 --minimum-samples 7 \
+              --comparison-engine "$engine" \
+              --max-native-over-comparison 1.0 \
+              --json-output "hardware-run/gate-${engine}.json"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-x86-cpu-performance-${{ github.sha }}
+          path: hardware-run/

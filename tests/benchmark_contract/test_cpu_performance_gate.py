@@ -121,6 +121,22 @@ def _batched_payload() -> dict:
     }
 
 
+def _simulator_framework_payload() -> dict:
+    payload = _payload()
+    case = payload["cases"][0]
+    case["correctness"]["engines"] = {
+        "flagquantum_native": {"passed": True},
+        "qiskit_aer": {"passed": True},
+    }
+    case["stability"]["engines"]["qiskit_aer"] = True
+    case["engines"]["flagquantum_native"]["versions"] = {"flagquantum": "0.2.0"}
+    case["engines"]["qiskit_aer"] = {
+        "versions": {"qiskit": "2.5.1", "qiskit-aer": "0.17.2"},
+        "end_to_end": {"median_seconds": 1.25, "sample_count": 7},
+    }
+    return payload
+
+
 def test_runner_is_registered() -> None:
     assert "cpu_performance_gate" in runners.names()
     assert callable(runners.resolve("cpu_performance_gate"))
@@ -269,6 +285,42 @@ def test_batched_framework_gate_fails_closed() -> None:
     assert "native/comparison ratio 1.250 exceeds 1.000" in failures
 
 
+def test_simulator_gate_can_lock_an_external_framework_floor() -> None:
+    baseline = _simulator_framework_payload()
+    current = copy.deepcopy(baseline)
+
+    report = evaluate(
+        baseline,
+        current,
+        comparison_engine="qiskit_aer",
+        max_native_over_comparison=0.90,
+    )
+
+    comparison = report["cases"][0]["metrics"]["comparison"]
+    assert report["verdict"] == "pass"
+    assert comparison["native_over_comparison"] == 0.8
+    assert comparison["passed"] is True
+
+
+def test_simulator_framework_gate_fails_closed_on_version_and_speed() -> None:
+    baseline = _simulator_framework_payload()
+    current = copy.deepcopy(baseline)
+    current_case = current["cases"][0]
+    current_case["engines"]["qiskit_aer"]["versions"]["qiskit-aer"] = "0.18.0"
+    current_case["engines"]["qiskit_aer"]["end_to_end"]["median_seconds"] = 0.8
+
+    report = evaluate(
+        baseline,
+        current,
+        comparison_engine="qiskit_aer",
+    )
+
+    failures = "\n".join(report["failures"])
+    assert report["verdict"] == "fail"
+    assert "comparison engine versions changed: qiskit_aer" in failures
+    assert "native/comparison ratio 1.250 exceeds 1.000" in failures
+
+
 def test_framework_gate_rejects_missing_or_inapplicable_comparison() -> None:
     report = evaluate(
         _batched_payload(),
@@ -278,8 +330,12 @@ def test_framework_gate_rejects_missing_or_inapplicable_comparison() -> None:
     assert report["verdict"] == "fail"
     assert "comparison engine missing" in report["failures"][0]
 
-    with pytest.raises(ValueError, match="only for batched statevectors"):
-        evaluate(_payload(), _payload(), comparison_engine="external")
+    with pytest.raises(ValueError, match="only for statevector simulator corpora"):
+        evaluate(
+            _payload(schema="flagquantum.differentiable_simulator_corpus.v1"),
+            _payload(schema="flagquantum.differentiable_simulator_corpus.v1"),
+            comparison_engine="external",
+        )
 
 
 def test_gate_fails_closed_on_regression_correctness_stability_and_samples() -> None:
@@ -317,6 +373,18 @@ def test_gate_reports_incomparable_profile_instead_of_false_verdict() -> None:
         "baseline": 1,
         "current": 2,
     }
+
+
+def test_gate_requires_matching_cpu_model_and_affinity_when_recorded() -> None:
+    baseline = _payload()
+    current = copy.deepcopy(baseline)
+    baseline["environment"].update({"cpu_model": "Example CPU", "cpu_affinity": [0, 1]})
+    current["environment"].update({"cpu_model": "Other CPU", "cpu_affinity": [2, 3]})
+
+    report = evaluate(baseline, current)
+
+    assert report["verdict"] == "incomparable"
+    assert set(report["profile_differences"]) == {"cpu_model", "cpu_affinity"}
 
 
 def test_gate_fails_when_baseline_case_disappears() -> None:
@@ -427,3 +495,37 @@ def test_checked_in_framework_floor_is_reproducible() -> None:
         case["metrics"]["comparison"]["native_over_comparison"] <= 0.90
         for case in regenerated["cases"]
     )
+
+
+@pytest.mark.parametrize(
+    ("engine", "report_name"),
+    [
+        ("qiskit_aer", "linux_x86_cpu_regression_gate_20261004.json"),
+        (
+            "pennylane_lightning_qubit",
+            "linux_x86_cpu_regression_gate_pennylane_20261004.json",
+        ),
+    ],
+)
+def test_checked_in_linux_x86_framework_floor_is_reproducible(
+    engine: str,
+    report_name: str,
+) -> None:
+    baseline = json.loads(
+        (RESULTS / "linux_x86_cpu_regression_baseline_20261004.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    expected = json.loads((RESULTS / report_name).read_text(encoding="utf-8"))
+
+    regenerated = evaluate(
+        baseline,
+        baseline,
+        max_slowdown=1.20,
+        minimum_samples=7,
+        comparison_engine=engine,
+        max_native_over_comparison=1.0,
+    )
+
+    assert regenerated == expected
+    assert regenerated["verdict"] == "pass"
