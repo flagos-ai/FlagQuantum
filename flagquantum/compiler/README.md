@@ -491,7 +491,13 @@ magnitude ladder may drop its `RY(0)` group but not its flips, while a whole zer
 ladder may drop both. On the uniform superposition the leaf count is exactly
 `4 * n + flip_cost * (2**n - 2)` at every width, and the flip cost is the roster's
 own measurement of one `cx` rather than a number this package keeps: one leaf for
-`cx`, `6` for `cy`, `7` for `rzz`, `9` for `cz`, and `13` for `rxx` and `ryy`.
+`cx`, `6` for `cy`, `7` for `rzz` and `9` for `cz`, all four of them arithmetic
+because their routes cross only polar angles `one_qubit_synthesis._zyz_angles`
+produces exactly. The two entanglers that are not degenerate are a host quantity
+instead, because their trailing local factor's polar angle is a general
+`2 * atan2(...)` that `_leaves` compares to `pi/2` with `==`: `rxx` costs `10` or
+`13` leaves and `ryy` `11` or `13`, depending on which way the platform's own
+rounding falls. The suite states that one dimension as the set it is.
 Measured, the two implementations agree to `2.6e-08` through `5.7e-08` entrywise,
 which is the frozen reference's `complex64` floor rather than this boundary's
 rounding: the compiler side reaches `3.9e-16` against the exact direction. The
