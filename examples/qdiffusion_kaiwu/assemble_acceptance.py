@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import stat
 from pathlib import Path
 from statistics import fmean
 from tempfile import TemporaryDirectory
@@ -67,9 +68,27 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _require_private_directory(path: Path, *, description: str) -> None:
+    try:
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(
+            f"{description} must be an existing private, non-symlink directory: {path}"
+        ) from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_mode & 0o077
+    ):
+        raise ValueError(
+            f"{description} must be an existing private, non-symlink directory: {path}"
+        )
+
+
 def _require_private_input(path: Path) -> None:
     if not path.is_absolute():
         raise ValueError(f"evidence input must use an absolute path: {path}")
+    _require_private_directory(path.parent, description="evidence input parent")
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"evidence input must be a regular, non-symlink file: {path}")
     if path.stat().st_mode & 0o077:
@@ -499,7 +518,12 @@ def _publish_acceptance_bundle(
 ) -> None:
     """Validate in a private sibling directory before atomically publishing."""
 
+    for source in (config_path, environment_lock_path, *component_sources.values()):
+        _require_private_input(source)
     destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _require_private_directory(
+        destination.parent, description="acceptance output parent"
+    )
     with TemporaryDirectory(
         prefix=f".{destination.name}.staging-",
         dir=destination.parent,

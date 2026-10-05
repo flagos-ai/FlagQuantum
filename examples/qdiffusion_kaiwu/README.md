@@ -257,6 +257,11 @@ copies of every component record, so deleting or replacing a source record
 makes the final manifest invalid. Revalidation also rejects public permissions
 and symlinks in any manifest member path, duplicate or non-normalized paths, and
 files that are present in the bundle but absent from its manifest.
+Every assembly input must also reside directly in an existing private,
+non-symlink directory; mode-0600 alone is insufficient if another user can
+replace its directory entry. The publisher repeats this check internally rather
+than relying only on CLI validation. The final output parent is subject to the
+same private, non-symlink rule before staging and atomic publication.
 All frozen configuration, lock, preflight, transfer, component, and final
 manifest JSON readers also reject duplicate object keys at every nesting level;
 a byte-identical evidence file cannot rely on last-key-wins interpretation.
