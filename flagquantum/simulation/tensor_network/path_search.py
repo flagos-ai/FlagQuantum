@@ -11,6 +11,10 @@ from typing import Any, Literal, SupportsInt, overload
 import torch
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
+from ..complex_bmm_dispatch import (
+    _layout_complex_bmm_declared,
+    _layout_complex_bmm_declared_for,
+)
 from ..real_imag_kernels import complex_einsum_pair
 from .models import (
     CompiledTNStagePlan,
@@ -374,7 +378,10 @@ def _contract_nodes_greedy(
     if (
         cached_path is not None
         and not dry_run
-        and active[0].tensor.is_cuda
+        and _layout_complex_bmm_declared_for(
+            device_type=active[0].tensor.device.type,
+            dtype=active[0].tensor.dtype,
+        )
         and len(active) > 1
     ):
         stages = _CONTRACTION_STAGE_CACHE.get(path_key)
@@ -434,7 +441,12 @@ def _contract_nodes_greedy(
         if dry_run:
             tensor = _dry_run_tensor(output_shape, left.tensor)
         else:
-            if cached_path is None and left.tensor.is_cuda:
+            # Where the catalog declares a fused contraction route for these
+            # operands, this pair must not also build a shape-specialized
+            # compiled kernel. The catalog, not a device literal, decides.
+            if cached_path is None and _layout_complex_bmm_declared(
+                _real_tensor(left.tensor), _real_tensor(right.tensor)
+            ):
                 tensor = complex_einsum_pair(
                     _pair_equation(left.labels, right.labels, pair_outputs),
                     _real_tensor(left.tensor),

@@ -500,7 +500,7 @@ status = "partial"
 priority = "now"
 dependency_class = "none"
 reason = "An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence."
-evidence = ["flagquantum/simulation/density_matrix.py"]
+evidence = ["flagquantum/simulation/density_matrix.py", "flagquantum/simulation/density_matrix_dispatch.py", "tests/unit/test_density_matrix_catalog_dispatch.py"]
 
 [[domains.capabilities]]
 id = "backend_stim_stabilizer"

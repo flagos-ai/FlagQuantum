@@ -21,7 +21,7 @@ import inspect
 import pytest
 import torch
 
-import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
+import flagquantum.simulation.kernel_dispatch as kernel_dispatch
 import flagquantum.simulation.real_imag_kernels as kernels_runtime
 from flagquantum.kernels.catalog import (
     EVIDENCE,
@@ -74,7 +74,15 @@ def _operands(dtype: torch.dtype = torch.complex64):
 
 
 def _declare_cpu_implementations(monkeypatch) -> None:
-    """Add CPU records to the catalog the dispatcher actually reads."""
+    """Add CPU records to the catalog the dispatcher actually reads.
+
+    The declared-route question is asked through
+    ``flagquantum.simulation.kernel_dispatch._catalog_declares_kernel``, which is
+    the one seam every fused contraction route in Simulation shares: the
+    tensor-network, layout-BMM, and density-matrix callers all reach the catalog
+    through it. Patching the catalog lookup there is what makes this a
+    replacement proof rather than a test of one module's private helper.
+    """
 
     def with_cpu_records(request: KernelRequest, **kwargs: object) -> KernelMatchResult:
         return match_kernel_implementations(
@@ -85,7 +93,7 @@ def _declare_cpu_implementations(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        complex_bmm_dispatch, "match_kernel_implementations", with_cpu_records
+        kernel_dispatch, "match_kernel_implementations", with_cpu_records
     )
 
 

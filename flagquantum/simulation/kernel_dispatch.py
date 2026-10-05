@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from ..kernels.catalog import KernelImplementation, KernelMatchResult
+from collections.abc import Sequence
+
+import torch
+
+from ..kernels.catalog import (
+    KERNEL_DEVICES,
+    KernelImplementation,
+    KernelMatchResult,
+    KernelRequest,
+    match_kernel_implementations,
+)
 
 
 def _require_cataloged_kernel(
@@ -43,4 +53,62 @@ def _require_cataloged_kernel(
     )
 
 
-__all__ = ("_require_cataloged_kernel",)
+def _operand_kernel_axis(operands: Sequence[torch.Tensor]) -> tuple[str, str] | None:
+    """Return the shared ``(device_type, dtype)`` of a tensor group.
+
+    A group that spans two devices or two precisions has no single catalog
+    request to make, and a device outside the declared axis cannot reach a
+    cataloged implementation at all. Both cases return ``None`` instead of
+    guessing, so a caller's route question has one spelling everywhere. An empty
+    group is one more case of the same rule rather than a separate guard: it has
+    no device for the group to agree on either.
+    """
+
+    if len({operand.device for operand in operands}) != 1:
+        return None
+    device_type = operands[0].device.type
+    if device_type not in KERNEL_DEVICES:
+        return None
+    dtypes = {str(operand.dtype).removeprefix("torch.") for operand in operands}
+    if len(dtypes) != 1:
+        return None
+    return device_type, dtypes.pop()
+
+
+def _catalog_declares_kernel(
+    semantic_id: str,
+    *,
+    device_type: str,
+    dtype: str,
+    layout: str,
+) -> bool:
+    """Return whether an evidenced implementation covers this device and layout.
+
+    The catalog is the authority for which execution devices can run a fused
+    route, so a caller asks this question instead of matching on a device
+    literal. The provider is deliberately not pinned: the question is whether
+    *any* evidenced implementation covers the device and precision, so a record
+    added for another provider changes the answer without editing the caller.
+    Local addressing and the forward direction are the shape every dense
+    contraction route in this package declares.
+    """
+
+    if device_type not in KERNEL_DEVICES:
+        return False
+    return match_kernel_implementations(
+        KernelRequest(
+            semantic_id=semantic_id,
+            device=device_type,
+            dtype=dtype,
+            layout=layout,
+            direction="forward",
+            addressing=("local",),
+        )
+    ).matched
+
+
+__all__ = (
+    "_catalog_declares_kernel",
+    "_operand_kernel_axis",
+    "_require_cataloged_kernel",
+)

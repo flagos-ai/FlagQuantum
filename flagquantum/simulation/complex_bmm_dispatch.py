@@ -5,14 +5,16 @@ from __future__ import annotations
 import torch
 
 from ..kernels.catalog import (
-    KERNEL_DEVICES,
     KernelImplementation,
     KernelMatchResult,
-    KernelProvider,
     KernelRequest,
     match_kernel_implementations,
 )
-from .kernel_dispatch import _require_cataloged_kernel
+from .kernel_dispatch import (
+    _catalog_declares_kernel,
+    _operand_kernel_axis,
+    _require_cataloged_kernel,
+)
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-NUM-002-A"
 _SEMANTIC_ID = "numerics.matmul.complex_batched_layout"
@@ -23,16 +25,8 @@ def _layout_complex_bmm_kernel_match(
     *,
     device_type: str,
     dtype: str,
-    providers: tuple[KernelProvider, ...] = ("triton",),
 ) -> KernelMatchResult:
-    """Match the layout-aware BMM semantic against its exact catalog contract.
-
-    An empty ``providers`` filter asks the catalog a different question: not
-    "is the wired provider available" but "does any evidenced implementation
-    cover this device and precision". Callers that only need to know whether a
-    cataloged route exists pass no provider, so a record added for another
-    provider changes their answer without editing them.
-    """
+    """Match the layout-aware BMM semantic against its wired catalog contract."""
 
     return match_kernel_implementations(
         KernelRequest(
@@ -42,7 +36,7 @@ def _layout_complex_bmm_kernel_match(
             layout=_LAYOUT,
             direction="forward",
             addressing=("local",),
-            providers=providers,
+            providers=("triton",),
         )
     )
 
@@ -60,26 +54,38 @@ def _require_layout_complex_bmm_kernel(
 
 
 def _layout_complex_bmm_declared(left: torch.Tensor, right: torch.Tensor) -> bool:
-    """Return whether the catalog declares a layout BMM for this device/dtype.
+    """Return whether the catalog declares a layout BMM for these operands.
 
     The catalog is the authority for which execution devices can run the fused
-    route; the caller must not infer it from a device literal. A device outside
-    the declared axis cannot reach a cataloged implementation, so it is not
-    declared here.
+    route; the caller must not infer it from a device literal. Two operands that
+    do not share one declared device and precision have no single catalog
+    request to make, and are not declared here.
     """
 
-    operands = (left, right)
-    if len({operand.device for operand in operands}) != 1:
+    axis = _operand_kernel_axis((left, right))
+    if axis is None:
         return False
-    device_type = left.device.type
-    if device_type not in KERNEL_DEVICES:
-        return False
-    dtypes = {str(operand.dtype).removeprefix("torch.") for operand in operands}
-    if len(dtypes) != 1:
-        return False
-    return _layout_complex_bmm_kernel_match(
-        device_type=device_type, dtype=dtypes.pop(), providers=()
-    ).matched
+    device_type, dtype = axis
+    return _layout_complex_bmm_declared_for(device_type=device_type, dtype=dtype)
+
+
+def _layout_complex_bmm_declared_for(
+    *, device_type: str, dtype: str | torch.dtype
+) -> bool:
+    """Answer the same route question from a device and precision pair.
+
+    Planning code that holds a requested device and dtype rather than operands
+    asks the catalog the same question through this entry, so one semantic has
+    one declared-route spelling across the tensor-network and MPS paths. A
+    device outside the declared axis is not declared, never an error.
+    """
+
+    return _catalog_declares_kernel(
+        _SEMANTIC_ID,
+        device_type=device_type,
+        dtype=str(dtype).removeprefix("torch."),
+        layout=_LAYOUT,
+    )
 
 
 def _apply_cataloged_layout_complex_bmm(
@@ -109,6 +115,7 @@ def _apply_cataloged_layout_complex_bmm(
 __all__ = (
     "_apply_cataloged_layout_complex_bmm",
     "_layout_complex_bmm_declared",
+    "_layout_complex_bmm_declared_for",
     "_layout_complex_bmm_kernel_match",
     "_require_layout_complex_bmm_kernel",
 )

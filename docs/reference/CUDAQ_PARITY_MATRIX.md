@@ -311,7 +311,7 @@ Evidence:
 - domain default, negative search: no stabilizer simulator, no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport
 
 - `backend_asynchronous_multi_qpu` override: `flagquantum/remote/jobs.py`, `tests/api_contract/test_remote_job_fanout.py`, `flagquantum/remote/README.md`, `search:no partitioning of one workload across targets, no combination of the independent streams into one estimate, and no rank or world size to report`
-- `backend_density_matrix` override: `flagquantum/simulation/density_matrix.py`
+- `backend_density_matrix` override: `flagquantum/simulation/density_matrix.py`, `flagquantum/simulation/density_matrix_dispatch.py`, `tests/unit/test_density_matrix_catalog_dispatch.py`
 - `backend_stim_stabilizer` override: `flagquantum/simulation/stabilizer/engine.py`, `flagquantum/runtime/executors/stabilizer/sampling.py`, `tests/team/simulation/test_stabilizer_sampling.py`, `tests/integration/test_stabilizer_execution_mode.py`, `examples/stabilizer_sampling.py`
 - `dynamics_schedule_and_integrators` override: `flagquantum/lindblad`, `flagquantum/simulation/lindblad.py`, `search:no schedule object and no selectable integrator`
 

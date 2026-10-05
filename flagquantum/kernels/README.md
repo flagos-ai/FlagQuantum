@@ -178,6 +178,27 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+The density-matrix simulator's operator products are the same rank-three batched
+complex matrix multiplication as NUM-001, and it is the first wired consumer of
+that semantic. `flagquantum/simulation/density_matrix_dispatch.py` asks the route
+question once, from the operands' own declared device and precision, and the
+simulator contracts through `torch.bmm` only where the catalog declares no
+implementation. No measured comparison against `torch.bmm` is claimed for the
+density-matrix shapes, so the route is recorded rather than described as faster:
+both routes are counted and `density_matmul_route_stats()` reports how many
+products took each, which makes a change of route observable without a benchmark.
+The MPS canonical-transfer path above is unchanged and still uses `torch.bmm`.
+
+Route questions are asked through one shared helper.
+`flagquantum/simulation/kernel_dispatch.py` owns `_operand_kernel_axis`, which
+reduces an operand group to the single device and precision a catalog request
+needs, and `_catalog_declares_kernel`, which reports whether any evidence-backed
+implementation covers that request. The helper deliberately does not pin a
+provider: a record added for another provider changes the answer without editing
+a caller. Statevector, MPS, tensor-network, and density-matrix dispatch all reach
+the catalog through it, so an execution device is spelled once, in the request,
+and never as a device literal in a physics routine.
+
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
 entry for contiguous CUDA `complex64` tensors outside reverse execution once

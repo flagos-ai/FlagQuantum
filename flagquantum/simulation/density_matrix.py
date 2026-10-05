@@ -11,6 +11,7 @@ from ..core.ir import CircuitIR
 from ..core.runtime_config import get_runtime_config
 from ..kernels.catalog import KERNEL_DEVICES
 from ..noise import KrausChannel
+from .density_matrix_dispatch import _density_bmm
 from .gate_matrix import gate_matrix
 
 
@@ -147,7 +148,7 @@ def apply_unitary_density(
     full = expand_operator(matrix, wires, n_wires, dtype=rho.dtype, device=rho.device)
     if full.ndim == 2:
         full = full.expand(rho.shape[0], -1, -1)
-    return torch.bmm(torch.bmm(full, rho), torch.conj(full).transpose(-1, -2))
+    return _density_bmm(_density_bmm(full, rho), torch.conj(full).transpose(-1, -2))
 
 
 def apply_kraus_density(
@@ -170,7 +171,9 @@ def apply_kraus_density(
         full = expand_operator(op, wires, n_wires, dtype=rho.dtype, device=rho.device)
         if full.ndim == 2:
             full = full.expand(rho.shape[0], -1, -1)
-        out = out + torch.bmm(torch.bmm(full, rho), torch.conj(full).transpose(-1, -2))
+        out = out + _density_bmm(
+            _density_bmm(full, rho), torch.conj(full).transpose(-1, -2)
+        )
     return out
 
 
