@@ -131,6 +131,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - An offline protein-artifact preflight now verifies exact file/tree identities,
   rejects symlinks and implicit path ambiguity, and emits a private record that
   cannot be mistaken for acceptance evidence.
+- A QDiffusion builder binding now forces the pinned plugin's validation,
+  training, baseline, and guided-generation branches to share the bounded
+  FlagQuantum sampler. It rejects competing sampler injection and verifies the
+  constructed energy model retained the same sampler object.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
