@@ -4,6 +4,11 @@
 
 Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 
+- API Change Proposal 068 documents the provider-specific Ising, remote-task,
+  sampler, dependency, evidence, and maturity boundaries. Its status is draft;
+  no root facade, dependency extra, or capability entry is authorized by the
+  prototype.
+
 - Phase 0 host reconnaissance is complete for the currently available compute
   surface. Both `jp-a800-171` and `jp-a800-172` expose eight NVIDIA
   A800-SXM4-80GB devices, driver 580.126.20, and system Python 3.10.12. Neither
