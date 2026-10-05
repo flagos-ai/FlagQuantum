@@ -671,6 +671,12 @@ def test_the_record_gather_runs_on_a_cpu_group_not_the_device_group(monkeypatch)
     assert opened[0]["backend"] == "gloo"
     assert opened[0]["timeout"].total_seconds() == 300
     assert os.environ["GLOO_SOCKET_IFNAME"] == "ens22f0"
+    # `_control_group` assigns the variable directly rather than through
+    # monkeypatch, and `delenv(..., raising=False)` records nothing when the name
+    # is already absent, so teardown cannot undo that write. Leaving it set hands
+    # a cluster interface name to every gloo group opened later in the same
+    # session, and a host that has no such interface then cannot open one.
+    os.environ.pop("GLOO_SOCKET_IFNAME", None)
 
 
 def test_the_record_gather_single_device_run_needs_no_group(monkeypatch):

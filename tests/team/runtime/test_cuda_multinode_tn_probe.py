@@ -270,15 +270,17 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert performance["minimum_seconds"] <= performance["median_seconds"]
     assert performance["median_seconds"] <= performance["maximum_seconds"]
 
-    # The staging audit ran, and it found transfers inside the region it
-    # profiled. That is a finding about the workload, so it keeps a blocker --
-    # but not the one that says nobody looked.
+    # The staging audit ran, and it found the profiled region clean. That is a
+    # measurement rather than an absence of measurement: the flag that says
+    # nobody looked and the blocker that says transfers were found are both
+    # keyed off this observation, so a run that stopped profiling would report
+    # the first and a run that regressed would report the second.
     staging = observations["host_staging"]
     assert staging["profiled"] is True
     assert staging["profiled_workload"] == performance["measurement"]
-    assert staging["host_transfer_observed"] is True
-    assert staging["host_transfer_events"]
-    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+    assert staging["host_transfer_observed"] is False
+    assert staging["host_transfer_events"] == []
+    assert staging["profiler_event_count"] > 0
 
     ranks = observations["rank_records"]
     assert len(ranks) == 2
@@ -450,7 +452,6 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # observation that justifies them, so a reader cannot find one here and
     # cannot find one silently missing either.
     assert sorted(evidence["claim_blockers"]) == [
-        "host_staging_in_measured_region",
         "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
         "validation_only_tiny_full_state_gather",
@@ -526,15 +527,22 @@ def test_the_cut_width_sweep_derives_both_topology_blockers(
     blockers = set(evidence["claim_blockers"])
 
     # The pair is fixed by the lane and the circuit is a toy one, so neither can
-    # be retracted by anything this run does. They have to stay.
-    assert {"two_node_pair_only_no_wider_topology", "toy_circuit_parameters_only"} <= (
-        blockers
-    )
+    # be retracted by anything this run does. They have to stay. The staging
+    # blocker is retracted by the same default shape, because the profiled region
+    # this helper describes is one that leaked nothing across the host boundary;
+    # the full-state-gather blocker stays because this helper describes a run
+    # whose only whole-state read is the validation comparison.
+    assert sorted(blockers) == [
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
     assert "inter_node_cut_width_not_swept" not in blockers
     assert "slice_count_fixed_at_world_size" not in blockers
     assert "rdma_not_tested" not in blockers
     assert "production_performance_not_measured" not in blockers
     assert "hidden_host_staging_not_audited" not in blockers
+    assert "host_staging_in_measured_region" not in blockers
 
     # One width, or a width whose ranks exchanged nothing, is not a sweep: the
     # whole point is that the cut moved and the exchange moved with it.

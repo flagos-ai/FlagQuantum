@@ -27,7 +27,7 @@
         "kind": "multinode_transport_probe",
         "note": "Carries the three standing claim blockers recorded at the top level of this manifest. Digest-bound so the disclosure cannot drift away from the bytes it describes.",
         "path": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
-        "sha256": "17e69ead64291324337c68236f7d9491f5b1d45994dafbb0d2b62fafe2c12123"
+        "sha256": "91b1306a6619b2005263ea1576869492bfcef7b1faae9d7186da1558550d524e"
       }
     ],
     "gradient_policy": "approximate",

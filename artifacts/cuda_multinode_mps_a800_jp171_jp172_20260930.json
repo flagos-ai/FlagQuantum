@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-05T08:41:24.432820+00:00",
+    "captured_at": "2026-10-05T09:17:58.656297+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
@@ -10,7 +10,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "2ba2c7d7d84ea648553ec4df81aad16a8b786f35",
+      "source_revision": "c5cef4133b3c36f12a1c48bbd20087bb1e7caa1b",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -140,18 +140,18 @@
       },
       "export": {
         "gather": {
-          "maximum_seconds": 0.0009517297148704529,
+          "maximum_seconds": 0.0009825173765420914,
           "measured": true,
           "measured_iterations": 5,
           "measurement": "distributed_mps_full_state_export",
-          "median_seconds": 0.0009304229170084,
-          "minimum_seconds": 0.0009149555116891861,
+          "median_seconds": 0.0009675640612840652,
+          "minimum_seconds": 0.0009552035480737686,
           "seconds": [
-            0.0009517297148704529,
-            0.000940786674618721,
-            0.0009274687618017197,
-            0.0009304229170084,
-            0.0009149555116891861
+            0.0009675640612840652,
+            0.0009620096534490585,
+            0.0009825173765420914,
+            0.0009729638695716858,
+            0.0009552035480737686
           ],
           "synchronized": true,
           "warmup_iterations": 2
@@ -234,7 +234,7 @@
         ],
         "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_mps_forward",
-        "profiler_event_count": 149
+        "profiler_event_count": 148
       },
       "network": {
         "backend": "nccl",
@@ -242,7 +242,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "4f02fa0f09cf55d18e55bf999c9b926dd324da3667d2169de642f180ebbc5132",
+        "debug_log_sha256": "153b68274c9b61a140c6167ea640af2eb074a2b0a5e1dbfc5ac3d14e04d1a703",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -266,19 +266,19 @@
       },
       "performance": {
         "max_bond": 64,
-        "maximum_seconds": 0.02356688678264618,
+        "maximum_seconds": 0.02328391745686531,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_mps_forward",
-        "median_seconds": 0.02206449583172798,
-        "minimum_seconds": 0.02129865624010563,
+        "median_seconds": 0.02279459312558174,
+        "minimum_seconds": 0.021957846358418465,
         "n_wires": 6,
         "seconds": [
-          0.02129865624010563,
-          0.023391379043459892,
-          0.02133628912270069,
-          0.02356688678264618,
-          0.02206449583172798
+          0.02328391745686531,
+          0.022662058472633362,
+          0.021957846358418465,
+          0.023093702271580696,
+          0.02279459312558174
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -324,7 +324,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.000371299684047699,
+            "layer_halo_wait_seconds": 0.000517718493938446,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -603,12 +603,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.00044129975140094757,
+            "diagnostics_seconds": 0.00043236464262008667,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03944819048047066,
+            "end_to_end_seconds": 0.04297472909092903,
             "forward_peak_memory_bytes": 17079808,
-            "forward_seconds": 0.021649247035384178,
+            "forward_seconds": 0.021482452750205994,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -632,7 +632,7 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.001163894310593605,
+            "optimizer_seconds": 0.0012863706797361374,
             "optimizer_stage": "sgd",
             "owned_bond_work": 1,
             "owned_site_work": 2,
@@ -645,7 +645,7 @@
             "reverse_autograd_grad_invocations": 3,
             "reverse_peak_memory_bytes": 17074688,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.016182705760002136,
+            "reverse_seconds": 0.01976197585463524,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -653,7 +653,7 @@
             "svd_activity": 1,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 384,
-            "training_compute_seconds": 0.03900561109185219,
+            "training_compute_seconds": 0.04254112392663956,
             "truncated_splits": 0,
             "two_site_splits": 1,
             "useful_work_completed": true
@@ -748,7 +748,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.00024078413844108582,
+            "layer_halo_wait_seconds": 0.00022258423268795013,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -1027,12 +1027,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.0006856992840766907,
+            "diagnostics_seconds": 0.0008170008659362793,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03993862122297287,
+            "end_to_end_seconds": 0.04355012811720371,
             "forward_peak_memory_bytes": 17079296,
-            "forward_seconds": 0.020210836082696915,
+            "forward_seconds": 0.022827409207820892,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -1056,7 +1056,7 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.000581124797463417,
+            "optimizer_seconds": 0.0006348844617605209,
             "optimizer_stage": "sgd",
             "owned_bond_work": 2,
             "owned_site_work": 1,
@@ -1069,7 +1069,7 @@
             "reverse_autograd_grad_invocations": 3,
             "reverse_peak_memory_bytes": 17069568,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.018451642245054245,
+            "reverse_seconds": 0.019259585067629814,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -1077,7 +1077,7 @@
             "svd_activity": 0,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 192,
-            "training_compute_seconds": 0.03925121948122978,
+            "training_compute_seconds": 0.04273035749793053,
             "truncated_splits": 0,
             "two_site_splits": 0,
             "useful_work_completed": true
@@ -1205,6 +1205,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "9054d7a629b641bf5990194652fc9ed1b52e0c2b80736cf74e6c881fb1ef4a4a",
+  "evidence_sha256": "9a59e9deccdecdcb4f8658b143f5720283fb3af784d0611741b9bd1328a99b33",
   "schema": "flagquantum.cuda_multinode_mps_artifact.v1"
 }
