@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from examples.qdiffusion_kaiwu.validate_acceptance import (
+    _validate_component_bundle,
     _validate_config,
     validate_acceptance,
 )
@@ -253,10 +254,77 @@ def _replace_record(manifest_path: Path, index: int, record: dict[str, Any]) -> 
     _write_json(manifest_path, manifest)
 
 
+def _source_preflight(host: str, manifest_sha256: str) -> dict[str, Any]:
+    revisions = (
+        ("flagquantum-qboson-", "FlagQuantum-", _REVISION),
+        ("kaiwu-plugin-", "kaiwu-pytorch-plugin-", _PLUGIN_REVISION),
+        (
+            "kaiwu-community-",
+            "kaiwu-community-",
+            "b648b531c034bd6ae9b7a34fed994c717967cc72",
+        ),
+    )
+    return {
+        "schema": "flagquantum.qboson_a800_extracted_bundle_verification",
+        "version": "1.0",
+        "evidence_class": "extraction_preflight_only",
+        "verification_hostname": f"hostname-{host}",
+        "verified_for_target_host": host,
+        "manifest_sha256": manifest_sha256,
+        "extracted_content_verified": True,
+        "artifacts": [
+            {
+                "filename": f"{filename_prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "extracted_root": f"{root_prefix}{revision[:10]}",
+                "file_count": 1,
+                "content_set_sha256": "f" * 64,
+            }
+            for filename_prefix, root_prefix, revision in revisions
+        ],
+        "qboson_hardware_used": False,
+        "a800_execution_verified": False,
+        "acceptance_evidence": False,
+    }
+
+
 def test_complete_two_host_real_provider_bundle_passes(tmp_path: Path) -> None:
     manifest_path, _ = _bundle(tmp_path)
 
     assert validate_acceptance(manifest_path) == []
+
+
+def test_component_validator_rejects_different_host_transfer_manifests() -> None:
+    config = _config()
+    component_payloads = {
+        "1" * 64: _source_preflight("jp-a800-171", "a" * 64),
+        "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
+    }
+    schemas = (
+        "flagquantum.qboson_qdiffusion_system_live_probe",
+        "flagquantum.qboson_qdiffusion_system_live_probe",
+        "flagquantum.qboson_qdiffusion_portability_replay",
+        *("flagquantum.qboson_qdiffusion_protein_training",) * 3,
+        *("flagquantum.qboson_qdiffusion_protein_evaluation",) * 3,
+    )
+    for index, schema in enumerate(schemas, start=3):
+        component_payloads[str(index) * 64] = {
+            "schema": schema,
+            "version": "1.0",
+            "experiment_config_sha256": "c" * 64,
+        }
+    errors: list[str] = []
+
+    _validate_component_bundle(
+        component_payloads,
+        config=config,
+        config_sha256="c" * 64,
+        primary={},
+        replay={},
+        errors=errors,
+    )
+
+    assert "manifest: source preflights do not share one transfer manifest" in errors
 
 
 @pytest.mark.parametrize(

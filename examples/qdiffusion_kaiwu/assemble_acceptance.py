@@ -27,7 +27,10 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_SCHEMA,
 )
-from examples.qdiffusion_kaiwu.source_preflight import validate_source_preflight_record
+from examples.qdiffusion_kaiwu.source_preflight import (
+    validate_common_transfer_manifest,
+    validate_source_preflight_record,
+)
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
@@ -223,6 +226,9 @@ def assemble_records(
             raise ValueError(f"system record source preflight differs for {host}")
         if system.get("transfer_manifest_sha256") != preflight.get("manifest_sha256"):
             raise ValueError(f"system record transfer manifest differs for {host}")
+    validate_common_transfer_manifest(
+        (primary_preflight_record, replay_preflight_record)
+    )
 
     training_by_seed: dict[int, tuple[dict[str, Any], str]] = {}
     for record, digest in training_records:

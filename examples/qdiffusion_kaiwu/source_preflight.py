@@ -149,3 +149,21 @@ def validate_source_preflight_record(
             filename_prefix=filename_prefix,
             expected_revision=expected_revision,
         )
+
+
+def validate_common_transfer_manifest(
+    records: tuple[dict[str, Any], dict[str, Any]],
+) -> str:
+    """Require both host preflights to bind the same reviewed manifest."""
+
+    digests = tuple(record.get("manifest_sha256") for record in records)
+    if any(
+        not isinstance(digest, str) or SHA256.fullmatch(digest) is None
+        for digest in digests
+    ):
+        raise ValueError(
+            "source preflights contain an invalid transfer manifest digest"
+        )
+    if digests[0] != digests[1]:
+        raise ValueError("source preflights do not share one transfer manifest")
+    return digests[0]

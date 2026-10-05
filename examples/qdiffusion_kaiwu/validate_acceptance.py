@@ -15,7 +15,10 @@ from typing import Any, cast
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
 )
-from examples.qdiffusion_kaiwu.source_preflight import validate_source_preflight_record
+from examples.qdiffusion_kaiwu.source_preflight import (
+    validate_common_transfer_manifest,
+    validate_source_preflight_record,
+)
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
@@ -765,6 +768,16 @@ def _validate_component_bundle(
         source_preflights[host] = (digest, payload)
     if set(source_preflights) != HOSTS:
         errors.append("manifest: source preflights must cover both validation hosts")
+    else:
+        try:
+            validate_common_transfer_manifest(
+                (
+                    source_preflights["jp-a800-171"][1],
+                    source_preflights["jp-a800-172"][1],
+                )
+            )
+        except ValueError as exc:
+            errors.append(f"manifest: {exc}")
 
     for digest, payload in component_payloads.items():
         if payload.get("schema") == SOURCE_PREFLIGHT_COMPONENT_SCHEMA:

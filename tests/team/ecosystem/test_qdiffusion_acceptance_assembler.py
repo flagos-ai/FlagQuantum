@@ -293,6 +293,46 @@ def test_assembler_rejects_evaluation_linked_to_another_training_record() -> Non
         )
 
 
+def test_assembler_rejects_different_host_transfer_manifests() -> None:
+    config = _config()
+    training, evaluations = _components()
+    selected_checkpoint = training[0][0]["trained_energy_checkpoint_sha256"]
+    portability = {
+        "execution_host": "jp-a800-172",
+        "acceptance": {"portability": "pass"},
+        "training_record_sha256": training[0][1],
+        "trained_energy_checkpoint_sha256": selected_checkpoint,
+        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
+        "transfer_manifest_sha256": "0" * 64,
+    }
+    replay_system = _system("jp-a800-172", "portability_replay", "replay-task")
+    replay_system["transfer_manifest_sha256"] = "0" * 64
+    replay_preflight = _source_preflight("jp-a800-172")
+    replay_preflight["manifest_sha256"] = "0" * 64
+
+    with pytest.raises(ValueError, match="share one transfer manifest"):
+        assemble_records(
+            config=config,
+            config_sha256="9" * 64,
+            primary_system=(
+                _system("jp-a800-171", "primary", "primary-task"),
+                "a" * 64,
+            ),
+            replay_system=(replay_system, "b" * 64),
+            primary_source_preflight=(
+                _source_preflight("jp-a800-171"),
+                PRIMARY_SOURCE_PREFLIGHT_SHA,
+            ),
+            replay_source_preflight=(
+                replay_preflight,
+                REPLAY_SOURCE_PREFLIGHT_SHA,
+            ),
+            portability=(portability, "c" * 64),
+            training_records=training,
+            evaluation_records=evaluations,
+        )
+
+
 def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> None:
     config = _config()
     config_path = tmp_path / "acceptance_config.json"

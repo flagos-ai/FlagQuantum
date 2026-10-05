@@ -8,6 +8,7 @@ import pytest
 from examples.qdiffusion_kaiwu.source_preflight import (
     COMMUNITY_REVISION,
     load_source_preflight,
+    validate_common_transfer_manifest,
 )
 
 pytestmark = pytest.mark.unit
@@ -124,3 +125,15 @@ def test_source_preflight_must_be_private_and_not_a_symlink(tmp_path: Path) -> N
             source_revision=SOURCE_REVISION,
             plugin_revision=PLUGIN_REVISION,
         )
+
+
+def test_both_hosts_must_share_one_transfer_manifest() -> None:
+    primary = _record()
+    replay = _record()
+    replay["verified_for_target_host"] = "jp-a800-172"
+
+    assert validate_common_transfer_manifest((primary, replay)) == "c" * 64
+
+    replay["manifest_sha256"] = "e" * 64
+    with pytest.raises(ValueError, match="share one transfer manifest"):
+        validate_common_transfer_manifest((primary, replay))
