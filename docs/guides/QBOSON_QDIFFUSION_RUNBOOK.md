@@ -201,10 +201,11 @@ python3 -B -s -m examples.qdiffusion_kaiwu.build_environment_lock \
   --output /absolute/private-evidence/environment-lock.json
 ```
 
-The builder reads bounded wheel METADATA and hashes the wheel bytes without
-installing or executing them. `environment_lock.example.json` documents the
-schema only; its three illustrative rows are not a complete lock. Independently
-verify the generated lock offline before credentials are present:
+The builder reads bounded wheel METADATA, hashes the wheel bytes, and hashes
+every file in each installed distribution's RECORD set without installing or
+executing the wheel. `environment_lock.example.json` documents the schema only;
+its three illustrative rows are not a complete lock. Independently verify the
+generated lock offline before credentials are present:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.verify_environment_lock \
@@ -213,9 +214,9 @@ python3 -B -s -m examples.qdiffusion_kaiwu.verify_environment_lock \
 
 The builder and verifier reject a different Python patch version, missing or
 additional distributions or wheels, version drift, duplicate names,
-placeholders, symlinks, and non-private lock permissions. They do not download,
-install, or approve packages; artifact review and installation remain separate
-controlled steps.
+placeholders, missing or changed installed files, symlinks, and non-private
+lock permissions. They do not download, install, or approve packages; artifact
+review and installation remain separate controlled steps.
 Record the verified lock's SHA-256 as
 `software.environment_lock_sha256` in `acceptance_config.json` before freezing
 the configuration. Every live, training, evaluation, and replay command below

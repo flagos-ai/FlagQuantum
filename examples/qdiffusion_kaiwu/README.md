@@ -109,13 +109,15 @@ Credentials never belong in the frozen configuration or evidence bundle.
 `build_environment_lock.py` builds the private dependency-lane lock directly
 from an explicitly reviewed wheel set. It reads each wheel's bounded METADATA,
 hashes its bytes, and requires an exact one-to-one name/version match with every
-distribution in the running isolated Python environment. The generated lock is
-then checked by `verify_environment_lock.py`; its Python version and complete
-distribution inventory must match the runtime exactly and its file digest must
-match the frozen config. `environment_lock.example.json` documents the schema
-only and is not a complete lock. Every quota-consuming path verifies the real
-lock before credential resolution. Neither command installs or downloads a
-package, and supplying a wheel does not turn it into an approved artifact.
+distribution in the running isolated Python environment. It also hashes each
+distribution's installed RECORD file set, including file names, sizes, and
+contents. The generated lock is then checked by `verify_environment_lock.py`;
+its Python version, complete distribution inventory, and installed contents
+must match the runtime exactly, and its file digest must match the frozen
+config. `environment_lock.example.json` documents the schema only and is not a
+complete lock. Every quota-consuming path verifies the real lock before
+credential resolution. Neither command installs or downloads a package, and
+supplying a wheel does not turn it into an approved artifact.
 
 ## Live provider smoke test
 

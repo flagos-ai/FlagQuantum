@@ -29,8 +29,8 @@ def test_builder_binds_complete_runtime_to_reviewed_wheels(
     numpy = _wheel(tmp_path, name="NumPy", version="2.2.6")
     torch = _wheel(tmp_path, name="torch", version="2.7.0")
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_versions",
-        lambda: {"numpy": "2.2.6", "torch": "2.7.0"},
+        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_inventory",
+        lambda: {"numpy": ("2.2.6", "c" * 64), "torch": ("2.7.0", "d" * 64)},
     )
     output = tmp_path / "environment-lock.json"
 
@@ -49,6 +49,7 @@ def test_builder_binds_complete_runtime_to_reviewed_wheels(
         record["distributions"][0]["approved_artifact_sha256"]
         == hashlib.sha256(numpy.read_bytes()).hexdigest()
     )
+    assert record["distributions"][0]["installed_content_sha256"] == "c" * 64
     with pytest.raises(FileExistsError):
         build_environment_lock(
             artifacts=[numpy.resolve(), torch.resolve()], output=output.resolve()
@@ -76,8 +77,8 @@ def test_builder_rejects_inventory_mismatch(
         for index, (name, version) in enumerate(artifacts)
     ]
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_versions",
-        lambda: installed,
+        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_inventory",
+        lambda: {name: (version, "c" * 64) for name, version in installed.items()},
     )
 
     with pytest.raises(ValueError, match=match):
@@ -91,8 +92,8 @@ def test_builder_rejects_relative_symlink_and_non_wheel_artifacts(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_versions",
-        lambda: {"numpy": "2.2.6"},
+        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_inventory",
+        lambda: {"numpy": ("2.2.6", "c" * 64)},
     )
     wheel = _wheel(tmp_path, name="numpy", version="2.2.6")
     with pytest.raises(ValueError, match="absolute"):
@@ -128,8 +129,8 @@ def test_builder_rejects_conflicting_wheel_metadata_identity(
             "Metadata-Version: 2.1\nName: numpy\nVersion: 2.2.6\n",
         )
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_versions",
-        lambda: {"numpy": "2.2.6"},
+        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_inventory",
+        lambda: {"numpy": ("2.2.6", "c" * 64)},
     )
 
     with pytest.raises(ValueError, match="differs from METADATA"):

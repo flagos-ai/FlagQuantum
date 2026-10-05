@@ -447,6 +447,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
                     "name": "torch",
                     "version": "2.7.0",
                     "approved_artifact_sha256": "a" * 64,
+                    "installed_content_sha256": "b" * 64,
                 }
             ],
         },

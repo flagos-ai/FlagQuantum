@@ -240,6 +240,7 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
                 "name": "torch",
                 "version": "2.7.0",
                 "approved_artifact_sha256": "a" * 64,
+                "installed_content_sha256": "b" * 64,
             }
         ],
     }

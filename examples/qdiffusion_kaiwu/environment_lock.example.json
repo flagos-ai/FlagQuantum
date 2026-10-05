@@ -7,17 +7,20 @@
     {
       "name": "kaiwu",
       "version": "1.3.1",
-      "approved_artifact_sha256": "<required>"
+      "approved_artifact_sha256": "<required>",
+      "installed_content_sha256": "<required>"
     },
     {
       "name": "numpy",
       "version": "2.2.6",
-      "approved_artifact_sha256": "<required>"
+      "approved_artifact_sha256": "<required>",
+      "installed_content_sha256": "<required>"
     },
     {
       "name": "torch",
       "version": "2.7.0",
-      "approved_artifact_sha256": "<required>"
+      "approved_artifact_sha256": "<required>",
+      "installed_content_sha256": "<required>"
     }
   ]
 }

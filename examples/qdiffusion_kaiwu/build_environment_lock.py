@@ -15,7 +15,7 @@ from typing import Any
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     SCHEMA,
     _canonical_distribution_name,
-    _installed_distribution_versions,
+    _installed_distribution_inventory,
     load_environment_lock,
 )
 
@@ -83,7 +83,6 @@ def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:
 
     if not artifacts:
         raise ValueError("at least one reviewed wheel artifact is required")
-    installed = _installed_distribution_versions()
     reviewed: dict[str, dict[str, str]] = {}
     for artifact in artifacts:
         name, version = _wheel_identity(artifact)
@@ -96,12 +95,13 @@ def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:
                 artifact.read_bytes()
             ).hexdigest(),
         }
+    installed = _installed_distribution_inventory()
     missing = sorted(installed.keys() - reviewed.keys())
     extra = sorted(reviewed.keys() - installed.keys())
     mismatched = sorted(
         name
         for name in installed.keys() & reviewed.keys()
-        if installed[name] != reviewed[name]["version"]
+        if installed[name][0] != reviewed[name]["version"]
     )
     if missing:
         raise ValueError(f"installed distributions lack reviewed wheels: {missing}")
@@ -109,6 +109,8 @@ def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:
         raise ValueError(f"reviewed wheels are not installed: {extra}")
     if mismatched:
         raise ValueError(f"reviewed wheel versions differ from runtime: {mismatched}")
+    for name, distribution in reviewed.items():
+        distribution["installed_content_sha256"] = installed[name][1]
     record: dict[str, Any] = {
         "schema": SCHEMA,
         "version": "1.0",

@@ -20,8 +20,48 @@ def _canonical_distribution_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def _installed_distribution_versions() -> dict[str, str]:
-    installed: dict[str, str] = {}
+def _stream_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _distribution_content_sha256(
+    distribution: importlib.metadata.Distribution, *, name: str
+) -> str:
+    files = distribution.files
+    if not files:
+        raise ValueError(f"installed distribution lacks a RECORD file set: {name}")
+    records: list[dict[str, Any]] = []
+    labels: set[str] = set()
+    for entry in sorted(files, key=str):
+        label = str(entry).replace("\\", "/")
+        if not label or label in labels:
+            raise ValueError(
+                f"installed distribution has invalid file identity: {name}"
+            )
+        labels.add(label)
+        path = Path(distribution.locate_file(entry))
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(
+                f"installed distribution file is missing or unsafe: {name}:{label}"
+            )
+        records.append(
+            {
+                "path": label,
+                "bytes": path.stat().st_size,
+                "sha256": _stream_sha256(path),
+            }
+        )
+    return hashlib.sha256(
+        json.dumps(records, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _installed_distribution_inventory() -> dict[str, tuple[str, str]]:
+    installed: dict[str, tuple[str, str]] = {}
     for distribution in importlib.metadata.distributions():
         raw_name = distribution.metadata.get("Name")
         if not isinstance(raw_name, str) or not raw_name.strip():
@@ -30,7 +70,10 @@ def _installed_distribution_versions() -> dict[str, str]:
         version = distribution.version
         if name in installed:
             raise ValueError(f"duplicate installed distribution identity: {name}")
-        installed[name] = version
+        installed[name] = (
+            version,
+            _distribution_content_sha256(distribution, name=name),
+        )
     return installed
 
 
@@ -69,6 +112,7 @@ def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
         name = distribution.get("name")
         version = distribution.get("version")
         artifact_sha256 = distribution.get("approved_artifact_sha256")
+        installed_content_sha256 = distribution.get("installed_content_sha256")
         if (
             not isinstance(name, str)
             or not name
@@ -88,6 +132,13 @@ def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
             raise ValueError(
                 f"environment lock distribution {name!r} artifact digest is invalid"
             )
+        if (
+            not isinstance(installed_content_sha256, str)
+            or SHA256.fullmatch(installed_content_sha256) is None
+        ):
+            raise ValueError(
+                f"environment lock distribution {name!r} installed content digest is invalid"
+            )
         names.append(name)
     if names != sorted(names) or len(names) != len(set(names)):
         raise ValueError(
@@ -101,16 +152,24 @@ def verify_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
     if record["python_version"] != platform.python_version():
         raise ValueError("observed Python version differs from environment lock")
     expected = {
-        distribution["name"]: distribution["version"]
+        distribution["name"]: (
+            distribution["version"],
+            distribution["installed_content_sha256"],
+        )
         for distribution in record["distributions"]
     }
-    observed = _installed_distribution_versions()
+    observed = _installed_distribution_inventory()
     missing = sorted(expected.keys() - observed.keys())
     extra = sorted(observed.keys() - expected.keys())
     mismatched = sorted(
         name
         for name in expected.keys() & observed.keys()
-        if expected[name] != observed[name]
+        if expected[name][0] != observed[name][0]
+    )
+    content_mismatched = sorted(
+        name
+        for name in expected.keys() & observed.keys()
+        if expected[name][1] != observed[name][1]
     )
     if missing:
         raise ValueError(f"environment lock distributions are missing: {missing}")
@@ -118,6 +177,10 @@ def verify_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
         raise ValueError(f"environment contains unlisted distributions: {extra}")
     if mismatched:
         raise ValueError(f"environment distribution versions differ: {mismatched}")
+    if content_mismatched:
+        raise ValueError(
+            f"environment distribution installed contents differ: {content_mismatched}"
+        )
     return record, digest
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    _distribution_content_sha256,
     load_environment_lock,
     verify_environment_lock,
     verify_frozen_environment_lock,
@@ -26,11 +27,13 @@ def _record() -> dict[str, object]:
                 "name": "numpy",
                 "version": "2.2.6",
                 "approved_artifact_sha256": "a" * 64,
+                "installed_content_sha256": "c" * 64,
             },
             {
                 "name": "torch",
                 "version": "2.7.0",
                 "approved_artifact_sha256": "b" * 64,
+                "installed_content_sha256": "d" * 64,
             },
         ],
     }
@@ -82,8 +85,8 @@ def test_environment_lock_matches_exact_runtime_inventory(
         lambda: "3.10.16",
     )
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.verify_environment_lock._installed_distribution_versions",
-        lambda: {"numpy": "2.2.6", "torch": "2.7.0"},
+        "examples.qdiffusion_kaiwu.verify_environment_lock._installed_distribution_inventory",
+        lambda: {"numpy": ("2.2.6", "c" * 64), "torch": ("2.7.0", "d" * 64)},
     )
 
     _, digest = verify_environment_lock(path)
@@ -102,15 +105,29 @@ def test_environment_lock_matches_exact_runtime_inventory(
 @pytest.mark.parametrize(
     ("inventory", "match"),
     (
-        ({"numpy": "2.2.6"}, "missing"),
-        ({"numpy": "2.2.6", "torch": "2.7.0", "extra": "1"}, "unlisted"),
-        ({"numpy": "2.2.6", "torch": "2.6.0"}, "versions differ"),
+        ({"numpy": ("2.2.6", "c" * 64)}, "missing"),
+        (
+            {
+                "numpy": ("2.2.6", "c" * 64),
+                "torch": ("2.7.0", "d" * 64),
+                "extra": ("1", "e" * 64),
+            },
+            "unlisted",
+        ),
+        (
+            {"numpy": ("2.2.6", "c" * 64), "torch": ("2.6.0", "d" * 64)},
+            "versions differ",
+        ),
+        (
+            {"numpy": ("2.2.6", "0" * 64), "torch": ("2.7.0", "d" * 64)},
+            "installed contents differ",
+        ),
     ),
 )
 def test_environment_lock_rejects_runtime_drift(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    inventory: dict[str, str],
+    inventory: dict[str, tuple[str, str]],
     match: str,
 ) -> None:
     path = tmp_path / "environment-lock.json"
@@ -120,9 +137,36 @@ def test_environment_lock_rejects_runtime_drift(
         lambda: "3.10.16",
     )
     monkeypatch.setattr(
-        "examples.qdiffusion_kaiwu.verify_environment_lock._installed_distribution_versions",
+        "examples.qdiffusion_kaiwu.verify_environment_lock._installed_distribution_inventory",
         lambda: inventory,
     )
 
     with pytest.raises(ValueError, match=match):
         verify_environment_lock(path)
+
+
+def test_distribution_content_digest_binds_record_file_set(tmp_path: Path) -> None:
+    first = tmp_path / "package" / "first.py"
+    first.parent.mkdir()
+    first.write_text("value = 1\n", encoding="utf-8")
+    second = tmp_path / "package" / "weights.bin"
+    second.write_bytes(b"weights")
+
+    class Distribution:
+        def __init__(self) -> None:
+            self.files = [Path("package/first.py"), Path("package/weights.bin")]
+
+        @staticmethod
+        def locate_file(entry: Path) -> Path:
+            return tmp_path / entry
+
+    before = _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]
+    second.write_bytes(b"changed")
+    after = _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]
+
+    assert before != after
+
+    second.unlink()
+    second.symlink_to(first)
+    with pytest.raises(ValueError, match="missing or unsafe"):
+        _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]

@@ -200,6 +200,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   wheel METADATA, hashes the reviewed wheel bytes, and requires an exact
   one-wheel-per-installed-distribution inventory. It never installs or executes
   an artifact and does not substitute for source, license, or terms approval.
+- The lock also binds every distribution's installed RECORD file identities,
+  sizes, and contents. Runtime verification recomputes those digests, so a
+  modified Python or binary package file fails even when version metadata is
+  unchanged.
 - System, training, evaluation, and replay verify that exact runtime inventory
   and bind its lock digest to the frozen config before credentials are resolved.
   Final assembly copies and independently revalidates the lock as a closed-world
