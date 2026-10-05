@@ -1063,7 +1063,6 @@ class MPSState(MPSPlanningMixin):
         requires_grad = (
             left.requires_grad or matrix.requires_grad or right.requires_grad
         )
-        fused_threshold = 2**18 if requires_grad else 2**12
         triton_enabled = os.getenv(
             "FQ_TRITON_MPS_TWO_SITE", "0"
         ).strip().lower() not in {
@@ -1076,8 +1075,9 @@ class MPSState(MPSPlanningMixin):
             triton_enabled
             and left.is_cuda
             and left.dtype == torch.complex64
+            and not requires_grad
             and not reverse
-            and contraction_volume >= fused_threshold
+            and contraction_volume >= 2**12
         ):
             from .two_site_dispatch import _apply_cataloged_mps_two_site
 
@@ -1143,6 +1143,11 @@ class MPSState(MPSPlanningMixin):
                 _opt_in_environment_flag("FQ_TRITON_MPS_TWO_SITE")
                 and flat_left.is_cuda
                 and flat_left.dtype == torch.complex64
+                and not (
+                    flat_left.requires_grad
+                    or flat_gates.requires_grad
+                    or flat_right.requires_grad
+                )
                 and volume >= 2**18
             )
             if use_triton:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import torch
 
 from ...kernels.catalog import (
@@ -32,6 +34,7 @@ def _mps_two_site_kernel_match(*, device_type: str, dtype: str) -> KernelMatchRe
     )
 
 
+@lru_cache(maxsize=None)
 def _require_mps_two_site_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
@@ -78,6 +81,7 @@ def _mps_projected_two_site_kernel_match(
     )
 
 
+@lru_cache(maxsize=None)
 def _require_mps_projected_two_site_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:

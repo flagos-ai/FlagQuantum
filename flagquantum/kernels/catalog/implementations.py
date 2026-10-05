@@ -210,7 +210,8 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_two_site",
         "fused_mps_two_site",
         layouts=("mps_two_site",),
-        directions=("forward", "backward"),
+        directions=("forward",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
