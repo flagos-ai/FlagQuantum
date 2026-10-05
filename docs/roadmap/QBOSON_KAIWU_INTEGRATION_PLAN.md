@@ -225,6 +225,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   recomputation, and complete equality between submitted precision identities
   and Remote receipt matrix identities; a report count alone cannot establish
   coverage.
+- The same per-matrix evidence now records the canonical float64 coefficient
+  range plus the exact arithmetic-mean symmetry normalization and
+  round-half-to-even policy. Final validation rejects absent, nonfinite,
+  inverted, or substituted normalization metadata rather than relying on an
+  implementation comment to describe the lossy conversion.
 - The Phase 5 runbook now covers frozen inputs, approved source transfer,
   development rehearsal, SDK-lane verification, quota-guarded smoke and system
   execution, interruption and same-identity resume, independent two-host runs,

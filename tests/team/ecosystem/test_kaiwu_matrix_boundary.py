@@ -201,6 +201,11 @@ def test_integer_precision_is_explicit_symmetric_and_auditable() -> None:
     assert report.quantized.min().item() >= -7
     assert report.quantized.max().item() <= 7
     assert torch.equal(report.quantized, report.quantized.T)
+    assert report.normalized_dtype == "torch.float64"
+    assert report.normalized_min == -2.0
+    assert report.normalized_max == 4.0
+    assert report.symmetry_normalization == "arithmetic_mean"
+    assert report.rounding_policy == "round_half_to_even"
     assert report.scale_factor == pytest.approx(1.75)
     assert report.max_abs_error >= 0.0
     assert report.mean_abs_error >= 0.0

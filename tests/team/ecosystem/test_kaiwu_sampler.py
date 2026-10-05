@@ -228,6 +228,11 @@ def test_integer_precision_is_applied_only_when_explicit() -> None:
         scaled.precision_evidence[0].submission_matrix_sha256
         == scaled.receipts[0].matrix_sha256
     )
+    assert scaled.precision_evidence[0].normalized_dtype == "torch.float64"
+    assert scaled.precision_evidence[0].normalized_min == 0.0
+    assert scaled.precision_evidence[0].normalized_max == 0.5
+    assert scaled.precision_evidence[0].symmetry_normalization == "arithmetic_mean"
+    assert scaled.precision_evidence[0].rounding_policy == "round_half_to_even"
 
 
 def test_precision_reports_cover_distinct_inputs_that_share_one_remote_matrix() -> None:

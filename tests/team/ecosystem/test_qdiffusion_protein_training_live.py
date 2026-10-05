@@ -254,6 +254,11 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     precision_evidence = KaiwuPrecisionEvidence(
         original_matrix_sha256="2" * 64,
         submission_matrix_sha256="1" * 64,
+        normalized_dtype="torch.float64",
+        normalized_min=-63.5,
+        normalized_max=63.5,
+        symmetry_normalization="arithmetic_mean",
+        rounding_policy="round_half_to_even",
         scale_factor=2.0,
         target_min=-127,
         target_max=127,
@@ -309,6 +314,11 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         {
             "original_matrix_sha256": "2" * 64,
             "submission_matrix_sha256": "1" * 64,
+            "normalized_dtype": "torch.float64",
+            "normalized_min": -63.5,
+            "normalized_max": 63.5,
+            "symmetry_normalization": "arithmetic_mean",
+            "rounding_policy": "round_half_to_even",
             "scale_factor": 2.0,
             "target_min": -127,
             "target_max": 127,

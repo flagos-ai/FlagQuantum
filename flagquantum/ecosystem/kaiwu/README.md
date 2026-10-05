@@ -26,7 +26,8 @@ Public entry points currently live in `flagquantum.ecosystem.kaiwu`:
   explicit remote-call budget and timeout. Its `precision_reports` retain one
   report per distinct original matrix, including separate reports when multiple
   inputs quantize to one shared remote matrix. `precision_evidence` additionally
-  binds each report to its original and submitted matrix digests. Its read-only
+  binds each report to its original and submitted matrix digests, normalized
+  coefficient range, and exact symmetry-normalization and rounding rules. Its read-only
   `client` property exposes the already-bound Remote client solely so evidence
   builders can prove transport provenance; task ownership remains in
   `remote.kaiwu`.

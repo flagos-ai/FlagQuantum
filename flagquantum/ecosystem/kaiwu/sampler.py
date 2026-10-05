@@ -53,6 +53,11 @@ class KaiwuPrecisionEvidence:
 
     original_matrix_sha256: str
     submission_matrix_sha256: str
+    normalized_dtype: str
+    normalized_min: float
+    normalized_max: float
+    symmetry_normalization: str
+    rounding_policy: str
     scale_factor: float
     target_min: int
     target_max: int
@@ -289,6 +294,11 @@ class KaiwuSampler:
             KaiwuPrecisionEvidence(
                 original_matrix_sha256=original_matrix_sha256,
                 submission_matrix_sha256=submission_matrix_sha256,
+                normalized_dtype=report.normalized_dtype,
+                normalized_min=report.normalized_min,
+                normalized_max=report.normalized_max,
+                symmetry_normalization=report.symmetry_normalization,
+                rounding_policy=report.rounding_policy,
                 scale_factor=report.scale_factor,
                 target_min=report.target_min,
                 target_max=report.target_max,

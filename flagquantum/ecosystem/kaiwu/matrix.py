@@ -44,6 +44,11 @@ class IntegerPrecisionReport:
 
     quantized: torch.Tensor
     dequantized: torch.Tensor
+    normalized_dtype: str
+    normalized_min: float
+    normalized_max: float
+    symmetry_normalization: str
+    rounding_policy: str
     scale_factor: float
     target_min: int
     target_max: int
@@ -296,6 +301,11 @@ def prepare_integer_precision(
     return IntegerPrecisionReport(
         quantized=quantized.clone(),
         dequantized=dequantized.clone(),
+        normalized_dtype=str(canonical.dtype),
+        normalized_min=float(canonical.min().item()),
+        normalized_max=float(canonical.max().item()),
+        symmetry_normalization="arithmetic_mean",
+        rounding_policy="round_half_to_even",
         scale_factor=scale_factor,
         target_min=target_min,
         target_max=target_max,

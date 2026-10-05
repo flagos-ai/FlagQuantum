@@ -103,6 +103,11 @@ def _complete_precision_record() -> dict[str, Any]:
             {
                 "original_matrix_sha256": "6" * 64,
                 "submission_matrix_sha256": "7" * 64,
+                "normalized_dtype": "torch.float64",
+                "normalized_min": -63.5,
+                "normalized_max": 63.5,
+                "symmetry_normalization": "arithmetic_mean",
+                "rounding_policy": "round_half_to_even",
                 "scale_factor": 2.0,
                 "target_min": -127,
                 "target_max": 127,
@@ -122,6 +127,24 @@ def _complete_precision_record() -> dict[str, Any]:
                 "submission_matrix_sha256", "8" * 64
             ),
             "submissions differ from task receipts",
+        ),
+        (
+            lambda record: record["precision_evidence"][0].__setitem__(
+                "rounding_policy", "truncate"
+            ),
+            "rounding policy is unsupported",
+        ),
+        (
+            lambda record: record["precision_evidence"][0].__setitem__(
+                "normalized_min", 64.0
+            ),
+            "normalized coefficient range is invalid",
+        ),
+        (
+            lambda record: record["precision_evidence"][0].__setitem__(
+                "normalized_max", 100.0
+            ),
+            "scale factor differs from coefficient range",
         ),
         (
             lambda record: record["precision_policy"].__setitem__("max_abs_error", 0.5),

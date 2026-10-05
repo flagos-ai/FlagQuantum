@@ -52,6 +52,11 @@ PRECISION_EVIDENCE_FIELDS = frozenset(
     {
         "original_matrix_sha256",
         "submission_matrix_sha256",
+        "normalized_dtype",
+        "normalized_min",
+        "normalized_max",
+        "symmetry_normalization",
+        "rounding_policy",
         "scale_factor",
         "target_min",
         "target_max",
@@ -171,6 +176,15 @@ def _validate_precision_evidence(
         return
     if precision.get("matrix_count") != len(entries):
         errors.append(f"{label}: precision matrix count differs from evidence")
+    target_min = precision.get("target_min")
+    target_max = precision.get("target_max")
+    target_range_valid = (
+        type(target_min) is int
+        and type(target_max) is int
+        and target_min < 0 < target_max
+    )
+    if not target_range_valid:
+        errors.append(f"{label}: precision target range is invalid")
 
     original_digests: list[str] = []
     submission_digests: list[str] = []
@@ -204,6 +218,24 @@ def _validate_precision_evidence(
             "target_max"
         ) != precision.get("target_max"):
             errors.append(f"{entry_label} target range differs from policy")
+        if entry.get("normalized_dtype") != "torch.float64":
+            errors.append(f"{entry_label} normalized dtype is not torch.float64")
+        if entry.get("symmetry_normalization") != "arithmetic_mean":
+            errors.append(f"{entry_label} symmetry normalization is unsupported")
+        if entry.get("rounding_policy") != "round_half_to_even":
+            errors.append(f"{entry_label} rounding policy is unsupported")
+        normalized_min = _finite_number(
+            entry.get("normalized_min"), f"{entry_label}.normalized_min", errors
+        )
+        normalized_max = _finite_number(
+            entry.get("normalized_max"), f"{entry_label}.normalized_max", errors
+        )
+        if (
+            normalized_min is not None
+            and normalized_max is not None
+            and normalized_min > normalized_max
+        ):
+            errors.append(f"{entry_label} normalized coefficient range is invalid")
         scale = _finite_number(
             entry.get("scale_factor"), f"{entry_label}.scale_factor", errors
         )
@@ -217,6 +249,23 @@ def _validate_precision_evidence(
             scales.append(scale)
             if scale <= 0:
                 errors.append(f"{entry_label} scale factor is not positive")
+            if (
+                target_range_valid
+                and normalized_min is not None
+                and normalized_max is not None
+            ):
+                maximum_magnitude = max(abs(normalized_min), abs(normalized_max))
+                expected_scale = (
+                    1.0
+                    if maximum_magnitude == 0.0
+                    else min(abs(target_min), target_max) / maximum_magnitude
+                )
+                if not math.isclose(
+                    scale, expected_scale, rel_tol=1e-12, abs_tol=1e-12
+                ):
+                    errors.append(
+                        f"{entry_label} scale factor differs from coefficient range"
+                    )
         if maximum is not None:
             maximum_errors.append(maximum)
             if maximum < 0:
