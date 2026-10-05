@@ -124,6 +124,11 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert record["retrieval_resubmitted"] is False
     assert 0 < record["remote_call_count"] <= record["remote_call_budget"]
     assert client.submissions == record["remote_call_count"]
+    precision = record["precision_policy"]
+    assert record["precision_evidence_complete"] is True
+    assert precision["matrix_count"] >= record["remote_call_count"]
+    assert 0 < precision["scale_factor_min"] <= precision["scale_factor_max"]
+    assert 0 <= precision["mean_of_matrix_mean_abs_error"] <= precision["max_abs_error"]
 
 
 def test_private_writer_rejects_credentials_before_creating_file(

@@ -103,3 +103,9 @@ unavailable, so a real completed run will still record `system=fail` pending a
 reviewed response mapping. The full command should be generated from the
 approved private runbook rather than copied with placeholder project or
 credential values.
+
+Every distinct original Ising matrix retains its own precision report even
+when two inputs quantize to the same submitted matrix. Live evidence aggregates
+the report count, scale-factor range, maximum absolute error, and mean of the
+per-matrix mean errors; a record with fewer reports than remote calls fails the
+acceptance validator.

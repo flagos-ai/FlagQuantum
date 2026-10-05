@@ -79,6 +79,7 @@ class KaiwuSampler:
         self._last_job: KaiwuRemoteJob | None = None
         self._last_result: KaiwuTaskResult | None = None
         self._last_precision_report: IntegerPrecisionReport | None = None
+        self._precision_reports: dict[str, IntegerPrecisionReport] = {}
 
     @property
     def remote_call_count(self) -> int:
@@ -100,6 +101,12 @@ class KaiwuSampler:
     def last_precision_report(self) -> IntegerPrecisionReport | None:
         return self._last_precision_report
 
+    @property
+    def precision_reports(self) -> tuple[IntegerPrecisionReport, ...]:
+        """Return one report for each distinct original matrix encountered."""
+
+        return tuple(self._precision_reports.values())
+
     def solve(self, ising_matrix: object) -> np.ndarray:
         """Submit one unique matrix and return an ``int8`` NumPy spin array."""
 
@@ -114,6 +121,7 @@ class KaiwuSampler:
 
         canonical = canonicalize_ising_matrix(cast(MatrixLike, ising_matrix))
         self._last_precision_report = None
+        report: IntegerPrecisionReport | None = None
         if self._integer_target_range is not None:
             target_min, target_max = self._integer_target_range
             report = prepare_integer_precision(
@@ -126,12 +134,19 @@ class KaiwuSampler:
         else:
             submission = canonical
 
+        original_key = hashlib.sha256(
+            json.dumps(
+                canonical.tolist(), separators=(",", ":"), allow_nan=False
+            ).encode()
+        ).hexdigest()
         matrix_rows = tuple(tuple(float(value) for value in row) for row in submission)
         cache_key = hashlib.sha256(
             json.dumps(matrix_rows, separators=(",", ":"), allow_nan=False).encode()
         ).hexdigest()
         cached = self._cache.get(cache_key)
         if cached is not None:
+            if report is not None:
+                self._precision_reports.setdefault(original_key, report)
             return np.asarray(cached, dtype=np.int8).copy()
         job = self._jobs.get(cache_key)
         if job is None:
@@ -151,6 +166,8 @@ class KaiwuSampler:
             self._remote_call_count += 1
             self._jobs[cache_key] = job
             self._receipts.append(job.receipt)
+        if report is not None:
+            self._precision_reports.setdefault(original_key, report)
         self._last_job = job
         result = job.wait(timeout=self._timeout, poll_interval=self._poll_interval)
         self._last_result = result

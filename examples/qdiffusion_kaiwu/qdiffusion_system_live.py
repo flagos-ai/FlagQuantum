@@ -172,6 +172,10 @@ def run_live_system_probe(
         if isinstance(receipt["provider_target"], str)
     }
     run_completed = failure is None
+    precision_reports = sampler.precision_reports
+    precision_complete = bool(precision_reports) and len(precision_reports) >= len(
+        receipts
+    )
     verified_provider_transport = real_provider_transport and isinstance(
         client, KaiwuSDKClient
     )
@@ -179,6 +183,7 @@ def run_live_system_probe(
         run_completed
         and verified_provider_transport
         and provider_identity_complete
+        and precision_complete
         and retrieval_resubmitted is False
         and slice_record.get("fallback_occurred") is False
         and slice_record.get("token_constraints_passed") is True
@@ -221,7 +226,30 @@ def run_live_system_probe(
             "name": config["precision_policy"]["name"],
             "target_min": target_range[0],
             "target_max": target_range[1],
+            "matrix_count": len(precision_reports),
+            "scale_factor_min": (
+                min(report.scale_factor for report in precision_reports)
+                if precision_reports
+                else None
+            ),
+            "scale_factor_max": (
+                max(report.scale_factor for report in precision_reports)
+                if precision_reports
+                else None
+            ),
+            "max_abs_error": (
+                max(report.max_abs_error for report in precision_reports)
+                if precision_reports
+                else None
+            ),
+            "mean_of_matrix_mean_abs_error": (
+                sum(report.mean_abs_error for report in precision_reports)
+                / len(precision_reports)
+                if precision_reports
+                else None
+            ),
         },
+        "precision_evidence_complete": precision_complete,
         "fallback_occurred": False,
         "retrieval_resubmitted": retrieval_resubmitted,
         "secrets_redacted": True,

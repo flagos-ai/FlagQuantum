@@ -216,9 +216,47 @@ def _validate_system_record(
     for field in ("name", "target_min", "target_max"):
         if precision.get(field) != expected_precision.get(field):
             errors.append(f"{label}.precision_policy.{field}: differs from config")
-    for field in ("name", "scale_factor", "target_min", "target_max", "max_abs_error"):
-        if field not in precision:
-            errors.append(f"{label}.precision_policy: missing {field}")
+    matrix_count = precision.get("matrix_count")
+    if type(matrix_count) is not int or matrix_count <= 0:
+        errors.append(
+            f"{label}.precision_policy.matrix_count: expected a positive integer"
+        )
+    elif type(call_count) is int and matrix_count < call_count:
+        errors.append(f"{label}.precision_policy: fewer reports than remote calls")
+    scale_min = _finite_number(
+        precision.get("scale_factor_min"),
+        f"{label}.precision_policy.scale_factor_min",
+        errors,
+    )
+    scale_max = _finite_number(
+        precision.get("scale_factor_max"),
+        f"{label}.precision_policy.scale_factor_max",
+        errors,
+    )
+    max_error = _finite_number(
+        precision.get("max_abs_error"),
+        f"{label}.precision_policy.max_abs_error",
+        errors,
+    )
+    mean_error = _finite_number(
+        precision.get("mean_of_matrix_mean_abs_error"),
+        f"{label}.precision_policy.mean_of_matrix_mean_abs_error",
+        errors,
+    )
+    if scale_min is not None and scale_min <= 0:
+        errors.append(f"{label}.precision_policy.scale_factor_min: expected positive")
+    if scale_max is not None and scale_max <= 0:
+        errors.append(f"{label}.precision_policy.scale_factor_max: expected positive")
+    if scale_min is not None and scale_max is not None and scale_max < scale_min:
+        errors.append(f"{label}.precision_policy: invalid scale-factor range")
+    if max_error is not None and max_error < 0:
+        errors.append(f"{label}.precision_policy.max_abs_error: expected non-negative")
+    if mean_error is not None and mean_error < 0:
+        errors.append(
+            f"{label}.precision_policy.mean_of_matrix_mean_abs_error: expected non-negative"
+        )
+    if max_error is not None and mean_error is not None and mean_error > max_error:
+        errors.append(f"{label}.precision_policy: mean error exceeds maximum error")
     training = _mapping(record.get("training"), f"{label}.training", errors)
     for field in ("energy_objective", "gradient_norm", "parameter_delta_max"):
         value = _finite_number(training.get(field), f"{label}.training.{field}", errors)

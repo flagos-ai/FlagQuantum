@@ -103,10 +103,13 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
         "returned_samples": 10,
         "precision_policy": {
             "name": "explicit-int8",
-            "scale_factor": 1.0,
             "target_min": -127,
             "target_max": 127,
+            "matrix_count": 2,
+            "scale_factor_min": 1.0,
+            "scale_factor_max": 2.0,
             "max_abs_error": 0.0,
+            "mean_of_matrix_mean_abs_error": 0.0,
         },
         "remote_call_budget": 128,
         "remote_call_count": 2,
@@ -222,3 +225,17 @@ def test_tampered_record_hash_is_rejected(tmp_path: Path) -> None:
     assert any(
         "SHA-256 mismatch" in error for error in validate_acceptance(manifest_path)
     )
+
+
+def test_system_gate_requires_aggregate_precision_evidence(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    changed["precision_policy"]["matrix_count"] = 1
+    changed["precision_policy"]["scale_factor_min"] = 3.0
+    changed["precision_policy"]["scale_factor_max"] = 2.0
+    _replace_record(manifest_path, 0, changed)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("fewer reports than remote calls" in error for error in errors)
+    assert any("invalid scale-factor range" in error for error in errors)

@@ -171,6 +171,31 @@ def test_integer_precision_is_applied_only_when_explicit() -> None:
     )
     assert plain.last_precision_report is None
     assert scaled.last_precision_report is not None
+    assert plain.precision_reports == ()
+    assert len(scaled.precision_reports) == 1
+
+
+def test_precision_reports_cover_distinct_inputs_that_share_one_remote_matrix() -> None:
+    client = _CompletedClient()
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="precision-collision",
+        integer_target_range=(-1, 1),
+        max_remote_calls=1,
+    )
+    first = [[0.0, 0.4, 0.0], [0.4, 0.0, 1.0], [0.0, 1.0, 0.0]]
+    second = [[0.0, 0.49, 0.0], [0.49, 0.0, 1.0], [0.0, 1.0, 0.0]]
+
+    sampler.solve(first)
+    sampler.solve(second)
+
+    assert sampler.remote_call_count == 1
+    assert len(client.submitted) == 1
+    assert len(sampler.precision_reports) == 2
+    assert [report.max_abs_error for report in sampler.precision_reports] == [
+        pytest.approx(0.4),
+        pytest.approx(0.49),
+    ]
 
 
 def test_result_identity_failure_is_not_replaced_by_fallback() -> None:

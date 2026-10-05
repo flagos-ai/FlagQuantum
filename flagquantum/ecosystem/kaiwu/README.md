@@ -23,7 +23,9 @@ Public entry points currently live in `flagquantum.ecosystem.kaiwu`:
 - `KaiwuSampler` implements the synchronous `solve(ising_matrix)` surface used
   by Kaiwu PyTorch Plugin while delegating task ownership to
   `flagquantum.remote.kaiwu`. It deduplicates identical matrices and enforces an
-  explicit remote-call budget and timeout.
+  explicit remote-call budget and timeout. Its `precision_reports` retain one
+  report per distinct original matrix, including separate reports when multiple
+  inputs quantize to one shared remote matrix.
 
 The integer preparation policy is FlagQuantum-owned and is not presented as an
 implementation of Kaiwu `PrecisionReducer`. Before using it for real-machine

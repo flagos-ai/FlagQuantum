@@ -131,7 +131,9 @@ establishes provider task-ID, target, and terminal-state mappings.
 - Each unique matrix consumes one declared remote-call budget slot; exhaustion
   fails before submission.
 - Precision conversion occurs only when the caller supplies an explicit target
-  range. No classical or local solver is selected on error.
+  range. Reports remain available for every distinct original matrix even when
+  quantization allows remote-task deduplication. No classical or local solver
+  is selected on error.
 - Receipts, the last task, last result, precision report, and remote-call count
   remain inspectable for joined QDiffusion evidence.
 
