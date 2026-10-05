@@ -258,13 +258,7 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
     (
         "override the matrix priority without stating why",
         "floor_override_reason",
-        lambda t: sub_in_key(
-            t,
-            "qec_dem_chunking",
-            "floor_override_reason",
-            "floor_override_reason = ",
-            "floor_override_reason_x = ",
-        ),
+        lambda t: set_key(t, "qec_code_record", "floor", 'floor = "later"'),
     ),
     (
         "drop the floor_override_reason where no matrix row backs the floor",
@@ -349,8 +343,8 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         "leave a gap row with no proof at all",
         "must prove the gap",
         lambda t: set_key(
-            set_key(t, "qec_dem_chunking", "symbols_absent", None),
-            "qec_dem_chunking",
+            set_key(t, "qec_decoder_configuration", "symbols_absent", None),
+            "qec_decoder_configuration",
             "negative_search",
             None,
         ),
