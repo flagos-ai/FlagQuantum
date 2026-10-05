@@ -36,6 +36,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
     _write_private_redacted_json,
 )
+from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
@@ -126,6 +127,8 @@ def run_portability_replay(
     observed_gpu: str,
     source_revision: str,
     plugin_revision: str,
+    source_preflight_sha256: str,
+    transfer_manifest_sha256: str,
     sdk_version: str,
     project_no: str,
     task_prefix: str,
@@ -250,6 +253,8 @@ def run_portability_replay(
         "training_record_sha256": training_record_sha256,
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -353,6 +358,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--expected-sdk-version", default="1.3.1")
@@ -378,6 +384,7 @@ def main() -> None:
         "trained-checkpoint": args.trained_checkpoint,
         "sdk-checkpoint-dir": args.sdk_checkpoint_dir,
         "output": args.output,
+        "source-preflight": args.source_preflight,
     }.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
@@ -412,6 +419,12 @@ def main() -> None:
     )
     if args.base_checkpoint.resolve() != args.tokenizer.resolve():
         parser.error("the pinned plugin requires tokenizer files in base checkpoint")
+    source_preflight, source_preflight_sha256 = load_source_preflight(
+        args.source_preflight,
+        execution_host=args.execution_host,
+        source_revision=args.source_revision,
+        plugin_revision=args.plugin_revision,
+    )
     preflight_artifacts(
         args.config,
         {
@@ -463,6 +476,8 @@ def main() -> None:
         observed_gpu=gpu,
         source_revision=args.source_revision,
         plugin_revision=args.plugin_revision,
+        source_preflight_sha256=source_preflight_sha256,
+        transfer_manifest_sha256=source_preflight["manifest_sha256"],
         sdk_version=args.expected_sdk_version,
         project_no=args.project_no,
         task_prefix=args.task_prefix,

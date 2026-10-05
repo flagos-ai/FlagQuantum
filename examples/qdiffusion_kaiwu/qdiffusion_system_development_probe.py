@@ -21,6 +21,7 @@ from typing import Any
 import torch
 from torch import nn
 
+from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuTaskReceipt,
@@ -248,6 +249,8 @@ def run_probe(
     expected_hostname: str,
     source_revision: str,
     plugin_revision: str,
+    source_preflight_sha256: str,
+    transfer_manifest_sha256: str,
     validation_image_id: str,
 ) -> dict[str, Any]:
     if execution_host not in HOSTS:
@@ -284,6 +287,8 @@ def run_probe(
         "system_acceptance": False,
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "validation_image_id": validation_image_id,
         "python_version": platform.python_version(),
         "torch_version": torch.__version__,
@@ -321,15 +326,24 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--validation-image-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
+    source_preflight, source_preflight_sha256 = load_source_preflight(
+        arguments.source_preflight,
+        execution_host=arguments.execution_host,
+        source_revision=arguments.source_revision,
+        plugin_revision=arguments.plugin_revision,
+    )
     payload = run_probe(
         device_name=arguments.device,
         execution_host=arguments.execution_host,
         expected_hostname=arguments.expected_hostname,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
+        source_preflight_sha256=source_preflight_sha256,
+        transfer_manifest_sha256=source_preflight["manifest_sha256"],
         validation_image_id=arguments.validation_image_id,
     )
     _write_private_json(arguments.output, payload)

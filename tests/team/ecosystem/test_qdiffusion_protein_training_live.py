@@ -202,6 +202,9 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index("preflight_artifacts(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("load_source_preflight(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert '"application": "not_evaluated"' in source
     assert "HF_HUB_OFFLINE" in source
 
@@ -239,11 +242,15 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         observed_gpu="NVIDIA A800-SXM4-80GB",
         source_revision="b" * 40,
         plugin_revision="c" * 40,
+        source_preflight_sha256="e" * 64,
+        transfer_manifest_sha256="f" * 64,
         sdk_version="1.3.1",
         preflight_sha256="d" * 64,
     )
 
     assert record["run_completed"] is False
+    assert record["source_preflight_sha256"] == "e" * 64
+    assert record["transfer_manifest_sha256"] == "f" * 64
     assert record["failure"]["type"] == "KeyboardInterrupt"
     assert record["acceptance"] == {
         "system": "not_evaluated",

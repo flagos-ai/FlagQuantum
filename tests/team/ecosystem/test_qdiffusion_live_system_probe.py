@@ -109,6 +109,8 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         observed_hostname="test-hostname",
         source_revision="a" * 40,
         plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -125,6 +127,8 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert record["transport"] == "injected_test"
     assert record["qboson_hardware_used"] is False
     assert record["real_provider_evidence"] is False
+    assert record["source_preflight_sha256"] == "d" * 64
+    assert record["transfer_manifest_sha256"] == "e" * 64
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
     assert record["fallback_occurred"] is False
     assert record["retrieval_resubmitted"] is False
@@ -180,3 +184,16 @@ def test_private_writer_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
             payload,
             forbidden_values=("user-id-secret", "sdk-code-secret"),
         )
+
+
+def test_live_system_validates_source_preflight_before_credentials() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_system_live.py"
+    ).read_text(encoding="utf-8")
+
+    assert source.index("load_source_preflight(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )

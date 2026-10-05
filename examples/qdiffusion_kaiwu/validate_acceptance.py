@@ -12,6 +12,11 @@ from pathlib import Path
 from statistics import fmean
 from typing import Any, cast
 
+from examples.qdiffusion_kaiwu.source_preflight import (
+    SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.source_preflight import validate_source_preflight_record
+
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
@@ -377,6 +382,10 @@ def _validate_system_record(
         value = record.get(field)
         if not isinstance(value, str) or FULL_REVISION.fullmatch(value) is None:
             errors.append(f"{label}.{field}: expected a full Git revision")
+    for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+        value = record.get(field)
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            errors.append(f"{label}.{field}: expected a SHA-256 digest")
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
@@ -708,6 +717,7 @@ def _validate_component_bundle(
 
     seeds = config.get("seeds", [])
     expected_schema_counts = {
+        SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
         SYSTEM_COMPONENT_SCHEMA: 2,
         PORTABILITY_COMPONENT_SCHEMA: 1,
         TRAINING_COMPONENT_SCHEMA: len(seeds),
@@ -726,10 +736,51 @@ def _validate_component_bundle(
     for digest, payload in component_payloads.items():
         if payload.get("version") != "1.0":
             errors.append(f"component {digest}: unsupported version")
-        if payload.get("experiment_config_sha256") != config_sha256:
+        if (
+            payload.get("schema") != SOURCE_PREFLIGHT_COMPONENT_SCHEMA
+            and payload.get("experiment_config_sha256") != config_sha256
+        ):
             errors.append(
                 f"component {digest}: frozen experiment config identity mismatch"
             )
+
+    software = _mapping(config.get("software"), "config.software", errors)
+    source_preflights: dict[str, tuple[str, dict[str, Any]]] = {}
+    for digest, payload in component_payloads.items():
+        if payload.get("schema") != SOURCE_PREFLIGHT_COMPONENT_SCHEMA:
+            continue
+        host = payload.get("verified_for_target_host")
+        if not isinstance(host, str) or host in source_preflights:
+            errors.append("manifest: source preflights contain an invalid host")
+            continue
+        try:
+            validate_source_preflight_record(
+                payload,
+                execution_host=host,
+                source_revision=software.get("source_revision", ""),
+                plugin_revision=software.get("kaiwu_pytorch_plugin_revision", ""),
+            )
+        except ValueError as exc:
+            errors.append(f"source preflight {host}: {exc}")
+        source_preflights[host] = (digest, payload)
+    if set(source_preflights) != HOSTS:
+        errors.append("manifest: source preflights must cover both validation hosts")
+
+    for digest, payload in component_payloads.items():
+        if payload.get("schema") == SOURCE_PREFLIGHT_COMPONENT_SCHEMA:
+            continue
+        host = payload.get("execution_host")
+        source_entry = source_preflights.get(host) if isinstance(host, str) else None
+        if source_entry is None:
+            errors.append(f"component {digest}: source preflight host is unavailable")
+            continue
+        source_digest, source_record = source_entry
+        if payload.get("source_preflight_sha256") != source_digest:
+            errors.append(f"component {digest}: source preflight identity mismatch")
+        if payload.get("transfer_manifest_sha256") != source_record.get(
+            "manifest_sha256"
+        ):
+            errors.append(f"component {digest}: transfer manifest identity mismatch")
 
     for final, label in ((primary, "primary"), (replay, "replay")):
         system_digest = final.get("system_evidence_sha256")
@@ -746,6 +797,8 @@ def _validate_component_bundle(
         copied_fields = (
             "source_revision",
             "kaiwu_pytorch_plugin_revision",
+            "source_preflight_sha256",
+            "transfer_manifest_sha256",
             "python_version",
             "torch_version",
             "kaiwu_sdk_version",
@@ -1018,7 +1071,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     primary = by_host[primary_host]
     replay = by_host[replay_host]
     if primary.get("component_bundle_required") is True:
-        expected_component_count = 3 + 2 * len(config.get("seeds", []))
+        expected_component_count = 5 + 2 * len(config.get("seeds", []))
         if len(component_payloads) != expected_component_count:
             errors.append(
                 "manifest: component bundle does not contain every source record"
@@ -1096,6 +1149,8 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             )
     if primary.get("component_bundle_required") is True:
         referenced_component_hashes = {
+            primary.get("source_preflight_sha256"),
+            replay.get("source_preflight_sha256"),
             primary.get("system_evidence_sha256"),
             replay.get("system_evidence_sha256"),
             portability_evidence.get("record_sha256"),

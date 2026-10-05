@@ -24,6 +24,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     HOSTS,
     _execute_qdiffusion_slice,
 )
+from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
@@ -55,6 +56,8 @@ def _validate_lane(
     execution_host: str,
     source_revision: str,
     plugin_revision: str,
+    source_preflight_sha256: str,
+    transfer_manifest_sha256: str,
     sdk_version: str,
 ) -> tuple[str, int, tuple[int, int]]:
     if execution_host not in HOSTS:
@@ -67,6 +70,8 @@ def _validate_lane(
     observed = {
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -308,6 +313,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--device", default="cuda:0")
@@ -340,6 +346,12 @@ def main() -> None:
         plugin_revision=arguments.plugin_revision,
         sdk_version=arguments.expected_sdk_version,
     )
+    source_preflight, source_preflight_sha256 = load_source_preflight(
+        arguments.source_preflight,
+        execution_host=arguments.execution_host,
+        source_revision=arguments.source_revision,
+        plugin_revision=arguments.plugin_revision,
+    )
 
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
@@ -356,6 +368,8 @@ def main() -> None:
         observed_hostname=observed_hostname,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
+        source_preflight_sha256=source_preflight_sha256,
+        transfer_manifest_sha256=source_preflight["manifest_sha256"],
         sdk_version=arguments.expected_sdk_version,
         device=device,
         observed_gpu=observed_gpu,

@@ -138,6 +138,8 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
         "version": "1.0",
         "source_revision": _REVISION,
         "kaiwu_pytorch_plugin_revision": _PLUGIN_REVISION,
+        "source_preflight_sha256": ("8" * 64 if host == "jp-a800-171" else "9" * 64),
+        "transfer_manifest_sha256": "7" * 64,
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
@@ -328,6 +330,18 @@ def test_system_gate_requires_aggregate_precision_evidence(tmp_path: Path) -> No
 
     assert any("fewer reports than remote calls" in error for error in errors)
     assert any("invalid scale-factor range" in error for error in errors)
+
+
+def test_system_gate_requires_source_preflight_identity(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    changed["source_preflight_sha256"] = "self-reported"
+    _replace_record(manifest_path, 0, changed)
+
+    assert any(
+        "source_preflight_sha256: expected a SHA-256" in error
+        for error in validate_acceptance(manifest_path)
+    )
 
 
 def test_system_gate_rejects_inconsistent_transfer_accounting(tmp_path: Path) -> None:

@@ -13,6 +13,7 @@ import torch
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
     _read_aligned_records,
+    _source_preflight_identity,
     _verified_training_paths,
     evaluate_outputs,
 )
@@ -112,6 +113,19 @@ def test_invalid_sequence_count_is_fail_closed() -> None:
     records = [("ok", "ACDE"), ("empty", ""), ("bad", "ACD-")]
 
     assert _invalid_sequence_count(records) == 2
+
+
+def test_evaluation_requires_training_source_preflight_identity() -> None:
+    record = {
+        "source_preflight_sha256": "a" * 64,
+        "transfer_manifest_sha256": "b" * 64,
+    }
+
+    assert _source_preflight_identity(record) == ("a" * 64, "b" * 64)
+
+    record["source_preflight_sha256"] = "missing"
+    with pytest.raises(ValueError, match="source_preflight_sha256"):
+        _source_preflight_identity(record)
 
 
 @dataclass

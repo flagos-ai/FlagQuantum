@@ -7,6 +7,7 @@ import hashlib
 import importlib
 import json
 import platform
+import re
 import socket
 import sys
 from dataclasses import asdict
@@ -142,6 +143,16 @@ def _invalid_sequence_count(records: list[tuple[str, str]]) -> int:
     )
 
 
+def _source_preflight_identity(record: dict[str, Any]) -> tuple[str, str]:
+    values: list[str] = []
+    for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+        value = record.get(field)
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise ValueError(f"training record has invalid {field}")
+        values.append(value)
+    return values[0], values[1]
+
+
 def _local_esm2_model(
     helpers: Any,
     checkpoint_path: Path,
@@ -262,6 +273,9 @@ def main() -> None:
         parser.error("training source revision differs from --source-revision")
     if record.get("kaiwu_pytorch_plugin_revision") != args.plugin_revision:
         parser.error("training plugin revision differs from --plugin-revision")
+    source_preflight_sha256, transfer_manifest_sha256 = _source_preflight_identity(
+        record
+    )
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")
@@ -305,6 +319,8 @@ def main() -> None:
         "training_record_sha256": record_sha256,
         "source_revision": args.source_revision,
         "kaiwu_pytorch_plugin_revision": args.plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "execution_host": args.execution_host,

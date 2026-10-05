@@ -59,8 +59,9 @@ bash examples/qdiffusion_kaiwu/run_a800_development_probe.sh \
   bm-baai-dx-zone1-lc-a800-80g-15-171 \
   "$PWD" \
   /absolute/path/to/kaiwu-pytorch-plugin \
+  "$PWD/private-evidence/jp-a800-171-extraction-preflight.json" \
   "$PWD/private-evidence/jp-a800-171-development.json" \
-  045e54276ef86d96524a39486fea93617952fb39 \
+  FULL_FLAGQUANTUM_REVISION \
   f047bce7b1077449967bbe9e9fab5741542b48d4 \
   sha256:FULL_LOCAL_VALIDATION_IMAGE_ID
 ```
@@ -71,10 +72,12 @@ objective, backward, optimizer update, and one guided generation step. The
 output is a new mode-0600 file and is never an acceptance record because the
 transport is explicitly the in-memory development fake. The runner exposes
 only GPU 0, disables networking, mounts both code trees read-only, uses a
-read-only container filesystem, and persists only the requested evidence file.
-The final argument is the full local Docker image ID, not a mutable tag. Resolve
-and review it independently on each host with `docker image inspect`; the same
-tag currently maps to different image IDs on the two validation hosts.
+read-only container filesystem, mounts the post-extraction preflight separately
+read-only, and persists only the requested evidence file. The record retains
+the preflight and common transfer-manifest digests. The final argument is the
+full local Docker image ID, not a mutable tag. Resolve and review it
+independently on each host with `docker image inspect`; the same tag currently
+maps to different image IDs on the two validation hosts.
 
 The acceptance lane uses a frozen configuration and two independent host
 records:
@@ -200,6 +203,9 @@ two-host manifest. It requires exactly one successful training and ESM2 record
 for every frozen seed, verifies each evaluation links to its training record,
 checks the replay uses the preregistered seed's exact checkpoint, computes
 arithmetic means across all seed metrics, and reruns the fail-closed acceptance
-validator. The output directory is new and mode-restricted; it includes hashed
-copies of every component record so deleting or replacing a source record makes
-the final manifest invalid.
+validator. It also requires and copies the primary- and replay-host
+post-extraction preflight records, then verifies that every execution record
+links to the correct host preflight and their common transfer manifest. The
+output directory is new and mode-restricted; it includes hashed copies of every
+component record so deleting or replacing a source record makes the final
+manifest invalid.

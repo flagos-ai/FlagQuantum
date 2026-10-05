@@ -48,6 +48,8 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert '--hostname "$expected_hostname"' in source
     assert ":/workspace/flagquantum:ro" in source
     assert ":/workspace/kaiwu-plugin:ro" in source
+    assert ':/source-preflight.json:ro"' in source
+    assert "--source-preflight /source-preflight.json" in source
     assert "VALIDATION_IMAGE_ID" in source
     assert "docker image inspect" in source
     assert '"$validation_image_id"' in source
@@ -69,6 +71,8 @@ def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:
     assert '"real_provider_evidence": False' in source
     assert '"transport": "in_memory_fake"' in source
     assert '"validation_image_id": validation_image_id' in source
+    assert '"source_preflight_sha256": source_preflight_sha256' in source
+    assert '"transfer_manifest_sha256": transfer_manifest_sha256' in source
 
 
 def test_qdiffusion_live_source_requires_cost_and_provider_identity() -> None:

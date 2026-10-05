@@ -29,6 +29,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
     _write_private_redacted_json,
 )
+from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _estimate_protein_remote_calls,
 )
@@ -213,6 +214,8 @@ def run_training_seed(
     observed_gpu: str,
     source_revision: str,
     plugin_revision: str,
+    source_preflight_sha256: str,
+    transfer_manifest_sha256: str,
     sdk_version: str,
     preflight_sha256: str,
 ) -> dict[str, Any]:
@@ -251,6 +254,8 @@ def run_training_seed(
         "artifact_preflight_sha256": preflight_sha256,
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -309,6 +314,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--seed", required=True, type=int)
@@ -333,6 +339,7 @@ def main() -> None:
         "sdk-checkpoint-dir": args.sdk_checkpoint_dir,
         "workflow-output-root": args.workflow_output_root,
         "run-record": args.run_record,
+        "source-preflight": args.source_preflight,
     }
     for label, path in path_arguments.items():
         if not path.is_absolute():
@@ -362,6 +369,12 @@ def main() -> None:
         parser.error("the full protein training workflow runs only on primary_host")
     if args.base_checkpoint.resolve() != args.tokenizer.resolve():
         parser.error("the pinned plugin requires tokenizer files in base checkpoint")
+    source_preflight, source_preflight_sha256 = load_source_preflight(
+        args.source_preflight,
+        execution_host=args.execution_host,
+        source_revision=args.source_revision,
+        plugin_revision=args.plugin_revision,
+    )
 
     preflight_artifacts(
         args.config,
@@ -413,6 +426,8 @@ def main() -> None:
         observed_gpu=observed_gpu,
         source_revision=args.source_revision,
         plugin_revision=args.plugin_revision,
+        source_preflight_sha256=source_preflight_sha256,
+        transfer_manifest_sha256=source_preflight["manifest_sha256"],
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
     )

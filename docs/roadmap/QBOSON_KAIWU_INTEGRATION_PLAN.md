@@ -217,6 +217,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   regular file and the exact file/directory set with the reviewed archives,
   rejecting mutation, omission, additions, symlinks, and special entries before
   the source trees are used on either validation host.
+- System, training, evaluation, portability-replay, and development records now
+  retain the host-specific post-extraction preflight digest and common transfer
+  manifest digest. Final assembly requires both host preflight files, copies
+  them as immutable components, and revalidates every execution record's link
+  to the correct host preflight and the shared manifest.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

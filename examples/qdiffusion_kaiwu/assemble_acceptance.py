@@ -24,6 +24,10 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     SCHEMA as SYSTEM_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
+from examples.qdiffusion_kaiwu.source_preflight import (
+    SCHEMA as SOURCE_PREFLIGHT_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.source_preflight import validate_source_preflight_record
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
@@ -121,6 +125,8 @@ def _final_host_record(
         "version": "1.0",
         "source_revision": system.get("source_revision"),
         "kaiwu_pytorch_plugin_revision": system.get("kaiwu_pytorch_plugin_revision"),
+        "source_preflight_sha256": system.get("source_preflight_sha256"),
+        "transfer_manifest_sha256": system.get("transfer_manifest_sha256"),
         "python_version": system.get("python_version"),
         "torch_version": system.get("torch_version"),
         "kaiwu_sdk_version": system.get("kaiwu_sdk_version"),
@@ -173,12 +179,16 @@ def assemble_records(
     config_sha256: str,
     primary_system: tuple[dict[str, Any], str],
     replay_system: tuple[dict[str, Any], str],
+    primary_source_preflight: tuple[dict[str, Any], str],
+    replay_source_preflight: tuple[dict[str, Any], str],
     portability: tuple[dict[str, Any], str],
     training_records: list[tuple[dict[str, Any], str]],
     evaluation_records: list[tuple[dict[str, Any], str]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     primary_system_record, primary_system_sha = primary_system
     replay_system_record, replay_system_sha = replay_system
+    primary_preflight_record, primary_preflight_sha = primary_source_preflight
+    replay_preflight_record, replay_preflight_sha = replay_source_preflight
     portability_record, portability_sha = portability
     if primary_system_record.get("execution_host") != config["primary_host"]:
         raise ValueError("primary system record is from the wrong host")
@@ -188,6 +198,31 @@ def assemble_records(
         raise ValueError("portability record is from the wrong host")
     if portability_record.get("acceptance") != {"portability": "pass"}:
         raise ValueError("portability replay did not pass")
+    software = config["software"]
+    for preflight, digest, system, host in (
+        (
+            primary_preflight_record,
+            primary_preflight_sha,
+            primary_system_record,
+            config["primary_host"],
+        ),
+        (
+            replay_preflight_record,
+            replay_preflight_sha,
+            replay_system_record,
+            config["replay_host"],
+        ),
+    ):
+        validate_source_preflight_record(
+            preflight,
+            execution_host=host,
+            source_revision=software["source_revision"],
+            plugin_revision=software["kaiwu_pytorch_plugin_revision"],
+        )
+        if system.get("source_preflight_sha256") != digest:
+            raise ValueError(f"system record source preflight differs for {host}")
+        if system.get("transfer_manifest_sha256") != preflight.get("manifest_sha256"):
+            raise ValueError(f"system record transfer manifest differs for {host}")
 
     training_by_seed: dict[int, tuple[dict[str, Any], str]] = {}
     for record, digest in training_records:
@@ -198,6 +233,9 @@ def assemble_records(
             raise ValueError(f"training seed {seed} did not complete")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"training seed {seed} is from the wrong host")
+        for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+            if record.get(field) != primary_system_record.get(field):
+                raise ValueError(f"training seed {seed} has different {field}")
         training_by_seed[seed] = (record, digest)
     if list(sorted(training_by_seed)) != list(sorted(config["seeds"])):
         raise ValueError("training records do not cover the frozen seed set")
@@ -219,6 +257,9 @@ def assemble_records(
             raise ValueError(f"evaluation seed {seed} uses another frozen config")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"evaluation seed {seed} is from the wrong host")
+        for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+            if record.get(field) != primary_system_record.get(field):
+                raise ValueError(f"evaluation seed {seed} has different {field}")
         evaluation_by_seed[seed] = (record, digest)
     if set(evaluation_by_seed) != set(training_by_seed):
         raise ValueError("evaluation records do not cover every training seed")
@@ -232,6 +273,9 @@ def assemble_records(
         raise ValueError("portability replay is linked to another training record")
     if portability_record.get("trained_energy_checkpoint_sha256") != checkpoint_digest:
         raise ValueError("portability replay used another trained checkpoint")
+    for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+        if portability_record.get(field) != replay_system_record.get(field):
+            raise ValueError(f"portability replay has different {field}")
 
     evaluations = [evaluation_by_seed[seed][0] for seed in config["seeds"]]
     primary = _final_host_record(
@@ -313,6 +357,8 @@ def main() -> None:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--primary-system", required=True, type=Path)
     parser.add_argument("--replay-system", required=True, type=Path)
+    parser.add_argument("--primary-source-preflight", required=True, type=Path)
+    parser.add_argument("--replay-source-preflight", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
     parser.add_argument("--training-record", action="append", required=True, type=Path)
     parser.add_argument(
@@ -324,6 +370,8 @@ def main() -> None:
         args.config,
         args.primary_system,
         args.replay_system,
+        args.primary_source_preflight,
+        args.replay_source_preflight,
         args.portability,
         *args.training_record,
         *args.evaluation_record,
@@ -337,6 +385,12 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(args.config)
     primary_system = _load_component(args.primary_system, SYSTEM_SCHEMA)
     replay_system = _load_component(args.replay_system, SYSTEM_SCHEMA)
+    primary_source_preflight = _load_component(
+        args.primary_source_preflight, SOURCE_PREFLIGHT_SCHEMA
+    )
+    replay_source_preflight = _load_component(
+        args.replay_source_preflight, SOURCE_PREFLIGHT_SCHEMA
+    )
     portability = _load_component(args.portability, PORTABILITY_SCHEMA)
     training = [_load_component(path, TRAINING_SCHEMA) for path in args.training_record]
     evaluations = [
@@ -347,6 +401,8 @@ def main() -> None:
         config_sha256=config_sha256,
         primary_system=primary_system,
         replay_system=replay_system,
+        primary_source_preflight=primary_source_preflight,
+        replay_source_preflight=replay_source_preflight,
         portability=portability,
         training_records=training,
         evaluation_records=evaluations,
@@ -361,6 +417,8 @@ def main() -> None:
     component_sources = {
         "primary-system.json": args.primary_system,
         "replay-system.json": args.replay_system,
+        "primary-source-preflight.json": args.primary_source_preflight,
+        "replay-source-preflight.json": args.replay_source_preflight,
         "portability.json": args.portability,
     }
     for index, path in enumerate(args.training_record):

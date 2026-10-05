@@ -159,7 +159,9 @@ It checks proposal forward, conditioned Boltzmann sampling through
 guided generation step on the observed A800.
 
 Run `examples/qdiffusion_kaiwu/run_a800_development_probe.sh` with absolute
-source, plugin, and output paths. Supply the stable SSH alias as
+source, plugin, extraction-preflight, and output paths. The extraction-preflight
+record is mounted separately read-only and must bind the supplied source and
+plugin revisions to the target alias. Supply the stable SSH alias as
 `EXECUTION_HOST` and the separately observed machine hostname as
 `EXPECTED_HOSTNAME`. The runner disables networking, exposes only GPU 0, mounts
 both code trees read-only, and writes one exclusive mode-0600 record.
@@ -243,6 +245,7 @@ python3 -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --expected-hostname "$EXPECTED_MACHINE_HOSTNAME" \
   --source-revision "$FLAGQUANTUM_REVISION" \
   --plugin-revision "$KAIWU_PLUGIN_REVISION" \
+  --source-preflight /absolute/private-evidence/extraction-preflight.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-qdiffusion-${RUN_ID}" \
   --device cuda:0 \
@@ -402,6 +405,7 @@ python -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --source-preflight /absolute/evidence/extraction-preflight.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-protein \
   --seed 1701 \
@@ -469,6 +473,7 @@ python -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-172 \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --source-preflight /absolute/evidence/replay-extraction-preflight.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-portability \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
@@ -490,6 +495,8 @@ python -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --config /absolute/evidence/acceptance-config.json \
   --primary-system /absolute/evidence/jp-a800-171-system.json \
   --replay-system /absolute/evidence/jp-a800-172-system.json \
+  --primary-source-preflight /absolute/evidence/jp-a800-171-extraction-preflight.json \
+  --replay-source-preflight /absolute/evidence/jp-a800-172-extraction-preflight.json \
   --portability /absolute/evidence/jp-a800-172-portability.json \
   --training-record /absolute/evidence/seed-1701-training.json \
   --training-record /absolute/evidence/seed-1702-training.json \
@@ -501,11 +508,12 @@ python -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
 ```
 
 The target directory must not exist. The assembler verifies component schemas,
-config identities, host roles, seed coverage, training/evaluation links, and
-the selected portability checkpoint before averaging metrics. It copies every
-source record into a private component directory, hashes those copies, creates
-the two final host records and manifest, then runs `validate_acceptance.py` on
-the result. Missing, extra, replaced, or selectively omitted seed records fail.
+config identities, both revision-bound extraction preflights, host roles, seed
+coverage, training/evaluation links, and the selected portability checkpoint
+before averaging metrics. It copies every source record into a private component
+directory, hashes those copies, creates the two final host records and manifest,
+then runs `validate_acceptance.py` on the result. Missing, extra, replaced, or
+selectively omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence
 
