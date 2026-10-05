@@ -15,12 +15,19 @@ From the repository root:
 ```bash
 python -m examples.compiler_optimize
 python -m examples.target_aware_compilation
+python -m examples.compiler_synthesis
 ```
 
 The first example checks optimization against the original circuit. The second
-checks routing legality and numerical equivalence on a concrete topology.
-Use `optimize(program)` for target-independent optimization and
-`compile(program, coupling_map=...)` for target-aware compilation.
+checks routing legality and numerical equivalence on a concrete topology. The
+third spells gates a target cannot run in the gates that target publishes, and
+checks each rewrite against the original on the shipped statevector engine; run
+it before changing an Euler form, an entangler cost, or a ladder. Use
+`optimize(program)` for target-independent optimization and
+`compile(program, coupling_map=...)` for target-aware compilation. Use
+`synthesize_one_qubit`, `synthesize_two_qubit`, and
+`synthesize_state_preparation` for basis rewriting; they are not stable
+`fq.compiler` exports, so reach them by module path.
 
 ## Change the owning stage
 
@@ -43,6 +50,7 @@ Use `optimize(program)` for target-independent optimization and
 | Two-qubit block splitting | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
 | State-preparation ladders from amplitudes | [state_preparation_synthesis.py](state_preparation_synthesis.py) |
+| The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
