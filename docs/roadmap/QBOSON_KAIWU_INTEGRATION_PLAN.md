@@ -47,6 +47,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   implements only documented SDK behavior; real provider task-ID, target, and
   raw-state mappings remain unavailable until an approved SDK response can be
   inspected.
+- Generic receipt restoration now validates runtime types, exact matrix size
+  and identity, mode-specific sample limits, nonempty project and provider
+  identities, and an aware UTC submission timestamp before a client operation.
+  Status and result validation also rejects non-string provider states,
+  non-mapping metadata, non-tuple samples or energies, boolean spins, and
+  non-real energies through stable FlagQuantum-owned errors rather than leaking
+  incidental Python exceptions across the Remote boundary.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

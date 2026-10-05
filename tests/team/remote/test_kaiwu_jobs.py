@@ -116,6 +116,24 @@ def test_timeout_preserves_recoverable_identity_without_fetch_or_resubmit() -> N
     assert client.result_calls == 0
 
 
+def test_status_rejects_non_string_provider_state() -> None:
+    class MalformedStatusClient(_FakeClient):
+        def query_status(  # type: ignore[override]
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> object:
+            del receipt, matrix
+            return None
+
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=MalformedStatusClient(),  # type: ignore[arg-type]
+        task_name="malformed-status",
+    )
+
+    with pytest.raises(RuntimeError, match="invalid provider status"):
+        job.status()
+
+
 def test_save_and_restore_are_credential_free_and_do_not_submit(tmp_path: Path) -> None:
     source = _FakeClient()
     job = submit_kaiwu_task(_MATRIX, client=source, task_name="restore-test")
@@ -157,6 +175,44 @@ def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("task_name", None, "empty task name"),
+        ("matrix_size", True, "matrix size"),
+        ("mode", ["sampling"], "unsupported task mode"),
+        ("requested_samples", True, "must be positive"),
+        ("requested_samples", 9, "between 10 and 2000"),
+        ("project_no", 7, "invalid project number"),
+        ("project_no", "   ", "invalid project number"),
+        ("submitted_at", "2026-10-05T00:00:00", "aware UTC"),
+        ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
+        ("provider_task_id", 7, "invalid provider_task_id"),
+        ("provider_task_id", "   ", "invalid provider_task_id"),
+        ("provider_target", 7, "invalid provider_target"),
+        ("provider_target", "   ", "invalid provider_target"),
+    ),
+)
+def test_restore_rejects_malformed_receipt_fields(
+    tmp_path: Path, field: str, value: object, message: str
+) -> None:
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=_FakeClient(),
+        task_name="field-test",
+        mode="sampling",
+        requested_samples=10,
+    )
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    payload = json.loads(receipt_path.read_text())
+    payload["receipt"][field] = value
+    receipt_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match=message):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
 @pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
 def test_restore_rejects_unsafe_receipt_file(tmp_path: Path, unsafe_kind: str) -> None:
     job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="unsafe-restore")
@@ -177,14 +233,16 @@ def test_restore_rejects_unsafe_receipt_file(tmp_path: Path, unsafe_kind: str) -
     "samples,energies,error",
     (
         (((1, 0),), (0.0,), r"only -1 or \+1"),
+        (((True, -1),), (2.0,), r"only -1 or \+1"),
         (((1,),), (0.0,), "width differs"),
         (((1, -1),), (999.0,), "energy failed"),
+        (((1, -1),), ("2.0",), "finite real numbers"),
         (((1, -1),), (), "counts differ"),
     ),
 )
 def test_result_validation_fails_closed(
-    samples: tuple[tuple[int, ...], ...],
-    energies: tuple[float, ...],
+    samples: tuple[tuple[object, ...], ...],
+    energies: tuple[object, ...],
     error: str,
 ) -> None:
     class MalformedClient(_FakeClient):
@@ -194,8 +252,8 @@ def test_result_validation_fails_closed(
             del matrix
             return KaiwuTaskResult(
                 receipt,
-                samples,
-                energies,
+                samples,  # type: ignore[arg-type]
+                energies,  # type: ignore[arg-type]
                 "Completed",
                 {"fallback_occurred": False},
             )
@@ -240,13 +298,15 @@ def test_result_rejects_receipt_identity_mismatch() -> None:
     ("raw_status", "metadata", "error"),
     (
         ("Failed", {"fallback_occurred": False}, "non-success"),
+        (7, {"fallback_occurred": False}, "invalid provider status"),
+        ("Completed", None, "metadata must be a mapping"),
         ("Completed", {}, "fallback_occurred=false"),
         ("Completed", {"fallback_occurred": True}, "fallback_occurred=false"),
     ),
 )
 def test_result_requires_success_and_explicit_no_fallback(
-    raw_status: str,
-    metadata: dict[str, bool],
+    raw_status: object,
+    metadata: object,
     error: str,
 ) -> None:
     class EvidenceClient(_FakeClient):
@@ -258,8 +318,8 @@ def test_result_requires_success_and_explicit_no_fallback(
                 receipt,
                 ((1, -1),),
                 (2.0,),
-                raw_status,
-                metadata,
+                raw_status,  # type: ignore[arg-type]
+                metadata,  # type: ignore[arg-type]
             )
 
     job = submit_kaiwu_task(

@@ -60,6 +60,14 @@ requires the in-memory receipt to match it exactly. A separately saved job
 receipt is therefore resumable only alongside the original checkpoint
 directory and cannot override its identity.
 
+The generic lifecycle independently validates every restored receipt before
+calling a client: runtime field types, exact matrix identity, task mode,
+mode-specific sample limits, project identity, provider identity strings, and
+an aware UTC timestamp are mandatory. Malformed provider status or result
+objects also fail through owned `RuntimeError` messages; non-string status,
+non-mapping metadata, boolean spins, and non-real energies are never treated as
+valid evidence or allowed to surface as incidental attribute/type errors.
+
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the
 credential helpers, its experimental entry points expose a Kaiwu-specific

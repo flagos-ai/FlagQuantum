@@ -9,8 +9,10 @@ import os
 import stat
 import tempfile
 import time
+from collections.abc import Mapping
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from numbers import Real
 from pathlib import Path
 from typing import Any, cast
 
@@ -125,16 +127,37 @@ def _validate_receipt(
 ) -> KaiwuTaskReceipt:
     if receipt.schema != KAIWU_TASK_RECEIPT_SCHEMA:
         raise ValueError("Unsupported Kaiwu task receipt schema")
-    if not receipt.task_name.strip():
+    if not isinstance(receipt.task_name, str) or not receipt.task_name.strip():
         raise ValueError("Kaiwu task receipt has an empty task name")
-    if receipt.matrix_size != len(matrix):
+    if type(receipt.matrix_size) is not int or receipt.matrix_size != len(matrix):
         raise ValueError("Kaiwu task receipt matrix size does not match its input")
     if receipt.matrix_sha256 != _matrix_sha256(matrix):
         raise ValueError("Kaiwu task receipt matrix identity does not match its input")
-    if receipt.mode not in {"optimization", "sampling"}:
+    if not isinstance(receipt.mode, str) or receipt.mode not in {
+        "optimization",
+        "sampling",
+    }:
         raise ValueError("Kaiwu task receipt has an unsupported task mode")
-    if receipt.requested_samples <= 0:
+    if type(receipt.requested_samples) is not int or receipt.requested_samples <= 0:
         raise ValueError("Kaiwu task receipt requested_samples must be positive")
+    if receipt.mode == "sampling" and not 10 <= receipt.requested_samples <= 2000:
+        raise ValueError(
+            "Kaiwu sampling receipt requested_samples must be between 10 and 2000"
+        )
+    if receipt.project_no is not None and (
+        not isinstance(receipt.project_no, str) or not receipt.project_no.strip()
+    ):
+        raise ValueError("Kaiwu task receipt has an invalid project number")
+    try:
+        submitted_at = datetime.fromisoformat(receipt.submitted_at)
+    except (TypeError, ValueError):
+        submitted_at = None
+    if submitted_at is None or submitted_at.utcoffset() != timedelta(0):
+        raise ValueError("Kaiwu task receipt must have an aware UTC submission time")
+    for field_name in ("provider_task_id", "provider_target"):
+        value = getattr(receipt, field_name)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ValueError(f"Kaiwu task receipt has an invalid {field_name}")
     return receipt
 
 
@@ -151,26 +174,38 @@ def _validate_result(
     receipt: KaiwuTaskReceipt,
     matrix: FrozenIsingMatrix,
 ) -> KaiwuTaskResult:
+    if not isinstance(result, KaiwuTaskResult):
+        raise RuntimeError("Kaiwu client returned an invalid result object")
     if result.receipt != receipt:
         raise RuntimeError("Kaiwu result does not match the submitted task receipt")
+    if not isinstance(result.raw_status, str) or not result.raw_status.strip():
+        raise RuntimeError("Kaiwu result carries an invalid provider status")
     if _normalize_status(result.raw_status) != "succeeded":
         raise RuntimeError("Kaiwu result carries a non-success provider status")
+    if not isinstance(result.metadata, Mapping):
+        raise RuntimeError("Kaiwu result metadata must be a mapping")
     if result.metadata.get("fallback_occurred") is not False:
         raise RuntimeError(
             "Kaiwu result must declare fallback_occurred=false explicitly"
         )
-    if not result.samples:
+    if not isinstance(result.samples, tuple) or not result.samples:
         raise RuntimeError("Kaiwu result contains no samples")
+    if not isinstance(result.energies, tuple):
+        raise RuntimeError("Kaiwu result energies must be a tuple")
     if len(result.samples) != len(result.energies):
         raise RuntimeError("Kaiwu result sample and energy counts differ")
     if receipt.mode == "sampling" and len(result.samples) != receipt.requested_samples:
         raise RuntimeError("Kaiwu sampling result count differs from the request")
     for sample, energy in zip(result.samples, result.energies, strict=True):
+        if not isinstance(sample, tuple):
+            raise RuntimeError("Kaiwu result samples must be tuples")
         if len(sample) != receipt.matrix_size:
             raise RuntimeError("Kaiwu result sample width differs from the matrix")
-        if any(spin not in {-1, 1} for spin in sample):
+        if any(type(spin) is not int or spin not in {-1, 1} for spin in sample):
             raise RuntimeError("Kaiwu result samples must contain only -1 or +1")
-        if not math.isfinite(energy):
+        if isinstance(energy, bool) or not isinstance(energy, Real):
+            raise RuntimeError("Kaiwu result energies must be finite real numbers")
+        if not math.isfinite(float(energy)):
             raise RuntimeError("Kaiwu result energies must be finite")
         if not math.isclose(
             energy,
@@ -205,7 +240,10 @@ class KaiwuRemoteJob:
         return self._raw_status
 
     def status(self) -> KaiwuJobStatus:
-        self._raw_status = self._client.query_status(self._receipt, self._matrix)
+        raw_status = self._client.query_status(self._receipt, self._matrix)
+        if not isinstance(raw_status, str) or not raw_status.strip():
+            raise RuntimeError("Kaiwu client returned an invalid provider status")
+        self._raw_status = raw_status
         return _normalize_status(self._raw_status)
 
     def result(self) -> KaiwuTaskResult:
