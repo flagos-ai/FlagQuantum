@@ -197,7 +197,10 @@ def _git_revision() -> str:
 
 
 def _bind_trainable(
-    circuit: fq.Circuit, theta: torch.Tensor, phi: torch.Tensor
+    circuit: fq.Circuit,
+    theta: torch.Tensor,
+    phi: torch.Tensor,
+    phase: torch.Tensor | float,
 ) -> None:
     """Bind both trainable parameters, one of them twice.
 
@@ -207,12 +210,25 @@ def _bind_trainable(
     entangling parameter a non-zero derivative; a circuit whose only non-commuting
     layer sat before the gate would make that derivative exactly zero and the
     gradient comparison would pass for a contraction that ignored the parameter.
+
+    The fixed angle is a device tensor wherever a device is in play, for the
+    same reason the trainable ones are: a rotation handed a host scalar has to
+    lift that scalar onto the device, and that lift would land inside whatever
+    region is being profiled rather than in the plan the circuit already is.
     """
 
-    circuit.ry(0, PHASE_ROTATION)
+    circuit.ry(0, phase)
     circuit.ry(N_WIRES - 1, theta)
     circuit.rxx(*OBSERVABLE_WIRES, phi)
     circuit.ry(0, theta)
+
+
+def _phase(device: torch.device | None) -> torch.Tensor | float:
+    """The fixed rotation as a host float or a device scalar."""
+
+    if device is None:
+        return PHASE_ROTATION
+    return torch.tensor(PHASE_ROTATION, dtype=REAL_DTYPE, device=device)
 
 
 def _forward_circuit(
@@ -224,7 +240,7 @@ def _forward_circuit(
         torch.tensor(value, dtype=REAL_DTYPE, device=device) for value in FORWARD_VALUES
     ]
     circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
-    _bind_trainable(circuit, *parameters)
+    _bind_trainable(circuit, *parameters, _phase(device))
     return circuit
 
 
@@ -242,7 +258,7 @@ def _trainable_circuit(
         tensor.copy_(torch.tensor(value, dtype=real_dtype))
         parameters.append(tensor.requires_grad_())
     circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
-    _bind_trainable(circuit, *parameters)
+    _bind_trainable(circuit, *parameters, _phase(device))
     return circuit, tuple(parameters)
 
 
@@ -273,7 +289,7 @@ def _reference_expectation() -> tuple[float, tuple[float, ...]]:
         tensor.copy_(torch.tensor(value, dtype=REAL_DTYPE))
         parameters.append(tensor.requires_grad_())
     circuit = fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
-    _bind_trainable(circuit, *parameters)
+    _bind_trainable(circuit, *parameters, _phase(None))
     state = circuit.state(refresh=True)
     expectation = _z_parity_expectation(
         state.abs().square().reshape(-1), OBSERVABLE_WIRES
