@@ -28,6 +28,7 @@ python -m pytest tests/test_native_circuit.py -q
 python -m pytest tests/test_mps.py -q
 python -m pytest tests/test_tensor_network.py -q
 python -m pytest tests/test_noise.py -q
+python -m pytest tests/unit/test_density_matrix_execution_capability.py -q
 python -m pytest tests/team/simulation/test_stabilizer_engine.py -q
 ```
 
@@ -36,6 +37,47 @@ Choose the suite for the affected representation, then broaden by the
 against independent references; truncation and emulated precision need their
 own error envelope. Local numerical changes must not introduce a dependency on
 Runtime orchestration.
+
+## Exact density-matrix execution
+
+`density_matrix_from_ir` executes a circuit as a dense `2**n` by `2**n` square
+matrix, so a channel acts on the state exactly instead of being sampled. It is
+the small-system correctness oracle: the representation is exact and the cost is
+`4**n`, measured here up to 13 wires, where one `complex128` state is about
+1.07 GB. Nothing above that is claimed, and readout has a lower ceiling than
+storage — probabilities over more than 8 wires are refused until
+`max_marginal_wires` is raised explicitly.
+
+Wire 0 is the highest-order index, so `expand_operator` of a one-wire gate on
+wire 0 of two wires is that gate tensored with the identity on the right, not the
+identity on the left. `mode="density_matrix"` selects the route and `mode="auto"`
+selects it exactly when the program carries a channel instruction;
+`mode="statevector"` and `mode="mps"` refuse such a program by name instead of
+approximating it. `Circuit.density_matrix()` reads a channel-free program off its
+statevector as an outer product and routes a channel-carrying program through
+`density_matrix_from_ir`, because an outer product is rank one and cannot be the
+mixed state a channel produces.
+
+The engine is device-generic `torch`: it takes the operands' own device and
+precision, and asks the kernel catalog once per product whether a fused batched
+complex matmul is declared for that device and precision. On CPU, and at every
+precision the catalog does not declare, the reference `torch.bmm` route runs and
+the route taken is counted rather than assumed. The density matrix is not
+sharded; no rank partitions it. `memory_limit_bytes` is recorded into the noisy
+plan and is not enforced on this route, so a dense state larger than a declared
+limit still executes. The circuit IR carries no mid-circuit measurement, reset,
+or classically conditioned instruction, so this route cannot express them;
+mid-circuit measurement is reached through `flagquantum.dynamic.DynamicCircuit`
+on a statevector trajectory instead.
+
+The route carries an exact autograd graph. `d<Z(0)>/dtheta` for `RY(theta)` on
+`|0>` is `-sin(theta)`: `complex128` reproduces it exactly and the default
+`complex64` lands about `1e-8` away. `examples/density_matrix_execution.py` is
+the ten-minute path through all of the above.
+
+```bash
+python -m examples.density_matrix_execution
+```
 
 ## Continuous-time open-system evolution
 

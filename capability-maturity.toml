@@ -762,6 +762,25 @@ integration_tests = "tests/unit/test_lindblad_evolution.py"
 hardware_evidence = ".github/workflows/ci.yml"
 operational_runbook = "flagquantum/simulation/README.md"
 
+[capabilities.density_matrix_execution]
+title = "Exact density-matrix execution"
+summary = "Execute a circuit as a dense square density matrix so a channel acts on it exactly, then read probabilities, samples, counts and Pauli expectations off it through an exact autograd graph."
+category = "simulation_and_training"
+user_goals = ["Run a noisy circuit exactly instead of by trajectory sampling", "Read Pauli expectations and outcome counts off an exact density matrix", "Differentiate a parameterized circuit through its density matrix"]
+public_apis = ["flagquantum.simulation.density_matrix.density_matrix", "flagquantum.simulation.density_matrix.density_matrix_from_ir", "flagquantum.simulation.density_matrix.apply_unitary_density", "flagquantum.simulation.density_matrix.apply_kraus_density", "flagquantum.simulation.density_matrix.expectation_z_density", "flagquantum.simulation.density_matrix.expand_operator"]
+runtime_modes = ["density_matrix"]
+hardware = ["cpu"]
+gradient_support = "exact"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/density_matrix_execution.py"
+documentation = "flagquantum/simulation/README.md"
+level = "development_evidence"
+owner = "simulation maintainers"
+limitations = "Exact evolution of a dense 2^n by 2^n square density matrix: the representation is exact and the cost is 4^n. Measured here up to 13 wires, where one complex128 density matrix is 8192 by 8192 and about 1.07 GB (4^13 times 16 bytes), and nothing above that is claimed. Readout has a separate and lower ceiling than storage, because probabilities over more than 8 wires are refused until max_marginal_wires is raised explicitly. Wire 0 is the highest-order index, so expand_operator of a one-wire gate on wire 0 of two wires is the gate tensored with the identity, not the identity tensored with the gate. mode='density_matrix' selects the route, and mode='auto' selects it exactly when the program carries a channel instruction; mode='statevector' and mode='mps' refuse such a program by name rather than approximating it. The engine is written in device-generic torch and reads the operands' own device and dtype, but accelerator execution is unverified because this checkout has no accelerator: device='meta' and device='mps' are refused at runtime backend admission, where the pytorch backend exposes cpu plus discovered accelerators, rather than by the engine, and the registry records cpu hardware only. The density matrix is not sharded: no rank and no second device partitions it. memory_limit_bytes is resolved and recorded in the plan's resolved options but is not enforced on this route, so a run whose dense state exceeds a declared limit still executes; enforcement lives in the advisory plan_runtime_selection cost selection, which this route does not consult. require_gradients is a planner admission and scoring input in the runtime, not a post-condition on the returned tensors, so a run that declares it with no differentiable parameter returns normally; the post-condition exists one layer up in flagquantum.lindblad, which raises gradients_not_available. The circuit IR carries no mid-circuit measurement, reset, or classically conditioned instruction at all, so this route cannot express them; mid-circuit measurement is reached through flagquantum.dynamic.DynamicCircuit on a statevector trajectory instead. The default precision is complex64, where an exact gradient reproduces its analytic value to about 1e-8; precision='complex128' reproduces it bit for bit, measured at zero difference from -sin(theta) at theta=0.7."
+focused_tests = "tests/unit/test_density_matrix_execution_capability.py"
+integration_tests = "tests/test_noise.py"
+development_artifact = "flagquantum/simulation/README.md"
+
 [capabilities.cloud_deployment]
 title = "Circuit packaging and cloud deployment"
 summary = "Package trained circuits, export provider formats, and route them through deployment provider abstractions."

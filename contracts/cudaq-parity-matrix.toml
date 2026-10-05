@@ -499,8 +499,10 @@ cudaq = "density-matrix-cpu backend"
 status = "partial"
 priority = "now"
 dependency_class = "none"
-reason = "An engine exists in the simulation domain, but it has no capability-maturity.toml entry, so it carries no recorded owner, limitation set, or hardware evidence."
-evidence = ["flagquantum/simulation/density_matrix.py", "flagquantum/simulation/density_matrix_dispatch.py", "tests/unit/test_density_matrix_catalog_dispatch.py"]
+maturity_ref = "density_matrix_execution"
+reason = "FlagQuantum executes a program as an exact dense density matrix through the registered density_matrix_execution entry, which records the owner, the limitation set, and the focused suite behind the engine and its mode selection. The row stays partial because the engine covers less than the CUDA-Q backend: the circuit IR carries no mid-circuit measurement, reset, or classically conditioned instruction, so this route cannot express them, and the path takes no accelerator."
+baseline_gap = "The registered entry measures a 13-wire storage ceiling on CPU, refuses a probability readout over more than 8 wires until max_marginal_wires is raised, records no accelerator hardware evidence, and discloses that memory_limit_bytes is not enforced on this route. The CUDA-Q backend is described as a CPU density-matrix engine at a larger qubit ceiling. No measured comparison exists in this checkout."
+evidence = ["flagquantum/simulation/density_matrix.py", "flagquantum/simulation/density_matrix_dispatch.py", "flagquantum/simulation/README.md", "examples/density_matrix_execution.py", "tests/unit/test_density_matrix_execution_capability.py", "tests/unit/test_density_matrix_catalog_dispatch.py", "tests/test_noise.py"]
 
 [[domains.capabilities]]
 id = "backend_stim_stabilizer"

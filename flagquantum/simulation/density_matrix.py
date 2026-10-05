@@ -55,8 +55,20 @@ def _resolve_density_dtype(
 
 
 def density_matrix(circuit_or_state: Any) -> torch.Tensor:
-    """Return a batched density matrix from a circuit or statevector."""
+    """Return a batched density matrix from a circuit or statevector.
 
+    A program that carries a channel instruction is executed as a density matrix
+    rather than read off a statevector: the outer product of a statevector is
+    rank one, so it cannot represent the mixed state a channel produces, and the
+    statevector route refuses a channel instead of approximating it. A program
+    without one keeps the cheaper outer-product route.
+    """
+
+    to_ir = getattr(circuit_or_state, "to_ir", None)
+    if to_ir is not None:
+        ir = to_ir()
+        if any(item.metadata.get("is_channel") for item in ir):
+            return density_matrix_from_ir(circuit_or_state)
     state = (
         circuit_or_state.state()
         if hasattr(circuit_or_state, "state")
