@@ -265,6 +265,60 @@ def _components(
     return training, evaluations
 
 
+def _portability(
+    training: tuple[dict[str, Any], str],
+    *,
+    config_sha256: str = "9" * 64,
+    source_preflight_sha256: str = REPLAY_SOURCE_PREFLIGHT_SHA,
+    transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
+    environment_lock_sha256: str = ENVIRONMENT_LOCK_SHA,
+) -> dict[str, Any]:
+    return {
+        "schema": "flagquantum.qboson_qdiffusion_portability_replay",
+        "version": "1.0",
+        "experiment_config_sha256": config_sha256,
+        "execution_host": "jp-a800-172",
+        "run_completed": True,
+        "requested_cuda_device": "cuda:0",
+        "observed_tensor_device": "cuda:0",
+        "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+        "transport": "kaiwu_cim",
+        "pinned_sdk_client": True,
+        "qboson_hardware_used": True,
+        "real_provider_evidence": True,
+        "provider_identity_complete": True,
+        "provider_reported_target": True,
+        "qboson_target": "SPQC-provider",
+        "qboson_task_ids": ["portability-task"],
+        "task_receipts": [
+            {
+                "matrix_sha256": "8" * 64,
+                "mode": "sampling",
+                "requested_samples": 10,
+                "provider_task_id": "portability-task",
+                "provider_target": "SPQC-provider",
+            }
+        ],
+        "requested_samples": 10,
+        "returned_samples": 10,
+        "remote_call_budget": 128,
+        "remote_call_count": 1,
+        "precision_policy": {"matrix_count": 1},
+        "fallback_occurred": False,
+        "retrieval_resubmitted": False,
+        "secrets_redacted": True,
+        "fixture": {"token_constraints_passed": True},
+        "acceptance": {"portability": "pass"},
+        "training_record_sha256": training[1],
+        "trained_energy_checkpoint_sha256": training[0][
+            "trained_energy_checkpoint_sha256"
+        ],
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
+        "environment_lock_sha256": environment_lock_sha256,
+    }
+
+
 def _write_json(path: Path, value: object) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -337,15 +391,7 @@ def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:
     config = _config()
     training, evaluations = _components()
     selected_checkpoint = training[0][0]["trained_energy_checkpoint_sha256"]
-    portability = {
-        "execution_host": "jp-a800-172",
-        "acceptance": {"portability": "pass"},
-        "training_record_sha256": training[0][1],
-        "trained_energy_checkpoint_sha256": selected_checkpoint,
-        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
-        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
-        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
-    }
+    portability = _portability(training[0])
 
     primary, replay = assemble_records(
         config=config,
@@ -385,16 +431,7 @@ def test_assembler_rejects_evaluation_linked_to_another_training_record() -> Non
     config = _config()
     training, evaluations = _components()
     evaluations[1][0]["training_record_sha256"] = "0" * 64
-    portability = {
-        "execution_host": "jp-a800-172",
-        "acceptance": {"portability": "pass"},
-        "training_record_sha256": training[0][1],
-        "trained_energy_checkpoint_sha256": training[0][0][
-            "trained_energy_checkpoint_sha256"
-        ],
-        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
-        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
-    }
+    portability = _portability(training[0])
 
     with pytest.raises(ValueError, match="not linked to its training record"):
         assemble_records(
@@ -427,17 +464,7 @@ def test_assembler_rejects_training_without_real_provider_evidence() -> None:
     config = _config()
     training, evaluations = _components()
     training[0][0]["real_provider_evidence"] = False
-    portability = {
-        "execution_host": "jp-a800-172",
-        "acceptance": {"portability": "pass"},
-        "training_record_sha256": training[0][1],
-        "trained_energy_checkpoint_sha256": training[0][0][
-            "trained_energy_checkpoint_sha256"
-        ],
-        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
-        "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
-        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
-    }
+    portability = _portability(training[0])
 
     with pytest.raises(ValueError, match="real_provider_evidence is not proven"):
         assemble_records(
@@ -469,16 +496,7 @@ def test_assembler_rejects_training_without_real_provider_evidence() -> None:
 def test_assembler_rejects_different_host_transfer_manifests() -> None:
     config = _config()
     training, evaluations = _components()
-    selected_checkpoint = training[0][0]["trained_energy_checkpoint_sha256"]
-    portability = {
-        "execution_host": "jp-a800-172",
-        "acceptance": {"portability": "pass"},
-        "training_record_sha256": training[0][1],
-        "trained_energy_checkpoint_sha256": selected_checkpoint,
-        "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
-        "transfer_manifest_sha256": "0" * 64,
-        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
-    }
+    portability = _portability(training[0], transfer_manifest_sha256="0" * 64)
     replay_system = _system("jp-a800-172", "portability_replay", "replay-task")
     replay_system["transfer_manifest_sha256"] = "0" * 64
     replay_preflight = _source_preflight("jp-a800-172")
@@ -590,19 +608,13 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         evaluation_entries.append((evaluation_record, digest))
         component_paths.append(path)
 
-    selected_checkpoint = training_entries[0][0]["trained_energy_checkpoint_sha256"]
-    portability_record = {
-        "schema": "flagquantum.qboson_qdiffusion_portability_replay",
-        "version": "1.0",
-        "experiment_config_sha256": config_sha,
-        "execution_host": "jp-a800-172",
-        "acceptance": {"portability": "pass"},
-        "training_record_sha256": training_entries[0][1],
-        "trained_energy_checkpoint_sha256": selected_checkpoint,
-        "source_preflight_sha256": replay_preflight_sha,
-        "transfer_manifest_sha256": transfer_manifest_sha,
-        "environment_lock_sha256": environment_lock_sha,
-    }
+    portability_record = _portability(
+        training_entries[0],
+        config_sha256=config_sha,
+        source_preflight_sha256=replay_preflight_sha,
+        transfer_manifest_sha256=transfer_manifest_sha,
+        environment_lock_sha256=environment_lock_sha,
+    )
     portability_path = tmp_path / "components" / "portability.json"
     portability_sha = _write_json(portability_path, portability_record)
     component_paths.append(portability_path)
@@ -685,7 +697,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][0]["sha256"] = tampered_system_sha
     _write_json(manifest_path, manifest)
     assert any(
-        "system component task receipts are missing" in error
+        "remote component task receipts are missing" in error
         for error in validate_acceptance(manifest_path)
     )
 
@@ -707,6 +719,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
     manifest["component_records"][5]["sha256"] = restored_training_sha
+
+    tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
+    tampered_portability["task_receipts"] = []
+    tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
+    replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = tampered_portability_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "remote component task receipts are missing" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    portability_sha = _write_json(component_paths[11], portability_record)
+    replay["portability_evidence"]["record_sha256"] = portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = portability_sha
 
     tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
     tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99

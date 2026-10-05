@@ -253,6 +253,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   executes one preregistered held-out fixture through a fresh FlagQuantum remote
   sampler, checks repeat retrieval, and records provider and precision evidence.
   This is a portability gate, not multi-node execution or a second training run.
+- Portability evidence now carries an exact SDK-client provenance flag and is
+  independently reconciled against its A800 observation, remote-call budget,
+  receipt and matrix identities, requested/returned samples, provider task IDs
+  and target, precision coverage, no-fallback state, repeat retrieval, and token
+  constraints before it can be linked into final replay-host evidence.
 - A final evidence assembler now requires both passing system components, one
   passing replay component, and paired training/evaluation components for every
   frozen seed. It recomputes cross-seed means, validates all hash links, copies

@@ -38,7 +38,8 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
     _validate_application,
-    _validate_system_component_provider_evidence,
+    _validate_portability_component_evidence,
+    _validate_remote_sampling_component_evidence,
     _validate_system_record,
     _validate_training_provider_evidence,
     validate_acceptance,
@@ -226,7 +227,7 @@ def assemble_records(
         (replay_system_record, "replay system"),
     ):
         provider_errors: list[str] = []
-        _validate_system_component_provider_evidence(system, label, provider_errors)
+        _validate_remote_sampling_component_evidence(system, label, provider_errors)
         if provider_errors:
             raise ValueError("; ".join(provider_errors))
     software = config["software"]
@@ -326,6 +327,12 @@ def assemble_records(
         raise ValueError("selected training record has no checkpoint digest")
     if portability_record.get("training_record_sha256") != portability_training_sha:
         raise ValueError("portability replay is linked to another training record")
+    portability_errors: list[str] = []
+    _validate_portability_component_evidence(
+        portability_record, "portability replay", portability_errors
+    )
+    if portability_errors:
+        raise ValueError("; ".join(portability_errors))
     if portability_record.get("trained_energy_checkpoint_sha256") != checkpoint_digest:
         raise ValueError("portability replay used another trained checkpoint")
     for field in (

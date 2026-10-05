@@ -194,6 +194,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
         == hashlib.sha256(b"trained").hexdigest()
     )
     assert record["transport"] == "injected_test"
+    assert record["pinned_sdk_client"] is False
     assert record["source_preflight_sha256"] == "f" * 64
     assert record["transfer_manifest_sha256"] == "0" * 64
     assert record["environment_lock_sha256"] == "1" * 64

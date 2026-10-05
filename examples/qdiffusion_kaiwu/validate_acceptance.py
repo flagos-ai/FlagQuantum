@@ -725,11 +725,11 @@ def _validate_application(
         errors.append("primary: application acceptance did not pass")
 
 
-def _validate_system_component_provider_evidence(
+def _validate_remote_sampling_component_evidence(
     record: dict[str, Any], label: str, errors: list[str]
 ) -> None:
     if record.get("run_completed") is not True:
-        errors.append(f"{label}: system component did not complete")
+        errors.append(f"{label}: remote component did not complete")
     for field in (
         "pinned_sdk_client",
         "provider_identity_complete",
@@ -739,56 +739,97 @@ def _validate_system_component_provider_evidence(
         "secrets_redacted",
     ):
         if record.get(field) is not True:
-            errors.append(f"{label}: system component {field} is not proven")
+            errors.append(f"{label}: remote component {field} is not proven")
     if record.get("transport") != "kaiwu_cim":
-        errors.append(f"{label}: system component transport is not kaiwu_cim")
+        errors.append(f"{label}: remote component transport is not kaiwu_cim")
     if record.get("fallback_occurred") is not False:
-        errors.append(f"{label}: system component fallback is not explicitly false")
+        errors.append(f"{label}: remote component fallback is not explicitly false")
     if record.get("retrieval_resubmitted") is not False:
-        errors.append(f"{label}: system component retrieval resubmitted")
+        errors.append(f"{label}: remote component retrieval resubmitted")
 
     remote_calls = record.get("remote_call_count")
     receipts = record.get("task_receipts")
     if type(remote_calls) is not int or remote_calls <= 0:
-        errors.append(f"{label}: system component remote calls must be positive")
+        errors.append(f"{label}: remote component calls must be positive")
     if not isinstance(receipts, list) or not receipts:
-        errors.append(f"{label}: system component task receipts are missing")
+        errors.append(f"{label}: remote component task receipts are missing")
         return
     if type(remote_calls) is int and len(receipts) != remote_calls:
-        errors.append(f"{label}: system receipt count differs from remote calls")
+        errors.append(f"{label}: remote receipt count differs from calls")
 
     receipt_task_ids: list[str] = []
     receipt_targets: set[str] = set()
     requested_samples = record.get("requested_samples")
     for index, receipt in enumerate(receipts):
         if not isinstance(receipt, dict):
-            errors.append(f"{label}: system receipt {index} is not an object")
+            errors.append(f"{label}: remote receipt {index} is not an object")
             continue
         task_id = receipt.get("provider_task_id")
         target = receipt.get("provider_target")
         if not isinstance(task_id, str) or not task_id.strip():
-            errors.append(f"{label}: system receipt {index} has no provider_task_id")
+            errors.append(f"{label}: remote receipt {index} has no provider_task_id")
         else:
             receipt_task_ids.append(task_id)
         if not isinstance(target, str) or not target.strip():
-            errors.append(f"{label}: system receipt {index} has no provider_target")
+            errors.append(f"{label}: remote receipt {index} has no provider_target")
         else:
             receipt_targets.add(target)
         if receipt.get("mode") != "sampling":
-            errors.append(f"{label}: system receipt {index} is not sampling")
+            errors.append(f"{label}: remote receipt {index} is not sampling")
         if receipt.get("requested_samples") != requested_samples:
-            errors.append(f"{label}: system receipt {index} sample count differs")
+            errors.append(f"{label}: remote receipt {index} sample count differs")
         matrix_digest = receipt.get("matrix_sha256")
         if (
             not isinstance(matrix_digest, str)
             or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
         ):
-            errors.append(f"{label}: system receipt {index} has no matrix digest")
+            errors.append(f"{label}: remote receipt {index} has no matrix digest")
 
     if record.get("qboson_task_ids") != receipt_task_ids:
-        errors.append(f"{label}: system task IDs differ from task receipts")
+        errors.append(f"{label}: task IDs differ from remote receipts")
     if len(receipt_targets) != 1 or record.get("qboson_target") not in receipt_targets:
-        errors.append(f"{label}: system target differs from task receipts")
+        errors.append(f"{label}: target differs from remote receipts")
+
+    returned_samples = record.get("returned_samples")
+    if (
+        type(requested_samples) is not int
+        or type(returned_samples) is not int
+        or requested_samples != returned_samples
+    ):
+        errors.append(f"{label}: remote requested and returned samples differ")
+    budget = record.get("remote_call_budget")
+    if type(budget) is not int or budget <= 0:
+        errors.append(f"{label}: remote call budget must be positive")
+    elif type(remote_calls) is int and remote_calls > budget:
+        errors.append(f"{label}: remote calls exceed their budget")
+    precision = record.get("precision_policy")
+    matrix_count = (
+        precision.get("matrix_count") if isinstance(precision, dict) else None
+    )
+    if (
+        type(matrix_count) is not int
+        or matrix_count <= 0
+        or (type(remote_calls) is int and matrix_count < remote_calls)
+    ):
+        errors.append(f"{label}: remote precision evidence is incomplete")
+
+
+def _validate_portability_component_evidence(
+    record: dict[str, Any], label: str, errors: list[str]
+) -> None:
+    _validate_remote_sampling_component_evidence(record, label, errors)
+    if record.get("requested_cuda_device") != "cuda:0":
+        errors.append(f"{label}: portability did not request cuda:0")
+    if record.get("observed_tensor_device") != "cuda:0":
+        errors.append(f"{label}: portability tensor work was not on cuda:0")
+    if "A800" not in str(record.get("observed_gpu_model", "")):
+        errors.append(f"{label}: portability GPU is not an NVIDIA A800")
+    fixture = record.get("fixture")
+    if (
+        not isinstance(fixture, dict)
+        or fixture.get("token_constraints_passed") is not True
+    ):
+        errors.append(f"{label}: portability token constraints did not pass")
 
 
 def _validate_training_provider_evidence(
@@ -973,7 +1014,7 @@ def _validate_component_bundle(
                 f"{label}: system evidence does not identify a system component"
             )
             continue
-        _validate_system_component_provider_evidence(component, label, errors)
+        _validate_remote_sampling_component_evidence(component, label, errors)
         copied_fields = (
             "source_revision",
             "kaiwu_pytorch_plugin_revision",
@@ -1148,6 +1189,7 @@ def _validate_component_bundle(
         return
     if portability.get("execution_host") != config.get("replay_host"):
         errors.append("replay: portability component is from the wrong host")
+    _validate_portability_component_evidence(portability, "replay", errors)
     if portability.get("acceptance") != {"portability": "pass"}:
         errors.append("replay: portability component did not pass")
     for field in ("training_record_sha256", "trained_energy_checkpoint_sha256"):

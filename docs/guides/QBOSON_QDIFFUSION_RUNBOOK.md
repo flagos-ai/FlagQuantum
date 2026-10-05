@@ -563,9 +563,13 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
 
 The runner verifies the checkpoint remains inside the recorded run directory,
 recomputes its digest, verifies every referenced training artifact, and records
-repeat retrieval without resubmission. This demonstrates portability between
-the two available A800 environments only; it is not multi-node or distributed
-execution.
+repeat retrieval without resubmission. Assembly and independent revalidation
+also reconcile the replay's exact SDK client, A800 device, receipt count,
+matrix digests, requested and returned samples, provider task IDs and target,
+call budget, precision reports, fallback state, and token constraints. A replay
+summary cannot pass after its underlying remote evidence is removed or changed.
+This demonstrates portability between the two available A800 environments
+only; it is not multi-node or distributed execution.
 
 ## 11. Assemble the immutable evidence bundle
 

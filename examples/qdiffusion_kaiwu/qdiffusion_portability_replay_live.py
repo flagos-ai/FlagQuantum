@@ -279,6 +279,7 @@ def run_portability_replay(
         "requested_cuda_device": str(device),
         "observed_tensor_device": generated_device,
         "transport": "kaiwu_cim" if verified_transport else "injected_test",
+        "pinned_sdk_client": verified_transport,
         "qboson_hardware_used": verified_transport and run_completed,
         "real_provider_evidence": verified_transport and run_completed,
         "provider_identity_complete": provider_identity_complete,
