@@ -1446,13 +1446,15 @@ def test_distributed_observable_batch_uses_one_shared_reduction():
 
 
 def test_amplitude_projectors_cross_the_host_boundary_independently_of_batch():
-    """Projector construction must not lift one host scalar per target and wire.
+    """Projector construction must not move any host value onto the device.
 
     A projector built element by element reads one host scalar per target per
     projected wire, and the projection is attached inside the region a caller
     times, so the contraction looks like it staged data through the host when it
-    only built its plan. The table is therefore lifted once, and the number of
-    host-to-device transfers must not grow with the number of targets.
+    only built its plan. Lifting the target table instead already bounded that at
+    one copy, but one copy is still a host-to-device transfer inside the timed
+    region, so the batch is now built by indexing a device-resident identity and
+    the count is zero for any batch.
     """
 
     circuit = fq.Circuit(6)
@@ -1482,8 +1484,8 @@ def test_amplitude_projectors_cross_the_host_boundary_independently_of_batch():
         ("010101", "101010", "000000", "111111")
     )
 
-    assert len(single_lifts) == 1
-    assert len(batch_lifts) == len(single_lifts)
+    assert single_lifts == []
+    assert batch_lifts == []
 
     expected_target = max(label for node in plan.nodes for label in node.labels) + 1
     assert batch_outputs == (plan.output_labels[0], expected_target)

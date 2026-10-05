@@ -146,17 +146,27 @@ def _basis_projectors(
 ) -> torch.Tensor:
     """One-hot projectors for a batch of basis states, built on the device.
 
-    The target table is lifted once and every projector is then a device
-    comparison against it. Writing each selected element from a host scalar
-    instead lifts one device scalar per target per projected wire, and those
-    lifts sit inside whatever region the caller is timing even though they are
-    plan construction rather than contraction. The returned tensor is indexed
-    `[target, wire]`.
+    Each projector is a row of a device-resident identity selected by index, so
+    building the batch moves no value across the host boundary. Lifting the
+    target table instead -- ``torch.as_tensor(bits, device=device)`` -- issues
+    one host-to-device copy, and that copy sits inside whatever region the caller
+    is timing even though it is plan construction rather than contraction.
+    Writing each selected element from a host scalar, which is what this
+    replaced, is worse still: one lift per target per projected wire.
+
+    The identity is two elements wide, so every selection is a view and no
+    movement is needed to read it. ``stack`` gives the rows independent storage
+    -- a projector that aliased another target's row would be a silent
+    correctness bug -- and the cast is the only device-to-device work. The
+    returned tensor is indexed ``[target, wire]``.
     """
 
-    targets = torch.as_tensor(bits, dtype=torch.int64, device=device)
-    columns = torch.arange(2, dtype=torch.int64, device=device)
-    return (columns.reshape(1, 1, 2) == targets.reshape(*targets.shape, 1)).to(dtype)
+    width = len(bits[0]) if bits else 0
+    if width == 0:
+        return torch.zeros((len(bits), 0, 2), dtype=dtype, device=device)
+    identity = torch.eye(2, dtype=torch.int64, device=device)
+    rows = [identity[int(bit)] for target in bits for bit in target]
+    return torch.stack(rows).reshape(len(bits), width, 2).to(dtype)
 
 
 def _amplitude_projection(
