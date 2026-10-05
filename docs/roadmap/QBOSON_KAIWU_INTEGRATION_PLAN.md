@@ -34,9 +34,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   receipt persistence, and restore without resubmission. Its in-memory fake
   proves timeout and recovery semantics, spin and energy validation, matrix
   identity, sample-count limits, and explicit `fallback_occurred=false`. It is
-  deliberately not exported from `flagquantum.remote`; the proprietary SDK
-  adapter and real provider-state mapping remain unimplemented until the pinned
-  SDK can be inspected.
+  deliberately not exported from `flagquantum.remote`. A pinned adapter now
+  implements only documented SDK behavior; real provider task-ID, target, and
+  raw-state mappings remain unavailable until an approved SDK response can be
+  inspected.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
@@ -83,6 +84,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   This closes the ambiguous-submission window: a process restart reuses the
   original timestamp and task/matrix identity, while corrupt or conflicting
   bundles fail before any SDK operation.
+- A cross-layer integration test now composes the ecosystem sampler, Remote
+  lifecycle, pinned SDK client, checkpoint scoping, independent energy
+  validation, recovery persistence, and deduplication. Only the final vendor
+  module is replaced with a deterministic fake, so this proves the FlagQuantum
+  boundary composition but is not provider or hardware evidence.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
