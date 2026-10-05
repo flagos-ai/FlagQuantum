@@ -312,7 +312,7 @@ def _synthesize(matrix: object, entangler: str) -> tuple[Instruction, ...] | Non
     rows = matrix.tolist() if hasattr(matrix, "tolist") else matrix
     return synthesize_two_qubit(
         [[complex(entry) for entry in row] for row in rows],
-        wires=(0, 1),
+        qubits=(0, 1),
         entangler=entangler,
         z_rotation=_Z_ROTATION,
         pulse_opcode=_PULSE,
@@ -1096,7 +1096,7 @@ def test_the_synthesis_refusal_surface_is_exactly_the_documented_one() -> None:
     assert (
         synthesize_two_qubit(
             identity,
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler="cx",
             z_rotation=_Z_ROTATION,
             pulse_opcode=_PULSE,
@@ -1110,18 +1110,18 @@ def test_the_synthesis_refusal_surface_is_exactly_the_documented_one() -> None:
         dict(entangler="cx", z_rotation=_Z_ROTATION, pulse_opcode="h"),
         dict(entangler="cx", z_rotation="rz", pulse_opcode=None),
     ):
-        assert synthesize_two_qubit(identity, wires=(0, 1), **kwargs) is None, kwargs
+        assert synthesize_two_qubit(identity, qubits=(0, 1), **kwargs) is None, kwargs
 
     for wires, message in (
-        ((0,), "wires must name exactly two wires"),
-        ((0, 1, 2), "wires must name exactly two wires"),
-        ((0, 0), "wires must name two distinct wires"),
-        ((-1, 0), "wires must be non-negative integers"),
+        ((0,), "qubits must name exactly two qubits"),
+        ((0, 1, 2), "qubits must name exactly two qubits"),
+        ((0, 0), "qubits must name two distinct qubits"),
+        ((-1, 0), "qubits must be non-negative integers"),
     ):
         with pytest.raises(ValueError, match=message):
             synthesize_two_qubit(
                 identity,
-                wires=wires,
+                qubits=wires,
                 entangler="cx",
                 z_rotation=_Z_ROTATION,
                 pulse_opcode=_PULSE,
@@ -1130,7 +1130,7 @@ def test_the_synthesis_refusal_surface_is_exactly_the_documented_one() -> None:
     with pytest.raises(ValueError, match="matrix must have exactly 4 entries"):
         synthesize_two_qubit(
             torch.eye(3, dtype=torch.complex128).tolist(),
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler="cx",
             z_rotation=_Z_ROTATION,
         )
@@ -1139,7 +1139,7 @@ def test_the_synthesis_refusal_surface_is_exactly_the_documented_one() -> None:
             torch.diag(
                 torch.tensor([2.0, 1.0, 1.0, 1.0], dtype=torch.complex128)
             ).tolist(),
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler="cx",
             z_rotation=_Z_ROTATION,
         )

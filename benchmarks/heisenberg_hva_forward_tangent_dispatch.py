@@ -195,7 +195,7 @@ def _case(
 
     def catalog_dispatch() -> tuple[torch.Tensor, torch.Tensor]:
         return heisenberg_hva_forward_tangents(
-            initial_state, parameters, n_wires=n_wires, depth=depth
+            initial_state, parameters, n_qubits=n_wires, depth=depth
         )
 
     def pytorch_eager() -> tuple[torch.Tensor, torch.Tensor]:
