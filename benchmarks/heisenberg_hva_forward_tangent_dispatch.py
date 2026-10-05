@@ -29,8 +29,8 @@ IMPLEMENTATION_ID = "FQKI-TRITON-GR-006-A"
 RUNNER = "benchmarks/heisenberg_hva_forward_tangent_dispatch.py"
 COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
-    (2, 1, False),
-    (4, 1, False),
+    (2, 1, True),
+    (4, 1, True),
     (4, 3, True),
     (6, 3, True),
     (8, 2, True),
