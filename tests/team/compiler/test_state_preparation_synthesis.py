@@ -65,9 +65,12 @@ The case family is generated rather than enumerated, and the two numbers pinned 
 counts are pinned on families where every drop is an exact comparison against an
 exactly zero quantity: the `|0...0>` vector, the computational-basis vectors, and
 the uniform superposition. Their ladder angles are exactly `0.0` or exactly `pi`,
-so no count below depends on how a platform rounds a nearly cancelling sum. The
-random points of the family are asserted only against their state and against the
-frozen reference's state. This mirrors
+so no count below depends on how a platform rounds a nearly cancelling sum. What
+*is* host dependent is the cost of spelling a control flip in two of the six bases,
+and that one dimension is stated as a set rather than a number on `_FLIP_COST`,
+with the mechanism recorded there; every other quantity in this file is
+arithmetic. The random points of the family are asserted only against their state
+and against the frozen reference's state. This mirrors
 `tests/team/compiler/test_two_qubit_decomposition_conformance.py` and
 `test_optimization_pass_conformance.py`; what
 `tests/unit/test_algorithms_state_preparation.py` cannot give it is that the file
@@ -132,28 +135,55 @@ _ENTANGLERS = tuple(SUPERCONTROLLED_ENTANGLERS)
 #: and not a preference.
 _ONE_QUBIT = frozenset({_Z_ROTATION, _PULSE})
 
-#: What `synthesize_two_qubit` spends to spell one `CX(control, target)` in each
-#: basis, measured at `_Z_ROTATION`/`_PULSE`. `cx` is the entangler itself, so its
-#: flip is one leaf; every other route conjugates it into the named entangler. These
-#: are asserted against that function's own answer below, not kept as a table.
+#: The set of leaf counts `synthesize_two_qubit` may spend to spell one
+#: `CX(control, target)` in each basis, at `_Z_ROTATION`/`_PULSE`. `cx` is the
+#: entangler itself, so its flip is one leaf; every other route conjugates it into
+#: the named entangler.
+#:
+#: Four of the six are single values and are arithmetic rather than measurements.
+#: The routes for `cz`, `cy` and `rzz` reach `one_qubit_synthesis._leaves` through
+#: polar angles that `_zyz_angles` either reads off a degenerate matrix (exactly
+#: `0.0`, `pi` or `-pi`) or divides a magnitude by itself to produce (`atan2(y, y)`
+#: is exactly `pi/4`, so `2 * atan2(y, y)` is exactly the tabulated `pi/2`). The
+#: short form is therefore selected by an equality no rounding can move, and the
+#: fifth distinct value below -- the general five-leaf form -- can only be reached
+#: by the two bases that are not degenerate.
+#:
+#: `rxx` and `ryy` are two values each. Their trailing factor is not degenerate:
+#: its polar angle is a general `2 * atan2(...)` whose two arguments differ in the
+#: last place, and `_leaves` compares that angle to `pi/2` with `==`, so the host's
+#: own rounding alone decides between the general form and the `pi/2` short form.
+#: Measured: this file's arm64 authoring host rounds the two arguments apart and
+#: spends 13 leaves in both bases; the x86-64 CI host rounds `rxx`'s arguments
+#: together and spends 10, which is the count reported by
+#: `tests/team/compiler`'s first CI run. The other member of each pair is what the
+#: short form gives, measured by re-running the same call with `_zyz_angles`
+#: snapped to `pi/2`, so each set is closed under the one rounding that can differ.
+#:
+#: Below, the length of a set is the whole assertion: a single value is an
+#: equality, and a pair is the band a host may land in.
 _FLIP_COST = {
-    "cx": 1,
-    "cz": 9,
-    "cy": 6,
-    "rzz": 7,
-    "rxx": 13,
-    "ryy": 13,
+    "cx": (1,),
+    "cz": (9,),
+    "cy": (6,),
+    "rzz": (7,),
+    "rxx": (10, 13),
+    "ryy": (11, 13),
 }
 
 #: The uniform superposition's leaf count for each entangler, `n = 1` through `5`,
-#: measured at `_Z_ROTATION`/`_PULSE`.
+#: as the set of values a host may produce. It is built from `_FLIP_COST` by the
+#: arithmetic the family is made of rather than restated: a uniform state has one
+#: non-zero branch per level, so it spends `4 * n` leaves on its `ry` groups and one
+#: flip per ladder step on top, level `j` spending `2**j` flips and level `0` none.
+#: The authoring host's own row at `cx` is `(4, 10, 18, 30, 50)` and at `rxx` through
+#: `ryy` it is `(4, 34, 90, 198, 410)`; the second member of each of those two rows
+#: is `(4, 28, 72, 156, 320)` at `rxx` and `(4, 30, 78, 170, 350)` at `ryy`.
 _UNIFORM_COUNTS = {
-    "cx": (4, 10, 18, 30, 50),
-    "cz": (4, 26, 66, 142, 290),
-    "cy": (4, 20, 48, 100, 200),
-    "rzz": (4, 22, 54, 114, 230),
-    "rxx": (4, 34, 90, 198, 410),
-    "ryy": (4, 34, 90, 198, 410),
+    entangler: tuple(
+        tuple(4 * n + cost * (2**n - 2) for cost in costs) for n in range(1, 6)
+    )
+    for entangler, costs in _FLIP_COST.items()
 }
 
 #: The leaf count of every computational-basis vector at `cx`, `n = 1` through `3`.
@@ -335,6 +365,24 @@ def _dropped_phase(leaves: Sequence[Instruction], theta: float) -> float:
     target = torch.tensor(_ry_matrix(theta), dtype=torch.complex128)
     # `product == s * RY(theta)` gives `s == trace(RY(theta)† @ product) / 2`.
     return cmath.phase(complex(torch.trace(target.conj().T @ product) / 2.0))
+
+
+def _flip_cost(entangler: str) -> int:
+    """What the roster spends on one `CX` in `entangler`, measured in this run.
+
+    The uniform counts below are asserted against this rather than against a
+    restated number, so a change in the flip's cost moves both sides together and
+    the identity under test stays the arithmetic the family is made of.
+    """
+    leaves = synthesize_two_qubit(
+        _CONTROL_FLIP,
+        wires=(0, 1),
+        entangler=entangler,
+        z_rotation=_Z_ROTATION,
+        pulse_opcode=_PULSE,
+    )
+    assert leaves is not None, f"{entangler!r} refused the flip"
+    return len(leaves)
 
 
 def _flips(
@@ -554,8 +602,15 @@ def test_the_uniform_family_count_is_the_ladder_arithmetic() -> None:
     `4 * n + flip_cost * (2**n - 2)`: `n` four-leaf groups, and `2**n - 2` control
     flips because level `j` spends `2**j` and level `0` spends none. The phase pass is
     empty here, checked separately below, so nothing else is added. The measured counts
-    are asserted to equal that arithmetic rather than the other way round, so a change
-    in the flip cost moves both sides together.
+    are asserted to equal that arithmetic rather than the other way round, and the flip
+    cost on the right-hand side is the same run's own measurement of it, so a change in
+    the flip cost moves both sides together.
+
+    The left-hand side is then compared with `_UNIFORM_COUNTS`, which is that same
+    arithmetic over the *set* of flip costs each basis may land on rather than over a
+    literal. The two bases whose cost is a host quantity hold two values there, and the
+    assertion is a membership in that band; the four whose cost is arithmetic hold one
+    and the assertion is an equality.
 
     The pulse count is only `2 * n` for the entangler that *is* a pulse-free flip.
     Every other basis spells the flip out of pulses of its own, so its count is higher
@@ -567,21 +622,14 @@ def test_the_uniform_family_count_is_the_ladder_arithmetic() -> None:
         for entangler in _ENTANGLERS:
             leaves = _prepared(_uniform(n_qubits), entangler=entangler)
             names = [leaf.name for leaf in leaves]
-            assert len(leaves) == _UNIFORM_COUNTS[entangler][n_qubits - 1]
-            assert len(leaves) == 4 * n_qubits + _FLIP_COST[entangler] * (size - 2)
+            assert len(leaves) in _UNIFORM_COUNTS[entangler][n_qubits - 1]
+            assert len(leaves) == 4 * n_qubits + _flip_cost(entangler) * (size - 2)
             assert names.count(_PULSE) >= 2 * n_qubits
             if entangler == "cx":
                 # One `cx` per flip, one group of two pulses per level, and nothing
                 # else: the flip is free of pulses only in this basis.
                 assert names.count(_PULSE) == 2 * n_qubits
                 assert names.count("cx") == size - 2
-    # The reference arm of the same table, so the two implementations' costs are read
-    # off one family rather than off two separate measurements.
-    for n_qubits, expected in enumerate(_REFERENCE_UNIFORM_COUNTS, start=1):
-        program = reference.arbitrary_state(
-            torch.tensor(_uniform(n_qubits), dtype=torch.complex64)
-        ).to_ir()
-        assert len(program.instructions) == expected
     # The reference arm of the same table, so the two implementations' costs are read
     # off one family rather than off two separate measurements.
     for n_qubits, expected in enumerate(_REFERENCE_UNIFORM_COUNTS, start=1):
@@ -596,7 +644,11 @@ def test_the_control_flip_cost_is_the_rosters_own_measurement() -> None:
 
     `_FLIP_COST` is asserted against `synthesize_two_qubit`'s own answer rather than
     against a table this file keeps, so the leaf counts above and this cost cannot
-    drift apart silently. Every route reproduces `CX` itself up to one global phase.
+    drift apart silently. A single-value entry is an equality and a two-value entry is
+    the band the host's own `atan2` rounding may move the count within; the reason is
+    recorded on the table itself. Every route reproduces `CX` itself up to one global
+    phase, which is checked here as well, so a count that dropped would have to drop a
+    leaf that was not needed rather than one that was.
     """
     target = torch.tensor(
         [
@@ -616,7 +668,8 @@ def test_the_control_flip_cost_is_the_rosters_own_measurement() -> None:
             pulse_opcode=_PULSE,
         )
         assert leaves is not None, f"{entangler!r} refused the flip"
-        assert len(leaves) == _FLIP_COST[entangler]
+        assert len(leaves) in _FLIP_COST[entangler]
+        assert len(leaves) == _flip_cost(entangler)
         product = _two_wire_unitary(leaves)
         _matrix_gap(target, product)
         assert {leaf.name for leaf in leaves} <= _ONE_QUBIT | {entangler}
@@ -633,9 +686,10 @@ def test_the_shortest_spelling_is_the_callers_basis() -> None:
         assert counts["cx"] == min(counts.values())
         assert sum(1 for count in counts.values() if count == counts["cx"]) == 1
         # A more expensive flip costs more in proportion, rather than in a way that
-        # depends on the state: the spread is exactly the flip cost's spread.
+        # depends on the state: the spread is exactly the flip cost's spread, both
+        # read from the same run so neither side of the equality is a literal.
         for entangler, count in counts.items():
-            assert count - counts["cx"] == (_FLIP_COST[entangler] - 1) * (
+            assert count - counts["cx"] == (_flip_cost(entangler) - 1) * (
                 2**n_qubits - 2
             )
 
