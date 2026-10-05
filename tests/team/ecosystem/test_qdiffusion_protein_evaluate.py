@@ -14,6 +14,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
     _read_aligned_records,
     _source_preflight_identity,
+    _verified_evaluation_source,
     _verified_training_paths,
     evaluate_outputs,
 )
@@ -126,6 +127,53 @@ def test_evaluation_requires_training_source_preflight_identity() -> None:
     record["source_preflight_sha256"] = "missing"
     with pytest.raises(ValueError, match="source_preflight_sha256"):
         _source_preflight_identity(record)
+
+
+def test_evaluation_revalidates_local_source_preflight() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_protein_evaluate.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'parser.add_argument("--source-preflight"' in source
+    assert source.index("load_source_preflight(") < source.index(
+        "workflow, helpers = _load_pinned_eval_workflow("
+    )
+    assert "evaluation source preflight differs from training record" in source
+    assert "evaluation transfer manifest differs from training record" in source
+
+
+def test_evaluation_source_must_match_training_record(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    training_record = {
+        "source_preflight_sha256": "a" * 64,
+        "transfer_manifest_sha256": "b" * 64,
+    }
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate.load_source_preflight",
+        lambda *args, **kwargs: ({"manifest_sha256": "b" * 64}, "a" * 64),
+    )
+    arguments = {
+        "execution_host": "jp-a800-171",
+        "source_revision": "c" * 40,
+        "plugin_revision": "d" * 40,
+    }
+
+    assert _verified_evaluation_source(
+        tmp_path / "preflight.json", training_record, **arguments
+    ) == ("a" * 64, "b" * 64)
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate.load_source_preflight",
+        lambda *args, **kwargs: ({"manifest_sha256": "b" * 64}, "e" * 64),
+    )
+    with pytest.raises(ValueError, match="source preflight differs"):
+        _verified_evaluation_source(
+            tmp_path / "preflight.json", training_record, **arguments
+        )
 
 
 @dataclass

@@ -443,7 +443,8 @@ python -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --execution-host jp-a800-171 \
   --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
   --source-revision FULL_FLAGQUANTUM_REVISION \
-  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --source-preflight /absolute/evidence/extraction-preflight.json
 ```
 
 This stage uses the A800 but consumes no additional QBoson quota. Preserve one

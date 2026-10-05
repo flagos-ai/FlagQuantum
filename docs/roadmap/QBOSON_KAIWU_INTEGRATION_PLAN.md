@@ -174,6 +174,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   that chain, loads one frozen checkpoint file without implicit download, checks
   aligned sequence identities, and computes candidate cosine/L2 evidence on the
   primary A800 without spending further QBoson quota.
+- The ESM2 evaluator now independently reloads the primary host's private
+  post-extraction preflight and requires both its record digest and shared
+  transfer-manifest digest to match the training record before loading the
+  evaluation workflow.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

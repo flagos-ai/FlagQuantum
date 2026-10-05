@@ -27,6 +27,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
     _write_private_redacted_json,
 )
+from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 
 SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
@@ -153,6 +154,31 @@ def _source_preflight_identity(record: dict[str, Any]) -> tuple[str, str]:
     return values[0], values[1]
 
 
+def _verified_evaluation_source(
+    path: Path,
+    training_record: dict[str, Any],
+    *,
+    execution_host: str,
+    source_revision: str,
+    plugin_revision: str,
+) -> tuple[str, str]:
+    expected_preflight_sha256, expected_manifest_sha256 = _source_preflight_identity(
+        training_record
+    )
+    source_preflight, source_preflight_sha256 = load_source_preflight(
+        path,
+        execution_host=execution_host,
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+    )
+    transfer_manifest_sha256 = source_preflight["manifest_sha256"]
+    if source_preflight_sha256 != expected_preflight_sha256:
+        raise ValueError("evaluation source preflight differs from training record")
+    if transfer_manifest_sha256 != expected_manifest_sha256:
+        raise ValueError("evaluation transfer manifest differs from training record")
+    return source_preflight_sha256, transfer_manifest_sha256
+
+
 def _local_esm2_model(
     helpers: Any,
     checkpoint_path: Path,
@@ -252,6 +278,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--expected-sdk-version", default="1.3.1")
     args = parser.parse_args()
     for label, path in {
@@ -260,6 +287,7 @@ def main() -> None:
         "run-directory": args.run_directory,
         "plugin-root": args.plugin_root,
         "evaluation-model": args.evaluation_model,
+        "source-preflight": args.source_preflight,
         "output": args.output,
     }.items():
         if not path.is_absolute():
@@ -273,9 +301,16 @@ def main() -> None:
         parser.error("training source revision differs from --source-revision")
     if record.get("kaiwu_pytorch_plugin_revision") != args.plugin_revision:
         parser.error("training plugin revision differs from --plugin-revision")
-    source_preflight_sha256, transfer_manifest_sha256 = _source_preflight_identity(
-        record
-    )
+    try:
+        source_preflight_sha256, transfer_manifest_sha256 = _verified_evaluation_source(
+            args.source_preflight,
+            record,
+            execution_host=args.execution_host,
+            source_revision=args.source_revision,
+            plugin_revision=args.plugin_revision,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

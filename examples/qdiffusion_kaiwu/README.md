@@ -183,7 +183,9 @@ credentials are used.
 `qdiffusion_protein_evaluate.py` performs the subsequent local A800 evaluation
 without submitting any new provider task. It verifies the training record's
 hash chain for the held-out test FASTA, baseline and guided FASTA files, and
-sequence-quality summaries. It loads ESM2 exclusively through
+sequence-quality summaries. It also reloads the primary-host extraction
+preflight and requires its file and transfer-manifest digests to match the
+training record rather than inheriting those claims. It loads ESM2 exclusively through
 `load_model_and_alphabet_local`, checks aligned headers and exact sequence
 counts, then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen
