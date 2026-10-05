@@ -54,13 +54,13 @@ from the matrix's `priority`, the row states why.
 | `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
-| `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
+| `qec_dem_construction` | partial | now | — | Construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route; no kernel-annotation route, so no X/Y fault family from a kernel body. |
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; the noise grammar has no location for a channel bound to a named gate, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, and a name-keyed registry all landed; no BP+OSD, no sliding window, no plugin boundary. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a composite-fault decomposition that widens the matcher past the one hyperedge a memory circuit states all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
@@ -261,6 +261,52 @@ a name that silently is not there. No name is preferred over another: the
 registry returns the class a name is registered against, so the authority is
 returned for its own name wherever the extra happens to be present, and the
 cross-check is never reached by accident.
+
+**How the hyperedge front end landed, and why it is a construction option.** The
+row named a hyperedge-decomposition front end as the thing that would widen the
+matcher's graphlike scope. It landed, and it landed in
+`DetectorErrorModel.from_memory_circuit` rather than in the decoder, because a
+hyperedge is a statement the *model* makes and a decoder can only refuse it. The
+keyword is `decompose_composite_faults`, and the composite fault it reads apart
+is the one a memory circuit states: the Y family, which is an X flip and a Z flip
+at one location, enumerated as those two parts at the parent's own rate, forced
+through the same injector at the parent's own round and wire and read by the same
+signature reader the single-Pauli families use.
+
+What it buys is measured rather than asserted. On a distance-three rotated
+surface code at two rounds with all four families at `0.01`, the combined model
+states four mechanisms of three detectors and one of four, and
+`MinimumWeightMatchingDecoder.from_detector_error_model` refuses it naming the
+detectors of the first hyperedge. The decomposed model states none above two, and
+that same matcher builds on it and returns corrections for the syndromes those
+mechanisms explain. On a repetition code — whose checks are Z-type alone, so a Z
+fault reaches no detector in any round — and on a one-round surface experiment,
+the two readings produce the *same* model mechanism for mechanism, so the option
+costs nothing where it has nothing to do.
+
+Three things keep it from being a rewrite of the model in a second place. The
+default is the combined reading, so no earlier caller's model changes and the
+compatibility claim is asserted as an identity of models rather than as an
+agreement of marginals. The reading is documented as a *different joint law*, not
+as an equivalent statement: the parts always fire together in the composite fault
+and independently when read apart, so each detector's and each observable's
+marginal rate is unchanged — measured at `5.6e-17` worst case over both rate
+vectors — while the mechanism sets are asserted to differ. And the matrix route
+deliberately carries no such keyword, with the absence pinned by a test rather
+than left to convention, because the code-capacity route's fault spans two
+detector bands: a part there still reaches four detectors at two rounds on
+rotated surface codes at distances three, five and seven. A keyword whose name
+promised the matcher a graphlike model would be stating something that route
+cannot deliver.
+
+The rule is also not upstream's, and the row says so. Upstream states
+`decompose_errors=False` on `dem_from_memory_circuit` and documents it as
+hyperedge mechanisms being "decomposed into pairs of two-detector edges by Stim
+before returning" — the pairing is whatever Stim chose, which is why no pairing
+rule exists in upstream's own sources to read. Here the parts are derived from
+the program, and the claim is bounded to what that derivation supports: a part is
+graphlike exactly where the corresponding single-Pauli fault at that location is
+and no further. A hyperedge from any other source is still refused by name.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -957,7 +1003,7 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_from_stim_text` | renamed | Same operation, same parser authority (stim), same `use_decomp_suggestions` flag with the same default, free function against classmethod; the default reading is the one stim's own sampler means, and the expanded one is the approximation upstream documents it as. |
 | `dem_to_stim_text` | extra | No writer found upstream at this layer; the produced text comes from CUDA-Q core. |
 | `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. The rates arrive as a separate `PhenomenologicalNoise` rather than folded into one `CssNoise`, and the vectors are read against these matrices. |
-| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. The context matches, but upstream canonicalizes lazily against a uniform per-round D layout and here the components are projections of the model as built. |
+| `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. The `decompose_errors` argument has a counterpart of its own now — `decompose_composite_faults` splits the Y family into the X and Z faults it is the XOR of, at the parent's rate and read off the program — but it is not upstream's rule: upstream's pairing is whatever Stim chose, while this one is derived from the program and claims only that a part is graphlike where the corresponding single-Pauli fault is. The context matches, but upstream canonicalizes lazily against a uniform per-round D layout and here the components are projections of the model as built. |
 | `dem_code_capacity_noise` | reshaped | The four families line up one for one against X/Y/Z data rates plus a measurement rate, scalars and per-qubit/per-check vectors alike, with the same wholesale override. The difference is the carrier: a standalone record read beside a code rather than a field of the matrix entry point's argument, so the vector lengths are validated against a count the reader supplies. |
 | `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |
 | `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |

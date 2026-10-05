@@ -137,10 +137,16 @@ equality is an acceptance test, not a comment.
   `fold_marginals(errors, count, select)`, and
   `sample_groups(errors, *, generator, detector_bits, observable_bits)` — the
   reading of `DemError.error_id`, split out because the model module would
-  otherwise pass its line ceiling -- `dem.py` ends at 1168 lines and this module
-  at 247, which is past the 1250 the architecture gate allows, so the arithmetic
-  could not have stayed beside the carrier -- and because the arithmetic is about
-  the ids rather than about the carrier. `DetectorErrorModel.error_ids`, `.stated_error_ids()`, and
+  otherwise pass its line ceiling -- `dem.py` ended at 1168 lines when this was
+  written and this module at 247, which is past the 1250 the architecture gate
+  allows, so the arithmetic could not have stayed beside the carrier -- and
+  because the arithmetic is about
+  the ids rather than about the carrier. The same ceiling is why the
+  `decompose_composite_faults` reading is documented at length in
+  [`QEC_CUDAQ_ALIGNMENT.md`](QEC_CUDAQ_ALIGNMENT.md) and stated only in outline on
+  `from_memory_circuit` itself: `dem.py` is at 1240 lines with the option in
+  place, so its docstring is trimmed to what a caller needs rather than carrying
+  the record of what was measured. `DetectorErrorModel.error_ids`, `.stated_error_ids()`, and
   `.exclusive_groups()` are the carrier's own statement of the same structure.
   Mechanisms sharing an id are alternatives rather than independent faults: at most
   one of them fires in a shot, which is how a correlated or decomposed mechanism
@@ -239,7 +245,16 @@ with a tolerance of one single-precision rounding per selected mechanism, the
 observables wherever the cheapest explanation is unique, and the two refusals as
 the same set — and a tie is uncomparable rather than evidence against either
 implementation. Hyperedge and non-graphlike detector error models fail closed
-rather than being approximated by graphlike edges, and the translation refuses
+rather than being approximated by graphlike edges, and a caller who wants the
+graphlike shape is offered a *reading* of the model rather than an approximation
+of it: `DetectorErrorModel.from_memory_circuit(decompose_composite_faults=True)`
+enumerates the one composite fault that route can name — the Y family — as the X
+and Z faults it is the XOR of, each forced through the program at the parent's
+rate, instead of as one mechanism of three detectors. That does not weaken this
+clause, because the default is the combined reading and because a source that
+states no such decomposition is still refused by name; the option changes what the
+construction route enumerates, not what the decoder will accept from a model it
+did not build. The translation refuses
 two graphs of its own rather than approximating them: a detector pair carrying
 two mechanisms, which `pymatching`'s `independent` merge strategy would collapse
 and thereby lose a logical-label difference, and a detector that no mechanism
@@ -445,7 +460,12 @@ is not modified.
   trajectory simulator inside a stated confidence interval, at `d = 3` and
   `d = 5`, within an explicit shot budget.
 - Non-Pauli channels, hyperedge detector error models, and unsupported gates fail
-  closed with a stated reason rather than being approximated.
+  closed with a stated reason rather than being approximated. A hyperedge a
+  construction route *states* is the neighbouring case and is answered by an
+  option rather than by an approximation: the circuit route offers the composite
+  fault it names as its two parts at the parent's rate, the default stays the
+  combined reading, and the option is exercised by a test that prefers the
+  combined model with the authority matcher and builds on the decomposed one.
 - The self-implemented matcher and `pymatching` agree on the cheapest weight of
   every syndrome of a graphlike DEM inside the stated tolerance, on the observables
   wherever the cheapest explanation is unique, and on which syndromes they refuse;
