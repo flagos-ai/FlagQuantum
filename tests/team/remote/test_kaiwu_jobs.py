@@ -6,6 +6,7 @@ import stat
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from flagquantum.remote.kaiwu import (
@@ -511,6 +512,16 @@ def test_invalid_mode_type_fails_before_submission() -> None:
         ((0.0, 1.0), (2.0, 0.0)),
         ((0.0, float("nan")), (float("nan"), 0.0)),
         ((False,),),
+        (("0.0", "1.0"), ("1.0", "0.0")),
+        ((np.str_("0.0"), np.str_("1.0")), (np.str_("1.0"), np.str_("0.0"))),
+        (
+            (np.complex64(0.0), np.complex64(1.0)),
+            (np.complex64(1.0), np.complex64(0.0)),
+        ),
+        (
+            (np.complex128(0.0), np.complex128(1.0)),
+            (np.complex128(1.0), np.complex128(0.0)),
+        ),
     ),
 )
 def test_invalid_matrix_fails_before_submission(matrix: object) -> None:
@@ -524,3 +535,14 @@ def test_invalid_matrix_fails_before_submission(matrix: object) -> None:
         )
 
     assert client.submit_calls == 0
+
+
+@pytest.mark.parametrize("dtype", (np.int8, np.int64, np.float32, np.float64))
+def test_numpy_real_matrix_scalars_remain_supported(dtype: type[np.generic]) -> None:
+    client = _FakeClient()
+    matrix = ((dtype(0), dtype(1)), (dtype(1), dtype(0)))
+
+    job = submit_kaiwu_task(matrix, client=client, task_name="numpy-real")
+
+    assert job.receipt.matrix_size == 2
+    assert client.submit_calls == 1

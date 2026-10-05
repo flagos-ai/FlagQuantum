@@ -115,8 +115,8 @@ def _freeze_matrix(matrix: MatrixInput) -> FrozenIsingMatrix:
         for row in matrix:
             values: list[float] = []
             for value in row:
-                if isinstance(value, bool):
-                    raise ValueError("boolean coefficients are not supported")
+                if isinstance(value, bool) or not isinstance(value, Real):
+                    raise ValueError("coefficients must be real numeric scalars")
                 numeric = float(value)
                 values.append(0.0 if numeric == 0.0 else numeric)
             rows.append(tuple(values))
@@ -286,8 +286,7 @@ class KaiwuRemoteJob:
         status = self.status()
         if status != "succeeded":
             raise RuntimeError(
-                f"Kaiwu task {self._receipt.task_name!r} is {status}; "
-                "no result fetched"
+                f"Kaiwu task {self._receipt.task_name!r} is {status}; no result fetched"
             )
         return _validate_result(
             self._client.fetch_result(self._receipt, self._matrix),

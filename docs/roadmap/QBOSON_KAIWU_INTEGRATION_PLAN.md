@@ -62,6 +62,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   rejects non-receipt client responses and invalid runtime task modes through
   owned errors; wait and sampler controls reject boolean, string, complex, or
   nonfinite numeric inputs without leaking incidental type errors.
+- The Remote matrix boundary now tests scalar numeric type before conversion,
+  so NumPy complex values cannot silently discard their imaginary part and
+  NumPy or Python strings cannot be accepted merely because `float(...)` can
+  parse them. NumPy integer and floating scalars remain supported.
 - Generic receipt save and restore now also reject a public, missing,
   non-directory, or symlinked parent before opening or publishing a file. A
   mode-0600 receipt inside a replaceable directory is no longer treated as
