@@ -331,10 +331,18 @@ order are related by one named translation rather than by a convention each rout
 re-states.
 
 This is a description of noise locations, not a `NoiseModel`, and the sampler
-places only the two families the engine has a channel for: a data flip at a round
-boundary and a measurement flip at a check's readout. The phase and Y data rates
-are read by the construction routes, which read matrices and supports rather than
-executing a program.
+places both kinds of location: a data fault at a round boundary and a measurement
+flip at a check's readout. The data kind is the one that has three fault families,
+and they are three channels at the one location rather than three locations: an X
+fault, a Z fault and a Y fault. The Y fault is one channel carrying the Y operator
+on its single non-identity branch, which is not the same mechanism as an X fault
+beside a Z fault — the two would fire independently, so the pair rates between the
+two detector bands would differ — and the sampler reproduces the model's pair
+rates, not a two-fault reading of them.
+
+A fault placed after a named gate has no location here, and neither does a
+depolarizing or a damping channel: the sampler places Pauli faults at the two
+positions the record describes and nothing else.
 
 ## Say that two mechanisms are alternatives
 

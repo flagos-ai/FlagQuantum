@@ -79,8 +79,39 @@ _CODES = (
 
 _NOISES = (
     pytest.param(PhenomenologicalNoise(data_flip=1.0), id="data-only"),
+    pytest.param(PhenomenologicalNoise(phase_flip=1.0), id="phase-only"),
+    pytest.param(PhenomenologicalNoise(both_flip=1.0), id="both-only"),
     pytest.param(PhenomenologicalNoise(measurement_flip=1.0), id="measurement-only"),
     pytest.param(PhenomenologicalNoise(data_flip=1.0, measurement_flip=1.0), id="both"),
+    pytest.param(
+        PhenomenologicalNoise(
+            data_flip=1.0,
+            phase_flip=1.0,
+            both_flip=1.0,
+            measurement_flip=1.0,
+        ),
+        id="every-family",
+    ),
+)
+
+# One family at a time, then all four together, at a physical strength. The
+# single-family cases say which detectors a family is responsible for; the
+# combined case is the one whose predicted rates are non-trivial everywhere, so
+# it is the case that pins every mechanism in one record.
+_FAMILY_NOISES = (
+    pytest.param(PhenomenologicalNoise(data_flip=_PROBABILITY), id="data"),
+    pytest.param(PhenomenologicalNoise(phase_flip=_PROBABILITY), id="phase"),
+    pytest.param(PhenomenologicalNoise(both_flip=_PROBABILITY), id="both"),
+    pytest.param(PhenomenologicalNoise(measurement_flip=_PROBABILITY), id="measure"),
+    pytest.param(
+        PhenomenologicalNoise(
+            data_flip=_PROBABILITY,
+            phase_flip=_PROBABILITY,
+            both_flip=_PROBABILITY,
+            measurement_flip=_PROBABILITY,
+        ),
+        id="every-family",
+    ),
 )
 
 
@@ -158,6 +189,96 @@ def test_every_firing_mechanism_reproduces_the_models_parity(
         assert sample.observables[shot].tolist() == expected.observables[0].tolist()
 
 
+def _forced_fault(code, rounds: int, family: str, qubit: int):
+    """Return the model's record and the sampler's record for one forced fault.
+
+    The record is made by stating a per-qubit vector that is one at ``qubit`` and
+    zero everywhere else, which is the way the noise record says one location is
+    noisy and its neighbours are quiet. At probability one the sample is
+    deterministic, so the four shots must be one vector rather than four draws
+    from a distribution.
+
+    Returns:
+        A pair ``(expected, sample)``: the model's one-shot sample and this
+        module's sampled record under the same noise.
+    """
+
+    memory = build_memory_circuit(code, rounds=rounds)
+    count = len(memory.code.data_wires)
+    vector = tuple(1.0 if position == qubit else 0.0 for position in range(count))
+    noise = PhenomenologicalNoise(**{family: 0.0, f"{family}_per_qubit": vector})
+    model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+    return (
+        model.dem_sampling(shots=1, seed=0),
+        sample_memory_circuit(memory, noise=noise, shots=4, seed=_SEED),
+    )
+
+
+@pytest.mark.parametrize("family", ("data_flip", "phase_flip", "both_flip"))
+@pytest.mark.parametrize(("code", "rounds"), _CODES)
+def test_one_forced_data_fault_fires_the_detectors_its_family_predicts(
+    code, rounds: int, family: str
+) -> None:
+    """Each of the three data faults is placed as its own Pauli channel.
+
+    One fault on one wire in every round is deterministic, so this is exact where
+    a rate comparison is statistical: the sample must be the model's own record.
+    The three families disagree about which detectors they reach, so a sampler
+    that placed all three as one channel would fail here on the family that does
+    not reach the detectors that channel reaches, with no tolerance involved.
+
+    All three families are placed at one instruction, so the model's expectation
+    for a family is the only thing that separates them here; that they *are* three
+    locations at one instruction is pinned by
+    `test_the_three_data_faults_are_three_channels_at_one_instruction`.
+    """
+
+    expected, sample = _forced_fault(code, rounds, family, qubit=0)
+
+    assert sample.shots == 4
+    for shot in range(sample.shots):
+        assert sample.detectors[shot].tolist() == expected.detectors[0].tolist()
+
+
+def test_the_two_basis_faults_fire_disjoint_detector_sets_and_the_y_fault_both() -> (
+    None
+):
+    """A Y fault is an X fault and a Z fault at once, and this is what that means.
+
+    The model states the assignment: an X fault reaches the Z-type detectors, a Z
+    fault reaches the X-type detectors, and a Y fault reaches both. Read out
+    through the executed circuit, that is two facts with a witness for each: the
+    two single-basis faults fire disjoint detector sets, and the Y fault fires
+    exactly their union. The same run pins the boundary that made this defect hard
+    to see -- a repetition code declares Z-type checks only, so a Z fault on a data
+    wire reaches no detector of it at all, and the sampler and the model agree on
+    that too.
+    """
+
+    surface = _forced_fault(RotatedSurfaceCode(distance=3), 2, "data_flip", 0)[1]
+    phase = _forced_fault(RotatedSurfaceCode(distance=3), 2, "phase_flip", 0)[1]
+    both = _forced_fault(RotatedSurfaceCode(distance=3), 2, "both_flip", 0)[1]
+
+    assert not bool(
+        (surface.detectors[0] & phase.detectors[0]).any()
+    ), "the two single-basis faults must not reach one detector"
+    assert bool(surface.detectors[0].any()), "the X fault reaches no Z-type detector"
+    assert bool(phase.detectors[0].any()), "the Z fault reaches no X-type detector"
+    assert (surface.detectors[0] | phase.detectors[0]).tolist() == (
+        both.detectors[0].tolist()
+    )
+
+    # A code with one check type is blind to one of the two faults, and says so.
+    repetition_phase = _forced_fault(RepetitionCode(distance=3), 3, "phase_flip", 0)[1]
+    repetition_data = _forced_fault(RepetitionCode(distance=3), 3, "data_flip", 0)[1]
+    repetition_both = _forced_fault(RepetitionCode(distance=3), 3, "both_flip", 0)[1]
+
+    assert not bool(repetition_phase.detectors[0].any())
+    assert (
+        repetition_both.detectors[0].tolist() == repetition_data.detectors[0].tolist()
+    )
+
+
 @pytest.mark.parametrize(("code", "rounds"), _CODES)
 def test_a_noiseless_experiment_reports_no_detection_event(code, rounds: int) -> None:
     """A deterministic noiseless memory round detects nothing.
@@ -180,12 +301,18 @@ def test_a_noiseless_experiment_reports_no_detection_event(code, rounds: int) ->
     assert int(sample.observables.sum()) == 0
 
 
+@pytest.mark.parametrize("noise", _FAMILY_NOISES)
 @pytest.mark.parametrize(("code", "rounds"), _CODES)
-def test_the_sampled_detector_rates_match_the_model(code, rounds: int) -> None:
-    """The sampled rate of every detector has to be the model's predicted rate."""
+def test_the_sampled_detector_rates_match_the_model(code, rounds: int, noise) -> None:
+    """The sampled rate of every detector has to be the model's predicted rate.
+
+    Every fault family is stated at a physical strength, one at a time and then
+    all together, because a family the sampler does not place produces a detector
+    rate of exactly zero where the model predicts a nonzero one -- which is a
+    deviation this comparison reports rather than absorbs.
+    """
 
     memory = _memory(code, rounds)
-    noise = PhenomenologicalNoise(data_flip=_PROBABILITY, measurement_flip=_PROBABILITY)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
     sample = sample_memory_circuit(memory, noise=noise, shots=_SHOTS, seed=_SEED)
 
@@ -199,12 +326,12 @@ def test_the_sampled_detector_rates_match_the_model(code, rounds: int) -> None:
     )
 
 
+@pytest.mark.parametrize("noise", _FAMILY_NOISES)
 @pytest.mark.parametrize(("code", "rounds"), _CODES)
-def test_the_sampled_observable_rates_match_the_model(code, rounds: int) -> None:
+def test_the_sampled_observable_rates_match_the_model(code, rounds: int, noise) -> None:
     """The observable is the parity a logical failure rate is read from."""
 
     memory = _memory(code, rounds)
-    noise = PhenomenologicalNoise(data_flip=_PROBABILITY, measurement_flip=_PROBABILITY)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
     sample = sample_memory_circuit(memory, noise=noise, shots=_SHOTS, seed=_SEED)
 
@@ -218,18 +345,23 @@ def test_the_sampled_observable_rates_match_the_model(code, rounds: int) -> None
     )
 
 
+@pytest.mark.parametrize("noise", _FAMILY_NOISES)
 @pytest.mark.parametrize(("code", "rounds"), _CODES)
-def test_the_sampled_detector_pair_rates_match_the_model(code, rounds: int) -> None:
+def test_the_sampled_detector_pair_rates_match_the_model(
+    code, rounds: int, noise
+) -> None:
     """Correlations are the half a marginal comparison cannot see.
 
     Two models with the same detector marginals and different mechanism
     signatures agree on every single-detector rate. The pair rates separate them,
     so they are what says each mechanism was placed where the model placed it
-    rather than somewhere that happens to produce the same marginals.
+    rather than somewhere that happens to produce the same marginals. A Y fault
+    placed as an X fault and a Z fault beside each other would keep the marginals
+    of both and change the correlation between them, which is a difference only
+    this comparison has the resolution to state.
     """
 
     memory = _memory(code, rounds)
-    noise = PhenomenologicalNoise(data_flip=_PROBABILITY, measurement_flip=_PROBABILITY)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
     sample = sample_memory_circuit(memory, noise=noise, shots=_SHOTS, seed=_SEED)
 
@@ -253,17 +385,77 @@ def test_the_model_predicts_the_same_pair_rates_the_lower_bound_allows() -> None
     it feeds is only as good as that derivation. Its diagonal has to reproduce the
     model's own marginal arithmetic, and the off-diagonal has to be non-trivial:
     if every pair rate were zero the comparison above would pass without looking
-    at any correlation.
+    at any correlation. The record used is the one the family sweep includes, so
+    the floor is stated for the comparison that actually runs.
     """
 
     memory = _memory(RepetitionCode(distance=3), 3)
-    noise = PhenomenologicalNoise(data_flip=_PROBABILITY, measurement_flip=_PROBABILITY)
+    noise = PhenomenologicalNoise(
+        data_flip=_PROBABILITY,
+        phase_flip=_PROBABILITY,
+        both_flip=_PROBABILITY,
+        measurement_flip=_PROBABILITY,
+    )
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
     pair = _exact_pair_rates(model)
 
     assert np.allclose(np.diag(pair), model.detector_rates().numpy())
     off_diagonal = pair[~np.eye(pair.shape[0], dtype=bool)]
     assert float(off_diagonal.min()) < float(off_diagonal.max())
+
+
+def test_a_y_fault_is_not_an_x_fault_beside_a_z_fault() -> None:
+    """The one Y mechanism and the two single-basis mechanisms differ observably.
+
+    A Y fault at ``p`` and the pair "an X fault at ``p`` and a Z fault at ``p``"
+    reach the same detectors with the same marginals, so a detector marginal
+    cannot tell them apart. What separates them is the correlation the two
+    independent faults create between the X-type and the Z-type detector bands:
+    the single Y branch fires both bands together on the same shot, and two
+    independent branches fire them together only on the fraction of shots where
+    both happen to fire. The two models therefore predict different pair rates for
+    the same marginals, and this asserts the difference is there for the sampler's
+    pair comparison to resolve rather than being an identity that comparison could
+    never see.
+
+    The code is the rotated surface patch rather than the repetition code, because
+    a code with one check type is blind to one of the two faults: on the repetition
+    code both models agree because one of the two bands does not exist.
+    """
+
+    memory = _memory(RotatedSurfaceCode(distance=3), 2)
+    rate = 0.05
+    as_one_fault = DetectorErrorModel.from_memory_circuit(
+        memory, noise=PhenomenologicalNoise(both_flip=rate)
+    )
+    as_two_faults = DetectorErrorModel.from_memory_circuit(
+        memory, noise=PhenomenologicalNoise(data_flip=rate, phase_flip=rate)
+    )
+
+    assert np.allclose(
+        as_one_fault.detector_rates().numpy(), as_two_faults.detector_rates().numpy()
+    ), "the two models were chosen to agree on every detector marginal"
+    one = _exact_pair_rates(as_one_fault)
+    two = _exact_pair_rates(as_two_faults)
+    off_diagonal = ~np.eye(one.shape[0], dtype=bool)
+    assert float(np.abs(one - two)[off_diagonal].max()) > 1e-3, (
+        "the two models must differ in a pair rate, since that is the only "
+        "comparison that can separate one Y branch from two independent branches"
+    )
+
+    # The sampler resolves that difference at a physical strength: the observed
+    # pair rates follow the one-branch model and not the two-branch one, and the
+    # two predictions are far enough apart that this is not a tolerance question.
+    sample = sample_memory_circuit(
+        memory, noise=PhenomenologicalNoise(both_flip=rate), shots=_SHOTS, seed=_SEED
+    )
+    bits = np.asarray(sample.detectors.numpy(), dtype=np.float64)
+    observed = bits.T @ bits / _SHOTS
+    one_error = np.abs(observed - one) / _tolerance(one)
+    two_error = np.abs(observed - two) / _tolerance(two)
+    np.fill_diagonal(one_error, 0.0)
+    np.fill_diagonal(two_error, 0.0)
+    assert float(one_error.max()) <= _SIGMA < float(two_error.max())
 
 
 def test_the_syndrome_round_is_the_programs_own_round_block() -> None:
@@ -290,11 +482,15 @@ def test_the_syndrome_round_is_the_programs_own_round_block() -> None:
 def test_a_data_location_precedes_its_round_and_a_measurement_location_its_readout() -> (
     None
 ):
-    """The two families sit at different instructions, and the plan says which.
+    """The two kinds sit at different instructions, and the plan says which.
 
     A data error is a round-boundary error, so its instruction index is the
     round's first; a measurement error belongs immediately before the readout of
     the check it corrupts, so its index is that readout's offset inside the block.
+
+    The three data faults share the data kind and the data position, so the key
+    here carries the channel as well; without it three locations per wire would
+    collapse into one entry and the test would pass with two of them missing.
     """
 
     memory = _memory(RepetitionCode(distance=3), 3)
@@ -302,60 +498,164 @@ def test_a_data_location_precedes_its_round_and_a_measurement_location_its_reado
     noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.02)
 
     located = {
-        (item.kind, item.round_index, item.wire): item.instruction_index
+        (item.kind, item.channel, item.round_index, item.wire): item.instruction_index
         for item in _noise_locations(memory, plan, noise)
     }
 
-    assert located[("data", 0, 0)] == 0
-    assert located[("data", 1, 2)] == plan.block
-    assert located[("data", 2, 1)] == 2 * plan.block
-    assert located[("measurement", 0, 3)] == 2
-    assert located[("measurement", 0, 4)] == 6
-    assert located[("measurement", 2, 4)] == 2 * plan.block + 6
+    assert located[("data", "bit_flip", 0, 0)] == 0
+    assert located[("data", "bit_flip", 1, 2)] == plan.block
+    assert located[("data", "bit_flip", 2, 1)] == 2 * plan.block
+    assert located[("measurement", "bit_flip", 0, 3)] == 2
+    assert located[("measurement", "bit_flip", 0, 4)] == 6
+    assert located[("measurement", "bit_flip", 2, 4)] == 2 * plan.block + 6
     # The index is the readout's own, and a channel emitted there is executed
     # before it. Parity cannot see this position: the CNOT that prepares the
     # ancilla is the instruction before, so one step earlier reads the same bit
     # and only the index says which side of the readout the flip is on.
     assert (
         tuple(
-            located[("measurement", 0, check.ancilla_wire)]
+            located[("measurement", "bit_flip", 0, check.ancilla_wire)]
             for check in memory.code.checks
         )
         == plan.measure_offsets
     )
 
 
-def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
-    """Three data wires at one round boundary is one group of three channels.
+def test_the_three_data_faults_are_three_channels_at_one_instruction() -> None:
+    """One data wire per round carries three locations, one per fault family.
 
-    The engine executes them before the round's first gate, which is what the
-    model's data mechanism describes, so the channels appear as a leading block
-    and the round's own instructions follow unchanged.
+    The three faults are independent mechanisms of the same location model -- "to
+    every data wire at the start of every syndrome round, before that round's
+    parity-check CNOTs" -- so they are placed at one instruction and differ only in
+    the channel. This is the property that a location naming its wire and not its
+    channel would lose: the three would be one location, and the sampler would
+    place one of the three faults three times.
     """
 
     memory = _memory(RepetitionCode(distance=3), 3)
     plan = _measurement_plan(memory)
-    noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.0)
-    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
+    noise = PhenomenologicalNoise(
+        data_flip=0.01, phase_flip=0.02, both_flip=0.03, measurement_flip=0.0
+    )
+    located = _noise_locations(memory, plan, noise)
 
-    leading = program.instructions[:3]
-    assert [instruction.name for instruction in leading] == ["bit_flip"] * 3
-    assert [instruction.wires for instruction in leading] == [(0,), (1,), (2,)]
+    first_round = [item for item in located if item.round_index == 0]
+    assert len(first_round) == len(memory.code.data_wires) * 3
+    assert {item.channel for item in first_round} == {
+        "bit_flip",
+        "phase_flip",
+        "y_flip",
+    }
+    assert {item.instruction_index for item in first_round} == {0}
+    for wire in memory.code.data_wires:
+        per_wire = {item.channel: item for item in first_round if item.wire == wire}
+        assert set(per_wire) == {"bit_flip", "phase_flip", "y_flip"}
+        assert per_wire["bit_flip"].probability == pytest.approx(0.01)
+        assert per_wire["phase_flip"].probability == pytest.approx(0.02)
+        assert per_wire["y_flip"].probability == pytest.approx(0.03)
+
+    # A measurement location is not a Pauli fault and keeps the X channel.
+    assert {item.channel for item in located if item.kind == "measurement"} <= {
+        "bit_flip"
+    }
+
+
+def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
+    """One round boundary, one group, and the group is three channels per wire.
+
+    The engine executes the whole group before the round's first gate, which is
+    what the model's data mechanism describes, so the channels appear as a leading
+    block and the round's own instructions follow unchanged. The group is nine
+    instructions rather than three because the record states three faults at that
+    one location: the three channels and the three wires are the same group, not
+    three groups, and a program that kept one channel per wire would put a third of
+    the group here.
+    """
+
+    memory = _memory(RepetitionCode(distance=3), 3)
+    plan = _measurement_plan(memory)
+    noise = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, both_flip=0.03)
+    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
+    group = len(memory.code.data_wires) * 3
+
+    leading = program.instructions[:group]
+    assert [instruction.name for instruction in leading] == (
+        ["bit_flip"] * 3 + ["phase_flip"] * 3 + ["y_flip"] * 3
+    )
+    assert [instruction.wires for instruction in leading] == [(0,), (1,), (2,)] * 3
+    assert [instruction.params["probability"] for instruction in leading] == (
+        [0.01] * 3 + [0.02] * 3 + [0.03] * 3
+    )
     assert all(instruction.metadata.get("is_channel") for instruction in leading)
     # Round zero's own instructions follow the group unchanged; the next group
     # opens the round after it.
     assert (
-        program.instructions[3 : 3 + plan.block]
+        program.instructions[group : group + plan.block]
         == plan.program.instructions[: plan.block]
     )
     assert [
         instruction.name
-        for instruction in program.instructions[3 + plan.block : 3 + plan.block + 3]
-    ] == ["bit_flip"] * 3
-    assert (
-        sum(1 for instruction in program.instructions if instruction.name == "bit_flip")
-        == len(memory.code.data_wires) * memory.rounds
-    )
+        for instruction in program.instructions[
+            group + plan.block : group + plan.block + group
+        ]
+    ] == ["bit_flip"] * 3 + ["phase_flip"] * 3 + ["y_flip"] * 3
+    for channel in ("bit_flip", "phase_flip", "y_flip"):
+        assert (
+            sum(
+                1 for instruction in program.instructions if instruction.name == channel
+            )
+            == len(memory.code.data_wires) * memory.rounds
+        )
+
+
+def test_a_faults_channel_is_the_one_the_location_names() -> None:
+    """The placed instruction is the location's channel, at the location's rate.
+
+    Two locations at one instruction and one wire must not be merged into one
+    channel: a Y fault at ``p`` is not an X fault at ``p`` beside a Z fault at
+    ``p``, and the three channels are distinguishable in the emitted program by
+    name and by the operators they carry. The Kraus operators are read back
+    through the engine's own classifier, which is what decides whether a channel
+    is an X, a Z, or a Y fault at execution time.
+    """
+
+    from flagquantum.noise import KrausChannel
+
+    memory = _memory(RepetitionCode(distance=3), 1)
+    plan = _measurement_plan(memory)
+    noise = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, both_flip=0.03)
+    program = _noisy_program(plan, _noise_locations(memory, plan, noise))
+
+    channels = [
+        instruction
+        for instruction in program.instructions
+        if instruction.metadata.get("is_channel") and instruction.wires == (0,)
+    ]
+    assert sorted(instruction.name for instruction in channels) == [
+        "bit_flip",
+        "phase_flip",
+        "y_flip",
+    ]
+    for instruction in channels:
+        assert instruction.wires == (0,)
+        assert instruction.params == {
+            "probability": {"bit_flip": 0.01, "phase_flip": 0.02, "y_flip": 0.03}[
+                instruction.name
+            ]
+        }
+        mixture = KrausChannel(
+            instruction.name, tuple(instruction.matrix)
+        ).unitary_mixture
+        assert mixture is not None
+        # The three channels are the three non-identity single-qubit Paulis, and
+        # the weight on each is the rate that named it.
+        assert mixture.probabilities[0] == pytest.approx(
+            1.0
+            - {"bit_flip": 0.01, "phase_flip": 0.02, "y_flip": 0.03}[instruction.name]
+        )
+        assert mixture.probabilities[1] == pytest.approx(
+            {"bit_flip": 0.01, "phase_flip": 0.02, "y_flip": 0.03}[instruction.name]
+        )
 
 
 def test_a_zero_probability_family_costs_no_engine_instruction() -> None:

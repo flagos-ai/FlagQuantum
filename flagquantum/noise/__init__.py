@@ -19,6 +19,7 @@ from .channels import (
     reset_error_channel,
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
+    y_flip_channel,
 )
 from .device_profile import DeviceNoiseProfile, GateDuration, QubitNoiseCalibration
 from .model import (
@@ -51,6 +52,7 @@ __all__ = (
     "reset_error_channel",
     "thermal_relaxation_channel",
     "two_qubit_depolarizing_channel",
+    "y_flip_channel",
     "noisy_density_matrix",
 )
 

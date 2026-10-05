@@ -220,12 +220,27 @@ An earlier revision of this document said both routes carried one fault family a
 that an X-type check therefore contributed no row; that was true when the matrix
 route landed and stopped being true when `PhenomenologicalNoise` gained its
 `phase_flip` and `both_flip` families, and it is corrected here rather than left
-standing. What remains narrower than the model is the **sampler**, and the
-narrowness is the stabilizer engine's channel set rather than the record's:
-`sampling.py` places a data flip and a measurement flip, and the phase and Y data
-rates reach a detector error model without reaching a sampled record. That gap is
-recorded in the sampling entry's own limitations rather than approximated here, and
-it is a defect in the sampler rather than a boundary anyone chose.
+standing.
+
+The **sampler** was narrower than the model in the same way, and stopped being
+narrow for the same reason. `sampling.py` placed a data flip and a measurement
+flip, so the phase and Y data rates reached a detector error model without reaching
+a sampled record, and every detector the model attributes to those two families
+was sampled at exactly zero. What was missing was never the record and never the
+channel: the model read all four families, and the stabilizer engine classifies a
+channel by the operators it carries rather than by its name, so a Z channel and a
+Y channel were both executable. What was missing was the placement — the data
+location placed the X channel and only the X channel. Each of the three data faults
+is now placed as its own channel at the one data location, and the Y fault is one
+channel whose single non-identity branch carries the Y operator rather than an X
+channel beside a Z channel, because the two would fire independently and that is a
+different mechanism. The suite states the difference where it lives rather than
+only in the marginals: a one-branch Y model and a two-fault reading of it agree on
+every single-detector rate and disagree on the pair rates between the two detector
+bands, and the sampled pair rates follow the one-branch model. What the sampler
+still does not reach is a channel placed after a named gate and a depolarizing or
+damping channel, and that narrower state is recorded in the sampling entry's own
+limitations rather than approximated here.
 
 Merging is also an operation a caller asks for, not only a step construction
 performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every

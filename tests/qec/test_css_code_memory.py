@@ -22,8 +22,10 @@ What this file proves
    read as this file having weakened the decoder.
 3. ``test_the_circuit_sampler_and_the_model_agree_for_a_matrix_stated_family``: the
    detector and observable marginals the model states match what the circuit
-   sampler observes, per index, at one round. The one-round setting is the one the
-   declared records are compared at; see the note on the round boundary below.
+   sampler observes, per index, at every round count this file models rather than
+   at one round. The round boundary is where the two sides are least alike -- the
+   detectors that compare one round against the next are the ones no single-round
+   experiment has -- so the multi-round rows are the ones that carry the claim.
 4. ``test_the_decoder_acts_only_where_the_distance_leaves_something_to_correct``:
    the lattice-two code's distance is two, so no single fault is correctable and
    the decoder returns no observable flip for any syndrome; the lattice-three
@@ -39,16 +41,6 @@ It makes no threshold, suppression or scaling claim. The two lattices are two
 sizes, not a family of growing capacity, and one of them is the smallest torus
 there is. It also does not compare this family against a hardware experiment or
 against another framework's implementation of the same code.
-
-A note on the round boundary, recorded because this file steps around it: at two
-or more rounds the circuit sampler and the detector error model disagree at the
-detectors that compare one round against the next, by roughly fifteen binomial
-standard errors at the noise below. The same disagreement appears, index for
-index, for the declared rotated surface code at the same settings, so it belongs
-to the sampler and the model rather than to this route, and it is not what this
-file is about. The one-round comparison below is therefore the claim this file
-makes; the multi-round discrepancy is a gap an owner has to adjudicate, and
-asserting a rate agreement that does not hold would hide it.
 """
 
 from __future__ import annotations
@@ -170,9 +162,9 @@ def test_the_matching_decoder_takes_this_family_and_still_refuses_the_steane_cod
     assert result.weight >= 0.0
 
 
-@pytest.mark.parametrize("lattice", (2, 3))
+@pytest.mark.parametrize("lattice, rounds, detectors, histogram", _MODEL_PROFILE)
 def test_the_circuit_sampler_and_the_model_agree_for_a_matrix_stated_family(
-    lattice: int,
+    lattice: int, rounds: int, detectors: int, histogram: dict[int, int]
 ) -> None:
     """The model's marginals match what the circuit actually does.
 
@@ -180,9 +172,17 @@ def test_the_circuit_sampler_and_the_model_agree_for_a_matrix_stated_family(
     circuit's layouts, while the sampler lowers the same circuit, places the noise,
     and executes it. The comparison is per index, so a single wrong mechanism is
     located by the failure message rather than hidden in a summary statistic.
+
+    The rows are the model profile's own rows, so the round counts, the lattices
+    and the detector counts are one table read by two tests rather than two tables
+    that could drift apart. Every row is compared, and the multi-round rows are the
+    load-bearing ones: a mechanism reached by only one of the two data faults is
+    invisible at one round on a code whose checks are all of one type, and the
+    detectors that compare one round against the next are the ones that see it.
     """
 
-    memory = build_memory_circuit(_toric(lattice), rounds=1)
+    memory = build_memory_circuit(_toric(lattice), rounds=rounds)
+    assert len(memory.detectors.detectors) == detectors
     model = DetectorErrorModel.from_memory_circuit(memory, noise=_noise())
     sample = sample_memory_circuit(
         memory, noise=_noise(), shots=_SAMPLED_SHOTS, seed=_SEED

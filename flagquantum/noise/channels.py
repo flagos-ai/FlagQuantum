@@ -313,6 +313,31 @@ def phase_flip_channel(
     )
 
 
+def y_flip_channel(
+    probability: float | torch.Tensor,
+    *,
+    dtype: torch.dtype | None = None,
+    device: torch.device | str | None = None,
+) -> KrausChannel:
+    """The channel that applies ``Y`` with ``probability`` and the identity otherwise.
+
+    ``bit_flip`` and ``phase_flip`` are named for the basis their error flips, so
+    neither name reaches the third single-qubit Pauli error and the two together
+    are not a substitute for it: a Y error is one branch carrying ``sqrt(p)``, not
+    an X branch and a Z branch that fire independently of each other.
+    """
+
+    p = _as_probability(probability, "probability").to(
+        dtype=_real_dtype(_complex_dtype(dtype)), device=device
+    )
+    identity, _, y, _ = _pauli_basis(dtype=_complex_dtype(dtype), device=device)
+    return KrausChannel(
+        "y_flip",
+        (torch.sqrt(1 - p) * identity, torch.sqrt(p) * y),
+        (("probability", float(p.detach().cpu().item())),),
+    )
+
+
 def depolarizing_channel(
     probability: float | torch.Tensor,
     *,
@@ -620,4 +645,5 @@ __all__ = (
     "reset_error_channel",
     "thermal_relaxation_channel",
     "two_qubit_depolarizing_channel",
+    "y_flip_channel",
 )

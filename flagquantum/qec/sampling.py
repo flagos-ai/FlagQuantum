@@ -30,16 +30,17 @@ predicted rates.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from numbers import Integral
+from types import MappingProxyType
 from typing import Literal
 
 import torch
 
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..core.ir import CircuitIR, Instruction
-from ..noise import bit_flip_channel
+from ..noise import KrausChannel, bit_flip_channel, phase_flip_channel, y_flip_channel
 from ..simulation.stabilizer import sample_noisy_measurements
 from .circuit import MeasurementRef, MemoryCircuit
 from .dem import DemSample
@@ -47,7 +48,23 @@ from .dem_construction import _check_rate_order
 from .noise import PhenomenologicalNoise
 
 _MEASURE_OPCODE = "measure"
-_NOISE_OPCODE = "bit_flip"
+# The single-qubit fault a data location may carry, as the channel that places
+# it. The three names are the three Pauli faults the noise record states: an X
+# fault is `bit_flip`, a Z fault is `phase_flip`, and a Y fault is `y_flip`,
+# which is one branch carrying the square root of the rate rather than an X fault
+# and a Z fault that fire independently. A measurement fault is not a Pauli fault
+# at all; it is placed as `bit_flip` because a misreported syndrome bit is a flip
+# of that bit.
+_ChannelName = Literal["bit_flip", "phase_flip", "y_flip"]
+_DATA_FAULT_CHANNELS: Mapping[_ChannelName, Callable[[float], KrausChannel]] = (
+    MappingProxyType(
+        {
+            "bit_flip": bit_flip_channel,
+            "phase_flip": phase_flip_channel,
+            "y_flip": y_flip_channel,
+        }
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -77,9 +94,15 @@ class _NoiseLocation:
     vector gives every location its own: a location is built only where its own
     effective rate is nonzero, and the channel placed there is that rate's
     channel rather than the family's scalar.
+
+    ``channel`` is the opcode of the channel this location is placed as, which is
+    what separates two locations that share a kind, a wire, and a round: the
+    three data faults are three locations at one instruction, and a location that
+    named only its wire would place X faults where Z faults were configured.
     """
 
     kind: Literal["data", "measurement"]
+    channel: Literal["bit_flip", "phase_flip", "y_flip"]
     round_index: int
     wire: int
     instruction_index: int
@@ -185,13 +208,24 @@ def _noise_locations(
 ) -> tuple[_NoiseLocation, ...]:
     """Return every location the noise record configures, in placement order.
 
-    A data location sits before the round's first instruction for every data
-    wire; a measurement location sits before the readout of the check it
-    corrupts. Each location carries the rate that named it -- the element of the
-    vector, or the scalar when no vector is stated -- and a location whose own
-    rate is zero is dropped here rather than at placement, so the caller never
-    pays for a channel that cannot fire and a per-element vector is how one quiet
-    location between two noisy ones is stated.
+    A data location sits before the round's first instruction for every data wire
+    and every one of the three data faults; a measurement location sits before the
+    readout of the check it corrupts. Each location carries the rate that named it
+    -- the element of the vector, or the scalar when no vector is stated -- and a
+    location whose own rate is zero is dropped here rather than at placement, so
+    the caller never pays for a channel that cannot fire and a per-element vector
+    is how one quiet location between two noisy ones is stated.
+
+    All three data faults are placed at the same instruction, and that is the
+    location model's own statement rather than a simplification: the record
+    applies each of them "to every data wire at the start of every syndrome round,
+    before that round's parity-check CNOTs", so the three differ in which channel
+    is placed and not in where it goes. The three channels are the three Pauli
+    faults, and the Z fault propagates to the X-type checks the way the X fault
+    propagates to the Z-type ones, which is a property of the circuit this module
+    executes rather than anything derived here. A Y fault is placed as one channel
+    with one branch rather than as an X fault and a Z fault beside each other,
+    because the two would fire independently and that is a different channel.
 
     The per-check vector is indexed in the matrix row order, Z-type checks first,
     which is not the declaration order the plan's offsets are in; the two are
@@ -205,24 +239,30 @@ def _noise_locations(
     """
 
     checks = tuple(memory.code.checks)
-    data_flip_rates = noise.data_flip_rates(num_qubits=len(memory.code.data_wires))
+    data_families: tuple[tuple[_ChannelName, Sequence[float]], ...] = (
+        ("bit_flip", noise.data_flip_rates(num_qubits=len(memory.code.data_wires))),
+        ("phase_flip", noise.phase_flip_rates(num_qubits=len(memory.code.data_wires))),
+        ("y_flip", noise.both_flip_rates(num_qubits=len(memory.code.data_wires))),
+    )
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
     rate_order = _check_rate_order(checks)
     locations: list[_NoiseLocation] = []
     for round_index in range(memory.rounds):
         start = round_index * plan.block
-        locations.extend(
-            _NoiseLocation(
-                "data", round_index, int(wire), start, data_flip_rates[position]
+        for channel, rates in data_families:
+            locations.extend(
+                _NoiseLocation(
+                    "data", channel, round_index, int(wire), start, rates[position]
+                )
+                for position, wire in enumerate(memory.code.data_wires)
+                if rates[position]
             )
-            for position, wire in enumerate(memory.code.data_wires)
-            if data_flip_rates[position]
-        )
     for round_index in range(memory.rounds):
         start = round_index * plan.block
         locations.extend(
             _NoiseLocation(
                 "measurement",
+                "bit_flip",
                 round_index,
                 int(check.ancilla_wire),
                 start + plan.measure_offsets[position],
@@ -238,7 +278,7 @@ def _noisy_program(
     plan: _MeasurementPlan,
     locations: Sequence[_NoiseLocation],
 ) -> CircuitIR:
-    """Return the lowered program with one bit-flip channel per location.
+    """Return the lowered program with one channel per location.
 
     Locations are placed before the instruction they were derived for, which is
     what makes a data error a round-boundary error and a measurement error a
@@ -248,22 +288,35 @@ def _noisy_program(
     here at all. Re-deriving the rate from the record would give two places that
     decide what a location's rate is, and a per-element vector is exactly the
     case where the two could answer differently.
+
+    The channel is read off the location the same way its rate is, and for the
+    same reason: the record states three data faults at one instruction, so a
+    placement that decided the channel from the wire alone would have to pick one
+    of the three and would silently place X faults where Z faults were configured.
+
+    Two locations may share an instruction and a wire -- the three data faults do
+    -- and each gets its own instruction, because two channels at one rate are not
+    the same channel as one channel at twice the rate. Each channel is placed at
+    the location's own rate, which is what makes the composition exact: applying a
+    Z fault at ``p_z`` and a Y fault at ``p_y`` are independent branches of
+    different channels, and the engine composes them over the Pauli group.
     """
 
-    by_index: dict[int, list[tuple[int, float]]] = {}
+    by_index: dict[int, list[tuple[_ChannelName, int, float]]] = {}
     for location in locations:
         by_index.setdefault(location.instruction_index, []).append(
-            (location.wire, float(location.probability))
+            (location.channel, location.wire, float(location.probability))
         )
     instructions: list[Instruction] = []
     for index, instruction in enumerate(plan.program.instructions):
-        for wire, probability in by_index.get(index, ()):
+        for channel, wire, probability in by_index.get(index, ()):
+            factory = _DATA_FAULT_CHANNELS[channel]
             instructions.append(
                 Instruction(
-                    name=_NOISE_OPCODE,
+                    name=channel,
                     wires=(wire,),
                     params={"probability": float(probability)},
-                    matrix=bit_flip_channel(probability).kraus,
+                    matrix=factory(probability).kraus,
                     metadata={"is_channel": True},
                 )
             )

@@ -531,12 +531,28 @@ The current built-ins are:
 
 - `bit_flip_channel(probability)`;
 - `phase_flip_channel(probability)`;
+- `y_flip_channel(probability)`;
 - `depolarizing_channel(probability)`;
+- `two_qubit_depolarizing_channel(probability)`;
 - `amplitude_damping_channel(gamma)`;
 - `phase_damping_channel(gamma)`;
 - `reset_error_channel(probability_zero, probability_one=0)`;
 - `thermal_relaxation_channel(t1, t2, duration, excited_population=0)`;
 - `coherent_overrotation_channel(angle, axis="x")`.
+
+Three of those are the three single-qubit Pauli faults, and each is named for the
+basis it flips: `bit_flip_channel` applies `X`, `phase_flip_channel` applies `Z`,
+and `y_flip_channel` applies `Y`. The last is a channel of its own rather than the
+first two composed, because `sqrt(1 - p) I` beside `sqrt(p) Y` is one branch — a Y
+error happens once, not twice — and because the two single-basis faults composed
+would fire independently of each other.
+
+`bit_flip`, `phase_flip`, `depolarizing`, and `amplitude_damping` are also
+registered circuit opcodes, so `circuit.bit_flip(0, 0.01)` and
+`fqn.channel_from_parameters("bit_flip", {"probability": 0.01})` both reach them.
+`y_flip` is a channel rather than an opcode: it is built from the factory and
+attached through a `NoiseModel`, a lowered channel, or a record that places
+channels itself, and it has no `circuit.y_flip(...)` method.
 
 Every `KrausChannel` is validated at construction. Operators must be finite,
 square, equal-sized, act on a power-of-two Hilbert space, and satisfy
