@@ -53,13 +53,14 @@ fi
 
 unset QBOSON_USER_ID QBOSON_SDK_CODE QBOSON_PROJECT_NO
 export PYTHONNOUSERSITE=1
+export PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/flagquantum-kaiwu-pycache-$$"
 export TRANSFORMERS_OFFLINE=1
 export HF_HUB_OFFLINE=1
 export FLAGQUANTUM_TEST_KAIWU_SOURCE=1
 export PYTHONPATH="$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
 
 cd -- "$REPOSITORY_ROOT"
-"$PYTHON_BIN" -m pytest -q \
+"$PYTHON_BIN" -B -m pytest -q \
   tests/team/ecosystem/test_kaiwu_matrix_boundary.py \
   tests/team/ecosystem/test_kaiwu_community_conformance.py \
   tests/team/ecosystem/test_kaiwu_sampler.py \

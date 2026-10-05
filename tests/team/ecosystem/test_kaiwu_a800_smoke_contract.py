@@ -107,6 +107,10 @@ def test_local_golden_path_is_pinned_and_credential_free() -> None:
     assert "status --porcelain --untracked-files=all" in source
     assert "unset QBOSON_USER_ID QBOSON_SDK_CODE QBOSON_PROJECT_NO" in source
     assert "PYTHONNOUSERSITE=1" in source
+    assert (
+        'PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/flagquantum-kaiwu-pycache-$$"' in source
+    )
+    assert '"$PYTHON_BIN" -B -m pytest' in source
     assert "test_kaiwu_community_conformance.py" in source
     assert "test_kaiwu_pytorch_plugin_conformance.py" in source
     assert "qboson_live_smoke.py" not in source

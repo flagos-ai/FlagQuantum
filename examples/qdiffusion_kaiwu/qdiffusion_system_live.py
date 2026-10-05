@@ -56,8 +56,6 @@ def _validate_lane(
     execution_host: str,
     source_revision: str,
     plugin_revision: str,
-    source_preflight_sha256: str,
-    transfer_manifest_sha256: str,
     sdk_version: str,
 ) -> tuple[str, int, tuple[int, int]]:
     if execution_host not in HOSTS:
@@ -70,8 +68,6 @@ def _validate_lane(
     observed = {
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
-        "source_preflight_sha256": source_preflight_sha256,
-        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -116,6 +112,8 @@ def run_live_system_probe(
     observed_hostname: str,
     source_revision: str,
     plugin_revision: str,
+    source_preflight_sha256: str,
+    transfer_manifest_sha256: str,
     sdk_version: str,
     device: torch.device,
     observed_gpu: str,
@@ -201,6 +199,8 @@ def run_live_system_probe(
         "experiment_config_sha256": config_sha256,
         "source_revision": source_revision,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "source_preflight_sha256": source_preflight_sha256,
+        "transfer_manifest_sha256": transfer_manifest_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
