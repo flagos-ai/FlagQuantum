@@ -592,13 +592,28 @@ def test_a_duplicated_wire_is_refused_rather_than_resolved_by_placement() -> Non
 def test_the_hermiticity_boundary_matches_the_dense_comparison() -> None:
     """The bound is the same ``atol``, so the accepted set cannot widen.
 
-    The image part of a coefficient appears twice in ``H - H^dagger``, so a
-    Pauli sum is accepted exactly while ``2 * |Im(c)|`` stays inside the
-    tolerance the dense comparison used.
+    The imaginary part of a coefficient appears twice in ``H - H^dagger``, so
+    the matrix-free rule decides on ``2 * |Im(c)|`` while the dense comparison
+    it replaces decided on ``max|H - H^dagger| <= atol``. The two rules agree
+    everywhere, but only the band ``tol / 2 < |Im(c)| <= tol`` can tell them
+    apart: below the band both accept, above it both reject. A sample outside
+    that band passes whichever rule is in force, so the points below straddle
+    it and every verdict is checked against the dense comparison as well.
     """
 
-    for imaginary, accepted in ((5e-11, True), (1.1e-10, False)):
+    for imaginary, accepted in (
+        (5e-11, True),
+        (5.1e-11, False),
+        (7e-11, False),
+        (1e-10, False),
+        (1.1e-10, False),
+    ):
         hamiltonian = Observable(terms=(_PauliTerm(1.0 + 1j * imaginary, ((0, "z"),)),))
+        reference = _dense_hamiltonian(hamiltonian, n_wires=1)
+        dense_accepts = bool(
+            torch.allclose(reference, reference.conj().T, atol=_TOLERANCE, rtol=0.0)
+        )
+        assert dense_accepts is accepted
         try:
             representation = _normalize(hamiltonian, n_wires=1)
         except EvolutionValidationError as error:
@@ -606,11 +621,8 @@ def test_the_hermiticity_boundary_matches_the_dense_comparison() -> None:
             assert not accepted
         else:
             assert accepted
-            reference = _dense_hamiltonian(hamiltonian, n_wires=1)
-            assert torch.allclose(
-                reference, reference.conj().T, atol=_TOLERANCE, rtol=0.0
-            )
             assert isinstance(representation, PauliSum)
+            assert torch.equal(representation.dense(), reference)
 
 
 def test_a_real_coefficient_on_a_y_string_stays_hermitian() -> None:
@@ -682,3 +694,47 @@ def test_the_evolving_hamiltonian_is_a_pauli_sum_for_every_accepted_input() -> N
 
     dense = torch.tensor([[0.5, 0.0], [0.0, -0.5]], dtype=torch.complex128)
     assert isinstance(_normalize(dense, n_wires=1), torch.Tensor)
+
+
+def test_a_pauli_sum_handed_back_is_evolved_without_densifying(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The representation is an accepted Hamiltonian form, not only an output.
+
+    A caller holding a representation can hand it straight back, so all three
+    Pauli forms must reach the same trajectory -- and the form that is already
+    matrix-free must not be read out as a matrix on the way. The three routes
+    are bitwise equal here, which is why the comparison can be ``torch.equal``
+    rather than a tolerance: they differ only in how the terms were named.
+    """
+
+    representation = PauliSum(
+        (
+            PauliSumTerm(coefficient=0.5, mask=0b1, signs=()),
+            PauliSumTerm(coefficient=0.25, mask=0, signs=(0,)),
+        ),
+        n_wires=1,
+        dimension=2,
+        dtype=torch.complex128,
+        device=_DEVICE,
+    )
+    observable = 0.5 * fq.X(0) + 0.25 * fq.Z(0)
+    descriptors = [
+        {"pauli": "X", "wires": [0], "coefficient": 0.5},
+        {"pauli": "Z", "wires": [0], "coefficient": 0.25},
+    ]
+    times = [0.0, 0.05, 0.11, 0.2]
+    expected = evolve_density_matrix(
+        observable, "0", 1, times, return_density_matrices=True
+    )
+
+    def forbidden(self: PauliSum) -> torch.Tensor:
+        raise AssertionError("evolving a PauliSum materialized the Hamiltonian")
+
+    monkeypatch.setattr(PauliSum, "dense", forbidden)
+    for candidate in (representation, descriptors):
+        result = evolve_density_matrix(
+            candidate, "0", 1, times, return_density_matrices=True
+        )
+        assert result.density_matrices is not None
+        assert torch.equal(result.density_matrices, expected.density_matrices)
