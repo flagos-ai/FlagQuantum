@@ -94,6 +94,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   submitting one optimization and one sampling task, has no local fallback,
   writes a private credential-free record, and keeps hardware acceptance closed
   when provider task or target identity is unavailable.
+- A read-only host recheck confirmed that the SSH validation aliases differ
+  from the machine-reported hostnames. The A800 development probe now records
+  and verifies both identities separately, requires full source revisions, and
+  writes an exclusive mode-0600 evidence file.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

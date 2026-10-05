@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import platform
+import re
 import socket
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,9 @@ from flagquantum.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+
+HOSTS = {"jp-a800-171", "jp-a800-172"}
+FULL_REVISION = re.compile(r"[0-9a-f]{40}")
 
 
 class _DevelopmentFakeClient:
@@ -84,7 +89,8 @@ class _DevelopmentFakeClient:
 def run_probe(
     *,
     device_name: str,
-    expected_host: str,
+    execution_host: str,
+    expected_hostname: str,
     source_revision: str,
     plugin_revision: str,
 ) -> dict[str, Any]:
@@ -92,9 +98,17 @@ def run_probe(
 
     from kaiwu.torch_plugin import BoltzmannMachine
 
-    actual_host = socket.gethostname()
-    if actual_host != expected_host:
-        raise RuntimeError(f"expected host {expected_host!r}, observed {actual_host!r}")
+    if execution_host not in HOSTS:
+        raise ValueError("execution_host must be one of the two declared A800 hosts")
+    if FULL_REVISION.fullmatch(source_revision) is None:
+        raise ValueError("source_revision must be a full lowercase Git revision")
+    if FULL_REVISION.fullmatch(plugin_revision) is None:
+        raise ValueError("plugin_revision must be a full lowercase Git revision")
+    observed_hostname = socket.gethostname()
+    if observed_hostname != expected_hostname:
+        raise RuntimeError(
+            f"expected hostname {expected_hostname!r}, observed {observed_hostname!r}"
+        )
     device = torch.device(device_name)
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("A800 sampler smoke requires an observed CUDA device")
@@ -166,7 +180,8 @@ def run_probe(
         "python_version": platform.python_version(),
         "torch_version": torch.__version__,
         "torch_cuda_version": torch.version.cuda,
-        "execution_host": actual_host,
+        "execution_host": execution_host,
+        "observed_hostname": observed_hostname,
         "requested_cuda_device": device_name,
         "observed_tensor_device": str(negative.device),
         "observed_gpu_model": observed_gpu,
@@ -192,24 +207,32 @@ def run_probe(
     }
 
 
+def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(encoded)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--expected-host", required=True)
+    parser.add_argument("--execution-host", choices=sorted(HOSTS), required=True)
+    parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
-    parser.add_argument("--output", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
     payload = run_probe(
         device_name=arguments.device,
-        expected_host=arguments.expected_host,
+        execution_host=arguments.execution_host,
+        expected_hostname=arguments.expected_hostname,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
     )
-    encoded = json.dumps(payload, indent=2, sort_keys=True) + "\n"
-    if arguments.output is not None:
-        arguments.output.write_text(encoded, encoding="utf-8")
-    print(encoded, end="")
+    _write_private_json(arguments.output, payload)
+    print(f"Private A800 development record written to {arguments.output}")
 
 
 if __name__ == "__main__":

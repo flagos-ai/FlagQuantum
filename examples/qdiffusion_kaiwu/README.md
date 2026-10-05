@@ -8,6 +8,23 @@ verify A800 tensor placement, matrix and sample transfers, backward, and an
 optimizer update. It cannot establish QBoson hardware use or QDiffusion system
 acceptance.
 
+The development probe records both the stable validation-host alias and the
+machine-reported hostname because they are different on the current systems.
+For example, the first host is invoked as follows after the source and plugin
+have been made available in the selected container:
+
+```bash
+python examples/qdiffusion_kaiwu/a800_sampler_smoke.py \
+  --execution-host jp-a800-171 \
+  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
+  --source-revision c3b9025fa26a0a78c533ae018def4dd636bc7275 \
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --output private-evidence/jp-a800-171-development.json
+```
+
+The output is a new mode-0600 file and is never an acceptance record because
+the transport is explicitly the in-memory development fake.
+
 The acceptance lane uses a frozen configuration and two independent host
 records:
 
