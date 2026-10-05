@@ -141,6 +141,17 @@ def _dense_pauli_sum(observable: object) -> torch.Tensor:
     return _pauli_sum(observable).dense()
 
 
+def _random_state(seed: int) -> torch.Tensor:
+    """Return a unit-trace state, for pairing checks on the public actions."""
+
+    generator = torch.Generator().manual_seed(seed)
+    raw = torch.randn(
+        (_DIMENSION, _DIMENSION), generator=generator, dtype=torch.complex128
+    )
+    state = raw @ raw.conj().T
+    return state / torch.trace(state)
+
+
 def _transpose_involution(dimension: int) -> torch.Tensor:
     """Return the permutation that vectorizes the transpose of a matrix."""
 
@@ -776,6 +787,75 @@ def test_a_pauli_sum_hamiltonian_drives_the_same_generator() -> None:
     assert torch.allclose(
         result.density_matrices, reference.density_matrices, atol=1e-12
     )
+
+
+def test_the_adjoint_of_a_matrix_free_generator_is_its_conjugate_transpose() -> None:
+    """The generator the plan assembles is adjointable without densifying ``H``.
+
+    ``adjoint_derivative`` is the reverse map a cost crosses, and the matrix it
+    must equal is the conjugate transpose of the generator's dense form. The
+    oracle is applied to the public action, so this cannot be satisfied by
+    reading the adjoint back out of the same object it was built from. The
+    Hamiltonian carries a ``Y``, so its transpose and its conjugate transpose
+    are different matrices and the conjugation is not decorative.
+    """
+
+    hamiltonian = fq.Y(0) + 0.5 * fq.X(1) + 0.25 * (fq.Z(0) @ fq.Z(1))
+    collapse = [0.4 * _embed(LOWERING, 0, _WIRES)]
+    generator = Liouvillian(
+        _pauli_sum(hamiltonian), collapse, hilbert_dimension=_DIMENSION
+    )
+    dense = generator.dense()
+    _, state, _ = _generator_and_state()
+    flat = state.reshape(-1)
+
+    measured = generator.adjoint_derivative(state)
+
+    assert float((measured - (dense.conj().T @ flat).reshape(4, 4)).abs().max()) < 1e-14
+    assert float((dense - dense.conj().T).abs().max()) > 1e-2
+    # Three wrong rules, each built from the same pieces and each a different
+    # operator: transposing without conjugating (0.370), flipping the
+    # Hamiltonian sign without reversing the dissipator sandwich (0.0655), and
+    # applying the generator itself (0.589).
+    sign_flipped_only = Liouvillian(
+        _pauli_sum(-1.0 * hamiltonian), collapse, hilbert_dimension=_DIMENSION
+    )
+    same_generator = Liouvillian(
+        _pauli_sum(hamiltonian), collapse, hilbert_dimension=_DIMENSION
+    )
+    assert float((measured - (dense.T @ flat).reshape(4, 4)).abs().max()) > 1e-2
+    assert float((measured - sign_flipped_only.derivative(state)).abs().max()) > 1e-2
+    assert float((measured - same_generator.derivative(state)).abs().max()) > 1e-2
+
+
+def test_the_matrix_free_and_dense_hamiltonians_adjoint_identically() -> None:
+    """The adjoint does not depend on which Hamiltonian form was planned."""
+
+    hamiltonian = fq.Y(0) + 0.5 * fq.X(1) + 0.25 * (fq.Z(0) @ fq.Z(1))
+    collapse = [0.4 * _embed(LOWERING, 0, _WIRES)]
+    matrix_free = Liouvillian(
+        _pauli_sum(hamiltonian), collapse, hilbert_dimension=_DIMENSION
+    )
+    dense = Liouvillian(
+        _dense_pauli_sum(hamiltonian), collapse, hilbert_dimension=_DIMENSION
+    )
+    _, state, _ = _generator_and_state()
+
+    assert torch.allclose(
+        matrix_free.adjoint_derivative(state),
+        dense.adjoint_derivative(state),
+        atol=1e-14,
+    )
+    # The pairing identity, checked on the public actions of the planned
+    # generator rather than on the adjoint object it was derived from.
+    rho, sigma = _random_state(31), _random_state(32)
+    forward = (sigma.conj().T @ matrix_free.derivative(rho)).trace()
+    backward = (matrix_free.adjoint_derivative(sigma).conj().T @ rho).trace()
+    control = (matrix_free.derivative(sigma).conj().T @ rho).trace()
+    assert float(abs(forward)) > 1e-2
+    assert float(abs(forward - backward)) < 1e-14
+    # Measured 2.57e-1 against this floor: the generator is not its own adjoint.
+    assert float(abs(forward - control)) > 1e-2
 
 
 def test_the_exponential_scheme_has_no_step_size_error_on_the_grid() -> None:

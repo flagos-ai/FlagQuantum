@@ -649,6 +649,212 @@ def test_applying_a_state_of_the_wrong_shape_or_dtype_is_refused() -> None:
         applied.apply([1.0, 0.0])
 
 
+def _general_map() -> SuperOperator:
+    """Return a map with a two-sided, a left-only and a right-only term.
+
+    The coefficients are complex and the factors are not normal, so conjugating
+    the coefficient and conjugating a factor are both separately visible.
+    """
+
+    first, second, third, fourth = _complex_factors()
+    mapped = SuperOperator.left_right_multiply(first, second) * complex(0.7, -1.3)
+    mapped += SuperOperator.left_multiply(third) * complex(-0.25, 0.85)
+    mapped += SuperOperator.right_multiply(fourth) * complex(0.45, 0.6)
+    return mapped
+
+
+def _probe_matrix(seed: int) -> torch.Tensor:
+    """Return a unit-trace complex matrix, the state a pairing is evaluated on."""
+
+    generator = torch.Generator().manual_seed(seed)
+    raw = torch.randn(_DIMENSION, _DIMENSION, dtype=_COMPLEX128, generator=generator)
+    state = raw @ raw.conj().T
+    return state / state.trace()
+
+
+def _wrong_adjoint(mapped: SuperOperator, rule: str) -> SuperOperator:
+    """Return a plausible-but-wrong adjoint, built from the same term list.
+
+    Three rules are available, each keeping the coefficients so that the
+    comparison is about the rule and not about a dropped scale: ``transpose``
+    transposes each factor without conjugating it, ``swap`` moves each factor to
+    the other side of the state, and ``conjugate`` leaves the coefficient alone.
+    """
+
+    wrong = SuperOperator()
+    for value, left, right in mapped.terms:
+        if rule == "conjugate":
+            scale = value
+        else:
+            scale = value.conjugate()
+        if rule == "swap":
+            left, right = right, left
+        if rule == "transpose":
+            left = None if left is None else left.T
+            right = None if right is None else right.T
+        else:
+            left = None if left is None else left.conj().T
+            right = None if right is None else right.conj().T
+        if left is None:
+            wrong += SuperOperator.right_multiply(right) * scale
+        elif right is None:
+            wrong += SuperOperator.left_multiply(left) * scale
+        else:
+            wrong += SuperOperator.left_right_multiply(left, right) * scale
+    return wrong
+
+
+@pytest.mark.parametrize(
+    ("rho_seed", "sigma_seed"), [(21, 22), (3, 4), (7, 8), (11, 12)]
+)
+def test_the_adjoint_satisfies_the_hilbert_schmidt_pairing(
+    rho_seed: int, sigma_seed: int
+) -> None:
+    mapped = _general_map()
+    adjoint = mapped.adjoint()
+    rho, sigma = _probe_matrix(rho_seed), _probe_matrix(sigma_seed)
+    inner = lambda left, right: (left.conj().T @ right).trace()  # noqa: E731
+
+    forward = inner(sigma, mapped.apply(rho))
+    backward = inner(adjoint.apply(sigma), rho)
+
+    # The pairing is complex, so a floor on its modulus and a tolerance on the
+    # difference are two separate statements. Measured over the four probe pairs
+    # here, the moduli run from 0.53 to 4.52 and every difference is below
+    # 1.0e-15, which is the round-off floor of the two evaluations.
+    assert float(abs(forward)) > 0.5
+    assert float(abs(forward - backward)) < 1e-14
+    # Controls: the map itself does not pair with its own forward action, and
+    # neither does any of the three wrong rules, so the identity above is not
+    # satisfied by an arbitrary linear map. Measured residuals run from 4.9e-1
+    # to 7.8e0 against the 1e-2 floor used here.
+    assert float(abs(inner(mapped.apply(sigma), rho) - forward)) > 1e-2
+    for rule in ("transpose", "swap", "conjugate"):
+        wrong = _wrong_adjoint(mapped, rule)
+        assert wrong != adjoint
+        assert float(abs(inner(wrong.apply(sigma), rho) - forward)) > 1e-2
+
+
+def test_the_adjoint_is_the_conjugate_transpose_of_the_dense_form() -> None:
+    mapped = _general_map()
+    adjoint = mapped.adjoint()
+
+    # The oracle is the dense form built from the *action*, so the claim below
+    # is a statement about the adjoint's own terms and not about a shared
+    # Kronecker convention. The two routes agree at the round-off floor; the
+    # measured worst entry is 1.99e-15.
+    oracle = _matrix_from_action(mapped.terms, _DIMENSION, _COMPLEX128)
+    dense_adjoint = adjoint.dense()
+
+    assert float((dense_adjoint - oracle.conj().T).abs().max()) < 1e-14
+    # Controls. A plain transpose is a different operator (measured 15.25), and
+    # so are the map itself (11.37) and each wrong rule (7.72, 8.59, 14.30).
+    assert float((dense_adjoint - oracle.T).abs().max()) > 1e-2
+    assert float((dense_adjoint - mapped.dense()).abs().max()) > 1e-2
+    for rule in ("transpose", "swap", "conjugate"):
+        wrong = _wrong_adjoint(mapped, rule)
+        assert float((dense_adjoint - wrong.dense()).abs().max()) > 1e-2
+
+
+def test_the_adjoint_conjugates_the_coefficient_and_both_factors() -> None:
+    mapped = _general_map()
+    adjoint = mapped.adjoint()
+
+    assert adjoint.dimension == mapped.dimension
+    assert adjoint.dtype == mapped.dtype
+    assert len(adjoint) == len(mapped)
+    for (value, left, right), (adj_value, adj_left, adj_right) in zip(
+        mapped.terms, adjoint.terms, strict=True
+    ):
+        assert adj_value == value.conjugate()
+        # A one-sided term stays one-sided on the side it already occupied: the
+        # adjoint of ``rho -> A rho`` is ``sigma -> A^dag sigma``, not
+        # ``sigma -> sigma A^dag``.
+        assert (left is None) == (adj_left is None)
+        assert (right is None) == (adj_right is None)
+        for original, derived in ((left, adj_left), (right, adj_right)):
+            if original is not None:
+                assert torch.equal(derived, original.conj().T)
+
+
+def test_the_adjoint_is_an_involution_and_commutes_with_the_algebra() -> None:
+    mapped = _general_map()
+    other = SuperOperator.right_multiply(_complex_factors()[0])
+    scalar = complex(-1.75, 0.5)
+
+    # Every expectation below is exact rather than close: conjugation and scalar
+    # multiplication of a complex number round in the same order on both sides.
+    assert mapped.adjoint().adjoint() == mapped
+    assert (mapped * scalar).adjoint() == mapped.adjoint() * scalar.conjugate()
+    assert (mapped + other).adjoint() == mapped.adjoint() + other.adjoint()
+    # An empty sum has no dimension to invent, so its adjoint is empty too.
+    assert SuperOperator().adjoint() == SuperOperator()
+    assert len(SuperOperator().adjoint()) == 0
+
+
+class _MatrixWithoutAdjoint:
+    """A factor that builds and applies a term but cannot be adjointed."""
+
+    dtype = _COMPLEX128
+    dimension = _DIMENSION
+
+    def __init__(self, matrix: torch.Tensor) -> None:
+        self._matrix = matrix.to(_COMPLEX128)
+
+    def __matmul__(self, state: torch.Tensor) -> torch.Tensor:
+        return self._matrix @ state
+
+    def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor:
+        return state @ self._matrix
+
+    def dense(self) -> torch.Tensor:
+        return self._matrix
+
+
+def test_a_factor_that_cannot_be_adjointed_is_refused_only_by_the_adjoint() -> None:
+    matrix = torch.arange(9, dtype=torch.float64).reshape(_DIMENSION, _DIMENSION)
+    applied = SuperOperator.left_multiply(_MatrixWithoutAdjoint(matrix))
+    state = _density_matrix()
+
+    # The refusal is the adjoint's own requirement: the factor satisfies every
+    # other member, so construction and both views still work.
+    assert applied.dimension == _DIMENSION
+    assert torch.equal(applied.apply(state), matrix.to(_COMPLEX128) @ state)
+    assert torch.equal(
+        applied.dense(), torch.kron(matrix.to(_COMPLEX128), torch.eye(_DIMENSION))
+    )
+    with pytest.raises(ValueError, match="must support adjoint"):
+        applied.adjoint()
+
+
+class _AdjointCountingFactor(_MatrixWithoutAdjoint):
+    """A non-tensor factor whose ``adjoint`` is counted and returns a new factor."""
+
+    def __init__(self, matrix: torch.Tensor) -> None:
+        super().__init__(matrix)
+        self.adjoint_calls = 0
+
+    def adjoint(self) -> _AdjointCountingFactor:
+        self.adjoint_calls += 1
+        return _AdjointCountingFactor(self._matrix.conj().T)
+
+
+def test_a_non_tensor_factor_is_adjointed_through_its_own_method() -> None:
+    matrix = torch.arange(9, dtype=torch.float64).reshape(_DIMENSION, _DIMENSION)
+    factor = _AdjointCountingFactor(matrix)
+    applied = SuperOperator.left_multiply(factor)
+
+    adjoint = applied.adjoint()
+
+    assert factor.adjoint_calls == 1
+    # The result is the factor's own adjoint, compared by value through the
+    # dense view, so a dispatch that conjugated the matrix itself would pass
+    # only by coincidence -- and here the matrix is real, so it would not.
+    assert torch.equal(adjoint.dense(), applied.dense().conj().T)
+    assert len(adjoint.terms) == 1
+    assert adjoint.terms[0][1].adjoint_calls == 0
+
+
 def test_the_dense_form_follows_the_factor_dtype() -> None:
     narrow = SuperOperator.left_multiply(torch.eye(_DIMENSION, dtype=_COMPLEX64))
     wide = SuperOperator.left_multiply(torch.eye(_DIMENSION, dtype=_COMPLEX128))

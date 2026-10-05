@@ -15,6 +15,7 @@ import torch
 import flagquantum as fq
 from flagquantum.errors import SerializationError
 from flagquantum.observables import Observable, _PauliTerm
+from flagquantum.operators import SuperOperator
 from flagquantum.simulation import (
     EvolutionValidationError,
     amplitude_damping,
@@ -640,6 +641,109 @@ def test_a_real_coefficient_on_a_y_string_stays_hermitian() -> None:
         assert torch.equal(
             representation.dense(), _dense_hamiltonian(hamiltonian, n_wires=2)
         )
+
+
+def _non_hermitian_pauli_sum() -> PauliSum:
+    """Return a matrix-free sum whose coefficients are genuinely complex.
+
+    The words overlap so that the ``i`` factors ``action_coefficient`` applies
+    are exercised, and one word carries a ``Y``, which is the factor whose
+    transpose differs from itself. A Hermitian sum would not separate the
+    conjugation from the identity.
+    """
+
+    return PauliSum(
+        (
+            PauliSumTerm(complex(0.3, -0.7), mask=0b11, signs=(0,)),
+            PauliSumTerm(complex(-0.25, 0.4), mask=0b1, signs=(1,)),
+            PauliSumTerm(complex(0.8, 0.15), mask=0b10, signs=(0, 1)),
+        ),
+        n_wires=2,
+        dimension=4,
+        dtype=torch.complex128,
+        device=_DEVICE,
+    )
+
+
+def test_the_adjoint_of_a_pauli_sum_is_its_conjugate_transpose() -> None:
+    representation = _non_hermitian_pauli_sum()
+    adjoint = representation.adjoint()
+    dense = representation.dense()
+
+    assert adjoint.dimension == representation.dimension
+    assert adjoint.dtype == representation.dtype
+    assert len(adjoint.terms) == len(representation.terms)
+    # Two routes to the same matrix: ``dense`` sums the action words column by
+    # column, ``adjoint`` rebuilds the terms. Measured worst entry 0.0.
+    assert float((adjoint.dense() - dense.conj().T).abs().max()) == 0.0
+    # Controls: the plain transpose and the sum itself are different operators,
+    # so the agreement above is about the conjugation and not about symmetry.
+    assert float((adjoint.dense() - dense.T).abs().max()) > 1e-2
+    assert float((adjoint.dense() - dense).abs().max()) > 1e-2
+
+
+def test_the_matrix_free_adjoint_pairs_with_the_matrix_free_action() -> None:
+    """``<sigma, H rho> = <H^dag sigma, rho>`` through the blocked actions only.
+
+    Both sides go through ``__matmul__``/``__rmatmul__``, the per-block kernels
+    that never build ``H``, so this is evidence about the adjoint of the action
+    and not a restatement of the dense view.
+    """
+
+    representation = _non_hermitian_pauli_sum()
+    adjoint = representation.adjoint()
+    generator = torch.Generator().manual_seed(31)
+    rho = torch.randn(4, 4, dtype=torch.complex128, generator=generator)
+    sigma = torch.randn(4, 4, dtype=torch.complex128, generator=generator)
+    inner = lambda left, right: (left.conj().T @ right).trace()  # noqa: E731
+
+    forward = inner(sigma, representation @ rho)
+    backward = inner(adjoint @ sigma, rho)
+
+    assert float(abs(forward)) > 0.5
+    assert float(abs(forward - backward)) < 1e-14
+    # Control: the sum used as its own adjoint -- the rule that drops the
+    # conjugation -- does not pair. Measured residual 3.83e0 against this floor.
+    assert float(abs(inner(representation @ sigma, rho) - forward)) > 1e-2
+
+
+def test_a_hermitian_pauli_sum_is_its_own_adjoint() -> None:
+    """The invariant that lets a planned Hamiltonian be adjointed at all."""
+
+    representation = _normalize(0.5 * fq.X(0) + 0.25 * (fq.Z(0) @ fq.Z(1)), n_wires=2)
+    assert isinstance(representation, PauliSum)
+
+    adjoint = representation.adjoint()
+
+    # Conjugating a real coefficient is a value equality, not an identity, so
+    # this is a statement about the term list the adjoint rebuilt.
+    assert adjoint == representation
+    assert adjoint is not representation
+    assert float((adjoint.dense() - representation.dense()).abs().max()) == 0.0
+
+
+def test_adjointing_a_pauli_sum_does_not_materialize_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The adjoint is a term-list operation, so it must not pay ``4**n``."""
+
+    representation = _non_hermitian_pauli_sum()
+
+    def forbidden(self: PauliSum) -> torch.Tensor:
+        raise AssertionError("adjointing a PauliSum materialized the Hamiltonian")
+
+    monkeypatch.setattr(PauliSum, "dense", forbidden)
+    adjoint = representation.adjoint()
+    state = torch.randn(4, 4, dtype=torch.complex128)
+
+    # Both directions of the adjointed factor are exercised, because a
+    # superoperator term can place the factor on either side of the state.
+    mapped = SuperOperator.left_multiply(representation).adjoint()
+    assert torch.equal(mapped.apply(state), adjoint @ state)
+    assert torch.equal(
+        SuperOperator.right_multiply(representation).adjoint().apply(state),
+        state @ adjoint,
+    )
 
 
 def test_planning_does_not_materialize_the_hamiltonian(

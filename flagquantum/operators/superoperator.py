@@ -15,12 +15,20 @@ writing a density-form expression by hand.
 The factors are *matrix operators*, not necessarily dense matrices. A factor
 must provide ``dtype``, ``dimension`` (for a ``torch.Tensor`` these are ``dtype``
 and ``shape[0]``), ``__matmul__`` and ``__rmatmul__`` with a square state, and a
-``dense()`` matrix. ``torch.Tensor`` is the implementation that exists today;
-:class:`flagquantum.simulation.matrix_free_hamiltonian.PauliSum` already exposes
-``dtype``, ``dimension`` and ``dense()``, and the two-sided action it needs is
-what its ``commutator`` already computes, so a matrix-free ``H`` can join a term
-without being materialized once it satisfies the remaining two members. Until
-then this module claims no matrix-free factor.
+``dense()`` matrix. ``torch.Tensor`` is one implementation;
+:class:`flagquantum.simulation.matrix_free_hamiltonian.PauliSum` is the other,
+and a matrix-free ``H`` therefore joins a term without ever being materialized.
+Only :meth:`SuperOperator.adjoint` additionally requires ``adjoint()`` from a
+non-tensor factor, because a factor that can be applied cannot necessarily be
+reversed; a factor that is never adjointed does not need it.
+
+The adjoint is a statement about the term list, not about a dense matrix:
+:meth:`SuperOperator.adjoint` returns the sum whose terms carry the conjugated
+coefficient and the adjoint of each factor on the side that factor already
+occupied, because the Hilbert--Schmidt adjoint of ``rho -> A rho B`` is
+``sigma -> A^dag sigma B^dag``. The sides do not swap. That map is what carries
+a cost gradient backwards through a generator, so a generator no longer has to
+be written twice to be differentiated.
 
 The dense form uses the row-major vectorization the rest of the repository uses,
 ``vec(A rho B) = (A (x) B^T) vec(rho)``, so the right factor is transposed and
@@ -49,6 +57,10 @@ class OperatorFactor(Protocol):
 
     A factor acts on a square matrix from one side. ``torch.Tensor`` provides
     every member directly apart from ``dimension``, which is read from the shape.
+
+    ``adjoint`` is required only by :meth:`SuperOperator.adjoint`, so a factor
+    that is never adjointed does not have to supply it and construction does not
+    demand it.
     """
 
     @property
@@ -62,6 +74,8 @@ class OperatorFactor(Protocol):
     def __rmatmul__(self, state: torch.Tensor) -> torch.Tensor: ...
 
     def dense(self) -> torch.Tensor: ...
+
+    def adjoint(self) -> OperatorFactor: ...
 
 
 Factor = Any
@@ -112,6 +126,17 @@ def _dense_matrix(operator: Factor) -> torch.Tensor:
             f"an operator factor must return a tensor from dense(), got {matrix!r}"
         )
     return matrix
+
+
+def _factor_adjoint(operator: Factor) -> Factor:
+    if isinstance(operator, torch.Tensor):
+        return torch.conj(operator).T
+    if not callable(getattr(operator, "adjoint", None)):
+        raise ValueError(
+            "a non-tensor operator factor must support adjoint() to be adjointed, "
+            f"got {operator!r}"
+        )
+    return operator.adjoint()
 
 
 def _coefficient(value: object) -> complex:
@@ -270,6 +295,31 @@ class SuperOperator:
 
     __rmul__ = __mul__
 
+    def adjoint(self) -> SuperOperator:
+        """Return the Hilbert--Schmidt adjoint of the map.
+
+        The adjoint of ``rho -> A rho B`` is ``sigma -> A^dag sigma B^dag``, so
+        every term conjugates its coefficient and adjoints each factor on the
+        side that factor already occupied. The sides do not swap and a one-sided
+        term stays one-sided on the same side. This is the map that pairs with
+        the original under ``<sigma, rho> = trace(sigma^dag rho)``, which is the
+        inner product a scalar cost over matrices differentiates through.
+
+        Raises:
+            ValueError: If a non-tensor factor does not support ``adjoint()``.
+        """
+
+        return self._from_terms(
+            [
+                (
+                    value.conjugate(),
+                    None if left is None else _factor_adjoint(left),
+                    None if right is None else _factor_adjoint(right),
+                )
+                for value, left, right in self._terms
+            ]
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SuperOperator):
             return NotImplemented
@@ -363,15 +413,19 @@ class SuperOperator:
         identity = torch.eye(dimension, dtype=dtype)
         matrix = torch.zeros((side, side), dtype=dtype)
         for coefficient, left, right in self._terms:
+            # Both products are materialized in the layout they will be read in,
+            # because a factor is free to hand back a transposed or lazily
+            # conjugated view -- an adjoint factor naturally does -- and a
+            # Kronecker product of non-contiguous operands is not defined.
             if left is None:
                 block = torch.kron(
                     identity, _dense_matrix(right).transpose(0, 1).contiguous()
                 )
             elif right is None:
-                block = torch.kron(_dense_matrix(left), identity)
+                block = torch.kron(_dense_matrix(left).contiguous(), identity)
             else:
                 block = torch.kron(
-                    _dense_matrix(left),
+                    _dense_matrix(left).contiguous(),
                     _dense_matrix(right).transpose(0, 1).contiguous(),
                 )
             matrix = matrix + coefficient * block

@@ -348,6 +348,29 @@ class PauliSum:
             matrix[indices, columns] += term.action_coefficient() * values
         return matrix
 
+    def adjoint(self) -> PauliSum:
+        """Return ``H^dag`` as a sum of the same strings, matrix-free.
+
+        Every Pauli string is Hermitian, so conjugating the coefficients is the
+        whole of the adjoint. A planned Hamiltonian is validated Hermitian and
+        therefore adjoints to itself term by term, but this is written as the
+        conjugation rather than as ``self`` so that it stays correct for a sum
+        whose coefficients are not real, and so that a caller comparing the two
+        is comparing values instead of an identity. The masks, sign vectors and
+        permutations are derived again on construction, which is the only cost.
+        """
+
+        return PauliSum(
+            [
+                PauliSumTerm(term.coefficient.conjugate(), term.mask, term.signs)
+                for term in self._terms
+            ],
+            n_wires=self._n_wires,
+            dimension=self._dimension,
+            dtype=self._dtype,
+            device=self._device,
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, PauliSum):
             return NotImplemented
