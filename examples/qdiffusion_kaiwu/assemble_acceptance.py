@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 from statistics import fmean
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
@@ -61,7 +62,19 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _require_private_input(path: Path) -> None:
+    if not path.is_absolute():
+        raise ValueError(f"evidence input must use an absolute path: {path}")
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"evidence input must be a regular, non-symlink file: {path}")
+    if path.stat().st_mode & 0o077:
+        raise ValueError(
+            f"evidence input must not be accessible by group or others: {path}"
+        )
+
+
 def _load_component(path: Path, schema: str) -> tuple[dict[str, Any], str]:
+    _require_private_input(path)
     encoded = path.read_bytes()
     value = json.loads(encoded)
     if not isinstance(value, dict):
@@ -369,6 +382,86 @@ def _json_bytes(value: object) -> bytes:
     ).encode()
 
 
+def _materialize_acceptance_bundle(
+    root: Path,
+    *,
+    config_path: Path,
+    config: dict[str, Any],
+    primary: dict[str, Any],
+    replay: dict[str, Any],
+    component_sources: dict[str, Path],
+) -> Path:
+    """Write a complete candidate bundle inside an existing private directory."""
+
+    components = root / "components"
+    components.mkdir(mode=0o700)
+    _write_exclusive(root / "acceptance_config.json", config_path.read_bytes())
+    component_entries = []
+    for name, source in component_sources.items():
+        destination = components / name
+        _write_exclusive(destination, source.read_bytes())
+        component_entries.append(
+            {"path": f"components/{name}", "sha256": _sha256(destination)}
+        )
+
+    primary_name = f"{config['primary_host']}.json"
+    replay_name = f"{config['replay_host']}.json"
+    _write_exclusive(root / primary_name, _json_bytes(primary))
+    _write_exclusive(root / replay_name, _json_bytes(replay))
+    manifest = {
+        "schema": MANIFEST_SCHEMA,
+        "version": "1.0",
+        "config": {
+            "path": "acceptance_config.json",
+            "sha256": _sha256(root / "acceptance_config.json"),
+        },
+        "records": [
+            {"path": primary_name, "sha256": _sha256(root / primary_name)},
+            {"path": replay_name, "sha256": _sha256(root / replay_name)},
+        ],
+        "component_records": component_entries,
+    }
+    manifest_path = root / "manifest.json"
+    _write_exclusive(manifest_path, _json_bytes(manifest))
+    return manifest_path
+
+
+def _publish_acceptance_bundle(
+    destination: Path,
+    *,
+    config_path: Path,
+    config: dict[str, Any],
+    primary: dict[str, Any],
+    replay: dict[str, Any],
+    component_sources: dict[str, Path],
+) -> None:
+    """Validate in a private sibling directory before atomically publishing."""
+
+    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with TemporaryDirectory(
+        prefix=f".{destination.name}.staging-",
+        dir=destination.parent,
+    ) as temporary_directory:
+        staging = Path(temporary_directory)
+        staging.chmod(0o700)
+        manifest_path = _materialize_acceptance_bundle(
+            staging,
+            config_path=config_path,
+            config=config,
+            primary=primary,
+            replay=replay,
+            component_sources=component_sources,
+        )
+        errors = validate_acceptance(manifest_path)
+        if errors:
+            raise RuntimeError(
+                "final acceptance validation failed: " + "; ".join(errors)
+            )
+        if destination.exists():
+            raise RuntimeError("--evidence-dir appeared during final validation")
+        os.replace(staging, destination)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
@@ -384,7 +477,7 @@ def main() -> None:
     )
     parser.add_argument("--evidence-dir", required=True, type=Path)
     args = parser.parse_args()
-    all_paths = [
+    input_paths = [
         args.config,
         args.primary_system,
         args.replay_system,
@@ -394,12 +487,16 @@ def main() -> None:
         args.portability,
         *args.training_record,
         *args.evaluation_record,
-        args.evidence_dir,
     ]
-    if any(not path.is_absolute() for path in all_paths):
+    if any(not path.is_absolute() for path in (*input_paths, args.evidence_dir)):
         parser.error("every path must be absolute")
     if args.evidence_dir.exists():
         parser.error("--evidence-dir must not already exist")
+    try:
+        for path in input_paths:
+            _require_private_input(path)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     config, config_sha256 = _load_frozen_config(args.config)
     primary_system = _load_component(args.primary_system, SYSTEM_SCHEMA)
@@ -431,12 +528,6 @@ def main() -> None:
         evaluation_records=evaluations,
     )
 
-    args.evidence_dir.mkdir(mode=0o700, parents=True)
-    components = args.evidence_dir / "components"
-    components.mkdir(mode=0o700)
-    _write_exclusive(
-        args.evidence_dir / "acceptance_config.json", args.config.read_bytes()
-    )
     component_sources = {
         "primary-system.json": args.primary_system,
         "replay-system.json": args.replay_system,
@@ -449,42 +540,14 @@ def main() -> None:
         component_sources[f"training-{index}.json"] = path
     for index, path in enumerate(args.evaluation_record):
         component_sources[f"evaluation-{index}.json"] = path
-    component_entries = []
-    for name, source in component_sources.items():
-        destination = components / name
-        _write_exclusive(destination, source.read_bytes())
-        component_entries.append(
-            {"path": f"components/{name}", "sha256": _sha256(destination)}
-        )
-
-    primary_name = f"{config['primary_host']}.json"
-    replay_name = f"{config['replay_host']}.json"
-    _write_exclusive(args.evidence_dir / primary_name, _json_bytes(primary))
-    _write_exclusive(args.evidence_dir / replay_name, _json_bytes(replay))
-    manifest = {
-        "schema": MANIFEST_SCHEMA,
-        "version": "1.0",
-        "config": {
-            "path": "acceptance_config.json",
-            "sha256": _sha256(args.evidence_dir / "acceptance_config.json"),
-        },
-        "records": [
-            {
-                "path": primary_name,
-                "sha256": _sha256(args.evidence_dir / primary_name),
-            },
-            {
-                "path": replay_name,
-                "sha256": _sha256(args.evidence_dir / replay_name),
-            },
-        ],
-        "component_records": component_entries,
-    }
-    manifest_path = args.evidence_dir / "manifest.json"
-    _write_exclusive(manifest_path, _json_bytes(manifest))
-    errors = validate_acceptance(manifest_path)
-    if errors:
-        raise RuntimeError("final acceptance validation failed: " + "; ".join(errors))
+    _publish_acceptance_bundle(
+        args.evidence_dir,
+        config_path=args.config,
+        config=config,
+        primary=primary,
+        replay=replay,
+        component_sources=component_sources,
+    )
     print(f"Validated acceptance bundle written to {args.evidence_dir}")
 
 

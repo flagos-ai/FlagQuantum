@@ -514,8 +514,11 @@ transfer manifest, host roles, seed coverage, training/evaluation links, and the
 selected portability checkpoint before averaging metrics. It copies every
 source record and the transfer manifest into a private component directory,
 hashes those copies, creates the two final host records and manifest, then runs
-`validate_acceptance.py` on the result. Missing, extra, replaced, or selectively
-omitted source or seed records fail.
+`validate_acceptance.py` on the result. Every input must be an absolute,
+mode-0600 regular file rather than a symlink. Assembly occurs in a private
+sibling staging directory and is atomically published only after final
+validation; a failed run does not leave the requested evidence directory.
+Missing, extra, replaced, or selectively omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence
 

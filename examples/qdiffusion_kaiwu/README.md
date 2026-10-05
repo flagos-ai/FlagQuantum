@@ -208,6 +208,8 @@ post-extraction preflight records, then verifies that every execution record
 links to the correct host preflight and their common transfer manifest. The
 manifest itself is a required copied component, so the final evidence remains
 self-contained after the temporary transfer directory is unavailable. The
-output directory is new and mode-restricted; it includes hashed copies of every
-component record so deleting or replacing a source record makes the final
-manifest invalid.
+inputs must be absolute, private regular files rather than symlinks. Assembly
+uses a private sibling staging directory and publishes the requested output
+directory only after the final validator passes. The output includes hashed
+copies of every component record, so deleting or replacing a source record
+makes the final manifest invalid.

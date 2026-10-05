@@ -9,6 +9,7 @@ import pytest
 
 from examples.qdiffusion_kaiwu.assemble_acceptance import (
     _load_component,
+    _publish_acceptance_bundle,
     assemble_records,
 )
 from examples.qdiffusion_kaiwu.validate_acceptance import validate_acceptance
@@ -233,7 +234,64 @@ def _write_json(path: Path, value: object) -> str:
     path.write_text(
         json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    path.chmod(0o600)
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_component_loader_requires_private_regular_file(tmp_path: Path) -> None:
+    path = tmp_path / "component.json"
+    _write_json(
+        path,
+        {"schema": "test.schema", "version": "1.0"},
+    )
+    path.chmod(0o644)
+    with pytest.raises(ValueError, match="group or others"):
+        _load_component(path, "test.schema")
+
+    path.chmod(0o600)
+    link = tmp_path / "component-link.json"
+    link.symlink_to(path)
+    with pytest.raises(ValueError, match="non-symlink"):
+        _load_component(link, "test.schema")
+
+
+def test_bundle_is_published_only_after_final_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.json"
+    component_path = tmp_path / "component.json"
+    _write_json(config_path, {"schema": "test.config", "version": "1.0"})
+    _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    destination = tmp_path / "acceptance"
+    arguments = {
+        "config_path": config_path,
+        "config": {
+            "primary_host": "jp-a800-171",
+            "replay_host": "jp-a800-172",
+        },
+        "primary": {},
+        "replay": {},
+        "component_sources": {"component.json": component_path},
+    }
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        lambda _: ["forced validation failure"],
+    )
+
+    with pytest.raises(RuntimeError, match="forced validation failure"):
+        _publish_acceptance_bundle(destination, **arguments)
+
+    assert not destination.exists()
+    assert list(tmp_path.glob(".acceptance.staging-*")) == []
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        lambda _: [],
+    )
+    _publish_acceptance_bundle(destination, **arguments)
+
+    assert (destination / "manifest.json").is_file()
+    assert destination.stat().st_mode & 0o077 == 0
 
 
 def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:

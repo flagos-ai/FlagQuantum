@@ -223,6 +223,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   them and the exact shared transfer manifest as immutable components, and
   revalidates every execution record's link to the correct host preflight and
   that self-contained manifest.
+- Final assembly now rejects non-private or symlinked inputs and builds in a
+  private sibling staging directory. The requested evidence directory appears
+  atomically only after the independent validator passes, preventing a failed
+  run from leaving a misleading partial bundle at the declared output path.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
