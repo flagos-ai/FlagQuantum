@@ -8,12 +8,14 @@ paths. It never contacts QBoson and can never produce acceptance evidence.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import math
 import os
 import platform
 import re
 import socket
+import sys
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -93,16 +95,53 @@ class _ToyProposal(nn.Module):
         return self.output(torch.tanh(self.hidden(self.embedding(input_ids))))
 
 
+def _load_pinned_qdiffusion_api(plugin_root: Path) -> tuple[Any, Any, Any, Any]:
+    root = plugin_root.resolve()
+    source_root = root / "src"
+    namespace_root = source_root / "kaiwu"
+    package_init = namespace_root / "torch_plugin" / "__init__.py"
+    qdiffusion_source = namespace_root / "torch_plugin" / "qdiffusion.py"
+    if not package_init.is_file() or not qdiffusion_source.is_file():
+        raise ValueError("plugin root does not contain the pinned QDiffusion API")
+    encoded_source = str(source_root)
+    if encoded_source not in sys.path:
+        sys.path.insert(0, encoded_source)
+    kaiwu_package = importlib.import_module("kaiwu")
+    package_paths = getattr(kaiwu_package, "__path__", None)
+    if package_paths is None:
+        raise RuntimeError("imported kaiwu is not a package")
+    encoded_namespace = str(namespace_root)
+    if encoded_namespace not in package_paths:
+        if hasattr(package_paths, "insert"):
+            package_paths.insert(0, encoded_namespace)
+        else:
+            package_paths.append(encoded_namespace)
+    torch_plugin = importlib.import_module("kaiwu.torch_plugin")
+    qdiffusion = importlib.import_module("kaiwu.torch_plugin.qdiffusion")
+    if Path(str(torch_plugin.__file__)).resolve() != package_init.resolve():
+        raise RuntimeError("imported Kaiwu Torch Plugin is outside --plugin-root")
+    if Path(str(qdiffusion.__file__)).resolve() != qdiffusion_source.resolve():
+        raise RuntimeError("imported QDiffusion API is outside --plugin-root")
+    return (
+        torch_plugin.EnergyModel,
+        torch_plugin.QDiffusion,
+        torch_plugin.QDiffusionConfig,
+        qdiffusion.SequenceTokenSpec,
+    )
+
+
 def _execute_qdiffusion_slice(
     device: torch.device,
     *,
+    plugin_root: Path,
     sampler: KaiwuSampler,
     remote_call_budget: int,
 ) -> dict[str, Any]:
-    from kaiwu.torch_plugin import EnergyModel, QDiffusion, QDiffusionConfig
-    from kaiwu.torch_plugin.qdiffusion import SequenceTokenSpec
+    energy_model_base, qdiffusion_type, config_type, token_spec_type = (
+        _load_pinned_qdiffusion_api(plugin_root)
+    )
 
-    class ToyBMEnergy(EnergyModel):
+    class ToyBMEnergy(energy_model_base):
         def __init__(self, sampler: KaiwuSampler) -> None:
             super().__init__(bm_num_visible=4, bm_num_hidden=2, sampler=sampler)
             self.embedding = nn.Embedding(9, 8)
@@ -130,17 +169,17 @@ def _execute_qdiffusion_slice(
 
     torch.manual_seed(1701)
     energy_model = ToyBMEnergy(sampler)
-    generator = QDiffusion(
+    generator = qdiffusion_type(
         proposal_model=_ToyProposal(vocab_size=9, hidden_size=8),
         energy_model=energy_model,
-        token_spec=SequenceTokenSpec(
+        token_spec=token_spec_type(
             pad_id=0,
             bos_id=1,
             eos_id=2,
             mask_id=3,
             x_id=4,
         ),
-        config=QDiffusionConfig(
+        config=config_type(
             num_diffusion_timesteps=8,
             num_candidates=2,
             proposal_temperature=0.0,
@@ -224,7 +263,7 @@ def _execute_qdiffusion_slice(
     }
 
 
-def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
+def _run_qdiffusion_slice(device: torch.device, *, plugin_root: Path) -> dict[str, Any]:
     client = _DevelopmentFakeClient()
     remote_call_budget = 64
     sampler = KaiwuSampler(
@@ -237,6 +276,7 @@ def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
     )
     return _execute_qdiffusion_slice(
         device,
+        plugin_root=plugin_root,
         sampler=sampler,
         remote_call_budget=remote_call_budget,
     )
@@ -252,6 +292,7 @@ def run_probe(
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
     validation_image_id: str,
+    plugin_root: Path,
 ) -> dict[str, Any]:
     if execution_host not in HOSTS:
         raise ValueError("execution_host must be one of the two declared A800 hosts")
@@ -274,7 +315,7 @@ def run_probe(
     if "A800" not in observed_gpu:
         raise RuntimeError(f"expected an NVIDIA A800, observed {observed_gpu!r}")
 
-    slice_record = _run_qdiffusion_slice(device)
+    slice_record = _run_qdiffusion_slice(device, plugin_root=plugin_root)
     if any(
         slice_record[field] != device_name
         for field in ("proposal_device", "energy_device", "generated_device")
@@ -350,6 +391,7 @@ def main() -> None:
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
         validation_image_id=arguments.validation_image_id,
+        plugin_root=arguments.plugin_root,
     )
     _write_private_json(arguments.output, payload)
     print(f"Private QDiffusion development record written to {arguments.output}")

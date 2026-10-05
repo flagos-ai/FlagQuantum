@@ -29,6 +29,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _load_training_record,
     _verified_training_paths,
 )
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _load_pinned_qdiffusion_api,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
     _load_frozen_config,
@@ -63,6 +66,7 @@ def _load_pinned_modules(
         not path.is_file() for path in expected.values()
     ):
         raise ValueError("plugin root does not contain the pinned DPLM modules")
+    _load_pinned_qdiffusion_api(root)
     for path in (source_root, case_root):
         encoded = str(path)
         if encoded not in sys.path:

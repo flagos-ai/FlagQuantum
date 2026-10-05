@@ -139,7 +139,9 @@ the missing mapping can be reviewed without persisting raw provider values.
 precision, host-role, and source-revision lane recorded by a completed
 `acceptance_config.json`. It validates that lane before resolving credentials.
 The command requires the absolute extracted plugin root and recomputes both the
-executing FlagQuantum tree and plugin tree against the extraction preflight.
+executing FlagQuantum tree and plugin tree against the extraction preflight. It
+also rejects `kaiwu.torch_plugin` or QDiffusion modules imported from any other
+installed or preloaded location.
 
 The command requires the same exact quota acknowledgement as the smaller live
 smoke test. It writes attempted task receipts even when the QDiffusion slice
@@ -192,7 +194,9 @@ preflight and requires its file and transfer-manifest digests to match the
 training record rather than inheriting those claims. System, training,
 evaluation, and replay recompute the executing FlagQuantum tree and actual
 plugin-root file count and content-set digests before importing the workflow.
-The evaluator loads ESM2 exclusively through
+System, training, and replay additionally reject the core QDiffusion modules
+when their resolved files are outside that plugin root. The evaluator loads
+ESM2 exclusively through
 `load_model_and_alphabet_local`, checks aligned headers and exact sequence counts,
 then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen

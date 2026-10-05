@@ -24,10 +24,11 @@ pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
 
 
-def _require_plugin_source() -> None:
+def _require_plugin_source() -> Path:
     if os.environ.get(SOURCE_CONFORMANCE) != "1":
         pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
-    importlib.import_module("kaiwu.torch_plugin")
+    module = importlib.import_module("kaiwu.torch_plugin")
+    return Path(str(module.__file__)).resolve().parents[3]
 
 
 class _IdentityClient:
@@ -98,7 +99,7 @@ def _config() -> dict[str, object]:
 
 
 def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
-    _require_plugin_source()
+    plugin_root = _require_plugin_source()
     client = _IdentityClient()
 
     record = run_live_system_probe(
@@ -120,6 +121,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         timeout=1.0,
         poll_interval=0.01,
         real_provider_transport=False,
+        plugin_root=plugin_root,
     )
 
     assert record["run_completed"] is True
@@ -196,6 +198,9 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
 
     assert source.index("load_source_preflight(") < source.index(
         "resolve_kaiwu_credentials()"
+    )
+    assert source.index("_load_pinned_qdiffusion_api(arguments.plugin_root)") < (
+        source.index("resolve_kaiwu_credentials()")
     )
     assert 'parser.add_argument("--plugin-root"' in source
     assert "source_root=Path(__file__).resolve().parents[2]" in source

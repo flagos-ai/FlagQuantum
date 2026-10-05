@@ -258,7 +258,8 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
 
 The command validates the frozen config and A800 before resolving credentials.
 It also recomputes the executing FlagQuantum tree and the supplied plugin tree
-against the post-extraction preflight before importing the plugin workflow.
+against the post-extraction preflight, places that reviewed source on the import
+path, and rejects a preloaded or installed QDiffusion module from another root.
 It uses explicit integer precision, a hard remote-call budget, and no fallback.
 It records every distinct original-matrix precision report, all returned task
 receipts, the training update, generation constraints, and repeat retrieval of
@@ -438,7 +439,9 @@ requires aligned FASTA headers and the exact frozen count, and loads the ESM2
 checkpoint only through the local-file API. System, training, evaluation, and
 replay recompute the executing FlagQuantum tree plus the actual `--plugin-root`
 file count and content-set digest against the host extraction preflight before
-importing the plugin workflow:
+importing the plugin workflow. The system probe, protein training, and replay
+also verify the resolved `kaiwu.torch_plugin` and QDiffusion module files are
+inside that root:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \

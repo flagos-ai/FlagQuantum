@@ -23,6 +23,9 @@ import torch
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     preflight_artifacts,
 )
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _load_pinned_qdiffusion_api,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
     _load_frozen_config,
@@ -53,6 +56,7 @@ def _load_pinned_workflow(plugin_root: Path) -> ModuleType:
     expected = case_root / "dplm" / "workflows" / "train.py"
     if not expected.is_file() or not source_root.is_dir():
         raise ValueError("plugin root does not contain the pinned QDiffusion workflow")
+    _load_pinned_qdiffusion_api(root)
     for path in (source_root, case_root):
         encoded = str(path)
         if encoded not in sys.path:

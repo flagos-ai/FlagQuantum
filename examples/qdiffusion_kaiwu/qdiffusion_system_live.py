@@ -23,6 +23,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
     HOSTS,
     _execute_qdiffusion_slice,
+    _load_pinned_qdiffusion_api,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
@@ -123,6 +124,7 @@ def run_live_system_probe(
     timeout: float,
     poll_interval: float,
     real_provider_transport: bool,
+    plugin_root: Path,
 ) -> dict[str, Any]:
     role, remote_call_budget, target_range = _validate_lane(
         config,
@@ -147,6 +149,7 @@ def run_live_system_probe(
     try:
         slice_record = _execute_qdiffusion_slice(
             device,
+            plugin_root=plugin_root,
             sampler=sampler,
             remote_call_budget=remote_call_budget,
         )
@@ -357,6 +360,7 @@ def main() -> None:
         source_root=Path(__file__).resolve().parents[2],
         plugin_root=arguments.plugin_root,
     )
+    _load_pinned_qdiffusion_api(arguments.plugin_root)
 
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
@@ -384,6 +388,7 @@ def main() -> None:
         timeout=arguments.timeout,
         poll_interval=arguments.poll_interval,
         real_provider_transport=True,
+        plugin_root=arguments.plugin_root,
     )
     _write_private_redacted_json(
         arguments.output,

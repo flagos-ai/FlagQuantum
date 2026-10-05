@@ -185,6 +185,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - Development, system, protein training, evaluation, and replay now also
   recompute the executing FlagQuantum source root against the host preflight;
   system and development paths bind their actual plugin root as well.
+- The bounded system slice, protein training, and portability replay now
+  resolve `kaiwu.torch_plugin` and its QDiffusion module from that reviewed root
+  and fail closed if an installed or preloaded module comes from a different
+  source tree.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

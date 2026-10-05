@@ -3,11 +3,15 @@ from __future__ import annotations
 import importlib
 import math
 import os
+import sys
+from pathlib import Path
+from types import ModuleType
 
 import pytest
 import torch
 
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _load_pinned_qdiffusion_api,
     _run_qdiffusion_slice,
 )
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
@@ -25,10 +29,11 @@ pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
 
 
-def _require_plugin_source() -> object:
+def _require_plugin_source() -> tuple[object, Path]:
     if os.environ.get(SOURCE_CONFORMANCE) != "1":
         pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
-    return importlib.import_module("kaiwu.torch_plugin")
+    module = importlib.import_module("kaiwu.torch_plugin")
+    return module, Path(str(module.__file__)).resolve().parents[3]
 
 
 class _ExactShapeClient:
@@ -79,7 +84,7 @@ class _ExactShapeClient:
 
 
 def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> None:
-    kaiwu_plugin = _require_plugin_source()
+    kaiwu_plugin, _ = _require_plugin_source()
     torch.manual_seed(7)
     machine = kaiwu_plugin.BoltzmannMachine(num_nodes=4, device="cpu")
     with torch.no_grad():
@@ -117,8 +122,8 @@ def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> N
 
 
 def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None:
-    _require_plugin_source()
-    record = _run_qdiffusion_slice(torch.device("cpu"))
+    _, plugin_root = _require_plugin_source()
+    record = _run_qdiffusion_slice(torch.device("cpu"), plugin_root=plugin_root)
 
     assert math.isfinite(record["objective"])
     assert record["gradient_norm"] > 0
@@ -138,3 +143,26 @@ def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None
         and boundary["returned_storage"] == "cpu_numpy"
         for boundary in transfers["sampler_boundaries"]
     )
+
+
+def test_qdiffusion_slice_rejects_preloaded_plugin_outside_reviewed_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    plugin_root = tmp_path / "reviewed-plugin"
+    package_root = plugin_root / "src" / "kaiwu" / "torch_plugin"
+    package_root.mkdir(parents=True)
+    (package_root / "__init__.py").write_text("", encoding="utf-8")
+    (package_root / "qdiffusion.py").write_text("", encoding="utf-8")
+    namespace = ModuleType("kaiwu")
+    namespace.__path__ = []  # type: ignore[attr-defined]
+    wrong_plugin = ModuleType("kaiwu.torch_plugin")
+    wrong_plugin.__file__ = str(tmp_path / "unreviewed" / "__init__.py")
+    wrong_qdiffusion = ModuleType("kaiwu.torch_plugin.qdiffusion")
+    wrong_qdiffusion.__file__ = str(tmp_path / "unreviewed" / "qdiffusion.py")
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setitem(sys.modules, "kaiwu", namespace)
+    monkeypatch.setitem(sys.modules, "kaiwu.torch_plugin", wrong_plugin)
+    monkeypatch.setitem(sys.modules, "kaiwu.torch_plugin.qdiffusion", wrong_qdiffusion)
+
+    with pytest.raises(RuntimeError, match="outside --plugin-root"):
+        _load_pinned_qdiffusion_api(plugin_root)
