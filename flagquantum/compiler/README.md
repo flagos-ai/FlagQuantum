@@ -215,6 +215,7 @@ amplitudes, the refusal directions, and the falsifiability control: the phase-bl
 route over the same input has an overlap magnitude of 1 and a raw difference above
 0.1, so nothing in that file compares overlaps.
 
+
 A gate that is its own inverse is one thing; a gate whose inverse is a *different*
 opcode is another, and `merge_self_inverse` only saw the first kind, so it left
 `s(0) sdg(0)` standing as two instructions although the pair is the identity.
@@ -407,6 +408,37 @@ entanglers, up to one global phase.
 [benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
 holds the reach, cost, and phase measurement, and cross-checks the entangler
 count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.
+
+The ten passes are one boundary with ten implementations of the same task --
+delete work that cannot change an observable -- so a new or rewritten pass is
+accepted only when it satisfies the same postconditions as the rest.
+[test_optimization_pass_conformance.py](../../tests/team/compiler/test_optimization_pass_conformance.py)
+states that contract once and drives every pass through all of it: the program
+scaffolding survives, no pass grows a program or emits on a wire the source never
+used, no pass mutates its input or answers differently twice, each wire keeps the
+order it carried, and the observable the pass may move is preserved. Operations on
+*disjoint* wires are allowed to move relative to each other, because they commute
+and a pass that folds one wire's stack at a time does reorder them; the order that
+may not change is the one two surviving operations share a wire in.
+
+The observable is not one assertion. Eight passes act on unitary opcodes, and for
+them the state vector is compared as a vector rather than through the overlap
+`1 - |<in|out>|`, because an overlap is blind to the one defect this repository has
+already paid for: a fold that drops a global phase. The other two reason about
+`reset` or `measure`, which `operator_schema` does not declare, so the statevector
+engine cannot execute those programs at all and their observable is the sampled
+outcome distribution. That split is derived from the operator schema in the suite
+rather than restated there. Each instrument is calibrated by a control that has to
+fail it: a pass that appends an identity, a pass that advances one surviving
+rotation by a full turn -- a phase of pi, which the overlap cannot see and the
+vector difference measures at 0.638 or more -- and the two removals the dynamic
+passes refuse, taken by hand, which each move a share by 1.000 against a legitimate
+removal's worst 0.0197.
+
+The roster the suite checks is the loop's own composition, not a copy of it:
+`optimize` runs its passes to a fixed point and imports them inside the function,
+so the suite records the calls the loop actually makes and compares the recording
+with its enumeration. A pass added to the loop and not to this file fails there.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
