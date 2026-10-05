@@ -29,7 +29,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# The table below declares seventy distinct revisions -- forty-eight
+# The table below declares seventy-two distinct revisions -- fifty
 # `unreferenced_object`, eighteen `producing_host_history` and four
 # `external_dependency` -- and they are exactly the revisions no ref of this repository
 # reaches, so this half of the question is countable from the file itself.
@@ -44,17 +44,17 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # no branch, which are the rows declared below. A reader who checks the first of those
 # four numbers is reading the remote's branch list rather than this table.
 #
-# `unreferenced_object` (forty-eight revisions) means no branch and no tag reaches
+# `unreferenced_object` (fifty revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all forty-eight by name, each confirmed by the counted measurement the method
+# serves all fifty by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the forty-eight is the head a pull request
+# policy rather than a promise, and one of the fifty is the head a pull request
 # was opened from: `4d976abe5c415414846c857616ffce6cbadeeefc` headed #201, which merged as
 # `4e52d18d`, and the head commit survives only as an object the remote retains. No ref
-# of this repository reaches any of the forty-eight, so a complete clone obtains none of
+# of this repository reaches any of the fifty, so a complete clone obtains none of
 # them. How many of them a particular working copy happens to resolve is a reading of
 # that working copy rather than a property of the repository -- a fetch of a since-deleted
 # branch brings objects in and a `gc` takes them out again -- so the number is not written
@@ -63,7 +63,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # exactly the quantity that moves, and would call a revision obtainable in the one
 # working copy most likely to still hold it.
 #
-# Fourteen of the forty-eight entered this table from a direction the first pass could
+# Fourteen of the fifty entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -84,7 +84,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# Two more of the forty-eight entered from the citation direction. The first is
+# Two more of the fifty entered from the citation direction. The first is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
@@ -203,6 +203,24 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # consecutive benchmark providers recorded the revision they were developed at, which
 # is why the paragraph above names the producer as the place this class of pin has to
 # be fixed: declaring the revision here repairs the table and not the producer.
+#
+# `69b28e06c9c74657cdce9faee59b4cec5e9477db` is recorded five times by
+# `benchmarks/results/local/statevector_rx_rz_tangent_dispatch_a800.json`, added by
+# `#499` when it merged as `ee3c7aa2`. The artifact pins the source commit from the
+# pull-request branch; deleting that branch left no ref reaching the revision. Both
+# repository-scoped commit API paths still serve the object by its full name, so this
+# is another `unreferenced_object`. Its deletion raised the declared set from
+# forty-eight to forty-nine revisions; both API paths returned the object when checked
+# after the deletion.
+#
+# `aabf25db1955b5de22cd2255f8afcd9895859ad9` is recorded five times by
+# `benchmarks/results/local/statevector_pauli_rotation_tangent_dispatch_a800.json`.
+# It is the fixed source revision copied to both A800 hosts for the GR-005 measurements.
+# Rebasing `#504` onto `main` replaced the branch commit with an equivalent rewritten
+# commit, leaving no ref that reaches the measured revision. Both repository-scoped
+# commit API paths still serve the original object by its full name, so this is an
+# `unreferenced_object`. The rebase raised the declared set from forty-nine to fifty
+# revisions; both API paths returned the object when checked after the rewrite.
 
 # The fetch confirmation is only worth its method, because a probe that reads a
 # failed fetch as a refusal cannot tell a deleted object from a dropped connection or
@@ -236,10 +254,13 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # and with `404` for all eighteen
 # `producing_host_history` revisions, two attempts each, and with `404` for the four
 # `external_dependency` revisions, which are commits of other repositories and are
-# declared with the `repository` that holds them. One `unreferenced_object` revision
-# has joined the table since, `51adb0a04f52745c0e019fa9f9ec402d7f9f6033`, and the whole
-# set was read again on both paths when it did: forty-eight requests each, and every
-# one answered with the object, which is the count stated above. Three controls bound what a `200`
+# declared with the `repository` that holds them. Three `unreferenced_object` revisions
+# have joined the table since: the whole set was read again on both paths when
+# `51adb0a04f52745c0e019fa9f9ec402d7f9f6033` joined, for forty-eight requests each,
+# and `69b28e06c9c74657cdce9faee59b4cec5e9477db` plus
+# `aabf25db1955b5de22cd2255f8afcd9895859ad9` were each read on both paths when they
+# joined. Every request answered with the object, which is the count stated above.
+# Three controls bound what a `200`
 # means: the same request answered with the object for a commit on `main`, with `404`
 # for a commit of `pytorch/pytorch`, and with `404` for a commit that exists only in the
 # checkout that produced it. The request therefore separates the state this table
@@ -698,7 +719,15 @@ value = "57f40ee6bfd1318ac98ab2d801216c958c168efe"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "69b28e06c9c74657cdce9faee59b4cec5e9477db"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "8f77d0c044076dc5e25eb5128d64699ebfd69d92"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "aabf25db1955b5de22cd2255f8afcd9895859ad9"
 origin = "unreferenced_object"
 
 [[artifact.revision]]

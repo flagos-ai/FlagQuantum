@@ -179,12 +179,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_two_qubit_pauli_tangent_triton.py::test_two_qubit_pauli_tangent_cpu_fallback_matches_reference",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_pauli_rotation_tangent_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-GR-006-A",
         "tests/unit/test_hva_forward_tangent_triton.py::test_hva_forward_tangents_match_statevector_jacobian",
         gradient_tests=(
             "tests/unit/test_hva_forward_tangent_triton.py::test_hva_forward_tangents_match_statevector_jacobian",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/heisenberg_hva_forward_tangent_dispatch_a800.json",
         ),
     ),
     _evidence(

@@ -375,6 +375,14 @@ Python and PyTorch version families, device, thread limits, measurement scope,
 and calls per sample must match. This prevents timings from an arbitrary CI
 runner from approving or rejecting a baseline recorded on different hardware.
 
+Linux x86 baselines may additionally record the CPU model and process affinity.
+When present, both become mandatory comparison-profile fields. The simulator
+corpus gate can also name Qiskit Aer or PennyLane Lightning with
+`--comparison-engine`; it then locks correctness, stability, sample count,
+version identity, and the maximum native/external timing ratio. The maintained
+fixed-host example is documented in
+[`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](results/comparison/LINUX_X86_CPU_REGRESSION_GATE_20261004.md).
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash

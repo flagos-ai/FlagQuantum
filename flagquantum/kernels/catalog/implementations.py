@@ -193,6 +193,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector", "parameter_major_tangents"),
         directions=("jacobian",),
         internal_fallback=True,
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-006-A",
@@ -201,6 +202,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "heisenberg_hva_forward_tangents",
         layouts=("flat_statevector", "parameter_major_tangents"),
         directions=("jacobian",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-MPS-001-A",

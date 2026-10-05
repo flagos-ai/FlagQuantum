@@ -461,6 +461,51 @@ bounded single-device development evidence, not a framework-wide QNG or
 distributed scalability claim. Reproduce or validate it with
 [`benchmarks/statevector_rx_rz_tangent_dispatch.py`](../../benchmarks/statevector_rx_rz_tangent_dispatch.py).
 
+`FQKI-TRITON-GR-005-A` propagates every parameter tangent through repeated
+RXX, RYY, and RZZ rotations in one persistent, parameter-major launch. It is
+the explicit-Jacobian building block for two-qubit Pauli ansatz layers used by
+Hamiltonian simulation, VQE-family workflows, and quantum geometric methods.
+
+The checked-in
+[`statevector_pauli_rotation_tangent_dispatch_a800.json`](../../benchmarks/results/local/statevector_pauli_rotation_tangent_dispatch_a800.json)
+artifact records six fixed batch, group-count, and depth shapes, including the
+depth-one boundary, depth 32, a `2**14`-group case, and a batched case, on
+`jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0.
+The independent baseline analytically propagates the same RXX/RYY/RZZ tangents
+with ordinary PyTorch operations, is checked against finite differences, and
+is also compiled with `torch.compile`. Maximum tangent absolute and relative
+L2 errors are `1.50e-6` and `4.50e-7`. Across the full default window, catalog
+dispatch reaches at least `14.840x` the speed of PyTorch eager and `23.775x`
+the speed of `torch.compile`. The runner rejects any case below either `1.0x`
+performance floor or the tangent tolerances, so GR-005-A is `provisional` for
+this measured CUDA `complex64` window. This is bounded single-device
+development evidence, not a framework-wide algorithm or distributed
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_pauli_rotation_tangent_dispatch.py`](../../benchmarks/statevector_pauli_rotation_tangent_dispatch.py).
+
+`FQKI-TRITON-GR-006-A` propagates the state and every parameter tangent through
+the bond-resolved-phase Heisenberg HVA. The fused augmented-state path supplies
+the explicit Jacobian used by quantum natural-gradient metric construction
+without replaying one reverse-mode pass per parameter.
+
+The checked-in
+[`heisenberg_hva_forward_tangent_dispatch_a800.json`](../../benchmarks/results/local/heisenberg_hva_forward_tangent_dispatch_a800.json)
+artifact records six fixed wire-count and depth shapes from the two-wire,
+depth-one boundary through ten wires on `jp-a800-171` and `jp-a800-172` under
+stock Triton 3.7.1 and FlagTree 0.7.0. The independent baseline propagates the
+same state and parameter-major analytic tangents with ordinary PyTorch
+operations, is checked against finite differences, and is also compiled with
+`torch.compile`. Maximum state and tangent absolute errors are `1.20e-7` and
+`1.50e-7`; their maximum relative L2 errors are `3.80e-7` and `3.69e-7`.
+Across the full measured window, catalog dispatch reaches at least `4.194x`
+the speed of PyTorch eager and `6.416x` the speed of `torch.compile`. The
+runner rejects any case below either `1.0x` performance floor or the state and
+tangent tolerances, so GR-006-A is `provisional` for this measured CUDA
+`complex64` window. This is bounded single-device development evidence, not a
+framework-wide QNG, HVA, or distributed scalability claim. Reproduce or
+validate it with
+[`benchmarks/heisenberg_hva_forward_tangent_dispatch.py`](../../benchmarks/heisenberg_hva_forward_tangent_dispatch.py).
+
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
 `torch.bmm`: A800 measurements show that the experimental NUM-001 Triton
