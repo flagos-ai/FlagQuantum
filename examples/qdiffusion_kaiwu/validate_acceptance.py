@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import math
 import os
 import re
@@ -22,6 +21,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     validate_source_preflight_record,
     validate_transfer_manifest_record,
 )
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.verify_environment_lock import load_environment_lock
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
@@ -50,7 +50,7 @@ METRIC_NAMES = (
 
 
 def _read_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return loads_json_strict(path.read_text(encoding="utf-8"))
 
 
 def _sha256(path: Path) -> str:

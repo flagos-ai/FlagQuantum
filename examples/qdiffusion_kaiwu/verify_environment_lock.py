@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+
 SCHEMA = "flagquantum.qboson_qdiffusion_environment_lock"
 SHA256 = re.compile(r"[0-9a-f]{64}")
 PLACEHOLDER = re.compile(r"<[^>]+>")
@@ -86,7 +88,7 @@ def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
         raise ValueError("environment lock must not be accessible by group or others")
     encoded = path.read_bytes()
     try:
-        record = json.loads(encoded)
+        record = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:
         raise ValueError("environment lock is not valid JSON") from exc
     if not isinstance(record, dict):

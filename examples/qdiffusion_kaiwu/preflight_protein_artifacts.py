@@ -10,6 +10,8 @@ import stat
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
 PREFLIGHT_SCHEMA = "flagquantum.qboson_qdiffusion_artifact_preflight"
 ARTIFACT_FIELDS = {
@@ -65,7 +67,7 @@ def _artifact_identity(path: Path) -> tuple[str, str, int]:
 
 def _read_config(path: Path) -> tuple[dict[str, Any], str]:
     raw = path.read_bytes()
-    value = json.loads(raw)
+    value = loads_json_strict(raw)
     if not isinstance(value, dict):
         raise ValueError("config must be a JSON object")
     if value.get("schema") != CONFIG_SCHEMA or value.get("version") != "1.0":

@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+
 SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
 CLASSIFICATION = "local_preparation_only_not_execution_evidence"
 HOSTS = {"jp-a800-171", "jp-a800-172"}
@@ -115,7 +117,7 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
         raise ValueError("target host is outside the reviewed A800 pair")
     encoded_manifest = manifest_path.read_bytes()
     try:
-        manifest = json.loads(encoded_manifest)
+        manifest = loads_json_strict(encoded_manifest)
     except json.JSONDecodeError as exc:
         raise ValueError("manifest is not valid JSON") from exc
     if not isinstance(manifest, dict):

@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
-import json
 import platform
 import re
 import socket
@@ -31,6 +30,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_training_provider_evidence,
 )
@@ -74,7 +74,7 @@ def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleTyp
 
 def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
     encoded = path.read_bytes()
-    record = json.loads(encoded)
+    record = loads_json_strict(encoded)
     if not isinstance(record, dict):
         raise ValueError("training record must be a JSON object")
     if record.get("schema") != TRAINING_SCHEMA or record.get("version") != "1.0":
@@ -220,7 +220,7 @@ def _local_esm2_model(
 
 
 def _quality_metrics(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = loads_json_strict(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError("sequence quality summary must be a JSON object")
     return value

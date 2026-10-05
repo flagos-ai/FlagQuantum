@@ -9,6 +9,8 @@ import stat
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+
 SCHEMA = "flagquantum.qboson_a800_extracted_bundle_verification"
 TRANSFER_MANIFEST_SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
 EVIDENCE_CLASS = "extraction_preflight_only"
@@ -83,7 +85,7 @@ def load_source_preflight(
         raise ValueError("source preflight execution host is outside the reviewed pair")
     encoded = path.read_bytes()
     try:
-        record = json.loads(encoded)
+        record = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:
         raise ValueError("source preflight is not valid JSON") from exc
     if not isinstance(record, dict):

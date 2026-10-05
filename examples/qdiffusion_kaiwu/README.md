@@ -257,3 +257,6 @@ copies of every component record, so deleting or replacing a source record
 makes the final manifest invalid. Revalidation also rejects public permissions
 and symlinks in any manifest member path, duplicate or non-normalized paths, and
 files that are present in the bundle but absent from its manifest.
+All frozen configuration, lock, preflight, transfer, component, and final
+manifest JSON readers also reject duplicate object keys at every nesting level;
+a byte-identical evidence file cannot rely on last-key-wins interpretation.

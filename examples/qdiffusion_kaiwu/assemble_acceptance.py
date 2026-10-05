@@ -34,6 +34,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     validate_source_preflight_record,
     validate_transfer_manifest_record,
 )
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
@@ -80,7 +81,7 @@ def _require_private_input(path: Path) -> None:
 def _load_component(path: Path, schema: str) -> tuple[dict[str, Any], str]:
     _require_private_input(path)
     encoded = path.read_bytes()
-    value = json.loads(encoded)
+    value = loads_json_strict(encoded)
     if not isinstance(value, dict):
         raise ValueError(f"component record must be a JSON object: {path}")
     if value.get("schema") != schema or value.get("version") != "1.0":

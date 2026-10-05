@@ -381,6 +381,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - Final evidence validation now applies a closed-world file-tree check: member
   paths must be unique normalized relative POSIX paths, and unlisted files are
   rejected instead of being silently ignored beside declared evidence.
+- Every QDiffusion configuration and evidence reader now uses one strict JSON
+  parser that rejects duplicate object keys at every nesting level. A source
+  scan in the credential-free golden path prevents frozen config, environment
+  lock, preflight, transfer, component, or final manifest readers from silently
+  returning to last-key-wins parsing.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

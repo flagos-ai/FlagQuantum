@@ -80,6 +80,7 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_protein_evaluate.py \
   tests/team/ecosystem/test_qdiffusion_protein_training_live.py \
   tests/team/ecosystem/test_qdiffusion_source_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_strict_json.py \
   tests/team/ecosystem/test_qdiffusion_transfer_builder.py \
   tests/team/ecosystem/test_qdiffusion_transfer_bundle.py \
   tests/team/remote/test_kaiwu_credentials.py \

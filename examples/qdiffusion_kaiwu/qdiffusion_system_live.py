@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import platform
 import socket
 from datetime import datetime, timezone
@@ -26,6 +25,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
@@ -44,7 +44,7 @@ SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
 
 def _load_frozen_config(path: Path) -> tuple[dict[str, Any], str]:
     encoded = path.read_bytes()
-    raw = json.loads(encoded)
+    raw = loads_json_strict(encoded)
     if not isinstance(raw, dict):
         raise ValueError("frozen configuration must be a JSON object")
     errors: list[str] = []
