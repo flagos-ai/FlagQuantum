@@ -68,14 +68,21 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         or len(set(seeds)) != len(seeds)
     ):
         errors.append("config.seeds: expected at least three unique integer seeds")
-    for name in ("dataset", "checkpoint", "tokenizer", "generation"):
+    for name in (
+        "dataset",
+        "checkpoint",
+        "tokenizer",
+        "evaluation_model",
+        "training",
+        "generation",
+    ):
         section = _mapping(config.get(name), f"config.{name}", errors)
         if not section or any(
             value is None or value == "" or value == "<required>"
             for value in section.values()
         ):
             errors.append(f"config.{name}: all frozen identity fields are required")
-    for name in ("dataset", "checkpoint"):
+    for name in ("dataset", "checkpoint", "tokenizer", "evaluation_model"):
         digest = _mapping(config.get(name), f"config.{name}", errors).get("sha256")
         if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
             errors.append(f"config.{name}.sha256: expected a SHA-256 digest")
@@ -83,6 +90,32 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
     for field in ("sequence_count", "max_steps", "num_candidates"):
         if type(generation.get(field)) is not int or generation.get(field, 0) <= 0:
             errors.append(f"config.generation.{field}: expected a positive integer")
+    training = _mapping(config.get("training"), "config.training", errors)
+    for field in (
+        "epochs",
+        "min_epochs",
+        "batch_size",
+        "validation_steps",
+        "scheduler_patience",
+        "early_stop_patience",
+    ):
+        if type(training.get(field)) is not int or training.get(field, 0) <= 0:
+            errors.append(f"config.training.{field}: expected a positive integer")
+    for field in (
+        "learning_rate",
+        "weight_decay",
+        "grad_clip_norm",
+        "scheduler_factor",
+    ):
+        value = _finite_number(training.get(field), f"config.training.{field}", errors)
+        if value is not None and value <= 0:
+            errors.append(f"config.training.{field}: expected a positive value")
+    if (
+        type(training.get("epochs")) is int
+        and type(training.get("min_epochs")) is int
+        and training["min_epochs"] > training["epochs"]
+    ):
+        errors.append("config.training.min_epochs: cannot exceed epochs")
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
@@ -207,6 +240,27 @@ def _validate_system_record(
         errors.append(f"{label}: retrieval must not resubmit")
     if record.get("secrets_redacted") is not True:
         errors.append(f"{label}: secret redaction is not proven")
+    artifacts = _mapping(record.get("artifacts"), f"{label}.artifacts", errors)
+    artifact_config_fields = {
+        "dataset_sha256": "dataset",
+        "base_checkpoint_sha256": "checkpoint",
+        "tokenizer_sha256": "tokenizer",
+        "evaluation_model_sha256": "evaluation_model",
+    }
+    for record_field, config_section in artifact_config_fields.items():
+        expected_digest = _mapping(
+            config.get(config_section), f"config.{config_section}", errors
+        ).get("sha256")
+        if artifacts.get(record_field) != expected_digest:
+            errors.append(f"{label}.artifacts.{record_field}: differs from config")
+    trained_digest = artifacts.get("trained_energy_checkpoint_sha256")
+    if (
+        not isinstance(trained_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", trained_digest) is None
+    ):
+        errors.append(
+            f"{label}.artifacts.trained_energy_checkpoint_sha256: expected a SHA-256 digest"
+        )
     precision = _mapping(
         record.get("precision_policy"), f"{label}.precision_policy", errors
     )
@@ -439,6 +493,16 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     }
     if len(revisions) != 1 or len(plugin_revisions) != 1:
         errors.append("manifest: both hosts must use identical source revisions")
+    trained_checkpoint_digests = {
+        _mapping(record.get("artifacts"), "record.artifacts", errors).get(
+            "trained_energy_checkpoint_sha256"
+        )
+        for record in records
+    }
+    if len(trained_checkpoint_digests) != 1:
+        errors.append(
+            "manifest: both hosts must use the same trained energy checkpoint"
+        )
     task_sets = []
     for record in records:
         raw_task_ids = record.get("qboson_task_ids")

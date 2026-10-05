@@ -24,7 +24,25 @@
   },
   "tokenizer": {
     "name": "<required>",
-    "revision": "<required>"
+    "revision": "<required>",
+    "sha256": "<required>"
+  },
+  "evaluation_model": {
+    "name": "esm2_t33_650M_UR50D",
+    "revision": "<required>",
+    "sha256": "<required>"
+  },
+  "training": {
+    "epochs": 20,
+    "min_epochs": 3,
+    "batch_size": 4,
+    "learning_rate": 0.00005,
+    "weight_decay": 0.01,
+    "grad_clip_norm": 1.0,
+    "validation_steps": 3,
+    "scheduler_factor": 0.5,
+    "scheduler_patience": 1,
+    "early_stop_patience": 4
   },
   "generation": {
     "sequence_count": 32,

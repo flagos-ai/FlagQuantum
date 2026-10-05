@@ -123,6 +123,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   execution, interruption and same-identity resume, independent two-host runs,
   the primary protein experiment, final manifest validation, failure
   classification, and claim boundaries.
+- Source audit of the pinned plugin confirms that its referenced human-proteome
+  FASTA, DPLM weights, trained guided checkpoint, tokenizer snapshot, and ESM2
+  weights are not in the Git tree. The acceptance config now freezes tokenizer
+  and ESM2 content hashes plus training settings, and both host records must
+  share the trained primary-host energy-checkpoint digest.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

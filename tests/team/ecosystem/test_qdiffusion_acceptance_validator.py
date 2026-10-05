@@ -42,7 +42,24 @@ def _config() -> dict[str, Any]:
             "sha256": "c" * 64,
         },
         "checkpoint": {"name": "dplm", "revision": "v1", "sha256": "d" * 64},
-        "tokenizer": {"name": "dplm", "revision": "v1"},
+        "tokenizer": {"name": "dplm", "revision": "v1", "sha256": "e" * 64},
+        "evaluation_model": {
+            "name": "esm2_t33_650M_UR50D",
+            "revision": "v1",
+            "sha256": "f" * 64,
+        },
+        "training": {
+            "epochs": 20,
+            "min_epochs": 3,
+            "batch_size": 4,
+            "learning_rate": 0.00005,
+            "weight_decay": 0.01,
+            "grad_clip_norm": 1.0,
+            "validation_steps": 3,
+            "scheduler_factor": 0.5,
+            "scheduler_patience": 1,
+            "early_stop_patience": 4,
+        },
         "generation": {"sequence_count": 32, "max_steps": 64, "num_candidates": 4},
         "seeds": [1701, 1702, 1703],
         "remote_call_budget": 128,
@@ -116,6 +133,13 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
         "fallback_occurred": False,
         "retrieval_resubmitted": False,
         "secrets_redacted": True,
+        "artifacts": {
+            "dataset_sha256": "c" * 64,
+            "base_checkpoint_sha256": "d" * 64,
+            "tokenizer_sha256": "e" * 64,
+            "evaluation_model_sha256": "f" * 64,
+            "trained_energy_checkpoint_sha256": "1" * 64,
+        },
         "training": {
             "energy_objective": -0.5,
             "gradient_norm": 1.0,
@@ -239,3 +263,15 @@ def test_system_gate_requires_aggregate_precision_evidence(tmp_path: Path) -> No
 
     assert any("fewer reports than remote calls" in error for error in errors)
     assert any("invalid scale-factor range" in error for error in errors)
+
+
+def test_manifest_requires_same_trained_energy_checkpoint(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[1])
+    changed["artifacts"]["trained_energy_checkpoint_sha256"] = "2" * 64
+    _replace_record(manifest_path, 1, changed)
+
+    assert any(
+        "same trained energy checkpoint" in error
+        for error in validate_acceptance(manifest_path)
+    )

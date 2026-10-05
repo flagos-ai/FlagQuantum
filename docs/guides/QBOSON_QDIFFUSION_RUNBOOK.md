@@ -27,7 +27,8 @@ Do not begin a live run until all entries are available and reviewed:
   environment rather than command-line arguments, files in the repository, or
   evidence records;
 - the frozen protein dataset split, DPLM checkpoint, tokenizer, generation
-  settings, seed list, and their immutable identities;
+  settings, seed list, ESM2 evaluation model, training settings, and their
+  immutable identities;
 - explicit authorization to transfer the reviewed source bundles to both
   validation hosts.
 
@@ -238,6 +239,19 @@ The dataset and checkpoint are not currently supplied by this repository.
 Their acquisition, licenses, hashes, and frozen revisions must be resolved
 before this step; the upstream example's published metrics are not FlagQuantum
 evidence.
+
+At plugin revision `f047bce7b1077449967bbe9e9fab5741542b48d4`, the Git tree
+contains no FASTA or model checkpoint even though its default helpers reference
+`data/UP000005640_9606.fasta`, `airkingbd/dplm_150m`, a local
+`/data2/wwx/models/dplm_150m` path, and `ckpt/best_epoch_9.pt`. The ESM2 loader
+also resolves `esm2_t33_650M_UR50D` outside the plugin tree. Treat each as an
+external artifact: stage it locally, review its license, freeze its revision and
+content digest, and prohibit implicit downloads during the acceptance run.
+
+The frozen base DPLM checkpoint is loaded independently for the proposal and
+energy backbones in the first acceptance scope. The guided energy checkpoint is
+then produced by the frozen training procedure. Record its digest in both host
+records; the replay host must load that exact primary-host artifact.
 
 ## 10. Assemble and validate final evidence
 
