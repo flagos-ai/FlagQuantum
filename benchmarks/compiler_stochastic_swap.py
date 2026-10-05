@@ -398,7 +398,7 @@ def plan_stochastic_swaps(
     if trials < 1:
         raise ValueError("trials must be at least one")
     n_wires = program.n_wires
-    if coupling.n_wires < n_wires:
+    if coupling.n_qubits < n_wires:
         raise ValueError("Coupling map has fewer wires than the circuit.")
     placement = _validated_layout(initial_layout, n_wires)
     instructions = program.instructions

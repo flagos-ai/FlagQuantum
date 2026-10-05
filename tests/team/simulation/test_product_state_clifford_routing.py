@@ -321,11 +321,11 @@ def test_wide_product_component_uses_native_static_clifford_with_rollback(
     def record_native(
         output: torch.Tensor,
         gate_codes: torch.Tensor,
-        wires: torch.Tensor,
+        qubits: torch.Tensor,
         *,
         n_qubits: int,
     ) -> bool:
-        observed.append((gate_codes.dtype, wires.dtype, n_qubits))
+        observed.append((gate_codes.dtype, qubits.dtype, n_qubits))
         return False
 
     monkeypatch.setattr(product_state, "fused_static_clifford_layer_", record_native)

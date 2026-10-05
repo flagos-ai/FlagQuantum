@@ -388,7 +388,7 @@ def run_tebd(
         raise RuntimeError("TEBD cumulative discarded weight is non-finite.")
     program_sha256 = _program_hash(
         hamiltonian,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         total_time=total,
         time_step=dt,
         max_bond=max_bond,

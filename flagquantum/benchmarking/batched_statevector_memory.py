@@ -281,7 +281,7 @@ def run_benchmark(
             "external_bridge_batching": "repeated_single_item_bridge",
         },
         workloads=workloads,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         batch_sizes=batch_sizes,
         engines=engines,
         cases=tuple(cases),

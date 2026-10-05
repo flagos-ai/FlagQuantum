@@ -1062,7 +1062,7 @@ def test_checked_in_euler_post_reduction_comparison_is_reproducible() -> None:
     "kwargs, message",
     (
         ({"workloads": ()}, "at least one"),
-        ({"n_wires": ()}, "at least one"),
+        ({"n_qubits": ()}, "at least one"),
         ({"threads": 0}, "threads must be positive"),
         ({"layers": 0}, "layers must be positive"),
         ({"workloads": ("unknown",)}, "unsupported workload"),
@@ -1073,7 +1073,7 @@ def test_differentiable_corpus_rejects_invalid_matrix(
 ) -> None:
     arguments = {
         "workloads": ("hardware_efficient_vqe",),
-        "n_wires": (4,),
+        "n_qubits": (4,),
         "layers": 1,
         "engines": ("flagquantum_native",),
         "threads": 1,

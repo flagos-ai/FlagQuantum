@@ -7,7 +7,7 @@ pytestmark = pytest.mark.benchmark_contract
 
 def test_routing_cache_benchmark_reports_deterministic_cache_evidence() -> None:
     payload = run_benchmark(
-        n_qubits=24,
+        n_wires=24,
         gate_count=240,
         path_cache_capacity=64,
     )

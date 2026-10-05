@@ -946,13 +946,13 @@ def test_forward_sweep_fuses_composed_rotation_groups(
     def counted(
         state: torch.Tensor,
         matrices: torch.Tensor,
-        wires: torch.Tensor,
+        qubits: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
     ) -> bool:
         nonlocal calls
         calls += 1
-        return native(state, matrices, wires, n_wires=n_wires)
+        return native(state, matrices, qubits, n_qubits=n_qubits)
 
     monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", counted)
     monkeypatch.setenv("FQ_NATIVE_CPU_ROTATION_FUSION", "1")
@@ -983,13 +983,13 @@ def test_forward_sweep_fuses_single_rotation_layer_with_explicit_rollback(
     def counted(
         state: torch.Tensor,
         matrices: torch.Tensor,
-        wires: torch.Tensor,
+        qubits: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
     ) -> bool:
         nonlocal calls
         calls += 1
-        return native(state, matrices, wires, n_wires=n_wires)
+        return native(state, matrices, qubits, n_qubits=n_qubits)
 
     monkeypatch.setattr(forward_sweep, "fused_rotation_block_forward_", counted)
     monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1")
@@ -1991,13 +1991,13 @@ def test_reverse_sweep_fuses_fixed_hadamard_blocks(
     def counted(
         ket: torch.Tensor,
         adjoint: torch.Tensor,
-        wires: torch.Tensor,
+        qubits: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
     ) -> bool:
         nonlocal calls
         calls += 1
-        return native(ket, adjoint, wires, n_wires=n_wires)
+        return native(ket, adjoint, qubits, n_qubits=n_qubits)
 
     monkeypatch.setattr(reverse_adjoint_sweep, "fused_hadamard_block_adjoint_", counted)
     monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "1")

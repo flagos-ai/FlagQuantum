@@ -470,7 +470,7 @@ def _case_arguments(
     iterations: int,
 ) -> dict[str, int]:
     return {
-        "n_wires": n_qubits,
+        "n_qubits": n_qubits,
         "layers": layers,
         "batch_size": batch_size,
         "seed": seed,

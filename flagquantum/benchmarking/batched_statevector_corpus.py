@@ -800,7 +800,7 @@ def run_benchmark(
             "engine_order": "rotated_per_iteration_within_one_process",
         },
         workloads=tuple(workloads),
-        n_qubits=tuple(n_qubits),
+        n_wires=tuple(n_qubits),
         batch_sizes=tuple(batch_sizes),
         engines=tuple(engines),
         cases=cases,

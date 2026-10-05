@@ -386,7 +386,7 @@ def test_checked_in_random_clifford_case_is_complete_stable_and_correct() -> Non
     "kwargs, message",
     (
         ({"workloads": ()}, "at least one"),
-        ({"n_wires": ()}, "at least one"),
+        ({"n_qubits": ()}, "at least one"),
         ({"threads": 0}, "threads must be positive"),
         ({"workloads": ("unknown",)}, "unsupported workload"),
     ),
@@ -394,7 +394,7 @@ def test_checked_in_random_clifford_case_is_complete_stable_and_correct() -> Non
 def test_corpus_rejects_invalid_matrix(kwargs: dict[str, object], message: str) -> None:
     arguments = {
         "workloads": ("hardware_efficient_statevector",),
-        "n_wires": (4,),
+        "n_qubits": (4,),
         "engines": ("flagquantum_native",),
         "threads": 1,
         "warmup": 0,

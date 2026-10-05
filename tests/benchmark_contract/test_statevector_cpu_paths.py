@@ -38,12 +38,12 @@ _CASE_NAMES = tuple(case.name for case in CASES)
 
 def _small_run(**overrides: object) -> dict:
     arguments = {
-        "n_wires": 4,
+        "n_qubits": 4,
         "layers": 1,
         "batch_size": 1,
         "warmup": 0,
         "iterations": 2,
-        "marginal_wires": 3,
+        "marginal_qubits": 3,
     }
     arguments.update(overrides)
     return run_benchmark(**arguments)
@@ -132,7 +132,7 @@ def test_cpu_paths_attributes_each_gate_family_to_its_engine_path():
 
 
 def test_fused_rotation_regions_are_attributed_and_reduce_to_one_apply_each():
-    by_case = {item["case"]: item for item in _small_run(layers=2, n_wires=6)["cases"]}
+    by_case = {item["case"]: item for item in _small_run(layers=2, n_qubits=6)["cases"]}
 
     rotation = by_case["rotation_chain"]["runtime_statistics"]
     assert rotation["fused_gate_regions"] == 6
@@ -164,7 +164,7 @@ def test_two_wire_diagonal_matching_fusion_can_be_disabled(monkeypatch):
 
     by_case = {
         item["case"]: item
-        for item in _small_run(layers=2, n_wires=6, cases=["two_wire_diagonal_chain"])[
+        for item in _small_run(layers=2, n_qubits=6, cases=["two_wire_diagonal_chain"])[
             "cases"
         ]
     }
@@ -182,7 +182,7 @@ def test_disjoint_single_wire_fusion_can_be_disabled(monkeypatch):
 
     by_case = {
         item["case"]: item
-        for item in _small_run(layers=2, n_wires=6, cases=["rotation_chain"])["cases"]
+        for item in _small_run(layers=2, n_qubits=6, cases=["rotation_chain"])["cases"]
     }
 
     assert (
@@ -195,7 +195,7 @@ def test_unfused_single_wire_layer_fusion_can_be_disabled(monkeypatch):
 
     by_case = {
         item["case"]: item
-        for item in _small_run(layers=2, n_wires=6, cases=["mixed_chain"])["cases"]
+        for item in _small_run(layers=2, n_qubits=6, cases=["mixed_chain"])["cases"]
     }
 
     assert by_case["mixed_chain"]["runtime_statistics"]["statevector_apply_count"] == 14
@@ -210,7 +210,7 @@ def test_the_diagonal_gate_count_agrees_with_a_count_taken_from_the_ir():
     counting it there is independent of every line that produces the statistic,
     and the two must agree for a chain whose every gate is diagonal.
     """
-    by_case = {item["case"]: item for item in _small_run(layers=2, n_wires=6)["cases"]}
+    by_case = {item["case"]: item for item in _small_run(layers=2, n_qubits=6)["cases"]}
 
     for name in ("diagonal_chain", "rotation_chain", "two_wire_diagonal_chain"):
         case = by_case[name]
@@ -236,9 +236,9 @@ def test_cpu_paths_rejects_unknown_cases_and_unusable_dimensions():
     with pytest.raises(ValueError, match="iterations must be >= 2"):
         _small_run(iterations=1)
     with pytest.raises(ValueError, match="n_qubits >= 3 required"):
-        _small_run(n_wires=2)
+        _small_run(n_qubits=2)
     with pytest.raises(ValueError, match="marginal_qubits must be between"):
-        _small_run(marginal_wires=9)
+        _small_run(marginal_qubits=9)
     with pytest.raises(ValueError, match="threads must be >= 1"):
         _small_run(threads=0)
     with pytest.raises(ValueError, match="layers >= 1 required"):
@@ -289,9 +289,9 @@ def test_marginal_case_reference_reads_a_freshly_simulated_state(
     reduced: list[torch.Tensor] = []
     original = module._direct_marginal_probabilities
 
-    def recording(state: torch.Tensor, wires: tuple[int, ...]) -> torch.Tensor:
+    def recording(state: torch.Tensor, qubits: tuple[int, ...]) -> torch.Tensor:
         reduced.append(state)
-        return original(state, wires)
+        return original(state, qubits)
 
     monkeypatch.setattr(module, "_direct_marginal_probabilities", recording)
     module._run_marginal_case(

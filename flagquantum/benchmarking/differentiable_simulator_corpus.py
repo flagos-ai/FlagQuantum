@@ -879,7 +879,7 @@ def run_benchmark(
         },
         support_matrix=build_support_matrix(engines),
         workloads=tuple(workloads),
-        n_qubits=tuple(n_qubits),
+        n_wires=tuple(n_qubits),
         layers=layers,
         engines=tuple(engines),
         cases=cases,

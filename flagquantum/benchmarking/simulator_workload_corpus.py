@@ -508,7 +508,7 @@ def run_benchmark(
             "feature_schema": FEATURE_SCHEMA,
         },
         workloads=tuple(workloads),
-        n_qubits=tuple(n_qubits),
+        n_wires=tuple(n_qubits),
         engines=tuple(engines),
         cases=cases,
     )
