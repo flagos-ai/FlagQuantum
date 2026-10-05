@@ -61,6 +61,8 @@ export PYTHONPATH="$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
 
 cd -- "$REPOSITORY_ROOT"
 "$PYTHON_BIN" -B -m pytest -q \
+  tests/team/ecosystem/test_boundary_inventory.py \
+  tests/team/ecosystem/test_kaiwu_draft_boundary.py \
   tests/team/ecosystem/test_kaiwu_matrix_boundary.py \
   tests/team/ecosystem/test_kaiwu_community_conformance.py \
   tests/team/ecosystem/test_kaiwu_sampler.py \

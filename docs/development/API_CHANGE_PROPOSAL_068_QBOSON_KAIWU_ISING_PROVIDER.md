@@ -71,7 +71,7 @@ from flagquantum.remote.kaiwu import (
 
 credentials = KaiwuCredentials(user_id="...", sdk_code="...")
 client = KaiwuSDKClient(
-    checkpoint_dir="private-kaiwu-checkpoints",
+    checkpoint_dir="/absolute/private-kaiwu-checkpoints",  # existing mode-0700 dir
     credentials=credentials,
     expected_version="1.3.1",
 )
@@ -92,9 +92,11 @@ The example is illustrative and does not approve these names as stable. In
 particular, the SDK client cannot be promoted until a real pinned response
 establishes provider task-ID, target, and terminal-state mappings.
 The prototype may persist a value-free schema of the documented
-`get_task_result` dictionary—field names, types, lengths, dtypes, and shapes—to
-support that review. It must not persist raw provider values or infer a mapping
-from field names alone.
+`get_task_result` dictionary—bounded safe field names, types, lengths, dtypes,
+and shapes—to support that review. Unsafe or oversized names are omitted, the
+serialized record is scanned for both credential values, and diagnostic
+failure remains nonfatal to otherwise valid samples. It must not persist raw
+provider values or infer a mapping from field names alone.
 
 ## Ising and QUBO semantics
 
@@ -118,8 +120,15 @@ from field names alone.
 - Before the first SDK operation, a mode-0600 recovery bundle records the
   credential-free task name, exact matrix, matrix digest, mode, sample count,
   project, schema, and original submission timestamp.
-- Existing recovery content is immutable: an exact identity is reused and a
-  conflict or corruption fails before SDK access.
+- The checkpoint directory must be private and non-symlinked before license
+  initialization. A complete temporary recovery bundle is synced and atomically
+  published without replacement before the first task operation.
+- Existing recovery content is immutable and opened without following
+  symlinks. Its schema and UTC timestamp are validated, provider task/target
+  identities must remain absent until an approved mapping exists, and every SDK
+  solve, poll, and result operation requires the in-memory receipt to match the
+  authoritative bundle exactly. A conflict, corruption, missing bundle, public
+  file, or generic restore mismatch fails before SDK task access.
 - Every successful result has valid spin shape and domain, matched sample and
   energy counts, independently recomputed finite energies, and explicit
   `fallback_occurred=false`.

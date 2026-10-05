@@ -245,6 +245,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   sampler, plugin, and live-probe contract tests without network access or
   provider quota. It is explicitly local conformance evidence rather than A800
   or QBoson evidence.
+- Machine-checked draft API gates now keep Kaiwu out of the stable root,
+  ecosystem parent, remote parent, and capability-maturity registry; normal
+  FlagQuantum imports are also proven not to resolve the optional vendor
+  package. The repository boundary inventory rejects Kaiwu imports from Core,
+  Runtime, and Simulation, preserving the planned `ecosystem + remote` split.
 - Sampler calls now retain explicit transfer accounting for the plugin-produced
   CPU NumPy Ising matrix, canonical CPU float64 tensor, submitted host tuple,
   returned CPU int8 NumPy samples, cache use, and result shape. System evidence

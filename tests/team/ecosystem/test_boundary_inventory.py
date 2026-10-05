@@ -18,6 +18,7 @@ EXTERNAL_OBJECT_FRAMEWORKS = {
     "cirq",
     "cuda_quantum",
     "cudaq",
+    "kaiwu",
     "pennylane",
     "qiskit",
     "qiskit_aer",
