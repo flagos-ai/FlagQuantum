@@ -78,6 +78,34 @@ class _RecoveringClient(_CompletedClient):
         return "Queued" if self.status_calls == 1 else "Completed"
 
 
+@pytest.mark.parametrize(
+    ("options", "message"),
+    (
+        ({"timeout": True}, "timeout must be finite"),
+        ({"timeout": "1"}, "timeout must be finite"),
+        ({"poll_interval": False}, "poll_interval must be finite"),
+        ({"poll_interval": "1"}, "poll_interval must be finite"),
+        ({"project_no": 7}, "project_no must"),
+        ({"project_no": "   "}, "project_no must"),
+        ({"integer_target_range": (-1, True)}, "values must be integers"),
+        ({"integer_target_range": (0, 1)}, "must straddle zero"),
+    ),
+)
+def test_sampler_rejects_invalid_configuration_before_solve(
+    options: dict[str, object], message: str
+) -> None:
+    client = _CompletedClient()
+
+    with pytest.raises(ValueError, match=message):
+        KaiwuSampler(  # type: ignore[arg-type]
+            client=client,
+            task_name="invalid-config",
+            **options,
+        )
+
+    assert client.submitted == []
+
+
 def test_sampler_returns_plugin_compatible_numpy_spins() -> None:
     client = _CompletedClient()
     sampler = KaiwuSampler(

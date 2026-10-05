@@ -56,7 +56,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   Status and result validation also rejects non-string provider states,
   non-mapping metadata, non-tuple samples or energies, boolean spins, and
   non-real energies through stable FlagQuantum-owned errors rather than leaking
-  incidental Python exceptions across the Remote boundary.
+  incidental Python exceptions across the Remote boundary. Submission now also
+  rejects non-receipt client responses and invalid runtime task modes through
+  owned errors; wait and sampler controls reject boolean, string, complex, or
+  nonfinite numeric inputs without leaking incidental type errors.
 - Generic receipt save and restore now also reject a public, missing,
   non-directory, or symlinked parent before opening or publishing a file. A
   mode-0600 receipt inside a replaceable directory is no longer treated as

@@ -66,7 +66,10 @@ mode-specific sample limits, project identity, provider identity strings, and
 an aware UTC timestamp are mandatory. Malformed provider status or result
 objects also fail through owned `RuntimeError` messages; non-string status,
 non-mapping metadata, boolean spins, and non-real energies are never treated as
-valid evidence or allowed to surface as incidental attribute/type errors.
+valid evidence or allowed to surface as incidental attribute/type errors. A
+client response that is not a `KaiwuTaskReceipt`, an invalid runtime task-mode
+type, and boolean, string, complex, or nonfinite wait controls likewise fail
+through FlagQuantum-owned boundary errors.
 Both save and restore require the receipt's immediate parent to be an existing
 private, non-symlink directory; private file bits alone are insufficient when
 another user could replace the directory entry. Publication synchronizes both

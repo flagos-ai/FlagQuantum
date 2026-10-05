@@ -118,6 +118,28 @@ def test_timeout_preserves_recoverable_identity_without_fetch_or_resubmit() -> N
     assert client.result_calls == 0
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("timeout", True, "timeout must be finite"),
+        ("timeout", "1", "timeout must be finite"),
+        ("timeout", complex(1, 0), "timeout must be finite"),
+        ("poll_interval", False, "poll_interval must be finite"),
+        ("poll_interval", "1", "poll_interval must be finite"),
+        ("poll_interval", complex(1, 0), "poll_interval must be finite"),
+    ),
+)
+def test_wait_rejects_invalid_scalar_controls(
+    field: str, value: object, message: str
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="invalid-wait")
+    options: dict[str, object] = {"timeout": 1.0, "poll_interval": 0.1}
+    options[field] = value
+
+    with pytest.raises(ValueError, match=message):
+        job.wait(**options)  # type: ignore[arg-type]
+
+
 def test_status_rejects_non_string_provider_state() -> None:
     class MalformedStatusClient(_FakeClient):
         def query_status(  # type: ignore[override]
@@ -442,6 +464,43 @@ def test_submission_receipt_must_match_request() -> None:
             client=WrongSubmissionClient(),
             task_name="expected",
         )
+
+
+def test_submission_rejects_non_receipt_client_response() -> None:
+    class MalformedReceiptClient(_FakeClient):
+        def submit(  # type: ignore[override]
+            self,
+            matrix: FrozenIsingMatrix,
+            *,
+            task_name: str,
+            mode: KaiwuTaskMode,
+            requested_samples: int,
+            project_no: str | None,
+        ) -> object:
+            del matrix, task_name, mode, requested_samples, project_no
+            self.submit_calls += 1
+            return None
+
+    client = MalformedReceiptClient()
+
+    with pytest.raises(RuntimeError, match="invalid task receipt"):
+        submit_kaiwu_task(_MATRIX, client=client, task_name="malformed-receipt")
+
+    assert client.submit_calls == 1
+
+
+def test_invalid_mode_type_fails_before_submission() -> None:
+    client = _FakeClient()
+
+    with pytest.raises(ValueError, match="mode must"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="invalid-mode",
+            mode=["sampling"],  # type: ignore[arg-type]
+        )
+
+    assert client.submit_calls == 0
 
 
 @pytest.mark.parametrize(

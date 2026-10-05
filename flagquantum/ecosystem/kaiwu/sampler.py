@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass
+from numbers import Real
 from typing import TYPE_CHECKING, cast
 
 from ...remote.kaiwu import (
@@ -71,9 +72,19 @@ class KaiwuSampler:
             raise ValueError("task_name must be a non-empty string")
         if type(max_remote_calls) is not int or max_remote_calls <= 0:
             raise ValueError("max_remote_calls must be a positive integer")
-        if not math.isfinite(timeout) or timeout < 0:
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, Real)
+            or not math.isfinite(float(timeout))
+            or timeout < 0
+        ):
             raise ValueError("timeout must be finite and non-negative")
-        if not math.isfinite(poll_interval) or poll_interval <= 0:
+        if (
+            isinstance(poll_interval, bool)
+            or not isinstance(poll_interval, Real)
+            or not math.isfinite(float(poll_interval))
+            or poll_interval <= 0
+        ):
             raise ValueError("poll_interval must be finite and positive")
         if type(requested_samples) is not int or not 10 <= requested_samples <= 2000:
             raise ValueError("requested_samples must be between 10 and 2000")
@@ -82,10 +93,23 @@ class KaiwuSampler:
             or len(integer_target_range) != 2
         ):
             raise ValueError("integer_target_range must be a two-integer tuple or None")
+        if integer_target_range is not None:
+            target_min, target_max = integer_target_range
+            if any(
+                isinstance(value, bool) or not isinstance(value, int)
+                for value in integer_target_range
+            ):
+                raise ValueError("integer_target_range values must be integers")
+            if target_min >= 0 or target_max <= 0:
+                raise ValueError("integer_target_range must straddle zero")
+        if project_no is not None and (
+            not isinstance(project_no, str) or not project_no.strip()
+        ):
+            raise ValueError("project_no must be a non-empty string or None")
 
         self._client = client
         self._task_name = task_name.strip()
-        self._project_no = project_no
+        self._project_no = project_no.strip() if project_no is not None else None
         self._requested_samples = requested_samples
         self._timeout = float(timeout)
         self._poll_interval = float(poll_interval)

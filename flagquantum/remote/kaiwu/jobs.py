@@ -300,11 +300,23 @@ class KaiwuRemoteJob:
     ) -> KaiwuTaskResult:
         """Poll to completion; timeout does not cancel or resubmit the task."""
 
-        if not math.isfinite(timeout) or timeout < 0:
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, Real)
+            or not math.isfinite(float(timeout))
+            or timeout < 0
+        ):
             raise ValueError("timeout must be finite and non-negative")
-        if not math.isfinite(poll_interval) or poll_interval <= 0:
+        if (
+            isinstance(poll_interval, bool)
+            or not isinstance(poll_interval, Real)
+            or not math.isfinite(float(poll_interval))
+            or poll_interval <= 0
+        ):
             raise ValueError("poll_interval must be finite and positive")
-        deadline = time.monotonic() + timeout
+        numeric_timeout = float(timeout)
+        numeric_poll_interval = float(poll_interval)
+        deadline = time.monotonic() + numeric_timeout
         while True:
             status = self.status()
             if status == "succeeded":
@@ -324,7 +336,7 @@ class KaiwuRemoteJob:
                     f"Kaiwu task {self._receipt.task_name!r} is incomplete; "
                     "no cancellation or resubmission occurred"
                 )
-            time.sleep(min(poll_interval, remaining))
+            time.sleep(min(numeric_poll_interval, remaining))
 
     def save(self, path: str | Path) -> None:
         """Persist the matrix identity needed by Kaiwu recovery without secrets."""
@@ -349,7 +361,7 @@ def submit_kaiwu_task(
 
     if not isinstance(task_name, str) or not task_name.strip():
         raise ValueError("task_name must be a non-empty string")
-    if mode not in {"optimization", "sampling"}:
+    if not isinstance(mode, str) or mode not in {"optimization", "sampling"}:
         raise ValueError("mode must be 'optimization' or 'sampling'")
     if type(requested_samples) is not int or requested_samples <= 0:
         raise ValueError("requested_samples must be a positive integer")
@@ -367,6 +379,8 @@ def submit_kaiwu_task(
         requested_samples=requested_samples,
         project_no=project_no.strip() if project_no is not None else None,
     )
+    if not isinstance(receipt, KaiwuTaskReceipt):
+        raise RuntimeError("Kaiwu client returned an invalid task receipt")
     expected_project = project_no.strip() if project_no is not None else None
     if (
         receipt.task_name != task_name.strip()

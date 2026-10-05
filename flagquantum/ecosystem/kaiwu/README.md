@@ -46,6 +46,9 @@ energy, dequantized value, or error becomes nonfinite.
 
 `KaiwuSampler` never enables integer scaling implicitly. Set its
 `integer_target_range` only after choosing and recording a precision policy.
+Sampler construction validates timeout, polling interval, project identity,
+and integer-range value types before a matrix can reach the Remote layer;
+booleans are not accepted as numeric configuration values.
 Exhausting the remote-call budget raises before submission; there is no local
 or classical fallback.
 
