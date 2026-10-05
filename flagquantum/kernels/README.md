@@ -638,11 +638,15 @@ scalability claim. Reproduce or validate it with
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
 entry for contiguous CUDA `complex64` tensors outside reverse execution once
-the contraction contains at least `2**12` elements for forward-only calls or
-`2**18` elements when gradients are required. Equal-shape spatial buckets use
-the same catalog route from `2**18` elements. Calls outside those contracts
-retain the existing PyTorch contraction, and both routes feed the unchanged
-downstream SVD or QR factorization.
+the contraction contains at least `2**12` elements. The optimized route is
+inference-forward-only: calls requiring gradients retain the differentiable
+PyTorch contraction because the current custom autograd backward recomputes an
+intermediate and does not provide a repeatable speedup. Equal-shape spatial
+buckets use the same catalog route from `2**18` elements when none of their
+inputs requires gradients. Calls outside those contracts retain the existing
+PyTorch contraction, and both routes feed the unchanged downstream SVD or QR
+factorization. Catalog authorization is cached by device and dtype, and the
+Triton launch is autotuned by contraction shape and gate batching.
 
 The checked-in
 [`mps_two_site_dispatch_a800.json`](../../benchmarks/results/local/mps_two_site_dispatch_a800.json)
