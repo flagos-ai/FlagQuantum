@@ -67,6 +67,9 @@ an aware UTC timestamp are mandatory. Malformed provider status or result
 objects also fail through owned `RuntimeError` messages; non-string status,
 non-mapping metadata, boolean spins, and non-real energies are never treated as
 valid evidence or allowed to surface as incidental attribute/type errors.
+Both save and restore require the receipt's immediate parent to be an existing
+private, non-symlink directory; private file bits alone are insufficient when
+another user could replace the directory entry.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

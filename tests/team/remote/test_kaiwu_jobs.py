@@ -162,6 +162,37 @@ def test_save_never_overwrites_receipt(tmp_path: Path) -> None:
         job.save(receipt_path)
 
 
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_save_rejects_unsafe_parent_directory(tmp_path: Path, unsafe_kind: str) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="unsafe-parent")
+    private_parent = tmp_path / "private-parent"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        receipt_path = private_parent / "receipt.json"
+    else:
+        linked_parent = tmp_path / "linked-parent"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        receipt_path = linked_parent / "receipt.json"
+
+    with pytest.raises(ValueError, match="private, non-symlink directory"):
+        job.save(receipt_path)
+
+    assert not receipt_path.exists()
+
+
+def test_restore_rejects_public_parent_directory(tmp_path: Path) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="public-parent")
+    private_parent = tmp_path / "private-parent"
+    private_parent.mkdir(mode=0o700)
+    receipt_path = private_parent / "receipt.json"
+    job.save(receipt_path)
+    private_parent.chmod(0o755)
+
+    with pytest.raises(ValueError, match="private, non-symlink directory"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
 def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
     job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="tamper-test")
     receipt_path = tmp_path / "receipt.json"

@@ -54,6 +54,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   non-mapping metadata, non-tuple samples or energies, boolean spins, and
   non-real energies through stable FlagQuantum-owned errors rather than leaking
   incidental Python exceptions across the Remote boundary.
+- Generic receipt save and restore now also reject a public, missing,
+  non-directory, or symlinked parent before opening or publishing a file. A
+  mode-0600 receipt inside a replaceable directory is no longer treated as
+  authoritative recovery state.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

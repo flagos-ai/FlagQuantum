@@ -28,11 +28,27 @@ from .contracts import (
 )
 
 
+def _validate_private_directory(path: Path, *, description: str) -> None:
+    try:
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(
+            f"{description} must be an existing private, non-symlink directory"
+        ) from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_mode & 0o077
+    ):
+        raise ValueError(
+            f"{description} must be an existing private, non-symlink directory"
+        )
+
+
 def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
     destination = Path(path)
     parent = destination.parent
-    if not parent.is_dir():
-        raise ValueError("Kaiwu receipt parent directory does not exist")
+    _validate_private_directory(parent, description="Kaiwu receipt parent")
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode()
@@ -52,6 +68,7 @@ def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
 
 def _read_private_json(path: str | Path) -> Any:
     source = Path(path)
+    _validate_private_directory(source.parent, description="Kaiwu receipt parent")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(source, flags)
