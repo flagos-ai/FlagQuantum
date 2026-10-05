@@ -9,6 +9,7 @@ import math
 import re
 from datetime import datetime
 from pathlib import Path
+from statistics import fmean
 from typing import Any, cast
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
@@ -16,6 +17,24 @@ FULL_REVISION = re.compile(r"[0-9a-f]{40}")
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
 RECORD_SCHEMA = "flagquantum.qboson_qdiffusion_acceptance"
 MANIFEST_SCHEMA = "flagquantum.qboson_qdiffusion_manifest"
+SYSTEM_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
+PORTABILITY_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay"
+TRAINING_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
+EVALUATION_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
+METRIC_NAMES = (
+    "mean_cosine_distance",
+    "median_cosine_distance",
+    "mean_l2_distance",
+    "median_l2_distance",
+    "identity_to_reference_mean",
+    "amino_acid_jsd",
+    "kmer2_jsd",
+    "kmer3_jsd",
+    "uniqueness_ratio",
+    "repeat_ratio_ge4",
+    "length_match_ratio",
+    "invalid_sequence_count",
+)
 
 
 def _read_json(path: Path) -> Any:
@@ -526,27 +545,13 @@ def _validate_application(
         primary.get("baseline_metrics"), "primary.baseline_metrics", errors
     )
     guided = _mapping(primary.get("guided_metrics"), "primary.guided_metrics", errors)
-    metric_names = (
-        "mean_cosine_distance",
-        "median_cosine_distance",
-        "mean_l2_distance",
-        "median_l2_distance",
-        "identity_to_reference_mean",
-        "amino_acid_jsd",
-        "kmer2_jsd",
-        "kmer3_jsd",
-        "uniqueness_ratio",
-        "repeat_ratio_ge4",
-        "length_match_ratio",
-        "invalid_sequence_count",
-    )
     baseline_values = {
         name: _metric(baseline, name, "primary.baseline_metrics", errors)
-        for name in metric_names
+        for name in METRIC_NAMES
     }
     guided_values = {
         name: _metric(guided, name, "primary.guided_metrics", errors)
-        for name in metric_names
+        for name in METRIC_NAMES
     }
     baseline_primary = baseline_values["mean_cosine_distance"]
     guided_primary = guided_values["mean_cosine_distance"]
@@ -628,6 +633,172 @@ def _validate_application(
     acceptance = _mapping(primary.get("acceptance"), "primary.acceptance", errors)
     if acceptance.get("application") != "pass":
         errors.append("primary: application acceptance did not pass")
+
+
+def _validate_component_bundle(
+    component_payloads: dict[str, dict[str, Any]],
+    *,
+    config: dict[str, Any],
+    config_sha256: str,
+    primary: dict[str, Any],
+    replay: dict[str, Any],
+    errors: list[str],
+) -> None:
+    """Independently prove that final records are derived from their components."""
+
+    seeds = config.get("seeds", [])
+    expected_schema_counts = {
+        SYSTEM_COMPONENT_SCHEMA: 2,
+        PORTABILITY_COMPONENT_SCHEMA: 1,
+        TRAINING_COMPONENT_SCHEMA: len(seeds),
+        EVALUATION_COMPONENT_SCHEMA: len(seeds),
+    }
+    observed_schema_counts = {
+        schema: sum(
+            payload.get("schema") == schema for payload in component_payloads.values()
+        )
+        for schema in expected_schema_counts
+    }
+    if observed_schema_counts != expected_schema_counts:
+        errors.append("manifest: component record schema counts are incomplete")
+        return
+
+    for digest, payload in component_payloads.items():
+        if payload.get("version") != "1.0":
+            errors.append(f"component {digest}: unsupported version")
+        if payload.get("experiment_config_sha256") != config_sha256:
+            errors.append(
+                f"component {digest}: frozen experiment config identity mismatch"
+            )
+
+    for final, label in ((primary, "primary"), (replay, "replay")):
+        system_digest = final.get("system_evidence_sha256")
+        component = (
+            component_payloads.get(system_digest)
+            if isinstance(system_digest, str)
+            else None
+        )
+        if component is None or component.get("schema") != SYSTEM_COMPONENT_SCHEMA:
+            errors.append(
+                f"{label}: system evidence does not identify a system component"
+            )
+            continue
+        for field in ("execution_host", "run_role"):
+            if component.get(field) != final.get(field):
+                errors.append(
+                    f"{label}: system component {field} differs from final record"
+                )
+        if component.get("acceptance") != {"system": "pass", "application": "not_run"}:
+            errors.append(f"{label}: system component did not pass its isolated gate")
+
+    application = _mapping(
+        primary.get("application_evidence"), "primary.application_evidence", errors
+    )
+    evidence_records = application.get("records")
+    if not isinstance(evidence_records, list):
+        return
+    training_by_seed: dict[int, tuple[str, dict[str, Any]]] = {}
+    evaluation_by_seed: dict[int, tuple[str, dict[str, Any]]] = {}
+    for digest, payload in component_payloads.items():
+        seed = payload.get("seed")
+        if payload.get("schema") == TRAINING_COMPONENT_SCHEMA:
+            if type(seed) is not int or seed in training_by_seed:
+                errors.append(
+                    "manifest: training components contain an invalid or duplicate seed"
+                )
+            else:
+                training_by_seed[seed] = (digest, payload)
+        elif payload.get("schema") == EVALUATION_COMPONENT_SCHEMA:
+            if type(seed) is not int or seed in evaluation_by_seed:
+                errors.append(
+                    "manifest: evaluation components contain an invalid or duplicate seed"
+                )
+            else:
+                evaluation_by_seed[seed] = (digest, payload)
+    if list(training_by_seed) != seeds or list(evaluation_by_seed) != seeds:
+        errors.append("manifest: component seed order differs from the frozen seed set")
+
+    for evidence in evidence_records:
+        if not isinstance(evidence, dict) or type(evidence.get("seed")) is not int:
+            continue
+        seed = evidence["seed"]
+        training_entry = training_by_seed.get(seed)
+        evaluation_entry = evaluation_by_seed.get(seed)
+        if training_entry is None or evaluation_entry is None:
+            continue
+        training_digest, training = training_entry
+        evaluation_digest, evaluation = evaluation_entry
+        if evidence.get("training_record_sha256") != training_digest:
+            errors.append(
+                f"seed {seed}: final record references another training component"
+            )
+        if evidence.get("evaluation_record_sha256") != evaluation_digest:
+            errors.append(
+                f"seed {seed}: final record references another evaluation component"
+            )
+        if training.get("run_completed") is not True:
+            errors.append(f"seed {seed}: training component did not complete")
+        if training.get("execution_host") != config.get("primary_host"):
+            errors.append(f"seed {seed}: training component is from the wrong host")
+        checkpoint = training.get("trained_energy_checkpoint_sha256")
+        if evidence.get("trained_energy_checkpoint_sha256") != checkpoint:
+            errors.append(
+                f"seed {seed}: final checkpoint differs from training component"
+            )
+        if evaluation.get("training_record_sha256") != training_digest:
+            errors.append(
+                f"seed {seed}: evaluation is linked to another training component"
+            )
+        if evaluation.get("execution_host") != config.get("primary_host"):
+            errors.append(f"seed {seed}: evaluation component is from the wrong host")
+
+    for field in ("baseline_metrics", "guided_metrics"):
+        final_metrics = _mapping(primary.get(field), f"primary.{field}", errors)
+        for metric in METRIC_NAMES:
+            values: list[float] = []
+            for seed in seeds:
+                entry = evaluation_by_seed.get(seed)
+                if entry is None:
+                    continue
+                metrics = _mapping(entry[1].get(field), f"seed {seed}.{field}", errors)
+                value = _finite_number(
+                    metrics.get(metric), f"seed {seed}.{field}.{metric}", errors
+                )
+                if value is not None:
+                    values.append(value)
+            if len(values) != len(seeds):
+                continue
+            expected = (
+                sum(values) if metric == "invalid_sequence_count" else fmean(values)
+            )
+            if final_metrics.get(metric) != expected:
+                errors.append(
+                    f"primary.{field}.{metric}: differs from component aggregation"
+                )
+
+    portability_evidence = _mapping(
+        replay.get("portability_evidence"), "replay.portability_evidence", errors
+    )
+    portability_digest = portability_evidence.get("record_sha256")
+    portability = (
+        component_payloads.get(portability_digest)
+        if isinstance(portability_digest, str)
+        else None
+    )
+    if portability is None or portability.get("schema") != PORTABILITY_COMPONENT_SCHEMA:
+        errors.append(
+            "replay: portability evidence does not identify a portability component"
+        )
+        return
+    if portability.get("execution_host") != config.get("replay_host"):
+        errors.append("replay: portability component is from the wrong host")
+    if portability.get("acceptance") != {"portability": "pass"}:
+        errors.append("replay: portability component did not pass")
+    for field in ("training_record_sha256", "trained_energy_checkpoint_sha256"):
+        if portability.get(field) != portability_evidence.get(field):
+            errors.append(
+                f"replay: portability component {field} differs from final record"
+            )
 
 
 def validate_acceptance(manifest_path: Path) -> list[str]:
@@ -733,25 +904,6 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             errors.append(
                 "manifest: component bundle does not contain every source record"
             )
-        expected_schema_counts = {
-            "flagquantum.qboson_qdiffusion_system_live_probe": 2,
-            "flagquantum.qboson_qdiffusion_portability_replay": 1,
-            "flagquantum.qboson_qdiffusion_protein_training": len(
-                config.get("seeds", [])
-            ),
-            "flagquantum.qboson_qdiffusion_protein_evaluation": len(
-                config.get("seeds", [])
-            ),
-        }
-        observed_schema_counts = {
-            schema: sum(
-                payload.get("schema") == schema
-                for payload in component_payloads.values()
-            )
-            for schema in expected_schema_counts
-        }
-        if observed_schema_counts != expected_schema_counts:
-            errors.append("manifest: component record schema counts are incomplete")
     if primary.get("run_role") != "primary":
         errors.append("manifest: configured primary host lacks the primary role")
     if replay.get("run_role") != "portability_replay":
@@ -842,6 +994,14 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             errors.append(
                 "manifest: final records do not reference the exact component bundle"
             )
+        _validate_component_bundle(
+            component_payloads,
+            config=config,
+            config_sha256=config_hash,
+            primary=primary,
+            replay=replay,
+            errors=errors,
+        )
     task_sets = []
     for record in records:
         raw_task_ids = record.get("qboson_task_ids")

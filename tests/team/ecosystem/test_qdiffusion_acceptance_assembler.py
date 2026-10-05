@@ -286,3 +286,19 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     )
     assert loaded_training["seed"] == 1701
     assert loaded_sha == training_entries[0][1]
+
+    tampered_evaluation = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99
+    tampered_evaluation_sha = _write_json(component_paths[5], tampered_evaluation)
+    primary["application_evidence"]["records"][0][
+        "evaluation_record_sha256"
+    ] = tampered_evaluation_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][5]["sha256"] = tampered_evaluation_sha
+    _write_json(manifest_path, manifest)
+
+    assert any(
+        "differs from component aggregation" in error
+        for error in validate_acceptance(manifest_path)
+    )
