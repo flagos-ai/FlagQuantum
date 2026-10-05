@@ -479,7 +479,9 @@ identities, retain complete precision evidence, and stay within its per-seed
 call budget. The assembler and independent final validator reject injected
 clients, zero-call records, missing identities, fallback, and incomplete receipt
 or precision sets even if the workflow artifacts and hash links are otherwise
-valid.
+valid. The ESM2 evaluator and replay-host runner apply the same checks while
+loading the selected training record, before loading a model, allocating A800
+work, resolving credentials, or submitting another task.
 
 Do not reuse the bounded system probe's `remote_call_budget` for this command.
 The plugin invokes the sampler once per conditioned example for positive energy,

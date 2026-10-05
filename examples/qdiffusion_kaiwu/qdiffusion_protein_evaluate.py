@@ -31,6 +31,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.validate_acceptance import (
+    _validate_training_provider_evidence,
+)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )
@@ -78,6 +81,15 @@ def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
         raise ValueError("unsupported protein-training record")
     if record.get("run_completed") is not True:
         raise ValueError("protein-training record is not complete")
+    provider_errors: list[str] = []
+    _validate_training_provider_evidence(
+        record, "protein-training record", provider_errors
+    )
+    if provider_errors:
+        raise ValueError(
+            "protein-training provider evidence is invalid: "
+            + "; ".join(provider_errors)
+        )
     return record, hashlib.sha256(encoded).hexdigest()
 
 

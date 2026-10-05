@@ -12,6 +12,7 @@ import torch
 
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
+    _load_training_record,
     _read_aligned_records,
     _source_preflight_identity,
     _verified_evaluation_source,
@@ -20,6 +21,31 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _provider_training_record() -> dict[str, Any]:
+    return {
+        "schema": "flagquantum.qboson_qdiffusion_protein_training",
+        "version": "1.0",
+        "run_completed": True,
+        "transport": "kaiwu_cim",
+        "pinned_sdk_client": True,
+        "real_provider_evidence": True,
+        "qboson_hardware_used": True,
+        "provider_identity_complete": True,
+        "fallback_occurred": False,
+        "secrets_redacted": True,
+        "remote_call_count": 1,
+        "protein_remote_call_budget_per_seed": 10,
+        "precision_report_count": 1,
+        "task_receipts": [
+            {
+                "mode": "sampling",
+                "provider_task_id": "provider-task",
+                "provider_target": "SPQC-provider",
+            }
+        ],
+    }
 
 
 def _write(path: Path, content: str) -> str:
@@ -94,6 +120,25 @@ def test_verified_training_paths_recomputes_every_digest(tmp_path: Path) -> None
         _verified_training_paths(tmp_path, record)
 
 
+def test_training_record_loader_rejects_injected_provider_evidence(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "training.json"
+    record = _provider_training_record()
+    path.write_text(json.dumps(record), encoding="utf-8")
+
+    loaded, digest = _load_training_record(path)
+
+    assert loaded == record
+    assert digest == hashlib.sha256(path.read_bytes()).hexdigest()
+
+    record["transport"] = "injected_test"
+    record["real_provider_evidence"] = False
+    path.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError, match="provider evidence is invalid"):
+        _load_training_record(path)
+
+
 def test_aligned_fasta_reader_rejects_header_drift(tmp_path: Path) -> None:
     record, paths = _training_artifacts(tmp_path)
     del record
@@ -138,6 +183,9 @@ def test_evaluation_revalidates_local_source_preflight() -> None:
     ).read_text(encoding="utf-8")
 
     assert 'parser.add_argument("--source-preflight"' in source
+    assert source.index(
+        "record, record_sha256 = _load_training_record("
+    ) < source.index("torch.cuda.set_device(device)")
     assert source.index("load_source_preflight(") < source.index(
         "workflow, helpers = _load_pinned_eval_workflow("
     )

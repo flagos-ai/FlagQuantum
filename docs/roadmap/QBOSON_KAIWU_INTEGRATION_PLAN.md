@@ -204,6 +204,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   that chain, loads one frozen checkpoint file without implicit download, checks
   aligned sequence identities, and computes candidate cosine/L2 evidence on the
   primary A800 without spending further QBoson quota.
+- The shared training-record loader used by both ESM2 evaluation and replay-host
+  execution now revalidates real SDK transport, QBoson-use and identity flags,
+  sampling receipts, call budget, no-fallback state, and precision completeness.
+  Injected or incomplete training evidence therefore fails before either A800
+  evaluation work or another quota-consuming replay can begin.
 - The ESM2 evaluator now independently reloads the primary host's private
   post-extraction preflight and requires both its record digest and shared
   transfer-manifest digest to match the training record before loading the

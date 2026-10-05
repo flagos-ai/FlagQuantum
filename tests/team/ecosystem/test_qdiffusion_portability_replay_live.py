@@ -209,6 +209,9 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     ).read_text(encoding="utf-8")
 
     assert "ACKNOWLEDGEMENT" in source
+    assert source.index("_load_training_record(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index("preflight_artifacts(") < source.index(
         "resolve_kaiwu_credentials()"
     )
