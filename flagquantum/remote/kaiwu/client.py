@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
+import os
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import asdict
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -71,6 +75,59 @@ class KaiwuSDKClient:
     @staticmethod
     def _identity_key(receipt: KaiwuTaskReceipt) -> str:
         return f"{receipt.task_name}:{receipt.matrix_sha256}"
+
+    def recovery_receipt_path(self, receipt: KaiwuTaskReceipt) -> Path:
+        """Return the deterministic, credential-free recovery bundle path."""
+
+        digest = hashlib.sha256(self._identity_key(receipt).encode()).hexdigest()
+        return self._checkpoint_dir / f"flagquantum-kaiwu-{digest}.json"
+
+    def _load_or_persist_receipt(
+        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> KaiwuTaskReceipt:
+        path = self.recovery_receipt_path(receipt)
+        if path.exists():
+            try:
+                raw = json.loads(path.read_text(encoding="utf-8"))
+                stored = KaiwuTaskReceipt(**raw["receipt"])
+                stored_matrix = tuple(
+                    tuple(float(value) for value in row) for row in raw["matrix"]
+                )
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+                raise KaiwuSDKError(
+                    "Existing Kaiwu recovery receipt is invalid"
+                ) from None
+            comparable = (
+                "task_name",
+                "matrix_sha256",
+                "matrix_size",
+                "mode",
+                "requested_samples",
+                "project_no",
+                "schema",
+            )
+            if stored_matrix != matrix or any(
+                getattr(stored, field) != getattr(receipt, field)
+                for field in comparable
+            ):
+                raise KaiwuSDKError(
+                    "Existing Kaiwu recovery receipt conflicts with the request"
+                )
+            return stored
+
+        encoded = (
+            json.dumps(
+                {"receipt": asdict(receipt), "matrix": matrix},
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        )
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(encoded)
+        return receipt
 
     @contextmanager
     def _checkpoint_context(self) -> Iterator[None]:
@@ -162,6 +219,7 @@ class KaiwuSDKClient:
             requested_samples=requested_samples,
             project_no=project_no,
         )
+        receipt = self._load_or_persist_receipt(receipt, matrix)
         self._solve_identity(receipt, matrix)
         return receipt
 

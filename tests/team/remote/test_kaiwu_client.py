@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import ClassVar
@@ -88,6 +89,9 @@ def test_submit_and_poll_reuse_documented_task_identity(
     assert _FakeOptimizer.created_options[0]["task_name"] == "same-task"
     assert _FakeOptimizer.created_options[0]["wait"] is False
     assert manager.save_dir == "original"
+    recovery_path = client.recovery_receipt_path(job.receipt)
+    assert recovery_path.is_file()
+    assert recovery_path.stat().st_mode & 0o777 == 0o600
 
 
 def test_restore_queries_same_identity_without_client_submit(
@@ -113,6 +117,63 @@ def test_restore_queries_same_identity_without_client_submit(
     assert result.samples
     assert len(_FakeOptimizer.created_options) == 1
     assert _FakeOptimizer.created_options[0] == original_options
+
+
+def test_new_client_reuses_preexisting_recovery_receipt(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    first_client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=first_client,
+        task_name="restart",
+        mode="sampling",
+        requested_samples=10,
+    )
+
+    second_client, _ = _client(monkeypatch, tmp_path)
+    second = submit_kaiwu_task(
+        _MATRIX,
+        client=second_client,
+        task_name="restart",
+        mode="sampling",
+        requested_samples=10,
+    )
+
+    assert second.receipt == first.receipt
+    assert second_client.recovery_receipt_path(second.receipt) == (
+        first_client.recovery_receipt_path(first.receipt)
+    )
+
+
+def test_conflicting_recovery_receipt_fails_before_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="conflict",
+        mode="sampling",
+        requested_samples=10,
+    )
+    path = client.recovery_receipt_path(first.receipt)
+    payload = json.loads(path.read_text())
+    payload["receipt"]["requested_samples"] = 11
+    path.write_text(json.dumps(payload))
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restarted, _ = _client(monkeypatch, tmp_path)
+    with pytest.raises(KaiwuSDKError, match="conflicts"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=restarted,
+            task_name="conflict",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == solve_calls
 
 
 def test_result_is_independently_scored_and_marks_evidence_gaps(
@@ -216,4 +277,10 @@ def test_vendor_operation_error_is_redacted_and_checkpoint_is_restored(
     assert "sdk-code-secret" not in str(caught.value)
     assert caught.value.__cause__ is None
     assert manager.save_dir == "original"
+    recovery_paths = list(tmp_path.glob("flagquantum-kaiwu-*.json"))
+    assert len(recovery_paths) == 1
+    encoded = recovery_paths[0].read_text()
+    assert "user-secret" not in encoded
+    assert "sdk-code-secret" not in encoded
+    assert json.loads(encoded)["receipt"]["task_name"] == "redacted"
     monkeypatch.setattr(_FakeOptimizer, "solve", original_solve)

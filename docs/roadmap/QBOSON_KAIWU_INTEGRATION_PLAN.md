@@ -73,6 +73,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   leaking vendor failures fail closed. Because documented APIs do not expose a
   stable provider task ID or provider-reported target, the client records those
   evidence gaps and cannot yet satisfy hardware acceptance.
+- Before its first SDK operation, that client now atomically persists a
+  mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
+  This closes the ambiguous-submission window: a process restart reuses the
+  original timestamp and task/matrix identity, while corrupt or conflicting
+  bundles fail before any SDK operation.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

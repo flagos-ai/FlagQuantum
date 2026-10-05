@@ -37,6 +37,12 @@ documentation is sufficient for idempotent execution but not for a provider
 task ID or provider-reported target; hardware acceptance remains closed until a
 real pinned response establishes those mappings.
 
+Before the first SDK task operation, the client atomically saves a mode-0600
+FlagQuantum recovery bundle in the configured checkpoint directory. An
+ambiguous network failure therefore leaves enough non-secret identity to query
+the same documented task after restart. Existing bundles are reused only when
+their task, matrix, mode, sample count, project, and schema all match.
+
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the
 credential helpers, its experimental entry points expose a Kaiwu-specific
