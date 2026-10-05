@@ -142,7 +142,6 @@ ABBREVIATIONS: dict[str, str | None] = {
     "9cd38efc": "9cd38efcd136abc9a705151be3378f9487d1064e",
     "a9e9ec2": "a9e9ec258b9a84be6d00ce93bc8cf04ba34583b6",
     "b2b734da": "b2b734dabf4b278cd3f9b1a580bb7ed7677f6f30",
-    "c997a2195": "c997a21955972f1255aa58ee26ba756aac7d3f7e",
     "e30b1b0c": "e30b1b0cc999d3fe780fb3453fbf72587257df1b",
     "ea7db394": "ea7db394520610d6aed623db277ecd8e355722a5",
     "ef3affbd": "ef3affbd99cc5f0bbabc6ff6403ec1dbdfc48ddc",
