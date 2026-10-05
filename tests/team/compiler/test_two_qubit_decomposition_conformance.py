@@ -730,9 +730,17 @@ def test_the_global_phase_is_real_and_entangler_dependent() -> None:
     5.712 rad at `cx` -- most of the circle -- while the same statistic for the fold
     route is exactly 0. Both are asserted, because a suite that only pinned the
     second would not know the first.
+
+    The per-case floor is a quarter turn rather than a half turn because the spread
+    is read off a grid: every difference is a whole number of quarter turns, while
+    which multiple a case lands on is not portable. The first version of this test
+    asserted a half turn and passed here while failing on all three CI interpreters,
+    which is the same class of defect as asserting a count where the width of a
+    transition is the property -- the number moved, the structure did not.
     """
 
     silent = []
+    spreads = []
     for point, matrix in _FAMILY:
         angles = []
         for entangler in _ENTANGLERS:
@@ -741,15 +749,33 @@ def test_the_global_phase_is_real_and_entangler_dependent() -> None:
             angles.append(_phase(matrix, _unitary(leaves)))
         base = angles[0]
         spread = max(abs(angle - base) for angle in angles)
+        # A coarse guard, an order of magnitude above a quarter turn: the widest
+        # per-case arc measured over the shipped family is 1.25*pi.
         assert _arc_width(angles) <= 1.5 * math.pi
         if spread < 1.0e-9:
             silent.append(point)
-        else:
-            assert spread >= math.pi / 2
+            continue
+        # The spread is a whole number of quarter turns, and that -- not which
+        # multiple -- is the portable statement. Over 21 independently framed
+        # families (861 cases, 5166 entangler arms) the largest distance from a
+        # whole number of quarter turns is 8.9e-16 of one, so the tolerance is a
+        # thousand-fold margin and a thousandth of the grid. The multiple itself
+        # is not portable: one point of this family spreads by two quarter turns
+        # on arm64 and by one on x86-64, because the phase it is read from sits on
+        # a grid boundary and libm rounds it either way. A floor of a quarter turn
+        # therefore holds on both, and a floor of a half turn does not.
+        quarters = spread / (math.pi / 4.0)
+        assert abs(quarters - round(quarters)) < 1.0e-12
+        assert round(quarters) >= 1
+        spreads.append(round(quarters))
     # The identity is the one input with no phase to differ about, and it is the
     # only silent case: 40 of 41 spread by at least a quarter turn across the six
     # entanglers, so the entangler dependence is the rule and not one outlier.
     assert silent == [(0.0, 0.0, 0.0)]
+    # And the spread is not one number standing in for the family: it takes at
+    # least four values, measured six, so "the phase depends on the entangler" is
+    # asserted of the family and not only of its extremes.
+    assert len(set(spreads)) >= 4
 
     family_arc = _arc_width(
         [
@@ -1324,7 +1350,12 @@ def test_the_identity_is_the_empty_answer_where_the_basis_allows_one() -> None:
     assert halves is not None
     assert len(halves) == 2
     assert {tuple(half.wires) for half in halves} == {(0,), (1,)}
-    assert _unitary(halves) == pytest.approx(identity, abs=1.0e-15)
+    # Compared entrywise rather than through `pytest.approx`, which reaches for
+    # numpy to compare a tensor and therefore answers differently in the CI lanes
+    # that install no numpy than it does here. The bound is a guard rather than a
+    # measurement: both halves are exact 2x2 identities, so the reconstruction is
+    # exact and the gap measured here is exactly 0.
+    assert _raw_gap(_unitary(halves), identity) < 1.0e-15
 
 
 def test_the_one_qubit_vocabulary_is_read_from_the_module_that_owns_it() -> None:

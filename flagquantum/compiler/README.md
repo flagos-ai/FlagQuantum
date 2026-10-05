@@ -425,10 +425,14 @@ Kronecker scale into the emitted factors and records no phase at all. The same
 input also shows why the phase assertion is an arc rather than an equality: the
 phase of the KAK answer genuinely depends on the entangler, spreading over an arc
 of up to `5.71` radians across the six of them, and 40 of the 41 cases move by at
-least a quarter turn. Reach is asserted as a count per route per entangler arm
-rather than as a capability, because a product of two single-qubit unitaries is
-answered by the product route on a target that publishes no entangler, while the
-KAK route refuses every one of them.
+least a quarter turn. The floor is a quarter turn and not a half turn because every
+such difference is a whole number of quarter turns while which multiple a case
+lands on is not portable: one point of the family spreads by two quarter turns on
+arm64 and by one on x86-64, since the phase it is read from sits on a grid
+boundary and the two `libm`s round it either way. Reach is asserted as a count per
+route per entangler arm rather than as a capability, because a product of two
+single-qubit unitaries is answered by the product route on a target that publishes
+no entangler, while the KAK route refuses every one of them.
 
 The suite also records one diagnosed refusal rather than a passing test. A
 two-qubit unitary whose Weyl coordinates have `b == c` makes `m2` in
