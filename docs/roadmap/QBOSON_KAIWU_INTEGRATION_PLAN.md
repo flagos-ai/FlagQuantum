@@ -28,8 +28,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   string, nonfinite, and negative scalar controls fail with owned boundary
   errors. Symmetry normalization avoids intermediate overflow, while
   QUBO conversion, independent energy evaluation, and precision reporting
-  reject finite inputs whose derived values overflow. Optional conformance
-  tests match Kaiwu Community 1.0.7 at revision
+  reject finite inputs whose derived values overflow. The effective integer
+  magnitude is capped at `2^53`, preserving exact conversion back to float64
+  for error evidence instead of allowing large-int saturation to look exact.
+  Optional conformance tests match Kaiwu Community 1.0.7 at revision
   `b648b531c034bd6ae9b7a34fed994c717967cc72` for energy and QUBO conversion.
 - The public Kaiwu Community tree does not contain a simulated-annealing
   optimizer; the replacement test therefore uses its real `IsingSolver`

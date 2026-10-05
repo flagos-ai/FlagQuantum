@@ -241,3 +241,43 @@ def test_integer_precision_rejects_invalid_ranges(
             target_min=target_min,  # type: ignore[arg-type]
             target_max=target_max,  # type: ignore[arg-type]
         )
+
+
+def test_integer_precision_rejects_effective_range_beyond_exact_float64() -> None:
+    beyond_exact = (1 << 53) + 1
+
+    with pytest.raises(KaiwuPrecisionError, match="exact float64"):
+        prepare_integer_precision(
+            [[1.0]],
+            target_min=-beyond_exact,
+            target_max=beyond_exact,
+        )
+
+
+def test_integer_precision_accepts_exact_float64_integer_boundary() -> None:
+    exact_limit = 1 << 53
+
+    report = prepare_integer_precision(
+        [[1.0]], target_min=-exact_limit, target_max=exact_limit
+    )
+
+    assert report.scale_factor == float(exact_limit)
+    assert report.quantized.item() == exact_limit
+    assert report.dequantized.item() == 1.0
+    assert report.max_abs_error == 0.0
+
+
+@pytest.mark.parametrize(
+    ("target_min", "target_max"),
+    ((-(10**400), 127), (-127, 10**400)),
+)
+def test_integer_precision_uses_only_effective_symmetric_capacity(
+    target_min: int, target_max: int
+) -> None:
+    report = prepare_integer_precision(
+        [[1.0]], target_min=target_min, target_max=target_max
+    )
+
+    assert report.scale_factor == 127.0
+    assert report.quantized.item() == 127
+    assert report.max_abs_error == 0.0

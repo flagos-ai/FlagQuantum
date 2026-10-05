@@ -43,6 +43,9 @@ Normalization uses half-scaled operands so two finite extreme coefficients do
 not overflow merely while being averaged. Conversion, energy evaluation, and
 precision evidence still fail closed if their actual derived matrix, bias,
 energy, dequantized value, or error becomes nonfinite.
+The effective symmetric integer magnitude is capped at the largest consecutive
+integer exactly representable by `float64` (`2^53`), so dequantized values and
+error evidence cannot hide an `int64` saturation or an inexact large integer.
 
 `KaiwuSampler` never enables integer scaling implicitly. Set its
 `integer_target_range` only after choosing and recording a precision policy.

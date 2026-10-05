@@ -66,6 +66,7 @@ class QuboIsingEncoding:
 
 MatrixLike = torch.Tensor | Sequence[Sequence[float]]
 SpinLike = torch.Tensor | Sequence[float] | Sequence[Sequence[float]]
+_MAX_EXACT_FLOAT64_INTEGER = 1 << 53
 
 
 def _finite_real_scalar(value: object, *, description: str) -> float:
@@ -267,6 +268,10 @@ def prepare_integer_precision(
     symmetric_limit = min(abs(target_min), target_max)
     if symmetric_limit <= 0:
         raise KaiwuPrecisionError("integer target range has no symmetric capacity")
+    if symmetric_limit > _MAX_EXACT_FLOAT64_INTEGER:
+        raise KaiwuPrecisionError(
+            "integer target range exceeds exact float64 evidence capacity"
+        )
 
     max_abs = float(canonical.abs().max().item())
     scale_factor = 1.0 if max_abs == 0.0 else symmetric_limit / max_abs
@@ -275,7 +280,9 @@ def prepare_integer_precision(
         raise KaiwuPrecisionError("scaled coefficients are not finite")
 
     quantized = torch.round(scaled).to(dtype=torch.int64)
-    if bool((quantized < target_min).any()) or bool((quantized > target_max).any()):
+    observed_min = int(quantized.min().item())
+    observed_max = int(quantized.max().item())
+    if observed_min < target_min or observed_max > target_max:
         raise KaiwuPrecisionError("quantized coefficients exceed the target range")
     if not torch.equal(quantized, quantized.transpose(0, 1)):
         raise KaiwuPrecisionError("integer preparation did not preserve symmetry")
