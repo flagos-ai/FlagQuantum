@@ -512,6 +512,11 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "ranks_by_width": {"1": [0, 1], "2": [0, 1]},
             "unexercised_widths": [],
         },
+        # No export leg by default, so the helper describes a run whose only
+        # whole-state read is the validation comparison and leaves the
+        # full-state-gather blocker standing. A test that wants it retracted
+        # passes an export of its own.
+        "export": None,
     }
     kwargs.update(overrides)
     return kwargs
@@ -631,6 +636,101 @@ def test_the_route_measurement_and_staging_are_each_derived(
     )
     assert "host_staging_in_measured_region" in found
     assert "hidden_host_staging_not_audited" not in found
+
+
+def test_the_export_leg_is_the_only_materialization_that_retracts_the_gather(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A state the workload produces, not a shard moved aside to check an answer."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+
+    def blockers(**overrides: object) -> set[str]:
+        return set(
+            _MODULE._artifact(**_artifact_kwargs(**overrides))["evidence"][
+                "claim_blockers"
+            ]
+        )
+
+    # The amplitude legs reduce a handful of projected outputs and never
+    # materialize the state, so a run with no export leg leaves the blocker.
+    assert "validation_only_tiny_full_state_gather" in blockers()
+    assert "validation_only_tiny_full_state_gather" in blockers(export=None)
+
+    # Three separate things have to hold, and each is a real way the leg could
+    # fail to be the product the blocker is about: the state has to have been
+    # materialized, it has to be the tensor-network state rather than another
+    # result shape, and it has to be the leg's product rather than a shard.
+    materialized = {
+        "result": {
+            "full_state_materialized": True,
+            "state_mode": "distributed_tensor_network",
+        }
+    }
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={**materialized, "product": "shard_state"}
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialized": False,
+                "state_mode": "distributed_tensor_network",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialized": True,
+                "state_mode": "distributed_tensor_network_amplitudes",
+            },
+        }
+    )
+
+    # The complete leg retracts it, and retracts nothing else: the pair and the
+    # circuit are declared boundaries that no leg of this run can move.
+    exported = blockers(export={**materialized, "product": _MODULE.EXPORTED_PRODUCT})
+    assert "validation_only_tiny_full_state_gather" not in exported
+    assert exported == {
+        "toy_circuit_parameters_only",
+        "two_node_pair_only_no_wider_topology",
+    }
+
+
+def test_the_export_leg_refuses_a_state_it_did_not_materialize() -> None:
+    """The guard reads the object's own distribution, not the probe's intent."""
+
+    placed = {
+        "node_count": 2,
+        "world_size": 2,
+        "local_world_size": 1,
+        "claim_evidence_type": "production_runtime",
+        "state_distribution_semantics": _MODULE.EXPORTED_STATE_DISTRIBUTION,
+        "full_state_materialized": True,
+        "scalability_claim_allowed": False,
+    }
+    _MODULE._require_export_placement(placed, expected_world_size=2)
+
+    # Every field the guard reads is a way the leg could have run somewhere or
+    # produced something other than the whole state on the declared pair.
+    for broken in (
+        {**placed, "node_count": 1},
+        {**placed, "world_size": 4},
+        {**placed, "claim_evidence_type": "development_smoke"},
+        {**placed, "state_distribution_semantics": "sharded_across_ranks"},
+        {**placed, "full_state_materialized": False},
+        {**placed, "scalability_claim_allowed": True},
+    ):
+        with pytest.raises(RuntimeError):
+            _MODULE._require_export_placement(broken, expected_world_size=2)
+
+    # And the derivation is read from the recorded result rather than from a
+    # flag beside it, so a leg whose record disagrees with its own summary is
+    # not a materialization.
+    assert _MODULE._materializes_the_full_state(None) is False
+    assert _MODULE._materializes_the_full_state({"product": "shard_state"}) is False
 
 
 def test_the_sweep_widths_are_prefixes_of_the_declared_cut() -> None:

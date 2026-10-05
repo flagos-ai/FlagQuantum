@@ -67,6 +67,7 @@ from flagquantum.runtime.executors.tensor_network.execution import (
     distributed_tensor_network_amplitude,
     distributed_tensor_network_amplitudes,
     distributed_tensor_network_expectation,
+    run_distributed_tensor_network,
 )
 from flagquantum.runtime.executors.tensor_network.training import (
     train_distributed_tensor_network,
@@ -121,6 +122,25 @@ MEASUREMENT_ITERATIONS = 5
 #: The count is the sample's own, so the audited region and the measured region
 #: are the same region.
 HOST_STAGING_WARMUP_EXECUTIONS = MEASUREMENT_WARMUP_ITERATIONS
+
+#: The export leg. The amplitude legs reduce a handful of projected outputs; this
+#: leg asks the runtime for the state itself, which is what a caller of
+#: `run_distributed_tensor_network` receives and nothing else in the probe
+#: produces. The runtime's own all-reduce of the rank partials is what builds it,
+#: so the state is the leg's product rather than a gather taken to check an answer
+#: computed somewhere else. The timings below are the export's own and the
+#: artifact never presents them as a speedup -- an all-reduce has no speedup to
+#: report, and the state it returns is replicated rather than sharded.
+EXPORT_MEASUREMENT = "distributed_tensor_network_full_state_export"
+EXPORT_WARMUP_ITERATIONS = 2
+EXPORT_ITERATIONS = 5
+EXPORTED_PRODUCT = "full_tensor_network_state"
+
+#: The one state-distribution the export leg may report. The runtime contracts
+#: the slices by owner and then all-reduces the partials, so the object it
+#: returns holds the whole state on every rank; a leg reporting anything else
+#: would mean the state it recorded came from a different act.
+EXPORTED_STATE_DISTRIBUTION = "replicated_full_state_after_all_reduce"
 
 #: A fixed rotation on wire 0, so the two trainable parameters act on a state
 #: that is not an eigenstate of the measured observable.
@@ -485,6 +505,145 @@ def _host_staging_observation(
         "profiler_event_count": len(events),
         "host_transfer_observed": bool(transfers),
         "host_transfer_events": transfers,
+    }
+
+
+def _require_export_placement(
+    summary: dict[str, Any], *, expected_world_size: int
+) -> None:
+    """Refuse an export leg the planner placed differently from the launched shape.
+
+    This leg is the one whose result is the state, so it reports the full-state
+    facade rather than `sharded_across_ranks`: the slices are contracted by their
+    owners and the partials are then all-reduced, which leaves every rank holding
+    the whole vector. The guard is therefore written against that distribution
+    instead, and it asks the object itself whether the state it carries is the
+    whole state -- a leg that reported the facade while holding one rank's
+    partial would otherwise be recorded as a materialization.
+    """
+
+    if summary["node_count"] != 2:
+        raise RuntimeError(
+            "the export leg did not resolve the two-node placement: "
+            f"local_world_size={summary['local_world_size']} "
+            f"node_count={summary['node_count']}"
+        )
+    if summary["world_size"] != expected_world_size:
+        raise RuntimeError(
+            f"the export leg ran at {summary['world_size']} ranks where "
+            f"{expected_world_size} were launched"
+        )
+    if summary["claim_evidence_type"] != "production_runtime":
+        raise RuntimeError(
+            "the export leg did not report accelerator runtime semantics: "
+            f"{summary['claim_evidence_type']}"
+        )
+    if summary["state_distribution_semantics"] != EXPORTED_STATE_DISTRIBUTION:
+        raise RuntimeError(
+            "the export leg did not distribute its state the way the export "
+            f"contract says: {summary['state_distribution_semantics']}"
+        )
+    if summary["full_state_materialized"] is not True:
+        raise RuntimeError("the export leg did not materialize the full state")
+    if summary["scalability_claim_allowed"] is not False:
+        raise RuntimeError("the export leg allowed a scalability claim")
+
+
+def _materializes_the_full_state(export: dict[str, Any] | None) -> bool:
+    """Whether the export leg produced the whole state as its product.
+
+    Read from the recorded result rather than from a bare flag beside it, so the
+    fact the blocker turns on and the fact the artifact publishes cannot drift
+    apart. Three things have to hold: the state was materialized in full, it was
+    the tensor-network state rather than another result shape, and it was the
+    product rather than a shard moved aside to check an answer.
+    """
+
+    if export is None:
+        return False
+    result = export.get("result")
+    if not isinstance(result, dict):
+        return False
+    return (
+        result.get("full_state_materialized") is True
+        and result.get("state_mode") == "distributed_tensor_network"
+        and export.get("product") == EXPORTED_PRODUCT
+    )
+
+
+def _export_observation(
+    *,
+    device: torch.device,
+    arguments: dict[str, Any],
+    world_size: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    """Materialize the whole tensor-network state, and time the act that builds it.
+
+    This is a separate act from the amplitude legs. Those reduce a handful of
+    projected outputs and never materialize the state -- the probe raises if they
+    do -- so the runtime's own all-reduce is not exercised by them as a product.
+    This leg calls the entry point whose contract is to return the state, so the
+    collective that assembles it is what the leg is for rather than a check on an
+    answer computed somewhere else.
+
+    Each sample is compared with the exact single-device statevector as it is
+    taken, so the duration and the vector it belongs to cannot come from
+    different calls, and a permuted or truncated product fails the run instead of
+    being published. Every rank runs this, because the reduction is a collective.
+    """
+
+    reference = _reference_statevector().to(device=device)
+
+    durations: list[float] = []
+    errors: list[float] = []
+    latest: Any = None
+    for index in range(EXPORT_WARMUP_ITERATIONS + EXPORT_ITERATIONS):
+        _synchronize(device)
+        started = time.perf_counter()
+        exported = run_distributed_tensor_network(
+            _forward_circuit(device=device), **arguments
+        )
+        state = exported.state()
+        _synchronize(device)
+        elapsed = time.perf_counter() - started
+        errors.append(float(torch.max(torch.abs(state[0] - reference)).item()))
+        if index >= EXPORT_WARMUP_ITERATIONS:
+            durations.append(elapsed)
+        latest = exported
+    if latest is None:  # pragma: no cover - both counts are positive constants
+        raise RuntimeError("the export leg has no iterations to run")
+
+    summary = latest.summary()
+    _require_export_placement(summary, expected_world_size=world_size)
+    _require_slice_partition(summary, leg="export", expected_world_size=world_size)
+
+    observed_error = max(errors)
+    if observed_error > NUMERICAL_TOLERANCE:
+        raise RuntimeError(
+            "the exported tensor-network state disagrees with the single-device "
+            f"reference: max_abs_error={observed_error}"
+        )
+
+    product = latest.state()[0].detach().to(device="cpu", dtype=COMPLEX_DTYPE)
+    return {
+        "measurement": EXPORT_MEASUREMENT,
+        "world_size": world_size,
+        "local_world_size": local_world_size,
+        "product": EXPORTED_PRODUCT,
+        "product_is_the_full_state": True,
+        "state_sha256": hashlib.sha256(product.numpy().tobytes()).hexdigest(),
+        "max_abs_error": observed_error,
+        "export": measured_performance(
+            durations,
+            warmup_iterations=EXPORT_WARMUP_ITERATIONS,
+            measurement=EXPORT_MEASUREMENT,
+        ),
+        # The result's own record, published whole rather than paraphrased: it
+        # carries the distribution the state ended up with, the rank ownership,
+        # the byte counts and the blockers that keep these durations from being
+        # read as a speedup.
+        "result": summary,
     }
 
 
@@ -1082,15 +1241,23 @@ def _artifact(
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any],
     cut_widths: dict[str, Any],
+    export: dict[str, Any] | None,
 ) -> dict[str, Any]:
     # One dict, put into the evidence and then read back by the derivation, so
     # the blockers cannot be decided from a different set of observations than
     # the artifact publishes.
+    #
+    # The full-state question has one answer here and it is kept apart from the
+    # amplitude legs: those reduce a handful of projected outputs and never
+    # materialize the state. The export calls the entry point whose contract is
+    # to return the state, so its materialization is one the workload needs, and
+    # only that one retracts the blocker.
     observations: dict[str, Any] = {
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
-        "production_full_state_materialization": False,
+        "export": export,
+        "production_full_state_materialization": _materializes_the_full_state(export),
         "reference": "exact_complex128_statevector_single_device",
         # The executor all-reduces the slice partials of the expectation and
         # returns the reduced value, so `distributed_expectation` is a
@@ -1130,6 +1297,7 @@ def _artifact(
             "checked_bitstrings": list(CHECKED_BITSTRINGS),
             "distribution_semantics": "sharded_across_ranks",
             "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
+            "exported_product": EXPORTED_PRODUCT,
         },
         "observations": observations,
         # Both topology blockers are decided by what this run observed rather
@@ -1489,6 +1657,17 @@ def probe(
             else None
         )
         host_staging = _host_staging_observation(device=device, arguments=placement)
+        # The export runs after the staging audit so the profiled region stays
+        # the region the previous revision profiled. It runs on every rank and
+        # unconditionally: it is a workload whose product is the state, not a
+        # timed leg the caller opts into, and the blocker it retracts is about
+        # the workload rather than about having taken a measurement.
+        export = _export_observation(
+            device=device,
+            arguments=placement,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
 
         communication = {
             "amplitudes_collective_bytes": amplitudes_summary["communication_tiers"][
@@ -1506,6 +1685,12 @@ def probe(
             "expectation_rank_partial_bytes_by_rank": {
                 str(rank_index): count
                 for rank_index, count in expectation_summary[
+                    "rank_partial_bytes_by_rank"
+                ].items()
+            },
+            "export_reduction_bytes_by_rank": {
+                str(rank_index): count
+                for rank_index, count in export["result"][
                     "rank_partial_bytes_by_rank"
                 ].items()
             },
@@ -1565,6 +1750,7 @@ def probe(
                 performance=performance,
                 host_staging=host_staging,
                 cut_widths=cut_widths,
+                export=export,
             )
         dist.barrier()
     finally:
