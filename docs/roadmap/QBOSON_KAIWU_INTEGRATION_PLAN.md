@@ -159,6 +159,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   synchronizes file contents and parent-directory metadata, so live evidence
   cannot be silently placed in a public or replaceable directory and then fail
   final assembly for a preventable local-permission error.
+- Quota-consuming smoke and system execution now convert keyboard interruption
+  and post-submission failures into failed attempted records. Smoke retains any
+  available task receipt and raw status, stops before submitting its next task,
+  and keeps all hardware gates closed; this aligns it with the training and
+  replay failure-evidence behavior.
 - A read-only host recheck confirmed that the SSH validation aliases differ
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and

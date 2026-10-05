@@ -129,7 +129,11 @@ scanned recursively through nested keys and values before JSON serialization,
 so escaped quotes, backslashes, or newlines cannot bypass the refusal check. It
 has no simulator fallback. Its output parent must already be a private,
 non-symlink directory; live evidence is published without replacement only
-after both file contents and parent-directory metadata are synchronized.
+after both file contents and parent-directory metadata are synchronized. A
+timeout, provider failure, malformed result, or keyboard interruption after a
+task receipt exists is converted into a failed attempted record; the smoke
+sequence stops without submitting its next task, and hardware acceptance stays
+closed.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private
 checkpoint directory, and an explicitly selected project. The acknowledgement

@@ -16,6 +16,7 @@ from typing import Any
 from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
+    KaiwuRemoteJob,
     KaiwuSDKClient,
     KaiwuTaskClient,
     KaiwuTaskResult,
@@ -55,6 +56,29 @@ def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
     }
 
 
+def _attempt_record(job: KaiwuRemoteJob) -> dict[str, Any]:
+    """Retain a submitted task identity when no validated result is available."""
+
+    receipt = job.receipt
+    return {
+        "task_name": receipt.task_name,
+        "task_mode": receipt.mode,
+        "matrix_sha256": receipt.matrix_sha256,
+        "matrix_size": receipt.matrix_size,
+        "requested_samples": receipt.requested_samples,
+        "returned_samples": None,
+        "provider_task_id": receipt.provider_task_id,
+        "provider_target": receipt.provider_target,
+        "raw_status": job.raw_status,
+        "fallback_occurred": False,
+        "minimum_energy": None,
+        "maximum_energy": None,
+        "provider_task_id_available": receipt.provider_task_id is not None,
+        "provider_target_available": receipt.provider_target is not None,
+        "provider_result_schema": None,
+    }
+
+
 def run_live_smoke(
     *,
     client: KaiwuTaskClient,
@@ -75,19 +99,27 @@ def run_live_smoke(
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
     real_provider_transport = type(client) is KaiwuSDKClient
     records: list[dict[str, Any]] = []
+    failure: dict[str, str] | None = None
     for mode in ("optimization", "sampling"):
-        job = submit_kaiwu_task(
-            _MATRIX,
-            client=client,
-            task_name=f"{task_prefix.strip()}-{mode}",
-            mode=mode,
-            requested_samples=requested_samples,
-            project_no=project_no.strip(),
-        )
-        result = job.wait(timeout=timeout, poll_interval=poll_interval)
-        records.append(_result_record(result))
+        job: KaiwuRemoteJob | None = None
+        try:
+            job = submit_kaiwu_task(
+                _MATRIX,
+                client=client,
+                task_name=f"{task_prefix.strip()}-{mode}",
+                mode=mode,
+                requested_samples=requested_samples,
+                project_no=project_no.strip(),
+            )
+            result = job.wait(timeout=timeout, poll_interval=poll_interval)
+            records.append(_result_record(result))
+        except (Exception, KeyboardInterrupt) as exc:
+            if job is not None:
+                records.append(_attempt_record(job))
+            failure = {"type": type(exc).__name__, "message": str(exc)}
+            break
 
-    provider_identity_complete = all(
+    provider_identity_complete = len(records) == 2 and all(
         record["provider_task_id_available"] is True
         and record["provider_target_available"] is True
         and isinstance(record["provider_task_id"], str)
@@ -96,13 +128,17 @@ def run_live_smoke(
         and bool(record["provider_target"].strip())
         for record in records
     )
-    smoke_passed = all(
-        record["raw_status"].strip().lower()
-        in {"finished", "completed", "done", "success", "succeed", "succeeded"}
-        and record["fallback_occurred"] is False
-        and math.isfinite(record["minimum_energy"])
-        and math.isfinite(record["maximum_energy"])
-        for record in records
+    smoke_passed = (
+        failure is None
+        and len(records) == 2
+        and all(
+            record["raw_status"].strip().lower()
+            in {"finished", "completed", "done", "success", "succeed", "succeeded"}
+            and record["fallback_occurred"] is False
+            and math.isfinite(record["minimum_energy"])
+            and math.isfinite(record["maximum_energy"])
+            for record in records
+        )
     )
     hardware_acceptance = (
         real_provider_transport and smoke_passed and provider_identity_complete
@@ -112,11 +148,13 @@ def run_live_smoke(
         "version": "1.0",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "transport": "kaiwu_cim" if real_provider_transport else "injected_test",
-        "real_provider_evidence": real_provider_transport,
-        "qboson_hardware_used": real_provider_transport,
+        "real_provider_evidence": real_provider_transport and smoke_passed,
+        "qboson_hardware_used": real_provider_transport and smoke_passed,
         "project_no": project_no.strip(),
         "environment_lock_sha256": environment_lock_sha256,
         "tasks": records,
+        "run_completed": failure is None,
+        "failure": failure,
         "live_provider_smoke_passed": smoke_passed,
         "provider_identity_complete": provider_identity_complete,
         "hardware_acceptance": hardware_acceptance,

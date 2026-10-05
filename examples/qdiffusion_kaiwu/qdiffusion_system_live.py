@@ -167,7 +167,7 @@ def run_live_system_probe(
         retrieval_resubmitted = not (
             sampler.remote_call_count == call_count and repeated.receipt == receipt
         )
-    except Exception as exc:
+    except (Exception, KeyboardInterrupt) as exc:
         failure = {"type": type(exc).__name__, "message": str(exc)}
 
     receipts = _receipt_records(sampler)

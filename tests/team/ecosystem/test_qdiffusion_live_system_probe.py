@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 import torch
 
+from examples.qdiffusion_kaiwu import qdiffusion_system_live as system_module
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
     run_live_system_probe,
@@ -155,6 +156,45 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         )
         == record["remote_call_count"]
     )
+
+
+def test_live_system_converts_keyboard_interrupt_to_failed_record(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def interrupted(*args: object, **kwargs: object) -> dict[str, object]:
+        del args, kwargs
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(system_module, "_execute_qdiffusion_slice", interrupted)
+
+    record = run_live_system_probe(
+        client=_IdentityClient(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="test CPU",
+        project_no="CPQC-test",
+        task_prefix="interrupted-system",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        real_provider_transport=False,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"] == {"type": "KeyboardInterrupt", "message": ""}
+    assert record["remote_call_count"] == 0
+    assert record["qboson_hardware_used"] is False
+    assert record["acceptance"] == {"system": "fail", "application": "not_run"}
 
 
 @pytest.mark.parametrize(

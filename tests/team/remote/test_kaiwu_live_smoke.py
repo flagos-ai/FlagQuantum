@@ -154,6 +154,65 @@ def test_live_smoke_rejects_invalid_environment_lock_digest() -> None:
         )
 
 
+def test_live_smoke_retains_failed_task_and_stops_before_another_submission() -> None:
+    class _PendingClient(_CompletedClient):
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            return "Pending"
+
+    client = _PendingClient(expose_provider_identity=True)
+
+    record = run_live_smoke(
+        client=client,
+        task_prefix="timeout-smoke",
+        project_no="CPQC-test",
+        timeout=0.0,
+        poll_interval=0.01,
+        environment_lock_sha256="d" * 64,
+    )
+
+    assert client.submissions == 1
+    assert len(record["tasks"]) == 1
+    assert record["tasks"][0]["task_mode"] == "optimization"
+    assert record["tasks"][0]["raw_status"] == "Pending"
+    assert record["tasks"][0]["returned_samples"] is None
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "TimeoutError"
+    assert record["live_provider_smoke_passed"] is False
+    assert record["provider_identity_complete"] is False
+    assert record["qboson_hardware_used"] is False
+    assert record["hardware_acceptance"] is False
+
+
+def test_live_smoke_converts_keyboard_interrupt_to_failed_attempt_record() -> None:
+    class _InterruptedClient(_CompletedClient):
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            raise KeyboardInterrupt
+
+    client = _InterruptedClient(expose_provider_identity=True)
+
+    record = run_live_smoke(
+        client=client,
+        task_prefix="interrupted-smoke",
+        project_no="CPQC-test",
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="e" * 64,
+    )
+
+    assert client.submissions == 1
+    assert len(record["tasks"]) == 1
+    assert record["tasks"][0]["raw_status"] is None
+    assert record["failure"] == {"type": "KeyboardInterrupt", "message": ""}
+    assert record["run_completed"] is False
+    assert record["hardware_acceptance"] is False
+
+
 def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
     path = tmp_path / "smoke.json"
     payload = {"secret": "not-a-real-credential"}
