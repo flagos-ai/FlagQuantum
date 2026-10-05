@@ -148,9 +148,7 @@ def test_run_validator_accepts_complete_raw_measurements() -> None:
 
 def test_run_validator_recomputes_medians() -> None:
     payload = _run("jp-a800-171", "stock_triton")
-    payload["cases"][0]["catalog_dispatch"][
-        "median_seconds_per_invocation"
-    ] = 9.0
+    payload["cases"][0]["catalog_dispatch"]["median_seconds_per_invocation"] = 9.0
     with pytest.raises(ValueError, match="median is invalid"):
         validate_run(payload)
 
@@ -178,9 +176,7 @@ def test_run_validator_enforces_each_default_window_floor(
 ) -> None:
     payload = _run("jp-a800-171", "stock_triton", speedup=1.0)
     validate_run(payload)
-    first_default = next(
-        case for case in payload["cases"] if case["default_eligible"]
-    )
+    first_default = next(case for case in payload["cases"] if case["default_eligible"])
     first_default[baseline]["samples_seconds_per_invocation"] = [
         0.99e-4,
         1.98e-4,
@@ -217,9 +213,7 @@ def test_aggregate_selects_only_the_declared_default_window() -> None:
 def test_checked_in_a800_evidence_is_canonical_and_selects_default() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
     validate_evidence(payload)
-    assert payload["source_revision"] == (
-        "55dc84d4da2a15166a1a954604b85a363d004504"
-    )
+    assert payload["source_revision"] == ("55dc84d4da2a15166a1a954604b85a363d004504")
     assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
     assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
     assert payload["minimum_default_window_speedup_over_pytorch_eager"] > 1.0
