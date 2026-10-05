@@ -19,6 +19,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   precision policy have focused tests. Optional conformance tests match Kaiwu
   Community 1.0.7 at revision
   `b648b531c034bd6ae9b7a34fed994c717967cc72` for energy and QUBO conversion.
+- The first Phase 2 security boundary is implemented under
+  `flagquantum/remote/kaiwu`: credentials are explicit, redacted, and
+  non-serializable, and environment discovery requires the complete dedicated
+  `QBOSON_USER_ID` plus `QBOSON_SDK_CODE` pair. No vendor SDK import or network
+  operation occurs during credential resolution.
 - Pulling a Python 3.10 container from Docker Hub on `jp-a800-171` timed out.
   This is an environment provisioning constraint, not evidence of an SDK or
   FlagQuantum defect. A pinned Python 3.10/Kaiwu environment must be supplied
