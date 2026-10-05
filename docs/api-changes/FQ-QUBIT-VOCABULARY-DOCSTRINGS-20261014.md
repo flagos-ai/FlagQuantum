@@ -555,9 +555,20 @@ the difference. The first eight commits were squash-merged onto
 `feat/qubit-vocabulary-algorithms` as `0e617c1d`, whose tree is byte-identical to the
 eighth commit's; the ninth is this record, committed separately precisely because its
 own file changes in none of the preceding eight, so it can be read against either shape.
-The stack branch therefore carries eight commits' content as one commit and this record
-as a second, while the head branch carries all nine separately — the same content, two
-histories, and `git rev-parse <ref>^{tree}` at the two tips is what shows it.
+The stack branch therefore carries the first eight commits' content as that one squash
+commit, with this record — and any later correction to it — as separate commits on top;
+the head branch carries all nine separately. The same content, two histories, and
+`git rev-parse <ref>^{tree}` at the two tips is what shows it.
+
+Stating it that way rather than as a count is deliberate, and the reason is that this
+paragraph has already been wrong once. It was written while the stack held the record as
+its second commit, and then the pull request carrying *this* text was merged by
+fast-forward onto the stack, which made the stack hold it as the third. **A commit whose
+prose counts the commits of the branch it is about to join cannot be written correctly
+before its own merge and stay correct after it** — the sentence is a claim about a
+topology that the merge itself is about to change, and the merge is the only event that
+can falsify it. So the paragraph now says which commit is the squash and which are the
+commits on top of it, a statement the next commit cannot invalidate.
 
 The lane readings above were taken after the eighth, so they are the cost of the slice
 as it will land rather than the cost it had when the surface was added. That
