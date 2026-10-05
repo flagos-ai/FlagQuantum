@@ -495,7 +495,10 @@ Borrowing a vendor-neutral project is permitted, and is the intended route for t
 documented need, an ownership boundary, a licence and supply-chain review, a
 replacement interface, and an exit plan.
 
-No project below is currently a FlagQuantum dependency. The table records
+No project below is a core dependency; a core install brings PyTorch only. The
+entries already declared as optional extras - `stim`, `pymatching` and `cotengra` -
+are pinned in `dependency-policy.toml`, and that file, not this table, is where a
+declared extra's version range and classified owner live. The table records
 ownership of the **licence check**, not approval to adopt. Licences were read from
 each project's own repository metadata on 2026-09-30; the licence column must be
 re-verified inside the adoption review, because an upstream licence can change and
@@ -508,9 +511,9 @@ because several of these projects ship bundled components under different terms.
 | Stim | Apache-2.0 | `backend_stim_stabilizer`, `qec_stim_integration`, `detector_error_model` | Also recorded as Apache-2.0 in the parity contract. |
 | PyMatching | Apache-2.0 | `qec_decoder_family` | Minimum-weight perfect matching. |
 | Qualtran | Apache-2.0 | `algorithm_block_encoding_family` | Faithful and fault-tolerant algorithm mathematics. `logical_resource_estimation` was withdrawn from this row: it landed natively over the compiler's own resource estimate rather than by adaptation, so the licence check below no longer applies to it. |
-| cotengra | Apache-2.0 | contraction-path search for the tensor-network core | Contraction ordering is search, not physics; owning it adds no moat. |
+| cotengra | Apache-2.0 | contraction-path search for the tensor-network core | Contraction ordering is search, not physics; owning it adds no moat. **Adopted**: declared as an optional extra and reached only through the sliced tensor-network routes, which report it as the contraction-path source of the plan they export. |
 | quimb | Apache-2.0 | tensor-network reference implementations |  |
-| opt_einsum | MIT | `einsum` path optimisation |  |
+| opt_einsum | MIT | `einsum` path optimisation | **Surveyed, not adopted.** The contraction order and the pair contraction are both owned in `flagquantum/simulation/tensor_network/`, so a second path optimiser would be a second source of truth for one decision. No module imports it. |
 | ITensor | Apache-2.0 | tensor-network reference implementations | C++. |
 | QuEST | MIT | statevector reference semantics |  |
 | PySCF | Apache-2.0 | `chemistry_domain_library` |  |

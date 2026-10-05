@@ -45,3 +45,36 @@ contraction steps, cache identities, output values, and gradients. The search
 regressions include output reordering and 96-axis products without allocating
 the represented state. These are planning checks, not simulation-capacity
 evidence.
+
+## Exporting a path cost
+
+A contraction cost is a property of one contraction order on one network, so it
+is reported for an order the caller selects rather than as a property of the
+program. Three surfaces export it, all of which plan without allocating the
+represented state:
+
+- `contraction_cost(strategy)` returns `estimated_cost` and `peak_size`, and adds
+  `n_slices` when the selected order is a sliced one.
+- `contraction_profile(strategy)` returns a `TensorNetworkContractionProfile`
+  whose `summary()` reports `strategy`, `estimated_cost`, `peak_size`, `n_steps`,
+  `output_size`, `n_slices`, `sliced_labels`, `total_intermediate_size`, and
+  `contraction_path_source`.
+- `tensor_network_contraction_peak_bytes(...)` converts a selected order's
+  `peak_size` into bytes using the widest node element size.
+
+`contraction_path_source` names the planner that produced the order, because two
+planners can return different costs for the same network and a recorded cost is
+only traceable with the search that produced it. This package's own search and
+its own slicers report `native`. A sliced profile inherits the source of the
+slicing plan it is built on, so when a slicing plan carries an external
+provenance the profile reports that instead; `cotengra_slicing_plan` is the route
+that records one, as `cotengra:<version>`. `opt_einsum` is surveyed in the parity
+strategy's licence table but is not adopted here, so no route reports it.
+
+These costs are estimates of a plan, not measured runtime or achieved-memory
+evidence. Every native objective is a self-built search heuristic. The `optimal`
+objective is exact only up to the node ceiling `_contract_nodes_optimal` accepts
+(`max_nodes`, 7 by default); above that ceiling it delegates to a bounded beam
+search, so an `optimal` cost must not be presented as exact for a larger network.
+No strategy here may be described as a cuTensorNet-class or cotengra-class
+planner.

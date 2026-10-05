@@ -95,6 +95,7 @@ class TensorNetworkContractionProfile:
     n_slices: int = 1
     sliced_labels: tuple[int, ...] = ()
     total_intermediate_size: int = 0
+    contraction_path_source: str = "native"
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -106,6 +107,7 @@ class TensorNetworkContractionProfile:
             "n_slices": self.n_slices,
             "sliced_labels": self.sliced_labels,
             "total_intermediate_size": self.total_intermediate_size,
+            "contraction_path_source": self.contraction_path_source,
         }
 
 
