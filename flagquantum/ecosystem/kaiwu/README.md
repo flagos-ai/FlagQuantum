@@ -20,11 +20,20 @@ Public entry points currently live in `flagquantum.ecosystem.kaiwu`:
   QUBO mapping with exhaustive energy-parity fixtures.
 - `ising_energy` makes the Kaiwu sign and matrix convention testable.
 - `prepare_integer_precision` provides explicit, auditable lossy scaling.
+- `KaiwuSampler` implements the synchronous `solve(ising_matrix)` surface used
+  by Kaiwu PyTorch Plugin while delegating task ownership to
+  `flagquantum.remote.kaiwu`. It deduplicates identical matrices and enforces an
+  explicit remote-call budget and timeout.
 
 The integer preparation policy is FlagQuantum-owned and is not presented as an
 implementation of Kaiwu `PrecisionReducer`. Before using it for real-machine
 submission, run version-pinned conformance tests against the installed Kaiwu
 SDK and record the resulting coefficient and energy-order evidence.
+
+`KaiwuSampler` never enables integer scaling implicitly. Set its
+`integer_target_range` only after choosing and recording a precision policy.
+Exhausting the remote-call budget raises before submission; there is no local
+or classical fallback.
 
 For a ten-minute local check, run:
 

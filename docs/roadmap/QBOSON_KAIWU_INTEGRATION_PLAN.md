@@ -32,6 +32,14 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   deliberately not exported from `flagquantum.remote`; the proprietary SDK
   adapter and real provider-state mapping remain unimplemented until the pinned
   SDK can be inspected.
+- The synchronous ecosystem sampler now matches the
+  `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
+  matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
+  hard remote-call budget, and exposes receipts and the last result. Integer
+  scaling remains explicit. A source-level conformance test passes through
+  `BoltzmannMachine.condition_sample()` at plugin revision
+  `f047bce7b1077449967bbe9e9fab5741542b48d4`; this is interface evidence only,
+  not the pinned Python 3.10/Torch 2.7 compatibility or A800 acceptance lane.
 - Pulling a Python 3.10 container from Docker Hub on `jp-a800-171` timed out.
   This is an environment provisioning constraint, not evidence of an SDK or
   FlagQuantum defect. A pinned Python 3.10/Kaiwu environment must be supplied

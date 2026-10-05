@@ -16,12 +16,14 @@ from .matrix import (
     ising_energy,
     prepare_integer_precision,
 )
+from .sampler import KaiwuSampler
 
 __all__ = (
     "IntegerPrecisionReport",
     "KaiwuInteropError",
     "KaiwuMatrixValidationError",
     "KaiwuPrecisionError",
+    "KaiwuSampler",
     "QuboIsingEncoding",
     "canonicalize_ising_matrix",
     "decode_qubo_spins",
