@@ -32,3 +32,20 @@ def test_a800_smoke_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
     assert path.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         _write_private_json(path, {"evidence_class": "development_fake_transport"})
+
+
+def test_a800_container_runner_keeps_execution_bounded() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "run_a800_development_probe.sh"
+    ).read_text(encoding="utf-8")
+
+    assert "--gpus device=0" in source
+    assert "--network none" in source
+    assert "--read-only" in source
+    assert '--hostname "$expected_hostname"' in source
+    assert ":/workspace/flagquantum:ro" in source
+    assert ":/workspace/kaiwu-plugin:ro" in source
+    assert "flagquantum/flagtree:0.7.0-validation" in source

@@ -10,20 +10,27 @@ acceptance.
 
 The development probe records both the stable validation-host alias and the
 machine-reported hostname because they are different on the current systems.
-For example, the first host is invoked as follows after the source and plugin
-have been made available in the selected container:
+The container hostname is explicitly set to the observed host identity because
+Docker otherwise assigns an unrelated container ID. After extracting the
+reviewed source and plugin archives, invoke the bounded runner on the first host
+as follows:
 
 ```bash
-python examples/qdiffusion_kaiwu/a800_sampler_smoke.py \
-  --execution-host jp-a800-171 \
-  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
-  --source-revision c3b9025fa26a0a78c533ae018def4dd636bc7275 \
-  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
-  --output private-evidence/jp-a800-171-development.json
+mkdir -m 700 private-evidence
+bash examples/qdiffusion_kaiwu/run_a800_development_probe.sh \
+  jp-a800-171 \
+  bm-baai-dx-zone1-lc-a800-80g-15-171 \
+  "$PWD" \
+  /absolute/path/to/kaiwu-pytorch-plugin \
+  "$PWD/private-evidence/jp-a800-171-development.json" \
+  045e54276ef86d96524a39486fea93617952fb39 \
+  f047bce7b1077449967bbe9e9fab5741542b48d4
 ```
 
 The output is a new mode-0600 file and is never an acceptance record because
-the transport is explicitly the in-memory development fake.
+the transport is explicitly the in-memory development fake. The runner exposes
+only GPU 0, disables networking, mounts both code trees read-only, uses a
+read-only container filesystem, and persists only the requested evidence file.
 
 The acceptance lane uses a frozen configuration and two independent host
 records:

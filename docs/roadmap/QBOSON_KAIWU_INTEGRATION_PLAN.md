@@ -98,6 +98,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and
   writes an exclusive mode-0600 evidence file.
+- The existing validation image was rechecked in ephemeral network-disabled
+  containers on both hosts: each exposes exactly one A800 to Torch, but the
+  image contains Python 3.12.3, Torch 2.13.0+cu129, and no Kaiwu package. A
+  bounded runner now injects the observed host identity and mounts FlagQuantum
+  and the public plugin source read-only for development-only execution.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
