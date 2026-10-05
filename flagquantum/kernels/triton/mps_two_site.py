@@ -10,9 +10,9 @@ import triton
 import triton.language as tl
 
 if TYPE_CHECKING:
-    from ._jit import jit
+    from ._jit import autotune, jit
 else:
-    from triton import jit
+    from triton import autotune, jit
 
 
 class _TwoSiteContext(Protocol):
@@ -22,7 +22,7 @@ class _TwoSiteContext(Protocol):
     def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
 
 
-@triton.autotune(
+@autotune(
     configs=[
         triton.Config(
             {"block_rows": 16, "block_columns": 16},

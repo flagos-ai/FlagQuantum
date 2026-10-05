@@ -21,11 +21,11 @@ declared:
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol, overload
+from typing import Any, Protocol, cast, overload
 
 import triton
 
-__all__ = ["Kernel", "jit"]
+__all__ = ["Kernel", "autotune", "jit"]
 
 
 class Kernel(Protocol):
@@ -70,3 +70,17 @@ def jit(fn: Any = None, /, **options: Any) -> Any:
     if fn is None:
         return triton.jit(**options)
     return triton.jit(fn, **options)
+
+
+def autotune(
+    *,
+    configs: Sequence[Any],
+    key: Sequence[str],
+    **options: Any,
+) -> Callable[[Kernel], Kernel]:
+    """Return a typed view of :func:`triton.autotune`."""
+
+    return cast(
+        Callable[[Kernel], Kernel],
+        triton.autotune(configs=configs, key=key, **options),
+    )
