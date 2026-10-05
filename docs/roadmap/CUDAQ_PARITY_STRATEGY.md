@@ -368,6 +368,89 @@ space and an off-contract input is reversible rather than added. Those absences
 are what a later row extension would close, and they are recorded here rather than
 left to be rediscovered.
 
+The next four rows are the third reconciliation of this round, and they moved
+nothing but their reasons: no status, no priority, no dependency class, and no
+count in this document changed, because in each case the capability had already
+been built and only the sentence describing it was stale. Each was re-derived by
+running the tree rather than by reading it, and each reason now opens by naming
+the clause that was false.
+
+`topology_aware_routing` was the most consequential, because its reason denied the
+existence of the very thing it is named for: "there is no published-quality router
+comparable to a SABRE-class algorithm."
+[sabre.py](../../flagquantum/compiler/sabre.py) is that algorithm, landed in three
+changes before the sentence was written and never reflected in it. It implements
+the heuristic of Li, Ding, and Xie, *Tackling the Qubit Mapping Problem for
+NISQ-Era Quantum Devices*: a front layer of two-wire operations whose predecessors
+have executed, a bounded extended layer of twenty operations, a lookahead term
+decayed by 0.9 and weighted 0.5, a deterministic lexicographic tie-break, and a
+stalled-swap limit of four per wire, together with the layout pass of the same
+paper that searches an initial mapping by routing the program and then the
+reversed program. Both are published names in
+`routing.ROUTING_STRATEGIES` -- `sabre` and `sabre_layout` -- and reachable
+through `route_to_topology`. What the measurement changed is where the gap is. On a
+fixed five-workload set the planner won every case: inserted SWAPs were
+48/98/52/124/310 for `restore_after_each_gate`, 54/134/56/110/434 for
+`persistent_layout`, 22/62/34/54/148 for `sabre`, and 17/48/31/54/109 for
+`sabre_layout`. An automatic selector that could not see the planner spent 310
+SWAPs on the largest case where 109 were needed, because `estimate_routing_cost`
+refuses `sabre` and `sabre_layout` by design -- it prices two named strategies
+rather than running a search -- so `select_routing_strategy` compares only the two
+that estimate and can never choose the two that plan. That is the row's remaining
+half, and it is a decision-layer gap rather than a router gap. The router's own
+limits are stated rather than implied: the cost is hop distance on a graph alone,
+so no error rate, readout fidelity, or gate duration enters it, no bridge-gate
+strategy is expressed, and the coupling map is undirected, which is the
+directional half the row's name promises.
+
+`spin_operator_algebra` overstated its own gap, and the correction is a subtraction
+from the row's claim rather than an addition to the code. Its reason said products,
+sums, and scalars were absent. They are present: `Observable` implements `__add__`,
+`__sub__`, `__mul__`, `__rmul__`, `__neg__`, and `__matmul__`, each returning an
+`Observable` rather than a matrix, so `X(0) + Z(0)`, `2 * X(0)`, `X(0) * 2`,
+`X(0) - Z(0)`, `X(0) @ Y(1)`, and `-X(0)` all work. Four operations are genuinely
+missing -- `commutator`, `anticommutator`, `exponential` with its `exp` spelling,
+and `__pow__` -- and the first three raise `AttributeError` while `X(0) ** 2`
+raises `TypeError`. What makes that a gap rather than a design is the asymmetry
+inside one package: `FermionOperator` and `BosonOperator` both carry `commutator`
+and `anticommutator`, so the fermionic and bosonic algebras are complete while the
+Pauli one is not. The row does not move, and the reason it cannot is rule 8:
+`Observable` is one of the thirty-six Stable Core exports, so every one of the four
+missing operations is an addition to a protected surface, and no approval exists.
+
+`custom_operation_registration` was false in its first two clauses and true in its
+third. There *is* an operation registry and *is* a schema:
+[operator_schema.py](../../flagquantum/core/operator_schema.py) defines
+`OperatorSchema`, `OPERATOR_SCHEMAS` over thirty-five canonical opcodes,
+`OPERATOR_ALIASES`, `ADJOINT_RULES`, and the accessors the circuit layer installs
+its gate methods from. The registry is closed rather than absent, which is a
+different fact: `OPERATOR_SCHEMAS` is a `mappingproxy`, so an item assignment
+raises `TypeError`, and no public callable adds, replaces, or removes a row, so a
+user-defined operation has no arity, no parameter declaration, no inverse rule, and
+no diagonal or adjoint marker. `Circuit.any` carries a raw unitary as a matrix
+instruction, which is a value the IR already admits rather than an operation the
+registry knows, so nothing can ask a custom matrix what its schema is. The third
+clause stands and is the half a reader would not have guessed: no recorded
+statement exists of what a backend does when it cannot serve a user-defined
+operation, so a custom unitary is routed, legalized, and emitted on the same path
+as a registered gate with no declared refusal and no declared fallback.
+
+`execution_entry_points` was half false. `translate` has an equivalent in
+[translate.py](../../flagquantum/compiler/translate.py), and its four accepted
+formats are read from `target_emission.EMISSION_PROFILES` rather than declared a
+second time, so an unaccepted spelling such as `qir:0.1` is refused by name.
+`draw` exists too, in the
+[drawer](../../flagquantum/drawer/__init__.py), and is narrower than the CUDA-Q
+surface rather than absent. `evolve` is the genuinely missing name, and the reason
+it was not built here is recorded in the row rather than left to be rediscovered:
+the integrators behind `flagquantum.lindblad` accept a constant generator with no
+time argument, so a time-dependent schedule is a new contract and not a reuse,
+which is what `API_CHANGE_PROPOSAL_065` asks to change. The four rows share one
+limit worth naming, because it explains why a reader could believe all four were
+absent: none of `draw`, `translate`, or `evolve` is among the thirty-six root
+exports, so each is reachable only by its own module path, and the parity row is
+where that reachability gap surfaces.
+
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
 `docs/roadmap/CAPABILITY_MATURITY.md` explains them; a parity row cites a registry

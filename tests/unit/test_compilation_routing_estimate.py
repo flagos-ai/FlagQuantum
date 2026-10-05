@@ -1,3 +1,5 @@
+import random
+
 import pytest
 import torch
 
@@ -101,3 +103,69 @@ def test_auto_strategy_tie_breaks_to_restore_after_each_gate() -> None:
     assert selection.restore_after_each_gate.planned_inserted_swap_count == 0
     assert selection.persistent_layout.planned_inserted_swap_count == 0
     assert selection.selected_strategy == "restore_after_each_gate"
+
+
+def test_the_estimate_refuses_the_planner_strategies_by_name() -> None:
+    """The estimate prices two strategies; the planner is refused, not priced.
+
+    `routing.ROUTING_STRATEGIES` names four strategies, so a caller could
+    reasonably ask the estimator for any of them. Two of those names are SWAP
+    planners rather than cost models, and the refusal says so instead of
+    returning a number that would be an estimate of nothing.
+    """
+
+    for strategy in ("sabre", "sabre_layout"):
+        with pytest.raises(ValueError, match="plan SWAPs instead of estimating them"):
+            estimate_routing_cost(_workload(), CouplingMap.line(5), strategy=strategy)
+
+
+def _spread_workload(n_wires: int, depth: int, seed: int) -> fq.Circuit:
+    """A two-wire-heavy program on many wires, which is what routing costs."""
+
+    rng = random.Random(seed)
+    circuit = fq.Circuit(n_wires)
+    for _ in range(depth // 2):
+        left, right = rng.sample(range(n_wires), 2)
+        circuit.cx(left, right)
+        circuit.ry(rng.randrange(n_wires), theta=rng.uniform(-0.7, 0.7))
+        left, right = rng.sample(range(n_wires), 2)
+        circuit.cz(left, right)
+    return circuit
+
+
+def test_auto_strategy_cannot_reach_a_planner_and_states_the_gap() -> None:
+    """The selector's candidate set is pinned, because the gap is the row's.
+
+    The parity row `topology_aware_routing` is `partial` on the routing decision
+    rather than on the router: a SABRE-class planner is present, and the
+    automatic choice cannot see it. This test re-derives that from the tree so
+    the reason cannot go stale in either direction -- the assertion is an
+    inequality, so it still holds after any improvement to the planner, and it
+    fails if the selector gains a planner strategy without the row being updated.
+    """
+
+    program = _spread_workload(n_wires=12, depth=20, seed=4)
+    coupling = CouplingMap.line(12)
+
+    selection = select_routing_strategy(program, coupling)
+
+    # The candidate set is exactly the two estimating strategies, which is what
+    # the selection record exposes as its candidate fields.
+    assert set(selection.summary()["candidates"]) == {
+        "restore_after_each_gate",
+        "persistent_layout",
+    }
+    selected = selection.selected_strategy
+    selected_swaps = route_to_topology(program, coupling, strategy=selected).metadata[
+        "routing"
+    ]["inserted_swap_count"]
+
+    for planner in ("sabre", "sabre_layout"):
+        planner_swaps = route_to_topology(program, coupling, strategy=planner).metadata[
+            "routing"
+        ]["inserted_swap_count"]
+        assert selected_swaps > planner_swaps, (
+            f"{selected} spent {selected_swaps} swaps where {planner} needed "
+            f"{planner_swaps}, so this workload no longer shows the gap the "
+            "parity row's reason rests on"
+        )
