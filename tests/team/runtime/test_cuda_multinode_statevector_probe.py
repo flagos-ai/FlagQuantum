@@ -88,17 +88,43 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
     assert evidence["status"] == "passed"
     assert evidence["scope"] == {
+        "cross_shard_gate_fraction": _MODULE.CROSS_SHARD_GATE_FRACTION,
+        "depth": _MODULE.DEPTH,
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
         "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
         "exported_product": "full_amplitude_vector",
         "local_world_size": 1,
-        "n_wires": 5,
+        "n_wires": _MODULE.N_WIRES,
         "node_count": 2,
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         "world_size": 2,
     }
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The forward leg runs the release contract's own narrowest matched-speed
+    # configuration rather than a hand-written circuit, and the artifact says so
+    # by naming the frozen file and the digest of the bytes it read. The declared
+    # and bound leaf counts have to agree, because the point of the observation
+    # is that the parameterization is a measured fact rather than a declaration
+    # beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert frozen["manifest"] == "benchmarks/manifests/statevector_speed_workload_v2.json"
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 22
+    assert frozen["depth"] == _MODULE.DEPTH == 8
+    assert frozen["cross_shard_gate_fraction"] == _MODULE.CROSS_SHARD_GATE_FRACTION
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 176
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    assert frozen == _ARTIFACT_FROZEN_CIRCUIT
+    assert (
+        frozen["manifest_sha256"]
+        == hashlib.sha256(
+            (_ROOT / frozen["manifest"]).read_bytes(),
+        ).hexdigest()
+    )
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -140,7 +166,14 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert {item["rank"] for item in ranks} == {0, 1}
     assert len({item["hostname_sha256"] for item in ranks}) == 2
     assert len({item["device_uuid"] for item in ranks}) == 2
-    assert all(item["rank_ownership"]["local_amplitudes"] == 16 for item in ranks)
+    # Half of the amplitude vector each, which at 22 wires is 2**21 rather than
+    # the handful of entries the five-wire circuit held. The ownership is
+    # recomputed from the width the scope declares, so a re-recorded artifact at
+    # another width fails here instead of agreeing by coincidence.
+    expected_local = 2 ** (_MODULE.N_WIRES - 1)
+    assert all(
+        item["rank_ownership"]["local_amplitudes"] == expected_local for item in ranks
+    )
     assert all(item["inter_node_communication_count"] > 0 for item in ranks)
     assert all(item["inter_node_communication_bytes"] > 0 for item in ranks)
     # One node per rank is the placement the whole artifact is about. If the
@@ -170,15 +203,14 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2
 
-    # The boundary is exactly these blockers. Each of the four the pair used
-    # to carry -- an untested fabric, an unmeasured workload, an unaudited
-    # staging path, and a full-state readout taken only to check an answer --
-    # is now retired by the observation that justifies it, so a reader cannot
-    # find it here and cannot find it silently missing either. What is left is
-    # the pair's own scope and the circuit's own size, neither of which any
-    # measurement on this hardware can retract.
+    # The boundary is exactly this blocker. Each of the five the pair used to
+    # carry -- an untested fabric, an unmeasured workload, an unaudited staging
+    # path, a full-state readout taken only to check an answer, and a toy
+    # parameterization -- is now retired by the observation that justifies it,
+    # so a reader cannot find it here and cannot find it silently missing
+    # either. What is left is the pair's own scope, which no measurement on this
+    # hardware can retract.
     assert sorted(evidence["claim_blockers"]) == [
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
     ]
 

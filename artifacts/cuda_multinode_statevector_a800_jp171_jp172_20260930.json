@@ -1,39 +1,38 @@
 {
   "evidence": {
-    "captured_at": "2026-10-05T10:45:43.607567+00:00",
+    "captured_at": "2026-10-05T12:04:07.586584+00:00",
     "claim_blockers": [
-      "toy_circuit_parameters_only",
       "two_node_pair_only_no_wider_topology"
     ],
     "environment": {
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "fe00cdc7d45affbd8982e2be1bf9d6e33f6620e4",
+      "source_revision": "6635f42152a658eb696e755d6cca7d4048f24c50",
       "torch": "2.13.0+cu130"
     },
     "observations": {
       "export": {
-        "amplitude_vector_sha256": "6528ae1e22ce1926e44a56d967062dcf3429534a237a310853888824419a2f08",
+        "amplitude_vector_sha256": "cea2d884b5052fe94075d1aab35049b67e85a50411bb357f81f92b95327b3b88",
         "gather": {
-          "maximum_seconds": 0.0002695787698030472,
+          "maximum_seconds": 0.0029762685298919678,
           "measured": true,
           "measured_iterations": 5,
           "measurement": "distributed_statevector_full_state_export",
-          "median_seconds": 0.000250495970249176,
-          "minimum_seconds": 0.00023629702627658844,
+          "median_seconds": 0.002945464104413986,
+          "minimum_seconds": 0.002901453524827957,
           "seconds": [
-            0.0002695787698030472,
-            0.0002577509731054306,
-            0.0002492982894182205,
-            0.000250495970249176,
-            0.00023629702627658844
+            0.0029762685298919678,
+            0.002945464104413986,
+            0.0029726196080446243,
+            0.002901453524827957,
+            0.0029107294976711273
           ],
           "synchronized": true,
           "warmup_iterations": 2
         },
         "gather_cost_semantics": "every_rank_receives_every_other_ranks_shard_and_keeps_the_whole_state",
-        "max_abs_error": 0.0,
+        "max_abs_error": 6.938893903907228e-17,
         "measurement": "distributed_statevector_full_state_export",
         "operation": "all_gather",
         "operation_semantics": "explicit_full_state_gather",
@@ -48,36 +47,53 @@
           "claim_evidence_type": "production_runtime",
           "distribution_semantics": "replicated_per_rank",
           "executor": "distributed_statevector_full_state_gather_v1",
-          "full_state_bytes": 512,
+          "full_state_bytes": 67108864,
           "full_state_materialization": true,
-          "gather_bytes_per_rank": 256,
+          "gather_bytes_per_rank": 33554432,
           "gather_cost_semantics": "every_rank_receives_every_other_ranks_shard_and_keeps_the_whole_state",
-          "local_block_bytes": 256,
+          "local_block_bytes": 33554432,
           "local_world_size": 1,
           "logical_to_physical_wires": [
             0,
             1,
             2,
             3,
-            4
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
           ],
-          "n_wires": 5,
+          "n_wires": 22,
           "node_count": 2,
           "operation": "all_gather",
           "operation_semantics": "explicit_full_state_gather",
-          "peak_resident_bytes_per_rank": 768,
+          "peak_resident_bytes_per_rank": 100663296,
           "rank_global_index_map": [
             {
               "global_offset": 0,
               "global_stride": 2,
-              "local_amplitudes": 16,
+              "local_amplitudes": 2097152,
               "placement": "strided_rank_address_bit",
               "rank": 0
             },
             {
               "global_offset": 1,
               "global_stride": 2,
-              "local_amplitudes": 16,
+              "local_amplitudes": 2097152,
               "placement": "strided_rank_address_bit",
               "rank": 1
             }
@@ -85,11 +101,21 @@
           "release_gate_allowed": false,
           "scalability_claim_allowed": false,
           "state_partition": "qubit_address_sharded",
-          "total_amplitudes": 32,
-          "total_gather_bytes": 512,
+          "total_amplitudes": 4194304,
+          "total_gather_bytes": 67108864,
           "wire_layout": "canonical",
           "world_size": 2
         }
+      },
+      "frozen_circuit": {
+        "bound_parameter_count": 176,
+        "configuration": "matched_speed_22q_d8_x0.10",
+        "cross_shard_gate_fraction": 0.1,
+        "declared_parameter_count": 176,
+        "depth": 8,
+        "manifest": "benchmarks/manifests/statevector_speed_workload_v2.json",
+        "manifest_sha256": "eb1693d360aefc0601b6b49449d3aca867655efeee7a9d9d7aee87d6ed9a3a66",
+        "n_wires": 22
       },
       "host_staging": {
         "host_transfer_events": [],
@@ -101,7 +127,7 @@
         ],
         "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_statevector_forward",
-        "profiler_event_count": 100
+        "profiler_event_count": 95
       },
       "network": {
         "backend": "nccl",
@@ -109,7 +135,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "7944ca9e5b838f1bce943bfc76d8564b6abfc30448242999d822ee382c6dd72b",
+        "debug_log_sha256": "f3a4af4375b49ed8f709d7de4326fb692f899d4c0dfdbb502ad024b2ca948a81",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -120,28 +146,28 @@
       "numerical_metrics": {
         "expectation_value_error": 3.3306690738754696e-16,
         "first_leg_initial_expectation_error": 3.3306690738754696e-16,
-        "gradient_max_abs_error": 8.326672684688674e-17,
+        "gradient_max_abs_error": 1.1102230246251565e-16,
         "resume_prefix_max_abs_error": 0.0,
         "resume_trajectory_max_abs_error": 0.0,
         "statevector_infidelity": 0.0,
-        "statevector_max_abs_error": 0.0,
-        "statevector_norm_error": 0.0,
+        "statevector_max_abs_error": 6.938893903907228e-17,
+        "statevector_norm_error": 2.220446049250313e-16,
         "training_loss_decrease": 0.008632771508185422
       },
       "performance": {
-        "maximum_seconds": 0.0036599822342395782,
+        "maximum_seconds": 0.17233173735439777,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_statevector_forward",
-        "median_seconds": 0.003256462514400482,
-        "minimum_seconds": 0.0029465332627296448,
-        "n_wires": 5,
+        "median_seconds": 0.17218679003417492,
+        "minimum_seconds": 0.17188558913767338,
+        "n_wires": 22,
         "seconds": [
-          0.0036599822342395782,
-          0.0029465332627296448,
-          0.0031051449477672577,
-          0.003256462514400482,
-          0.0032670069485902786
+          0.17233173735439777,
+          0.17221686616539955,
+          0.17206907458603382,
+          0.17218679003417492,
+          0.17188558913767338
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -180,10 +206,10 @@
               "compact_cpu_cx_cycles": false,
               "estimated_checkpoint_count": 2,
               "estimated_compact_reversible_bytes": 0,
-              "estimated_fused_reversible_bytes": 1024,
-              "estimated_local_state_bytes": 256,
-              "estimated_required_bytes": 1024,
-              "estimated_reversible_bytes": 1024,
+              "estimated_fused_reversible_bytes": 134217728,
+              "estimated_local_state_bytes": 33554432,
+              "estimated_required_bytes": 134217728,
+              "estimated_reversible_bytes": 134217728,
               "interval": 2,
               "low_memory_cpu_cx": false,
               "memory_budget_bytes": null,
@@ -237,14 +263,31 @@
               "triton_execution_count": 0
             },
             "layout_optimization_target": "training_step",
-            "local_state_bytes": 256,
+            "local_state_bytes": 33554432,
             "local_world_size": 1,
             "logical_to_physical_wires": [
               0,
               1,
-              4,
+              21,
               2,
-              3
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
             ],
             "node_count": 2,
             "observable_profile": "sum_of_single_wire_pauli_z_terms",
@@ -252,12 +295,12 @@
               [
                 1.0,
                 [
-                  4
+                  21
                 ]
               ]
             ],
             "observable_wires": [
-              4
+              21
             ],
             "optimizer_update_ready": false,
             "overlapped_gradient_collective_count": 0,
@@ -288,7 +331,7 @@
                 "reduction_count": 1
               }
             ],
-            "peak_backward_scratch_bytes": 768,
+            "peak_backward_scratch_bytes": 100663296,
             "persistent_inplace_local_enabled": false,
             "persistent_layout_buffer_allocation_count": 0,
             "persistent_layout_buffer_reserved_bytes": 0,
@@ -297,9 +340,9 @@
             "persistent_layout_swap_count": 0,
             "rank_ownership": {
               "full_state_owned": false,
-              "local_amplitudes": 16,
+              "local_amplitudes": 2097152,
               "rank": 0,
-              "total_amplitudes": 32
+              "total_amplitudes": 4194304
             },
             "release_gate_allowed": false,
             "saved_forward_state_reused": false,
@@ -310,13 +353,13 @@
             "forward_only_no_sharded_backward_or_optimizer"
           ],
           "claim_evidence_type": "accelerator_semantics",
-          "communication_bytes": 384,
-          "communication_count": 2,
+          "communication_bytes": 469762048,
+          "communication_count": 20,
           "communication_primitive": "torch.distributed.collective",
           "cross_shard_fusion_enabled": true,
           "device_name": "NVIDIA A800-SXM4-80GB",
           "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
-          "distributed_gate_count": 3,
+          "distributed_gate_count": 20,
           "distributed_identity": {
             "blockers": [
               "distributed_identity_is_not_collective_conformance_evidence"
@@ -343,22 +386,22 @@
           "exchange_pipelined_gate_count": 0,
           "exchange_subgroup_pipelined_gate_count": 0,
           "exchange_workspace_allocation_count": 1,
-          "exchange_workspace_reserved_bytes": 512,
-          "exchange_workspace_reuse_count": 1,
-          "executed_distributed_segment_count": 3,
+          "exchange_workspace_reserved_bytes": 67108864,
+          "exchange_workspace_reuse_count": 19,
+          "executed_distributed_segment_count": 20,
           "executor": "pytorch_native_distributed_statevector_v1",
           "full_state_materialization": false,
           "fused_cross_shard_gate_count": 0,
           "fused_cross_shard_regions": 0,
           "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
-          "inter_node_communication_bytes": 384,
-          "inter_node_communication_count": 2,
+          "inter_node_communication_bytes": 469762048,
+          "inter_node_communication_count": 20,
           "intra_node_communication_bytes": 0,
           "intra_node_communication_count": 0,
           "kernel_dispatch": {
             "decisions": [
               {
-                "count": 1,
+                "count": 12,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -379,7 +422,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 1,
+                "count": 12,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -400,7 +443,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 2,
+                "count": 168,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -421,7 +464,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 1,
+                "count": 88,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -442,36 +485,53 @@
                 "selected": "pytorch"
               }
             ],
-            "pytorch_fallback_count": 5,
+            "pytorch_fallback_count": 280,
             "triton_execution_count": 0
           },
-          "local_diagonal_gate_count": 1,
-          "local_gate_count": 4,
-          "local_state_bytes": 256,
+          "local_diagonal_gate_count": 0,
+          "local_gate_count": 256,
+          "local_state_bytes": 33554432,
           "local_world_size": 1,
           "logical_to_physical_wires": [
             0,
             1,
             2,
             3,
-            4
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
           ],
           "node_count": 2,
-          "owned_global_basis_indices": "0 + k*2, 0 <= k < 16",
-          "peak_scratch_bytes": 1536,
+          "owned_global_basis_indices": "0 + k*2, 0 <= k < 2097152",
+          "peak_scratch_bytes": 201326592,
           "rank": 0,
           "rank_ownership": {
-            "amplitude_end": 16,
+            "amplitude_end": 2097152,
             "amplitude_start": 0,
             "compact_global_indices": true,
             "device": "cuda:0",
             "dtype": "torch.complex128",
-            "global_index_count": 16,
-            "local_amplitudes": 16,
+            "global_index_count": 2097152,
+            "local_amplitudes": 2097152,
             "rank": 0,
             "shape": [
               1,
-              16
+              2097152
             ]
           },
           "release_gate_allowed": false,
@@ -487,14 +547,14 @@
             ],
             "communication_bytes": 96,
             "communication_events": 12,
-            "communication_fraction": 0.2727272727272727,
+            "communication_fraction": 2.861014763789853e-06,
             "completed_steps": 2,
             "distribution_semantics": "sharded_across_ranks",
             "executor": "pytorch_native_sharded_statevector_training_v1",
             "gradient_ownership_semantics": "sharded_across_ranks",
             "gradient_reduction": "reduce_scatter_sum",
             "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
-            "local_state_bytes": 256,
+            "local_state_bytes": 33554432,
             "local_world_size": 1,
             "losses": [
               0.9077758055611574,
@@ -522,7 +582,7 @@
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_update_semantics": "sharded_across_ranks",
             "parameter_ownership_semantics": "sharded_across_ranks",
-            "peak_memory_bytes": 17059328,
+            "peak_memory_bytes": 470123008,
             "progress_event_count": 21,
             "rank": 0,
             "release_gate_allowed": false,
@@ -565,10 +625,10 @@
               "compact_cpu_cx_cycles": false,
               "estimated_checkpoint_count": 2,
               "estimated_compact_reversible_bytes": 0,
-              "estimated_fused_reversible_bytes": 1024,
-              "estimated_local_state_bytes": 256,
-              "estimated_required_bytes": 1024,
-              "estimated_reversible_bytes": 1024,
+              "estimated_fused_reversible_bytes": 134217728,
+              "estimated_local_state_bytes": 33554432,
+              "estimated_required_bytes": 134217728,
+              "estimated_reversible_bytes": 134217728,
               "interval": 2,
               "low_memory_cpu_cx": false,
               "memory_budget_bytes": null,
@@ -622,14 +682,31 @@
               "triton_execution_count": 0
             },
             "layout_optimization_target": "training_step",
-            "local_state_bytes": 256,
+            "local_state_bytes": 33554432,
             "local_world_size": 1,
             "logical_to_physical_wires": [
               0,
               1,
-              4,
+              21,
               2,
-              3
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20
             ],
             "node_count": 2,
             "observable_profile": "sum_of_single_wire_pauli_z_terms",
@@ -637,12 +714,12 @@
               [
                 1.0,
                 [
-                  4
+                  21
                 ]
               ]
             ],
             "observable_wires": [
-              4
+              21
             ],
             "optimizer_update_ready": false,
             "overlapped_gradient_collective_count": 0,
@@ -673,7 +750,7 @@
                 "reduction_count": 1
               }
             ],
-            "peak_backward_scratch_bytes": 768,
+            "peak_backward_scratch_bytes": 100663296,
             "persistent_inplace_local_enabled": false,
             "persistent_layout_buffer_allocation_count": 0,
             "persistent_layout_buffer_reserved_bytes": 0,
@@ -682,9 +759,9 @@
             "persistent_layout_swap_count": 0,
             "rank_ownership": {
               "full_state_owned": false,
-              "local_amplitudes": 16,
+              "local_amplitudes": 2097152,
               "rank": 1,
-              "total_amplitudes": 32
+              "total_amplitudes": 4194304
             },
             "release_gate_allowed": false,
             "saved_forward_state_reused": false,
@@ -695,13 +772,13 @@
             "forward_only_no_sharded_backward_or_optimizer"
           ],
           "claim_evidence_type": "accelerator_semantics",
-          "communication_bytes": 384,
-          "communication_count": 2,
+          "communication_bytes": 469762048,
+          "communication_count": 20,
           "communication_primitive": "torch.distributed.collective",
           "cross_shard_fusion_enabled": true,
           "device_name": "NVIDIA A800-SXM4-80GB",
           "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
-          "distributed_gate_count": 3,
+          "distributed_gate_count": 20,
           "distributed_identity": {
             "blockers": [
               "distributed_identity_is_not_collective_conformance_evidence"
@@ -728,22 +805,22 @@
           "exchange_pipelined_gate_count": 0,
           "exchange_subgroup_pipelined_gate_count": 0,
           "exchange_workspace_allocation_count": 1,
-          "exchange_workspace_reserved_bytes": 512,
-          "exchange_workspace_reuse_count": 1,
-          "executed_distributed_segment_count": 3,
+          "exchange_workspace_reserved_bytes": 67108864,
+          "exchange_workspace_reuse_count": 19,
+          "executed_distributed_segment_count": 20,
           "executor": "pytorch_native_distributed_statevector_v1",
           "full_state_materialization": false,
           "fused_cross_shard_gate_count": 0,
           "fused_cross_shard_regions": 0,
           "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
-          "inter_node_communication_bytes": 384,
-          "inter_node_communication_count": 2,
+          "inter_node_communication_bytes": 469762048,
+          "inter_node_communication_count": 20,
           "intra_node_communication_bytes": 0,
           "intra_node_communication_count": 0,
           "kernel_dispatch": {
             "decisions": [
               {
-                "count": 1,
+                "count": 12,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -764,7 +841,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 1,
+                "count": 12,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -785,7 +862,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 2,
+                "count": 168,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -806,7 +883,7 @@
                 "selected": "pytorch"
               },
               {
-                "count": 1,
+                "count": 88,
                 "device_runtime": {
                   "device_type": "cuda",
                   "provider": "pytorch"
@@ -827,36 +904,53 @@
                 "selected": "pytorch"
               }
             ],
-            "pytorch_fallback_count": 5,
+            "pytorch_fallback_count": 280,
             "triton_execution_count": 0
           },
-          "local_diagonal_gate_count": 1,
-          "local_gate_count": 4,
-          "local_state_bytes": 256,
+          "local_diagonal_gate_count": 0,
+          "local_gate_count": 256,
+          "local_state_bytes": 33554432,
           "local_world_size": 1,
           "logical_to_physical_wires": [
             0,
             1,
             2,
             3,
-            4
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
           ],
           "node_count": 2,
-          "owned_global_basis_indices": "1 + k*2, 0 <= k < 16",
-          "peak_scratch_bytes": 1536,
+          "owned_global_basis_indices": "1 + k*2, 0 <= k < 2097152",
+          "peak_scratch_bytes": 201326592,
           "rank": 1,
           "rank_ownership": {
-            "amplitude_end": 32,
-            "amplitude_start": 16,
+            "amplitude_end": 4194304,
+            "amplitude_start": 2097152,
             "compact_global_indices": true,
             "device": "cuda:0",
             "dtype": "torch.complex128",
-            "global_index_count": 16,
-            "local_amplitudes": 16,
+            "global_index_count": 2097152,
+            "local_amplitudes": 2097152,
             "rank": 1,
             "shape": [
               1,
-              16
+              2097152
             ]
           },
           "release_gate_allowed": false,
@@ -872,14 +966,14 @@
             ],
             "communication_bytes": 96,
             "communication_events": 12,
-            "communication_fraction": 0.2727272727272727,
+            "communication_fraction": 2.861014763789853e-06,
             "completed_steps": 2,
             "distribution_semantics": "sharded_across_ranks",
             "executor": "pytorch_native_sharded_statevector_training_v1",
             "gradient_ownership_semantics": "sharded_across_ranks",
             "gradient_reduction": "reduce_scatter_sum",
             "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
-            "local_state_bytes": 256,
+            "local_state_bytes": 33554432,
             "local_world_size": 1,
             "losses": [
               0.9077758055611574,
@@ -907,7 +1001,7 @@
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_update_semantics": "sharded_across_ranks",
             "parameter_ownership_semantics": "sharded_across_ranks",
-            "peak_memory_bytes": 17059328,
+            "peak_memory_bytes": 470123008,
             "progress_event_count": 21,
             "rank": 1,
             "release_gate_allowed": false,
@@ -939,14 +1033,14 @@
           ],
           "communication_bytes": 96,
           "communication_events": 12,
-          "communication_fraction": 0.2727272727272727,
+          "communication_fraction": 2.861014763789853e-06,
           "completed_steps": 2,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
           "gradient_ownership_semantics": "sharded_across_ranks",
           "gradient_reduction": "reduce_scatter_sum",
           "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
-          "local_state_bytes": 256,
+          "local_state_bytes": 33554432,
           "local_world_size": 1,
           "losses": [
             0.9077758055611574,
@@ -974,7 +1068,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17059328,
+          "peak_memory_bytes": 470123008,
           "progress_event_count": 21,
           "rank": 0,
           "release_gate_allowed": false,
@@ -998,14 +1092,14 @@
           ],
           "communication_bytes": 96,
           "communication_events": 12,
-          "communication_fraction": 0.2727272727272727,
+          "communication_fraction": 2.861014763789853e-06,
           "completed_steps": 4,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
           "gradient_ownership_semantics": "sharded_across_ranks",
           "gradient_reduction": "reduce_scatter_sum",
           "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
-          "local_state_bytes": 256,
+          "local_state_bytes": 33554432,
           "local_world_size": 1,
           "losses": [
             0.8897849593717055,
@@ -1033,7 +1127,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17063424,
+          "peak_memory_bytes": 470127104,
           "progress_event_count": 21,
           "rank": 0,
           "release_gate_allowed": false,
@@ -1061,14 +1155,14 @@
           ],
           "communication_bytes": 192,
           "communication_events": 24,
-          "communication_fraction": 0.42857142857142855,
+          "communication_fraction": 5.7220131568155855e-06,
           "completed_steps": 4,
           "distribution_semantics": "sharded_across_ranks",
           "executor": "pytorch_native_sharded_statevector_training_v1",
           "gradient_ownership_semantics": "sharded_across_ranks",
           "gradient_reduction": "reduce_scatter_sum",
           "gradient_reduction_scheme": "owner_sharded_reduce_scatter",
-          "local_state_bytes": 256,
+          "local_state_bytes": 33554432,
           "local_world_size": 1,
           "losses": [
             0.9077758055611574,
@@ -1098,7 +1192,7 @@
           "optimizer_update_ownership_semantics": "sharded_across_ranks",
           "optimizer_update_semantics": "sharded_across_ranks",
           "parameter_ownership_semantics": "sharded_across_ranks",
-          "peak_memory_bytes": 17061376,
+          "peak_memory_bytes": 470125056,
           "progress_event_count": 41,
           "rank": 0,
           "release_gate_allowed": false,
@@ -1114,17 +1208,21 @@
     "scalability_claim_allowed": false,
     "schema": "flagquantum.cuda_multinode_statevector_probe.v2",
     "scope": {
+      "cross_shard_gate_fraction": 0.1,
+      "depth": 8,
       "distribution_semantics": "sharded_across_ranks",
       "dtype": "complex128",
       "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
       "exported_product": "full_amplitude_vector",
       "local_world_size": 1,
-      "n_wires": 5,
+      "n_wires": 22,
       "node_count": 2,
+      "parameter_count": 176,
+      "release_configuration": "matched_speed_22q_d8_x0.10",
       "world_size": 2
     },
     "status": "passed"
   },
-  "evidence_sha256": "d17bd83cfd18e3b15b10401d733ead109c273588655126ce41464388e49c9f55",
+  "evidence_sha256": "91bf43a1df1e4ccee3b2fea8c8175b95b4392e2fc9645c10b35b765a76da1549",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }
