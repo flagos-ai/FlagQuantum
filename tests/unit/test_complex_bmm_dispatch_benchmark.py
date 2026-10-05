@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import statistics
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +22,11 @@ from benchmarks.complex_bmm_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_ARTIFACT = (
+    Path(__file__).parents[2]
+    / "benchmarks/results/local/complex_bmm_dispatch_a800.json"
+)
 
 
 def _result(multiplier: float = 1.0) -> dict[str, object]:
@@ -201,3 +208,15 @@ def test_aggregate_validator_rejects_edited_decision() -> None:
 
     with pytest.raises(ValueError, match="canonical merge"):
         validate_evidence(payload)
+
+
+def test_checked_in_a800_evidence_is_canonical_and_rejects_dispatch() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["source_revision"] == ("77a3182c4c61fb3d0941424aaccc77781191aa21")
+    assert payload["required_hosts"] == ["jp-a800-171", "jp-a800-172"]
+    assert payload["required_compiler_lanes"] == ["stock_triton", "flagtree"]
+    assert payload["triton_forward_win_on_all_cases"] is False
+    assert payload["triton_training_win_on_all_cases"] is False
+    assert payload["runtime_dispatch_authorized"] is False

@@ -523,6 +523,20 @@ aggregate authorizes runtime dispatch only when every shape wins on both
 `jp-a800-171` and `jp-a800-172` under both stock Triton and FlagTree compiler
 lanes. A partial forward win is diagnostic evidence, not dispatch authority.
 
+The checked-in
+[`complex_bmm_dispatch_a800.json`](../../benchmarks/results/local/complex_bmm_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations after 20 warmups for
+ten fixed right- and left-going canonical-transfer shapes. It covers both A800
+hosts under stock Triton 3.7.1 and FlagTree 0.7.0. Maximum forward and gradient
+absolute errors are `3.06e-5` and `6.11e-5`. Across the complete matrix, the
+experimental Triton implementation reaches `0.186x` to `0.903x` the
+`torch.bmm` forward speed and `0.278x` to `0.546x` its forward-plus-backward
+speed. The canonical aggregate therefore records
+`runtime_dispatch_authorized=false`: NUM-001 remains experimental and MPS
+continues to use `torch.bmm`. This is bounded single-device development
+evidence, not a release gate or scalability claim. Reproduce or validate it
+with the runner above.
+
 `FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
 and its first-order complex gradient. Runtime dispatch is enabled by default
 only for contiguous CUDA `complex64` statevectors with shape `(1, 2**24)`, no
