@@ -78,6 +78,7 @@ def test_qdiffusion_live_source_requires_cost_and_provider_identity() -> None:
     assert "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE" in source
     assert "provider_identity_complete" in source
     assert "retrieval_resubmitted is False" in source
+    assert '"returned_samples"' in source
     assert '"fallback_occurred": False' in source
     assert "resolve_kaiwu_credentials" in source
     assert "_write_private_redacted_json" in source

@@ -220,6 +220,11 @@ def run_live_system_probe(
         "task_receipts": receipts,
         "sampling_mode": "sampling",
         "requested_samples": requested_samples,
+        "returned_samples": (
+            len(sampler.last_result.samples)
+            if sampler.last_result is not None
+            else None
+        ),
         "remote_call_budget": remote_call_budget,
         "remote_call_count": sampler.remote_call_count,
         "precision_policy": {
