@@ -37,6 +37,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
     _load_frozen_config,
+    _precision_evidence_complete,
     _receipt_records,
     _validate_lane,
     _write_private_redacted_json,
@@ -250,7 +251,7 @@ def run_portability_replay(
     }
     precision_reports = sampler.precision_reports
     precision_evidence = sampler.precision_evidence
-    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
+    precision_complete = _precision_evidence_complete(sampler, receipts)
     verified_transport = real_provider_transport and isinstance(client, KaiwuSDKClient)
     run_completed = failure is None
     portability_pass = bool(
@@ -260,10 +261,7 @@ def run_portability_replay(
         and retrieval_resubmitted is False
         and token_constraints_passed
         and generated_device == "cuda:0"
-        and precision_reports
-        and len(precision_evidence) == len(precision_reports)
-        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
-        == receipt_matrix_digests
+        and precision_complete
     )
     return {
         "schema": SCHEMA,
@@ -332,6 +330,7 @@ def run_portability_replay(
             ),
         },
         "precision_evidence": [asdict(evidence) for evidence in precision_evidence],
+        "precision_evidence_complete": precision_complete,
         "trained_energy_checkpoint_sha256": trained_checkpoint_sha256,
         "artifacts": {
             "dataset_sha256": config["dataset"]["sha256"],

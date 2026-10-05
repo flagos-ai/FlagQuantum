@@ -31,6 +31,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
     _load_frozen_config,
+    _precision_evidence_complete,
     _validate_lane,
     _write_private_redacted_json,
 )
@@ -274,12 +275,7 @@ def run_training_seed(
     }
     precision_reports = sampler.precision_reports
     precision_evidence = sampler.precision_evidence
-    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
-    precision_evidence_complete = bool(precision_reports) and (
-        len(precision_evidence) == len(precision_reports)
-        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
-        == receipt_matrix_digests
-    )
+    precision_evidence_complete = _precision_evidence_complete(sampler, receipts)
     verified_provider_transport = type(sampler.client) is KaiwuSDKClient
     qboson_hardware_used = bool(
         failure is None

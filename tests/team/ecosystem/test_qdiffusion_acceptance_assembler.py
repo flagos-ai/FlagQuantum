@@ -455,6 +455,7 @@ def _portability(
                 "mean_abs_error": 0.0,
             }
         ],
+        "precision_evidence_complete": True,
         "fallback_occurred": False,
         "retrieval_resubmitted": False,
         "secrets_redacted": True,

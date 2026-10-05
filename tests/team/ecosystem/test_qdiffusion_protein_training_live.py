@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -13,7 +14,14 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _workflow_artifact_identities,
     run_training_seed,
 )
-from flagquantum.ecosystem.kaiwu import KaiwuPrecisionEvidence, KaiwuSampler
+from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
+    _precision_evidence_complete,
+)
+from flagquantum.ecosystem.kaiwu import (
+    KaiwuPrecisionEvidence,
+    KaiwuSampler,
+    KaiwuTransferRecord,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -267,6 +275,21 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         max_abs_error=0.25,
         mean_abs_error=0.125,
     )
+    transfer_record = KaiwuTransferRecord(
+        input_type="numpy.ndarray",
+        input_device="cpu",
+        input_dtype="float32",
+        matrix_shape=(3, 3),
+        original_matrix_sha256="2" * 64,
+        submission_matrix_sha256="1" * 64,
+        canonical_device="cpu",
+        canonical_dtype="torch.float64",
+        submission_storage="cpu_python_tuple",
+        returned_storage="cpu_numpy",
+        returned_dtype="int8",
+        returned_shape=(10, 3),
+        cache_hit=False,
+    )
     sampler = cast(
         KaiwuSampler,
         SimpleNamespace(
@@ -275,8 +298,16 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
             receipts=(receipt,),
             precision_reports=(precision_report,),
             precision_evidence=(precision_evidence,),
+            transfer_records=(transfer_record,),
         ),
     )
+    receipt_records = [{"matrix_sha256": "1" * 64}]
+    assert _precision_evidence_complete(sampler, receipt_records) is True
+    sampler.precision_evidence = (
+        replace(precision_evidence, source_type="torch.Tensor"),
+    )
+    assert _precision_evidence_complete(sampler, receipt_records) is False
+    sampler.precision_evidence = (precision_evidence,)
 
     record = run_training_seed(
         workflow=workflow,

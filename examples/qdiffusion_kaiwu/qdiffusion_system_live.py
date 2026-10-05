@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import math
 import platform
+import re
 import socket
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -110,6 +112,88 @@ def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
     ]
 
 
+def _precision_evidence_complete(
+    sampler: KaiwuSampler,
+    receipts: list[dict[str, Any]],
+) -> bool:
+    """Reconcile live precision evidence, receipts, and sampler transfers."""
+
+    reports = sampler.precision_reports
+    evidence = sampler.precision_evidence
+    if not reports or len(evidence) != len(reports):
+        return False
+    for item in evidence:
+        numeric_values = (
+            item.normalized_min,
+            item.normalized_max,
+            item.scale_factor,
+            item.max_abs_error,
+            item.mean_abs_error,
+        )
+        if (
+            not isinstance(item.original_matrix_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", item.original_matrix_sha256) is None
+            or not isinstance(item.submission_matrix_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", item.submission_matrix_sha256) is None
+            or item.source_type != "numpy.ndarray"
+            or not isinstance(item.source_dtype, str)
+            or not item.source_dtype.strip()
+            or item.normalized_dtype != "torch.float64"
+            or item.symmetry_normalization != "arithmetic_mean"
+            or item.rounding_policy != "round_half_to_even"
+            or any(
+                isinstance(value, bool) or not isinstance(value, (int, float))
+                for value in numeric_values
+            )
+            or not all(math.isfinite(float(value)) for value in numeric_values)
+            or type(item.target_min) is not int
+            or type(item.target_max) is not int
+            or item.normalized_min > item.normalized_max
+            or item.target_min >= 0
+            or item.target_max <= 0
+            or item.scale_factor <= 0
+            or item.max_abs_error < 0
+            or item.mean_abs_error < 0
+            or item.mean_abs_error > item.max_abs_error
+        ):
+            return False
+        maximum_magnitude = max(abs(item.normalized_min), abs(item.normalized_max))
+        expected_scale = (
+            1.0
+            if maximum_magnitude == 0.0
+            else min(abs(item.target_min), item.target_max) / maximum_magnitude
+        )
+        if not math.isclose(
+            item.scale_factor, expected_scale, rel_tol=1e-12, abs_tol=1e-12
+        ):
+            return False
+    original_digests = {item.original_matrix_sha256 for item in evidence}
+    if len(original_digests) != len(evidence):
+        return False
+    receipt_digests = {receipt.get("matrix_sha256") for receipt in receipts}
+    if {item.submission_matrix_sha256 for item in evidence} != receipt_digests:
+        return False
+    precision_origins = {
+        (
+            item.original_matrix_sha256,
+            item.submission_matrix_sha256,
+            item.source_type,
+            item.source_dtype,
+        )
+        for item in evidence
+    }
+    transfer_origins = {
+        (
+            record.original_matrix_sha256,
+            record.submission_matrix_sha256,
+            record.input_type,
+            record.input_dtype,
+        )
+        for record in sampler.transfer_records
+    }
+    return precision_origins == transfer_origins
+
+
 def run_live_system_probe(
     *,
     client: KaiwuTaskClient,
@@ -189,12 +273,7 @@ def run_live_system_probe(
     run_completed = failure is None
     precision_reports = sampler.precision_reports
     precision_evidence = sampler.precision_evidence
-    receipt_matrix_digests = {receipt["matrix_sha256"] for receipt in receipts}
-    precision_complete = bool(precision_reports) and (
-        len(precision_evidence) == len(precision_reports)
-        and {evidence.submission_matrix_sha256 for evidence in precision_evidence}
-        == receipt_matrix_digests
-    )
+    precision_complete = _precision_evidence_complete(sampler, receipts)
     verified_provider_transport = real_provider_transport and isinstance(
         client, KaiwuSDKClient
     )

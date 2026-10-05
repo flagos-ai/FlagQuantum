@@ -240,6 +240,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   `(original, submitted, type, dtype)` identity set to equal the precision
   evidence set. A receipt-linked submission can no longer conceal a substituted
   plugin input at the A800-to-CPU boundary.
+- One shared live-record predicate now applies those receipt, normalization,
+  original-input, and sampler-transfer checks before system or portability
+  status can be written as passing, and before training can claim complete
+  precision evidence. The final validator independently requires the same
+  portability completeness flag, preventing a component from temporarily
+  overstating a result that only fails during final assembly.
 - The Phase 5 runbook now covers frozen inputs, approved source transfer,
   development rehearsal, SDK-lane verification, quota-guarded smoke and system
   execution, interruption and same-identity resume, independent two-host runs,
