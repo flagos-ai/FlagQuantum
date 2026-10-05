@@ -22,6 +22,13 @@ read automatically because they can collide with unrelated application state.
 No credential value may enter logs, exceptions, checkpoints, receipts, or test
 fixtures.
 
+`initialize_kaiwu_license` verifies the documented Python 3.10 runtime and an
+explicit SDK version before resolving credentials or invoking
+`kaiwu.license.init`. Import and license failures are re-raised through
+FlagQuantum-owned exceptions; vendor exception text is discarded because it
+may contain authorization values. The function returns only non-secret SDK and
+Python version evidence.
+
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the
 credential helpers, its experimental entry points expose a Kaiwu-specific

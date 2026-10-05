@@ -61,6 +61,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   CPU execution, reused task identities, fallback, resubmission, over-budget
   calls, changed software or precision lanes, missing seeds, and post-hoc metric
   failures are rejected. No real acceptance record has been produced yet.
+- The proprietary SDK initialization boundary now fails before credential use
+  unless Python is 3.10 and the installed Kaiwu version exactly matches the
+  selected lane. SDK import is lazy, `license.init` receives the in-memory pair,
+  and vendor exception text is discarded to prevent credential leakage. This
+  is fake-module contract evidence; no license has been initialized yet.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

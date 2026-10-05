@@ -18,16 +18,30 @@ from .jobs import (
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
+from .sdk import (
+    KaiwuLicenseInitializationError,
+    KaiwuSDKEnvironment,
+    KaiwuSDKError,
+    KaiwuSDKUnavailableError,
+    KaiwuSDKVersionError,
+    initialize_kaiwu_license,
+)
 
 __all__ = (
     "KaiwuCredentials",
     "KaiwuJobStatus",
+    "KaiwuLicenseInitializationError",
     "KaiwuRemoteJob",
+    "KaiwuSDKEnvironment",
+    "KaiwuSDKError",
+    "KaiwuSDKUnavailableError",
+    "KaiwuSDKVersionError",
     "KaiwuTaskClient",
     "KaiwuTaskMode",
     "KaiwuTaskReceipt",
     "KaiwuTaskResult",
     "new_receipt",
+    "initialize_kaiwu_license",
     "resolve_kaiwu_credentials",
     "restore_kaiwu_job",
     "submit_kaiwu_task",
