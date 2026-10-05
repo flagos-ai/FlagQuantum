@@ -265,6 +265,12 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   sample counts, and aware submission timestamps against their receipts, and
   retain bounded scale/error summaries for every precision report. A bare
   precision-report count is no longer sufficient evidence.
+- System, protein-training, and portability components now serialize the full
+  Remote receipt identity, including its schema and matrix size. One shared
+  final-evidence check requires the exact field set, nonempty task and project
+  names, sampling mode and count, a positive matrix size, matrix digest,
+  provider task and target identities, and an aware UTC submission time; it
+  also rejects duplicate task or matrix identities within a component.
 - System-probe and protein-training call budgets are now separate. A validator
   derives a conservative per-seed submission bound from the pinned plugin's
   actual positive/negative energy and generation loops; the illustrative full

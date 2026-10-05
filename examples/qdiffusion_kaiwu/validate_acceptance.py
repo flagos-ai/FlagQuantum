@@ -7,7 +7,7 @@ import hashlib
 import math
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 from statistics import fmean
 from typing import Any, cast
@@ -33,6 +33,21 @@ SYSTEM_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
 PORTABILITY_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay"
 TRAINING_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
 EVALUATION_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
+TASK_RECEIPT_SCHEMA = "flagquantum.kaiwu-task.v1"
+TASK_RECEIPT_FIELDS = frozenset(
+    {
+        "schema",
+        "task_name",
+        "matrix_sha256",
+        "matrix_size",
+        "mode",
+        "requested_samples",
+        "project_no",
+        "submitted_at",
+        "provider_task_id",
+        "provider_target",
+    }
+)
 METRIC_NAMES = (
     "mean_cosine_distance",
     "median_cosine_distance",
@@ -73,6 +88,57 @@ def _finite_number(value: Any, label: str, errors: list[str]) -> float | None:
         errors.append(f"{label}: expected a finite number")
         return None
     return number
+
+
+def _validate_sampling_receipt(
+    receipt: dict[str, Any],
+    *,
+    label: str,
+    expected_requested_samples: Any,
+    errors: list[str],
+) -> tuple[str | None, str | None, str | None]:
+    """Validate one complete serialized Remote receipt for final evidence."""
+
+    if set(receipt) != TASK_RECEIPT_FIELDS:
+        errors.append(f"{label}: receipt field set is incomplete")
+    if receipt.get("schema") != TASK_RECEIPT_SCHEMA:
+        errors.append(f"{label}: receipt schema is unsupported")
+    task_name = receipt.get("task_name")
+    if not isinstance(task_name, str) or not task_name.strip():
+        errors.append(f"{label}: receipt has no task name")
+    matrix_digest = receipt.get("matrix_sha256")
+    if (
+        not isinstance(matrix_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
+    ):
+        errors.append(f"{label}: receipt has no matrix digest")
+        matrix_digest = None
+    matrix_size = receipt.get("matrix_size")
+    if type(matrix_size) is not int or matrix_size <= 0:
+        errors.append(f"{label}: receipt has an invalid matrix size")
+    if receipt.get("mode") != "sampling":
+        errors.append(f"{label}: receipt is not sampling")
+    if receipt.get("requested_samples") != expected_requested_samples:
+        errors.append(f"{label}: receipt sample count differs")
+    project_no = receipt.get("project_no")
+    if not isinstance(project_no, str) or not project_no.strip():
+        errors.append(f"{label}: receipt has no project number")
+    submitted_at = receipt.get("submitted_at")
+    try:
+        submitted = datetime.fromisoformat(submitted_at)
+    except (TypeError, ValueError):
+        submitted = None
+    if submitted is None or submitted.utcoffset() != timedelta(0):
+        errors.append(f"{label}: receipt has no aware UTC submission time")
+    task_id = receipt.get("provider_task_id")
+    if not isinstance(task_id, str) or not task_id.strip():
+        errors.append(f"{label}: receipt has no provider_task_id")
+        task_id = None
+    target = receipt.get("provider_target")
+    if not isinstance(target, str) or not target.strip():
+        errors.append(f"{label}: receipt has no provider_target")
+        target = None
+    return task_id, target, matrix_digest
 
 
 def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
@@ -766,36 +832,33 @@ def _validate_remote_sampling_component_evidence(
 
     receipt_task_ids: list[str] = []
     receipt_targets: set[str] = set()
+    receipt_matrix_digests: list[str] = []
     requested_samples = record.get("requested_samples")
     for index, receipt in enumerate(receipts):
         if not isinstance(receipt, dict):
             errors.append(f"{label}: remote receipt {index} is not an object")
             continue
-        task_id = receipt.get("provider_task_id")
-        target = receipt.get("provider_target")
-        if not isinstance(task_id, str) or not task_id.strip():
-            errors.append(f"{label}: remote receipt {index} has no provider_task_id")
-        else:
+        task_id, target, matrix_digest = _validate_sampling_receipt(
+            receipt,
+            label=f"{label}: remote receipt {index}",
+            expected_requested_samples=requested_samples,
+            errors=errors,
+        )
+        if task_id is not None:
             receipt_task_ids.append(task_id)
-        if not isinstance(target, str) or not target.strip():
-            errors.append(f"{label}: remote receipt {index} has no provider_target")
-        else:
+        if target is not None:
             receipt_targets.add(target)
-        if receipt.get("mode") != "sampling":
-            errors.append(f"{label}: remote receipt {index} is not sampling")
-        if receipt.get("requested_samples") != requested_samples:
-            errors.append(f"{label}: remote receipt {index} sample count differs")
-        matrix_digest = receipt.get("matrix_sha256")
-        if (
-            not isinstance(matrix_digest, str)
-            or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
-        ):
-            errors.append(f"{label}: remote receipt {index} has no matrix digest")
+        if matrix_digest is not None:
+            receipt_matrix_digests.append(matrix_digest)
 
     if record.get("qboson_task_ids") != receipt_task_ids:
         errors.append(f"{label}: task IDs differ from remote receipts")
     if len(receipt_targets) != 1 or record.get("qboson_target") not in receipt_targets:
         errors.append(f"{label}: target differs from remote receipts")
+    if len(receipt_task_ids) != len(set(receipt_task_ids)):
+        errors.append(f"{label}: provider task IDs are not unique")
+    if len(receipt_matrix_digests) != len(set(receipt_matrix_digests)):
+        errors.append(f"{label}: receipt matrix identities are not unique")
 
     returned_samples = record.get("returned_samples")
     if (
@@ -890,44 +953,18 @@ def _validate_training_provider_evidence(
             if not isinstance(receipt, dict):
                 errors.append(f"{label}: training receipt {index} is not an object")
                 continue
-            task_id = receipt.get("provider_task_id")
-            target = receipt.get("provider_target")
-            if not isinstance(task_id, str) or not task_id.strip():
-                errors.append(
-                    f"{label}: training receipt {index} has no provider_task_id"
-                )
-            else:
+            task_id, target, matrix_digest = _validate_sampling_receipt(
+                receipt,
+                label=f"{label}: training receipt {index}",
+                expected_requested_samples=requested_samples,
+                errors=errors,
+            )
+            if task_id is not None:
                 receipt_task_ids.append(task_id)
-            if not isinstance(target, str) or not target.strip():
-                errors.append(
-                    f"{label}: training receipt {index} has no provider_target"
-                )
-            else:
+            if target is not None:
                 receipt_targets.add(target)
-            if receipt.get("mode") != "sampling":
-                errors.append(f"{label}: training receipt {index} is not sampling")
-            if receipt.get("requested_samples") != requested_samples:
-                errors.append(f"{label}: training receipt {index} sample count differs")
-            matrix_digest = receipt.get("matrix_sha256")
-            if (
-                not isinstance(matrix_digest, str)
-                or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
-            ):
-                errors.append(f"{label}: training receipt {index} has no matrix digest")
-            else:
+            if matrix_digest is not None:
                 receipt_matrix_digests.append(matrix_digest)
-            task_name = receipt.get("task_name")
-            if not isinstance(task_name, str) or not task_name.strip():
-                errors.append(f"{label}: training receipt {index} has no task name")
-            submitted_at = receipt.get("submitted_at")
-            try:
-                submitted = datetime.fromisoformat(submitted_at)
-            except (TypeError, ValueError):
-                submitted = None
-            if submitted is None or submitted.tzinfo is None:
-                errors.append(
-                    f"{label}: training receipt {index} has no aware submission time"
-                )
         if record.get("qboson_task_ids") != receipt_task_ids:
             errors.append(f"{label}: training task IDs differ from receipts")
         if (

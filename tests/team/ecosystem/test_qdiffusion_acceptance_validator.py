@@ -11,6 +11,7 @@ import pytest
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_component_bundle,
     _validate_config,
+    _validate_sampling_receipt,
     validate_acceptance,
 )
 
@@ -18,6 +19,72 @@ pytestmark = pytest.mark.unit
 
 _REVISION = "a" * 40
 _PLUGIN_REVISION = "b" * 40
+
+
+def _complete_task_receipt() -> dict[str, Any]:
+    return {
+        "schema": "flagquantum.kaiwu-task.v1",
+        "task_name": "system-task",
+        "matrix_sha256": "7" * 64,
+        "matrix_size": 3,
+        "mode": "sampling",
+        "requested_samples": 10,
+        "project_no": "CPQC-test",
+        "submitted_at": "2026-10-05T00:00:00+00:00",
+        "provider_task_id": "provider-task",
+        "provider_target": "SPQC-provider",
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("schema", "wrong", "schema is unsupported"),
+        ("task_name", "", "no task name"),
+        ("matrix_sha256", "bad", "no matrix digest"),
+        ("matrix_size", True, "invalid matrix size"),
+        ("mode", "optimization", "not sampling"),
+        ("requested_samples", 11, "sample count differs"),
+        ("project_no", " ", "no project number"),
+        ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
+        ("provider_task_id", "", "no provider_task_id"),
+        ("provider_target", "", "no provider_target"),
+    ),
+)
+def test_complete_sampling_receipt_rejects_tampered_identity_fields(
+    field: str, value: object, message: str
+) -> None:
+    receipt = _complete_task_receipt()
+    receipt[field] = value
+    errors: list[str] = []
+
+    _validate_sampling_receipt(
+        receipt,
+        label="receipt",
+        expected_requested_samples=10,
+        errors=errors,
+    )
+
+    assert any(message in error for error in errors)
+
+
+def test_complete_sampling_receipt_rejects_missing_or_extra_fields() -> None:
+    for receipt in (
+        {
+            key: value
+            for key, value in _complete_task_receipt().items()
+            if key != "schema"
+        },
+        {**_complete_task_receipt(), "unexpected": True},
+    ):
+        errors: list[str] = []
+        _validate_sampling_receipt(
+            receipt,
+            label="receipt",
+            expected_requested_samples=10,
+            errors=errors,
+        )
+        assert any("field set is incomplete" in error for error in errors)
 
 
 def _write_json(path: Path, payload: object) -> str:

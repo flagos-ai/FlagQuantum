@@ -66,8 +66,10 @@ def _system(
         "qboson_task_ids": [task_id],
         "task_receipts": [
             {
+                "schema": "flagquantum.kaiwu-task.v1",
                 "task_name": f"system-{task_id}",
                 "matrix_sha256": "7" * 64,
+                "matrix_size": 3,
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",
@@ -255,8 +257,10 @@ def _components(
                     "precision_evidence_complete": True,
                     "task_receipts": [
                         {
+                            "schema": "flagquantum.kaiwu-task.v1",
                             "task_name": f"protein-seed-{seed}",
                             "matrix_sha256": str(index) * 64,
+                            "matrix_size": 3,
                             "mode": "sampling",
                             "requested_samples": 10,
                             "project_no": "CPQC-test",
@@ -369,9 +373,14 @@ def _portability(
         "qboson_task_ids": ["portability-task"],
         "task_receipts": [
             {
+                "schema": "flagquantum.kaiwu-task.v1",
+                "task_name": "portability-seed-1701",
                 "matrix_sha256": "8" * 64,
+                "matrix_size": 3,
                 "mode": "sampling",
                 "requested_samples": 10,
+                "project_no": "CPQC-test",
+                "submitted_at": "2026-10-05T00:00:00+00:00",
                 "provider_task_id": "portability-task",
                 "provider_target": "SPQC-provider",
             }
@@ -897,7 +906,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][5]["sha256"] = tampered_training_sha
     _write_json(manifest_path, manifest)
     assert any(
-        "training receipt 0 sample count differs" in error
+        "training receipt 0: receipt sample count differs" in error
         for error in validate_acceptance(manifest_path)
     )
 

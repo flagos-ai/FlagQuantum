@@ -233,8 +233,10 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
 
     workflow.main = interrupted
     receipt = SimpleNamespace(
+        schema="flagquantum.kaiwu-task.v1",
         task_name="protein-task",
         matrix_sha256="1" * 64,
+        matrix_size=3,
         mode="sampling",
         requested_samples=10,
         project_no="CPQC-test",

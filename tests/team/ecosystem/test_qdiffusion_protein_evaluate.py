@@ -47,8 +47,10 @@ def _provider_training_record() -> dict[str, Any]:
         "precision_evidence_complete": True,
         "task_receipts": [
             {
+                "schema": "flagquantum.kaiwu-task.v1",
                 "task_name": "protein-task",
                 "matrix_sha256": "a" * 64,
+                "matrix_size": 3,
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",

@@ -94,8 +94,10 @@ def _validate_lane(
 def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
     return [
         {
+            "schema": receipt.schema,
             "task_name": receipt.task_name,
             "matrix_sha256": receipt.matrix_sha256,
+            "matrix_size": receipt.matrix_size,
             "mode": receipt.mode,
             "requested_samples": receipt.requested_samples,
             "project_no": receipt.project_no,
