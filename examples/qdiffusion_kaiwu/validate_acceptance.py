@@ -9,7 +9,7 @@ import math
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
@@ -42,6 +42,55 @@ def _finite_number(value: Any, label: str, errors: list[str]) -> float | None:
         errors.append(f"{label}: expected a finite number")
         return None
     return number
+
+
+def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
+    """Estimate the workflow's worst-case distinct sampler calls per seed."""
+    dataset = config.get("dataset")
+    training = config.get("training")
+    generation = config.get("generation")
+    if not all(
+        isinstance(section, dict) for section in (dataset, training, generation)
+    ):
+        return None
+    assert isinstance(dataset, dict)
+    assert isinstance(training, dict)
+    assert isinstance(generation, dict)
+    integer_fields = (
+        dataset.get("max_records"),
+        training.get("epochs"),
+        training.get("num_candidates"),
+        training.get("validation_steps"),
+        generation.get("sequence_count"),
+        generation.get("max_steps"),
+        generation.get("num_candidates"),
+    )
+    if any(type(value) is not int or value <= 0 for value in integer_fields):
+        return None
+    validation_ratio = dataset.get("validation_ratio")
+    test_ratio = dataset.get("test_ratio")
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        for value in (validation_ratio, test_ratio)
+    ):
+        return None
+    selected = int(dataset["max_records"])
+    validation_count = max(
+        1, int(selected * float(cast(int | float, validation_ratio)))
+    )
+    test_count = max(1, int(selected * float(cast(int | float, test_ratio))))
+    train_count = selected - validation_count - test_count
+    if train_count <= 0 or generation["sequence_count"] != test_count:
+        return None
+    training_candidates = int(training["num_candidates"])
+    generation_candidates = int(generation["num_candidates"])
+    validation_steps = int(training["validation_steps"])
+    epochs = int(training["epochs"])
+    max_steps = int(generation["max_steps"])
+    structural_calls = 1 + training_candidates + validation_steps
+    epoch_calls = epochs * (train_count + validation_count) * (1 + training_candidates)
+    generation_calls = test_count * max_steps * (1 + generation_candidates)
+    return structural_calls + epoch_calls + generation_calls
 
 
 def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
@@ -168,6 +217,7 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         "validation_steps",
         "scheduler_patience",
         "early_stop_patience",
+        "remote_call_budget_per_seed",
     ):
         if type(training.get(field)) is not int or training.get(field, 0) <= 0:
             errors.append(f"config.training.{field}: expected a positive integer")
@@ -186,6 +236,17 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         and training["min_epochs"] > training["epochs"]
     ):
         errors.append("config.training.min_epochs: cannot exceed epochs")
+    estimated_calls = _estimate_protein_remote_calls(config)
+    protein_budget = training.get("remote_call_budget_per_seed")
+    if (
+        estimated_calls is not None
+        and type(protein_budget) is int
+        and protein_budget < estimated_calls
+    ):
+        errors.append(
+            "config.training.remote_call_budget_per_seed: below the "
+            f"worst-case workflow estimate of {estimated_calls}"
+        )
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",

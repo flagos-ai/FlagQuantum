@@ -139,6 +139,16 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   training, baseline, and guided-generation branches to share the bounded
   FlagQuantum sampler. It rejects competing sampler injection and verifies the
   constructed energy model retained the same sampler object.
+- A quota-guarded primary-host launcher now maps the frozen config into the
+  pinned plugin's complete protein workflow one seed at a time, performs input
+  preflight before credential resolution, forces local-only Transformers model
+  loading, persists task receipts, and hashes the best trained energy
+  checkpoint. Its record explicitly leaves both acceptance gates unevaluated.
+- System-probe and protein-training call budgets are now separate. A validator
+  derives a conservative per-seed submission bound from the pinned plugin's
+  actual positive/negative energy and generation loops; the illustrative full
+  config requires up to 71,048 submissions per seed, so its protein budget stays
+  unresolved until experiment size and QBoson quota are explicitly approved.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

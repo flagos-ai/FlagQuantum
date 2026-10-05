@@ -109,3 +109,26 @@ when two inputs quantize to the same submitted matrix. Live evidence aggregates
 the report count, scale-factor range, maximum absolute error, and mean of the
 per-matrix mean errors; a record with fewer reports than remote calls fails the
 acceptance validator.
+
+## Live frozen protein training
+
+`qdiffusion_protein_training_live.py` runs one preregistered seed of the pinned
+plugin's complete protein training workflow on the configured primary A800. It
+performs artifact and FASTA preflight before resolving credentials, forces
+Transformers into offline mode, constructs every plugin dataclass from the
+frozen acceptance config, and binds all workflow-created generators to one
+budgeted FlagQuantum `KaiwuSampler`. The base checkpoint directory must also
+contain the tokenizer files required by the pinned plugin.
+
+The command requires absolute paths and the exact provider-cost
+acknowledgement. It creates a mode-0600 preflight record plus a separate private
+training record. A successful record contains the best trained energy
+checkpoint digest and remote receipts, but deliberately marks system and
+application acceptance `not_evaluated`: all configured seeds, ESM2 evaluation,
+and the independent replay-host gate still remain.
+
+The top-level `remote_call_budget` protects the bounded system probe only. Full
+protein training uses `training.remote_call_budget_per_seed`. The validator
+computes a conservative worst-case bound from the frozen record count, epochs,
+training candidates, test count, generation candidates, and generation steps;
+it rejects a smaller per-seed budget before credentials are used.

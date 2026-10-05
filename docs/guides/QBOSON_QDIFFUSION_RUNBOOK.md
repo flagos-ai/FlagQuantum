@@ -295,6 +295,48 @@ sampler. Use a single non-concurrent process. Merely setting
 `sampler_type="cim"` does not test the FlagQuantum `remote/kaiwu` boundary and
 is outside this acceptance lane.
 
+Run each configured seed separately on the declared primary host. The launcher
+validates the A800/software lane, performs artifact preflight before credentials
+are resolved, maps every frozen knob into the plugin dataclasses, injects the
+FlagQuantum sampler into the complete workflow, and records the best trained
+energy-checkpoint digest:
+
+```bash
+python examples/qdiffusion_kaiwu/qdiffusion_protein_training_live.py \
+  --config /absolute/evidence/acceptance-config.json \
+  --plugin-root /absolute/src/kaiwu-pytorch-plugin \
+  --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --base-checkpoint /absolute/artifacts/dplm_150m \
+  --tokenizer /absolute/artifacts/dplm_150m \
+  --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
+  --artifact-preflight-output /absolute/evidence/seed-1701-preflight.json \
+  --sdk-checkpoint-dir /absolute/private/kaiwu-checkpoints \
+  --workflow-output-root /absolute/private/qdiffusion-runs \
+  --run-record /absolute/evidence/seed-1701-training.json \
+  --execution-host jp-a800-171 \
+  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
+  --source-revision FULL_FLAGQUANTUM_REVISION \
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --project-no APPROVED_PROJECT \
+  --task-prefix qdiffusion-protein \
+  --seed 1701 \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
+```
+
+Repeat with a new exclusive preflight and training-record path for every frozen
+seed. A training record is not system or application acceptance; do not promote
+it until ESM2 evaluation and both host gates pass.
+
+Do not reuse the bounded system probe's `remote_call_budget` for this command.
+The plugin invokes the sampler once per conditioned example for positive energy,
+once per negative candidate, and once per generated candidate per step. With
+the illustrative 640-record, 20-epoch, four-candidate, 64-step configuration,
+the conservative bound is 71,048 submissions per seed. Therefore
+`training.remote_call_budget_per_seed` is deliberately left as a required value:
+resize and preregister the experiment or secure matching project quota before
+running. The validator rejects a budget below the bound; deduplication may lower
+actual submissions but must not be assumed during quota planning.
+
 ## 10. Assemble and validate final evidence
 
 The live-system probe record is an attempt record, not by itself the final

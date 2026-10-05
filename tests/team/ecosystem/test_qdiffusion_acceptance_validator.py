@@ -69,6 +69,7 @@ def _config() -> dict[str, Any]:
             "scheduler_factor": 0.5,
             "scheduler_patience": 1,
             "early_stop_patience": 4,
+            "remote_call_budget_per_seed": 71048,
         },
         "generation": {
             "sequence_count": 32,
@@ -332,3 +333,13 @@ def test_config_rejects_workflow_parameter_drift(
     _validate_config(config, errors)
 
     assert any(message in error for error in errors)
+
+
+def test_config_rejects_protein_budget_below_worst_case_estimate() -> None:
+    config = _config()
+    config["training"]["remote_call_budget_per_seed"] = 71047
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("worst-case workflow estimate of 71048" in error for error in errors)
