@@ -1063,14 +1063,7 @@ class MPSState(MPSPlanningMixin):
         requires_grad = (
             left.requires_grad or matrix.requires_grad or right.requires_grad
         )
-        triton_enabled = os.getenv(
-            "FQ_TRITON_MPS_TWO_SITE", "0"
-        ).strip().lower() not in {
-            "0",
-            "false",
-            "off",
-            "no",
-        }
+        triton_enabled = _opt_in_environment_flag("FQ_TRITON_MPS_TWO_SITE")
         if (
             triton_enabled
             and left.is_cuda
