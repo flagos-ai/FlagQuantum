@@ -200,6 +200,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   links, duplicate names, and special tar members, and emits a private
   preflight-only record per target alias. It does not authorize or perform the
   source transfer itself.
+- A deterministic transfer builder now requires clean Git checkouts, enforces
+  the pinned plugin and Community revisions, creates a new private directory,
+  archives the exact commits, hashes them into the manifest, and self-verifies
+  for both target aliases. Verification rejects any unlisted colocated tarball,
+  preventing an extra archive from bypassing manifest review.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

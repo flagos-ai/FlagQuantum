@@ -116,6 +116,14 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
         raise ValueError("transfer manifest must contain exactly three artifacts")
 
     root = manifest_path.resolve().parent
+    listed_filenames = {
+        entry.get("filename") for entry in artifacts if isinstance(entry, dict)
+    }
+    colocated_archives = {path.name for path in root.glob("*.tar.gz")}
+    if colocated_archives != listed_filenames:
+        raise ValueError(
+            "transfer directory archives differ from the exact manifest artifact set"
+        )
     observed_prefixes: set[str] = set()
     verified_artifacts: list[dict[str, Any]] = []
     for index, raw_entry in enumerate(artifacts):

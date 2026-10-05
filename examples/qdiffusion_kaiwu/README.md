@@ -26,6 +26,10 @@ acceptance bundle.
 transfers. It verifies the three colocated source archives against their
 reviewed manifest and rejects unsafe tar members. Its output is a private
 transfer-preflight record, not execution or acceptance evidence.
+Use `build_transfer_bundle.py` to create those three archives and the manifest
+from clean pinned Git checkouts in one new private directory. The builder runs
+the same verifier for both target aliases and refuses dirty or wrong-revision
+inputs.
 
 `a800_sampler_smoke.py` is a development probe. It uses the real Kaiwu PyTorch
 Plugin data path and an explicitly selected in-memory fake transport. It can

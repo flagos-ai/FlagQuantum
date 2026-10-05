@@ -93,6 +93,22 @@ reviewed transfer manifest before extraction. Reject missing, extra, or
 mismatched artifacts. Extract into a new private directory; do not overwrite a
 previous run.
 
+Build the reviewed source bundle from clean checkouts before transfer. The
+builder requires the pinned plugin and Community revisions, creates a new mode
+0700 directory, writes mode-0600 archives and manifest, and self-verifies for
+both target aliases:
+
+```bash
+python examples/qdiffusion_kaiwu/build_transfer_bundle.py \
+  --flagquantum-root /absolute/src/FlagQuantum \
+  --plugin-root /absolute/src/kaiwu-pytorch-plugin \
+  --community-root /absolute/src/kaiwu_community \
+  --output-dir /absolute/private/flagquantum-qboson-transfer
+```
+
+Do not add another `.tar.gz` file to that directory after review. The host-side
+verifier requires the colocated archive set to equal the manifest exactly.
+
 Place the three archives next to the reviewed manifest and verify them before
 using `tar` or another extraction tool:
 

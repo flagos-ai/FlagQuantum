@@ -74,6 +74,14 @@ def test_transfer_bundle_rejects_digest_mismatch(tmp_path: Path) -> None:
         verify_transfer_bundle(manifest, target_host="jp-a800-172")
 
 
+def test_transfer_bundle_rejects_unlisted_archive(tmp_path: Path) -> None:
+    manifest = _bundle(tmp_path)
+    _archive(tmp_path / "unexpected.tar.gz")
+
+    with pytest.raises(ValueError, match="exact manifest artifact set"):
+        verify_transfer_bundle(manifest, target_host="jp-a800-171")
+
+
 @pytest.mark.parametrize("unsafe_name", ("../escape", "/absolute", "dir\\file"))
 def test_transfer_bundle_rejects_unsafe_member(
     tmp_path: Path, unsafe_name: str
