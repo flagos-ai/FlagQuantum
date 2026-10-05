@@ -130,6 +130,8 @@ def run_live_system_probe(
     real_provider_transport: bool,
     plugin_root: Path,
 ) -> dict[str, Any]:
+    if requested_samples != config.get("requested_samples"):
+        raise ValueError("requested_samples differs from the frozen configuration")
     role, remote_call_budget, target_range = _validate_lane(
         config,
         execution_host=execution_host,
@@ -341,6 +343,8 @@ def main() -> None:
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
     config, config_sha256 = _load_frozen_config(arguments.config)
+    if arguments.requested_samples != config["requested_samples"]:
+        parser.error("--requested-samples differs from the frozen configuration")
     observed_hostname = socket.gethostname()
     if observed_hostname != arguments.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

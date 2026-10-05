@@ -25,7 +25,13 @@ class _ConfigObject:
 
 def _frozen_config() -> dict[str, Any]:
     return {
+        "requested_samples": 10,
         "remote_call_budget": 128,
+        "precision_policy": {
+            "name": "explicit-int8",
+            "target_min": -127,
+            "target_max": 127,
+        },
         "dataset": {
             "min_length": 50,
             "max_length": 256,
@@ -226,13 +232,28 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         raise KeyboardInterrupt
 
     workflow.main = interrupted
+    receipt = SimpleNamespace(
+        task_name="protein-task",
+        matrix_sha256="1" * 64,
+        mode="sampling",
+        requested_samples=10,
+        project_no="CPQC-test",
+        submitted_at="2026-10-05T00:00:00+00:00",
+        provider_task_id="provider-task",
+        provider_target="SPQC-provider",
+    )
+    precision_report = SimpleNamespace(
+        scale_factor=2.0,
+        max_abs_error=0.25,
+        mean_abs_error=0.125,
+    )
     sampler = cast(
         KaiwuSampler,
         SimpleNamespace(
             client=object(),
-            remote_call_count=0,
-            receipts=(),
-            precision_reports=(),
+            remote_call_count=1,
+            receipts=(receipt,),
+            precision_reports=(precision_report,),
         ),
     )
 
@@ -266,6 +287,20 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["pinned_sdk_client"] is False
     assert record["real_provider_evidence"] is False
     assert record["qboson_hardware_used"] is False
+    assert record["qboson_target"] == "SPQC-provider"
+    assert record["qboson_task_ids"] == ["provider-task"]
+    assert record["requested_samples"] == 10
+    assert record["precision_evidence_complete"] is True
+    assert record["precision_policy"] == {
+        "name": "explicit-int8",
+        "target_min": -127,
+        "target_max": 127,
+        "matrix_count": 1,
+        "scale_factor_min": 2.0,
+        "scale_factor_max": 2.0,
+        "max_abs_error": 0.25,
+        "mean_of_matrix_mean_abs_error": 0.125,
+    }
     assert record["acceptance"] == {
         "system": "not_evaluated",
         "application": "not_evaluated",

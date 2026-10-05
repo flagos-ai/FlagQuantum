@@ -259,7 +259,20 @@ def run_training_seed(
         bool(receipt["provider_task_id"]) and bool(receipt["provider_target"])
         for receipt in receipts
     )
+    targets = {
+        receipt["provider_target"]
+        for receipt in receipts
+        if isinstance(receipt["provider_target"], str)
+    }
+    requested_sample_counts = {
+        receipt["requested_samples"]
+        for receipt in receipts
+        if type(receipt["requested_samples"]) is int
+    }
     precision_reports = sampler.precision_reports
+    precision_evidence_complete = bool(precision_reports) and len(
+        precision_reports
+    ) >= len(receipts)
     verified_provider_transport = type(sampler.client) is KaiwuSDKClient
     qboson_hardware_used = bool(
         failure is None
@@ -290,6 +303,19 @@ def run_training_seed(
         "pinned_sdk_client": verified_provider_transport,
         "real_provider_evidence": qboson_hardware_used,
         "qboson_hardware_used": qboson_hardware_used,
+        "provider_reported_target": provider_identity_complete and len(targets) == 1,
+        "qboson_target": next(iter(targets)) if len(targets) == 1 else None,
+        "qboson_task_ids": [
+            receipt["provider_task_id"]
+            for receipt in receipts
+            if isinstance(receipt["provider_task_id"], str)
+        ],
+        "sampling_mode": "sampling",
+        "requested_samples": (
+            next(iter(requested_sample_counts))
+            if len(requested_sample_counts) == 1
+            else None
+        ),
         "fallback_occurred": False,
         "secrets_redacted": True,
         "run_completed": failure is None,
@@ -303,6 +329,28 @@ def run_training_seed(
         "task_receipts": receipts,
         "provider_identity_complete": provider_identity_complete,
         "precision_report_count": len(precision_reports),
+        "precision_policy": {
+            "name": config["precision_policy"]["name"],
+            "target_min": config["precision_policy"]["target_min"],
+            "target_max": config["precision_policy"]["target_max"],
+            "matrix_count": len(precision_reports),
+            "scale_factor_min": min(
+                (report.scale_factor for report in precision_reports), default=None
+            ),
+            "scale_factor_max": max(
+                (report.scale_factor for report in precision_reports), default=None
+            ),
+            "max_abs_error": max(
+                (report.max_abs_error for report in precision_reports), default=None
+            ),
+            "mean_of_matrix_mean_abs_error": (
+                sum(report.mean_abs_error for report in precision_reports)
+                / len(precision_reports)
+                if precision_reports
+                else None
+            ),
+        },
+        "precision_evidence_complete": precision_evidence_complete,
         "run_directory_name": run_directory.name if run_directory else None,
         "trained_energy_checkpoint_name": checkpoint_name,
         "trained_energy_checkpoint_sha256": checkpoint_sha256,
@@ -373,6 +421,8 @@ def main() -> None:
             parser.error(f"--{label} must be an absolute path")
 
     config, config_sha256 = _load_frozen_config(args.config)
+    if args.requested_samples != config["requested_samples"]:
+        parser.error("--requested-samples differs from the frozen configuration")
     if args.seed not in config["seeds"]:
         parser.error("--seed is not present in the frozen seed list")
     observed_hostname = socket.gethostname()

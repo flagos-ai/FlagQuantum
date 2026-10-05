@@ -365,6 +365,11 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         or config.get("remote_call_budget", 0) <= 0
     ):
         errors.append("config.remote_call_budget: expected a positive integer")
+    if (
+        type(config.get("requested_samples")) is not int
+        or not 10 <= config.get("requested_samples", 0) <= 2000
+    ):
+        errors.append("config.requested_samples: expected an integer from 10 to 2000")
     portability_calls = _estimate_portability_remote_calls(config)
     if (
         portability_calls is not None
@@ -461,6 +466,8 @@ def _validate_system_record(
     )
     if requested is not None and returned is not None and requested != returned:
         errors.append(f"{label}: requested and returned sample counts differ")
+    if record.get("requested_samples") != config.get("requested_samples"):
+        errors.append(f"{label}: requested sample count differs from config")
     call_count = record.get("remote_call_count")
     call_budget = record.get("remote_call_budget")
     if (
@@ -815,9 +822,18 @@ def _validate_remote_sampling_component_evidence(
 
 
 def _validate_portability_component_evidence(
-    record: dict[str, Any], label: str, errors: list[str]
+    record: dict[str, Any],
+    label: str,
+    errors: list[str],
+    *,
+    expected_requested_samples: int | None = None,
 ) -> None:
     _validate_remote_sampling_component_evidence(record, label, errors)
+    if (
+        expected_requested_samples is not None
+        and record.get("requested_samples") != expected_requested_samples
+    ):
+        errors.append(f"{label}: portability sample count differs from config")
     if record.get("requested_cuda_device") != "cuda:0":
         errors.append(f"{label}: portability did not request cuda:0")
     if record.get("observed_tensor_device") != "cuda:0":
@@ -842,6 +858,8 @@ def _validate_training_provider_evidence(
         "real_provider_evidence",
         "qboson_hardware_used",
         "provider_identity_complete",
+        "provider_reported_target",
+        "precision_evidence_complete",
         "secrets_redacted",
     ):
         if record.get(field) is not True:
@@ -864,16 +882,69 @@ def _validate_training_provider_evidence(
     else:
         if type(remote_calls) is int and len(receipts) != remote_calls:
             errors.append(f"{label}: training receipt count differs from remote calls")
+        receipt_task_ids: list[str] = []
+        receipt_targets: set[str] = set()
+        receipt_matrix_digests: list[str] = []
+        requested_samples = record.get("requested_samples")
         for index, receipt in enumerate(receipts):
             if not isinstance(receipt, dict):
                 errors.append(f"{label}: training receipt {index} is not an object")
                 continue
-            for field in ("provider_task_id", "provider_target"):
-                value = receipt.get(field)
-                if not isinstance(value, str) or not value.strip():
-                    errors.append(f"{label}: training receipt {index} has no {field}")
+            task_id = receipt.get("provider_task_id")
+            target = receipt.get("provider_target")
+            if not isinstance(task_id, str) or not task_id.strip():
+                errors.append(
+                    f"{label}: training receipt {index} has no provider_task_id"
+                )
+            else:
+                receipt_task_ids.append(task_id)
+            if not isinstance(target, str) or not target.strip():
+                errors.append(
+                    f"{label}: training receipt {index} has no provider_target"
+                )
+            else:
+                receipt_targets.add(target)
             if receipt.get("mode") != "sampling":
                 errors.append(f"{label}: training receipt {index} is not sampling")
+            if receipt.get("requested_samples") != requested_samples:
+                errors.append(f"{label}: training receipt {index} sample count differs")
+            matrix_digest = receipt.get("matrix_sha256")
+            if (
+                not isinstance(matrix_digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
+            ):
+                errors.append(f"{label}: training receipt {index} has no matrix digest")
+            else:
+                receipt_matrix_digests.append(matrix_digest)
+            task_name = receipt.get("task_name")
+            if not isinstance(task_name, str) or not task_name.strip():
+                errors.append(f"{label}: training receipt {index} has no task name")
+            submitted_at = receipt.get("submitted_at")
+            try:
+                submitted = datetime.fromisoformat(submitted_at)
+            except (TypeError, ValueError):
+                submitted = None
+            if submitted is None or submitted.tzinfo is None:
+                errors.append(
+                    f"{label}: training receipt {index} has no aware submission time"
+                )
+        if record.get("qboson_task_ids") != receipt_task_ids:
+            errors.append(f"{label}: training task IDs differ from receipts")
+        if (
+            len(receipt_targets) != 1
+            or record.get("qboson_target") not in receipt_targets
+        ):
+            errors.append(f"{label}: training target differs from receipts")
+        if len(receipt_task_ids) != len(set(receipt_task_ids)):
+            errors.append(f"{label}: training provider task IDs are not unique")
+        if len(receipt_matrix_digests) != len(set(receipt_matrix_digests)):
+            errors.append(f"{label}: training receipt matrix identities are not unique")
+
+    if record.get("sampling_mode") != "sampling":
+        errors.append(f"{label}: training sampling mode is not sampling")
+    requested_samples = record.get("requested_samples")
+    if type(requested_samples) is not int or not 10 <= requested_samples <= 2000:
+        errors.append(f"{label}: training requested sample count is invalid")
 
     precision_count = record.get("precision_report_count")
     if (
@@ -882,6 +953,12 @@ def _validate_training_provider_evidence(
         or (type(remote_calls) is int and precision_count < remote_calls)
     ):
         errors.append(f"{label}: training precision evidence is incomplete")
+    precision = record.get("precision_policy")
+    matrix_count = (
+        precision.get("matrix_count") if isinstance(precision, dict) else None
+    )
+    if matrix_count != precision_count:
+        errors.append(f"{label}: training precision summary count differs")
 
 
 def _validate_training_component(
@@ -916,6 +993,8 @@ def _validate_training_component(
         errors.append(f"{label}: training seed is not preregistered")
     if record.get("remote_call_budget") != config.get("remote_call_budget"):
         errors.append(f"{label}: training system-call budget differs from config")
+    if record.get("requested_samples") != config.get("requested_samples"):
+        errors.append(f"{label}: training sample count differs from config")
     training_config = _mapping(config.get("training"), "config.training", errors)
     protein_budget = record.get("protein_remote_call_budget_per_seed")
     if protein_budget != training_config.get("remote_call_budget_per_seed"):
@@ -945,6 +1024,48 @@ def _validate_training_component(
         "application": "not_evaluated",
     }:
         errors.append(f"{label}: training overstates standalone acceptance")
+
+    precision = _mapping(
+        record.get("precision_policy"), f"{label}.training_precision_policy", errors
+    )
+    expected_precision = _mapping(
+        config.get("precision_policy"), "config.precision_policy", errors
+    )
+    for field in ("name", "target_min", "target_max"):
+        if precision.get(field) != expected_precision.get(field):
+            errors.append(f"{label}: training precision {field} differs from config")
+    scale_min = _finite_number(
+        precision.get("scale_factor_min"),
+        f"{label}.training_precision_policy.scale_factor_min",
+        errors,
+    )
+    scale_max = _finite_number(
+        precision.get("scale_factor_max"),
+        f"{label}.training_precision_policy.scale_factor_max",
+        errors,
+    )
+    max_error = _finite_number(
+        precision.get("max_abs_error"),
+        f"{label}.training_precision_policy.max_abs_error",
+        errors,
+    )
+    mean_error = _finite_number(
+        precision.get("mean_of_matrix_mean_abs_error"),
+        f"{label}.training_precision_policy.mean_of_matrix_mean_abs_error",
+        errors,
+    )
+    if scale_min is not None and scale_min <= 0:
+        errors.append(f"{label}: training precision minimum scale is not positive")
+    if scale_max is not None and scale_max <= 0:
+        errors.append(f"{label}: training precision maximum scale is not positive")
+    if scale_min is not None and scale_max is not None and scale_max < scale_min:
+        errors.append(f"{label}: training precision scale range is invalid")
+    if max_error is not None and max_error < 0:
+        errors.append(f"{label}: training maximum precision error is negative")
+    if mean_error is not None and mean_error < 0:
+        errors.append(f"{label}: training mean precision error is negative")
+    if max_error is not None and mean_error is not None and mean_error > max_error:
+        errors.append(f"{label}: training mean precision error exceeds maximum")
 
     expected_artifacts = {
         "test_fasta": "data_splits/test.fasta",
@@ -1362,7 +1483,12 @@ def _validate_component_bundle(
         return
     if portability.get("execution_host") != config.get("replay_host"):
         errors.append("replay: portability component is from the wrong host")
-    _validate_portability_component_evidence(portability, "replay", errors)
+    _validate_portability_component_evidence(
+        portability,
+        "replay",
+        errors,
+        expected_requested_samples=config.get("requested_samples"),
+    )
     if portability.get("acceptance") != {"portability": "pass"}:
         errors.append("replay: portability component did not pass")
     for field in ("training_record_sha256", "trained_energy_checkpoint_sha256"):

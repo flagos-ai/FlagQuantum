@@ -152,6 +152,8 @@ def run_portability_replay(
     device: torch.device,
     real_provider_transport: bool,
 ) -> dict[str, Any]:
+    if requested_samples != config.get("requested_samples"):
+        raise ValueError("requested_samples differs from the frozen configuration")
     generation = config["generation"]
     target_range = (
         config["precision_policy"]["target_min"],
@@ -408,6 +410,8 @@ def main() -> None:
             parser.error(f"--{label} must be an absolute path")
 
     config, config_sha256 = _load_frozen_config(args.config)
+    if args.requested_samples != config["requested_samples"]:
+        parser.error("--requested-samples differs from the frozen configuration")
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

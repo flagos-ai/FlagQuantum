@@ -89,6 +89,7 @@ def _config() -> dict[str, object]:
             "torch_version": str(torch.__version__),
             "kaiwu_sdk_version": "1.3.1",
         },
+        "requested_samples": 10,
         "remote_call_budget": 64,
         "precision_policy": {
             "name": "explicit-int8",

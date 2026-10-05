@@ -206,6 +206,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   the exact held-out, baseline, guided, history, metric, and quality artifact
   identities. A plausible provider receipt cannot compensate for missing or
   substituted workflow evidence.
+- Provider samples per Ising request are now preregistered in the experiment
+  config and enforced by the system, protein-training, portability, assembly,
+  and final-validation paths. Protein records also reconcile ordered provider
+  task IDs, one provider-reported target, unique matrix identities, requested
+  sample counts, and aware submission timestamps against their receipts, and
+  retain bounded scale/error summaries for every precision report. A bare
+  precision-report count is no longer sufficient evidence.
 - System-probe and protein-training call budgets are now separate. A validator
   derives a conservative per-seed submission bound from the pinned plugin's
   actual positive/negative energy and generation loops; the illustrative full

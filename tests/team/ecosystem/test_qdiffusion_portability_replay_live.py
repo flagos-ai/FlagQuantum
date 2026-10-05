@@ -96,6 +96,7 @@ class _Generator:
 
 def _config() -> dict[str, Any]:
     return {
+        "requested_samples": 10,
         "remote_call_budget": 20,
         "precision_policy": {
             "name": "explicit-int8",

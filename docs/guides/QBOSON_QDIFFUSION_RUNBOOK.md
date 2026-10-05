@@ -430,10 +430,12 @@ generation sequence count.
 The frozen configuration includes every plugin knob that changes the selected
 corpus or generated sequences: record-length bounds, record cap, validation and
 test ratios, proposal/noise/energy temperatures, candidate count, generation
-steps, resampling policy, ESM2 pairing/pooling, and evaluation batch size. The
-current values select 640 eligible records and therefore 32 test sequences at a
-0.05 test ratio. Changing any of these values creates a different experiment
-and requires a new preregistered configuration identity.
+steps, resampling policy, QBoson samples per Ising request, ESM2
+pairing/pooling, and evaluation batch size. The current values select 640
+eligible records, 32 test sequences at a 0.05 test ratio, and 10 returned spins
+per provider request. Every live command's `--requested-samples` must equal the
+frozen value. Changing any of these values creates a different experiment and
+requires a new preregistered configuration identity.
 
 The pinned plugin's complete workflow imports `build_qdiffusion` once and then
 uses it for structural validation, training, proposal-only baseline, and guided
@@ -493,6 +495,12 @@ artifact set with exact relative paths and content hashes. The ESM2 evaluator
 and replay-host runner apply the provider checks while loading the selected
 training record, before loading a model, allocating A800 work, resolving
 credentials, or submitting another task.
+
+For training evidence, those provider checks reconcile the ordered task-ID
+list and single provider-reported target with every receipt; require unique
+matrix identities, the frozen sample count, and aware submission timestamps;
+and validate the retained precision-policy scale and error ranges. Recording
+only a receipt count or precision-report count is not sufficient.
 
 Do not reuse the bounded system probe's `remote_call_budget` for this command.
 The plugin invokes the sampler once per conditioned example for positive energy,

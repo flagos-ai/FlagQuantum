@@ -90,6 +90,7 @@ def _config() -> dict[str, Any]:
         },
         "evaluation": {"pair_mode": "order", "pooling": "mean", "batch_size": 1},
         "seeds": [1701, 1702, 1703],
+        "requested_samples": 10,
         "remote_call_budget": 128,
         "precision_policy": {
             "name": "explicit-int8",
@@ -628,6 +629,17 @@ def test_config_rejects_system_budget_below_portability_estimate() -> None:
     _validate_config(config, errors)
 
     assert any("portability replay estimate of 17" in error for error in errors)
+
+
+@pytest.mark.parametrize("value", (None, 9, 2001, 10.0))
+def test_config_rejects_unfrozen_provider_sample_count(value: object) -> None:
+    config = _config()
+    config["requested_samples"] = value
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("config.requested_samples" in error for error in errors)
 
 
 def test_component_bundle_is_required_for_assembled_records(tmp_path: Path) -> None:

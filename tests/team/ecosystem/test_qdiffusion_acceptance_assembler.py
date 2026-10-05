@@ -230,6 +230,11 @@ def _components(
                     "real_provider_evidence": True,
                     "qboson_hardware_used": True,
                     "provider_identity_complete": True,
+                    "provider_reported_target": True,
+                    "qboson_target": "SPQC-provider",
+                    "qboson_task_ids": [f"protein-task-{seed}"],
+                    "sampling_mode": "sampling",
+                    "requested_samples": 10,
                     "fallback_occurred": False,
                     "secrets_redacted": True,
                     "remote_call_budget": 128,
@@ -237,9 +242,25 @@ def _components(
                     "protein_remote_call_budget_per_seed": 71269,
                     "estimated_worst_case_remote_calls": 100,
                     "precision_report_count": 1,
+                    "precision_policy": {
+                        "name": "explicit-int8",
+                        "target_min": -127,
+                        "target_max": 127,
+                        "matrix_count": 1,
+                        "scale_factor_min": 1.0,
+                        "scale_factor_max": 1.0,
+                        "max_abs_error": 0.0,
+                        "mean_of_matrix_mean_abs_error": 0.0,
+                    },
+                    "precision_evidence_complete": True,
                     "task_receipts": [
                         {
+                            "task_name": f"protein-seed-{seed}",
+                            "matrix_sha256": str(index) * 64,
                             "mode": "sampling",
+                            "requested_samples": 10,
+                            "project_no": "CPQC-test",
+                            "submitted_at": "2026-10-05T00:00:00+00:00",
                             "provider_task_id": f"protein-task-{seed}",
                             "provider_target": "SPQC-provider",
                         }
@@ -770,6 +791,32 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "training real_provider_evidence is not proven" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
+    manifest["component_records"][5]["sha256"] = restored_training_sha
+
+    tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_training["task_receipts"][0]["requested_samples"] = 11
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training receipt 0 sample count differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
+    manifest["component_records"][5]["sha256"] = restored_training_sha
+
+    tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_training["precision_policy"]["scale_factor_max"] = 0.5
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training precision scale range is invalid" in error
         for error in validate_acceptance(manifest_path)
     )
 

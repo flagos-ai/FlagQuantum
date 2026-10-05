@@ -344,7 +344,10 @@ def assemble_records(
         raise ValueError("portability replay is linked to another training record")
     portability_errors: list[str] = []
     _validate_portability_component_evidence(
-        portability_record, "portability replay", portability_errors
+        portability_record,
+        "portability replay",
+        portability_errors,
+        expected_requested_samples=config.get("requested_samples"),
     )
     if portability_errors:
         raise ValueError("; ".join(portability_errors))

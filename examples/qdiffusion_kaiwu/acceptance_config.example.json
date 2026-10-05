@@ -73,6 +73,7 @@
     "batch_size": 1
   },
   "seeds": [1701, 1702, 1703],
+  "requested_samples": 10,
   "remote_call_budget": 128,
   "precision_policy": {
     "name": "explicit-int8",
