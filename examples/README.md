@@ -77,6 +77,22 @@ fixed point, and compares the optimized program with the original numerical
 result. It uses `compiler.optimize`; target-aware lowering and routing belong to
 `compiler.compile`.
 
+To rewrite gates a target cannot run into the gates that target publishes:
+
+```bash
+python -m examples.compiler_synthesis
+```
+
+This example declares a target basis (a z-rotation, a pi/2 pulse about `x`, and
+one entangler) and then spells an `h`, a `swap`, and a four-amplitude state in
+that basis. Each case executes the rewrite next to the original on the shipped
+statevector engine, removes the global phase a synthesis result cannot record
+in FlagQuantum IR, and prints the residual that remains. It also prints what the
+boundary refuses -- a non-supercontrolled entangler, a z-rotation that is not
+entrywise exact, and a pulse opcode the module cannot emit -- because a refusal
+is the boundary's answer, not a fallback. The three entry points are reached by
+module path; none of them is a stable `fq.compiler` export.
+
 To exercise the optional single-GPU Triton kernel for local one-qubit gates:
 
 ```bash

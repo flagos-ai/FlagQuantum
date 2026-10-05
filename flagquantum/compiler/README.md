@@ -15,12 +15,19 @@ From the repository root:
 ```bash
 python -m examples.compiler_optimize
 python -m examples.target_aware_compilation
+python -m examples.compiler_synthesis
 ```
 
 The first example checks optimization against the original circuit. The second
-checks routing legality and numerical equivalence on a concrete topology.
-Use `optimize(program)` for target-independent optimization and
-`compile(program, coupling_map=...)` for target-aware compilation.
+checks routing legality and numerical equivalence on a concrete topology. The
+third spells gates a target cannot run in the gates that target publishes, and
+checks each rewrite against the original on the shipped statevector engine; run
+it before changing an Euler form, an entangler cost, or a ladder. Use
+`optimize(program)` for target-independent optimization and
+`compile(program, coupling_map=...)` for target-aware compilation. Use
+`synthesize_one_qubit`, `synthesize_two_qubit`, and
+`synthesize_state_preparation` for basis rewriting; they are not stable
+`fq.compiler` exports, so reach them by module path.
 
 ## Change the owning stage
 
@@ -42,6 +49,8 @@ Use `optimize(program)` for target-independent optimization and
 | Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit block splitting | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
+| State-preparation ladders from amplitudes | [state_preparation_synthesis.py](state_preparation_synthesis.py) |
+| The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
@@ -447,6 +456,61 @@ every other failure it can reach a caller with is wrapped in
 refusal-free under a ten-frame sweep per point, and
 `test_the_near_product_band_is_refused_by_both_routes` documents the escape as a
 limitation rather than endorsing it.
+
+State-preparation synthesis turns an amplitude vector into a circuit, which is the
+one place in this package where the input is a classical vector rather than a
+program. `synthesize_state_preparation(amplitudes, qubits=None, z_rotation="rz",
+pulse_opcode="sx", entangler="cx", metadata=None)` returns the leaves of a
+uniformly controlled ladder -- a magnitude pass over the register, then a phase
+pass over it, both in the Möttönen-Vartiainen-Bergholm-Salomaa construction -- or
+`None` when the named basis cannot carry one, which is the same refusal
+`synthesize_two_qubit` gives. Level `j` acts on wire `j` controlled by wires `0`
+to `j-1`, each level's control flips are spelled by `synthesize_two_qubit` out of
+the caller's entangler, and the result is a plain tuple of `Instruction` with no
+runtime selected, no device named, and no state executed. It normalises the vector
+rather than requiring one, since a global phase and a scale are both unobservable.
+
+Two constraints in that signature are load-bearing and neither is a preference.
+`z_rotation` may only be `rz`: `phase` and `u1` are exactly `exp(1j * theta / 2)`
+times `RZ(theta)`, so over a ladder, where the angle is the branch index, the
+offset becomes branch dependent and the level stops being one controlled rotation.
+And the `ry` groups are emitted in the general Euler form
+`RZ(lam) PULSE RZ(theta - pi) PULSE RZ(phi - pi)` rather than through
+`synthesize_one_qubit_matrix`, whose shorter spellings move the dropped global
+phase by a full `pi` when the polar angle reaches `pi`. A ladder multiplies its
+branches' dropped phases into relative phases, so it needs the one form that holds
+a constant. Both refusals are therefore fail-closed: a basis this construction
+cannot hold is reported as `None` rather than answered with a replacement that was
+never verified.
+
+An amplitude vector also has an existing implementation in this repository:
+`flagquantum.algorithms.primitives.state_preparation`, which `algorithms.svd` and
+`algorithms.pca` call and which the change that added the compiler-side entry point
+did not edit. That makes the pair the replacement ARCH-012 clause 2 asks for, and
+[test_state_preparation_synthesis.py](../../tests/team/compiler/test_state_preparation_synthesis.py)
+is where the two meet, because `tests/**` is the only path both domains share. The
+suite states the boundary's postconditions once and drives both implementations
+through all of them behind the shipped simulation entry point, and it asserts three
+properties as differences so that no check is a claim never seen to fail: the short
+Euler forms' phase really does move by `pi` at `theta = pi` where the general form
+holds one constant; a `phase` ladder really is `O(1)` away from its `rz`
+counterpart, by a different phase on each branch; and a single zero branch of a
+magnitude ladder may drop its `RY(0)` group but not its flips, while a whole zero
+ladder may drop both. On the uniform superposition the leaf count is exactly
+`4 * n + flip_cost * (2**n - 2)` at every width, and the flip cost is the roster's
+own measurement of one `cx` rather than a number this package keeps: one leaf for
+`cx`, `6` for `cy`, `7` for `rzz` and `9` for `cz`, all four of them arithmetic
+because their routes cross only polar angles `one_qubit_synthesis._zyz_angles`
+produces exactly. The two entanglers that are not degenerate are a host quantity
+instead, because their trailing local factor's polar angle is a general
+`2 * atan2(...)` that `_leaves` compares to `pi/2` with `==`: `rxx` costs `10` or
+`13` leaves and `ryy` `11` or `13`, depending on which way the platform's own
+rounding falls. The suite states that one dimension as the set it is.
+Measured, the two implementations agree to `2.6e-08` through `5.7e-08` entrywise,
+which is the frozen reference's `complex64` floor rather than this boundary's
+rounding: the compiler side reaches `3.9e-16` against the exact direction. The
+entry point is not re-exported from [__init__.py](__init__.py); it is reached by
+module path, and no capability label is claimed for it here.
 
 The ten passes are one boundary with ten implementations of the same task --
 delete work that cannot change an observable -- so a new or rewritten pass is

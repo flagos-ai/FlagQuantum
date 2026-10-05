@@ -141,10 +141,16 @@ expert-facing entry points. Change or compose them through `optimize`.
   `basis_translation.py`; re-run
   `tests/unit/test_compilation_basis_translation.py`, which pins every entry
   against the runtime, before touching anything else.
+- Run `python -m examples.compiler_synthesis` before and after changing a
+  synthesis leaf form. It executes each emitted leaf against the original
+  program, so it localizes a broken form faster than a full test file.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
   `one_qubit_synthesis.py`.
+- Change a state-preparation ladder, its pulse emitter, or its refusal set in
+  `state_preparation_synthesis.py`.
 - Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in
-  `two_qubit_synthesis.py`.
+  `two_qubit_synthesis.py`; the example prints the entangler count, so a cost
+  change is visible without reading a test.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in
