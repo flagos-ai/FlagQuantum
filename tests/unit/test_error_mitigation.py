@@ -340,7 +340,15 @@ def test_the_declared_limitations_name_what_the_unit_does_not_do() -> None:
         "Clifford data regression is provided beside it by "
         "flagquantum.algorithms.run_cdr" in text
     )
-    assert "no gate-folding scale factor is offered" in text
+    # The phrase pin is that gate and circuit folding is *separate* rather than
+    # missing, and that its unit of scale is a length ratio rather than this
+    # unit's channel parameter; pinning the old wording would pin the absence of
+    # the folding unit instead of this unit's boundary with it.
+    assert (
+        "Gate and circuit folding is provided beside it by "
+        "flagquantum.algorithms.fold_program" in text
+    )
+    assert "different units of scale and are refused together" in text
     assert "max_residual is the diagnostic that exposes it" in text
     assert (
         "a model that declares a readout rule is refused rather than measured" in text

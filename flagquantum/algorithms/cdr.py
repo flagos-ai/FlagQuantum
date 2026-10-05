@@ -53,8 +53,9 @@ than the target fits a correction for a difference that is not there.
 **What is not here.** The estimate is a point value with no error bound and no
 confidence interval, because this slice evaluates exact state expectations rather
 than samples; nothing guarantees it is closer to the ideal value than the
-unmitigated one. Circuit folding is absent, and readout-error mitigation is a
-separate unit beside this one.
+unmitigated one. Gate and circuit folding is a separate unit beside this one,
+:func:`flagquantum.algorithms.fold_program`, and readout-error mitigation is a
+third, :func:`flagquantum.algorithms.plan_readout_mitigation`.
 
 Only the single-parameter rotations ``rx``, ``ry``, ``rz``, ``phase`` and ``u1``
 are snapped, and a program containing none of them is refused with that list,
@@ -218,7 +219,8 @@ CDR_LIMITATIONS: tuple[str, ...] = (
     "The estimate is a point value from an affine fit. Zero-noise extrapolation "
     "is provided beside it by flagquantum.algorithms.run_zne and probabilistic "
     "error cancellation by flagquantum.algorithms.run_pec; neither is applied "
-    "here, and circuit folding and gate-folding scale factors are absent.",
+    "here, and neither a channel-parameter scale factor nor the gate and circuit "
+    "folding of flagquantum.algorithms.fold_program is.",
 )
 
 

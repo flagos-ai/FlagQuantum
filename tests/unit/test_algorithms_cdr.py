@@ -778,7 +778,14 @@ def test_the_assumptions_and_limitations_name_what_the_unit_does_not_do() -> Non
     # asserts is that it is separate rather than that it is missing; asserting the
     # old wording would pin the unit's removal instead of its boundary.
     assert "Readout-error mitigation is a separate unit beside this one" in text
-    assert "circuit folding" in text
+    # Gate and circuit folding now exists as its own unit beside this one, so the
+    # sentence is that neither it nor a channel-parameter scale factor is applied
+    # here; the old wording pinned the folding unit's absence instead of the
+    # boundary this unit draws with it.
+    assert (
+        "the gate and circuit folding of flagquantum.algorithms.fold_program" in text
+    )
+    assert "neither a channel-parameter scale factor nor" in text
     assert CDR_LIMITATIONS and all(statement for statement in CDR_LIMITATIONS)
 
 

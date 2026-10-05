@@ -19,6 +19,7 @@ python -m examples.algorithms.error_mitigation
 python -m examples.algorithms.pec
 python -m examples.algorithms.cdr
 python -m examples.algorithms.readout_mitigation
+python -m examples.algorithms.folding
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
@@ -70,9 +71,15 @@ What they show:
   two marginals, and three refusals printed by measured quantity: a singular
   value against the floor, a block width against the ceiling, and a bit-string
   length against the plan's width.
+- [`folding.py`](folding.py): one program folded by both strategies, with the
+  requested factor printed beside the ratio each strategy actually realized, the
+  instructions each spent to reach it, the amplitude gap that shows the fold is
+  an identity rather than an approximation, and the pair's own location shown to
+  decide which observables can see the noise the fold added.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
+
 - [`nelder_mead_optimizer.py`](nelder_mead_optimizer.py): the same Pauli energy
   minimized with no gradient, no parameter-shift rule and no random draw, with
   SPSA run beside it at the *same evaluation budget* so the two optimizer units
@@ -133,8 +140,11 @@ and reads the step back with `flagquantum.simulation.unitary.get_unitary`.
 and the patch-size helper from the subpackage, and `flagquantum` itself for the
 `fq.Circuit` programs it costs. `arithmetic.py` imports both as well: the
 constructor and the register map from the subpackage, and `flagquantum` itself for
-the `fq.Circuit` register the adder is run on. `examples/README.md` records that
-boundary.
+the `fq.Circuit` register the adder is run on. `folding.py` needs no root alias
+either: it composes `flagquantum.circuit.Circuit`, wraps the programs it compares
+through `flagquantum.core.ir`, and reaches the fold itself from the subpackage
+with `from flagquantum.algorithms import fold_program`.
+`examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the
@@ -148,7 +158,10 @@ zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
 that is not checkable from the measurements it fits, probabilistic error
 cancellation rests on the noise being exactly the channel the model declares at
 the location it declares it and pays for the inversion in programs rather than
-shots, the SPSA update is built from a finite-difference estimate that is an
+shots, gate and circuit folding rests on the noise being local to the instruction
+that carries it -- so repeating a gate with its own inverse repeats its error --
+and reports the length ratio it realized rather than any estimate of the noise it
+amplified, the SPSA update is built from a finite-difference estimate that is an
 estimate rather than a gradient, the Nelder-Mead search decides every step by
 ranking two objective values against each other, so a stochastic objective turns
 those decisions into a coin toss and the flag it ends on reports a collapsed

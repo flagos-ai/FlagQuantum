@@ -7,6 +7,7 @@ from . import core as core
 from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
 from . import feature_selection as feature_selection
+from . import folding as folding
 from . import grover as grover
 from . import kmedians as kmedians
 from . import logical_resources as logical_resources
@@ -73,6 +74,13 @@ from .error_mitigation import (
     extrapolate_richardson,
     run_zne,
     scale_noise_model,
+)
+from .folding import (
+    FOLDING_ASSUMPTIONS,
+    FOLDING_SCHEMA,
+    FOLDING_STRATEGIES,
+    FoldingPlan,
+    fold_program,
 )
 from .logical_resources import (
     LOGICAL_RESOURCE_BASIS,
@@ -170,6 +178,12 @@ __all__ = [
     "estimate_logical_resources",
     "extrapolate_richardson",
     "feature_selection",
+    "FOLDING_ASSUMPTIONS",
+    "FOLDING_SCHEMA",
+    "FOLDING_STRATEGIES",
+    "FoldingPlan",
+    "fold_program",
+    "folding",
     "grover",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",

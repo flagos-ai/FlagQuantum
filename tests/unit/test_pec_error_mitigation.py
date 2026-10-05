@@ -773,7 +773,11 @@ def test_the_declared_limitations_name_what_the_unit_does_not_do() -> None:
     assert "four terms per single-qubit noise location" in text
     assert "readout-error mitigation is a third" in text
     assert "Clifford data regression is a separate unit beside this one" in text
-    assert "no gate-folding scale factor is offered" in text
+    # Folding exists as its own unit beside this one and this unit offers no fold
+    # count, because its inverse is built from a Pauli transfer matrix rather
+    # than by repeating gates; the cost is reported as terms, not as folds.
+    assert "no fold count is offered here" in text
+    assert "the cost is reported as a term count rather than as a fold count" in text
     assumptions = " ".join(PEC_ASSUMPTIONS)
     assert "exactly the channel the model declares" in assumptions
     assert "Each declared channel is a Pauli channel" in assumptions

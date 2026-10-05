@@ -48,6 +48,7 @@ SCRIPTS = (
     "pec",
     "cdr",
     "readout_mitigation",
+    "folding",
     "spsa_optimizer",
     "nelder_mead_optimizer",
     "trotter",
@@ -143,6 +144,17 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "readout_mitigation": (
         "is the device's readout behaviour",
         "not a free improvement",
+    ),
+    # Two halves. "the noise is local to the instruction that carries it, so
+    # repeating an instruction repeats its noise and nothing else" is the
+    # assumption the fold rests on, and "this unit therefore does not estimate
+    # the noise it amplifies" is what it gives up to reach it -- the fold reports
+    # a length ratio and nothing about the device it ran on. Pinning only the
+    # first would leave the disclaimer deletable, and a length ratio read as a
+    # measured error strength is exactly the misreading the second half prevents.
+    "folding": (
+        "the noise is local to the instruction that carries it",
+        "does not estimate the noise it amplifies",
     ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
@@ -553,6 +565,89 @@ def test_readout_mitigation_example_corrects_and_reports_what_it_cost() -> None:
         output, "a one-character histogram"
     )
     _assert_premise("readout_mitigation", output)
+    assert "take away" in output
+
+
+def _two(output: str, label: str) -> tuple[float, float]:
+    """Return the two numbers an example printed after ``label``."""
+    left, right = _labelled(output, label).split()
+    return float(left), float(right)
+
+
+def test_folding_example_lengthens_by_an_identity_and_shows_what_it_cost() -> None:
+    output = _run("folding")
+
+    assert "gate and circuit folding -- flagquantum.algorithms.folding" in output
+    assert _labelled(output, "observable") == "1.0 * xx(0, 1)"
+    # The gate strategy reaches the requested 1.4 exactly in one pair, so its
+    # realized ratio is the request; the circuit strategy repeats whole bodies and
+    # can only reach odd ratios, so the same request becomes 3.0 and costs five
+    # pairs. Both facts are read off the row rather than recomputed here.
+    gate = _labelled(output, "fold gate").split()
+    circuit = _labelled(output, "fold circuit").split()
+    assert tuple(gate[:2]) == ("1.40", "1.40")
+    assert (gate[3], gate[4], gate[5]) == ("7", "1", "True")
+    assert tuple(circuit[:2]) == ("1.40", "3.00")
+    assert (circuit[3], circuit[4], circuit[5]) == ("15", "5", "False")
+    # The fold is an exact identity, so the extra instructions are ideal: the
+    # gap between the body's state and each folded program's state is the
+    # complex128 rounding floor and not a number the fold contributed. The bound
+    # is loose on purpose -- what must not appear is a gap the fold caused.
+    assert float(_labelled(output, "gate max amplitude gap")) < 1e-14
+    assert float(_labelled(output, "circuit max amplitude gap")) < 1e-14
+    # The pair lands on the first instruction, which sits before the entangler,
+    # and a zz readout is exactly blind to depolarizing there: both readings are
+    # the same number. The xx readout is not, so the two lines together say the
+    # flat zz curve is the observable's blindness rather than absent noise.
+    zz_plain, zz_folded = _two(output, "zz(0, 1) at 1.0 then 1.4")
+    assert zz_plain == zz_folded
+    xx_plain, xx_folded = _two(output, "xx(0, 1) at 1.0 then 1.4")
+    assert xx_folded < xx_plain
+    assert _labelled(output, "gate scale 1").split()[0] == (
+        _labelled(output, "circuit scale 1").split()[0]
+    )
+    # Each curve falls as more of the same channel is applied, and each strategy's
+    # own four points are distinct, which is the precondition the fit needs.
+    gate_points = [
+        float(_labelled(output, f"gate scale {factor}").split()[0])
+        for factor in ("1", "1.4", "1.8", "2.2")
+    ]
+    circuit_points = [
+        float(_labelled(output, f"circuit scale {factor}").split()[0])
+        for factor in ("1", "3", "5", "7")
+    ]
+    assert gate_points == sorted(gate_points, reverse=True)
+    assert circuit_points == sorted(circuit_points, reverse=True)
+    assert len(set(gate_points)) == 4 and len(set(circuit_points)) == 4
+    # Both estimates land nearer the noiseless value than the unmitigated point
+    # did. The comparison is the claim; the numbers behind it are printed beside
+    # it and are not pinned, because a different but equally correct channel moves
+    # them all together.
+    noiseless = float(_labelled(output, "noiseless value"))
+    for strategy in ("gate", "circuit"):
+        unmitigated = float(_labelled(output, f"{strategy} unmitigated"))
+        estimate = float(_labelled(output, f"{strategy} estimate"))
+        stated = _labelled(output, f"{strategy} distance")
+        distance = float(stated.split()[0])
+        against = float(stated.split(" against ")[1].split(",")[0])
+        residual = float(stated.split("residual")[1])
+        # Both distances are printed at four mantissa decimals, so the tolerance
+        # is the print's own rounding at that value's magnitude rather than a
+        # number chosen to pass.
+        assert distance == pytest.approx(abs(estimate - noiseless), abs=1e-6)
+        assert against == pytest.approx(abs(unmitigated - noiseless), abs=1e-6)
+        assert distance < against
+        # The residual is the diagnostic the estimate is read against, so it is
+        # printed beside it and has to be a real number here rather than absent.
+        assert 0.0 < residual < against
+    # Four refusals, each naming the thing it refused rather than a code.
+    assert "different units of scale" in _labelled(output, "fold with scaling")
+    assert "below one" in _labelled(output, "factor below one")
+    assert "realize the same one more than once" in _labelled(
+        output, "two requests, one length"
+    )
+    assert "no unitary inverse" in _labelled(output, "a channel in the body")
+    _assert_premise("folding", output)
     assert "take away" in output
 
 

@@ -58,8 +58,10 @@ executed by `tests/test_algorithm_examples.py`.
   parameters are not error probabilities is refused by name, and a model that
   declares a readout rule is refused rather than measured without it, because the
   estimate is `Tr(O rho)` and classical readout confusion is applied after
-  measurement. Readout-error mitigation is absent, and Clifford data regression
-  and probabilistic error cancellation are separate units beside it.
+  measurement. Readout-error mitigation is a separate unit beside it rather than a
+  mode of it, gate and circuit folding is a third alternative that lengthens the
+  program instead of scaling a channel parameter, and Clifford data regression and
+  probabilistic error cancellation are two more units beside it.
 - `pec.py`: probabilistic error cancellation — each declared Pauli channel is
   inverted from its Pauli transfer matrix into an exact signed combination of
   Pauli words, which is inserted after the channel it inverts and summed
@@ -84,6 +86,26 @@ executed by `tests/test_algorithm_examples.py`.
   a correlated block wider than the ceiling is refused before its matrix is
   built. The premise is that the declared confusion is the device's confusion and
   nothing here checks that.
+- `folding.py`: gate and circuit folding — the program is lengthened by an exact
+  identity, each instruction followed by its own inverse and then the instruction
+  again, either distributed one instruction at a time (`gate`) or as whole
+  repeated bodies (`circuit`), so the noise the instructions carry runs more times
+  while nothing but the dtype's rounding changes what is computed. `fold_program`
+  returns a `FoldingPlan` carrying the ratio it **realized** rather than the one
+  requested, and `run_zne(..., fold=...)` fits against that realized ratio because
+  it is the ratio the noise saw. **The two strategies are not interchangeable**: a
+  circuit fold reaches only `1 + 2m`, so a request of `1.4` on a five-instruction
+  body is met by `3.0` in fifteen instructions, while a gate fold meets `1.4`
+  exactly in seven and meets `2.2` exactly in eleven where the circuit strategy's
+  next reachable ratio costs it fifteen. A gate fold spends its pairs leftmost
+  first, so a readout blind to where they land reads a flat curve over a program
+  whose noise genuinely grew, and the unit reports the length ratio rather than a
+  noise strength: the conversion between the two is the part it does not estimate.
+  A program carrying a noise channel, an empty program, a non-unitary custom
+  instruction, a factor below one, and two requests that realize one length are
+  each refused by name before anything is built. No new execution path is
+  introduced — the fold builds a `CircuitIR` the existing runtime executes — and no
+  target, runtime option, result field, or Stable Core export follows from it.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has

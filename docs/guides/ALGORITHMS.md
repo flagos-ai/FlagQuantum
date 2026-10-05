@@ -218,6 +218,22 @@ units carries a root-level `fq.` name.
   "standard construction with no single paper to cite" rather than "sought and
   not yet found", so the absence is stated here instead of being spelled as
   something it is not. See the three sections below.
+- **The folding unit carries no advantage premise either, and it rests on a
+  different kind of assumption: one about the device rather than about a curve.**
+  `folding.py` lengthens a program by an exact identity so that the noise its
+  instructions carry runs more times, and the identity is exact for every unitary,
+  so nothing is approximated and nothing is fitted. What it assumes is that
+  repeating a gate repeats that gate's error and changes no other gate's — a
+  statement about crosstalk, drift and calibration stability that no program
+  carries and no measurement in the unit checks. **It also does not estimate the
+  noise it amplifies**: what it returns is a length ratio, and the conversion from
+  a length ratio to a noise strength is the caller's, taken from the same
+  polynomial or Richardson assumption `error_mitigation.py` already states. It is
+  the one mitigation unit that needs no noise model and no channel parameter, and
+  the one whose curve is only as readable as its readout is sensitive, because its
+  added gates land where the strategy puts them rather than where the observable
+  is. Like the four beside it it has no row in the index above and no source under
+  Sources. See the section below.
 - **The adder carries no advantage premise either, and it is not a speed-up to
   state: it is a construction.** `arithmetic.py` builds Cuccaro's in-place
   ripple-carry addition, which is `2 n` Toffolis and `6 n + 1` `cx` for `8 n + 1`
@@ -1182,7 +1198,7 @@ and is therefore not evidence**, so the record reports `max_residual` as absent 
 degree of freedom is left rather than as an arithmetic zero, and the honest reading order is
 residual first, estimate second.
 
-**Scaling is the caller's claim, and one implementation is offered.** The declared scaling
+**Scaling is the caller's claim, and two units of scale are offered.** The declared scaling
 multiplies the one error-probability parameter each of `bit_flip`, `phase_flip`,
 `depolarizing`, `two_qubit_depolarizing`, `amplitude_damping` and `phase_damping` declares.
 It refuses `coherent_overrotation`, `reset_error` and `thermal_relaxation` by name:
@@ -1194,11 +1210,17 @@ bounded by the channel it scales. A caller who needs one of the refused families
 in noise strength; the result records which of the two claims it rests on, and the refusal
 is all-or-nothing over the model rather than leaving it partly scaled.
 
-**Not here:** circuit folding, gate-folding scale factors, shot-based execution, and
+**Not here:** shot-based execution and
 readout-error mitigation. Probabilistic error cancellation and Clifford data regression are
 units beside this one rather than modes of it — see the two sections below — because one
 inverts a channel that is declared rather than scaling it, and the other fits the noise's
-effect on near-Clifford circuits rather than scaling anything.
+effect on near-Clifford circuits rather than scaling anything. Gate and circuit folding is a
+third way to reach the same curve and is a unit of its own beside this one: it lengthens the
+program by an exact identity instead of scaling a channel parameter, so it fits against the
+length ratio it realized rather than against the factor requested, it needs no noise model at
+all, and a call naming both it and a `scaling` callable is refused because the product of a
+length ratio and a channel parameter names neither. See
+[Gate and circuit folding](#gate-and-circuit-folding) below.
 
 **Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose value is
 analytically `1.0` and whose exactly simulated noiseless read is `0.9999999999999998` in
@@ -1622,6 +1644,101 @@ above, which is a bound on the corrected weight's standard error and not a bound
 correction's error against the truth. No demonstration here is a performance, scaling or
 hardware claim: the whole path is single-process CPU linear algebra on vectors the caller
 supplies, and the confusion it inverts is the one the caller declared.
+
+## Gate and circuit folding
+
+`folding.py` is the fifth error-mitigation unit and the only one that neither scales a channel
+parameter, inverts a channel, nor fits a relation. It lengthens a program by an **exact
+identity** so that the noise attached to its instructions runs more times, which is the
+scaling a zero-noise extrapolation needs when the device's error is not a parameter the caller
+can name. `fold_program(program, *, scale_factor, strategy="gate")` returns a `FoldingPlan`
+carrying the instructions it added, the ratio it actually realized, and the folded program;
+`run_zne(..., fold="gate" | "circuit")` folds each point and fits against the realized ratios
+rather than the requested ones.
+
+**The identity is `U (U† U)^m`, and it is exact for any unitary.** A fold appends `m` copies
+of the body's adjoint followed by the body again, or distributes the same pairs one instruction
+at a time; both are `U† U` interleaved with `U`, so the folded unitary equals the original one
+for every unitary the body is made of, and the only deviation the fold contributes is the
+dtype's own rounding. It is not an approximation of the program: what changes is how much noise
+runs, not what is computed. The stronger statement is per instruction — each folded instruction
+is its original followed by the original's inverse and then the original again — which is what
+makes a **channel** in the body a refusal rather than something to fold, because a channel has
+no unitary inverse to insert and a fold that dropped it would change the ideal signal.
+
+**The two strategies are not interchangeable, because they reach different ratios.** `circuit`
+repeats whole bodies, so its realized ratio is `1 + 2m` and a request between two odd integers
+is met by overshooting. `gate` distributes the same pairs one instruction at a time, so it
+reaches a requested ratio exactly whenever the arithmetic allows, and reaches a nearby one in
+fewer instructions than the circuit strategy needs for its next odd ratio. The plan reports the
+**realized** ratio, and that ratio is the abscissa the fit is given, because it is the ratio
+the noise saw; a run that reports the requested factor instead would be reporting what was
+intended rather than what ran.
+
+```python
+import torch
+
+from flagquantum.algorithms import fold_program
+from flagquantum.circuit import Circuit
+from flagquantum.compiler.noise import lower_noise_model
+from flagquantum.core.ir import CircuitIR, ensure_circuit_ir
+from flagquantum.noise import NoiseModel, depolarizing_channel
+
+
+def exact_state(program: Circuit) -> torch.Tensor:
+    """The program's state read at complex128, so the gap is the fold's own."""
+    ir = ensure_circuit_ir(program)
+    exact = CircuitIR(n_wires=ir.n_wires, instructions=ir.instructions, dtype="complex128")
+    return torch.as_tensor(Circuit.from_ir(exact).state()).reshape(-1)
+
+
+body = Circuit(2).h(0).cx(0, 1).rz(0, 0.4).ry(1, 0.6).t(0)
+for strategy in ("gate", "circuit"):
+    plan = fold_program(body, scale_factor=1.4, strategy=strategy)
+    gap = float((exact_state(body) - exact_state(plan.program)).abs().max())
+    print(strategy, plan.scale_factor, plan.folded_instructions, plan.exact, f"{gap:.1e}")
+# gate 1.4 7 True 1.6e-16
+# circuit 3.0 15 False 1.6e-16
+
+model = NoiseModel().add(
+    ("h", "cx", "rz", "ry", "t"), depolarizing_channel(0.03, dtype=torch.complex128)
+)
+for factor in (1.0, 1.4, 2.6):
+    plan = fold_program(body, scale_factor=factor, strategy="gate")
+    lowered = lower_noise_model(plan.program, model)
+    channels = sum(1 for i in lowered.instructions if i.metadata.get("is_channel"))
+    print(factor, plan.folded_instructions, channels)
+# 1.0 5 6
+# 1.4 7 8
+# 2.6 13 16
+```
+
+The first block of output says the gate strategy reached the requested `1.4` in seven
+instructions and the circuit strategy could only reach `3.0`, in fifteen; the amplitude gap on
+both rows is the complex128 rounding floor, so neither fold changed what is computed. The
+second block says where the noise comes from: the same model lowers to six channel
+applications on the unfolded body and to eight and sixteen as the fold repeats gates, because
+the model is matched per instruction and a repeated gate carries its channel again. That is
+the mechanism the method rests on and the reason it needs no noise model of its own.
+
+**The noise has to be local to the instruction, and a fold cannot check that.** A fold assumes
+that repeating a gate repeats its error and that repeating a gate does not change the error of
+the gates beside it. Crosstalk between neighbouring gates, a drift over the run, or a
+calibration that changed between the unfolded and folded points all violate the assumption, and
+none of them is visible in the program: what the unit reports is a length ratio, and the
+conversion from a length ratio to a noise strength is exactly the part it does not estimate.
+A caller who reads the realized factor as a measured error strength has substituted the
+device's behaviour for the model's, which is the misreading this boundary exists to prevent.
+
+**Not here:** any estimate of the noise a fold amplifies; any channel-parameter scaling, which
+is `error_mitigation.py`'s unit and is refused together with a fold because the two are
+different units of scale; any fold of a program carrying a noise channel, a non-unitary
+instruction, or nothing to fold; any strategy beyond the two named; and any request below
+`1.0`, which would have to remove instructions and change the ideal signal. A run may not
+request two factors that realize the same length either, because repeated abscissas make the
+extrapolation's linear system singular. No demonstration here is a performance, scaling or
+hardware claim: the whole path is single-process CPU statevector simulation on programs the
+caller supplies, and the noise it amplifies is the one the caller's model declares.
 
 ## SPSA optimization
 

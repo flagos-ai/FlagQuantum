@@ -15,7 +15,7 @@ signal must not depend on the scale factor, and no other process may depend on
 it either. Neither condition is checked here, because neither is checkable from
 the measurements alone.
 
-**Scaling is the caller's claim, and one implementation is offered.** Noise is
+**Scaling is the caller's claim, and two units of scale are offered.** Noise is
 scaled by multiplying the single error-probability parameter a channel declares,
 which keeps the channel in its own family at a different strength. A channel
 whose parameters are not error probabilities -- ``coherent_overrotation``'s
@@ -24,7 +24,14 @@ angle, ``reset_error``'s two independent reset probabilities,
 take as one leading parameter -- is refused with a stated reason rather than
 scaled, because multiplying such a parameter does not scale the noise. A caller
 who wants one of those supplies a ``scaling`` callable and owns the claim that
-the scaled model differs from the original only in noise strength.
+the scaled model differs from the original only in noise strength. The second
+unit of scale is not a callable at all: ``fold`` lengthens the *program* rather
+than strengthening the noise, so no channel parameter moves, and the fold itself
+is implemented beside this unit in :mod:`flagquantum.algorithms.folding`, because
+lengthening a program is a construction on the program rather than a property of
+a model. A length ratio and a channel parameter are different units, so the two
+are never combined; the ratio a fold realized, rather than the one it was asked
+for, is the abscissa the fit is given.
 
 **The curve is ``Tr(O rho)``, which is before measurement.** Readout confusion is
 a classical misassignment applied after measurement, so it is not in ``rho`` and
@@ -32,8 +39,8 @@ this path cannot represent it. A model that declares a readout rule is refused
 rather than measured without it, because the alternative is a state-preparation
 estimate reported under the name of a measured one.
 
-**What is not here.** Circuit folding, shot-based execution, and readout-error
-mitigation are all absent. The estimate is a point value with no confidence
+**What is not here.** Shot-based execution and readout-error mitigation are both
+absent. The estimate is a point value with no confidence
 interval, because this slice extrapolates exact state expectations rather than
 samples. Probabilistic error cancellation and Clifford data regression are
 separate units beside this one -- :func:`flagquantum.algorithms.run_pec` inverts a
@@ -63,9 +70,16 @@ from ..noise import (
     two_qubit_depolarizing_channel,
 )
 from .core import Hamiltonian
+from .folding import (
+    FOLDING_ASSUMPTIONS,
+    FOLDING_STRATEGIES,
+    FoldingStrategy,
+    fold_program,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for typing only
     from ..circuit import Circuit
+    from ..core.ir import CircuitIR
 
 __all__ = (
     "EXTRAPOLATION_METHODS",
@@ -125,8 +139,11 @@ _ZERO_ARGUMENT_LIMITATIONS: tuple[str, ...] = (
     "error strengths, and Clifford data regression is provided beside it by "
     "flagquantum.algorithms.run_cdr, which fits the affine relation the noise "
     "induces between near-Clifford training circuits and their exact values.",
-    "Noise is scaled through a channel parameter rather than by folding the "
-    "circuit, so no gate-folding scale factor is offered.",
+    "This unit's own scaling multiplies a channel parameter. Gate and circuit "
+    "folding is provided beside it by flagquantum.algorithms.fold_program, which "
+    "lengthens the program by an exact identity instead, and the fold argument "
+    "reaches it; the two are different units of scale and are refused together, "
+    "so a folded run is a length ratio that this unit's scaling did not touch.",
     "Zero-noise extrapolation removes no bias from a family that is not "
     "polynomial in the scale factor. max_residual is the diagnostic that exposes "
     "it, and a square fit's residual is zero by construction and is therefore not "
@@ -663,7 +680,7 @@ class ZneResult:
 
 
 def _measure(
-    circuit: Circuit,
+    circuit: Circuit | CircuitIR,
     hamiltonian: Hamiltonian,
     model: NoiseModel,
     factor: float,
@@ -694,15 +711,18 @@ def run_zne(
     order: int,
     extrapolation: ExtrapolationMethod = "polynomial_least_squares",
     scaling: Callable[[NoiseModel, float], NoiseModel] = scale_noise_model,
+    fold: FoldingStrategy | None = None,
     device: torch.device | str = "cpu",
     dtype: torch.dtype | None = None,
 ) -> ZneResult:
     """Measure ``hamiltonian`` at each scaled noise model and extrapolate to zero.
 
     Args:
-        circuit: The program whose observable is measured. It is executed
-            unchanged once per scale factor, so the ideal signal is the same at
-            every point by construction.
+        circuit: The program whose observable is measured. Under the default
+            scaling it is executed unchanged once per scale factor, so the ideal
+            signal is the same at every point by construction; under ``fold`` it
+            is lengthened by an exact identity, which leaves the ideal signal
+            where it was.
         hamiltonian: The observable, evaluated exactly on each scaled model's
             density matrix. Its expectation is a single number, so the circuit's
             batch size is one.
@@ -710,16 +730,26 @@ def run_zne(
             readout rule: the observable is read as ``Tr(O rho)``, which is
             before measurement, so a classical readout confusion would be
             silently unused.
-        scale_factors: The factors to scale it by. Distinct positive finite
-            numbers; include ``1.0`` to have the unmitigated measurement
-            reported beside the estimate.
+        scale_factors: The factors to scale the noise by. Distinct positive finite
+            numbers; include ``1.0`` to have the unmitigated measurement reported
+            beside the estimate. Under ``fold`` each one is a *request*: a fold
+            adds instructions two at a time, so the factor it realizes is at least
+            this one and is not always equal to it, and the realized factors are
+            the ones that must be distinct.
         order: The polynomial degree to fit. It also fixes how many points each
             method needs, which is checked before anything is simulated.
         extrapolation: The fit to use, one of :data:`EXTRAPOLATION_METHODS`.
         scaling: How a scaled model is built. The default multiplies each
             channel's error probability and refuses a channel where that
             multiplication has no meaning; a caller-supplied callable takes over
-            the claim that the scaled model differs only in noise strength.
+            the claim that the scaled model differs only in noise strength. It is
+            not used under ``fold``.
+        fold: Which fold to lengthen the program with instead of scaling the
+            model, one of :data:`flagquantum.algorithms.FOLDING_STRATEGIES`, or
+            ``None`` to scale the model. Folding leaves every channel parameter
+            where it is and repeats instructions, so the noise grows because the
+            program is longer. It is a different unit of scale from ``scaling``
+            and the two are refused together.
         device: The device the density simulation runs on.
         dtype: The density simulation's complex dtype. The default is the runtime
             configuration's, which is single precision; the extrapolation's own
@@ -730,11 +760,14 @@ def run_zne(
         limitations that go with them.
 
     Raises:
-        ValueError: if the scale factors, the order, or the point count cannot
-            support the requested fit, if the model declares a readout rule the
-            observable path cannot apply, or if the scaling refuses a channel.
-            All of it is checked before the first simulation runs, so a
-            mis-specified extrapolation costs no simulation time.
+        ValueError: if the scale factors, the order, the point count or the
+            folding strategy cannot support the requested fit; if the model
+            declares a readout rule the observable path cannot apply; if the
+            scaling refuses a channel; if folding and a caller-supplied scaling
+            are asked for together; or if two requested scale factors fold to the
+            same realized one. All of it is checked before the first simulation
+            runs, so a mis-specified extrapolation costs no simulation time.
+        CapabilityError: under ``fold``, if an instruction has no inverse at all.
     """
 
     factors = _as_scale_factors(scale_factors)
@@ -744,8 +777,21 @@ def run_zne(
             f"unsupported extrapolation {extrapolation!r}; expected one of "
             f"{', '.join(EXTRAPOLATION_METHODS)}"
         )
+    if fold is not None and fold not in FOLDING_STRATEGIES:
+        raise ValueError(
+            f"unsupported folding strategy {fold!r}; expected one of "
+            f"{', '.join(FOLDING_STRATEGIES)}, or None to scale the noise model"
+        )
     if not isinstance(noise_model, NoiseModel):
         raise TypeError("zero-noise extrapolation needs the noise model to scale")
+    if fold is not None and scaling is not scale_noise_model:
+        raise ValueError(
+            "folding lengthens the program and a scaling callable strengthens the "
+            "noise, so the two are different units of scale and the product of a "
+            "length ratio and a channel parameter names neither; pass one of them, "
+            "or fold the program first and scale the folded program in a second "
+            "call."
+        )
     _require_point_count(factors, degree, extrapolation)
     if noise_model.readout_rules:
         raise ValueError(
@@ -756,33 +802,60 @@ def run_zne(
             "the model is refused instead. Drop the readout rules to extrapolate "
             "the state-preparation estimate, or mitigate readout separately."
         )
+    points: list[tuple[Circuit | CircuitIR, NoiseModel, float]] = []
+    for factor in factors:
+        if fold is None:
+            points.append((circuit, scaling(noise_model, factor), factor))
+        else:
+            plan = fold_program(circuit, scale_factor=factor, strategy=fold)
+            points.append((plan.program, noise_model, plan.scale_factor))
+    # A fold can only reach a length in steps of two instructions, so two
+    # requests can realize one abscissa. The fit's own linear system would be
+    # singular, and its refusal would name the realized factors rather than the
+    # requests that produced them, so the collision is named here instead.
+    abscissas = tuple(point[2] for point in points)
+    repeated = sorted({value for value in abscissas if abscissas.count(value) > 1})
+    if repeated:
+        raise ValueError(
+            "folding reaches a length in steps of two instructions, so these "
+            "requested scale factors realize the same one more than once: "
+            f"{repeated}. Distinct abscissas are required, because repeated ones "
+            "make the extrapolation's linear system singular; space the requests "
+            "further apart."
+        )
     measurements = tuple(
         _measure(
-            circuit,
+            program,
             hamiltonian,
-            scaling(noise_model, factor),
-            factor,
+            model,
+            abscissa,
             device=device,
             dtype=dtype,
         )
-        for factor in factors
+        for program, model, abscissa in points
     )
     fit = (
         extrapolate_richardson
         if extrapolation == "richardson"
         else extrapolate_polynomial
-    )(factors, tuple(item.expectation for item in measurements), order=degree)
+    )(abscissas, tuple(item.expectation for item in measurements), order=degree)
     unmitigated = next(
         (item.expectation for item in measurements if item.scale_factor == 1.0),
         None,
     )
-    assumptions = ZNE_ASSUMPTIONS + (
-        (
-            _DECLARED_SCALING_ASSUMPTION
-            if scaling is scale_noise_model
-            else _CALLER_SCALING_ASSUMPTION
-        ),
-    )
+    if fold is None:
+        assumptions = ZNE_ASSUMPTIONS + (
+            (
+                _DECLARED_SCALING_ASSUMPTION
+                if scaling is scale_noise_model
+                else _CALLER_SCALING_ASSUMPTION
+            ),
+        )
+    else:
+        # No scaling assumption applies: the channel parameters are untouched and
+        # only the program's length moved, which is what FOLDING_ASSUMPTIONS
+        # states.
+        assumptions = ZNE_ASSUMPTIONS + FOLDING_ASSUMPTIONS
     return ZneResult(
         estimate=fit.estimate,
         fit=fit,

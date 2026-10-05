@@ -24,6 +24,7 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
@@ -92,7 +93,11 @@ pytestmark = pytest.mark.unit
 # groups that census is read through. The Nelder-Mead optimizer contributes
 # one: its example is the same two-qubit Pauli energy the SPSA entry beside it
 # minimizes, so the two optimizer units are compared on one objective rather
-# than each being merely present. The adjoint route into the Lindblad engine is
+# than each being merely present. The folding module contributes one: its
+# example is the shortest statement that separates the two quantities a plan
+# reports, so a reader sees the realized instruction count beside the factor
+# that was asked for rather than a single number standing for both. The adjoint
+# route into the Lindblad engine is
 # listed beside the forward integrator because its example is the same kind of
 # statement about a different capability: the cotangent's shape is the shape of
 # the state the trajectory started from, which is what distinguishes a reverse
@@ -118,6 +123,7 @@ ENTRIES = (
     estimate_resources,
     evolve_density_matrix,
     excitation_operator,
+    fold_program,
     fq.Circuit,
     fq.Module,
     fq.Observable,

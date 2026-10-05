@@ -151,9 +151,10 @@ PEC_LIMITATIONS: tuple[str, ...] = (
     "Clifford data regression is a separate unit beside this one rather than a "
     "mode of it, and readout-error mitigation is a third: "
     ":func:`flagquantum.algorithms.plan_readout_mitigation` inverts a declared "
-    "classical confusion on a measured vector rather than a channel on a state, "
-    "so no gate-folding "
-    "scale factor is offered either: the inverse is built from the channel's Pauli "
+    "classical confusion on a measured vector rather than a channel on a state. "
+    "Gate and circuit folding is a fourth, "
+    ":func:`flagquantum.algorithms.fold_program`, and no fold count is offered "
+    "here: the inverse is built from the channel's Pauli "
     "transfer matrix rather than by folding gates, so the cost is reported as a "
     "term count rather than as a fold count.",
 )
