@@ -115,7 +115,7 @@ def _pytorch_reference(
                     ),
                     dim=-1,
                 )
-            half = 0.5 * angles[:, layer, family].reshape(batch, 1)
+            half = 0.5 * angles[:, layer, family].reshape(batch, 1, 1)
             sine, cosine = torch.sin(half), torch.cos(half)
             derivative = -0.5 * sine * output - 0.5j * cosine * transformed_output
             tangents = (

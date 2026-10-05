@@ -106,15 +106,15 @@ def _forward(state: torch.Tensor, angles: torch.Tensor) -> torch.Tensor:
                 transformed = torch.stack((-three, two, one, -zero), dim=-1)
             else:
                 transformed = torch.stack((zero, -one, -two, three), dim=-1)
-            half = 0.5 * angles[:, layer, family].reshape(-1, 1)
+            half = 0.5 * angles[:, layer, family].reshape(-1, 1, 1)
             output = torch.cos(half) * output - 1j * torch.sin(half) * transformed
     return output
 
 
 def test_analytic_tangent_reference_matches_finite_differences() -> None:
     generator = torch.Generator().manual_seed(41)
-    state = torch.randn(1, 2, 4, dtype=torch.complex128, generator=generator)
-    angles = torch.randn(1, 2, 3, dtype=torch.float64, generator=generator)
+    state = torch.randn(2, 2, 4, dtype=torch.complex128, generator=generator)
+    angles = torch.randn(2, 2, 3, dtype=torch.float64, generator=generator)
     epsilon = 1e-6
     finite_differences = []
     for layer in range(2):
