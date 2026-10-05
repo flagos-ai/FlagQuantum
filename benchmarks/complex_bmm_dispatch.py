@@ -24,11 +24,16 @@ IMPLEMENTATION_ID = "FQKI-TRITON-NUM-001-A"
 RUNNER = "benchmarks/complex_bmm_dispatch.py"
 COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
-    (1, 32, 32, 64),
-    (16, 32, 32, 64),
-    (16, 64, 64, 128),
-    (64, 64, 64, 128),
-    (16, 128, 128, 256),
+    (1, 32, 32, 64, "right_going_transfer"),
+    (1, 64, 32, 32, "left_going_transfer"),
+    (16, 32, 32, 64, "right_going_transfer"),
+    (16, 64, 32, 32, "left_going_transfer"),
+    (16, 64, 64, 128, "right_going_transfer"),
+    (16, 128, 64, 64, "left_going_transfer"),
+    (64, 64, 64, 128, "right_going_transfer"),
+    (64, 128, 64, 64, "left_going_transfer"),
+    (16, 128, 128, 256, "right_going_transfer"),
+    (16, 256, 128, 128, "left_going_transfer"),
 )
 RESULT_NAMES = (
     "pytorch_bmm_forward",
@@ -97,6 +102,7 @@ def _case(
     rows: int,
     reduction: int,
     columns: int,
+    direction: str,
     *,
     seed: int,
     warmup: int,
@@ -191,6 +197,7 @@ def _case(
         "dtype": "complex64",
         "layout": "contiguous_batched_matrix",
         "workload_origin": "mps_canonical_transfer_absorption",
+        "canonical_sweep_direction": direction,
         "maximum_forward_absolute_error": forward_error,
         "forward_relative_l2_error": _relative_l2(actual, reference),
         "maximum_gradient_absolute_error": max(gradient_errors),
@@ -310,8 +317,19 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         case = _mapping(raw_case, f"cases[{index}]")
         shape = _mapping(case.get("shape"), f"cases[{index}].shape")
         observed_shapes.append(
-            tuple(shape.get(name) for name in ("batch", "rows", "reduction", "columns"))
+            (
+                *(
+                    shape.get(name)
+                    for name in ("batch", "rows", "reduction", "columns")
+                ),
+                case.get("canonical_sweep_direction"),
+            )
         )
+        if case.get("canonical_sweep_direction") not in (
+            "right_going_transfer",
+            "left_going_transfer",
+        ):
+            raise ValueError(f"cases[{index}] records an invalid canonical direction")
         for error_field, tolerance in (
             ("maximum_forward_absolute_error", 5e-4),
             ("forward_relative_l2_error", 5e-5),

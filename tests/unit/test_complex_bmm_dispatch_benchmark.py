@@ -33,7 +33,7 @@ def _result(multiplier: float = 1.0) -> dict[str, object]:
 
 def _run(host: str, lane: str, *, triton_multiplier: float = 0.8) -> dict[str, object]:
     cases = []
-    for batch, rows, reduction, columns in SHAPE_MATRIX:
+    for batch, rows, reduction, columns, direction in SHAPE_MATRIX:
         pytorch_forward = _result()
         triton_forward = _result(triton_multiplier)
         pytorch_training = _result()
@@ -49,6 +49,7 @@ def _run(host: str, lane: str, *, triton_multiplier: float = 0.8) -> dict[str, o
                 "dtype": "complex64",
                 "layout": "contiguous_batched_matrix",
                 "workload_origin": "mps_canonical_transfer_absorption",
+                "canonical_sweep_direction": direction,
                 "maximum_forward_absolute_error": 1e-6,
                 "forward_relative_l2_error": 1e-6,
                 "maximum_gradient_absolute_error": 1e-6,
@@ -138,6 +139,14 @@ def test_run_validator_recomputes_speedups(field: str) -> None:
     payload["cases"][0][field] = 9.0
 
     with pytest.raises(ValueError, match="speedup is not reproducible"):
+        validate_run(payload)
+
+
+def test_run_validator_requires_canonical_sweep_direction() -> None:
+    payload = _run("jp-a800-171", "stock_triton")
+    payload["cases"][0]["canonical_sweep_direction"] = "unknown"
+
+    with pytest.raises(ValueError, match="canonical direction"):
         validate_run(payload)
 
 
