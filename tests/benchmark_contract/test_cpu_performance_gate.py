@@ -529,3 +529,31 @@ def test_checked_in_linux_x86_framework_floor_is_reproducible(
 
     assert regenerated == expected
     assert regenerated["verdict"] == "pass"
+
+
+def test_linux_x86_workflow_installs_the_baseline_framework_versions() -> None:
+    baseline = json.loads(
+        (RESULTS / "linux_x86_cpu_regression_baseline_20261004.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    workflow = (
+        ROOT / ".github" / "workflows" / "linux-x86-cpu-performance.yml"
+    ).read_text(encoding="utf-8")
+    case = baseline["cases"][0]
+
+    expected_packages = {
+        "pennylane": case["engines"]["pennylane_lightning_qubit"]["versions"][
+            "pennylane"
+        ],
+        "pennylane-lightning": case["engines"]["pennylane_lightning_qubit"]["versions"][
+            "pennylane-lightning"
+        ],
+        "qiskit": case["engines"]["qiskit_aer"]["versions"]["qiskit"],
+        "qiskit-aer": case["engines"]["qiskit_aer"]["versions"]["qiskit-aer"],
+    }
+
+    assert "python -m venv --clear --system-site-packages" in workflow
+    assert workflow.count('"$BENCHMARK_VENV/bin/python"') >= 6
+    for package, version in expected_packages.items():
+        assert f'"{package}=={version}"' in workflow
