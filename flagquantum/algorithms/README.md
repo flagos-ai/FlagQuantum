@@ -151,6 +151,23 @@ executed by `tests/test_algorithm_examples.py`.
   global minimum. Demonstration scale: the starting simplex is the caller's or a
   coordinate-offset default, the run is single-threaded and unbatched, and the
   reported cost is a count of objective calls rather than a latency.
+- `variational.py`: variational solvers over a checked cost operator —
+  `maxcut_hamiltonian` builds the weighted MaxCut cost operator `sum w_ij Z_i
+  Z_j`, and `run_qaoa` fits QAOA angles to it. **The two share one checked edge
+  list**, because a QAOA circuit is built from weighted `ZZ` edges while an energy
+  is an expectation against some Hamiltonian and nothing inside either one relates
+  the two: the solver exists so that one graph's edge list reaches both the cost
+  layer and the operator, and a caller who assembles them separately still has the
+  freedom to mismatch them. **The start is the caller's and a finite layer count
+  is an approximation**: the uniform superposition is an eigenstate of every cost
+  and mixer term, so the objective's gradient at a zero start is exactly zero at
+  every layer count and a run started there returns the start and reports the
+  objective at it, and the reported energy is an expectation rather than a bound.
+  A self-loop, a repeated undirected pair, a non-real or non-finite weight, an
+  empty edge list, and a start that is not one even-length flat vector are each
+  refused by name. Demonstration scale: weighted MaxCut instances of three to
+  five edges on three to four qubits, fitted on the CPU statevector path, with
+  sampling, decoding and cut ranking left to the caller.
 - `trotter.py`: time evolution by a product formula — a weighted Pauli sum
   becomes an ordinary `Circuit` whose unitary approximates `exp(-i * time * H)`,
   with the exact circuit for one Pauli word's exponential underneath it, as a

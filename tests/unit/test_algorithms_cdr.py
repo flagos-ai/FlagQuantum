@@ -782,9 +782,7 @@ def test_the_assumptions_and_limitations_name_what_the_unit_does_not_do() -> Non
     # sentence is that neither it nor a channel-parameter scale factor is applied
     # here; the old wording pinned the folding unit's absence instead of the
     # boundary this unit draws with it.
-    assert (
-        "the gate and circuit folding of flagquantum.algorithms.fold_program" in text
-    )
+    assert "the gate and circuit folding of flagquantum.algorithms.fold_program" in text
     assert "neither a channel-parameter scale factor nor" in text
     assert CDR_LIMITATIONS and all(statement for statement in CDR_LIMITATIONS)
 

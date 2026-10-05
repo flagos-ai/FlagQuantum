@@ -49,6 +49,7 @@ SCRIPTS = (
     "cdr",
     "readout_mitigation",
     "folding",
+    "variational_solvers",
     "spsa_optimizer",
     "nelder_mead_optimizer",
     "trotter",
@@ -155,6 +156,19 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "folding": (
         "the noise is local to the instruction that carries it",
         "does not estimate the noise it amplifies",
+    ),
+    # Three halves, because the premise has three: the cost layer and the operator
+    # "describe one graph" is what the unit pairs so a caller cannot score one
+    # graph's ansatz against another's operator; "a zero start cannot move" is the
+    # saddle that makes the start a required argument rather than a default; and
+    # "the energy is not a bound" is what a finite layer count gives up, so a
+    # fitted value is a cost to compare rather than a floor to trust. Pinning only
+    # the first would leave both concessions deletable, and a fitted energy read
+    # as a bound is exactly the misreading the third half prevents.
+    "variational_solvers": (
+        "describe one graph",
+        "a zero start cannot move",
+        "the energy is not a bound",
     ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
@@ -648,6 +662,60 @@ def test_folding_example_lengthens_by_an_identity_and_shows_what_it_cost() -> No
     )
     assert "no unitary inverse" in _labelled(output, "a channel in the body")
     _assert_premise("folding", output)
+    assert "take away" in output
+
+
+def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
+    output = _run("variational_solvers")
+
+    assert "variational solvers -- flagquantum.algorithms.variational" in output
+    # The operator is checked against the cut it stands for rather than trusted:
+    # a square with one diagonal has five edges and a largest cut of four, so the
+    # ground energy is the total less twice that cut, and the basis states that
+    # attain it are exactly the two maximum cuts.
+    assert _labelled(output, "largest cut (enumerated)") == "4 of 5 edges"
+    assert _labelled(output, "cut at the optimum") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
+    assert _labelled(output, "ground energy") == "-3"
+    assert _labelled(output, "total less twice the cut") == "-3"
+    assert _labelled(output, "argmin equals argmax") == "True"
+    # The saddle is shown rather than described: the gradient at the zero start is
+    # exactly zero, so the returned angles are the start and the energy is the
+    # objective there. A run that reported an optimum from that start would print
+    # a moved angle or a negative energy.
+    assert _labelled(output, "gradient at the zero start") == (
+        "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+    )
+    assert _labelled(output, "energy at the zero start") == "0"
+    assert _labelled(output, "angles returned") == "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+    assert _labelled(output, "steps taken") == "100"
+    # Three layers at this start reach the optimum and the shallower runs do not,
+    # and the mass the optimized circuit puts on the two maximum cuts rises with
+    # it. The energies are pinned as the evidence for this instance; the claim the
+    # row carries is the gap column, which falls towards zero without reaching it.
+    rows = {layers: _labelled(output, str(layers)).split() for layers in (1, 2, 3)}
+    assert rows[1][0] == "-1.473527074"
+    assert rows[2][0] == "-1.914364219"
+    assert rows[3][0] == "-2.972455502"
+    gaps = [float(rows[layers][1]) for layers in (1, 2, 3)]
+    assert gaps == sorted(gaps, reverse=True)
+    assert gaps[-1] > 0.0
+    masses = [float(rows[layers][2]) for layers in (1, 2, 3)]
+    assert masses == sorted(masses)
+    assert masses[-1] > 0.9
+    # The cut is decoded from the optimized state rather than read off the
+    # energy: the two bitstrings above the threshold are exactly the two maximum
+    # cuts the brute-force spectrum found.
+    assert _labelled(output, "mass at (0, 1, 0, 1)") == "0.494200140238"
+    assert _labelled(output, "mass at (1, 0, 1, 0)") == "0.494200378656"
+    assert _labelled(output, "bitstrings above 0.1") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
+    assert _labelled(output, "those are the largest cuts") == "True"
+    # Five refusals, each naming the thing it refused rather than a code.
+    assert "the same undirected pair" in _labelled(output, "one cut edge listed twice")
+    assert "constant shift rather than a cut" in _labelled(output, "an edge to itself")
+    assert "at least one" in _labelled(output, "no optimizer step at all")
+    assert "the count must be even" in _labelled(output, "an odd number of angles")
+    assert "one flat vector" in _labelled(output, "a start that is not flat")
+    _assert_premise("variational_solvers", output)
     assert "take away" in output
 
 

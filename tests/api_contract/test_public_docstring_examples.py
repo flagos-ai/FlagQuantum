@@ -35,6 +35,10 @@ from flagquantum.algorithms.trotter import (
     pauli_exponential_circuit,
     trotter_circuit,
 )
+from flagquantum.algorithms.variational import (
+    maxcut_hamiltonian,
+    run_qaoa,
+)
 from flagquantum.compiler import Layout
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
@@ -139,6 +143,7 @@ ENTRIES = (
     import_openqasm,
     import_openqasm_to_ir,
     jordan_wigner,
+    maxcut_hamiltonian,
     pauli_exponential_circuit,
     parity_encoding,
     plan_lindblad_evolution,
@@ -146,6 +151,7 @@ ENTRIES = (
     recommend_simulator,
     run_cirq,
     run_pennylane,
+    run_qaoa,
     run_qiskit,
     single_excitation,
     surface_code_qubits_per_logical,

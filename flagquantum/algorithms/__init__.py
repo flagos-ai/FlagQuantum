@@ -21,6 +21,7 @@ from . import readout_mitigation as readout_mitigation
 from . import spsa as spsa
 from . import svd as svd
 from . import trotter as trotter
+from . import variational as variational
 from .arithmetic import (
     AdderWires,
     adder_circuit,
@@ -128,6 +129,13 @@ from .trotter import (
     pauli_exponential_circuit,
     trotter_circuit,
 )
+from .variational import (
+    QAOA_ASSUMPTIONS,
+    QAOA_LIMITATIONS,
+    QAOAResult,
+    maxcut_hamiltonian,
+    run_qaoa,
+)
 
 __all__ = [
     "AdaptVQEIteration",
@@ -157,6 +165,9 @@ __all__ = [
     "PauliTwirlDecomposition",
     "PecLocation",
     "PecResult",
+    "QAOA_ASSUMPTIONS",
+    "QAOA_LIMITATIONS",
+    "QAOAResult",
     "SPSAOptimizer",
     "SURFACE_CODE_MODEL",
     "TROTTER_ORDERS",
@@ -193,6 +204,7 @@ __all__ = [
     "kmedians",
     "nelder_mead",
     "logical_resources",
+    "maxcut_hamiltonian",
     "optimize_hybrid",
     "pauli_exponential_circuit",
     "pauli_term",
@@ -223,6 +235,7 @@ __all__ = [
     "run_adapt_vqe",
     "run_cdr",
     "run_pec",
+    "run_qaoa",
     "run_zne",
     "scale_noise_model",
     "spsa",
@@ -231,6 +244,7 @@ __all__ = [
     "trotter",
     "trotter_circuit",
     "transverse_field_ising",
+    "variational",
     "vqe_loss",
     "zz_chain_hamiltonian",
 ]

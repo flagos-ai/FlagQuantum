@@ -166,7 +166,18 @@ units carries a root-level `fq.` name.
   existing VQE and QAOA paths in [core.py](../../flagquantum/algorithms/core.py)
   are approximation heuristics. Their evidence and their boundary are the ones
   already recorded for local statevector execution; this guide adds no
-  asymptotic advantage conclusion for them.
+  asymptotic advantage conclusion for them. **`variational.py` carries no
+  advantage premise either, and it states two concessions rather than one.** The
+  MaxCut solver is a heuristic over one ansatz and not an exact solver: a finite
+  layer count is an approximation, so the energy it reports is an expectation
+  and not a bound. And the uniform superposition — the state the first layer acts
+  on — is an eigenstate of every cost and mixer term, so the objective's gradient
+  at a zero start is **exactly zero** at every layer count, which makes the start
+  a required argument instead of a default; a solver that defaulted to the origin
+  would return the origin and call it an optimum. What the unit adds is not a
+  speedup but an agreement: one checked edge list reaches both the circuit that
+  rotates by it and the operator it is scored against, which the primitives
+  beside it left to the caller. See the section below.
 - **SPSA carries no advantage premise either, and what it offers is a cost.**
   `spsa.py` is not an algorithm with a speedup to state: it is an optimizer, and
   the quantity it improves is the number of objective evaluations per step, which
@@ -2041,6 +2052,129 @@ except Exception as error:
 # Nelder-Mead stores a vertex and its objective value together, so an in-place
 # objective makes the stored pair describe different parameters
 ```
+
+## Variational solvers over a checked cost operator
+
+`variational.py` is the first unit in this guide that is a **solver** rather than a
+primitive, a construction or an optimizer. `maxcut_hamiltonian(n_qubits, edges)`
+builds the cost operator of a weighted MaxCut instance, and
+`run_qaoa(n_qubits, edges, initial_parameters, *, steps=..., lr=..., optimizer_factory=...)`
+fits QAOA angles to it. The two exist together because they have to agree: a QAOA
+circuit is built from a list of weighted `ZZ` edges while an energy is an
+expectation against some Hamiltonian, and nothing inside either one relates the
+two, so a caller wiring `qaoa_circuit` to a hand-built operator can score one
+graph's ansatz against another graph's operator and read a number about a problem
+nobody posed. Here the edge list is checked once and reaches both sides through
+the same tuple.
+
+**The operator is `sum w_ij Z_i Z_j`, and its value on a basis state is the edge
+total less twice the cut.** That is what makes the energy a cost rather than a cut
+size: the minimum is `W - 2 * (largest weighted cut)`, so minimizing the operator
+maximizes the cut, and the two are checked against each other here rather than
+assumed. A negative weight inverts that one edge's preference and is allowed. A
+self-loop is refused, because `Z` on one qubit squares to the identity and the
+edge is then a constant shift rather than a cut. A repeated undirected pair is
+refused rather than summed, because `(1, 0)` and `(0, 1)` are one cut edge:
+summing would count it twice in the objective while the cost layer rotated twice
+as well, and the two errors would reinforce instead of cancelling.
+
+```python
+import itertools
+
+import torch
+
+from flagquantum.algorithms import (
+    maxcut_hamiltonian,
+    qaoa_circuit,
+    qaoa_loss,
+    run_qaoa,
+)
+from flagquantum.circuit import Circuit
+
+edges = ((0, 1), (1, 2), (2, 3), (3, 0), (0, 2))
+cost = maxcut_hamiltonian(4, edges)
+
+
+def basis(bits):
+    circuit = Circuit(len(bits))
+    for wire, bit in enumerate(bits):
+        if bit:
+            circuit = circuit.x(wire)
+    return circuit
+
+
+enumerated = {
+    bits: sum(1 for source, target in edges if bits[source] != bits[target])
+    for bits in itertools.product((0, 1), repeat=4)
+}
+values = {bits: float(cost.expectation(basis(bits))) for bits in enumerated}
+print(min(values.values()), max(enumerated.values()), min(values.values()) == 5 - 2 * max(enumerated.values()))
+# -3.0 4 True
+
+for layers in (1, 2, 3):
+    result = run_qaoa(4, edges, torch.full((2 * layers,), 0.1))
+    state = qaoa_circuit(4, edges, result.gammas, result.betas).state().reshape(-1)
+    mass = (state.abs() ** 2).real
+    print(layers, f"{float(result.energy):.9f}", f"{float(mass.max()):.6f}")
+# 1 -1.473527074 0.162757
+# 2 -1.914364219 0.237453
+# 3 -2.972455502 0.494200
+
+parameters = torch.zeros(6, requires_grad=True)
+loss = qaoa_loss(4, edges, parameters[:3], parameters[3:], cost)
+torch.autograd.backward(loss)
+print(float(loss.detach()), bool(torch.equal(parameters.grad, torch.zeros(6))))
+# 0.0 True
+```
+
+The first block prints the operator's minimum, the graph's largest cut, and the
+identity between them: the square with one diagonal has five edges and a largest
+cut of four, so `min = 5 - 2 * 4 = -3`, and the enumerated cut sizes and the
+operator's values agree exactly. The second block is the same instance solved at
+three layer counts from one constant start: one layer reaches `-1.473527074` and
+puts `0.162757` of the mass on its most probable bitstring, two reach
+`-1.914364219` at `0.237453`, and three reach `-2.972455502` at `0.494200` against
+an optimum of `-3.0`. **That progression is a fact about this instance and this
+start and not a law**: a finite layer count is an approximation, a larger layer
+count is not guaranteed to be closer in general, and the reported energy is an
+expectation rather than a bound. The third block is the saddle: the gradient at
+a zero start is exactly zero at every parameter, so a zero start cannot move and
+the objective at it is `0.0`.
+
+**The start is the caller's, and the unit does not choose one.** The uniform
+superposition is an eigenstate of every `ZZ` term in the cost operator and of
+every `X` in the mixer, so the objective's gradient there is zero for every
+parameter at every layer count — that is why `initial_parameters` is a required
+argument rather than an optional one, and why a run started at zero returns zero
+angles and reports the objective at them as its result. This is a genuine saddle
+rather than a rounding artefact and it is asserted by strict equality here. The
+consequence is that a caller who wants a nonzero start supplies one, and the unit
+does not perturb it: a displacement chosen inside `run_qaoa` would be a claim
+about the caller's instance rather than a property of QAOA.
+
+**The fitted angles and the energy are all the result carries, and the trajectory
+is a record rather than a descent.** `QAOAResult` holds the flat parameter
+vector, the energy at it, and the objective's value at every step. Adam, the
+default optimizer, takes a step of the learning rate's size regardless of how
+flat the objective is, so `history` can rise; only the final value is the result.
+Angles, the circuit and the objective are `float32`, because the circuit builder
+casts every angle to `float32`, so a `float64` start is downcast rather than
+refused and the energy is `float32`-accurate. The result carries no cut:
+sampling the optimized circuit, decoding a bitstring, ranking sampled cuts and
+comparing a sampled best against the optimum are all the caller's steps.
+
+**Not here:** a cost Hamiltonian for a general QUBO or Ising instance; any
+constraint, penalty or slack term; adaptive or multi-angle QAOA variants; a warm
+start from a classical heuristic; a multi-start or basin-hopping wrapper; and any
+shots, hardware or sampled path. The update is autograd-based, so the
+gradient-free units this package ships — [spsa.py](../../flagquantum/algorithms/spsa.py)
+and [nelder_mead.py](../../flagquantum/algorithms/nelder_mead.py) — cannot be
+supplied to `run_qaoa`, which a sampled or hardware objective would need. The VQE
+entry points themselves stay where they were, in
+[core.py](../../flagquantum/algorithms/core.py); this module is the QAOA half of
+the family and it neither wraps nor replaces them. No demonstration here is a
+performance, scaling or hardware claim: the whole path is single-process CPU
+statevector simulation on instances of three to five edges.
 
 ## Time evolution by a product formula
 

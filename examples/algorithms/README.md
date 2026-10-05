@@ -20,6 +20,7 @@ python -m examples.algorithms.pec
 python -m examples.algorithms.cdr
 python -m examples.algorithms.readout_mitigation
 python -m examples.algorithms.folding
+python -m examples.algorithms.variational_solvers
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
@@ -76,6 +77,12 @@ What they show:
   instructions each spent to reach it, the amplitude gap that shows the fold is
   an identity rather than an approximation, and the pair's own location shown to
   decide which observables can see the noise the fold added.
+- [`variational_solvers.py`](variational_solvers.py): a weighted MaxCut
+  instance solved by QAOA at three layer counts from one constant start, with the
+  cost operator checked against the cut spectrum enumerated in Python, the
+  gradient at the uniform superposition printed as exactly zero so the saddle is
+  shown rather than asserted, and the maximum cut decoded from the optimized
+  circuit's own probability distribution rather than read off the energy.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
@@ -143,7 +150,11 @@ constructor and the register map from the subpackage, and `flagquantum` itself f
 the `fq.Circuit` register the adder is run on. `folding.py` needs no root alias
 either: it composes `flagquantum.circuit.Circuit`, wraps the programs it compares
 through `flagquantum.core.ir`, and reaches the fold itself from the subpackage
-with `from flagquantum.algorithms import fold_program`.
+with `from flagquantum.algorithms import fold_program`. `variational_solvers.py`
+needs no root alias either: it builds its basis states with
+`flagquantum.circuit.Circuit` and reaches the operator, the ansatz, and the solver
+from the subpackage, because the energy it reports is an expectation of a
+`flagquantum.algorithms.core.Hamiltonian` rather than a root-level object.
 `examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
@@ -161,7 +172,10 @@ the location it declares it and pays for the inversion in programs rather than
 shots, gate and circuit folding rests on the noise being local to the instruction
 that carries it -- so repeating a gate with its own inverse repeats its error --
 and reports the length ratio it realized rather than any estimate of the noise it
-amplified, the SPSA update is built from a finite-difference estimate that is an
+amplified, the QAOA solver pairs one checked edge list with both the circuit that
+rotates by it and the operator it is scored against, turns the uniform
+superposition's stationary point into a required start, and reports an energy
+that is a cost to compare rather than a bound, the SPSA update is built from a finite-difference estimate that is an
 estimate rather than a gradient, the Nelder-Mead search decides every step by
 ranking two objective values against each other, so a stochastic objective turns
 those decisions into a coin toss and the flag it ends on reports a collapsed
