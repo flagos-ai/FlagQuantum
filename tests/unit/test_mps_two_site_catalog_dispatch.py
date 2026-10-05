@@ -114,6 +114,20 @@ def _interior_bond_state(n_wires: int, bond_dim: int) -> MPSState:
     return MPSState(tensors)
 
 
+def test_mps_summary_reports_two_site_opt_in(monkeypatch) -> None:
+    """The two-site route is opt-in, and its summary reads the flag it places by."""
+
+    state = MPSState((torch.tensor([[[[1.0 + 0.0j], [0.0j]]]], dtype=torch.complex64),))
+    monkeypatch.delenv("FQ_TRITON_MPS_TWO_SITE", raising=False)
+    assert state.summary()["triton_mps_two_site_enabled"] is False
+
+    monkeypatch.setenv("FQ_TRITON_MPS_TWO_SITE", "off")
+    assert state.summary()["triton_mps_two_site_enabled"] is False
+
+    monkeypatch.setenv("FQ_TRITON_MPS_TWO_SITE", "1")
+    assert state.summary()["triton_mps_two_site_enabled"] is True
+
+
 @pytest.mark.gpu
 @pytest.mark.triton
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
