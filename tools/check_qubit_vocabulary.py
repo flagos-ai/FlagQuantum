@@ -5,8 +5,11 @@ The ledger in `contracts/qubit-vocabulary-contract.toml` is the only progress
 record for the `wire` to `qubit` migration. This gate is what makes it a record
 rather than a document:
 
-- the baseline parameter list is frozen, and the live scan must equal the
-  baseline minus the retired identifiers, so a slice can only shrink the set;
+- the ledger must equal what the live scan finds, minus the retired identifiers,
+  so the set can only shrink and it shrinks in one of two recorded ways: a
+  renamed parameter stays in the ledger and moves to the retirement list, while a
+  site whose module no longer exists leaves the ledger and takes the declared
+  baseline down with it;
 - a wire-named parameter that no ledger entry covers fails, including one added
   by a change that had nothing to do with vocabulary;
 - a retired identifier that is still present fails, so a slice cannot claim
@@ -16,7 +19,9 @@ rather than a document:
 "Only shrink, never grow" needs the equality, not two inequalities: with a
 subset check alone, deleting a baseline line would look like progress, and with
 a superset check alone, a new site would look like the baseline already covered
-it.
+it. The equality is what makes a deletion from the ledger safe: it is only
+accepted when the site is gone from the live scan too, so the row cannot be
+dropped to silence a rename that has not happened.
 """
 
 from __future__ import annotations

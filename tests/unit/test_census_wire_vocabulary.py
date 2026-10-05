@@ -173,10 +173,28 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    assert len(scanned.canonical) == 345
-    assert len(scanned.aliases) == 11
-    assert len(scanned.internal) == 415
     assert scanned.canonical and scanned.aliases and scanned.internal
+    # The three sizes are recorded once, in the contract the gate reads, and are
+    # not repeated here. A pinned copy of a measurement states the number instead
+    # of checking anything about the scanner, and it fails on every legitimate
+    # change to the package -- including a file that stops existing -- which is
+    # the opposite of what this test is for. What belongs to the scanner is that
+    # it separates the populations and that the boundary sees the aliases.
+    kinds = {
+        "canonical": {site.kind for site in scanned.canonical},
+        "aliases": {site.kind for site in scanned.aliases},
+        "internal": {site.kind for site in scanned.internal},
+    }
+    assert kinds["canonical"] == {"canonical"}
+    assert kinds["aliases"] == {"deprecated_alias"}
+    assert kinds["internal"] == {"internal"}
+    identifiers = {
+        "canonical": {site.identifier for site in scanned.canonical},
+        "aliases": {site.identifier for site in scanned.aliases},
+        "internal": {site.identifier for site in scanned.internal},
+    }
+    assert not identifiers["canonical"] & identifiers["aliases"]
+    assert not identifiers["canonical"] & identifiers["internal"]
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"
     assert (

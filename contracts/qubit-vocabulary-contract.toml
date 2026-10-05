@@ -30,9 +30,9 @@ packages_included = ["flagquantum"]
 private_excluded = true
 dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
-measured_canonical = 345
+measured_canonical = 343
 measured_deprecated_aliases = 11
-measured_private = 415
+measured_private = 413
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -380,8 +380,6 @@ canonical = [
     "flagquantum/simulation/pauli.py::pauli_product_statevector_expectation::n_wires",
     "flagquantum/simulation/stabilizer/engine.py::sample_noisy_measurements::terminal_wires",
     "flagquantum/simulation/stabilizer/engine.py::sample_stabilizer::wires",
-    "flagquantum/simulation/stabilizer/tableau.py::CliffordTableau.apply_gate::wires",
-    "flagquantum/simulation/stabilizer/tableau.py::CliffordTableau.measure_z::wire",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::n_wires",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_adjoint_chunk::wire",
     "flagquantum/simulation/statevector/adjoint.py::z_expectation_chunk::n_wires",
@@ -533,7 +531,7 @@ files = [
 id = "WQ-6"
 title = "simulation CPU cores"
 owner_team = "simulation"
-canonical_count = 80
+canonical_count = 78
 files = [
     "flagquantum/simulation/density_matrix.py",
     "flagquantum/simulation/lindblad.py",
@@ -544,7 +542,6 @@ files = [
     "flagquantum/simulation/native_cpu/rzz.py",
     "flagquantum/simulation/pauli.py",
     "flagquantum/simulation/stabilizer/engine.py",
-    "flagquantum/simulation/stabilizer/tableau.py",
     "flagquantum/simulation/statevector/adjoint.py",
     "flagquantum/simulation/statevector/clifford_matching.py",
     "flagquantum/simulation/statevector/double_single.py",

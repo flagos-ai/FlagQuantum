@@ -90,7 +90,15 @@ def test_the_gate_reports_progress_per_slice() -> None:
     rows = _GATE.slice_progress(_contract())
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
     assert all(retired == 0 for _, retired, _ in rows)
-    assert sum(remaining for _, _, remaining in rows) == 345
+    # The remaining total is not pinned to the number the ledger happened to hold
+    # when this test was written. What the gate has to guarantee is that the
+    # slices *partition* the ledger: every baseline site belongs to exactly one
+    # slice, so no site is unowned and none is counted twice. A pinned total
+    # states that instead of checking it, and it turns every legitimate change to
+    # the ledger -- a renamed site, or a file that no longer exists -- into a
+    # failure of this test rather than a fact the gate reports.
+    ledger = _contract()["ledger"]["canonical"]
+    assert sum(remaining for _, _, remaining in rows) == len(ledger)
 
 
 def test_the_gate_is_wired_into_ci_and_pre_push() -> None:
