@@ -258,9 +258,12 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
 ```
 
 `QBOSON_PROJECT_NO` is not a credential, but it should still be managed in the
-private run environment. The command has no simulator fallback. It exits with
-hardware acceptance closed if the pinned SDK mapping cannot supply stable
-provider task and target identities.
+private run environment. The command has no simulator fallback. It writes the
+diagnostic record and exits nonzero with hardware acceptance closed if the
+pinned SDK mapping cannot supply stable provider task and target identities.
+Only the command's real SDK path records `transport=kaiwu_cim`,
+`real_provider_evidence=true`, and `qboson_hardware_used=true`; injected test
+clients cannot produce hardware acceptance.
 
 The smoke record includes a redacted `provider_result_schema` from the SDK's
 documented `get_task_result` dictionary. It contains field names and structural

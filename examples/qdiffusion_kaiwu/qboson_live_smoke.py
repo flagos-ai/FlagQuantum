@@ -74,6 +74,7 @@ def run_live_smoke(
         raise ValueError("project_no must be non-empty")
     if SHA256.fullmatch(environment_lock_sha256) is None:
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
+    real_provider_transport = type(client) is KaiwuSDKClient
     records: list[dict[str, Any]] = []
     for mode in ("optimization", "sampling"):
         job = submit_kaiwu_task(
@@ -104,17 +105,22 @@ def run_live_smoke(
         and math.isfinite(record["maximum_energy"])
         for record in records
     )
+    hardware_acceptance = (
+        real_provider_transport and smoke_passed and provider_identity_complete
+    )
     return {
         "schema": SCHEMA,
         "version": "1.0",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
-        "transport": "kaiwu_cim",
+        "transport": "kaiwu_cim" if real_provider_transport else "injected_test",
+        "real_provider_evidence": real_provider_transport,
+        "qboson_hardware_used": real_provider_transport,
         "project_no": project_no.strip(),
         "environment_lock_sha256": environment_lock_sha256,
         "tasks": records,
         "live_provider_smoke_passed": smoke_passed,
         "provider_identity_complete": provider_identity_complete,
-        "hardware_acceptance": smoke_passed and provider_identity_complete,
+        "hardware_acceptance": hardware_acceptance,
         "fallback_occurred": False,
         "limitations": [
             "This smoke test does not execute QDiffusion or A800 tensor work.",
@@ -183,6 +189,7 @@ def main() -> None:
     print(f"Private smoke record written to {arguments.output}")
     if not payload["hardware_acceptance"]:
         print("Hardware acceptance remains closed; inspect the recorded limitations.")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

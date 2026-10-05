@@ -121,6 +121,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - That smoke command now passes an explicit in-memory credential object after
   offline environment verification and scans both resolved credential values
   against the complete serialized evidence before creating its output file.
+- Phase 2 smoke evidence now binds acceptance to an explicit real-SDK transport
+  marker. Injected clients remain test evidence even when they return plausible
+  provider identities, and the live command writes its diagnostic record but
+  exits nonzero whenever hardware acceptance remains closed.
 - A read-only host recheck confirmed that the SSH validation aliases differ
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and

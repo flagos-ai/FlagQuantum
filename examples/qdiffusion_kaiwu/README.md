@@ -143,8 +143,12 @@ python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
 ```
 
 Successful tasks alone do not make this an acceptance record. The script keeps
-`hardware_acceptance=false` until the pinned SDK mapping supplies both a stable
-provider task ID and a provider-reported target for every task.
+`hardware_acceptance=false` until the command is using the real SDK transport
+and the pinned SDK mapping supplies both a stable provider task ID and a
+provider-reported target for every task. Injected clients are always recorded
+as `transport=injected_test`, `real_provider_evidence=false`, and
+`qboson_hardware_used=false`. The command preserves the diagnostic record but
+returns a nonzero exit status whenever hardware acceptance remains closed.
 It also records a value-free schema of the documented SDK result dictionary so
 the missing mapping can be reviewed without persisting raw provider values.
 

@@ -73,5 +73,6 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_environment_lock_builder.py \
   tests/team/remote/test_kaiwu_credentials.py \
   tests/team/remote/test_kaiwu_jobs.py \
+  tests/team/remote/test_kaiwu_live_smoke.py \
   tests/team/remote/test_kaiwu_client.py \
   tests/team/remote/test_kaiwu_sdk.py

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import qboson_live_smoke as smoke_module
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     _write_private_json,
     run_live_smoke,
@@ -95,6 +97,9 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["live_provider_smoke_passed"] is True
     assert record["provider_identity_complete"] is False
     assert record["hardware_acceptance"] is False
+    assert record["transport"] == "injected_test"
+    assert record["real_provider_evidence"] is False
+    assert record["qboson_hardware_used"] is False
     assert record["fallback_occurred"] is False
     assert record["environment_lock_sha256"] == "a" * 64
     assert all(
@@ -103,7 +108,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     )
 
 
-def test_live_smoke_accepts_complete_provider_identity() -> None:
+def test_injected_live_smoke_cannot_claim_hardware_with_complete_identity() -> None:
     record = run_live_smoke(
         client=_CompletedClient(expose_provider_identity=True),
         task_prefix="smoke",
@@ -114,6 +119,26 @@ def test_live_smoke_accepts_complete_provider_identity() -> None:
     )
 
     assert record["provider_identity_complete"] is True
+    assert record["live_provider_smoke_passed"] is True
+    assert record["hardware_acceptance"] is False
+
+
+def test_live_smoke_requires_exact_sdk_client_type(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _CompletedClient)
+    record = run_live_smoke(
+        client=_CompletedClient(expose_provider_identity=True),
+        task_prefix="smoke",
+        project_no="CPQC-test",
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="c" * 64,
+    )
+
+    assert record["transport"] == "kaiwu_cim"
+    assert record["real_provider_evidence"] is True
+    assert record["qboson_hardware_used"] is True
     assert record["hardware_acceptance"] is True
 
 
@@ -170,4 +195,57 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
     )
     assert source.index("resolve_kaiwu_credentials()") < source.index(
         "client = KaiwuSDKClient("
+    )
+    assert "type(client) is KaiwuSDKClient" in source
+    assert 'if not payload["hardware_acceptance"]:' in source
+    assert "raise SystemExit(1)" in source
+
+
+def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    class _CLIClient(_CompletedClient):
+        def __init__(self, **kwargs: object) -> None:
+            del kwargs
+            super().__init__(expose_provider_identity=False)
+
+    output = tmp_path / "smoke.json"
+    monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _CLIClient)
+    monkeypatch.setattr(
+        smoke_module,
+        "verify_environment_lock",
+        lambda path: ({}, "d" * 64),
+    )
+    monkeypatch.setattr(
+        smoke_module,
+        "resolve_kaiwu_credentials",
+        lambda: ("test-user", "test-sdk-code"),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "qboson_live_smoke",
+            "--checkpoint-dir",
+            str(tmp_path),
+            "--environment-lock",
+            str(tmp_path / "lock.json"),
+            "--output",
+            str(output),
+            "--project-no",
+            "CPQC-test",
+            "--task-prefix",
+            "smoke",
+            "--acknowledge-provider-cost",
+            smoke_module.ACKNOWLEDGEMENT,
+        ],
+    )
+
+    with pytest.raises(SystemExit) as raised:
+        smoke_module.main()
+
+    assert raised.value.code == 1
+    assert (
+        json.loads(output.read_text(encoding="utf-8"))["hardware_acceptance"] is False
     )
