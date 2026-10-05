@@ -227,6 +227,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed
   run from leaving a misleading partial bundle at the declared output path.
+- Revalidation now rejects a symlink anywhere in a manifest member path and
+  requires the manifest, config, host records, and copied components to remain
+  inaccessible to group and other users.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

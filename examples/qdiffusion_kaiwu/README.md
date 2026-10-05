@@ -212,4 +212,5 @@ inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed
 copies of every component record, so deleting or replacing a source record
-makes the final manifest invalid.
+makes the final manifest invalid. Revalidation also rejects public permissions
+and symlinks in any manifest member path.

@@ -22,6 +22,7 @@ _PLUGIN_REVISION = "b" * 40
 
 def _write_json(path: Path, payload: object) -> str:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    path.chmod(0o600)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -314,6 +315,29 @@ def test_complete_two_host_real_provider_bundle_passes(tmp_path: Path) -> None:
     manifest_path, _ = _bundle(tmp_path)
 
     assert validate_acceptance(manifest_path) == []
+
+
+def test_validator_rejects_symlinked_or_public_bundle_members(tmp_path: Path) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    original = tmp_path / manifest["records"][0]["path"]
+    link = tmp_path / "linked-primary.json"
+    link.symlink_to(original)
+    manifest["records"][0]["path"] = link.name
+    _write_json(manifest_path, manifest)
+
+    assert any(
+        "path contains a symlink" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    manifest["records"][0]["path"] = original.name
+    _write_json(manifest_path, manifest)
+    original.chmod(0o644)
+    assert any(
+        "accessible by group or others" in error
+        for error in validate_acceptance(manifest_path)
+    )
 
 
 def test_component_validator_rejects_different_host_transfer_manifests() -> None:

@@ -518,6 +518,9 @@ hashes those copies, creates the two final host records and manifest, then runs
 mode-0600 regular file rather than a symlink. Assembly occurs in a private
 sibling staging directory and is atomically published only after final
 validation; a failed run does not leave the requested evidence directory.
+Subsequent validation repeats the private-file check for the manifest, config,
+host records, and every component, and rejects a symlink anywhere in a member
+path rather than following it.
 Missing, extra, replaced, or selectively omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence

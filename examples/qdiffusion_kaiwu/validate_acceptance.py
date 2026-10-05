@@ -1018,6 +1018,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     """Return all validation errors; an empty list means the evidence passes."""
 
     errors: list[str] = []
+    if not manifest_path.is_absolute():
+        return ["manifest: path must be absolute"]
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        return ["manifest: must be a regular, non-symlink file"]
+    if manifest_path.stat().st_mode & 0o077:
+        return ["manifest: must not be accessible by group or others"]
     root = manifest_path.resolve().parent
     manifest = _mapping(_read_json(manifest_path), "manifest", errors)
     if manifest.get("schema") != MANIFEST_SCHEMA or manifest.get("version") != "1.0":
@@ -1027,12 +1033,26 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         if not isinstance(value, str) or not value:
             errors.append(f"{label}: expected a relative path")
             return None
-        member = (root / value).resolve()
-        if Path(value).is_absolute() or not member.is_relative_to(root):
+        relative = Path(value)
+        if relative.is_absolute():
+            errors.append(f"{label}: path escapes the evidence directory")
+            return None
+        candidate = root / relative
+        cursor = root
+        for part in relative.parts:
+            cursor /= part
+            if cursor.is_symlink():
+                errors.append(f"{label}: path contains a symlink")
+                return None
+        member = candidate.resolve()
+        if not member.is_relative_to(root):
             errors.append(f"{label}: path escapes the evidence directory")
             return None
         if not member.is_file():
             errors.append(f"{label}: file does not exist")
+            return None
+        if member.stat().st_mode & 0o077:
+            errors.append(f"{label}: file is accessible by group or others")
             return None
         return member
 
