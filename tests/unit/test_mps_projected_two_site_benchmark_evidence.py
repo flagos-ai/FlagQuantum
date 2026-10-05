@@ -18,6 +18,7 @@ from benchmarks.mps_projected_two_site_dispatch import (
     RUNNER,
     SEMANTIC_ID,
     SHAPE_MATRIX,
+    _measure_counterbalanced,
     merge_runs,
     validate_evidence,
     validate_run,
@@ -138,6 +139,8 @@ def _run(
         "measurement": {
             "clock": "time.perf_counter",
             "synchronization": "torch.cuda.synchronize after each invocation group",
+            "timing_order": "counterbalanced_forward_reverse_per_repeat",
+            "memory_collection": "separate_single_invocation_after_timing",
             "warmup": 2,
             "repeats": 3,
             "group_size": 4,
@@ -171,6 +174,44 @@ def _matrix(
 
 def test_run_validator_accepts_forward_measurements() -> None:
     validate_run(_run("jp-a800-171", "stock_triton"))
+
+
+def test_measurement_counterbalances_order_and_separates_memory(monkeypatch) -> None:
+    calls: list[str] = []
+    clock = iter(float(index) for index in range(100))
+    monkeypatch.setattr("time.perf_counter", lambda: next(clock))
+    monkeypatch.setattr("torch.cuda.synchronize", lambda: None)
+    monkeypatch.setattr("torch.cuda.memory_allocated", lambda: 100)
+    monkeypatch.setattr("torch.cuda.reset_peak_memory_stats", lambda: None)
+    monkeypatch.setattr("torch.cuda.max_memory_allocated", lambda: 140)
+
+    results = _measure_counterbalanced(
+        {
+            "first": lambda: calls.append("first"),
+            "second": lambda: calls.append("second"),
+            "third": lambda: calls.append("third"),
+        },
+        warmup=0,
+        repeats=2,
+        group_size=1,
+    )
+
+    assert calls == [
+        "first",
+        "second",
+        "third",
+        "third",
+        "second",
+        "first",
+        "first",
+        "second",
+        "third",
+    ]
+    assert all(
+        len(result["samples_seconds_per_invocation"]) == 2
+        for result in results.values()
+    )
+    assert all(result["peak_memory_delta_bytes"] == 40 for result in results.values())
 
 
 @pytest.mark.parametrize("result_name", RESULT_NAMES)
