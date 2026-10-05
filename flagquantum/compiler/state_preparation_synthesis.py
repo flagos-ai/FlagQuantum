@@ -432,7 +432,7 @@ def _phase_ladder(
 
 
 def _control_flips(
-    wires: Sequence[int],
+    register: Sequence[int],
     *,
     entangler: str,
     z_rotation: str,
@@ -445,8 +445,8 @@ def _control_flips(
     preparation unavailable rather than partially written.
     """
     table: dict[tuple[int, int], tuple[Instruction, ...]] = {}
-    for index, target in enumerate(wires):
-        for control in wires[:index]:
+    for index, target in enumerate(register):
+        for control in register[:index]:
             leaves = synthesize_two_qubit(
                 _CONTROL_FLIP,
                 wires=(control, target),
