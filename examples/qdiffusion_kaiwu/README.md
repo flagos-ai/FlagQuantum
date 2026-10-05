@@ -108,8 +108,10 @@ post-hoc metric thresholds fails closed.
 
 Live system, training, and portability writers also reconcile per-matrix
 precision identities with provider receipts and their sampler transfer origins
-before setting their own completeness or pass fields. Final validation repeats
-those checks; component-local status is not trusted as acceptance evidence.
+and require serialized values to equal the retained precision reports before
+setting their own completeness or pass fields. Final validation repeats those
+checks and requires the component completeness flags; component-local status is
+not trusted as acceptance evidence.
 
 Credentials never belong in the frozen configuration or evidence bundle.
 

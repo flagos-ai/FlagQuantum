@@ -12,7 +12,10 @@ from examples.qdiffusion_kaiwu.assemble_acceptance import (
     _publish_acceptance_bundle,
     assemble_records,
 )
-from examples.qdiffusion_kaiwu.validate_acceptance import validate_acceptance
+from examples.qdiffusion_kaiwu.validate_acceptance import (
+    _validate_remote_sampling_component_evidence,
+    validate_acceptance,
+)
 from tests.team.ecosystem.test_qdiffusion_acceptance_validator import (
     _config as _full_config,
 )
@@ -114,6 +117,7 @@ def _system(
                 "mean_abs_error": 0.0,
             }
         ],
+        "precision_evidence_complete": True,
         "training": {
             "objective": -0.5,
             "gradient_norm": 1.0,
@@ -668,6 +672,18 @@ def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:
     )
     assert replay["artifacts"]["trained_energy_checkpoint_sha256"] == (
         selected_checkpoint
+    )
+
+
+def test_system_component_requires_its_precision_completeness_flag() -> None:
+    record = _system("jp-a800-171", "primary", "primary-task")
+    record["precision_evidence_complete"] = False
+    errors: list[str] = []
+
+    _validate_remote_sampling_component_evidence(record, "system", errors)
+
+    assert (
+        "system: remote component precision_evidence_complete is not proven" in errors
     )
 
 

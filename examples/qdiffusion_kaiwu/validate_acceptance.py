@@ -1036,6 +1036,7 @@ def _validate_remote_sampling_component_evidence(
         "provider_reported_target",
         "real_provider_evidence",
         "qboson_hardware_used",
+        "precision_evidence_complete",
         "secrets_redacted",
     ):
         if record.get(field) is not True:
@@ -1176,8 +1177,6 @@ def _validate_portability_component_evidence(
     expected_requested_samples: int | None = None,
 ) -> None:
     _validate_remote_sampling_component_evidence(record, label, errors)
-    if record.get("precision_evidence_complete") is not True:
-        errors.append(f"{label}: portability precision evidence is not complete")
     if (
         expected_requested_samples is not None
         and record.get("requested_samples") != expected_requested_samples

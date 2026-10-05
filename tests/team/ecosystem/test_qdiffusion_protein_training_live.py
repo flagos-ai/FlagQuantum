@@ -253,6 +253,11 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         provider_target="SPQC-provider",
     )
     precision_report = SimpleNamespace(
+        normalized_dtype="torch.float64",
+        normalized_min=-63.5,
+        normalized_max=63.5,
+        symmetry_normalization="arithmetic_mean",
+        rounding_policy="round_half_to_even",
         scale_factor=2.0,
         target_min=-127,
         target_max=127,
@@ -306,6 +311,8 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     sampler.precision_evidence = (
         replace(precision_evidence, source_type="torch.Tensor"),
     )
+    assert _precision_evidence_complete(sampler, receipt_records) is False
+    sampler.precision_evidence = (replace(precision_evidence, mean_abs_error=0.25),)
     assert _precision_evidence_complete(sampler, receipt_records) is False
     sampler.precision_evidence = (precision_evidence,)
 

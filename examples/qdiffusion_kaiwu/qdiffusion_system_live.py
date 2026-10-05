@@ -122,7 +122,20 @@ def _precision_evidence_complete(
     evidence = sampler.precision_evidence
     if not reports or len(evidence) != len(reports):
         return False
-    for item in evidence:
+    for report, item in zip(reports, evidence, strict=True):
+        if (
+            item.normalized_dtype != report.normalized_dtype
+            or item.normalized_min != report.normalized_min
+            or item.normalized_max != report.normalized_max
+            or item.symmetry_normalization != report.symmetry_normalization
+            or item.rounding_policy != report.rounding_policy
+            or item.scale_factor != report.scale_factor
+            or item.target_min != report.target_min
+            or item.target_max != report.target_max
+            or item.max_abs_error != report.max_abs_error
+            or item.mean_abs_error != report.mean_abs_error
+        ):
+            return False
         numeric_values = (
             item.normalized_min,
             item.normalized_max,
