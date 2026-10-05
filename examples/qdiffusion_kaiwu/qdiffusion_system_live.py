@@ -313,6 +313,7 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
@@ -323,6 +324,8 @@ def main() -> None:
     parser.add_argument("--poll-interval", type=float, default=60.0)
     parser.add_argument("--acknowledge-provider-cost", required=True)
     arguments = parser.parse_args()
+    if not arguments.plugin_root.is_absolute():
+        parser.error("--plugin-root must be an absolute path")
     if arguments.acknowledge_provider_cost != ACKNOWLEDGEMENT:
         parser.error(
             "--acknowledge-provider-cost must equal "
@@ -351,6 +354,8 @@ def main() -> None:
         execution_host=arguments.execution_host,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
+        source_root=Path(__file__).resolve().parents[2],
+        plugin_root=arguments.plugin_root,
     )
 
     user_id, sdk_code = resolve_kaiwu_credentials()

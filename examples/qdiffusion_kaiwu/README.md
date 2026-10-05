@@ -74,7 +74,8 @@ output is a new mode-0600 file and is never an acceptance record because the
 transport is explicitly the in-memory development fake. The runner exposes
 only GPU 0, disables networking, mounts both code trees read-only, uses a
 read-only container filesystem, mounts the post-extraction preflight separately
-read-only, and persists only the requested evidence file. The record retains
+read-only, recomputes both mounted trees against that preflight before plugin
+import, and persists only the requested evidence file. The record retains
 the preflight and common transfer-manifest digests. The final argument is the
 full local Docker image ID, not a mutable tag. Resolve and review it
 independently on each host with `docker image inspect`; the same tag currently
@@ -137,6 +138,8 @@ the missing mapping can be reviewed without persisting raw provider values.
 `KaiwuSDKClient`. It must run only in the frozen Python, Torch, plugin, SDK,
 precision, host-role, and source-revision lane recorded by a completed
 `acceptance_config.json`. It validates that lane before resolving credentials.
+The command requires the absolute extracted plugin root and recomputes both the
+executing FlagQuantum tree and plugin tree against the extraction preflight.
 
 The command requires the same exact quota acknowledgement as the smaller live
 smoke test. It writes attempted task receipts even when the QDiffusion slice
@@ -186,9 +189,10 @@ without submitting any new provider task. It verifies the training record's
 hash chain for the held-out test FASTA, baseline and guided FASTA files, and
 sequence-quality summaries. It also reloads the primary-host extraction
 preflight and requires its file and transfer-manifest digests to match the
-training record rather than inheriting those claims. Training, evaluation, and
-replay recompute the actual plugin-root file count and content-set digest before
-importing the workflow. The evaluator loads ESM2 exclusively through
+training record rather than inheriting those claims. System, training,
+evaluation, and replay recompute the executing FlagQuantum tree and actual
+plugin-root file count and content-set digests before importing the workflow.
+The evaluator loads ESM2 exclusively through
 `load_model_and_alphabet_local`, checks aligned headers and exact sequence counts,
 then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen

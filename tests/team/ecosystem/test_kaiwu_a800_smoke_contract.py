@@ -50,6 +50,7 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert ":/workspace/kaiwu-plugin:ro" in source
     assert ':/source-preflight.json:ro"' in source
     assert "--source-preflight /source-preflight.json" in source
+    assert "--plugin-root /workspace/kaiwu-plugin" in source
     assert "VALIDATION_IMAGE_ID" in source
     assert "docker image inspect" in source
     assert '"$validation_image_id"' in source

@@ -197,3 +197,6 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     assert source.index("load_source_preflight(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert 'parser.add_argument("--plugin-root"' in source
+    assert "source_root=Path(__file__).resolve().parents[2]" in source
+    assert "plugin_root=arguments.plugin_root" in source

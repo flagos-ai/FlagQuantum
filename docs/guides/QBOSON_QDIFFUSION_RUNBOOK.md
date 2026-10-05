@@ -161,7 +161,9 @@ guided generation step on the observed A800.
 Run `examples/qdiffusion_kaiwu/run_a800_development_probe.sh` with absolute
 source, plugin, extraction-preflight, and output paths. The extraction-preflight
 record is mounted separately read-only and must bind the supplied source and
-plugin revisions to the target alias. Supply the stable SSH alias as
+plugin revisions to the target alias. The probe recomputes both mounted source
+trees against that record before importing the plugin. Supply the stable SSH
+alias as
 `EXECUTION_HOST` and the separately observed machine hostname as
 `EXPECTED_HOSTNAME`. The runner disables networking, exposes only GPU 0, mounts
 both code trees read-only, and writes one exclusive mode-0600 record.
@@ -245,6 +247,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --expected-hostname "$EXPECTED_MACHINE_HOSTNAME" \
   --source-revision "$FLAGQUANTUM_REVISION" \
   --plugin-revision "$KAIWU_PLUGIN_REVISION" \
+  --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --source-preflight /absolute/private-evidence/extraction-preflight.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-qdiffusion-${RUN_ID}" \
@@ -254,6 +257,8 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
 ```
 
 The command validates the frozen config and A800 before resolving credentials.
+It also recomputes the executing FlagQuantum tree and the supplied plugin tree
+against the post-extraction preflight before importing the plugin workflow.
 It uses explicit integer precision, a hard remote-call budget, and no fallback.
 It records every distinct original-matrix precision report, all returned task
 receipts, the training update, generation constraints, and repeat retrieval of
@@ -430,9 +435,10 @@ actual submissions but must not be assumed during quota planning.
 After a seed completes, evaluate its already-generated held-out outputs; do not
 generate them again. The evaluator recomputes every training-artifact digest,
 requires aligned FASTA headers and the exact frozen count, and loads the ESM2
-checkpoint only through the local-file API. Training, evaluation, and replay
-also recompute the actual `--plugin-root` file count and content-set digest
-against the host extraction preflight before importing its workflow:
+checkpoint only through the local-file API. System, training, evaluation, and
+replay recompute the executing FlagQuantum tree plus the actual `--plugin-root`
+file count and content-set digest against the host extraction preflight before
+importing the plugin workflow:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \

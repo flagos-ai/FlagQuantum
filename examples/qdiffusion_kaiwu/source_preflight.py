@@ -68,6 +68,7 @@ def load_source_preflight(
     execution_host: str,
     source_revision: str,
     plugin_revision: str,
+    source_root: Path | None = None,
     plugin_root: Path | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Load and validate one private post-extraction source record."""
@@ -93,6 +94,12 @@ def load_source_preflight(
         source_revision=source_revision,
         plugin_revision=plugin_revision,
     )
+    if source_root is not None:
+        validate_runtime_source_root(
+            record,
+            filename_prefix="flagquantum-qboson-",
+            root=source_root,
+        )
     if plugin_root is not None:
         validate_runtime_source_root(
             record,

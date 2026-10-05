@@ -326,15 +326,20 @@ def main() -> None:
     parser.add_argument("--expected-hostname", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--validation-image-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
+    if not arguments.plugin_root.is_absolute():
+        parser.error("--plugin-root must be an absolute path")
     source_preflight, source_preflight_sha256 = load_source_preflight(
         arguments.source_preflight,
         execution_host=arguments.execution_host,
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
+        source_root=Path(__file__).resolve().parents[2],
+        plugin_root=arguments.plugin_root,
     )
     payload = run_probe(
         device_name=arguments.device,

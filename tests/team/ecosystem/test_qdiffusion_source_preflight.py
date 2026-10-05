@@ -181,26 +181,35 @@ def test_transfer_manifest_component_binds_all_source_revisions() -> None:
         )
 
 
-def test_runtime_plugin_root_is_recomputed_against_preflight(tmp_path: Path) -> None:
-    root = tmp_path / f"kaiwu-pytorch-plugin-{PLUGIN_REVISION[:10]}"
+@pytest.mark.parametrize(
+    ("filename_prefix", "root_prefix", "revision"),
+    (
+        ("flagquantum-qboson-", "FlagQuantum-", SOURCE_REVISION),
+        ("kaiwu-plugin-", "kaiwu-pytorch-plugin-", PLUGIN_REVISION),
+    ),
+)
+def test_runtime_source_root_is_recomputed_against_preflight(
+    tmp_path: Path, filename_prefix: str, root_prefix: str, revision: str
+) -> None:
+    root = tmp_path / f"{root_prefix}{revision[:10]}"
     root.mkdir()
-    source = root / "plugin.py"
+    source = root / "source.py"
     source.write_text("VALUE = 1\n", encoding="utf-8")
     verified_files = [
         {
-            "path": f"{root.name}/plugin.py",
+            "path": f"{root.name}/source.py",
             "bytes": source.stat().st_size,
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         }
     ]
     record = _record()
-    plugin = next(
+    artifact = next(
         artifact
         for artifact in record["artifacts"]  # type: ignore[union-attr]
-        if artifact["filename"].startswith("kaiwu-plugin-")
+        if artifact["filename"].startswith(filename_prefix)
     )
-    plugin["file_count"] = 1
-    plugin["content_set_sha256"] = hashlib.sha256(
+    artifact["file_count"] = 1
+    artifact["content_set_sha256"] = hashlib.sha256(
         json.dumps(
             verified_files,
             sort_keys=True,
@@ -210,7 +219,7 @@ def test_runtime_plugin_root_is_recomputed_against_preflight(tmp_path: Path) -> 
 
     validate_runtime_source_root(
         record,  # type: ignore[arg-type]
-        filename_prefix="kaiwu-plugin-",
+        filename_prefix=filename_prefix,
         root=root,
     )
 
@@ -218,6 +227,6 @@ def test_runtime_plugin_root_is_recomputed_against_preflight(tmp_path: Path) -> 
     with pytest.raises(ValueError, match="content differs"):
         validate_runtime_source_root(
             record,  # type: ignore[arg-type]
-            filename_prefix="kaiwu-plugin-",
+            filename_prefix=filename_prefix,
             root=root,
         )

@@ -182,6 +182,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   execution-time recomputable. Protein training, evaluation, and replay bind
   the actual plugin-root name, file count, regular-file set, and content digest
   to the host preflight before importing the plugin workflow.
+- Development, system, protein training, evaluation, and replay now also
+  recompute the executing FlagQuantum source root against the host preflight;
+  system and development paths bind their actual plugin root as well.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

@@ -78,6 +78,7 @@ docker run --rm \
   --expected-hostname "$expected_hostname" \
   --source-revision "$source_revision" \
   --plugin-revision "$plugin_revision" \
+  --plugin-root /workspace/kaiwu-plugin \
   --source-preflight /source-preflight.json \
   --validation-image-id "$validation_image_id" \
   --output "/evidence/$output_name"
