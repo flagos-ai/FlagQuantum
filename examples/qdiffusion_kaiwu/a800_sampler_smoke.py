@@ -8,9 +8,7 @@ it is not QBoson hardware evidence and cannot pass QDiffusion system acceptance.
 from __future__ import annotations
 
 import argparse
-import json
 import math
-import os
 import platform
 import re
 import socket
@@ -19,6 +17,7 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuTaskReceipt,
@@ -208,11 +207,7 @@ def run_probe(
 
 
 def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-        stream.write(encoded)
+    write_private_json_exclusive(path, payload)
 
 
 def main() -> None:

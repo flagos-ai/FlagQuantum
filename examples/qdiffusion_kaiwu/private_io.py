@@ -13,6 +13,8 @@ from typing import Any
 def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
     """Publish one JSON record without following or replacing unsafe paths."""
 
+    if not path.is_absolute():
+        raise ValueError("evidence output path must be absolute")
     parent = path.parent
     try:
         metadata = parent.lstat()

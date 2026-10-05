@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import socket
 import tarfile
@@ -13,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
@@ -92,7 +92,7 @@ def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
                     directory_count += 1
                 else:
                     raise ValueError(
-                        "archive contains a link or special member: " f"{member.name!r}"
+                        f"archive contains a link or special member: {member.name!r}"
                     )
             if not names:
                 raise ValueError(f"archive is empty: {path.name}")
@@ -222,13 +222,7 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
 def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
     if not path.is_absolute():
         raise ValueError("output path must be absolute")
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    encoded = (
-        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    ).encode()
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "wb") as stream:
-        stream.write(encoded)
+    write_private_json_exclusive(path, payload)
 
 
 def main() -> None:

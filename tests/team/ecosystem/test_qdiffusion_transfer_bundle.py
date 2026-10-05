@@ -124,13 +124,38 @@ def test_transfer_bundle_rejects_unsafe_member(
 
 
 def test_transfer_verification_record_is_exclusive_and_private(tmp_path: Path) -> None:
-    output = tmp_path / "evidence" / "transfer.json"
+    parent = tmp_path / "evidence"
+    parent.mkdir(mode=0o700)
+    output = parent / "transfer.json"
 
     _write_private_json(output, {"safe_to_extract": True})
 
     assert output.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         _write_private_json(output, {"safe_to_extract": True})
+
+
+@pytest.mark.parametrize("unsafe_kind", ("missing", "public", "symlink"))
+def test_transfer_verification_requires_private_real_parent(
+    tmp_path: Path, unsafe_kind: str
+) -> None:
+    private_parent = tmp_path / "private"
+    if unsafe_kind == "missing":
+        output = private_parent / "transfer.json"
+    else:
+        private_parent.mkdir(mode=0o700)
+        if unsafe_kind == "public":
+            private_parent.chmod(0o755)
+            output = private_parent / "transfer.json"
+        else:
+            linked_parent = tmp_path / "linked"
+            linked_parent.symlink_to(private_parent, target_is_directory=True)
+            output = linked_parent / "transfer.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        _write_private_json(output, {"safe_to_extract": True})
+
+    assert not output.exists()
 
 
 def test_extracted_bundle_is_bound_to_archive_content(tmp_path: Path) -> None:

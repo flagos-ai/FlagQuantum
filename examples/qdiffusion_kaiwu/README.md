@@ -38,7 +38,9 @@ import from the extracted tree so Python cannot add bytecode first.
 Use `build_transfer_bundle.py` to create those three archives and the manifest
 from clean pinned Git checkouts in one new private directory. The builder runs
 the same verifier for both target aliases and refuses dirty or wrong-revision
-inputs.
+inputs. Pre-create every evidence output parent as a mode-0700 real directory;
+the preparatory tools share the live-evidence writer and reject relative output
+paths, missing or public parents, and symlinked parents.
 
 `a800_sampler_smoke.py` is a development probe. It uses the real Kaiwu PyTorch
 Plugin data path and an explicitly selected in-memory fake transport. It can

@@ -105,6 +105,27 @@ def test_preflight_refuses_to_overwrite_evidence(tmp_path: Path) -> None:
     assert output.read_text(encoding="utf-8") == "preserve me"
 
 
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_preflight_requires_private_real_output_parent(
+    tmp_path: Path, unsafe_kind: str
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        output = private_parent / "preflight.json"
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        output = linked_parent / "preflight.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        preflight_artifacts(config_path, paths, output)
+
+    assert not output.exists()
+
+
 def test_tree_identity_rejects_symlinks(tmp_path: Path) -> None:
     tree = tmp_path / "model"
     target = tmp_path / "outside.bin"

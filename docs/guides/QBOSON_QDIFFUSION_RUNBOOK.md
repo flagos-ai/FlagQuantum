@@ -130,6 +130,7 @@ Place the three archives next to the reviewed manifest and verify them before
 using `tar` or another extraction tool:
 
 ```bash
+mkdir -m 700 /absolute/private-evidence
 python -B -s -m examples.qdiffusion_kaiwu.verify_transfer_bundle \
   --manifest /absolute/transfer/flagquantum-qboson-a800-bundle.manifest.json \
   --target-host jp-a800-171 \
@@ -206,7 +207,8 @@ terms, place exactly one wheel for every installed distribution in a private
 wheelhouse. Build the mode-0600 lock from that complete set while the isolated
 environment is active. Shell expansion is safe only when that directory
 contains the exact reviewed set; extra, missing, duplicate, or version-mismatched
-wheels fail closed:
+wheels fail closed. The evidence parent must already be a private mode-0700 real
+directory:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.build_environment_lock \
@@ -414,8 +416,8 @@ records; the replay host must load that exact primary-host artifact.
 Before either host run, verify the four staged inputs offline. File artifacts
 use ordinary SHA-256; directory snapshots use the path-aware
 `tree-sha256-v1` algorithm implemented by the preflight tool. The tool rejects
-relative paths, symlinks, special files, digest mismatches, and existing output
-records:
+relative paths, symlinks, special files, digest mismatches, existing output
+records, and missing, public, or symlinked output parents:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.preflight_protein_artifacts \

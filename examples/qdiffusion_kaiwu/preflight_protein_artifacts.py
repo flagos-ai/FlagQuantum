@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
-import os
 import stat
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
@@ -169,18 +168,6 @@ def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
     }
 
 
-def _write_private_json(path: Path, payload: object) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            json.dump(payload, stream, indent=2, sort_keys=True)
-            stream.write("\n")
-    except BaseException:
-        path.unlink(missing_ok=True)
-        raise
-
-
 def preflight_artifacts(
     config_path: Path,
     artifact_paths: dict[str, Path],
@@ -229,7 +216,7 @@ def preflight_artifacts(
         "config_sha256": config_sha256,
         "artifacts": artifacts,
     }
-    _write_private_json(output_path, record)
+    write_private_json_exclusive(output_path, record)
     return record
 
 

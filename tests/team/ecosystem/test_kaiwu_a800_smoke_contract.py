@@ -5,6 +5,9 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.a800_sampler_smoke import _write_private_json
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _write_private_json as _write_development_json,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -32,6 +35,27 @@ def test_a800_smoke_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
     assert path.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         _write_private_json(path, {"evidence_class": "development_fake_transport"})
+
+
+@pytest.mark.parametrize("writer", (_write_private_json, _write_development_json))
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_development_records_require_private_real_parent(
+    tmp_path: Path, unsafe_kind: str, writer
+) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        output = private_parent / "probe.json"
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        output = linked_parent / "probe.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        writer(output, {"evidence_class": "development_fake_transport"})
+
+    assert not output.exists()
 
 
 def test_a800_container_runner_keeps_execution_bounded() -> None:

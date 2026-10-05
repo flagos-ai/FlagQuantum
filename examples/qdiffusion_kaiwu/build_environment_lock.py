@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
-import os
 import platform
 import zipfile
 from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     SCHEMA,
     _canonical_distribution_name,
@@ -70,12 +69,7 @@ def _wheel_identity(path: Path) -> tuple[str, str]:
 def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
     if not path.is_absolute():
         raise ValueError("environment lock output path must be absolute")
-    if not path.parent.is_dir():
-        raise ValueError("environment lock output parent must already exist")
-    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-        stream.write(encoded)
+    write_private_json_exclusive(path, payload)
 
 
 def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:

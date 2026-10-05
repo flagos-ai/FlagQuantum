@@ -164,6 +164,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   synchronizes file contents and parent-directory metadata, so live evidence
   cannot be silently placed in a public or replaceable directory and then fail
   final assembly for a preventable local-permission error.
+- Offline artifact preflight, environment-lock, transfer-verification, and A800
+  development records now use that same durable writer. Missing, public, or
+  symlinked output parents therefore fail before publication across both the
+  preparatory and quota-consuming evidence lanes.
 - Quota-consuming smoke and system execution now convert keyboard interruption
   and post-submission failures into failed attempted records. Smoke retains any
   available task receipt and raw status, stops before submitting its next task,

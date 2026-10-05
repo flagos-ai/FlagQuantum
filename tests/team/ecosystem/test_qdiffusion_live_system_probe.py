@@ -287,6 +287,15 @@ def test_private_writer_rejects_unsafe_parent(tmp_path: Path, unsafe_kind: str) 
     assert not path.exists()
 
 
+def test_private_writer_requires_absolute_output_path() -> None:
+    with pytest.raises(ValueError, match="output path must be absolute"):
+        _write_private_redacted_json(
+            Path("relative-evidence.json"),
+            {"secrets_redacted": True},
+            forbidden_values=(),
+        )
+
+
 def test_live_system_validates_source_preflight_before_credentials() -> None:
     source = (
         Path(__file__).parents[3]

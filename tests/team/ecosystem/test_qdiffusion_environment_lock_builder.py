@@ -138,3 +138,28 @@ def test_builder_rejects_conflicting_wheel_metadata_identity(
             artifacts=[artifact.resolve()],
             output=(tmp_path / "environment-lock.json").resolve(),
         )
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
+def test_builder_requires_private_real_output_parent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unsafe_kind: str
+) -> None:
+    artifact = _wheel(tmp_path, name="numpy", version="2.2.6")
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.build_environment_lock._installed_distribution_inventory",
+        lambda: {"numpy": ("2.2.6", "c" * 64)},
+    )
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        output = private_parent / "environment-lock.json"
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        output = linked_parent / "environment-lock.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        build_environment_lock(artifacts=[artifact.resolve()], output=output)
+
+    assert not output.exists()
