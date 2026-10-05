@@ -157,6 +157,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   hash and exact software lane, persists attempted receipts, checks repeat
   retrieval without a new sampler submission, scans output for both credential
   values, and fails the system gate when provider task or target IDs are absent.
+- System-component acceptance now independently reconciles its exact SDK-client
+  provenance, remote-call count, sampling receipts, matrix identities, requested
+  sample counts, provider task IDs, and single provider target. Final summaries
+  cannot pass by retaining plausible task/target fields after their underlying
+  receipt set is removed or changed.
 - Precision evidence now covers every distinct original Ising matrix rather
   than only the last plugin call. Quantization-equivalent inputs may share one
   remote task while retaining separate error reports; the acceptance validator

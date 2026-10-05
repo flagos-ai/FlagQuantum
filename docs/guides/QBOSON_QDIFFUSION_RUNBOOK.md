@@ -310,6 +310,12 @@ It records every distinct original-matrix precision report, all returned task
 receipts, the training update, generation constraints, and repeat retrieval of
 the last task.
 
+Final assembly and independent revalidation reconcile those system receipts
+against the remote-call count, matrix digests, requested sample count,
+`qboson_task_ids`, and the single provider target. They also require the exact
+SDK client, successful run, real-provider/QBoson flags, no fallback, and no
+resubmission; summary task fields without their matching receipts fail closed.
+
 It also records the explicit host/device boundary: the energy model's CUDA
 device, the plugin-produced CPU NumPy Ising matrices, FlagQuantum's canonical
 CPU float64 matrices and submitted host tuples, returned CPU int8 samples,

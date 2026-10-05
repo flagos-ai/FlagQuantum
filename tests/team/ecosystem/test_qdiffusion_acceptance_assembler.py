@@ -55,12 +55,27 @@ def _system(
         "requested_cuda_device": "cuda:0",
         "observed_tensor_device": "cuda:0",
         "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+        "run_completed": True,
         "transport": "kaiwu_cim",
+        "pinned_sdk_client": True,
         "qboson_hardware_used": True,
         "real_provider_evidence": True,
+        "provider_identity_complete": True,
         "provider_reported_target": True,
         "qboson_target": "SPQC-provider",
         "qboson_task_ids": [task_id],
+        "task_receipts": [
+            {
+                "task_name": f"system-{task_id}",
+                "matrix_sha256": "7" * 64,
+                "mode": "sampling",
+                "requested_samples": 10,
+                "project_no": "CPQC-test",
+                "submitted_at": "2026-10-05T00:00:00+00:00",
+                "provider_task_id": task_id,
+                "provider_target": "SPQC-provider",
+            }
+        ],
         "sampling_mode": "sampling",
         "requested_samples": 10,
         "returned_samples": 10,
@@ -652,6 +667,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "system component transport differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    primary_system_sha = _write_json(component_paths[0], primary_system_record)
+    primary["system_evidence_sha256"] = primary_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = primary_system_sha
+
+    tampered_system = json.loads(component_paths[0].read_text(encoding="utf-8"))
+    tampered_system["task_receipts"] = []
+    tampered_system_sha = _write_json(component_paths[0], tampered_system)
+    primary["system_evidence_sha256"] = tampered_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = tampered_system_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "system component task receipts are missing" in error
         for error in validate_acceptance(manifest_path)
     )
 

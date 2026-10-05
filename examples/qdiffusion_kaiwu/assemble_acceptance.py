@@ -38,6 +38,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
     _validate_application,
+    _validate_system_component_provider_evidence,
     _validate_system_record,
     _validate_training_provider_evidence,
     validate_acceptance,
@@ -220,6 +221,14 @@ def assemble_records(
         raise ValueError("portability record is from the wrong host")
     if portability_record.get("acceptance") != {"portability": "pass"}:
         raise ValueError("portability replay did not pass")
+    for system, label in (
+        (primary_system_record, "primary system"),
+        (replay_system_record, "replay system"),
+    ):
+        provider_errors: list[str] = []
+        _validate_system_component_provider_evidence(system, label, provider_errors)
+        if provider_errors:
+            raise ValueError("; ".join(provider_errors))
     software = config["software"]
     for preflight, digest, system, host in (
         (
