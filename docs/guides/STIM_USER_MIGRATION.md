@@ -287,10 +287,11 @@ These are stated as boundaries rather than left for a caller to discover.
   circuit-level samples keeps `compile_detector_sampler`, and a study that needs
   FlagQuantum's own noisy circuit execution uses the noise models in
   [`docs/guides/NOISY_SIMULATION.md`](NOISY_SIMULATION.md).
-- **Distance is bounded on the construction route, not the reading route.**
-  Reading a large patch's text costs one parse; building a model from a memory
-  circuit forces each signature through an execution and is bounded by the
-  statevector amplitude ceiling. The boundary is recorded in
+- **Neither the construction route nor the reading route is bounded by the patch's
+  width.** Reading a large patch's text costs one parse, and building a model from
+  a memory circuit derives each signature from the circuit's own layouts, so a
+  distance-7 rotated surface patch is 97 wires and reaches a model in under a
+  quarter of a second. The scope that does remain is recorded in
   [`docs/reference/KNOWN_LIMITATIONS.md`](../reference/KNOWN_LIMITATIONS.md).
 
 The runnable, gate-checked version of every block above is

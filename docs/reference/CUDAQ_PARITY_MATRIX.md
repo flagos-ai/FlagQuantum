@@ -337,7 +337,7 @@ Evidence:
 - domain default, negative search: no per-operation callback model and no unitary-mixture type
 
 - `kraus_channel_algebra` override: `flagquantum/noise/channels.py`, `tests/unit/test_kraus_channel_surface.py`
-- `detector_error_model` override: `flagquantum/qec/dem.py`, `tests/qec/test_dem_stim_text.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_stim_reference_rates.py`, `tests/qec/test_dem_error_ids.py`, `flagquantum/qec/IMPLEMENTATION.md`, `search:no route from an arbitrary annotated circuit to a detector error model`
+- `detector_error_model` override: `flagquantum/qec/dem.py`, `tests/qec/test_dem_stim_text.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_stim_reference_rates.py`, `tests/benchmark_contract/test_qec_memory_logical_error_rate.py`, `tests/qec/test_dem_error_ids.py`, `flagquantum/qec/IMPLEMENTATION.md`, `search:no route from an arbitrary annotated circuit to a detector error model`
 - `unitary_mixture_degradation` override: `flagquantum/noise/channels.py`, `flagquantum/simulation/stabilizer/engine.py`, `tests/unit/test_noise_unitary_mixture.py`, `tests/team/simulation/test_stabilizer_positioned_noise.py`, `flagquantum/noise/README.md`, `search:the density-matrix and trajectory routes do not read the classification`
 - `noise_trajectory_shot_allocation` override: `flagquantum/runtime/executors/mps/noisy.py`, `flagquantum/runtime/planner/noise_selection.py`, `search:no explicit trajectory selection strategy and no shot allocation policy`
 
@@ -426,7 +426,7 @@ Evidence:
 
 - `qec_code_library` override: `flagquantum/qec/codes.py`, `flagquantum/qec/circuit.py`, `flagquantum/qec/dem_construction.py`, `tests/qec/test_codes.py`, `tests/qec/test_surface_code.py`, `tests/qec/test_dem_code_matrices.py`
 - `qec_decoder_family` override: `flagquantum/qec/bposd.py`, `flagquantum/qec/decoders.py`, `flagquantum/qec/decoding_graph.py`, `flagquantum/qec/matching.py`, `tests/qec/test_bposd_decoder.py`, `tests/qec/test_matching_decoder.py`, `tests/qec/test_dem_merge.py`
-- `qec_stim_integration` override: `flagquantum/simulation/stabilizer/engine.py`, `flagquantum/qec/dem.py`, `flagquantum/qec/dem_construction.py`, `flagquantum/qec/sampling.py`, `tests/qec/test_sampling_memory_circuit.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_code_matrices_stim.py`, `tests/integration/test_stabilizer_execution_mode.py`
+- `qec_stim_integration` override: `flagquantum/simulation/stabilizer/engine.py`, `flagquantum/qec/dem.py`, `flagquantum/qec/dem_construction.py`, `flagquantum/qec/sampling.py`, `tests/qec/test_sampling_memory_circuit.py`, `tests/benchmark_contract/test_qec_memory_logical_error_rate.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_code_matrices_stim.py`, `tests/integration/test_stabilizer_execution_mode.py`
 - `qec_stim_user_migration` override: `docs/guides/STIM_USER_MIGRATION.md`, `examples/qec/stim_user_migration.py`, `tests/qec/test_stim_user_migration.py`, `flagquantum/qec/dem.py`, `flagquantum/qec/registry.py`, `search:no for-Stim-users page in cudaq-qec, and no Stim-text writer anywhere in the CUDA-Q stack; the only such page is in the logical preview layer, which emits no detector error model and does no sampling or decoding`
 
 #### Logical and fault-tolerant layer

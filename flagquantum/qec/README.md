@@ -342,8 +342,8 @@ family in `contracts/qec-cudaq-alignment-checklist.toml`.
 ## Sample the circuit itself, not the model
 
 `sampling.py` samples the same experiment from the circuit rather than from the
-model, so a logical-failure rate no longer depends on the statevector ceiling that
-bounds construction. It shares the code record and the noise record with the
+model, so a logical-failure rate comes from the circuit's own shots rather than
+from the model's sampled ones. It shares the code record and the noise record with the
 model above and nothing else: the model derives each mechanism's signature from
 the source, this module derives each mechanism's instruction position from the
 lowered program.

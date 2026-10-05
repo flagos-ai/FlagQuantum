@@ -63,9 +63,12 @@ _SHOTS = 400_000
 _SIGMA = 4.0
 _PROBABILITY = 0.01
 
-# Round counts one through four at both distances that the model builder reaches:
-# the distance-5 aggregate allocation is refused and the distance-4 build did not
-# finish in forty-five minutes.
+# Round counts one through four at the two smallest distances, which is a reading
+# budget rather than a construction limit: the model builder derives every
+# signature from the circuit's layouts and reaches any width, while the four
+# hundred thousand shots this file draws per configuration through every
+# detector pair of a distance-7 patch would not finish. The distance-7 curve is
+# tests/benchmark_contract/test_qec_memory_logical_error_rate.py.
 _ROUND_SWEEP = [
     (2, 1),
     (2, 2),

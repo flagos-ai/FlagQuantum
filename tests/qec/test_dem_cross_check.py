@@ -35,16 +35,21 @@ measures: three mechanisms that share a signature flip their detector when an
 odd number of them fires, so a model that added their probabilities instead
 would disagree with the sample.
 
-It does **not** independently re-derive the signatures. Every source in this
+It does **not** re-derive the signatures by a third route. Every source in this
 file is built by the Task 6 injectors, which is what keeps injection in one
-place, but the single-mechanism signatures the pair sweep compares against come
-from ``_forced_signature`` — the same engine ``from_memory_circuit`` builds the
-model from. A signature that engine computes wrongly is therefore wrong on both
-sides of the comparison, and this file cannot see it. What this file does read
-for itself is the *combined* result, through its own layout reader, so an engine
+place, and the single-mechanism signatures the pair sweep compares against come
+from ``_forced_signature``, which forces each location through an execution.
+``from_memory_circuit`` no longer goes through that engine: it derives the same
+signature from the circuit's layouts and executes nothing, and the two are held
+against each other location by location in
+``tests/qec/test_dem_from_memory_circuit.py`` and
+``tests/qec/test_dem_signatures.py``. The sampled rates below compare the derived
+model against an execution again. What no comparison here can see is a mistake
+both routes share, because both read the same layouts. What this file does read
+for itself is the *combined* result, through its own layout reader, so a route
 that read the layouts differently for one mechanism than for several would fail
 the XOR assertion rather than agree with itself. That the pair comparison uses
-this file's reader rather than the engine's is a design property of the
+this file's reader rather than either engine's is a design property of the
 committed code and is pinned by no assertion: replacing it with
 ``_forced_signature`` is invisible here.
 

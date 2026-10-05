@@ -5,13 +5,16 @@ observables each mechanism flips. This module owns where those mechanisms come
 from, and it knows two descriptions of an experiment. Each one reaches the same
 model shape by a different route, and neither is the authority for the other.
 
-A **circuit** description is forced. :func:`_memory_circuit_entries` enumerates
+A **circuit** description is derived. :func:`_memory_circuit_entries` enumerates
 the locations a :class:`~flagquantum.qec.PhenomenologicalNoise` record
-configures, injects one at a time into the source program the circuit carries,
-and reads the resulting flip set off the circuit's own detector and observable
-layouts. The signature is therefore derived from the program rather than
-asserted about it, and a mechanism whose flip set is not deterministic across
-trajectories is refused.
+configures and reads each one's flip set off the circuit's own detector and
+observable layouts, from the code's checks and the frame the experiment is
+prepared and read out in. Nothing is lowered and nothing is executed, so a
+memory circuit of any width reaches a model: the derivation is a property of the
+declarative layout. The route this replaced forced each location through an
+execution and read the same flip set off the same layouts; that route survives
+as :func:`_forced_signature`, which the suite holds the derivation against
+location by location.
 
 A **matrix** description is read. :func:`_code_matrix_entries` takes the
 parity-check matrix a code is defined by and the matrix of its logical
@@ -31,9 +34,17 @@ X-type logical operators, and a Y fault reaches both. Each data fault in round
 a measurement fault shows up in its own check's detector and in the next round's,
 which is the code-capacity experiment stated as detector differences.
 
-The circuit route states one of those families, the data bit flip, because a
-memory circuit measures the data qubits in the Z basis and its layouts are
-therefore Z memory. That is a property of the program, not a gap in the model.
+The circuit route carries the same three data faults. Which detectors and which
+observables a fault reaches is decided by the frame the experiment is prepared
+and read out in, and the frame is stated by
+:attr:`~flagquantum.qec.MemoryCircuit.x_readout_wires`: an X fault flips the
+Z-type checks' syndrome and the Z-basis readout, a Z fault flips the X-type
+checks' syndrome and the X-basis readout, and a Y fault flips both. A fault
+injected at the top of round ``r`` stays on the data wire, so it opens the
+detector band of round ``r`` and cancels in every band after it; a syndrome
+measurement flip opens its own check's band at round ``r`` and at ``r + 1``. The
+terminal detectors exist only for the checks the preparation state pins, which
+is the same set the layout records.
 """
 
 from __future__ import annotations
@@ -56,17 +67,167 @@ Entry = tuple[float, tuple[int, ...], tuple[int, ...]]
 # One mechanism: its rate, the detectors it flips, and the observables it flips.
 
 
+def _require_source_anchors(
+    circuit: MemoryCircuit, mechanisms: tuple[_Mechanism, ...]
+) -> None:
+    """Refuse a source that does not carry the lines the mechanisms read.
+
+    A data mechanism is injected at the top of a round and a measurement mechanism
+    at a check's own measurement, so the derivation reads the same two lines the
+    injectors used to anchor on. Only the lines the enumerated mechanisms actually
+    need are required, and each anchor must occur exactly once: a source missing it
+    describes a program the model would misdescribe, and a source repeating it
+    cannot say which occurrence a mechanism belongs to.
+    """
+
+    if any(mechanism.kind == "data" for mechanism in mechanisms):
+        _single_anchor(
+            circuit.source, _ROUND_LOOP_ANCHOR, label="the round loop anchor"
+        )
+    if any(mechanism.kind == "measurement" for mechanism in mechanisms):
+        for check in circuit.code.checks:
+            _single_anchor(
+                circuit.source,
+                f"{_FLIP_INDENT}last = qp.measure(wires={check.ancilla_wire})\n",
+                label="the check measurement anchor",
+            )
+
+
+def _require_owned_syndrome_references(
+    circuit: MemoryCircuit, *, owned: set[int]
+) -> None:
+    """Refuse a layout whose syndrome reference no check records a bit for.
+
+    A syndrome reference is read at the position of the check that owns its
+    ancilla, so an ancilla no check owns has no recorded bit: every detector
+    reading it would compare against a bit that does not exist. A layout may name
+    one — ``MemoryCircuit`` ties the reference to the code's declared ancilla
+    wires, not to its checks — so the failure is stated rather than left to a
+    lookup that finds nothing and reports an even parity.
+    """
+
+    for detector in circuit.detectors.detectors:
+        for reference in detector.parity:
+            if reference.round_index is not None and reference.wire not in owned:
+                raise ValueError(
+                    f"detector syndrome measurement names ancilla wire "
+                    f"{reference.wire}, which no check owns"
+                )
+
+
+def _flipped_measurements(
+    circuit: MemoryCircuit, mechanism: _Mechanism
+) -> frozenset[tuple[int | None, int]]:
+    """Return the layout references one noise location flips.
+
+    A reference is named the way the layouts name it: a syndrome measurement by
+    its round and its check's ancilla, and a terminal data sample by ``None`` and
+    the data wire. A mechanism is a classical bit-flip set over those references,
+    and a detector or an observable fires exactly when its parity meets that set
+    in an odd number of places — so this is the whole of the derivation, and
+    everything after it is a parity count.
+
+    A **measurement** mechanism flips the one syndrome bit its check records that
+    round. A **data** mechanism flips a syndrome bit in every round from the round
+    it is injected in to the last, for every check the fault anticommutes with on
+    that wire, and it flips the terminal sample of the wire when the fault
+    anticommutes with the basis the wire is read out in. Which checks and which
+    readouts those are is read from the code's check types and the circuit's
+    ``x_readout_wires``; a Z-type check measures a Z stabilizer and so sees the
+    faults that anticommute with Z, and a wire read out in X sees the same.
+
+    The fault stays on the data wire, so the run of flipped syndrome bits starts at
+    the injected round and does not stop; that is why a data fault opens one
+    detector band and cancels in the rest.
+    """
+
+    if mechanism.kind == "measurement":
+        return frozenset({(mechanism.round_index, mechanism.wire)})
+    rotated = frozenset(circuit.x_readout_wires)
+    if mechanism.fault == "y":
+        flips_readout = True
+    elif mechanism.fault == "z":
+        flips_readout = mechanism.wire in rotated
+    else:
+        flips_readout = mechanism.wire not in rotated
+    flips: set[tuple[int | None, int]] = set()
+    if flips_readout:
+        flips.add((None, mechanism.wire))
+    for check in circuit.code.checks:
+        if mechanism.wire not in check.stabilizer.support:
+            continue
+        x_type = bool(check.stabilizer.x_wires)
+        if mechanism.fault == "y":
+            coupled = True
+        elif mechanism.fault == "z":
+            coupled = x_type
+        else:
+            coupled = not x_type
+        if not coupled:
+            continue
+        flips.update(
+            (round_index, check.ancilla_wire)
+            for round_index in range(mechanism.round_index, circuit.rounds)
+        )
+    return frozenset(flips)
+
+
+def _layout_signature(
+    circuit: MemoryCircuit, mechanism: _Mechanism
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return the detectors and observables one mechanism flips.
+
+    Every detector's parity and every observable's parity is counted against the
+    references :func:`_flipped_measurements` returns, so the signature is read off
+    the layouts rather than derived from the code a second time. The reference
+    list is the one the circuit states: a terminal detector reads the data wires
+    its own layout names, which is not always the support of the check it belongs
+    to, and the count follows the layout either way.
+    """
+
+    flips = _flipped_measurements(circuit, mechanism)
+    detectors = tuple(
+        detector.index
+        for detector in circuit.detectors.detectors
+        if sum(
+            1
+            for reference in detector.parity
+            if (reference.round_index, reference.wire) in flips
+        )
+        % 2
+        == 1
+    )
+    observables = tuple(
+        observable.index
+        for observable in circuit.observables.observables
+        if sum(
+            1
+            for reference in observable.measurement_parity
+            if (reference.round_index, reference.wire) in flips
+        )
+        % 2
+        == 1
+    )
+    return detectors, observables
+
+
 def _memory_circuit_entries(
     circuit: MemoryCircuit, noise: PhenomenologicalNoise
 ) -> tuple[int, int, tuple[Entry, ...]]:
     """Return the model shape and every mechanism a memory circuit contains.
 
-    Each location :func:`_mechanisms` enumerates is forced through the circuit on
-    its own and its signature is read off the layouts, so the model is derived
-    from the program rather than asserted about it. The refusals of the injection
-    engine reach the caller unchanged: a hand-built circuit whose source does not
-    match its layouts fails closed with a stated reason instead of building a
-    model that misdescribes it.
+    Each location :func:`_mechanisms` enumerates has its signature derived from
+    the circuit's own layouts by :func:`_flipped_measurements`, so the model is a
+    reading of the record the circuit states rather than a claim about it. The
+    derivation needs no execution, so the width of the code does not bound it.
+
+    The source is still held against the layouts. Nothing is injected into it any
+    more, so a source that does not carry the round loop or a check's measurement,
+    or a layout that reads a syndrome bit no check records, would otherwise build
+    a model that misdescribes the program it was handed. Both are refused with the
+    reason the injection engine used to state, and only the parts of the source
+    the enumerated mechanisms actually read are required: a circuit modelled from
+    data faults alone needs no measurement anchor.
 
     The detector and observable counts come from the circuit's own layouts rather
     than from a count re-derived from the code, so the returned shape and the
@@ -77,29 +238,26 @@ def _memory_circuit_entries(
         raise TypeError("circuit must be a MemoryCircuit")
     if not isinstance(noise, PhenomenologicalNoise):
         raise TypeError("noise must be a PhenomenologicalNoise")
+    mechanisms = _mechanisms(circuit, noise)
+    if not mechanisms:
+        return len(circuit.detectors), len(circuit.observables), ()
+    _require_source_anchors(circuit, mechanisms)
+    owned = {check.ancilla_wire for check in circuit.code.checks}
+    _require_owned_syndrome_references(circuit, owned=owned)
     entries: list[Entry] = []
-    for mechanism in _mechanisms(circuit, noise):
-        if mechanism.kind == "data":
-            source = _inject_data_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                wire=mechanism.wire,
-                fault=mechanism.fault,
-            )
-        elif mechanism.kind == "measurement":
-            source = _inject_measurement_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                ancilla_wire=mechanism.wire,
-            )
-        else:
+    for mechanism in mechanisms:
+        if mechanism.kind not in ("data", "measurement"):
             # Unreachable through ``_mechanisms``, which sets the field from the
             # annotation; stated for a caller that builds records itself, where a
             # bare ``else`` would read an unknown kind as a measurement flip
             # whenever the wire is a declared ancilla.
             raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
-        detectors, observables = _forced_signature(circuit, source)
-        entries.append((mechanism.probability, detectors, observables))
+        entries.append(
+            (
+                mechanism.probability,
+                *_layout_signature(circuit, mechanism),
+            )
+        )
     return len(circuit.detectors), len(circuit.observables), tuple(entries)
 
 

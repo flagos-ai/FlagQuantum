@@ -317,24 +317,36 @@ reproduces the marginals by construction — while its pair rates miss by 10.7 t
 23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
 to 0.1794.
 
-The forced route is a forced execution, so it is bounded by the
-statevector amplitude ceiling rather than by the detector error model's own cost.
-A rotated surface code is `distance**2` data wires plus one ancilla per check:
-`distance=2` is 7 wires and `distance=3` is 17, and both build in seconds, while
-`distance=4` is 31 wires (2**31 amplitudes) and did not complete in forty-five
-minutes, and `distance=5` is 49 wires and fails on the allocator. The modelled
-rotated-surface distance is therefore three. Reaching five and seven needs a
-signature route that does not materialise the state — either a first-party
-Clifford propagation in this layer, which is a second implementation of an
-algorithm this layer otherwise does not own, or an explicit decision that the
-larger-distance curve is a reference-only comparison.
+The circuit route is a derivation, not an execution, so it is bounded by the
+detector error model's own cost rather than by the statevector amplitude ceiling.
+A mechanism's flip set is read off the circuit's detector and observable layouts,
+from the code's check types and the frame the experiment is prepared and read out
+in, and nothing is lowered or executed. A rotated surface code is `distance**2`
+data wires plus one ancilla per check, and reading the layout costs one pass over
+its entries per mechanism: `distance=3` is 17 wires and 45 mechanisms, `distance=5`
+is 49 wires and 225 mechanisms, and `distance=7` is 97 wires, 336 detectors and
+637 mechanisms, and all three build in under a quarter of a second.
 
-The matrix route is bounded by none of that. It reads a support rather than
+Three shapes are still refused with the reason the injection engine stated,
+because a model built from a record that misdescribes the program it stores would
+be wrong in a way no reader could see: a source missing the round loop anchor, a
+source missing a check's measurement anchor, and a detector whose syndrome
+reference names an ancilla no check owns. What the derivation gives up is the
+executed route's guard against a record that is merely wrong about a mechanism the
+program does contain. That guard cannot be recovered without executing, so the
+oracle it belonged to survives as `_forced_signature` and the suite holds the
+derivation against it location by location: every mechanism of a repetition code,
+a Steane code and a rotated surface patch, over every fault family, in both
+readout frames. The distance-7 patch is asserted to build for exactly that reason —
+it is what fails if the derivation is replaced by an execution again. The executed
+route is bounded where the derivation is not: `distance=4` is 31 wires (2**31
+amplitudes), and `distance=5` is 49 wires and fails on the allocator.
+
+The matrix route is bounded by none of that either. It reads a support rather than
 executing a program, so its cost is the number of nonzero matrix entries times
 the round count and a distance-5 or distance-7 patch reaches a model as easily as
-a distance-2 one. The ceiling above is a property of the circuit route, not of
-the construction contract, and the two are allowed to differ because they answer
-different questions.
+a distance-2 one. The two routes answer different questions and their geometries
+are allowed to differ, which is why the difference is pinned rather than glossed.
 
 The stim interchange is a text format, not a package dependency: nothing in
 `dem.py` imports `stim`, and the reader is exercised against real stim output by
@@ -558,9 +570,7 @@ same syndrome predictions once that fault is merged back.
 
 Nothing about a code, a distance, a round count, or a check layout enters the
 graph. Whatever the model states is what the graph holds, so the decoder inherits
-every scope limit of the model it consumes, including the modelled rotated-surface
-distance of three that the statevector amplitude ceiling imposes on the circuit
-route. It also inherits the fault family: a model read from matrices states only
+every scope limit of the model it consumes. It also inherits the fault family: a model read from matrices states only
 the bit-flip family, so the matching decoder is matched to that model and not to
 a channel the matrix route cannot describe. Measured on the two codes this layer
 models at three rounds and two percent noise:
@@ -640,8 +650,18 @@ rounds.
 Because the pairing is enumerated, the cost is in the enumeration, so the decoder
 accepts at most twenty defective detectors per syndrome by default and refuses a
 larger syndrome with a `CapabilityError`. The budget is a constructor argument
-rather than a silent truncation, and twenty is chosen because `2**20` states is
-far above what a distance-three patch reaches at noise below its threshold.
+rather than a silent truncation. Twenty is a real ceiling on this route and not a
+formality once the patches are wide: measured at a physical rate of 0.02 over one
+thousand shots of `RotatedSurfaceCode(distance=5)`, the widest syndrome held 21
+detection events and the default budget declined one shot in a thousand, while at
+0.01 over twenty thousand shots the same patch never passed 16 events and the
+default never fired. The derivation and the model have no ceiling of that kind —
+a distance-7 patch is 336 detectors — so the budget, and not the model, is what
+bounds the patch a decode of this route can cover, and it is recorded as an owned
+gap rather than presented as a property of the model. Raising it trades shots for
+enumeration, not memory: the widening of the model does not change this decoder's
+cost per syndrome.
+
 Detectors that no chain of mechanisms connects are refused with a `CapabilityError`
 naming them, rather than answered partially.
 
