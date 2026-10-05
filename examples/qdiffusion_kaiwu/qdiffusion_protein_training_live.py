@@ -374,6 +374,7 @@ def main() -> None:
         execution_host=args.execution_host,
         source_revision=args.source_revision,
         plugin_revision=args.plugin_revision,
+        plugin_root=args.plugin_root,
     )
 
     preflight_artifacts(

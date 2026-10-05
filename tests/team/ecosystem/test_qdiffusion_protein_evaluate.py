@@ -160,6 +160,7 @@ def test_evaluation_source_must_match_training_record(
         "execution_host": "jp-a800-171",
         "source_revision": "c" * 40,
         "plugin_revision": "d" * 40,
+        "plugin_root": tmp_path / "kaiwu-pytorch-plugin-dddddddddd",
     }
 
     assert _verified_evaluation_source(

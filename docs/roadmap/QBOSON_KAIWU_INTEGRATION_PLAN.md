@@ -178,6 +178,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   post-extraction preflight and requires both its record digest and shared
   transfer-manifest digest to match the training record before loading the
   evaluation workflow.
+- Post-extraction content-set digests are now path-order normalized and
+  execution-time recomputable. Protein training, evaluation, and replay bind
+  the actual plugin-root name, file count, regular-file set, and content digest
+  to the host preflight before importing the plugin workflow.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

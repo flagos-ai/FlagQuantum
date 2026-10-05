@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     COMMUNITY_REVISION,
     load_source_preflight,
     validate_common_transfer_manifest,
+    validate_runtime_source_root,
     validate_transfer_manifest_record,
 )
 
@@ -176,4 +178,46 @@ def test_transfer_manifest_component_binds_all_source_revisions() -> None:
             record,
             source_revision=SOURCE_REVISION,
             plugin_revision=PLUGIN_REVISION,
+        )
+
+
+def test_runtime_plugin_root_is_recomputed_against_preflight(tmp_path: Path) -> None:
+    root = tmp_path / f"kaiwu-pytorch-plugin-{PLUGIN_REVISION[:10]}"
+    root.mkdir()
+    source = root / "plugin.py"
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    verified_files = [
+        {
+            "path": f"{root.name}/plugin.py",
+            "bytes": source.stat().st_size,
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        }
+    ]
+    record = _record()
+    plugin = next(
+        artifact
+        for artifact in record["artifacts"]  # type: ignore[union-attr]
+        if artifact["filename"].startswith("kaiwu-plugin-")
+    )
+    plugin["file_count"] = 1
+    plugin["content_set_sha256"] = hashlib.sha256(
+        json.dumps(
+            verified_files,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+    validate_runtime_source_root(
+        record,  # type: ignore[arg-type]
+        filename_prefix="kaiwu-plugin-",
+        root=root,
+    )
+
+    source.write_text("VALUE = 2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="content differs"):
+        validate_runtime_source_root(
+            record,  # type: ignore[arg-type]
+            filename_prefix="kaiwu-plugin-",
+            root=root,
         )

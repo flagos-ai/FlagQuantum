@@ -134,7 +134,7 @@ def verify_extracted_bundle(
                 "file_count": len(verified_files),
                 "content_set_sha256": hashlib.sha256(
                     json.dumps(
-                        verified_files,
+                        sorted(verified_files, key=lambda entry: entry["path"]),
                         sort_keys=True,
                         separators=(",", ":"),
                     ).encode()

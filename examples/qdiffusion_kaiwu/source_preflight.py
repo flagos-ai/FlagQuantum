@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,7 @@ def load_source_preflight(
     execution_host: str,
     source_revision: str,
     plugin_revision: str,
+    plugin_root: Path | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Load and validate one private post-extraction source record."""
 
@@ -91,6 +93,12 @@ def load_source_preflight(
         source_revision=source_revision,
         plugin_revision=plugin_revision,
     )
+    if plugin_root is not None:
+        validate_runtime_source_root(
+            record,
+            filename_prefix="kaiwu-plugin-",
+            root=plugin_root,
+        )
     return record, hashlib.sha256(encoded).hexdigest()
 
 
@@ -210,3 +218,48 @@ def validate_transfer_manifest_record(
         digest = artifact.get("sha256")
         if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
             raise ValueError(f"transfer manifest {filename_prefix} digest is invalid")
+
+
+def validate_runtime_source_root(
+    record: dict[str, Any], *, filename_prefix: str, root: Path
+) -> None:
+    """Recompute one execution-time source tree against its preflight identity."""
+
+    if not root.is_absolute():
+        raise ValueError("runtime source root must be absolute")
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("runtime source root must be a regular, non-symlink directory")
+    artifacts = record.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise ValueError("source preflight artifacts are unavailable")
+    artifact = _artifact_for(artifacts, filename_prefix=filename_prefix)
+    if root.name != artifact.get("extracted_root"):
+        raise ValueError(f"runtime {filename_prefix} root name differs from preflight")
+    verified_files: list[dict[str, Any]] = []
+    for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
+        relative = path.relative_to(root).as_posix()
+        metadata = path.lstat()
+        if stat.S_ISLNK(metadata.st_mode):
+            raise ValueError(f"runtime source tree contains a symlink: {relative}")
+        if stat.S_ISDIR(metadata.st_mode):
+            continue
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(f"runtime source tree contains a special file: {relative}")
+        verified_files.append(
+            {
+                "path": f"{root.name}/{relative}",
+                "bytes": metadata.st_size,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    if len(verified_files) != artifact.get("file_count"):
+        raise ValueError(f"runtime {filename_prefix} file count differs from preflight")
+    content_set_sha256 = hashlib.sha256(
+        json.dumps(
+            verified_files,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    if content_set_sha256 != artifact.get("content_set_sha256"):
+        raise ValueError(f"runtime {filename_prefix} content differs from preflight")

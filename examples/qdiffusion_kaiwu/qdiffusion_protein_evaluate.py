@@ -161,6 +161,7 @@ def _verified_evaluation_source(
     execution_host: str,
     source_revision: str,
     plugin_revision: str,
+    plugin_root: Path,
 ) -> tuple[str, str]:
     expected_preflight_sha256, expected_manifest_sha256 = _source_preflight_identity(
         training_record
@@ -170,6 +171,7 @@ def _verified_evaluation_source(
         execution_host=execution_host,
         source_revision=source_revision,
         plugin_revision=plugin_revision,
+        plugin_root=plugin_root,
     )
     transfer_manifest_sha256 = source_preflight["manifest_sha256"]
     if source_preflight_sha256 != expected_preflight_sha256:
@@ -308,6 +310,7 @@ def main() -> None:
             execution_host=args.execution_host,
             source_revision=args.source_revision,
             plugin_revision=args.plugin_revision,
+            plugin_root=args.plugin_root,
         )
     except ValueError as exc:
         parser.error(str(exc))

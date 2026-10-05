@@ -103,7 +103,7 @@ builder requires the pinned plugin and Community revisions, creates a new mode
 both target aliases:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.build_transfer_bundle \
+python -B -s -m examples.qdiffusion_kaiwu.build_transfer_bundle \
   --flagquantum-root /absolute/src/FlagQuantum \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --community-root /absolute/src/kaiwu_community \
@@ -117,7 +117,7 @@ Place the three archives next to the reviewed manifest and verify them before
 using `tar` or another extraction tool:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.verify_transfer_bundle \
+python -B -s -m examples.qdiffusion_kaiwu.verify_transfer_bundle \
   --manifest /absolute/transfer/flagquantum-qboson-a800-bundle.manifest.json \
   --target-host jp-a800-171 \
   --output /absolute/private-evidence/transfer-preflight.json
@@ -205,7 +205,7 @@ Use a fresh task prefix and the assigned project. The following command submits
 one optimization task and one sampling task and may consume quota:
 
 ```bash
-python3 -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
+python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir private-kaiwu-checkpoints \
   --output private-evidence/qboson-smoke-attempt-001.json \
   --project-no "$QBOSON_PROJECT_NO" \
@@ -237,7 +237,7 @@ container is used, set its hostname to the reviewed host hostname so the
 recorded identity is not a random container ID.
 
 ```bash
-python3 -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
+python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --config private-evidence/acceptance_config.json \
   --checkpoint-dir private-kaiwu-checkpoints \
   --output private-evidence/system-attempt-001.json \
@@ -348,7 +348,7 @@ relative paths, symlinks, special files, digest mismatches, and existing output
 records:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.preflight_protein_artifacts \
+python -B -s -m examples.qdiffusion_kaiwu.preflight_protein_artifacts \
   --config /absolute/evidence/acceptance-config.json \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
   --base-checkpoint /absolute/artifacts/dplm_150m \
@@ -390,7 +390,7 @@ FlagQuantum sampler into the complete workflow, and records the best trained
 energy-checkpoint digest:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
+python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --config /absolute/evidence/acceptance-config.json \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
@@ -430,10 +430,12 @@ actual submissions but must not be assumed during quota planning.
 After a seed completes, evaluate its already-generated held-out outputs; do not
 generate them again. The evaluator recomputes every training-artifact digest,
 requires aligned FASTA headers and the exact frozen count, and loads the ESM2
-checkpoint only through the local-file API:
+checkpoint only through the local-file API. Training, evaluation, and replay
+also recompute the actual `--plugin-root` file count and content-set digest
+against the host extraction preflight before importing its workflow:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
+python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --config /absolute/evidence/acceptance-config.json \
   --training-record /absolute/evidence/seed-1701-training.json \
   --run-directory /absolute/private/qdiffusion-runs/seed-1701/RUN_DIRECTORY \
@@ -457,7 +459,7 @@ one objective call and three guided steps with the frozen four candidates, for
 a conservative 17-call budget:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
+python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --config /absolute/evidence/acceptance-config.json \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
@@ -492,7 +494,7 @@ After both system probes, the portability replay, and every configured
 training/evaluation seed pass, assemble them without manually copying metrics:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
+python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --config /absolute/evidence/acceptance-config.json \
   --primary-system /absolute/evidence/jp-a800-171-system.json \
   --replay-system /absolute/evidence/jp-a800-172-system.json \
@@ -538,7 +540,7 @@ SHA-256 digests.
 Run the fail-closed validator from the same source revision:
 
 ```bash
-python3 -s -m examples.qdiffusion_kaiwu.validate_acceptance \
+python3 -B -s -m examples.qdiffusion_kaiwu.validate_acceptance \
   private-evidence/acceptance_manifest.json
 ```
 

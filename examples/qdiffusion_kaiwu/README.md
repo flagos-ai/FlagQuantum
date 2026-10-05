@@ -2,7 +2,8 @@
 
 This directory separates development checks from acceptance evidence.
 Run the documented Python module commands from the reviewed FlagQuantum
-checkout root. The `-s` flag disables the user-site package directory so an old
+checkout root. The `-B` flag prevents bytecode files from mutating reviewed
+source trees, and `-s` disables the user-site package directory so an old
 installed FlagQuantum cannot silently replace the current source tree.
 
 ## Credential-free local golden path
@@ -92,7 +93,7 @@ records:
 4. Validate the finished bundle:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.validate_acceptance path/to/manifest.json
+python -B -s -m examples.qdiffusion_kaiwu.validate_acceptance path/to/manifest.json
 ```
 
 The validator recomputes the decision from evidence. It requires an observed
@@ -116,7 +117,7 @@ checkpoint directory, and an explicitly selected project. The acknowledgement
 must be typed exactly so an ordinary test run cannot spend provider quota:
 
 ```bash
-python -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
+python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir private-kaiwu-checkpoints \
   --output private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \
@@ -185,9 +186,11 @@ without submitting any new provider task. It verifies the training record's
 hash chain for the held-out test FASTA, baseline and guided FASTA files, and
 sequence-quality summaries. It also reloads the primary-host extraction
 preflight and requires its file and transfer-manifest digests to match the
-training record rather than inheriting those claims. It loads ESM2 exclusively through
-`load_model_and_alphabet_local`, checks aligned headers and exact sequence
-counts, then emits cosine/L2 plus sequence-quality metrics in a private record.
+training record rather than inheriting those claims. Training, evaluation, and
+replay recompute the actual plugin-root file count and content-set digest before
+importing the workflow. The evaluator loads ESM2 exclusively through
+`load_model_and_alphabet_local`, checks aligned headers and exact sequence counts,
+then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen
 seeds and the two independent system-gate records.
 
