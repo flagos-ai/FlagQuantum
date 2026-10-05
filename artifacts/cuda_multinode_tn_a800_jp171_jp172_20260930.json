@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-03T08:28:58.578392+00:00",
+    "captured_at": "2026-10-05T08:39:50.298831+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
       "toy_circuit_parameters_only",
@@ -11,7 +11,7 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "e339c225bd1b246c63994bb17d015b36f0106908",
+      "source_revision": "2ba2c7d7d84ea648553ec4df81aad16a8b786f35",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -44,7 +44,7 @@
       "host_staging": {
         "host_transfer_events": [
           {
-            "count": 23,
+            "count": 3,
             "direction": "host_to_device",
             "name": "Memcpy HtoD (Pageable -> Device)"
           }
@@ -57,7 +57,7 @@
         ],
         "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_tensor_network_amplitudes",
-        "profiler_event_count": 80
+        "profiler_event_count": 86
       },
       "network": {
         "backend": "nccl",
@@ -65,7 +65,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "61f757edebdc3b1fc264b51b1f22ef6f37f3f8ebdfa36ce94b4772995ead31c7",
+        "debug_log_sha256": "cf3f93678c733eee9870fe210174221ee4612e1f12eba8d3c18c3c8399e69b07",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -91,19 +91,19 @@
           "00001",
           "10001"
         ],
-        "maximum_seconds": 0.004240699112415314,
+        "maximum_seconds": 0.004147723317146301,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_tensor_network_amplitudes",
-        "median_seconds": 0.004223635420203209,
-        "minimum_seconds": 0.004211273044347763,
+        "median_seconds": 0.00381380133330822,
+        "minimum_seconds": 0.003791162744164467,
         "n_wires": 5,
         "seconds": [
-          0.00422016903758049,
-          0.004223635420203209,
-          0.004228323698043823,
-          0.004211273044347763,
-          0.004240699112415314
+          0.00381380133330822,
+          0.003791162744164467,
+          0.004147723317146301,
+          0.003803310915827751,
+          0.0038450639694929123
         ],
         "sliced_labels": [
           6,
@@ -404,7 +404,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.004856172949075699,
+            "collective_seconds": 0.0033753719180822372,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -412,7 +412,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.0005394294857978821,
+              "execution_seconds": 0.00039634108543395996,
               "gradient_distribution_semantics": "sharded_across_ranks",
               "gradient_ownership": [
                 {
@@ -485,12 +485,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.004856172949075699,
+              "collective_seconds": 0.0033753719180822372,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.027951693162322044,
+              "local_execution_seconds": 0.02851087786257267,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -832,7 +832,7 @@
           },
           "training_step": {
             "collective_count": 2,
-            "collective_seconds": 0.00037972815334796906,
+            "collective_seconds": 0.00037312693893909454,
             "local_forward_operation_count": 46,
             "local_reverse_operation_count": 46,
             "local_task_count": 2,
@@ -840,7 +840,7 @@
             "optimizer": {
               "collective_count": 1,
               "collective_payload_bytes_per_rank": 8,
-              "execution_seconds": 0.000722268596291542,
+              "execution_seconds": 0.0004073232412338257,
               "gradient_distribution_semantics": "sharded_across_ranks",
               "gradient_ownership": [
                 {
@@ -913,12 +913,12 @@
               "backward_distribution_semantics": "sharded_across_ranks",
               "collective_count": 2,
               "collective_payload_bytes_per_rank": 32,
-              "collective_seconds": 0.00037972815334796906,
+              "collective_seconds": 0.00037312693893909454,
               "distribution_semantics": "sharded_across_ranks",
               "forward_distribution_semantics": "sharded_across_ranks",
               "gradient_aggregation_semantics": "reduce_to_parameter_owner",
               "gradient_distribution_semantics": "sharded_across_ranks",
-              "local_execution_seconds": 0.03361940011382103,
+              "local_execution_seconds": 0.029029348865151405,
               "local_forward_operation_count": 46,
               "local_gradient_contribution_semantics": "rank_owned_slice_contributions",
               "local_peak_slice_tensor_bytes": 1296,
@@ -1079,6 +1079,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "00dcd31539c4e3b361ac69baf93151a72af5babb2106f5817495168fe74f7808",
+  "evidence_sha256": "acf481d5610c449461103969c89929c305a7c09183cfc75d431914bc92279ad7",
   "schema": "flagquantum.cuda_multinode_tn_artifact.v1"
 }

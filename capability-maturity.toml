@@ -415,8 +415,8 @@ operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 id = "multinode-mps-forward-latency-20261001"
 title = "Two-node MPS forward latency"
 artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
-artifact_sha256 = "e3cd463e7640a06e2eaa3b43879973607cf2adee83870fe6d81fce54e3618059"
-code_version = "e339c225bd1b246c63994bb17d015b36f0106908"
+artifact_sha256 = "763736cd85dfa8b029c21e66d182dfd938fd2d5275caac383253cf65f57075c4"
+code_version = "2ba2c7d7d84ea648553ec4df81aad16a8b786f35"
 maturity = "production_supported"
 
 scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
@@ -425,7 +425,7 @@ environment_limitations = "The artifact records the accelerator, node count, wor
 [capabilities.two_node_mps_training.performance_claims.evidence_checks]
 benchmark_evidence_class = "local_non_release"
 "distribution_semantics" = "sharded_across_ranks"
-"commit" = "e339c225bd1b246c63994bb17d015b36f0106908"
+"commit" = "2ba2c7d7d84ea648553ec4df81aad16a8b786f35"
 "environment.route" = "infiniband"
 "environment.node_count" = 2
 "environment.world_size" = 2
@@ -662,8 +662,8 @@ operational_runbook = "docs/guides/MULTINODE_RUNBOOK.md"
 id = "multinode-tensor-network-amplitude-latency-20261001"
 title = "Two-node sliced amplitude latency"
 artifact = "benchmarks/results/local/multinode_two_node_performance_20261001.json"
-artifact_sha256 = "e3cd463e7640a06e2eaa3b43879973607cf2adee83870fe6d81fce54e3618059"
-code_version = "e339c225bd1b246c63994bb17d015b36f0106908"
+artifact_sha256 = "763736cd85dfa8b029c21e66d182dfd938fd2d5275caac383253cf65f57075c4"
+code_version = "2ba2c7d7d84ea648553ec4df81aad16a8b786f35"
 maturity = "production_supported"
 
 scope = "One sharded forward pass of the recorded two-node workload, timed between CUDA synchronizations on two A800 hosts with one device per host and a RoCE fabric route read from the NCCL debug log. This is a latency of a five- or six-wire toy circuit and not a scaling, throughput, or capacity claim; the artifact's own blockers say so and both of its claim flags are false."
@@ -672,7 +672,7 @@ environment_limitations = "The artifact records the accelerator, node count, wor
 [capabilities.two_node_tensor_network_training.performance_claims.evidence_checks]
 benchmark_evidence_class = "local_non_release"
 "distribution_semantics" = "sharded_across_ranks"
-"commit" = "e339c225bd1b246c63994bb17d015b36f0106908"
+"commit" = "2ba2c7d7d84ea648553ec4df81aad16a8b786f35"
 "environment.route" = "infiniband"
 "environment.node_count" = 2
 "environment.world_size" = 2
