@@ -198,6 +198,7 @@ def _record(
         "input_device": "cpu",
         "input_dtype": "float32",
         "matrix_shape": [3, 3],
+        "submission_matrix_sha256": "7" * 64,
         "canonical_device": "cpu",
         "canonical_dtype": "torch.float64",
         "submission_storage": "cpu_python_tuple",

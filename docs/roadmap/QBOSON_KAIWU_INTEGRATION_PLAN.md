@@ -359,6 +359,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   also records the A800 device that originated the matrix and received the
   reconstructed samples; the final validator rejects missing or inconsistent
   A800-to-CPU and CPU-to-A800 boundary records.
+- Each sampler transfer now also retains the exact submitted-matrix SHA-256.
+  System-component validation aligns every non-cached transfer with its Remote
+  receipt in order and requires the same matrix digest, matrix width, requested
+  sample count, and returned sample shape, closing the gap between individually
+  valid transfer and provider records.
 - A pre-extraction transfer verifier now binds the three reviewed source
   archives to manifest hashes and revision-derived names, rejects traversal,
   links, duplicate names, and special tar members, and emits a private

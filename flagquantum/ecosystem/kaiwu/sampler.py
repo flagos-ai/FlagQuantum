@@ -37,6 +37,7 @@ class KaiwuTransferRecord:
     input_device: str
     input_dtype: str
     matrix_shape: tuple[int, int]
+    submission_matrix_sha256: str
     canonical_device: str
     canonical_dtype: str
     submission_storage: str
@@ -214,6 +215,7 @@ class KaiwuSampler:
                 input_device=input_device,
                 input_dtype=input_dtype,
                 canonical=canonical,
+                submission_matrix_sha256=cache_key,
                 output=output,
                 cache_hit=True,
             )
@@ -248,6 +250,7 @@ class KaiwuSampler:
             input_device=input_device,
             input_dtype=input_dtype,
             canonical=canonical,
+            submission_matrix_sha256=cache_key,
             output=output,
             cache_hit=False,
         )
@@ -260,6 +263,7 @@ class KaiwuSampler:
         input_device: str,
         input_dtype: str,
         canonical: torch.Tensor,
+        submission_matrix_sha256: str,
         output: np.ndarray,
         cache_hit: bool,
     ) -> None:
@@ -271,6 +275,7 @@ class KaiwuSampler:
                 input_device=input_device,
                 input_dtype=input_dtype,
                 matrix_shape=canonical_shape,
+                submission_matrix_sha256=submission_matrix_sha256,
                 canonical_device=str(canonical.device),
                 canonical_dtype=str(canonical.dtype),
                 submission_storage="cpu_python_tuple",

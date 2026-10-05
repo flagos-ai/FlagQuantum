@@ -156,6 +156,14 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         )
         == record["remote_call_count"]
     )
+    non_cached = [
+        boundary
+        for boundary in transfers["sampler_boundaries"]
+        if boundary["cache_hit"] is False
+    ]
+    assert [boundary["submission_matrix_sha256"] for boundary in non_cached] == [
+        receipt["matrix_sha256"] for receipt in record["task_receipts"]
+    ]
 
 
 def test_live_system_converts_keyboard_interrupt_to_failed_record(

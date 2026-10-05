@@ -110,6 +110,7 @@ def _system(
                     "input_device": "cpu",
                     "input_dtype": "float32",
                     "matrix_shape": [3, 3],
+                    "submission_matrix_sha256": "7" * 64,
                     "canonical_device": "cpu",
                     "canonical_dtype": "torch.float64",
                     "submission_storage": "cpu_python_tuple",
@@ -883,6 +884,29 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     primary_system_sha = _write_json(component_paths[0], primary_system_record)
     primary["system_evidence_sha256"] = primary_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = primary_system_sha
+
+    tampered_system = json.loads(component_paths[0].read_text(encoding="utf-8"))
+    tampered_system["transfer_accounting"]["sampler_boundaries"][0][
+        "submission_matrix_sha256"
+    ] = ("8" * 64)
+    tampered_system_sha = _write_json(component_paths[0], tampered_system)
+    primary["system_evidence_sha256"] = tampered_system_sha
+    primary["transfer_accounting"] = tampered_system["transfer_accounting"]
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = tampered_system_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "transfer 0 matrix identity differs from its receipt" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    primary_system_sha = _write_json(component_paths[0], primary_system_record)
+    primary["system_evidence_sha256"] = primary_system_sha
+    primary["transfer_accounting"] = primary_system_record["transfer_accounting"]
     primary_sha = _write_json(primary_path, primary)
     manifest["records"][0]["sha256"] = primary_sha
     manifest["component_records"][0]["sha256"] = primary_system_sha

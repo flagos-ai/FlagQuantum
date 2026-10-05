@@ -667,6 +667,12 @@ def _validate_system_record(
                         f"{field}: expected {expected}"
                     )
             matrix_shape = boundary.get("matrix_shape")
+            submission_digest = boundary.get("submission_matrix_sha256")
+            if (
+                not isinstance(submission_digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", submission_digest) is None
+            ):
+                errors.append(f"{label}: transferred matrix digest is invalid")
             returned_shape = boundary.get("returned_shape")
             if (
                 not isinstance(matrix_shape, list)
@@ -859,6 +865,51 @@ def _validate_remote_sampling_component_evidence(
         errors.append(f"{label}: provider task IDs are not unique")
     if len(receipt_matrix_digests) != len(set(receipt_matrix_digests)):
         errors.append(f"{label}: receipt matrix identities are not unique")
+
+    if record.get("schema") == SYSTEM_COMPONENT_SCHEMA:
+        transfers = record.get("transfer_accounting")
+        boundaries = (
+            transfers.get("sampler_boundaries") if isinstance(transfers, dict) else None
+        )
+        if isinstance(boundaries, list) and all(
+            isinstance(boundary, dict) for boundary in boundaries
+        ):
+            non_cached = [
+                boundary
+                for boundary in boundaries
+                if boundary.get("cache_hit") is False
+            ]
+            if len(non_cached) != len(receipts):
+                errors.append(
+                    f"{label}: non-cached transfers differ from remote receipts"
+                )
+            else:
+                for index, (receipt, boundary) in enumerate(
+                    zip(receipts, non_cached, strict=True)
+                ):
+                    if not isinstance(receipt, dict):
+                        continue
+                    matrix_size = receipt.get("matrix_size")
+                    requested_count = receipt.get("requested_samples")
+                    matrix_shape = boundary.get("matrix_shape")
+                    returned_shape = boundary.get("returned_shape")
+                    if boundary.get("submission_matrix_sha256") != receipt.get(
+                        "matrix_sha256"
+                    ):
+                        errors.append(
+                            f"{label}: transfer {index} matrix identity differs "
+                            "from its receipt"
+                        )
+                    if matrix_shape != [matrix_size, matrix_size]:
+                        errors.append(
+                            f"{label}: transfer {index} matrix size differs "
+                            "from its receipt"
+                        )
+                    if returned_shape != [requested_count, matrix_size]:
+                        errors.append(
+                            f"{label}: transfer {index} returned shape differs "
+                            "from its receipt"
+                        )
 
     returned_samples = record.get("returned_samples")
     if (

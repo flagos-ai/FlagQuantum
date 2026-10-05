@@ -150,9 +150,17 @@ def test_identical_matrix_is_deduplicated_and_returns_a_copy() -> None:
     assert sampler.transfer_records[0].returned_storage == "cpu_numpy"
     assert sampler.transfer_records[0].returned_dtype == "int8"
     assert sampler.transfer_records[0].matrix_shape == (3, 3)
+    assert (
+        sampler.transfer_records[0].submission_matrix_sha256
+        == sampler.receipts[0].matrix_sha256
+    )
     assert sampler.transfer_records[0].returned_shape == (10, 3)
     assert sampler.transfer_records[0].cache_hit is False
     assert sampler.transfer_records[1].cache_hit is True
+    assert (
+        sampler.transfer_records[1].submission_matrix_sha256
+        == sampler.receipts[0].matrix_sha256
+    )
 
 
 def test_remote_call_budget_fails_before_second_unique_submission() -> None:
