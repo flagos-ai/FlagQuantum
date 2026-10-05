@@ -29,6 +29,7 @@ from benchmarks.internal.evidence.tensor_network_release_gate import (
     evaluate_tensor_network_release,
     load_manifest,
 )
+from flagquantum.runtime.audit.engine import validate_distributed_claim_evidence
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
     EvidenceScope,
@@ -43,6 +44,18 @@ DEVICE = "NVIDIA A800-SXM4-80GB"
 
 ROOT = Path(__file__).resolve().parents[2]
 SCALABILITY = ROOT / "benchmarks/results/scalability"
+MATCHED_SPEED_PAIR = (
+    ROOT
+    / "benchmarks/results/smoke/release_candidates"
+    / "tensor_network_matched_speed_pair"
+    / "tensor_network_matched_speed_pair.json"
+)
+CLAIM_KEYS = (
+    "claim_evidence_type",
+    "release_gate_allowed",
+    "release_payload",
+    "scalability_claim_allowed",
+)
 
 
 def _workload_digest(manifest: dict) -> str:
@@ -439,9 +452,16 @@ def test_the_gate_admits_exactly_the_state_modes_the_vocabulary_names():
         TENSOR_NETWORK_STATE_MODES,
     )
 
-    assert frozenset(
-        {"distributed_tensor_network", "jax_sharded_tensor_network", "tensor_network"}
-    ) == TENSOR_NETWORK_STATE_MODES
+    assert (
+        frozenset(
+            {
+                "distributed_tensor_network",
+                "jax_sharded_tensor_network",
+                "tensor_network",
+            }
+        )
+        == TENSOR_NETWORK_STATE_MODES
+    )
     assert TENSOR_NETWORK_STATE_MODES.isdisjoint(
         STATEVECTOR_STATE_MODES | MPS_STATE_MODES
     )
@@ -523,3 +543,239 @@ def test_the_builder_reproduces_the_frozen_capacity_workload(tmp_path):
     write_workload(build(*capacity["grid"]), built)
     assert built.read_bytes() == frozen
     assert hashlib.sha256(built.read_bytes()).hexdigest() == capacity["workload_sha256"]
+
+
+def _committed_matched_speed_pair() -> dict:
+    """Return the sealed pair the campaign measured on the two hosts."""
+
+    return json.loads(MATCHED_SPEED_PAIR.read_text(encoding="utf-8"))
+
+
+def _reseal(evidence: dict, provenance_of: dict, envelope: dict) -> dict:
+    """Seal evidence over the committed envelope's own provenance and scope.
+
+    The committed artifact is signed with the campaign's key, which no test
+    holds, so its signature cannot be re-verified here. Its content hash can be,
+    because that hash covers the unsigned envelope: rebuilding the envelope from
+    the committed evidence and provenance reproduces the committed
+    ``content_sha256`` exactly when nothing in the artifact was edited, and the
+    gate's own signing key is used from there on.
+    """
+
+    artifact = create_evidence_artifact(
+        artifact_class=ArtifactClass(envelope["artifact_class"]),
+        evidence_scope=EvidenceScope(envelope["evidence_scope"]),
+        provenance=RuntimeProvenance(**provenance_of),
+        evidence=evidence,
+        signing_key=KEY,
+    )
+    return artifact.summary()
+
+
+def test_the_committed_matched_speed_pair_is_the_measurement_it_records():
+    """The sealed candidate must describe the run it was sealed from.
+
+    The campaign recovered the frozen acceptance rung by bounding the reverse
+    tape, and this is the artifact that records it. Two things have to hold for
+    it to be evidence rather than a file: the artifact must be unedited since it
+    was signed, and the run it describes must be the sharded two-host training
+    step the contract asks for rather than a single-host timing with a claim
+    attached.
+    """
+
+    envelope = _committed_matched_speed_pair()
+    assert set(envelope) == {
+        "artifact_class",
+        "evidence",
+        "evidence_scope",
+        "integrity",
+        "provenance",
+        "schema",
+    }
+    assert envelope["artifact_class"] == "measured_production_run"
+    assert envelope["evidence_scope"] == EvidenceScope.TWO_GPU_SEMANTIC.value
+    assert envelope["integrity"]["algorithm"] == "hmac-sha256"
+    committed = envelope["integrity"]["content_sha256"]
+    rebuilt = _reseal(envelope["evidence"], envelope["provenance"], envelope)
+    assert (
+        rebuilt["integrity"]["content_sha256"] == committed
+    ), "the committed artifact was edited after it was signed"
+
+    evidence = envelope["evidence"]
+    assert evidence["acceptance_case"] == "matched_speed"
+    assert evidence["state_mode"] == "distributed_tensor_network"
+    assert evidence["distribution_semantics"] == "sharded_across_ranks"
+    assert evidence["world_size"] == 2
+    assert evidence["node_count"] == 2
+    assert evidence["topology_scope"] == "multi_node_production_transport"
+    assert evidence["training_step_count"] > 0
+    ownership = evidence["gradient_ownership"]
+    assert ownership, "sharding without gradients is a forward pass"
+    assert evidence["checkpoint_budget_bytes"] == 4294967296, (
+        "the bound is what makes the frozen acceptance rung runnable, so the "
+        "candidate must record it rather than inherit it from a command line"
+    )
+
+    provenance_of = envelope["provenance"]
+    assert provenance_of["commit"] == "e4ad30ec42607acf95773bd302977574c1e687fa"
+    devices = tuple(provenance_of["devices"])
+    assert len(devices) == 2, "a two-host pair runs one device per host here"
+    assert len(set(devices)) == 2, "one device cannot be both ranks"
+    assert len(provenance_of["rank_mapping"]) == 2
+    assert provenance_of["warmup"] == 2
+    assert provenance_of["iterations"] == 10
+    assert provenance_of["fallback_events"] == []
+    command = " ".join(provenance_of["command"])
+    assert "--checkpoint-budget-bytes 4294967296" in command
+    assert provenance_of["collective_backend"] == "nccl"
+
+
+def test_the_candidate_digest_check_rejects_an_edited_artifact():
+    """The digest check above is only worth running if an edit breaks it.
+
+    The gate verifies a signature with a key the campaign holds and this
+    repository does not, so the committed artifact is checked by rebuilding its
+    envelope and comparing digests. A statistic changed after sealing must move
+    that digest, or the check proves nothing about the file.
+    """
+
+    envelope = _committed_matched_speed_pair()
+    edited = dict(envelope["evidence"])
+    edited["speedup"] = 99.0
+    rebuilt = _reseal(edited, envelope["provenance"], envelope)
+    committed = envelope["integrity"]["content_sha256"]
+    assert rebuilt["integrity"]["content_sha256"] != committed
+
+
+def test_the_committed_matched_speed_pair_is_not_promoted_and_claims_nothing():
+    """It is a candidate: it asserts nothing and sits outside the release lane.
+
+    The capability matrix keeps this pair at ``production_supported`` because the
+    contract's capacity premise is unestablished, and a candidate that quietly
+    asserted the claim would be a release payload in a directory nobody audits as
+    one. The gate must therefore refuse it, and refuse it by naming the claim it
+    lacks rather than by reading its measurement.
+    """
+
+    envelope = _committed_matched_speed_pair()
+    evidence = envelope["evidence"]
+    present = [key for key in CLAIM_KEYS if key in evidence]
+    assert not present, present
+    assert not MATCHED_SPEED_PAIR.is_relative_to(SCALABILITY)
+    baseline = baseline_results(load_manifest())
+    assert baseline.parts[:4] == (
+        "benchmarks",
+        "results",
+        "smoke",
+        "release_candidates",
+    ), "the declared baseline must stay outside the promoted lane"
+    assert not (ROOT / baseline).is_dir(), (
+        "the premise's single-device baseline must stay absent until it is "
+        "measured; a stray directory here would be read as the baseline"
+    )
+
+    passed, blockers = evaluate_tensor_network_release(
+        [_reseal(evidence, envelope["provenance"], envelope)],
+        load_manifest(),
+        signing_key=KEY,
+    )
+    assert not passed
+    assert set(blockers) == {
+        "missing_release_world_sizes",
+        "missing_multinode_correctness_artifact",
+        "missing_sharded_training_ownership",
+        "missing_statistically_significant_speedup_artifact",
+        "capacity_premise_not_established",
+    }, (
+        "a claim-free payload is not release evidence, so the four blockers a "
+        "claim would answer must still be reported beside the premise"
+    )
+
+
+def test_the_committed_matched_speed_pair_answers_every_blocker_but_the_premise():
+    """With the claim it asserts, only the unestablished premise remains.
+
+    This is the campaign's strongest tensor-network result on this pair, and it
+    is asserted here from the committed artifact rather than from the prose of a
+    capability note: the four claim keys are the only difference between the
+    candidate that reports five blockers and the envelope that reports one. The
+    claim the test adds is the same one the release contract asks a promoted
+    payload to carry, and the strict audit reads the result as a valid sharded
+    training claim, so neither the gate nor the audit is being talked past.
+    """
+
+    envelope = _committed_matched_speed_pair()
+    claiming = dict(envelope["evidence"])
+    claiming.update(
+        {
+            "claim_evidence_type": "production_training_benchmark",
+            "release_gate_allowed": True,
+            "release_payload": True,
+            "scalability_claim_allowed": True,
+        }
+    )
+    passed, blockers = evaluate_tensor_network_release(
+        [_reseal(claiming, envelope["provenance"], envelope)],
+        load_manifest(),
+        signing_key=KEY,
+    )
+    assert not passed
+    assert blockers == ("capacity_premise_not_established",), (
+        "the measured half of the contract must be complete on the committed "
+        "artifact, and the premise must be the only thing left"
+    )
+
+    audit = validate_distributed_claim_evidence(claiming).summary()
+    assert audit["valid"] is True, audit["errors"]
+    assert audit["errors"] == ()
+    assert audit["distribution_semantics"] == "sharded_across_ranks"
+    assert audit["scalability_claim_allowed"] is True
+    assert audit["release_gate_allowed"] is True
+
+
+def test_the_candidate_reports_the_speedup_the_gate_requires():
+    """The interval must exclude the speedup the contract refuses to accept.
+
+    The gate reads three numbers and ignores every other statistic in the
+    payload, so the ones it reads are checked against the manifest here rather
+    than trusted to have been copied correctly.
+    """
+
+    manifest = load_manifest()
+    speed = manifest["speed_workload"]
+    evidence = _committed_matched_speed_pair()["evidence"]
+    assert evidence["acceptance_configuration"] == speed["acceptance_configuration"]
+    speedup = evidence["speedup"]
+    lower, upper = evidence["speedup_confidence_interval"]
+    assert lower > speed["confidence_interval_must_exclude_speedup"]
+    assert speedup >= speed["minimum_speedup"]
+    assert lower <= speedup <= upper
+    assert evidence["scaling_efficiency"] >= speed["minimum_scaling_efficiency"]
+
+    accept = [
+        rung
+        for rung in evidence["configurations"]
+        if rung["name"] == speed["acceptance_configuration"]
+    ]
+    assert len(accept) == 1, "the acceptance rung must be measured, not averaged in"
+    rung = accept[0]
+    assert rung["speedup"] == speedup
+    assert rung["speedup_confidence_interval"] == [lower, upper]
+    assert rung["steps"] == 1, (
+        "each rung is one full forward-and-reverse step, which is the timing "
+        "unit the manifest freezes"
+    )
+    assert rung["slice_count"] == speed["slice_label_counts"][-1]
+
+    prefix = speed["acceptance_configuration"].split("_18q_")[0] + "_"
+    frozen_rungs = {
+        f"{prefix}{qubits}q_l{layers}_s{labels}"
+        for qubits, layers, labels in zip(
+            speed["qubits"], speed["layers"], speed["slice_label_counts"], strict=True
+        )
+    }
+    assert {rung["name"] for rung in evidence["configurations"]} == frozen_rungs
+    for rung in evidence["configurations"]:
+        assert rung["speedup_confidence_interval"][0] > 1.0, rung
+        assert rung["sharded_median_seconds"] < rung["baseline_median_seconds"], rung
+        assert rung["sharded_collective_seconds"] > 0.0, rung
