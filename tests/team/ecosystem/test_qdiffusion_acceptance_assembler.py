@@ -215,9 +215,16 @@ def _components(
                 {
                     "schema": "flagquantum.qboson_qdiffusion_protein_training",
                     "version": "1.0",
+                    "source_revision": "a" * 40,
+                    "kaiwu_pytorch_plugin_revision": "b" * 40,
+                    "python_version": "3.10.18",
+                    "torch_version": "2.7.0",
+                    "kaiwu_sdk_version": "1.3.1",
                     "seed": seed,
                     "run_completed": True,
                     "execution_host": "jp-a800-171",
+                    "requested_cuda_device": "cuda:0",
+                    "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "transport": "kaiwu_cim",
                     "pinned_sdk_client": True,
                     "real_provider_evidence": True,
@@ -225,8 +232,10 @@ def _components(
                     "provider_identity_complete": True,
                     "fallback_occurred": False,
                     "secrets_redacted": True,
+                    "remote_call_budget": 128,
                     "remote_call_count": 1,
                     "protein_remote_call_budget_per_seed": 71269,
+                    "estimated_worst_case_remote_calls": 100,
                     "precision_report_count": 1,
                     "task_receipts": [
                         {
@@ -239,7 +248,44 @@ def _components(
                     "transfer_manifest_sha256": transfer_manifest_sha256,
                     "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
                     "experiment_config_sha256": config_sha256,
+                    "artifact_preflight_sha256": "c" * 64,
+                    "run_directory_name": f"seed-{seed}-run",
+                    "trained_energy_checkpoint_name": "best_epoch_1.pt",
                     "trained_energy_checkpoint_sha256": str(index + 3) * 64,
+                    "acceptance": {
+                        "system": "not_evaluated",
+                        "application": "not_evaluated",
+                    },
+                    "workflow_artifacts": {
+                        "test_fasta": {
+                            "relative_path": "data_splits/test.fasta",
+                            "sha256": "1" * 64,
+                        },
+                        "baseline_fasta": {
+                            "relative_path": "baseline/proposal_only_generated_sequences.fasta",
+                            "sha256": "2" * 64,
+                        },
+                        "guided_fasta": {
+                            "relative_path": "guided/energy_guided_generated_sequences.fasta",
+                            "sha256": "3" * 64,
+                        },
+                        "training_history": {
+                            "relative_path": "history.json",
+                            "sha256": "4" * 64,
+                        },
+                        "sequence_metrics": {
+                            "relative_path": "baseline_vs_guided.json",
+                            "sha256": "5" * 64,
+                        },
+                        "baseline_quality": {
+                            "relative_path": "baseline_eval/quality_summary.json",
+                            "sha256": "6" * 64,
+                        },
+                        "guided_quality": {
+                            "relative_path": "guided_eval/quality_summary.json",
+                            "sha256": "7" * 64,
+                        },
+                    },
                 },
                 training_sha,
             )
@@ -724,6 +770,19 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "training real_provider_evidence is not proven" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
+    manifest["component_records"][5]["sha256"] = restored_training_sha
+
+    tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_training["workflow_artifacts"]["guided_fasta"]["sha256"] = "bad"
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training artifact guided_fasta has no digest" in error
         for error in validate_acceptance(manifest_path)
     )
 

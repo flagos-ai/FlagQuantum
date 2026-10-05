@@ -884,6 +884,96 @@ def _validate_training_provider_evidence(
         errors.append(f"{label}: training precision evidence is incomplete")
 
 
+def _validate_training_component(
+    record: dict[str, Any],
+    *,
+    config: dict[str, Any],
+    config_sha256: str,
+    label: str,
+    errors: list[str],
+) -> None:
+    _validate_training_provider_evidence(record, label, errors)
+    if record.get("experiment_config_sha256") != config_sha256:
+        errors.append(f"{label}: training uses another frozen config")
+    software = _mapping(config.get("software"), "config.software", errors)
+    for field in (
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "environment_lock_sha256",
+    ):
+        if record.get(field) != software.get(field):
+            errors.append(f"{label}: training {field} differs from config")
+    if record.get("execution_host") != config.get("primary_host"):
+        errors.append(f"{label}: training is not from primary_host")
+    if record.get("requested_cuda_device") != "cuda:0":
+        errors.append(f"{label}: training did not request cuda:0")
+    if "A800" not in str(record.get("observed_gpu_model", "")):
+        errors.append(f"{label}: training GPU is not an NVIDIA A800")
+    if record.get("seed") not in config.get("seeds", []):
+        errors.append(f"{label}: training seed is not preregistered")
+    if record.get("remote_call_budget") != config.get("remote_call_budget"):
+        errors.append(f"{label}: training system-call budget differs from config")
+    training_config = _mapping(config.get("training"), "config.training", errors)
+    protein_budget = record.get("protein_remote_call_budget_per_seed")
+    if protein_budget != training_config.get("remote_call_budget_per_seed"):
+        errors.append(f"{label}: training per-seed budget differs from config")
+    estimated_calls = record.get("estimated_worst_case_remote_calls")
+    if (
+        type(estimated_calls) is not int
+        or estimated_calls <= 0
+        or (type(protein_budget) is int and estimated_calls > protein_budget)
+    ):
+        errors.append(f"{label}: training worst-case call bound is invalid")
+    for field in ("artifact_preflight_sha256", "trained_energy_checkpoint_sha256"):
+        value = record.get(field)
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            errors.append(f"{label}: training {field} is not a SHA-256 digest")
+    for field in ("run_directory_name", "trained_energy_checkpoint_name"):
+        value = record.get(field)
+        if (
+            not isinstance(value, str)
+            or not value
+            or PurePosixPath(value).name != value
+            or value in {".", ".."}
+        ):
+            errors.append(f"{label}: training {field} is not a safe basename")
+    if record.get("acceptance") != {
+        "system": "not_evaluated",
+        "application": "not_evaluated",
+    }:
+        errors.append(f"{label}: training overstates standalone acceptance")
+
+    expected_artifacts = {
+        "test_fasta": "data_splits/test.fasta",
+        "baseline_fasta": "baseline/proposal_only_generated_sequences.fasta",
+        "guided_fasta": "guided/energy_guided_generated_sequences.fasta",
+        "training_history": "history.json",
+        "sequence_metrics": "baseline_vs_guided.json",
+        "baseline_quality": "baseline_eval/quality_summary.json",
+        "guided_quality": "guided_eval/quality_summary.json",
+    }
+    artifacts = record.get("workflow_artifacts")
+    if not isinstance(artifacts, dict) or set(artifacts) != set(expected_artifacts):
+        errors.append(f"{label}: training workflow artifact set is incomplete")
+    else:
+        for name, relative_path in expected_artifacts.items():
+            identity = artifacts.get(name)
+            if not isinstance(identity, dict):
+                errors.append(f"{label}: training artifact {name} is not an object")
+                continue
+            if identity.get("relative_path") != relative_path:
+                errors.append(f"{label}: training artifact {name} path differs")
+            digest = identity.get("sha256")
+            if (
+                not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+            ):
+                errors.append(f"{label}: training artifact {name} has no digest")
+
+
 def _validate_evaluation_component(
     record: dict[str, Any],
     *,
@@ -1182,7 +1272,13 @@ def _validate_component_bundle(
         errors.append("manifest: component seed order differs from the frozen seed set")
 
     for seed, (_, training) in training_by_seed.items():
-        _validate_training_provider_evidence(training, f"seed {seed}", errors)
+        _validate_training_component(
+            training,
+            config=config,
+            config_sha256=config_sha256,
+            label=f"seed {seed}",
+            errors=errors,
+        )
     for seed, (_, evaluation) in evaluation_by_seed.items():
         _validate_evaluation_component(
             evaluation,

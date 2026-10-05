@@ -199,6 +199,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   QBoson-use flags, nonempty sampling receipts with provider identities,
   positive in-budget call counts, no fallback, and complete precision evidence
   for every frozen seed.
+- Complete training-component validation now also binds every seed to the
+  frozen FlagQuantum, plugin, Python, Torch, Kaiwu SDK, and environment-lock
+  lane; the primary A800 and `cuda:0`; both system and per-seed call budgets;
+  the artifact preflight and trained-checkpoint digests; safe output names; and
+  the exact held-out, baseline, guided, history, metric, and quality artifact
+  identities. A plausible provider receipt cannot compensate for missing or
+  substituted workflow evidence.
 - System-probe and protein-training call budgets are now separate. A validator
   derives a conservative per-seed submission bound from the pinned plugin's
   actual positive/negative energy and generation loops; the illustrative full

@@ -485,9 +485,14 @@ identities, retain complete precision evidence, and stay within its per-seed
 call budget. The assembler and independent final validator reject injected
 clients, zero-call records, missing identities, fallback, and incomplete receipt
 or precision sets even if the workflow artifacts and hash links are otherwise
-valid. The ESM2 evaluator and replay-host runner apply the same checks while
-loading the selected training record, before loading a model, allocating A800
-work, resolving credentials, or submitting another task.
+valid. They also require the exact frozen software lane, primary-host A800 and
+`cuda:0` request, system and per-seed budgets, a positive conservative call
+bound within quota, safe run/checkpoint names, artifact-preflight and checkpoint
+digests, and the fixed seven-item held-out/baseline/guided/history/metrics/quality
+artifact set with exact relative paths and content hashes. The ESM2 evaluator
+and replay-host runner apply the provider checks while loading the selected
+training record, before loading a model, allocating A800 work, resolving
+credentials, or submitting another task.
 
 Do not reuse the bounded system probe's `remote_call_budget` for this command.
 The plugin invokes the sampler once per conditioned example for positive energy,
@@ -604,8 +609,11 @@ python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
 The target directory must not exist. The assembler verifies component schemas,
 config identities, both revision-bound extraction preflights, their exact shared
 transfer manifest, host roles, seed coverage, training/evaluation links, and the
-selected portability checkpoint before averaging metrics. It copies every
-source record and the transfer manifest into a private component directory,
+selected portability checkpoint before averaging metrics. Training components
+are revalidated against the frozen software/A800 lane, both call budgets, safe
+output names, preflight and checkpoint digests, and the exact seven workflow
+artifact identities; a missing or substituted artifact fails assembly. It
+copies every source record and the transfer manifest into a private component directory,
 copies the exact environment lock as a top-level member, hashes those copies,
 creates the two final host records and manifest, then runs
 `validate_acceptance.py` on the result. Every input must be an absolute,
