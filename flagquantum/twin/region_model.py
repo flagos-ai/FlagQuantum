@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ..core.ir import ensure_circuit_ir
+from ..core.qubit_mapping import remap_qubits
 from ..noise import (
     CorrelatedReadoutError,
     DeviceNoiseProfile,
@@ -56,19 +57,6 @@ def _same_qubit_calibration(
     )
 
 
-def _remap_wires(
-    wires: tuple[int, ...],
-    *,
-    local_to_region: Mapping[int, int],
-) -> tuple[int, ...]:
-    try:
-        return tuple(local_to_region[wire] for wire in wires)
-    except KeyError as error:
-        raise ValueError(
-            "Twin noise rule references a wire outside its mapping"
-        ) from error
-
-
 def _compose_device_profile(
     cells: tuple[tuple[QPUDigitalTwin, TwinCircuitSupport], ...],
     region: TwinConnectedRegion,
@@ -94,11 +82,11 @@ def _compose_device_profile(
             for local, physical in enumerate(twin.snapshot.physical_qubits)
         }
         for calibration in profile.qubits:
-            if calibration.wire not in local_to_region:
-                raise ValueError(
-                    "Twin device profile references a wire outside its mapping"
-                )
-            regional_wire = local_to_region[calibration.wire]
+            regional_wire = remap_qubits(
+                (calibration.wire,),
+                local_to_region,
+                owner="Twin device profile",
+            )[0]
             remapped_calibration = QubitNoiseCalibration(
                 wire=regional_wire,
                 t1=calibration.t1,
@@ -116,7 +104,11 @@ def _compose_device_profile(
             remapped_wires = (
                 None
                 if duration.wires is None
-                else _remap_wires(duration.wires, local_to_region=local_to_region)
+                else remap_qubits(
+                    duration.wires,
+                    local_to_region,
+                    owner="Twin device profile",
+                )
             )
             key = (duration.gate_name, remapped_wires)
             remapped_duration = GateDuration(
@@ -191,8 +183,10 @@ def _compose_noise_model(
                         cell_index
                     ] = rule.channel
                     continue
-                remapped_wires = _remap_wires(
-                    rule.wires, local_to_region=local_to_region
+                remapped_wires = remap_qubits(
+                    rule.wires,
+                    local_to_region,
+                    owner="Twin noise rule",
                 )
                 key = (gate_name, remapped_wires)
                 existing = scoped.get(key)
@@ -203,8 +197,10 @@ def _compose_noise_model(
                 scoped[key] = rule.channel
 
         for readout_rule in twin.noise_model.readout_rules:
-            remapped_wires = _remap_wires(
-                readout_rule.wires, local_to_region=local_to_region
+            remapped_wires = remap_qubits(
+                readout_rule.wires,
+                local_to_region,
+                owner="Twin readout rule",
             )
             existing_readout = readout.get(remapped_wires)
             if existing_readout is not None:

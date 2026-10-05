@@ -36,8 +36,8 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 226
-private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
+measured_private = 225
+private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous. It was 226 until `flagquantum/twin/region_model.py::_remap_wires::wires` left it: the Twin region composer now relabels through `flagquantum.core.qubit_mapping.remap_qubits`, so the private copy and its private `wires` parameter are gone. Only the private bucket moved -- `measured_canonical` and `measured_deprecated_aliases` did not -- which is what makes this a re-measurement rather than a relaxed threshold"
 
 [naming]
 # One rule, applied by root substitution. A hand-written list per slice would

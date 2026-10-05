@@ -656,6 +656,101 @@ def test_the_gate_and_this_file_agree_on_the_expansion_tests() -> None:
         assert f"def {test}(" in source, (operation, test)
 
 
+#: The internal-only row's reader list, read as the measurement it claims to be.
+_RELABELLING = _contract()["issue_codes"]["internal_only"][0]
+
+
+def test_the_relabelling_rule_readers_are_measured_from_the_import_graph() -> None:
+    """The recorded readers are exactly the package modules that import the rule."""
+
+    source = _RELABELLING["source"]
+    owner = _RELABELLING["owner"]
+    module = source[: -len(".py")].replace("/", ".")
+
+    measured = _GATE._package_readers(module, owner, root=ROOT)
+
+    assert measured == sorted(_RELABELLING["consumers"])
+    assert measured, "the relabelling rule must have at least one reader"
+
+
+def test_the_relabelling_clause_refuses_a_tree_that_copied_the_rule(
+    tmp_path: Path,
+) -> None:
+    """The clause is measured against a built tree, so each drift is shown to fail.
+
+    Building the tree is the point: the clause's claim is about the shape of a package,
+    and a fake package is the only way to show that it refuses a copy instead of only
+    agreeing with the one checkout it was written in.
+    """
+
+    package = tmp_path / "flagquantum"
+    (package / "core").mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "core" / "__init__.py").write_text("", encoding="utf-8")
+    rule = (
+        "def remap_qubits(qubits, mapping, *, owner='composition'):\n"
+        "    return tuple(mapping[qubit] for qubit in qubits)\n"
+    )
+    (package / "core" / "qubit_mapping.py").write_text(rule, encoding="utf-8")
+    reader = (
+        "from .core.qubit_mapping import remap_qubits\n"
+        "\n"
+        "def place(qubits, mapping):\n"
+        "    return remap_qubits(qubits, mapping, owner='cell')\n"
+    )
+    (package / "cell.py").write_text(reader, encoding="utf-8")
+    contract = {
+        "issue_codes": {
+            "internal_only": [
+                {
+                    "source": "flagquantum/core/qubit_mapping.py",
+                    "owner": "remap_qubits",
+                    "consumers": ["flagquantum/cell.py"],
+                    "retired_wording": "outside its mapping",
+                }
+            ]
+        }
+    }
+
+    assert _GATE._relabelling_errors(contract, root=tmp_path) == []
+
+    # A second module that reads the rule without being recorded is a second reader.
+    (package / "other.py").write_text(reader, encoding="utf-8")
+    errors = _GATE._relabelling_errors(contract, root=tmp_path)
+    assert any("drifted from the import graph" in error for error in errors), errors
+    assert any("flagquantum/other.py" in error for error in errors), errors
+
+    # A reader that imports the rule but folds a failed lookup into its own refusal has
+    # copied the rule, whether or not it still mentions the rule's name.
+    (package / "other.py").unlink()
+    (package / "cell.py").write_text(
+        reader.replace(
+            "    return remap_qubits(qubits, mapping, owner='cell')\n",
+            "    try:\n"
+            "        return remap_qubits(qubits, mapping, owner='cell')\n"
+            "    except KeyError as error:\n"
+            "        raise ValueError('a cell qubit is outside its mapping') from error\n",
+        ),
+        encoding="utf-8",
+    )
+    errors = _GATE._relabelling_errors(contract, root=tmp_path)
+    assert any("kept the retired private wording" in error for error in errors), errors
+
+    # A recorded reader that stopped reading the rule is a claim about code that is gone.
+    (package / "cell.py").write_text(
+        "def place(qubits, mapping):\n    return tuple(mapping[q] for q in qubits)\n",
+        encoding="utf-8",
+    )
+    errors = _GATE._relabelling_errors(contract, root=tmp_path)
+    assert any("never calls remap_qubits" in error for error in errors), errors
+
+    # And a row that records no readers at all is not a measurement.
+    recorded = contract["issue_codes"]["internal_only"][0].pop("consumers")
+    errors = _GATE._relabelling_errors(contract, root=tmp_path)
+    assert any("readers are not recorded" in error for error in errors), errors
+    contract["issue_codes"]["internal_only"][0]["consumers"] = recorded
+
+
 def _drop_rule(contract: dict[str, Any]) -> None:
     contract["adjoint"]["declared_opcode_rules"].remove("adjoint_u2_angles")
 
