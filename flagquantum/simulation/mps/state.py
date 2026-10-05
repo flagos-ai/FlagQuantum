@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable, Sequence
 from typing import Any
 
@@ -11,6 +10,7 @@ import torch
 from ...core.ir import Instruction
 from ...core.runtime_config import get_runtime_config
 from ..gate_matrix import gate_matrix, parameter_tensor
+from ..kernel_dispatch import _opt_in_environment_flag
 from ..matrices import GATE_MAT_DICT
 from ..statevector.operations import _apply_matrix
 from .canonical import move_orthogonality_center as _move_orthogonality_center
@@ -23,12 +23,8 @@ from .factorization import (
     _z_sum_dense_weights,
 )
 from .models import MPSConfig, MPSTruncationRecord
-from .one_site_dispatch import _apply_mps_one_site
+from .one_site_dispatch import _apply_mps_one_site, _mps_two_site_rollout_enabled
 from .planning import MPSPlanningMixin
-
-
-def _opt_in_environment_flag(name: str) -> bool:
-    return os.getenv(name, "0").strip().lower() not in {"0", "false", "off", "no"}
 
 
 class MPSState(MPSPlanningMixin):
@@ -1060,14 +1056,7 @@ class MPSState(MPSPlanningMixin):
         requires_grad = (
             left.requires_grad or matrix.requires_grad or right.requires_grad
         )
-        triton_enabled = os.getenv(
-            "FQ_TRITON_MPS_TWO_SITE", "0"
-        ).strip().lower() not in {
-            "0",
-            "false",
-            "off",
-            "no",
-        }
+        triton_enabled = _mps_two_site_rollout_enabled()
         if (
             triton_enabled
             and left.is_cuda

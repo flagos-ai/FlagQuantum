@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import os
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -16,7 +15,10 @@ from .models import (
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
 )
-from .one_site_dispatch import _mps_one_site_rollout_enabled
+from .one_site_dispatch import (
+    _mps_one_site_rollout_enabled,
+    _mps_two_site_rollout_enabled,
+)
 
 
 class MPSPlanningMixin(ABC):
@@ -285,10 +287,7 @@ class MPSPlanningMixin(ABC):
             "device": str(self.device),
             "triton_mps_one_site_enabled": _mps_one_site_rollout_enabled(),
             "triton_mps_one_site_regions": self.triton_one_site_regions,
-            "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "0")
-            .strip()
-            .lower()
-            not in {"0", "false", "off", "no"},
+            "triton_mps_two_site_enabled": _mps_two_site_rollout_enabled(),
             "triton_mps_two_site_regions": self.triton_two_site_regions,
             "eager_mps_two_site_regions": self.eager_two_site_regions,
             "fixed_rank_qr_regions": self.fixed_rank_qr_regions,
