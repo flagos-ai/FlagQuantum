@@ -520,7 +520,9 @@ def _contract_module(relative_path: str, module_name: str):
         raise RuntimeError(f"the contract names a file that is missing: {source}")
     spec = importlib.util.spec_from_file_location(module_name, source)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"the contract names a file that is not importable: {source}")
+        raise RuntimeError(
+            f"the contract names a file that is not importable: {source}"
+        )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

@@ -25,9 +25,9 @@
         "claim_evidence_type": "capability_probe",
         "evidence_class": "development_probe",
         "kind": "multinode_transport_probe",
-        "note": "Carries the three standing claim blockers recorded at the top level of this manifest. Digest-bound so the disclosure cannot drift away from the bytes it describes.",
+        "note": "Carries the claim blockers this manifest still stands behind: the host staging it measured inside its own profiled region, and the two-host boundary no run on this pair can widen. Digest-bound so the disclosure cannot drift away from the bytes it describes. The digest is refreshed whenever the probe is re-recorded, and the artifact was re-recorded when its forward circuit was bound to this contract's own accepted rung, which is what retired toy_circuit_parameters_only from it.",
         "path": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
-        "sha256": "790b02702b3a41871147917873b3617b613a6c389e30e64f1f5a6bd427f43fd6"
+        "sha256": "0c7952f26345f98980f2906ff0aab9498500ed1869ca73a18a71a0f2bc3434db"
       }
     ],
     "gradient_policy": "approximate",

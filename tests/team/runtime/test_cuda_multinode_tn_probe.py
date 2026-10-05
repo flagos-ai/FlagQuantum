@@ -355,10 +355,10 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # The partition is the sharding: four slices over the two declared labels,
     # two per rank, and no rank owning the whole contraction.
     for item in ranks:
-        assert item["slice_labels"] == [6, 7]
+        assert item["slice_labels"] == list(_MODULE.SLICED_LABELS)
         assert item["slice_tasks"] == 4
         assert item["tasks_by_rank"] == {"0": 2, "1": 2}
-        assert item["amplitudes"]["slice_labels"] == [6, 7]
+        assert item["amplitudes"]["slice_labels"] == list(_MODULE.SLICED_LABELS)
         assert item["amplitudes"]["tasks_by_rank"] == {"0": 2, "1": 2}
         assert item["single_amplitude"]["slice_tasks"] == 4
         # The single-amplitude leg takes the other output path and must reach
@@ -473,9 +473,14 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # step of the run and belonging to the plan the run reported.
     generation = training["checkpoint_generation"]
     assert generation["committed_step"] == 4
+    # The plan identity is a digest of the contraction plan, so it moves with the
+    # circuit: this is the digest of the released rung's plan rather than of the
+    # five-wire circuit the earlier recording carried. It is compared against the
+    # plan the interrupted leg committed, not recomputed here, because recomputing
+    # it would only check this file against itself.
     assert (
         generation["task_plan_identity"]
-        == "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7"
+        == "52cd77094c1332f2e9f9df29b129305ca4a72d5c708ac762dc4f9ccac8142d75"
     )
     assert sorted(generation["shards"]) == ["0", "1"]
     assert generation["rank_local_files_hold_replicated_parameters"] is True

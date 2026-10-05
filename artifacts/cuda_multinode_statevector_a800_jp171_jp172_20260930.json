@@ -1,6 +1,6 @@
 {
   "evidence": {
-    "captured_at": "2026-10-05T12:04:07.586584+00:00",
+    "captured_at": "2026-10-05T14:09:28.003630+00:00",
     "claim_blockers": [
       "two_node_pair_only_no_wider_topology"
     ],
@@ -8,25 +8,25 @@
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "6635f42152a658eb696e755d6cca7d4048f24c50",
+      "source_revision": "be04365f7a78c5361635b712184f8abe53b47f51",
       "torch": "2.13.0+cu130"
     },
     "observations": {
       "export": {
         "amplitude_vector_sha256": "cea2d884b5052fe94075d1aab35049b67e85a50411bb357f81f92b95327b3b88",
         "gather": {
-          "maximum_seconds": 0.0029762685298919678,
+          "maximum_seconds": 0.003016144037246704,
           "measured": true,
           "measured_iterations": 5,
           "measurement": "distributed_statevector_full_state_export",
-          "median_seconds": 0.002945464104413986,
-          "minimum_seconds": 0.002901453524827957,
+          "median_seconds": 0.0029309410601854324,
+          "minimum_seconds": 0.0029263030737638474,
           "seconds": [
-            0.0029762685298919678,
-            0.002945464104413986,
-            0.0029726196080446243,
-            0.002901453524827957,
-            0.0029107294976711273
+            0.0029309410601854324,
+            0.003016144037246704,
+            0.0029263030737638474,
+            0.003012334927916527,
+            0.002926856279373169
           ],
           "synchronized": true,
           "warmup_iterations": 2
@@ -135,7 +135,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "f3a4af4375b49ed8f709d7de4326fb692f899d4c0dfdbb502ad024b2ca948a81",
+        "debug_log_sha256": "6324902cc26dca8eda0d438c0992740d47f96c47d180de8f92169fa9f245ef87",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -155,19 +155,19 @@
         "training_loss_decrease": 0.008632771508185422
       },
       "performance": {
-        "maximum_seconds": 0.17233173735439777,
+        "maximum_seconds": 0.17168224789202213,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_statevector_forward",
-        "median_seconds": 0.17218679003417492,
-        "minimum_seconds": 0.17188558913767338,
+        "median_seconds": 0.17129501700401306,
+        "minimum_seconds": 0.17127478122711182,
         "n_wires": 22,
         "seconds": [
-          0.17233173735439777,
-          0.17221686616539955,
-          0.17206907458603382,
-          0.17218679003417492,
-          0.17188558913767338
+          0.17168224789202213,
+          0.17128617875277996,
+          0.17164606973528862,
+          0.17129501700401306,
+          0.17127478122711182
         ],
         "synchronized": true,
         "warmup_iterations": 2
@@ -1223,6 +1223,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "91bf43a1df1e4ccee3b2fea8c8175b95b4392e2fc9645c10b35b765a76da1549",
+  "evidence_sha256": "2c60cc2481979455eed5e1ed7499f1b6f67a35d94e5b8c6578383b274da565ea",
   "schema": "flagquantum.cuda_multinode_statevector_artifact.v1"
 }
