@@ -1121,7 +1121,7 @@ def _string_leaves(payload: Any) -> dict[str, str]:
 def test_the_abbreviated_revisions_written_out_in_full_are_declared_unreferenced() -> (
     None
 ):
-    # Red before this change: none of these fourteen revisions was in the tree at all,
+    # Red before this change: none of these thirteen revisions was in the tree at all,
     # so the table could not have declared them and this is the assertion that fails
     # when a value is written out in full without its measured origin. The origin is
     # the measured one, not the one the abbreviation sat in: a value recorded in a
@@ -1129,7 +1129,7 @@ def test_the_abbreviated_revisions_written_out_in_full_are_declared_unreferenced
     # when a repository-scoped request for the commit object returns it.
     declared = _checked_in_declarations()
 
-    assert len(ABBREVIATED_REVISIONS) == 14, ABBREVIATED_REVISIONS
+    assert len(ABBREVIATED_REVISIONS) == 13, ABBREVIATED_REVISIONS
     for revision in ABBREVIATED_REVISIONS:
         assert declared.get(revision) == ORIGIN_UNREFERENCED_OBJECT, revision
 
