@@ -82,3 +82,23 @@ def test_qdiffusion_live_source_requires_cost_and_provider_identity() -> None:
     assert '"fallback_occurred": False' in source
     assert "resolve_kaiwu_credentials" in source
     assert "_write_private_redacted_json" in source
+
+
+def test_local_golden_path_is_pinned_and_credential_free() -> None:
+    path = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "run_local_conformance.sh"
+    )
+    source = path.read_text(encoding="utf-8")
+
+    assert path.stat().st_mode & 0o111
+    assert "b648b531c034bd6ae9b7a34fed994c717967cc72" in source
+    assert "f047bce7b1077449967bbe9e9fab5741542b48d4" in source
+    assert "status --porcelain --untracked-files=all" in source
+    assert "unset QBOSON_USER_ID QBOSON_SDK_CODE QBOSON_PROJECT_NO" in source
+    assert "PYTHONNOUSERSITE=1" in source
+    assert "test_kaiwu_community_conformance.py" in source
+    assert "test_kaiwu_pytorch_plugin_conformance.py" in source
+    assert "qboson_live_smoke.py" not in source

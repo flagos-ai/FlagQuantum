@@ -164,6 +164,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   frozen seed. It recomputes cross-seed means, validates all hash links, copies
   the exact components into a private bundle, and invokes the fail-closed final
   validator; selective seed reporting and component replacement are rejected.
+- A credential-free local golden-path script now verifies clean checkouts at the
+  pinned Kaiwu Community and Kaiwu PyTorch Plugin revisions, clears provider
+  credential variables, and runs conversion, lifecycle, sampler, plugin, and
+  live-probe contract tests without network access or provider quota. It is
+  explicitly local conformance evidence rather than A800 or QBoson evidence.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

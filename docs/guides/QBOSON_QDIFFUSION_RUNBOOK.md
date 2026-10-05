@@ -36,6 +36,20 @@ The SDK authorization code is a secret. Do not paste either credential into a
 ticket, chat transcript, shell history, command line, log, checkpoint, receipt,
 or evidence JSON.
 
+Before provisioning either host, run the credential-free local golden path
+against clean checkouts at the pinned upstream revisions:
+
+```bash
+bash examples/qdiffusion_kaiwu/run_local_conformance.sh \
+  /absolute/src/kaiwu_community \
+  /absolute/src/kaiwu-pytorch-plugin \
+  /absolute/flagquantum-venv/bin/python
+```
+
+This validates local conversion and provider-boundary contracts without network
+access, credentials, quota, A800 access, or the proprietary SDK. It does not
+replace any live gate.
+
 ## Current environment facts
 
 As measured on 2026-10-05, both hosts expose NVIDIA A800-SXM4-80GB devices with

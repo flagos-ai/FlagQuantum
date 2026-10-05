@@ -2,6 +2,26 @@
 
 This directory separates development checks from acceptance evidence.
 
+## Credential-free local golden path
+
+`run_local_conformance.sh` is the single local entry point for the conversion,
+precision, remote-lifecycle, sampler, pinned Kaiwu Community, and pinned Kaiwu
+PyTorch Plugin contracts. It performs no network or provider operation, removes
+QBoson credential variables from the child environment, requires clean source
+checkouts at the reviewed revisions, and normally completes in under ten
+minutes:
+
+```bash
+bash examples/qdiffusion_kaiwu/run_local_conformance.sh \
+  /absolute/src/kaiwu_community \
+  /absolute/src/kaiwu-pytorch-plugin \
+  /absolute/flagquantum-venv/bin/python
+```
+
+Passing this path is local conformance evidence only. It is not A800 or QBoson
+hardware evidence and cannot be included as a substitute component in the final
+acceptance bundle.
+
 `a800_sampler_smoke.py` is a development probe. It uses the real Kaiwu PyTorch
 Plugin data path and an explicitly selected in-memory fake transport. It can
 verify A800 tensor placement, matrix and sample transfers, backward, and an
