@@ -60,6 +60,14 @@ this layer.
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
 expert-facing entry point.
+`optimization_levels.py` owns the declared levels and the sequence of pass names
+each one runs, including why the sequence is ordered the way it is, why level 3 is
+reserved rather than approximated, and which Qiskit pass each FlagQuantum pass
+corresponds to. It is a declaration and a validator, not a pass: `pipeline.py`
+resolves the names it returns and runs them to a fixed point, so the composition
+lives in one place and the level parameter is a selection over it rather than a
+second copy of it. It imports nothing from this package except the error type, so
+the declaration can be read without importing the passes it names.
 `one_qubit_optimization.py` owns the same-wire run fold that
 `pipeline._optimize_to_fixed_point` runs beside the identity, self-inverse, and
 adjacent-rotation passes: it composes a maximal run of single-qubit gates on one
@@ -128,6 +136,10 @@ expert-facing entry points. Change or compose them through `optimize`.
 ## Ten-minute change path
 
 - Change local canonical optimization in `pipeline.py`.
+- Change how much optimization a level runs, or add a level, in
+  `optimization_levels.py`; the declaration is what `pipeline.py` executes, so a
+  pass added to a level and not to the loop's roster fails
+  `tests/team/compiler/test_optimization_levels.py` rather than passing silently.
 - Change instruction layer scheduling in `pipeline.py`.
 - Change coupling maps or SWAP routing in `routing.py`.
 - Change lookahead SWAP planning or the SABRE layout search in `sabre.py`.
