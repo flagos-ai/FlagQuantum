@@ -175,6 +175,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   also records the A800 device that originated the matrix and received the
   reconstructed samples; the final validator rejects missing or inconsistent
   A800-to-CPU and CPU-to-A800 boundary records.
+- A pre-extraction transfer verifier now binds the three reviewed source
+  archives to manifest hashes and revision-derived names, rejects traversal,
+  links, duplicate names, and special tar members, and emits a private
+  preflight-only record per target alias. It does not authorize or perform the
+  source transfer itself.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

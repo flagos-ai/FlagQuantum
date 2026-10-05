@@ -22,6 +22,11 @@ Passing this path is local conformance evidence only. It is not A800 or QBoson
 hardware evidence and cannot be included as a substitute component in the final
 acceptance bundle.
 
+`verify_transfer_bundle.py` is the pre-extraction gate for approved host
+transfers. It verifies the three colocated source archives against their
+reviewed manifest and rejects unsafe tar members. Its output is a private
+transfer-preflight record, not execution or acceptance evidence.
+
 `a800_sampler_smoke.py` is a development probe. It uses the real Kaiwu PyTorch
 Plugin data path and an explicitly selected in-memory fake transport. It can
 verify A800 tensor placement, matrix and sample transfers, backward, and an
