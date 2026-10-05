@@ -147,8 +147,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - System-probe and protein-training call budgets are now separate. A validator
   derives a conservative per-seed submission bound from the pinned plugin's
   actual positive/negative energy and generation loops; the illustrative full
-  config requires up to 71,048 submissions per seed, so its protein budget stays
+  config requires up to 71,269 submissions per seed, so its protein budget stays
   unresolved until experiment size and QBoson quota are explicitly approved.
+- Completed training records now hash the exact held-out, baseline, guided,
+  history, and sequence-quality artifacts. A local-only ESM2 evaluator verifies
+  that chain, loads one frozen checkpoint file without implicit download, checks
+  aligned sequence identities, and computes candidate cosine/L2 evidence on the
+  primary A800 without spending further QBoson quota.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

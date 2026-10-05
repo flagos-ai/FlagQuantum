@@ -87,9 +87,18 @@ def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
     validation_steps = int(training["validation_steps"])
     epochs = int(training["epochs"])
     max_steps = int(generation["max_steps"])
-    structural_calls = 1 + training_candidates + validation_steps
+    # Structural validation uses one candidate: one positive call, one negative
+    # call, then one candidate-scoring call per generation step.
+    structural_calls = 2 + validation_steps
     epoch_calls = epochs * (train_count + validation_count) * (1 + training_candidates)
-    generation_calls = test_count * max_steps * (1 + generation_candidates)
+    # Each baseline/guided record first executes objective(), then generate().
+    baseline_calls_per_record = 2 + max_steps
+    guided_calls_per_record = (
+        1 + generation_candidates + max_steps * generation_candidates
+    )
+    generation_calls = test_count * (
+        baseline_calls_per_record + guided_calls_per_record
+    )
     return structural_calls + epoch_calls + generation_calls
 
 

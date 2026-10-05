@@ -10,6 +10,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
     _checkpoint_identity,
     _run_workflow,
+    _workflow_artifact_identities,
     run_training_seed,
 )
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
@@ -45,7 +46,7 @@ def _frozen_config() -> dict[str, Any]:
             "scheduler_factor": 0.5,
             "scheduler_patience": 1,
             "early_stop_patience": 4,
-            "remote_call_budget_per_seed": 71048,
+            "remote_call_budget_per_seed": 71269,
         },
         "generation": {
             "num_candidates": 4,
@@ -151,6 +152,38 @@ def test_checkpoint_identity_selects_latest_best_epoch(tmp_path: Path) -> None:
 
     assert name == "best_epoch_10.pt"
     assert digest == "804f51f71254c4081e37e7c887073560f4a6fa6cdad202e9ac67e032c43ed1e1"
+
+
+def test_workflow_artifact_identities_freeze_evaluation_inputs(
+    tmp_path: Path,
+) -> None:
+    paths = (
+        "data_splits/test.fasta",
+        "baseline/proposal_only_generated_sequences.fasta",
+        "guided/energy_guided_generated_sequences.fasta",
+        "history.json",
+        "baseline_vs_guided.json",
+        "baseline_eval/quality_summary.json",
+        "guided_eval/quality_summary.json",
+    )
+    for relative in paths:
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(relative, encoding="utf-8")
+
+    identities = _workflow_artifact_identities(tmp_path)
+
+    assert set(identities) == {
+        "test_fasta",
+        "baseline_fasta",
+        "guided_fasta",
+        "training_history",
+        "sequence_metrics",
+        "baseline_quality",
+        "guided_quality",
+    }
+    assert identities["test_fasta"]["relative_path"] == "data_splits/test.fasta"
+    assert len(identities["guided_fasta"]["sha256"]) == 64
 
 
 def test_live_training_source_guards_cost_and_preflights_before_credentials() -> None:

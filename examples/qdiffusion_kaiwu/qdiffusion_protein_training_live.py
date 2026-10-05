@@ -160,6 +160,28 @@ def _checkpoint_identity(run_directory: Path) -> tuple[str, str]:
     return selected.name, hashlib.sha256(selected.read_bytes()).hexdigest()
 
 
+def _workflow_artifact_identities(run_directory: Path) -> dict[str, dict[str, str]]:
+    relative_paths = {
+        "test_fasta": Path("data_splits/test.fasta"),
+        "baseline_fasta": Path("baseline/proposal_only_generated_sequences.fasta"),
+        "guided_fasta": Path("guided/energy_guided_generated_sequences.fasta"),
+        "training_history": Path("history.json"),
+        "sequence_metrics": Path("baseline_vs_guided.json"),
+        "baseline_quality": Path("baseline_eval/quality_summary.json"),
+        "guided_quality": Path("guided_eval/quality_summary.json"),
+    }
+    identities: dict[str, dict[str, str]] = {}
+    for name, relative_path in relative_paths.items():
+        path = run_directory / relative_path
+        if not path.is_file():
+            raise RuntimeError(f"protein workflow did not produce {relative_path}")
+        identities[name] = {
+            "relative_path": relative_path.as_posix(),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+    return identities
+
+
 def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
     return [
         {
@@ -198,6 +220,7 @@ def run_training_seed(
     run_directory: Path | None = None
     checkpoint_name: str | None = None
     checkpoint_sha256: str | None = None
+    workflow_artifacts: dict[str, dict[str, str]] = {}
     try:
         workflow_config = _build_workflow_config(
             workflow,
@@ -210,6 +233,7 @@ def run_training_seed(
             workflow, workflow_config, sampler, output_root / f"seed-{seed}"
         )
         checkpoint_name, checkpoint_sha256 = _checkpoint_identity(run_directory)
+        workflow_artifacts = _workflow_artifact_identities(run_directory)
     except (Exception, KeyboardInterrupt) as exc:
         failure = {"type": type(exc).__name__, "message": str(exc)}
 
@@ -252,6 +276,7 @@ def run_training_seed(
         "run_directory_name": run_directory.name if run_directory else None,
         "trained_energy_checkpoint_name": checkpoint_name,
         "trained_energy_checkpoint_sha256": checkpoint_sha256,
+        "workflow_artifacts": workflow_artifacts,
         "acceptance": {
             "system": "not_evaluated",
             "application": "not_evaluated",

@@ -331,11 +331,35 @@ Do not reuse the bounded system probe's `remote_call_budget` for this command.
 The plugin invokes the sampler once per conditioned example for positive energy,
 once per negative candidate, and once per generated candidate per step. With
 the illustrative 640-record, 20-epoch, four-candidate, 64-step configuration,
-the conservative bound is 71,048 submissions per seed. Therefore
+the conservative bound is 71,269 submissions per seed, including the objective
+call that precedes each baseline and guided generation. Therefore
 `training.remote_call_budget_per_seed` is deliberately left as a required value:
 resize and preregister the experiment or secure matching project quota before
 running. The validator rejects a budget below the bound; deduplication may lower
 actual submissions but must not be assumed during quota planning.
+
+After a seed completes, evaluate its already-generated held-out outputs; do not
+generate them again. The evaluator recomputes every training-artifact digest,
+requires aligned FASTA headers and the exact frozen count, and loads the ESM2
+checkpoint only through the local-file API:
+
+```bash
+python examples/qdiffusion_kaiwu/qdiffusion_protein_evaluate.py \
+  --config /absolute/evidence/acceptance-config.json \
+  --training-record /absolute/evidence/seed-1701-training.json \
+  --run-directory /absolute/private/qdiffusion-runs/seed-1701/RUN_DIRECTORY \
+  --plugin-root /absolute/src/kaiwu-pytorch-plugin \
+  --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
+  --output /absolute/evidence/seed-1701-evaluation.json \
+  --execution-host jp-a800-171 \
+  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
+  --source-revision FULL_FLAGQUANTUM_REVISION \
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4
+```
+
+This stage uses the A800 but consumes no additional QBoson quota. Preserve one
+evaluation record per seed; final application metrics must be assembled across
+the complete preregistered seed set rather than selected post hoc.
 
 ## 10. Assemble and validate final evidence
 

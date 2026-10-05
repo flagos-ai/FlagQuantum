@@ -130,5 +130,15 @@ and the independent replay-host gate still remain.
 The top-level `remote_call_budget` protects the bounded system probe only. Full
 protein training uses `training.remote_call_budget_per_seed`. The validator
 computes a conservative worst-case bound from the frozen record count, epochs,
-training candidates, test count, generation candidates, and generation steps;
-it rejects a smaller per-seed budget before credentials are used.
+training candidates, test count, both baseline/guided objectives, generation
+candidates, and generation steps; it rejects a smaller per-seed budget before
+credentials are used.
+
+`qdiffusion_protein_evaluate.py` performs the subsequent local A800 evaluation
+without submitting any new provider task. It verifies the training record's
+hash chain for the held-out test FASTA, baseline and guided FASTA files, and
+sequence-quality summaries. It loads ESM2 exclusively through
+`load_model_and_alphabet_local`, checks aligned headers and exact sequence
+counts, then emits cosine/L2 plus sequence-quality metrics in a private record.
+That record remains candidate evidence until it is assembled with all frozen
+seeds and the two independent system-gate records.
