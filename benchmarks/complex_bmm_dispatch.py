@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import socket
 import statistics
@@ -297,6 +298,16 @@ def validate_run(payload: Mapping[str, Any]) -> None:
     for field, value in expected.items():
         if payload.get(field) != value:
             raise ValueError(f"run field {field!r} must equal {value!r}")
+    source_revision = payload.get("source_revision")
+    if (
+        not isinstance(source_revision, str)
+        or re.fullmatch(r"[0-9a-f]{40}", source_revision) is None
+    ):
+        raise ValueError("run source_revision must be a full lowercase Git commit SHA")
+    for field in ("host_label", "reported_hostname"):
+        host_value = payload.get(field)
+        if not isinstance(host_value, str) or not host_value.strip():
+            raise ValueError(f"run field {field!r} must be a non-empty string")
     lane = payload.get("compiler_lane")
     if lane not in COMPILER_LANES:
         raise ValueError("run records an unsupported compiler lane")
@@ -307,10 +318,28 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         or compiler.get("identity_status") != "resolved"
     ):
         raise ValueError("run compiler identity does not match its lane")
+    version = compiler.get("version")
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError("run compiler version must be a non-empty string")
+    environment = _mapping(payload.get("environment"), "environment")
+    gpu = environment.get("gpu")
+    if not isinstance(gpu, str) or "A800" not in gpu:
+        raise ValueError("run environment must identify an NVIDIA A800 GPU")
     measurement = _mapping(payload.get("measurement"), "measurement")
+    warmup = measurement.get("warmup")
+    if not isinstance(warmup, int) or warmup < 0:
+        raise ValueError("measurement.warmup must be non-negative")
     repeats = measurement.get("repeats")
     if not isinstance(repeats, int) or repeats <= 0:
         raise ValueError("measurement.repeats must be positive")
+    group_size = measurement.get("group_size")
+    if not isinstance(group_size, int) or group_size <= 0:
+        raise ValueError("measurement.group_size must be positive")
+    if (
+        measurement.get("ordering")
+        != "counterbalanced baseline/candidate by repeat parity"
+    ):
+        raise ValueError("measurement.ordering must be counterbalanced")
     cases = _sequence(payload.get("cases"), "cases")
     observed_shapes = []
     for index, raw_case in enumerate(cases):
@@ -330,6 +359,13 @@ def validate_run(payload: Mapping[str, Any]) -> None:
             "left_going_transfer",
         ):
             raise ValueError(f"cases[{index}] records an invalid canonical direction")
+        for field, value in (
+            ("dtype", "complex64"),
+            ("layout", "contiguous_batched_matrix"),
+            ("workload_origin", "mps_canonical_transfer_absorption"),
+        ):
+            if case.get(field) != value:
+                raise ValueError(f"cases[{index}].{field} must equal {value!r}")
         for error_field, tolerance in (
             ("maximum_forward_absolute_error", 5e-4),
             ("forward_relative_l2_error", 5e-5),
@@ -356,6 +392,9 @@ def validate_run(payload: Mapping[str, Any]) -> None:
                 raise ValueError(
                     f"cases[{index}].{result_name} median is not reproducible"
                 )
+            peak_memory = result.get("peak_memory_delta_bytes")
+            if not isinstance(peak_memory, int) or peak_memory < 0:
+                raise ValueError(f"cases[{index}].{result_name} peak memory is invalid")
         expected_forward = (
             case["pytorch_bmm_forward"]["median_seconds_per_invocation"]
             / case["triton_forward"]["median_seconds_per_invocation"]

@@ -118,6 +118,30 @@ def test_run_validator_accepts_bmm_forward_and_backward_measurements() -> None:
     validate_run(_run("jp-a800-171", "stock_triton"))
 
 
+def test_run_validator_requires_full_source_revision() -> None:
+    payload = _run("jp-a800-171", "stock_triton")
+    payload["source_revision"] = "0123456"
+
+    with pytest.raises(ValueError, match="full lowercase Git commit SHA"):
+        validate_run(payload)
+
+
+def test_run_validator_requires_a800_environment() -> None:
+    payload = _run("jp-a800-171", "stock_triton")
+    payload["environment"]["gpu"] = "NVIDIA H100 80GB HBM3"
+
+    with pytest.raises(ValueError, match="NVIDIA A800 GPU"):
+        validate_run(payload)
+
+
+def test_run_validator_requires_counterbalanced_ordering() -> None:
+    payload = _run("jp-a800-171", "stock_triton")
+    payload["measurement"]["ordering"] = "baseline then candidate"
+
+    with pytest.raises(ValueError, match="ordering must be counterbalanced"):
+        validate_run(payload)
+
+
 @pytest.mark.parametrize("result_name", RESULT_NAMES)
 def test_run_validator_recomputes_each_median(result_name: str) -> None:
     payload = _run("jp-a800-171", "stock_triton")
