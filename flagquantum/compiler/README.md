@@ -573,6 +573,28 @@ holds the measurement and the commands that reproduce it. The checked-in port is
 also the only runnable form of the algorithm left to this repository, because
 Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
 
+What those strategies cost is a checked-in number rather than an impression.
+[benchmarks/compiler_routing_quality.py](../../benchmarks/compiler_routing_quality.py)
+compiles the same 140 programs through `flagquantum.compiler.compile` -- the entry
+point a caller uses, so the programs are optimized before they are routed, as a
+caller's are -- and reports the SWAPs each of the five entry points retains after
+post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
+automatic selection 4316, `restore_after_each_gate` 4656 and
+`persistent_layout` 4722, with every entry point routing all 140 programs, no
+two-wire operation off the device, and every compiled program equal to its source
+to `2.8e-16`. Two numbers there are worth carrying forward. The automatic
+selection never resolves to a SABRE strategy, because its cost estimate can rank
+only `restore_after_each_gate` and `persistent_layout`, and that scope costs
+`2.14` times what the best available strategy costs -- so the price of the
+restriction is measured rather than merely stated. And the estimate is good inside
+that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
+and lands within `1.005` of always picking the better one, with the eight misses
+all being programs where `persistent_layout` wins and the estimate took
+`restore_after_each_gate`.
+[test_compiler_routing_quality.py](../../tests/benchmark_contract/test_compiler_routing_quality.py)
+holds those readings, including a test that fails if the automatic selection
+becomes an alias of one candidate or quietly widens its scope.
+
 Routing moves two-qubit operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more qubits, so such
 an operation is carried through unchanged, and only when the device already
