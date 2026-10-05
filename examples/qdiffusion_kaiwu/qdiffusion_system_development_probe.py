@@ -91,7 +91,12 @@ class _ToyProposal(nn.Module):
         return self.output(torch.tanh(self.hidden(self.embedding(input_ids))))
 
 
-def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
+def _execute_qdiffusion_slice(
+    device: torch.device,
+    *,
+    sampler: KaiwuSampler,
+    remote_call_budget: int,
+) -> dict[str, Any]:
     from kaiwu.torch_plugin import EnergyModel, QDiffusion, QDiffusionConfig
     from kaiwu.torch_plugin.qdiffusion import SequenceTokenSpec
 
@@ -122,15 +127,6 @@ def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
             )
 
     torch.manual_seed(1701)
-    client = _DevelopmentFakeClient()
-    sampler = KaiwuSampler(
-        client=client,
-        task_name="qdiffusion-system-development",
-        requested_samples=10,
-        timeout=5.0,
-        poll_interval=0.01,
-        max_remote_calls=64,
-    )
     energy_model = ToyBMEnergy(sampler)
     generator = QDiffusion(
         proposal_model=_ToyProposal(vocab_size=9, hidden_size=8),
@@ -204,7 +200,7 @@ def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
         "parameter_delta_max": parameter_delta,
         "generated_tokens": generated.detach().cpu().tolist(),
         "token_constraints_passed": token_constraints_passed,
-        "remote_call_budget": 64,
+        "remote_call_budget": remote_call_budget,
         "remote_call_count": sampler.remote_call_count,
         "requested_samples_per_call": 10,
         "task_count": len(sampler.receipts),
@@ -213,6 +209,24 @@ def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
         "generated_device": str(generated.device),
         "fallback_occurred": False,
     }
+
+
+def _run_qdiffusion_slice(device: torch.device) -> dict[str, Any]:
+    client = _DevelopmentFakeClient()
+    remote_call_budget = 64
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="qdiffusion-system-development",
+        requested_samples=10,
+        timeout=5.0,
+        poll_interval=0.01,
+        max_remote_calls=remote_call_budget,
+    )
+    return _execute_qdiffusion_slice(
+        device,
+        sampler=sampler,
+        remote_call_budget=remote_call_budget,
+    )
 
 
 def run_probe(

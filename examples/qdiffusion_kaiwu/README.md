@@ -83,3 +83,23 @@ python examples/qdiffusion_kaiwu/qboson_live_smoke.py \
 Successful tasks alone do not make this an acceptance record. The script keeps
 `hardware_acceptance=false` until the pinned SDK mapping supplies both a stable
 provider task ID and a provider-reported target for every task.
+
+## Live QDiffusion system probe
+
+`qdiffusion_system_live.py` joins the same bounded QDiffusion slice to
+`KaiwuSDKClient`. It must run only in the frozen Python, Torch, plugin, SDK,
+precision, host-role, and source-revision lane recorded by a completed
+`acceptance_config.json`. It validates that lane before resolving credentials.
+
+The command requires the same exact quota acknowledgement as the smaller live
+smoke test. It writes attempted task receipts even when the QDiffusion slice
+fails after submission, verifies repeat retrieval against the same last task,
+and scans the serialized record for the resolved `user_id` and `sdk_code`
+before creating a mode-0600 file. There is no local fallback.
+
+This probe exits unsuccessfully until all system gates pass. In particular,
+the current documented SDK adapter leaves provider task and target identity
+unavailable, so a real completed run will still record `system=fail` pending a
+reviewed response mapping. The full command should be generated from the
+approved private runbook rather than copied with placeholder project or
+credential values.

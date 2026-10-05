@@ -108,6 +108,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   objective, backward, optimizer update, and one-step guided generation path.
   Its transport remains an explicit in-memory fake and its schema hard-codes
   `system_acceptance=false`; this is a rehearsal for, not evidence of, Phase 4.
+- A separate quota-guarded live-system command now composes that QDiffusion
+  slice with `KaiwuSDKClient`. It binds execution to the preregistered config
+  hash and exact software lane, persists attempted receipts, checks repeat
+  retrieval without a new sampler submission, scans output for both credential
+  values, and fails the system gate when provider task or target IDs are absent.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

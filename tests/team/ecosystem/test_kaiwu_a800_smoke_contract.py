@@ -65,3 +65,19 @@ def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:
     assert '"qboson_hardware_used": False' in source
     assert '"real_provider_evidence": False' in source
     assert '"transport": "in_memory_fake"' in source
+
+
+def test_qdiffusion_live_source_requires_cost_and_provider_identity() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_system_live.py"
+    ).read_text(encoding="utf-8")
+
+    assert "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE" in source
+    assert "provider_identity_complete" in source
+    assert "retrieval_resubmitted is False" in source
+    assert '"fallback_occurred": False' in source
+    assert "resolve_kaiwu_credentials" in source
+    assert "_write_private_redacted_json" in source

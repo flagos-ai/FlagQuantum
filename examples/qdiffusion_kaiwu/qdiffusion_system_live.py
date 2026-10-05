@@ -1,0 +1,341 @@
+"""Run the bounded QDiffusion system slice on A800 plus QBoson CIM.
+
+This command consumes provider quota. It binds the run to a preregistered
+configuration and never falls back. A completed run remains failed for hardware
+acceptance unless the pinned provider mapping supplies task and target IDs.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import socket
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import torch
+
+from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    FULL_REVISION,
+    HOSTS,
+    _execute_qdiffusion_slice,
+)
+from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
+from flagquantum.remote.kaiwu import (
+    KaiwuCredentials,
+    KaiwuSDKClient,
+    KaiwuTaskClient,
+    resolve_kaiwu_credentials,
+)
+
+ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
+SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
+
+
+def _load_frozen_config(path: Path) -> tuple[dict[str, Any], str]:
+    encoded = path.read_bytes()
+    raw = json.loads(encoded)
+    if not isinstance(raw, dict):
+        raise ValueError("frozen configuration must be a JSON object")
+    errors: list[str] = []
+    _validate_config(raw, errors)
+    if errors:
+        raise ValueError("invalid frozen configuration: " + "; ".join(errors))
+    return raw, hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_lane(
+    config: dict[str, Any],
+    *,
+    execution_host: str,
+    source_revision: str,
+    plugin_revision: str,
+    sdk_version: str,
+) -> tuple[str, int, tuple[int, int]]:
+    if execution_host not in HOSTS:
+        raise ValueError("execution_host must be one of the two declared A800 hosts")
+    if FULL_REVISION.fullmatch(source_revision) is None:
+        raise ValueError("source_revision must be a full lowercase Git revision")
+    if FULL_REVISION.fullmatch(plugin_revision) is None:
+        raise ValueError("plugin_revision must be a full lowercase Git revision")
+    software = config["software"]
+    observed = {
+        "source_revision": source_revision,
+        "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "python_version": platform.python_version(),
+        "torch_version": str(torch.__version__),
+        "kaiwu_sdk_version": sdk_version,
+    }
+    for field, value in observed.items():
+        if software.get(field) != value:
+            raise ValueError(f"observed {field} differs from the frozen configuration")
+    if execution_host == config["primary_host"]:
+        role = "primary"
+    elif execution_host == config["replay_host"]:
+        role = "portability_replay"
+    else:
+        raise ValueError("execution_host is not assigned a role in the configuration")
+    remote_call_budget = config["remote_call_budget"]
+    precision = config["precision_policy"]
+    target_range = (precision["target_min"], precision["target_max"])
+    return role, remote_call_budget, target_range
+
+
+def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
+    return [
+        {
+            "task_name": receipt.task_name,
+            "matrix_sha256": receipt.matrix_sha256,
+            "mode": receipt.mode,
+            "requested_samples": receipt.requested_samples,
+            "project_no": receipt.project_no,
+            "submitted_at": receipt.submitted_at,
+            "provider_task_id": receipt.provider_task_id,
+            "provider_target": receipt.provider_target,
+        }
+        for receipt in sampler.receipts
+    ]
+
+
+def run_live_system_probe(
+    *,
+    client: KaiwuTaskClient,
+    config: dict[str, Any],
+    config_sha256: str,
+    execution_host: str,
+    observed_hostname: str,
+    source_revision: str,
+    plugin_revision: str,
+    sdk_version: str,
+    device: torch.device,
+    observed_gpu: str,
+    project_no: str,
+    task_prefix: str,
+    requested_samples: int,
+    timeout: float,
+    poll_interval: float,
+    real_provider_transport: bool,
+) -> dict[str, Any]:
+    role, remote_call_budget, target_range = _validate_lane(
+        config,
+        execution_host=execution_host,
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+        sdk_version=sdk_version,
+    )
+    sampler = KaiwuSampler(
+        client=client,
+        task_name=task_prefix,
+        project_no=project_no,
+        requested_samples=requested_samples,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        max_remote_calls=remote_call_budget,
+        integer_target_range=target_range,
+    )
+    failure: dict[str, str] | None = None
+    slice_record: dict[str, Any] = {}
+    retrieval_resubmitted: bool | None = None
+    try:
+        slice_record = _execute_qdiffusion_slice(
+            device,
+            sampler=sampler,
+            remote_call_budget=remote_call_budget,
+        )
+        if sampler.last_job is None:
+            raise RuntimeError("QDiffusion completed without a recoverable last job")
+        call_count = sampler.remote_call_count
+        receipt = sampler.last_job.receipt
+        repeated = sampler.last_job.result()
+        retrieval_resubmitted = not (
+            sampler.remote_call_count == call_count and repeated.receipt == receipt
+        )
+    except Exception as exc:
+        failure = {"type": type(exc).__name__, "message": str(exc)}
+
+    receipts = _receipt_records(sampler)
+    provider_identity_complete = bool(receipts) and all(
+        isinstance(receipt["provider_task_id"], str)
+        and bool(receipt["provider_task_id"].strip())
+        and isinstance(receipt["provider_target"], str)
+        and bool(receipt["provider_target"].strip())
+        for receipt in receipts
+    )
+    targets = {
+        receipt["provider_target"]
+        for receipt in receipts
+        if isinstance(receipt["provider_target"], str)
+    }
+    run_completed = failure is None
+    verified_provider_transport = real_provider_transport and isinstance(
+        client, KaiwuSDKClient
+    )
+    system_acceptance = bool(
+        run_completed
+        and verified_provider_transport
+        and provider_identity_complete
+        and retrieval_resubmitted is False
+        and slice_record.get("fallback_occurred") is False
+        and slice_record.get("token_constraints_passed") is True
+        and slice_record.get("parameter_delta_max", 0.0) > 0.0
+    )
+    return {
+        "schema": SCHEMA,
+        "version": "1.0",
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+        "experiment_config_sha256": config_sha256,
+        "source_revision": source_revision,
+        "kaiwu_pytorch_plugin_revision": plugin_revision,
+        "python_version": platform.python_version(),
+        "torch_version": str(torch.__version__),
+        "kaiwu_sdk_version": sdk_version,
+        "execution_host": execution_host,
+        "observed_hostname": observed_hostname,
+        "run_role": role,
+        "requested_cuda_device": str(device),
+        "observed_tensor_device": slice_record.get("generated_device"),
+        "observed_gpu_model": observed_gpu,
+        "transport": "kaiwu_cim" if verified_provider_transport else "injected_test",
+        "qboson_hardware_used": verified_provider_transport and run_completed,
+        "real_provider_evidence": verified_provider_transport and run_completed,
+        "pinned_sdk_client": verified_provider_transport,
+        "provider_identity_complete": provider_identity_complete,
+        "provider_reported_target": provider_identity_complete,
+        "qboson_target": next(iter(targets)) if len(targets) == 1 else None,
+        "qboson_task_ids": [
+            receipt["provider_task_id"]
+            for receipt in receipts
+            if isinstance(receipt["provider_task_id"], str)
+        ],
+        "task_receipts": receipts,
+        "sampling_mode": "sampling",
+        "requested_samples": requested_samples,
+        "remote_call_budget": remote_call_budget,
+        "remote_call_count": sampler.remote_call_count,
+        "precision_policy": {
+            "name": config["precision_policy"]["name"],
+            "target_min": target_range[0],
+            "target_max": target_range[1],
+        },
+        "fallback_occurred": False,
+        "retrieval_resubmitted": retrieval_resubmitted,
+        "secrets_redacted": True,
+        "run_completed": run_completed,
+        "failure": failure,
+        "training": {
+            key: slice_record.get(key)
+            for key in ("objective", "gradient_norm", "parameter_delta_max")
+        },
+        "generation": {
+            "generated_tokens": slice_record.get("generated_tokens"),
+            "token_constraints_passed": slice_record.get("token_constraints_passed"),
+        },
+        "acceptance": {
+            "system": "pass" if system_acceptance else "fail",
+            "application": "not_run",
+        },
+        "limitations": [
+            "This bounded system probe does not run the frozen protein effectiveness experiment.",
+            "System acceptance remains failed without provider-reported task and target identities.",
+            "Two independent passing host records are required; this is one single-device run.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
+    }
+
+
+def _write_private_redacted_json(
+    path: Path, payload: dict[str, Any], *, forbidden_values: tuple[str, ...]
+) -> None:
+    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    if any(value and value in encoded for value in forbidden_values):
+        raise RuntimeError("refusing to write evidence containing a credential value")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(encoded)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", required=True, type=Path)
+    parser.add_argument("--checkpoint-dir", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--execution-host", choices=sorted(HOSTS), required=True)
+    parser.add_argument("--expected-hostname", required=True)
+    parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--plugin-revision", required=True)
+    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--task-prefix", required=True)
+    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--expected-sdk-version", default="1.3.1")
+    parser.add_argument("--requested-samples", type=int, default=10)
+    parser.add_argument("--timeout", type=float, default=3600.0)
+    parser.add_argument("--poll-interval", type=float, default=60.0)
+    parser.add_argument("--acknowledge-provider-cost", required=True)
+    arguments = parser.parse_args()
+    if arguments.acknowledge_provider_cost != ACKNOWLEDGEMENT:
+        parser.error(
+            "--acknowledge-provider-cost must equal "
+            f"{ACKNOWLEDGEMENT!r}; no task was submitted"
+        )
+    config, config_sha256 = _load_frozen_config(arguments.config)
+    observed_hostname = socket.gethostname()
+    if observed_hostname != arguments.expected_hostname:
+        parser.error("observed hostname differs from --expected-hostname")
+    device = torch.device(arguments.device)
+    if device.type != "cuda" or not torch.cuda.is_available():
+        parser.error("live QDiffusion system probe requires an observed CUDA device")
+    torch.cuda.set_device(device)
+    observed_gpu = torch.cuda.get_device_name(device)
+    if "A800" not in observed_gpu:
+        parser.error("live QDiffusion system probe requires an NVIDIA A800")
+    _validate_lane(
+        config,
+        execution_host=arguments.execution_host,
+        source_revision=arguments.source_revision,
+        plugin_revision=arguments.plugin_revision,
+        sdk_version=arguments.expected_sdk_version,
+    )
+
+    user_id, sdk_code = resolve_kaiwu_credentials()
+    credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
+    client = KaiwuSDKClient(
+        checkpoint_dir=arguments.checkpoint_dir,
+        credentials=credentials,
+        expected_version=arguments.expected_sdk_version,
+    )
+    payload = run_live_system_probe(
+        client=client,
+        config=config,
+        config_sha256=config_sha256,
+        execution_host=arguments.execution_host,
+        observed_hostname=observed_hostname,
+        source_revision=arguments.source_revision,
+        plugin_revision=arguments.plugin_revision,
+        sdk_version=arguments.expected_sdk_version,
+        device=device,
+        observed_gpu=observed_gpu,
+        project_no=arguments.project_no,
+        task_prefix=arguments.task_prefix,
+        requested_samples=arguments.requested_samples,
+        timeout=arguments.timeout,
+        poll_interval=arguments.poll_interval,
+        real_provider_transport=True,
+    )
+    _write_private_redacted_json(
+        arguments.output,
+        payload,
+        forbidden_values=(user_id, sdk_code),
+    )
+    print(f"Private live-system record written to {arguments.output}")
+    if payload["acceptance"]["system"] != "pass":
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
