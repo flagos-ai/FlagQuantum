@@ -44,6 +44,17 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   This is an environment provisioning constraint, not evidence of an SDK or
   FlagQuantum defect. A pinned Python 3.10/Kaiwu environment must be supplied
   or made reachable before proprietary SDK conformance and A800 execution.
+- The existing `flagquantum/flagtree:0.7.0-validation` image on both A800 hosts
+  observes GPU 0 as `NVIDIA A800-SXM4-80GB`, but contains Python 3.12.3 and
+  Torch 2.13.0+cu129. A committed development probe can exercise the plugin,
+  bounded sampler, explicit fake transport, backward pass, and parameter
+  update in that image, but it must remain classified as preliminary evidence
+  because it neither uses the declared Python 3.10/Torch 2.7 lane nor QBoson
+  hardware.
+- The documented `kaiwu==1.3.1` package was not available from the configured
+  public package index during a download-only probe. The proprietary wheel or
+  an approved platform download is still required to inspect and implement its
+  provider-state mapping without guessing.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
