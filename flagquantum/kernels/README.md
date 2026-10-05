@@ -440,6 +440,27 @@ single-device result is development evidence, not distributed scalability or
 release evidence. Reproduce or validate it with
 [`benchmarks/flagtree_tle_sharded_adjoint.py`](../../benchmarks/flagtree_tle_sharded_adjoint.py).
 
+`FQKI-TRITON-GR-004-A` propagates every RX/RZ parameter tangent for a repeated
+local rotation sequence in one persistent, parameter-major launch. This is the
+Jacobian building block used by QNG-style metric construction and by other
+workflows that need explicit tangents rather than one reverse-mode VJP.
+
+The checked-in
+[`statevector_rx_rz_tangent_dispatch_a800.json`](../../benchmarks/results/local/statevector_rx_rz_tangent_dispatch_a800.json)
+artifact records six fixed batch, pair-count, and depth shapes, including the
+depth-one boundary, depth 64, and a batched large case, on `jp-a800-171` and
+`jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0. The independent
+baseline propagates the same parameter-major analytic tangents with ordinary
+PyTorch operations and is also compiled with `torch.compile`. Maximum tangent
+absolute and relative L2 errors are `1.92e-6` and `4.81e-7`. Across the full
+default window, catalog dispatch reaches at least `9.641x` the speed of
+PyTorch eager and `18.005x` the speed of `torch.compile`. The runner rejects
+any case below either `1.0x` performance floor or the tangent tolerances, so
+GR-004-A is `provisional` for this measured CUDA `complex64` window. This is
+bounded single-device development evidence, not a framework-wide QNG or
+distributed scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_rx_rz_tangent_dispatch.py`](../../benchmarks/statevector_rx_rz_tangent_dispatch.py).
+
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
 `torch.bmm`: A800 measurements show that the experimental NUM-001 Triton

@@ -166,6 +166,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_single_qubit_loop_triton.py::test_repeated_rx_rz_cpu_tangents_match_jacobian",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_rx_rz_tangent_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-GR-005-A",

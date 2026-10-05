@@ -183,6 +183,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector", "parameter_major_tangents"),
         directions=("jacobian",),
         internal_fallback=True,
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-005-A",
