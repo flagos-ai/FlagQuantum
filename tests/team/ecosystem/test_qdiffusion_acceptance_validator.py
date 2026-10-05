@@ -330,6 +330,23 @@ def test_system_gate_requires_aggregate_precision_evidence(tmp_path: Path) -> No
     assert any("invalid scale-factor range" in error for error in errors)
 
 
+def test_system_gate_rejects_inconsistent_transfer_accounting(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    boundary = changed["transfer_accounting"]["sampler_boundaries"][0]
+    boundary["input_device"] = "cuda:0"
+    boundary["cache_hit"] = True
+    _replace_record(manifest_path, 0, changed)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("input_device: expected cpu" in error for error in errors)
+    assert any(
+        "transfer accounting differs from remote-call count" in error
+        for error in errors
+    )
+
+
 def test_manifest_requires_same_trained_energy_checkpoint(tmp_path: Path) -> None:
     manifest_path, records = _bundle(tmp_path)
     changed = copy.deepcopy(records[1])
