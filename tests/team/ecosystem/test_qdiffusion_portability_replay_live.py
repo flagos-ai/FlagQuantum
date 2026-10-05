@@ -175,6 +175,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
         plugin_revision="d" * 40,
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
+        environment_lock_sha256="1" * 64,
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay",
@@ -195,6 +196,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
     assert record["transport"] == "injected_test"
     assert record["source_preflight_sha256"] == "f" * 64
     assert record["transfer_manifest_sha256"] == "0" * 64
+    assert record["environment_lock_sha256"] == "1" * 64
     assert record["acceptance"]["portability"] == "fail"
 
 
@@ -211,6 +213,9 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
         "resolve_kaiwu_credentials()"
     )
     assert source.index("load_source_preflight(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("verify_frozen_environment_lock(") < source.index(
         "resolve_kaiwu_credentials()"
     )
     assert 'role != "portability_replay"' in source

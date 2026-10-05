@@ -27,6 +27,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
+from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    verify_frozen_environment_lock,
+)
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
@@ -115,6 +118,7 @@ def run_live_system_probe(
     plugin_revision: str,
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
+    environment_lock_sha256: str,
     sdk_version: str,
     device: torch.device,
     observed_gpu: str,
@@ -204,6 +208,7 @@ def run_live_system_probe(
         "kaiwu_pytorch_plugin_revision": plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
+        "environment_lock_sha256": environment_lock_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -318,6 +323,7 @@ def main() -> None:
     parser.add_argument("--plugin-revision", required=True)
     parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--source-preflight", required=True, type=Path)
+    parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--device", default="cuda:0")
@@ -361,6 +367,10 @@ def main() -> None:
         plugin_root=arguments.plugin_root,
     )
     _load_pinned_qdiffusion_api(arguments.plugin_root)
+    _, environment_lock_sha256 = verify_frozen_environment_lock(
+        arguments.environment_lock,
+        expected_sha256=config["software"]["environment_lock_sha256"],
+    )
 
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
@@ -379,6 +389,7 @@ def main() -> None:
         plugin_revision=arguments.plugin_revision,
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
+        environment_lock_sha256=environment_lock_sha256,
         sdk_version=arguments.expected_sdk_version,
         device=device,
         observed_gpu=observed_gpu,

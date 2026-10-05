@@ -37,6 +37,9 @@ from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _estimate_protein_remote_calls,
 )
+from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    verify_frozen_environment_lock,
+)
 from flagquantum.ecosystem.kaiwu import (
     KaiwuSampler,
     bound_qdiffusion_workflow,
@@ -226,6 +229,7 @@ def run_training_seed(
     plugin_revision: str,
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
+    environment_lock_sha256: str,
     sdk_version: str,
     preflight_sha256: str,
 ) -> dict[str, Any]:
@@ -266,6 +270,7 @@ def run_training_seed(
         "kaiwu_pytorch_plugin_revision": plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
+        "environment_lock_sha256": environment_lock_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -325,6 +330,7 @@ def main() -> None:
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
     parser.add_argument("--source-preflight", required=True, type=Path)
+    parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--seed", required=True, type=int)
@@ -350,6 +356,7 @@ def main() -> None:
         "workflow-output-root": args.workflow_output_root,
         "run-record": args.run_record,
         "source-preflight": args.source_preflight,
+        "environment-lock": args.environment_lock,
     }
     for label, path in path_arguments.items():
         if not path.is_absolute():
@@ -386,6 +393,10 @@ def main() -> None:
         plugin_revision=args.plugin_revision,
         source_root=Path(__file__).resolve().parents[2],
         plugin_root=args.plugin_root,
+    )
+    _, environment_lock_sha256 = verify_frozen_environment_lock(
+        args.environment_lock,
+        expected_sha256=config["software"]["environment_lock_sha256"],
     )
 
     preflight_artifacts(
@@ -440,6 +451,7 @@ def main() -> None:
         plugin_revision=args.plugin_revision,
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
+        environment_lock_sha256=environment_lock_sha256,
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
     )

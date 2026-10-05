@@ -112,6 +112,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         plugin_revision="b" * 40,
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -131,6 +132,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert record["real_provider_evidence"] is False
     assert record["source_preflight_sha256"] == "d" * 64
     assert record["transfer_manifest_sha256"] == "e" * 64
+    assert record["environment_lock_sha256"] == "f" * 64
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
     assert record["fallback_occurred"] is False
     assert record["retrieval_resubmitted"] is False
@@ -201,6 +203,9 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     )
     assert source.index("_load_pinned_qdiffusion_api(arguments.plugin_root)") < (
         source.index("resolve_kaiwu_credentials()")
+    )
+    assert source.index("verify_frozen_environment_lock(") < source.index(
+        "resolve_kaiwu_credentials()"
     )
     assert 'parser.add_argument("--plugin-root"' in source
     assert "source_root=Path(__file__).resolve().parents[2]" in source

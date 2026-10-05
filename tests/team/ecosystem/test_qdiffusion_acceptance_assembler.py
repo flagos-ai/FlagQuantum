@@ -22,6 +22,7 @@ pytestmark = pytest.mark.unit
 PRIMARY_SOURCE_PREFLIGHT_SHA = "d" * 64
 REPLAY_SOURCE_PREFLIGHT_SHA = "e" * 64
 TRANSFER_MANIFEST_SHA = "f" * 64
+ENVIRONMENT_LOCK_SHA = "6" * 64
 
 
 def _config() -> dict[str, Any]:
@@ -45,6 +46,7 @@ def _system(
             else REPLAY_SOURCE_PREFLIGHT_SHA
         ),
         "transfer_manifest_sha256": transfer_manifest_sha256,
+        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
@@ -203,6 +205,7 @@ def _components(
                     "execution_host": "jp-a800-171",
                     "source_preflight_sha256": source_preflight_sha256,
                     "transfer_manifest_sha256": transfer_manifest_sha256,
+                    "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
                     "experiment_config_sha256": config_sha256,
                     "trained_energy_checkpoint_sha256": str(index + 3) * 64,
                 },
@@ -220,6 +223,7 @@ def _components(
                     "execution_host": "jp-a800-171",
                     "source_preflight_sha256": source_preflight_sha256,
                     "transfer_manifest_sha256": transfer_manifest_sha256,
+                    "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
                     "baseline_metrics": _metrics(0.6 + index * 0.01),
                     "guided_metrics": _metrics(0.4 + index * 0.01),
                 },
@@ -260,11 +264,14 @@ def test_bundle_is_published_only_after_final_validation(
 ) -> None:
     config_path = tmp_path / "config.json"
     component_path = tmp_path / "component.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
     _write_json(config_path, {"schema": "test.config", "version": "1.0"})
     _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
     destination = tmp_path / "acceptance"
     arguments = {
         "config_path": config_path,
+        "environment_lock_path": environment_lock_path,
         "config": {
             "primary_host": "jp-a800-171",
             "replay_host": "jp-a800-172",
@@ -305,6 +312,7 @@ def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:
         "trained_energy_checkpoint_sha256": selected_checkpoint,
         "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
         "transfer_manifest_sha256": TRANSFER_MANIFEST_SHA,
+        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
     }
 
     primary, replay = assemble_records(
@@ -394,6 +402,7 @@ def test_assembler_rejects_different_host_transfer_manifests() -> None:
         "trained_energy_checkpoint_sha256": selected_checkpoint,
         "source_preflight_sha256": REPLAY_SOURCE_PREFLIGHT_SHA,
         "transfer_manifest_sha256": "0" * 64,
+        "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
     }
     replay_system = _system("jp-a800-172", "portability_replay", "replay-task")
     replay_system["transfer_manifest_sha256"] = "0" * 64
@@ -425,7 +434,25 @@ def test_assembler_rejects_different_host_transfer_manifests() -> None:
 
 
 def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> None:
+    environment_lock_path = tmp_path / "environment_lock.json"
+    environment_lock_sha = _write_json(
+        environment_lock_path,
+        {
+            "schema": "flagquantum.qboson_qdiffusion_environment_lock",
+            "version": "1.0",
+            "inventory_policy": "exact",
+            "python_version": "3.10.18",
+            "distributions": [
+                {
+                    "name": "torch",
+                    "version": "2.7.0",
+                    "approved_artifact_sha256": "a" * 64,
+                }
+            ],
+        },
+    )
     config = _config()
+    config["software"]["environment_lock_sha256"] = environment_lock_sha
     config_path = tmp_path / "acceptance_config.json"
     config_sha = _write_json(config_path, config)
 
@@ -454,6 +481,8 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     )
     primary_system_record["source_preflight_sha256"] = primary_preflight_sha
     replay_system_record["source_preflight_sha256"] = replay_preflight_sha
+    primary_system_record["environment_lock_sha256"] = environment_lock_sha
+    replay_system_record["environment_lock_sha256"] = environment_lock_sha
     primary_system_record["experiment_config_sha256"] = config_sha
     replay_system_record["experiment_config_sha256"] = config_sha
     primary_system_sha = _write_json(primary_system_path, primary_system_record)
@@ -472,11 +501,13 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         transfer_manifest_path,
     ]
     for index, (training_record, _) in enumerate(training_templates):
+        training_record["environment_lock_sha256"] = environment_lock_sha
         path = tmp_path / "components" / f"training-{index}.json"
         digest = _write_json(path, training_record)
         training_entries.append((training_record, digest))
         component_paths.append(path)
     for index, (evaluation_record, _) in enumerate(evaluation_templates):
+        evaluation_record["environment_lock_sha256"] = environment_lock_sha
         evaluation_record["training_record_sha256"] = training_entries[index][1]
         path = tmp_path / "components" / f"evaluation-{index}.json"
         digest = _write_json(path, evaluation_record)
@@ -494,6 +525,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         "trained_energy_checkpoint_sha256": selected_checkpoint,
         "source_preflight_sha256": replay_preflight_sha,
         "transfer_manifest_sha256": transfer_manifest_sha,
+        "environment_lock_sha256": environment_lock_sha,
     }
     portability_path = tmp_path / "components" / "portability.json"
     portability_sha = _write_json(portability_path, portability_record)
@@ -522,6 +554,10 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         "schema": "flagquantum.qboson_qdiffusion_manifest",
         "version": "1.0",
         "config": {"path": config_path.name, "sha256": config_sha},
+        "environment_lock": {
+            "path": environment_lock_path.name,
+            "sha256": environment_lock_sha,
+        },
         "records": [
             {"path": primary_path.name, "sha256": primary_sha},
             {"path": replay_path.name, "sha256": replay_sha},

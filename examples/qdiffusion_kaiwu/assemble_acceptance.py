@@ -145,6 +145,7 @@ def _final_host_record(
         "kaiwu_pytorch_plugin_revision": system.get("kaiwu_pytorch_plugin_revision"),
         "source_preflight_sha256": system.get("source_preflight_sha256"),
         "transfer_manifest_sha256": system.get("transfer_manifest_sha256"),
+        "environment_lock_sha256": system.get("environment_lock_sha256"),
         "python_version": system.get("python_version"),
         "torch_version": system.get("torch_version"),
         "kaiwu_sdk_version": system.get("kaiwu_sdk_version"),
@@ -263,7 +264,11 @@ def assemble_records(
             raise ValueError(f"training seed {seed} did not complete")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"training seed {seed} is from the wrong host")
-        for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+        for field in (
+            "source_preflight_sha256",
+            "transfer_manifest_sha256",
+            "environment_lock_sha256",
+        ):
             if record.get(field) != primary_system_record.get(field):
                 raise ValueError(f"training seed {seed} has different {field}")
         training_by_seed[seed] = (record, digest)
@@ -287,7 +292,11 @@ def assemble_records(
             raise ValueError(f"evaluation seed {seed} uses another frozen config")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"evaluation seed {seed} is from the wrong host")
-        for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+        for field in (
+            "source_preflight_sha256",
+            "transfer_manifest_sha256",
+            "environment_lock_sha256",
+        ):
             if record.get(field) != primary_system_record.get(field):
                 raise ValueError(f"evaluation seed {seed} has different {field}")
         evaluation_by_seed[seed] = (record, digest)
@@ -303,7 +312,11 @@ def assemble_records(
         raise ValueError("portability replay is linked to another training record")
     if portability_record.get("trained_energy_checkpoint_sha256") != checkpoint_digest:
         raise ValueError("portability replay used another trained checkpoint")
-    for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+    for field in (
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+    ):
         if portability_record.get(field) != replay_system_record.get(field):
             raise ValueError(f"portability replay has different {field}")
 
@@ -386,6 +399,7 @@ def _materialize_acceptance_bundle(
     root: Path,
     *,
     config_path: Path,
+    environment_lock_path: Path,
     config: dict[str, Any],
     primary: dict[str, Any],
     replay: dict[str, Any],
@@ -396,6 +410,7 @@ def _materialize_acceptance_bundle(
     components = root / "components"
     components.mkdir(mode=0o700)
     _write_exclusive(root / "acceptance_config.json", config_path.read_bytes())
+    _write_exclusive(root / "environment_lock.json", environment_lock_path.read_bytes())
     component_entries = []
     for name, source in component_sources.items():
         destination = components / name
@@ -415,6 +430,10 @@ def _materialize_acceptance_bundle(
             "path": "acceptance_config.json",
             "sha256": _sha256(root / "acceptance_config.json"),
         },
+        "environment_lock": {
+            "path": "environment_lock.json",
+            "sha256": _sha256(root / "environment_lock.json"),
+        },
         "records": [
             {"path": primary_name, "sha256": _sha256(root / primary_name)},
             {"path": replay_name, "sha256": _sha256(root / replay_name)},
@@ -430,6 +449,7 @@ def _publish_acceptance_bundle(
     destination: Path,
     *,
     config_path: Path,
+    environment_lock_path: Path,
     config: dict[str, Any],
     primary: dict[str, Any],
     replay: dict[str, Any],
@@ -447,6 +467,7 @@ def _publish_acceptance_bundle(
         manifest_path = _materialize_acceptance_bundle(
             staging,
             config_path=config_path,
+            environment_lock_path=environment_lock_path,
             config=config,
             primary=primary,
             replay=replay,
@@ -465,6 +486,7 @@ def _publish_acceptance_bundle(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
+    parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--primary-system", required=True, type=Path)
     parser.add_argument("--replay-system", required=True, type=Path)
     parser.add_argument("--primary-source-preflight", required=True, type=Path)
@@ -479,6 +501,7 @@ def main() -> None:
     args = parser.parse_args()
     input_paths = [
         args.config,
+        args.environment_lock,
         args.primary_system,
         args.replay_system,
         args.primary_source_preflight,
@@ -543,6 +566,7 @@ def main() -> None:
     _publish_acceptance_bundle(
         args.evidence_dir,
         config_path=args.config,
+        environment_lock_path=args.environment_lock,
         config=config,
         primary=primary,
         replay=replay,

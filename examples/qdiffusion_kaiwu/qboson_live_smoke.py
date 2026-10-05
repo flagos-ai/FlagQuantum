@@ -22,6 +22,8 @@ from flagquantum.remote.kaiwu import (
     submit_kaiwu_task,
 )
 
+from .verify_environment_lock import SHA256, verify_environment_lock
+
 SCHEMA = "flagquantum.qboson_kaiwu_live_smoke"
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
 _MATRIX = ((0.0, 1.0), (1.0, 0.0))
@@ -59,6 +61,7 @@ def run_live_smoke(
     project_no: str,
     timeout: float,
     poll_interval: float,
+    environment_lock_sha256: str,
     requested_samples: int = 10,
 ) -> dict[str, Any]:
     """Run one optimization and one sampling task without fallback."""
@@ -67,6 +70,8 @@ def run_live_smoke(
         raise ValueError("task_prefix must be non-empty")
     if not project_no.strip():
         raise ValueError("project_no must be non-empty")
+    if SHA256.fullmatch(environment_lock_sha256) is None:
+        raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
     records: list[dict[str, Any]] = []
     for mode in ("optimization", "sampling"):
         job = submit_kaiwu_task(
@@ -103,6 +108,7 @@ def run_live_smoke(
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "transport": "kaiwu_cim",
         "project_no": project_no.strip(),
+        "environment_lock_sha256": environment_lock_sha256,
         "tasks": records,
         "live_provider_smoke_passed": smoke_passed,
         "provider_identity_complete": provider_identity_complete,
@@ -127,6 +133,7 @@ def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint-dir", required=True, type=Path)
+    parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
@@ -142,6 +149,7 @@ def main() -> None:
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
 
+    _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
     client = KaiwuSDKClient(
         checkpoint_dir=arguments.checkpoint_dir,
         expected_version=arguments.expected_sdk_version,
@@ -152,6 +160,7 @@ def main() -> None:
         project_no=arguments.project_no,
         timeout=arguments.timeout,
         poll_interval=arguments.poll_interval,
+        environment_lock_sha256=environment_lock_sha256,
         requested_samples=arguments.requested_samples,
     )
     _write_private_json(arguments.output, payload)

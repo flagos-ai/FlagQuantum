@@ -192,6 +192,14 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
 - Training, evaluation, and replay also reject any loaded `dplm.*` module, and
   every bounded path rejects any `kaiwu.torch_plugin.*` module, whose source or
   namespace path escapes the reviewed plugin tree.
+- An offline environment-lock verifier now requires the exact Python patch
+  version and a complete, sorted installed-distribution inventory with exact
+  versions and reviewed artifact digests. It rejects missing, extra, duplicate,
+  placeholder, public, or symlinked inputs without installing anything.
+- System, training, evaluation, and replay verify that exact runtime inventory
+  and bind its lock digest to the frozen config before credentials are resolved.
+  Final assembly copies and independently revalidates the lock as a closed-world
+  evidence member.
 - A quota-guarded replay-host runner now verifies and loads the exact selected
   primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
   executes one preregistered held-out fixture through a fresh FlagQuantum remote

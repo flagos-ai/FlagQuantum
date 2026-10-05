@@ -106,6 +106,16 @@ post-hoc metric thresholds fails closed.
 
 Credentials never belong in the frozen configuration or evidence bundle.
 
+`verify_environment_lock.py` provides the offline dependency-lane gate. Start
+from `environment_lock.example.json`, replace its illustrative rows with every
+distribution in the isolated Python 3.10 environment, and record each exact
+version plus the approved installation-artifact SHA-256. The private lock is
+accepted only when its Python version and complete distribution inventory match
+the running environment exactly and its file digest matches the frozen config.
+Every quota-consuming path verifies it before credential resolution. The
+verifier never installs or downloads a package and does not turn an unreviewed
+artifact into an approved one.
+
 ## Live provider smoke test
 
 `qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
@@ -120,6 +130,7 @@ must be typed exactly so an ordinary test run cannot spend provider quota:
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir private-kaiwu-checkpoints \
+  --environment-lock /absolute/private-evidence/environment-lock.json \
   --output private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \
   --task-prefix flagquantum-smoke-20261005 \
@@ -220,8 +231,9 @@ arithmetic means across all seed metrics, and reruns the fail-closed acceptance
 validator. It also requires and copies the primary- and replay-host
 post-extraction preflight records, then verifies that every execution record
 links to the correct host preflight and their common transfer manifest. The
-manifest itself is a required copied component, so the final evidence remains
-self-contained after the temporary transfer directory is unavailable. The
+environment lock and transfer manifest are required copied members, so the
+final evidence remains self-contained after the temporary preparation
+directories are unavailable. The
 inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed

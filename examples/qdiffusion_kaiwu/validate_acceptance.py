@@ -22,6 +22,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     validate_source_preflight_record,
     validate_transfer_manifest_record,
 )
+from examples.qdiffusion_kaiwu.verify_environment_lock import load_environment_lock
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
@@ -330,6 +331,7 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
+        "environment_lock_sha256",
     ):
         if software.get(field) in {None, "", "<required>"}:
             errors.append(f"config.software.{field}: frozen value is required")
@@ -337,6 +339,14 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         revision = software.get(field)
         if not isinstance(revision, str) or FULL_REVISION.fullmatch(revision) is None:
             errors.append(f"config.software.{field}: expected a full Git revision")
+    environment_digest = software.get("environment_lock_sha256")
+    if (
+        not isinstance(environment_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", environment_digest) is None
+    ):
+        errors.append(
+            "config.software.environment_lock_sha256: expected a SHA-256 digest"
+        )
     precision = _mapping(
         config.get("precision_policy"), "config.precision_policy", errors
     )
@@ -388,7 +398,11 @@ def _validate_system_record(
         value = record.get(field)
         if not isinstance(value, str) or FULL_REVISION.fullmatch(value) is None:
             errors.append(f"{label}.{field}: expected a full Git revision")
-    for field in ("source_preflight_sha256", "transfer_manifest_sha256"):
+    for field in (
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+    ):
         value = record.get(field)
         if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
             errors.append(f"{label}.{field}: expected a SHA-256 digest")
@@ -399,6 +413,7 @@ def _validate_system_record(
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
+        "environment_lock_sha256",
     ):
         if record.get(field) != software.get(field):
             errors.append(f"{label}.{field}: differs from the frozen software lane")
@@ -823,6 +838,10 @@ def _validate_component_bundle(
             "manifest_sha256"
         ):
             errors.append(f"component {digest}: transfer manifest identity mismatch")
+        if payload.get("environment_lock_sha256") != software.get(
+            "environment_lock_sha256"
+        ):
+            errors.append(f"component {digest}: environment lock identity mismatch")
 
     for final, label in ((primary, "primary"), (replay, "replay")):
         system_digest = final.get("system_evidence_sha256")
@@ -841,6 +860,7 @@ def _validate_component_bundle(
             "kaiwu_pytorch_plugin_revision",
             "source_preflight_sha256",
             "transfer_manifest_sha256",
+            "environment_lock_sha256",
             "python_version",
             "torch_version",
             "kaiwu_sdk_version",
@@ -1108,6 +1128,25 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         errors.append("manifest.config: SHA-256 mismatch")
     config = _mapping(_read_json(config_path), "config", errors)
     _validate_config(config, errors)
+
+    environment_entry = _mapping(
+        manifest.get("environment_lock"), "manifest.environment_lock", errors
+    )
+    environment_path = resolve_member(
+        environment_entry.get("path"), "manifest.environment_lock.path"
+    )
+    if environment_path is None:
+        return errors
+    environment_hash = _sha256(environment_path)
+    if environment_entry.get("sha256") != environment_hash:
+        errors.append("manifest.environment_lock: SHA-256 mismatch")
+    try:
+        load_environment_lock(environment_path)
+    except ValueError as exc:
+        errors.append(f"manifest.environment_lock: {exc}")
+    software = _mapping(config.get("software"), "config.software", errors)
+    if software.get("environment_lock_sha256") != environment_hash:
+        errors.append("manifest.environment_lock: differs from frozen configuration")
 
     component_payloads: dict[str, dict[str, Any]] = {}
     raw_components = manifest.get("component_records")

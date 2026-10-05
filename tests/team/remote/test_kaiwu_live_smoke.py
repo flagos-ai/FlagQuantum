@@ -84,6 +84,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
         project_no="CPQC-test",
         timeout=1.0,
         poll_interval=0.01,
+        environment_lock_sha256="a" * 64,
     )
 
     assert client.submissions == 2
@@ -95,6 +96,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["provider_identity_complete"] is False
     assert record["hardware_acceptance"] is False
     assert record["fallback_occurred"] is False
+    assert record["environment_lock_sha256"] == "a" * 64
     assert all(
         task["provider_result_schema"] == {"available": False, "reason": "test_client"}
         for task in record["tasks"]
@@ -108,10 +110,23 @@ def test_live_smoke_accepts_complete_provider_identity() -> None:
         project_no="CPQC-test",
         timeout=1.0,
         poll_interval=0.01,
+        environment_lock_sha256="b" * 64,
     )
 
     assert record["provider_identity_complete"] is True
     assert record["hardware_acceptance"] is True
+
+
+def test_live_smoke_rejects_invalid_environment_lock_digest() -> None:
+    with pytest.raises(ValueError, match="environment_lock_sha256"):
+        run_live_smoke(
+            client=_CompletedClient(expose_provider_identity=True),
+            task_prefix="smoke",
+            project_no="CPQC-test",
+            timeout=1.0,
+            poll_interval=0.01,
+            environment_lock_sha256="not-a-digest",
+        )
 
 
 def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
@@ -124,3 +139,17 @@ def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
     assert path.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         _write_private_json(path, payload)
+
+
+def test_live_smoke_verifies_environment_before_client_initialization() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qboson_live_smoke.py"
+    ).read_text(encoding="utf-8")
+
+    assert "--environment-lock" in source
+    assert source.index("verify_environment_lock(") < source.index(
+        "client = KaiwuSDKClient("
+    )

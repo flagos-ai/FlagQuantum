@@ -9,7 +9,8 @@
     "kaiwu_pytorch_plugin_revision": "<required>",
     "python_version": "3.10.<required>",
     "torch_version": "2.7.0",
-    "kaiwu_sdk_version": "1.3.1"
+    "kaiwu_sdk_version": "1.3.1",
+    "environment_lock_sha256": "<required>"
   },
   "dataset": {
     "name": "<required>",

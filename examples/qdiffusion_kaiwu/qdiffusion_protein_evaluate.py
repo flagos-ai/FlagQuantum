@@ -31,6 +31,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    verify_frozen_environment_lock,
+)
 
 SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
@@ -291,6 +294,7 @@ def main() -> None:
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--plugin-revision", required=True)
     parser.add_argument("--source-preflight", required=True, type=Path)
+    parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--expected-sdk-version", default="1.3.1")
     args = parser.parse_args()
     for label, path in {
@@ -300,6 +304,7 @@ def main() -> None:
         "plugin-root": args.plugin_root,
         "evaluation-model": args.evaluation_model,
         "source-preflight": args.source_preflight,
+        "environment-lock": args.environment_lock,
         "output": args.output,
     }.items():
         if not path.is_absolute():
@@ -325,6 +330,10 @@ def main() -> None:
         )
     except ValueError as exc:
         parser.error(str(exc))
+    _, environment_lock_sha256 = verify_frozen_environment_lock(
+        args.environment_lock,
+        expected_sha256=config["software"]["environment_lock_sha256"],
+    )
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")
@@ -370,6 +379,7 @@ def main() -> None:
         "kaiwu_pytorch_plugin_revision": args.plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
+        "environment_lock_sha256": environment_lock_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "execution_host": args.execution_host,

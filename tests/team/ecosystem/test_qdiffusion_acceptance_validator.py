@@ -39,6 +39,7 @@ def _config() -> dict[str, Any]:
             "python_version": "3.10.18",
             "torch_version": "2.7.0",
             "kaiwu_sdk_version": "1.3.1",
+            "environment_lock_sha256": "6" * 64,
         },
         "dataset": {
             "name": "frozen",
@@ -121,7 +122,9 @@ def _metrics(*, cosine: float, uniqueness: float, repeat: float) -> dict[str, fl
     }
 
 
-def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
+def _record(
+    host: str, role: str, config_sha256: str, environment_lock_sha256: str
+) -> dict[str, Any]:
     transfer_boundary = {
         "input_type": "numpy.ndarray",
         "input_device": "cpu",
@@ -142,6 +145,7 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
         "kaiwu_pytorch_plugin_revision": _PLUGIN_REVISION,
         "source_preflight_sha256": ("8" * 64 if host == "jp-a800-171" else "9" * 64),
         "transfer_manifest_sha256": "7" * 64,
+        "environment_lock_sha256": environment_lock_sha256,
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
@@ -226,12 +230,28 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
 
 
 def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
+    environment_lock = {
+        "schema": "flagquantum.qboson_qdiffusion_environment_lock",
+        "version": "1.0",
+        "inventory_policy": "exact",
+        "python_version": "3.10.18",
+        "distributions": [
+            {
+                "name": "torch",
+                "version": "2.7.0",
+                "approved_artifact_sha256": "a" * 64,
+            }
+        ],
+    }
+    environment_path = tmp_path / "environment-lock.json"
+    environment_hash = _write_json(environment_path, environment_lock)
     config = _config()
+    config["software"]["environment_lock_sha256"] = environment_hash
     config_path = tmp_path / "config.json"
     config_hash = _write_json(config_path, config)
     records = [
-        _record("jp-a800-171", "primary", config_hash),
-        _record("jp-a800-172", "portability_replay", config_hash),
+        _record("jp-a800-171", "primary", config_hash, environment_hash),
+        _record("jp-a800-172", "portability_replay", config_hash, environment_hash),
     ]
     entries = []
     for record in records:
@@ -241,6 +261,10 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
         "schema": "flagquantum.qboson_qdiffusion_manifest",
         "version": "1.0",
         "config": {"path": config_path.name, "sha256": config_hash},
+        "environment_lock": {
+            "path": environment_path.name,
+            "sha256": environment_hash,
+        },
         "records": entries,
     }
     manifest_path = tmp_path / "manifest.json"
@@ -504,6 +528,37 @@ def test_manifest_requires_same_trained_energy_checkpoint(tmp_path: Path) -> Non
         "same trained energy checkpoint" in error
         for error in validate_acceptance(manifest_path)
     )
+
+
+def test_environment_lock_is_frozen_and_retained(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    changed["environment_lock_sha256"] = "0" * 64
+    _replace_record(manifest_path, 0, changed)
+
+    assert any(
+        "environment_lock_sha256: differs from the frozen software lane" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    lock_path = tmp_path / manifest["environment_lock"]["path"]
+    lock_path.write_text("{}", encoding="utf-8")
+    lock_path.chmod(0o600)
+    assert any(
+        "manifest.environment_lock: SHA-256 mismatch" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+
+def test_config_requires_environment_lock_digest() -> None:
+    config = _config()
+    config["software"]["environment_lock_sha256"] = "not-a-digest"
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("environment_lock_sha256" in error for error in errors)
 
 
 @pytest.mark.parametrize(

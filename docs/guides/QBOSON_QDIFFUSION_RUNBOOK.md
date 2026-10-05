@@ -188,6 +188,27 @@ Create an isolated Python 3.10 environment from the approved wheel set. Verify
 package files and versions before setting credentials. Do not install an
 unreviewed package merely because it shares the name `kaiwu`.
 
+Copy `examples/qdiffusion_kaiwu/environment_lock.example.json` to a private
+mode-0600 file and replace the illustrative rows with the complete, sorted
+distribution inventory of the isolated environment. Every row requires the
+exact installed version and SHA-256 of its approved wheel or installation
+artifact; the three example rows are not a complete lock. Verify the finished
+lock offline before credentials are present:
+
+```bash
+python3 -B -s -m examples.qdiffusion_kaiwu.verify_environment_lock \
+  --lock /absolute/private-evidence/environment-lock.json
+```
+
+The verifier rejects a different Python patch version, missing or additional
+distributions, version drift, duplicate names, placeholders, symlinks, and
+non-private permissions. It does not download, install, or approve packages;
+artifact review and installation remain separate controlled steps.
+Record the verified lock's SHA-256 as
+`software.environment_lock_sha256` in `acceptance_config.json` before freezing
+the configuration. Every live, training, evaluation, and replay command below
+must receive that same private lock file.
+
 At minimum, record:
 
 ```bash
@@ -209,6 +230,7 @@ one optimization task and one sampling task and may consume quota:
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir private-kaiwu-checkpoints \
+  --environment-lock /absolute/private-evidence/environment-lock.json \
   --output private-evidence/qboson-smoke-attempt-001.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-smoke-${RUN_ID}" \
@@ -249,6 +271,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --plugin-revision "$KAIWU_PLUGIN_REVISION" \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --source-preflight /absolute/private-evidence/extraction-preflight.json \
+  --environment-lock /absolute/private-evidence/environment-lock.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-qdiffusion-${RUN_ID}" \
   --device cuda:0 \
@@ -412,6 +435,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
   --source-preflight /absolute/evidence/extraction-preflight.json \
+  --environment-lock /absolute/evidence/environment-lock.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-protein \
   --seed 1701 \
@@ -456,7 +480,8 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
-  --source-preflight /absolute/evidence/extraction-preflight.json
+  --source-preflight /absolute/evidence/extraction-preflight.json \
+  --environment-lock /absolute/evidence/environment-lock.json
 ```
 
 This stage uses the A800 but consumes no additional QBoson quota. Preserve one
@@ -487,6 +512,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
   --source-preflight /absolute/evidence/replay-extraction-preflight.json \
+  --environment-lock /absolute/evidence/environment-lock.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-portability \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
@@ -506,6 +532,7 @@ training/evaluation seed pass, assemble them without manually copying metrics:
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --config /absolute/evidence/acceptance-config.json \
+  --environment-lock /absolute/evidence/environment-lock.json \
   --primary-system /absolute/evidence/jp-a800-171-system.json \
   --replay-system /absolute/evidence/jp-a800-172-system.json \
   --primary-source-preflight /absolute/evidence/jp-a800-171-extraction-preflight.json \
@@ -526,16 +553,18 @@ config identities, both revision-bound extraction preflights, their exact shared
 transfer manifest, host roles, seed coverage, training/evaluation links, and the
 selected portability checkpoint before averaging metrics. It copies every
 source record and the transfer manifest into a private component directory,
-hashes those copies, creates the two final host records and manifest, then runs
+copies the exact environment lock as a top-level member, hashes those copies,
+creates the two final host records and manifest, then runs
 `validate_acceptance.py` on the result. Every input must be an absolute,
 mode-0600 regular file rather than a symlink. Assembly occurs in a private
 sibling staging directory and is atomically published only after final
 validation; a failed run does not leave the requested evidence directory.
 Subsequent validation repeats the private-file check for the manifest, config,
-host records, and every component, and rejects a symlink anywhere in a member
-path rather than following it. Member paths must be unique normalized relative
-POSIX paths, and the on-disk file tree must exactly equal the manifest's declared
-set; unlisted files are rejected.
+environment lock, host records, and every component; it verifies that the lock
+digest equals the frozen config and rejects a symlink anywhere in a member path
+rather than following it. Member paths must be unique normalized relative POSIX
+paths, and the on-disk file tree must exactly equal the manifest's declared set;
+unlisted files are rejected.
 Missing, extra, replaced, or selectively omitted source or seed records fail.
 
 ## 10. Assemble and validate final evidence
