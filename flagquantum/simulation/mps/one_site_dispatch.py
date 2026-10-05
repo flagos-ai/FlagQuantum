@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 import torch
 
 from ...kernels.catalog import (
@@ -12,19 +10,22 @@ from ...kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-from ..kernel_dispatch import _require_cataloged_kernel
+from ..kernel_dispatch import _opt_in_environment_flag, _require_cataloged_kernel
 from ..real_imag_kernels import complex_einsum_pair
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MPS-003-A"
-_DISABLED_VALUES = frozenset({"0", "false", "off", "no"})
 
 
 def _mps_one_site_rollout_enabled() -> bool:
     """Return whether the default MPS-003 route has not been disabled."""
 
-    return os.getenv("FQ_TRITON_MPS_ONE_SITE", "1").strip().lower() not in (
-        _DISABLED_VALUES
-    )
+    return _opt_in_environment_flag("FQ_TRITON_MPS_ONE_SITE", "1")
+
+
+def _mps_two_site_rollout_enabled() -> bool:
+    """Return whether the opt-in MPS two-site fused route is enabled."""
+
+    return _opt_in_environment_flag("FQ_TRITON_MPS_TWO_SITE")
 
 
 def _mps_one_site_kernel_enabled(tensor: torch.Tensor, gate: torch.Tensor) -> bool:
@@ -120,6 +121,7 @@ __all__ = (
     "_mps_one_site_kernel_match",
     "_mps_one_site_kernel_enabled",
     "_mps_one_site_rollout_enabled",
+    "_mps_two_site_rollout_enabled",
     "_require_mps_one_site_kernel",
     "_try_apply_cataloged_mps_one_site_bucket",
 )
