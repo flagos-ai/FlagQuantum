@@ -16,9 +16,11 @@ from pathlib import Path
 from typing import Any
 
 from flagquantum.remote.kaiwu import (
+    KaiwuCredentials,
     KaiwuSDKClient,
     KaiwuTaskClient,
     KaiwuTaskResult,
+    resolve_kaiwu_credentials,
     submit_kaiwu_task,
 )
 
@@ -122,9 +124,16 @@ def run_live_smoke(
     }
 
 
-def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
+def _write_private_json(
+    path: Path,
+    payload: dict[str, Any],
+    *,
+    forbidden_values: tuple[str, ...] = (),
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    if any(value and value in encoded for value in forbidden_values):
+        raise RuntimeError("refusing to persist a smoke record containing credentials")
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
         stream.write(encoded)
@@ -150,8 +159,11 @@ def main() -> None:
         )
 
     _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
+    user_id, sdk_code = resolve_kaiwu_credentials()
+    credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
     client = KaiwuSDKClient(
         checkpoint_dir=arguments.checkpoint_dir,
+        credentials=credentials,
         expected_version=arguments.expected_sdk_version,
     )
     payload = run_live_smoke(
@@ -163,7 +175,11 @@ def main() -> None:
         environment_lock_sha256=environment_lock_sha256,
         requested_samples=arguments.requested_samples,
     )
-    _write_private_json(arguments.output, payload)
+    _write_private_json(
+        arguments.output,
+        payload,
+        forbidden_values=(user_id, sdk_code),
+    )
     print(f"Private smoke record written to {arguments.output}")
     if not payload["hardware_acceptance"]:
         print("Hardware acceptance remains closed; inspect the recorded limitations.")

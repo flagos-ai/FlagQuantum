@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import math
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
@@ -27,6 +29,11 @@ from .sdk import (
     _load_kaiwu_module,
     initialize_kaiwu_license,
 )
+
+_SAFE_SCHEMA_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}")
+_MAX_SCHEMA_FIELDS = 64
+_MAX_SCHEMA_SEQUENCE_TYPES = 64
+_MAX_SCHEMA_DIMENSIONS = 16
 
 
 class KaiwuSDKClient:
@@ -294,13 +301,14 @@ class KaiwuSDKClient:
 
             with self._checkpoint_context():
                 raw = getter(np.asarray(matrix, dtype=np.float64))
+            result_description = self._describe_value(raw, include_mapping_fields=True)
         except Exception:
             schema = {"available": False, "reason": "inspection_failed"}
             self._result_schemas[key] = schema
             return schema
         schema = {
             "available": True,
-            "result": self._describe_value(raw, include_mapping_fields=True),
+            "result": result_description,
         }
         self._result_schemas[key] = schema
         return schema
@@ -312,16 +320,36 @@ class KaiwuSDKClient:
         """Return JSON-safe type/shape metadata with no raw provider values."""
 
         value_type = f"{type(value).__module__}.{type(value).__qualname__}"
+        if _SAFE_SCHEMA_NAME.fullmatch(value_type) is None:
+            value_type = "unavailable"
         if isinstance(value, dict):
-            if not all(isinstance(key, str) for key in value):
-                return {"type": value_type, "length": len(value), "string_keys": False}
-            fields = sorted(value)
+            field_count = len(value)
             description: dict[str, Any] = {
                 "type": value_type,
-                "length": len(value),
-                "string_keys": True,
-                "fields": fields,
+                "length": field_count,
             }
+            if field_count > _MAX_SCHEMA_FIELDS:
+                description.update(
+                    {
+                        "string_keys": None,
+                        "fields_safe": False,
+                        "field_limit": _MAX_SCHEMA_FIELDS,
+                    }
+                )
+                return description
+            if not all(isinstance(key, str) for key in value):
+                description.update({"string_keys": False, "fields_safe": False})
+                return description
+            fields = sorted(value)
+            description["string_keys"] = True
+            fields_safe = all(
+                _SAFE_SCHEMA_NAME.fullmatch(field) is not None for field in fields
+            )
+            description["fields_safe"] = fields_safe
+            if not fields_safe:
+                description["field_limit"] = _MAX_SCHEMA_FIELDS
+                return description
+            description["fields"] = fields
             if include_mapping_fields:
                 description["field_schemas"] = {
                     field: cls._describe_value(value[field]) for field in fields
@@ -330,25 +358,42 @@ class KaiwuSDKClient:
         shape = getattr(value, "shape", None)
         dtype = getattr(value, "dtype", None)
         if shape is not None and dtype is not None:
+            shape_safe = True
             try:
-                normalized_shape = [int(size) for size in shape]
+                raw_shape = list(
+                    itertools.islice(iter(shape), _MAX_SCHEMA_DIMENSIONS + 1)
+                )
+                if len(raw_shape) > _MAX_SCHEMA_DIMENSIONS:
+                    raise ValueError("shape has too many dimensions")
+                normalized_shape = [int(size) for size in raw_shape]
             except (TypeError, ValueError):
                 normalized_shape = []
+                shape_safe = False
+            dtype_name = str(dtype)
+            dtype_safe = _SAFE_SCHEMA_NAME.fullmatch(dtype_name) is not None
             return {
                 "type": value_type,
                 "shape": normalized_shape,
-                "dtype": str(dtype),
+                "shape_safe": shape_safe,
+                "dtype": dtype_name if dtype_safe else "unavailable",
+                "dtype_safe": dtype_safe,
             }
         if isinstance(value, (list, tuple)):
+            inspected = value[:_MAX_SCHEMA_SEQUENCE_TYPES]
             return {
                 "type": value_type,
                 "length": len(value),
                 "element_types": sorted(
                     {
                         f"{type(element).__module__}.{type(element).__qualname__}"
-                        for element in value
+                        for element in inspected
+                        if _SAFE_SCHEMA_NAME.fullmatch(
+                            f"{type(element).__module__}.{type(element).__qualname__}"
+                        )
+                        is not None
                     }
                 ),
+                "element_type_scan_limit": _MAX_SCHEMA_SEQUENCE_TYPES,
             }
         if isinstance(value, (str, bytes)):
             return {"type": value_type, "length": len(value)}

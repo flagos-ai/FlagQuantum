@@ -86,6 +86,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   types, lengths, dtypes, and shapes) after completion. Raw values are never
   retained, and this diagnostic structure does not automatically map or accept
   a provider identity.
+- Result-schema diagnostics now bound field counts, field-name length and
+  syntax, dimensions, dtype names, and sequence-type inspection. Unsafe names
+  are omitted, and inspection failure remains redacted and nonfatal to valid
+  samples rather than causing unbounded or value-bearing evidence output.
 - Before its first SDK operation, that client now atomically persists a
   mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
   This closes the ambiguous-submission window: a process restart reuses the
@@ -114,6 +118,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   submitting one optimization and one sampling task, has no local fallback,
   writes a private credential-free record, and keeps hardware acceptance closed
   when provider task or target identity is unavailable.
+- That smoke command now passes an explicit in-memory credential object after
+  offline environment verification and scans both resolved credential values
+  against the complete serialized evidence before creating its output file.
 - A read-only host recheck confirmed that the SSH validation aliases differ
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and

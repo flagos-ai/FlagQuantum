@@ -34,7 +34,10 @@ SDK's `task_name + ising_matrix` checkpoint identity so polling and restoration
 query the same task instead of creating a new identity. It deliberately does
 not interpret undocumented `get_task_result` fields. After completion it may
 record only a value-free schema of that documented result dictionary to support
-review of a real response. As a result, current SDK documentation is sufficient
+review of a real response. Schema field count, names, shapes, dtypes, and
+sequence-type inspection are bounded; unsafe or oversized field names are not
+retained, and diagnostic failure does not discard otherwise valid samples. As
+a result, current SDK documentation is sufficient
 for idempotent execution but not for a provider task ID or provider-reported
 target; hardware acceptance remains closed until a real pinned response
 establishes those mappings.

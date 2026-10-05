@@ -394,6 +394,7 @@ def test_result_is_independently_scored_and_marks_evidence_gaps(
         "status",
         "task_id",
     ]
+    assert schema["result"]["fields_safe"] is True
     assert schema["result"]["field_schemas"]["task_id"] == {
         "type": "builtins.str",
         "length": len("provider-task-secret-value"),
@@ -401,7 +402,9 @@ def test_result_is_independently_scored_and_marks_evidence_gaps(
     assert schema["result"]["field_schemas"]["solutions"] == {
         "type": "numpy.ndarray",
         "shape": [10, 2],
+        "shape_safe": True,
         "dtype": "int8",
+        "dtype_safe": True,
     }
     encoded = json.dumps(schema)
     assert "provider-task-secret-value" not in encoded
@@ -436,6 +439,53 @@ def test_result_schema_failure_is_redacted_and_nonfatal(
     encoded = json.dumps(result.metadata)
     assert "provider-task-secret" not in encoded
     assert "sdk-code-secret" not in encoded
+
+
+def test_result_schema_rejects_unbounded_or_unsafe_field_names_without_leakage(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    secret_field = "sdk-code-secret-" + "x" * 200
+
+    def oversized_result(self: _FakeOptimizer, matrix: np.ndarray) -> dict[str, object]:
+        del self, matrix
+        return {**{f"field_{index}": index for index in range(64)}, secret_field: 1}
+
+    monkeypatch.setattr(_FakeOptimizer, "get_task_result", oversized_result)
+    client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="bounded-schema",
+        mode="sampling",
+        requested_samples=10,
+    )
+
+    result = job.result()
+
+    schema = result.metadata["provider_result_schema"]
+    assert schema == {
+        "available": True,
+        "result": {
+            "type": "builtins.dict",
+            "length": 65,
+            "string_keys": None,
+            "fields_safe": False,
+            "field_limit": 64,
+        },
+    }
+    assert secret_field not in json.dumps(schema)
+
+    unsafe_name_schema = KaiwuSDKClient._describe_value(
+        {secret_field: 1}, include_mapping_fields=True
+    )
+    assert unsafe_name_schema == {
+        "type": "builtins.dict",
+        "length": 1,
+        "string_keys": True,
+        "fields_safe": False,
+        "field_limit": 64,
+    }
+    assert secret_field not in json.dumps(unsafe_name_schema)
 
 
 def test_same_matrix_with_different_task_name_creates_distinct_sdk_identity(

@@ -141,6 +141,21 @@ def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
         _write_private_json(path, payload)
 
 
+def test_private_record_rejects_credentials_before_file_creation(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "smoke.json"
+
+    with pytest.raises(RuntimeError, match="credentials"):
+        _write_private_json(
+            path,
+            {"provider_result_schema": {"fields": ["sdk-code-secret"]}},
+            forbidden_values=("user-id-secret", "sdk-code-secret"),
+        )
+
+    assert not path.exists()
+
+
 def test_live_smoke_verifies_environment_before_client_initialization() -> None:
     source = (
         Path(__file__).parents[3]
@@ -151,5 +166,8 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
 
     assert "--environment-lock" in source
     assert source.index("verify_environment_lock(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("resolve_kaiwu_credentials()") < source.index(
         "client = KaiwuSDKClient("
     )

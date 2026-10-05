@@ -124,7 +124,9 @@ supplying a wheel does not turn it into an approved artifact.
 `qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
 It submits one fixed optimization task and one fixed sampling task, uses the
 same identity for bounded polling, and writes a new mode-0600 record without
-credentials or raw vendor exception text. It has no simulator fallback.
+credentials or raw vendor exception text. Both resolved credential values are
+scanned against the complete serialized record before the file is created. It
+has no simulator fallback.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private
 checkpoint directory, and an explicitly selected project. The acknowledgement
