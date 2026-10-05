@@ -60,7 +60,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; a second grammar now places a channel bound to a named gate after the gate it matched, so what remains at the input end is the arbitrary annotated circuit rather than the placement. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a composite-fault decomposition that widens the matcher past the one hyperedge a memory circuit states all landed; no BP+OSD, no sliding window, no plugin boundary. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, and a name-keyed registry all landed; no sliding window, no batch result record, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
@@ -304,10 +304,14 @@ they stay directly constructed.
 Three refusals, all at the point where the mistake is, keep the registry from
 being a look-up table with a fallback. An unregistered name raises and lists the
 names that are registered rather than reaching any implementation. A class
-missing `decode` or `from_detector_error_model` is refused while the registering
-module is being imported, which is the same place upstream refuses it and a
-better place than the first caller, where the name is all the caller has to go
-on. And a second registration of one name is refused unless the caller says
+missing `decode`, `from_detector_error_model` or `from_decoding_graph` is refused
+while the registering module is being imported, which is the same place upstream
+refuses it and a better place than the first caller, where the name is all the
+caller has to go on. The third member is required because the three carriers are
+one documented surface: a name that could be built from a model and not from a
+graph would be a name whose accepted sources depend on which name was asked for,
+so the matcher and the cross-check both carry the constructor the graph carrier
+reaches and the registry calls it rather than a bare `__init__`. And a second registration of one name is refused unless the caller says
 `replace`, because two classes answering to one name is a choice the registry
 cannot make on the caller's behalf.
 
@@ -364,6 +368,86 @@ rule exists in upstream's own sources to read. Here the parts are derived from
 the program, and the claim is bounded to what that derivation supports: a part is
 graphlike exactly where the corresponding single-Pauli fault at that location is
 and no further. A hyperedge from any other source is still refused by name.
+
+The second decoder that registry holds is the one the matcher's own scope left
+out, and it is `flagquantum/qec/belief_propagation.py`, registered under
+`belief_propagation`. The row named "belief propagation with ordered statistics
+decoding" as one of the two families the matcher does not cover, and the reason
+it is a family rather than a setting is the shape of the input: a matcher needs a
+graphlike model, so a mechanism touching three or more detectors has no edge to
+become and is refused. A factor graph has no such limit. A mechanism is one
+variable, a detector is one check, and a mechanism touching three detectors joins
+three checks, so the factor graph is the model as written rather than a
+projection of it — which is exactly the projection the matcher's refusal
+declined to make.
+
+What the exchange is, and what is checked about it. The prior of a variable is
+the log-likelihood ratio `log((1 - p) / p)` of that mechanism's own rate and not
+a marginal. A check composes the tangents of half of each *other* variable's
+message, inverts the product when its own detector fired, and sends the result
+back: excluding the variable's own report is what separates the check's evidence
+about the variable from what the variable already said, and the syndrome bit is
+in the update because a check whose detector fired states the complement of what
+it states when the detector is quiet. A run returns the first iterate whose hard
+decision explains the syndrome, and the empty syndrome is answered from the
+priors alone before any message is sent. The correctness claim is made against
+the model's own distribution and not against the exchange's opinion of itself:
+every mechanism set has a probability, a detector signature and a logical label,
+so the most likely explanation of a syndrome is a number computed by enumeration,
+and on a factor graph that is a tree — where the beliefs are exact — the decoder
+must reach it for every syndrome the model can produce. The test does that on a
+five-mechanism chain against an exhaustive enumeration, and it pins the syndrome
+bit separately by turning the fallback off: a decoder that dropped the bit would
+be transmitting the empty syndrome on every other one, would never settle, and
+would raise instead of answering.
+
+Off a tree the exchange is approximate, and that is stated rather than left to be
+discovered. On the triangle-plus-hyperedge model the beliefs settle on
+explanations that flip the syndrome and are heavier than the cheapest, which is
+the known behaviour of sum-product on a graph with cycles and the reason a caller
+who needs the cheapest explanation on a graphlike model wants the matcher. What
+the tests hold the decoder to instead is the invariant that survives: every
+syndrome is answered with a set that flips it, the reported weight is the sum of
+the selected mechanisms' own ratios, and the weight is never below the cheapest
+explanation's — a smaller number would be a weight that is not the quantity it
+claims to be. A cycle that settles on a heavier-than-cheapest explanation is
+asserted to happen, so the approximation is a demonstrated fact rather than a
+clause in a docstring.
+
+When the exchange does not settle, ordered statistics answers, and the flag is
+what says which of the two answered. The fallback orders the mechanisms by their
+posterior belief, takes a greedily chosen independent set of their columns as the
+information set, solves the reduced system over that set, and fixes every other
+mechanism at its belief decision; if the residual check row is inconsistent it
+refuses rather than returning a set that does not explain the syndrome. A caller
+who needs the exchange's own answer rather than a solve sets the fallback off,
+and then an unsettled run raises with the reason. `converged` is false exactly
+when the fallback answered, so the flag is a fact about the path taken and not a
+quality score.
+
+The refusals are the region the exchange cannot carry, and they are raised while
+the caller still holds the model. A model that states its mechanisms are
+alternatives is refused, because the exchange weighs every variable as an
+independent fault and a group of alternatives is one fault whose members cannot
+fire together, so reading the group as independent would invent shots in which
+two members both fired. A mechanism of rate zero is refused, because its prior
+ratio is not a number and a mechanism no shot can select is not evidence. A
+syndrome that no set of mechanisms can produce is refused by name, because the
+mechanisms span a subspace of the detector space and a syndrome outside it did
+not come from this model; the least-bad set would be a correction that does not
+explain what it was asked about.
+
+What the row still does not have, and it is now one item of scope rather than
+three. The sliding-window decoder needs the chunk seams the baseline expresses as
+`DemChunkSpec` with a window size, a step size, a per-round error-rate vector and
+straddle rounds, and this repository has no chunks and no seams, so the row stays
+`partial` until it does. The baseline's `DecoderResult` — the batch record whose
+`opt_results` channel is compared as a boolean flag and whose empty batch yields
+a `(0, 0)` result with a `(0,)` converged vector — has no local carrier either;
+`BeliefPropagationDecodeResult` is deliberately this decoder's own record and not
+that one, because a belief-propagation answer is a convergence flag over a
+selected set rather than a batch of corrections. And the plugin boundary is still
+the baseline's precedent rather than a protocol here.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -1152,6 +1236,6 @@ CUDA-Q side; the last column is the difference in one line.
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |
 | `kernel_dem_from_kernel` | absent | CUDA-Q core derives the DEM from the kernel's own annotations; here it is assembled by hand. |
 | `decoder_registry` | reshaped | Upstream reaches a decoder by name — `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` with a decorator putting a class behind a name; here `flagquantum.qec.get_decoder` takes a carrier and `register_decoder` puts one there, checked while the registering module is imported. Narrower on two deliberate points: the source argument is one of the three carriers a caller can hold a model in rather than a parity-check matrix, and only the detector-error-model family is registered, because the repetition-code decoders take an ordered syndrome history rather than detection events. |
-| `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult`, which carries observables, the selected mechanisms and their weight, and deliberately is not this record. |
+| `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult` and the belief-propagation decoder adds `BeliefPropagationDecodeResult`, which is the one carrying the convergence flag; neither is this record and neither has a batch or async form. |
 | `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction. |
 | `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. The integrating half of that split is now realized for one library, as the PyMatching cross-check behind an extra; what is still absent is the boundary itself, since the adapter is a concrete class rather than a registered plugin. |

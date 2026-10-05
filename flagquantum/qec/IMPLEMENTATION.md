@@ -737,6 +737,62 @@ than here: the two decoders agree on the cheapest weight of every syndrome and o
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
 
+## A second decoder, for the models the matcher cannot read
+
+`belief_propagation.py` is the other half of that decoder family, and the reason
+it is a family rather than a setting is the shape of the input. A matcher needs a
+graphlike model, so a mechanism touching three or more detectors has no edge to
+become and is refused. A factor graph has no such limit: a mechanism is one
+variable, a detector is one check, and a mechanism touching three detectors joins
+three checks, so the graph is the model as written rather than a projection of it.
+
+The exchange is sum-product in the log domain. A variable's prior is
+`log((1 - p) / p)` for that mechanism's own rate; a check composes the tangents of
+half of each other variable's message, inverts the product when its own detector
+fired, and sends the result back. Two details are the whole correctness of it.
+The message a check sends a variable must exclude that variable's own report,
+which is what separates the check's evidence about the variable from what the
+variable already said. And the check's syndrome bit belongs in the update,
+because a check whose detector fired states the complement of what it states when
+the detector is quiet. `_syndrome_mask` reads a syndrome as a set of detectors,
+so a detector named twice is named once, and a detector outside the model is
+refused.
+
+A run returns the first iterate whose hard decision explains the syndrome, and
+the empty syndrome is answered from the priors alone with an iteration count of
+zero. The claim is checked against the model's own distribution rather than
+against the exchange: every mechanism set has a probability and a signature, so
+the most likely explanation of a syndrome is a number computed by enumeration,
+and on a factor graph that is a tree the beliefs are exact and the decoder must
+reach it for every syndrome the model can produce. On a graph with cycles the
+exchange is approximate and a settled run can be heavier than the cheapest
+explanation, which is asserted as a fact rather than left to be discovered; what
+the tests hold the decoder to there is that every syndrome is answered with a set
+that flips it, that the weight is the sum of the selected mechanisms' own ratios,
+and that the weight is never below the cheapest explanation's.
+
+When the exchange does not settle, ordered statistics answers and the result's
+`converged` flag is false. The fallback orders the mechanisms by their posterior
+belief, takes a greedily chosen independent set of their columns as the
+information set, solves the reduced system over it, fixes every other mechanism
+at its belief decision, and refuses an inconsistent residual rather than
+returning a set that does not explain the syndrome. A caller who needs the
+exchange's own answer rather than a solve turns the fallback off, and then an
+unsettled run raises with the reason. Three refusals keep the region honest: a
+model that states its mechanisms are alternatives is refused, because the
+exchange weighs each variable as an independent fault and a group of alternatives
+is one fault whose members cannot fire together; a mechanism of rate zero is
+refused, because its prior ratio is not a number; and a syndrome no set of
+mechanisms can produce is refused, because the mechanisms span a subspace of the
+detector space and a syndrome outside it did not come from this model.
+
+`BeliefPropagationDecodeResult` carries the convergence flag, the selected
+mechanisms, the logical observables they flip, the total weight and the iteration
+count. It is deliberately not the baseline's `DecoderResult`: there is no batch
+form, no async form and no optional-results channel here. The module imports
+`math`, `dataclasses` and `numbers` and nothing else, and it does not implement
+the sliding window, which needs the chunk seams this layer does not have yet.
+
 ## Reaching a decoder by name
 
 `registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
@@ -744,8 +800,8 @@ reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
 **options)` and registers one with a decorator, and this module offers
 `get_decoder(name, source, **options)`, `register_decoder(name, *,
 replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
-those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
-two registrations this package ships.
+those three are written against. `AUTHORITY_NAME`, `CROSS_CHECK_NAME` and
+`BELIEF_PROPAGATION_NAME` name the three registrations this package ships.
 
 Three things about it are narrower than upstream on purpose, and each is a
 decision rather than an omission.
@@ -754,9 +810,13 @@ The source argument is a *carrier*, not a decoder setting, which is why the thre
 accepted forms are the three a caller can hold a model in: the detector error
 model, stim's text for one, and the decoding graph the model defines. A model is
 lifted through the class's own `from_detector_error_model`; a graph is passed to
-the constructor, because the graph is already the thing a matcher searches and
-rebuilding a model from it would lose the observable labels the caller has in
-hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+the class's own `from_decoding_graph`, which for a matcher is the graph it already
+searches and for a decoder that reads the model as written is the lift of the
+graph's own edges back into a model; text is read through
+`DetectorErrorModel.from_stim_text` first. The third constructor is required of
+every registered class for that reason: the three carriers are one documented
+surface, and a name that could be built from a model and not from a graph would
+be a name whose accepted sources depend on which name was asked for. A
 parity-check matrix is not a carrier, although upstream's
 `H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
 model and a round count rather than defaulting them, so a factory that lifted a
@@ -773,8 +833,8 @@ why the registry is a module of its own rather than methods on `Decoder`.
 Registration is checked at registration time, while the registering module is
 being imported. `register_decoder` refuses a name that is not a non-empty string,
 a second registration of a name unless the caller passes `replace=True`, and a
-class missing `decode` or `from_detector_error_model` — the two members every
-decoder in this family shares. A `TypeError` at import time, naming the member
+class missing `decode`, `from_detector_error_model` or `from_decoding_graph` —
+the three members every decoder in this family shares. A `TypeError` at import time, naming the member
 that is missing, is a better failure than an `AttributeError` at the first call,
 where the name is all the caller has to go on.
 

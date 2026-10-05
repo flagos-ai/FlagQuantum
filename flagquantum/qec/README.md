@@ -96,6 +96,8 @@ it.
 `decoding_graph.py` turns a detector error model into a weighted graph and
 `matching.py` decodes a syndrome on it. This is the code-independent decoder: it
 reads the model's mechanisms and nothing about the code that produced them.
+`belief_propagation.py` is the second decoder over the same model, for the
+mechanisms a matcher has no edge for.
 
 ```python
 from flagquantum.qec import (
@@ -153,6 +155,39 @@ the mechanisms that touch it, so the combined prior of a group is the single `p`
 whose factor is that group's product and every rate is unchanged.
 `mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
 the refusal.
+
+## Decode a model the matcher refuses
+
+A matcher needs one edge per mechanism, so a mechanism that flips three or more
+detectors is a hyperedge and `matching.py` refuses it. `belief_propagation.py`
+reads exactly that model: a mechanism is one variable, a detector is one check,
+and a mechanism touching three detectors joins three checks, so the graph is the
+model as written rather than a projection of it.
+
+```python
+from flagquantum.qec import BeliefPropagationDecoder, DetectorErrorModel
+
+model = DetectorErrorModel.from_stim_text(
+    "error(0.01) D0 D1 D2\n"
+    "error(0.01) D0 D1\n"
+    "error(0.01) D1 D2\n"
+    "detector D0\n"
+    "detector D1\n"
+    "detector D2\n"
+)
+result = BeliefPropagationDecoder.from_detector_error_model(model).decode((0, 1, 2))
+print(result.converged, result.mechanisms, result.observables, result.weight)
+```
+
+`converged` is false exactly when the exchange did not settle and an
+ordered-statistics solve over a greedily chosen information set answered instead,
+so the flag is a fact about the path taken rather than a quality score. Belief
+propagation is exact on a factor graph that is a tree and approximate off one, so
+a loopy model can settle on an explanation that is heavier than the cheapest; a
+caller who needs the cheapest explanation on a graphlike model wants the matcher.
+The decoder refuses a model that states its mechanisms are alternatives, a
+mechanism of rate zero, and a syndrome that no set of mechanisms can produce,
+rather than approximating any of the three.
 
 ## Cross-check the matcher against PyMatching
 
@@ -610,8 +645,10 @@ now something a test can recompute from handles rather than only assume.
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
-and [matching.py](matching.py) for the detector-error-model decoder,
-[adapters.py](adapters.py) for the PyMatching cross-check,
+and [matching.py](matching.py) for the detector-error-model matcher,
+[belief_propagation.py](belief_propagation.py) for the decoder that reads the
+hyperedges the matcher refuses, [registry.py](registry.py) for reaching either by
+name, [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [css_code.py](css_code.py) for a code record built from
