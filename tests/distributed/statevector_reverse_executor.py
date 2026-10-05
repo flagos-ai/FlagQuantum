@@ -61,7 +61,7 @@ def main() -> None:
         )
         result = execute_torch_distributed_statevector_reverse(
             circuit,
-            observable_wire=n_wires - 1,
+            observable_qubit=n_wires - 1,
             checkpoint_policy=StatevectorCheckpointPolicy(
                 strategy=(
                     "reversible_adjoint" if args.persistent_layout else "interval"
@@ -135,7 +135,7 @@ def main() -> None:
             )
             transport_result = execute_torch_distributed_statevector_reverse(
                 transport_circuit,
-                observable_wire=0,
+                observable_qubit=0,
                 checkpoint_policy=StatevectorCheckpointPolicy(
                     strategy="interval",
                     interval=1,
@@ -193,7 +193,7 @@ def main() -> None:
             )
             sharded_result = execute_torch_distributed_statevector_reverse(
                 sharded_circuit,
-                observable_wire=0,
+                observable_qubit=0,
                 checkpoint_policy=StatevectorCheckpointPolicy(
                     strategy="interval",
                     interval=1,

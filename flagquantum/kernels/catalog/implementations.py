@@ -33,6 +33,32 @@ def _triton(
     )
 
 
+def _flagtree(
+    implementation_id: str,
+    semantic_id: str,
+    module: str,
+    symbol: str,
+    *,
+    layouts: tuple[str, ...],
+    directions: tuple[KernelDirection, ...] = ("forward",),
+    addressing: tuple[str, ...] = ("local",),
+    maturity: KernelMaturity = "experimental",
+) -> KernelImplementation:
+    return KernelImplementation(
+        implementation_id=implementation_id,
+        semantic_id=semantic_id,
+        provider="flagtree",
+        module=module,
+        symbol=symbol,
+        devices=("cuda",),
+        dtypes=("complex64",),
+        layouts=layouts,
+        directions=directions,
+        addressing=addressing,
+        maturity=maturity,
+    )
+
+
 IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
     _triton(
         "FQKI-TRITON-SV-001-A",
@@ -41,6 +67,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "apply_complex64_local_1q",
         layouts=("flat_statevector",),
         directions=("forward",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-001-B",
@@ -56,6 +83,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector_gates",
         "apply_complex64_local_cx_inplace",
         layouts=("flat_statevector",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-003-A",
@@ -63,6 +91,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector_gates",
         "apply_complex64_local_cx_segment",
         layouts=("flat_statevector",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-003-B",
@@ -79,6 +108,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "ry_rz_pair",
         layouts=("flat_statevector",),
         directions=("forward",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-005-A",
@@ -88,6 +118,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector",),
         directions=("forward", "backward"),
         internal_fallback=True,
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-006-A",
@@ -96,6 +127,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "apply_complex64_transpose_1q_inplace",
         layouts=("sharded_statevector",),
         addressing=("distributed", "transpose"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-007-A",
@@ -104,6 +136,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "pack_complex64_control_one",
         layouts=("flat_statevector", "packed_subspace"),
         addressing=("distributed", "control_subspace"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-SV-008-A",
@@ -112,6 +145,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "unpack_complex64_control_one",
         layouts=("packed_subspace", "flat_statevector"),
         addressing=("distributed", "control_subspace"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-001-A",
@@ -120,6 +154,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_complex64_local_1q_vjp_adjoint",
         layouts=("flat_statevector",),
         directions=("vjp",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-002-A",
@@ -128,6 +163,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_complex64_local_1q_reversible_vjp",
         layouts=("flat_statevector",),
         directions=("vjp",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-003-A",
@@ -137,6 +173,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("sharded_statevector",),
         directions=("vjp",),
         addressing=("distributed",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-004-A",
@@ -146,6 +183,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("flat_statevector", "parameter_major_tangents"),
         directions=("jacobian",),
         internal_fallback=True,
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-005-A",
@@ -225,6 +263,37 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_wire_probabilities",
         "fused_mps_qubit_probabilities",
         layouts=("mps_site_tensor",),
+        maturity="provisional",
+        internal_fallback=True,
+    ),
+    _triton(
+        "FQKI-TRITON-MEAS-001-A",
+        "measurement.probabilities.statevector",
+        "statevector_measurement",
+        "statevector_probabilities",
+        layouts=("flat_statevector",),
+        directions=("forward", "backward"),
+        maturity="provisional",
+        internal_fallback=True,
+    ),
+    _triton(
+        "FQKI-TRITON-MEAS-002-A",
+        "measurement.expectation.pauli_product.statevector",
+        "statevector_measurement",
+        "statevector_pauli_expectation",
+        layouts=("flat_statevector",),
+        directions=("forward", "backward"),
+        maturity="provisional",
+        internal_fallback=True,
+    ),
+    _triton(
+        "FQKI-TRITON-MEAS-003-A",
+        "measurement.probabilities.marginal.statevector",
+        "statevector_measurement",
+        "statevector_marginal_probabilities",
+        layouts=("flat_statevector", "selected_wire_order"),
+        directions=("forward", "backward"),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
@@ -244,6 +313,46 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         layouts=("explicit_strided_batch",),
         directions=("forward", "backward"),
         internal_fallback=True,
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-SV-001-A",
+        "statevector.apply.matrix_1q.local",
+        "flagquantum.kernels.flagtree",
+        "apply_complex64_local_1q_tle",
+        layouts=("flat_statevector",),
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-SV-006-A",
+        "statevector.distributed.transpose_apply_1q",
+        "flagquantum.kernels.flagtree",
+        "apply_complex64_transpose_1q_tle_inplace",
+        layouts=("sharded_statevector",),
+        addressing=("distributed", "transpose"),
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-SV-007-A",
+        "statevector.transport.control_subspace_pack",
+        "flagquantum.kernels.flagtree",
+        "pack_complex64_control_one_tle",
+        layouts=("flat_statevector", "packed_subspace"),
+        addressing=("distributed", "control_subspace"),
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-SV-008-A",
+        "statevector.transport.control_subspace_unpack",
+        "flagquantum.kernels.flagtree",
+        "unpack_complex64_control_one_tle",
+        layouts=("packed_subspace", "flat_statevector"),
+        addressing=("distributed", "control_subspace"),
+    ),
+    _flagtree(
+        "FQKI-FLAGTREE-GR-003-A",
+        "gradient.vjp.adjoint_1q.sharded",
+        "flagquantum.kernels.flagtree",
+        "fused_complex64_sharded_1q_vjp_adjoint_tle",
+        layouts=("sharded_statevector",),
+        directions=("vjp",),
+        addressing=("distributed",),
     ),
 )
 

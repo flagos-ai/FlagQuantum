@@ -2,7 +2,10 @@
 
 The source is a bounded hybrid-compiler program that runs the configured number
 of syndrome-extraction rounds and returns the final check measurement. Detector
-and observable identity is derived from the code, so a caller never asserts it.
+and observable identity is derived from the code, so a caller never asserts it,
+and the measurement handles the experiment records are derived from the code the
+same way, so a recorded bit is named by a handle rather than by a column index a
+caller has to know.
 """
 
 from __future__ import annotations
@@ -10,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Integral
 
-from .codes import StabilizerCode
+from .codes import StabilizerCode, ancilla_bands
 from .pauli import Pauli
 
 _FUNCTION_NAME = "memory_experiment"
@@ -163,6 +166,35 @@ class MemoryCircuit:
             )
         self._validate_layout()
 
+    @property
+    def measurement_refs(self) -> tuple[MeasurementRef, ...]:
+        """Every measurement location this configured experiment records.
+
+        The vector is the handles the circuit itself declares rather than the
+        subset its layouts happen to reference, and it is read off the code and
+        the round count, so it needs no lowering: one handle per check per
+        syndrome round -- the source measures every check once every round -- in
+        round-major order, then one handle per data qubit for the terminal
+        readout. A position in this vector is what names a recorded bit.
+
+        The two sets need not coincide in either direction, which is why the
+        vector is stated here rather than collected from the layouts. A one-round
+        surface patch measures its X-type checks once and no detector names them,
+        because an X-type check is deterministic neither in round zero nor at the
+        terminal readout, so those bits are recorded and referenced by nothing; a
+        longer experiment does name every handle, because each round after the
+        first compares against the round before it. Reading a handle by name does
+        not depend on which of the two holds.
+        """
+
+        refs = [
+            MeasurementRef(round_index, check.ancilla_qubit)
+            for round_index in range(self.rounds)
+            for check in self.code.checks
+        ]
+        refs.extend(MeasurementRef(None, wire) for wire in self.code.data_qubits)
+        return tuple(refs)
+
     def _validate_layout(self) -> None:
         """Tie every detector and observable reference to what this code declares."""
 
@@ -218,6 +250,33 @@ def _require_z_type_readout(code: StabilizerCode) -> None:
             "memory-circuit source requires a Z-type logical observable, because "
             "both the initial state and the terminal data readout are in the Z "
             "basis"
+        )
+
+
+def _require_ancilla_bands(code: StabilizerCode) -> None:
+    """Refuse a record whose per-basis ancilla counts contradict its checks.
+
+    The two bands are a function of the checks, and
+    :func:`~flagquantum.qec.codes.ancilla_bands` derives them everywhere they are
+    read. A record that also reports the two counts is stating them a second
+    time, so this is where the two statements are compared: a count that does not
+    match the band its own checks define would otherwise be read by whoever asks
+    the record and ignored by whoever reads the checks, and the two readers would
+    disagree silently. A record that declares ancillas measuring neither basis --
+    a flag or an idle ancilla -- keeps them out of both bands and is unaffected,
+    because this compares the counts against the bands and not against the total.
+    """
+
+    x_qubits, z_qubits = ancilla_bands(code.checks)
+    stated = (code.num_ancilla_x_qubits, code.num_ancilla_z_qubits)
+    derived = (len(x_qubits), len(z_qubits))
+    if stated != derived:
+        raise ValueError(
+            "code reports "
+            f"{stated[0]} X-type and {stated[1]} Z-type ancilla qubits, but its "
+            f"checks measure {derived[0]} X-type and {derived[1]} Z-type "
+            "stabilizers, so the two bands it states and the two bands its checks "
+            "define disagree"
         )
 
 
@@ -308,6 +367,7 @@ def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
         raise TypeError("code must implement the StabilizerCode protocol")
     if not code.checks:
         raise ValueError("memory experiment requires a code with at least one check")
+    _require_ancilla_bands(code)
     if isinstance(rounds, bool) or not isinstance(rounds, Integral):
         raise TypeError("rounds must be an integer")
     if rounds <= 0:

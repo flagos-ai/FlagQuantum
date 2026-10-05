@@ -178,6 +178,7 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     batched_rotation_sequence_regions: int
     native_cpu_one_qubit_layer_regions: int
     native_cpu_parameterized_one_qubit_layer_regions: int
+    native_cpu_product_state_initialization: int
     native_cpu_clifford_matching_regions: int
     statevector_batch_chunk_size: int
     statevector_batch_chunk_count: int

@@ -31,6 +31,7 @@ from .diagonal_cpu import (
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
     fuse_native_parameterized_one_qubit_layers,
+    fuse_native_rotation_clifford_layers,
 )
 from .index_basis import (
     _basis_indices_for_wires,
@@ -166,8 +167,19 @@ def _triton_single_qubit_loop_enabled() -> bool:
     return _environment_flag("FQ_TRITON_SINGLE_QUBIT_LOOP", default=True)
 
 
-def _triton_ry_rz_pair_enabled() -> bool:
-    return _environment_flag("FQ_TRITON_RY_RZ_PAIR", default=True)
+_TRITON_RY_RZ_PAIR_DEFAULT_SHAPES = (
+    (1, 1 << 20),
+    (1, 1 << 24),
+)
+
+
+def _triton_ry_rz_pair_enabled(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, with an explicit user override."""
+
+    configured = os.getenv("FQ_TRITON_RY_RZ_PAIR")
+    if configured is None or not configured.strip():
+        return shape in _TRITON_RY_RZ_PAIR_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
 
 
 def _triton_single_qubit_matrix_enabled() -> bool:
@@ -259,6 +271,8 @@ def _compile_statevector_program(
     enable_cpu_native_fixed_one_qubit_layer: bool = False,
     enable_cpu_native_parameterized_one_qubit_layer: bool = False,
     enable_cpu_native_fused_rotation_layer: bool = False,
+    enable_cpu_native_scalar_fused_rotation_layer: bool = False,
+    enable_cpu_native_rotation_clifford_fusion: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -277,6 +291,9 @@ def _compile_statevector_program(
         optimized = fuse_native_parameterized_one_qubit_layers(
             optimized,
             include_terminal_fused_regions=enable_cpu_native_fused_rotation_layer,
+            include_nonterminal_fused_regions=(
+                enable_cpu_native_scalar_fused_rotation_layer
+            ),
         )
     if enable_cpu_native_clifford_matching:
         optimized = fuse_native_disjoint_clifford_matchings(optimized)
@@ -292,6 +309,8 @@ def _compile_statevector_program(
             max_two_wire_regions,
             max_wires=max_dense_wires,
         )
+    if enable_cpu_native_rotation_clifford_fusion:
+        optimized = fuse_native_rotation_clifford_layers(optimized)
     if enable_cpu_disjoint_clifford_matching:
         optimized = _reorder_disjoint_clifford_matchings(optimized)
     return tuple(_fuse_cx_sequences(optimized))

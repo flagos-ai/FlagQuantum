@@ -92,7 +92,7 @@ def _jax_apply_all_to_all_statevector_instruction(
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
-    qubits = tuple(int(qubit) for qubit in instruction.wires)
+    qubits = tuple(int(qubit) for qubit in instruction.qubits)
     sharded_qubits = tuple(int(qubit) for qubit in plan.sharded_qubits)
     sharded_set = set(sharded_qubits)
     touched = tuple(qubit for qubit in qubits if qubit in sharded_set)
@@ -155,7 +155,7 @@ def _jax_apply_pair_exchange_statevector_instruction(
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
-    qubits = tuple(int(qubit) for qubit in instruction.wires)
+    qubits = tuple(int(qubit) for qubit in instruction.qubits)
     sharded_qubits = tuple(int(qubit) for qubit in plan.sharded_qubits)
     touched = tuple(qubit for qubit in qubits if qubit in set(sharded_qubits))
     if diagonal or not touched:

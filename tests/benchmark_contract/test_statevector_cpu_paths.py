@@ -296,13 +296,13 @@ def test_marginal_case_reference_reads_a_freshly_simulated_state(
     monkeypatch.setattr(module, "_direct_marginal_probabilities", recording)
     module._run_marginal_case(
         module._CASE_BY_NAME["marginal_probabilities"],
-        n_wires=4,
+        n_qubits=4,
         layers=1,
         batch_size=1,
         seed=4417,
         warmup=0,
         iterations=2,
-        marginal_wires=2,
+        marginal_qubits=2,
     )
 
     assert len(reduced) >= 3, "the reference was not exercised by both measures"

@@ -2,11 +2,21 @@
 
 Status: approved for implementation.
 Area: `flagquantum.drawer`.
-Base: `fd4abac1`, the tip of the compiler, tooling, and measurement slice, whose
-decision record is
-[`FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md`](FQ-QUBIT-VOCABULARY-COMPILER-TOOLING-20261011.md).
+Base: the `feat/qubit-vocabulary-attributes` tip at `721ce1a4`, the runtime
+executor slice, whose decision record is
+[`FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md`](FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md),
+merged with `main` at `bdb8675f`.
 Predecessor: [`FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md`](FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md)
 and the slice record [`FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md`](FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md).
+
+This branch is not the tip of the whole migration: it stops after the runtime
+executor slice, so the counts quoted below are the ones this tree reports, not
+the ones a tree that also carries WQ-5 through WQ-8 reports. The regression, the
+fix, and the repair of the stale test spellings are identical on either tree,
+because `to_drawable_circuit` and the Matplotlib renderer stop changing after
+WQ-2. It is recorded here rather than only on the later branch because the
+`coverage` job — the one lane in `ci.yml` that installs the `viz` extra — is red
+on this branch for exactly this reason.
 
 ## The regression
 
@@ -68,9 +78,9 @@ exists; inference is the fallback for objects that report none.
   exactly what the migration publishes. `fq.Circuit.draw`, `fq.draw`, `draw_text`
   and `draw_mpl` keep their signatures; nothing in `docs/public_api_v1.json`
   moves, and the drawer is not part of the Stable Core surface.
-* No census counter moves. `[boundary].measured_private` stays `226`: private
-  code keeps `wire` names by the contract's own `private_note`, and this change
-  is not a slice retiring one. `_draw_qubits` therefore keeps its
+* No census counter moves. `[boundary].measured_private` stays `331` on this
+  tree: private code keeps `qubit` names by the contract's own `private_note`, and
+  this change is not a slice retiring one. `_draw_qubits` therefore keeps its
   pre-qubit parameter name, with a comment saying why.
 * No frozen payload key moves. `CircuitIR.n_wires` and
   `Instruction.wires` are read exactly as before, and `to_drawable_circuit`
@@ -80,8 +90,9 @@ exists; inference is the fallback for objects that report none.
   tell a serialized key from a refusal sentence — and the line belongs to the
   slice that owns it. Measured against this change, it does not move at all: the
   census returns the *distinct* literals, and every spelling this change
-  introduces already appears elsewhere in the package. The declared `634` against
-  a measured `641` is drift that predates this branch and stays WQ-8's to settle.
+  introduces already appears elsewhere in the package. The declared `1291` against
+  a measured `985` on this tree is drift that predates this branch and stays
+  WQ-8's to settle.
 
 ## A second finding, from the same corner
 
@@ -123,25 +134,23 @@ Every claim above is reproducible on this branch with the command shown.
 
 | # | Claim | Command | Result |
 |---|---|---|---|
-| 1 | the regression is real and raises before the fix | `pytest tests/test_drawer_ir.py` on `fd4abac1` | `1 failed, 2 passed`, `ValueError: min() iterable argument is empty` |
+| 1 | the regression is real and raises before the fix | `pytest tests/test_drawer_ir.py` on `721ce1a4` | `1 failed, 2 passed`, `ValueError: min() iterable argument is empty` |
 | 2 | text and mpl both draw a legacy device after the fix | `pytest tests/test_drawer_ir.py` | `11 passed` |
-| 3 | the whole mpl renderer suite is green after the stale spellings are repaired | `pytest tests/unit/test_drawer_mpl_kernels.py` | `25 passed` (was `15 failed, 10 passed`) |
-| 4 | the three legacy keywords warn and still take effect | `pytest tests/unit/test_drawer_mpl_kernels.py -k legacy_option` | `5 passed`, each under `pytest.warns(DeprecationWarning)` |
-| 5 | a third-party device is still drawn from its own vocabulary | `pytest tests/test_drawer_ir.py -k legacy` | `5 passed, 1 skipped`; the skip is the mpl branch without `matplotlib`, and `test_drawer_keeps_legacy_qdev_compatibility` is kept byte-identical |
+| 3 | the whole mpl renderer suite is green after the stale spellings are repaired | `pytest tests/unit/test_drawer_mpl_kernels.py` | `31 passed` (was `15 failed, 10 passed`) |
+| 4 | the three legacy keywords warn and still take effect | `pytest tests/unit/test_drawer_mpl_kernels.py -k legacy_option` | `5 passed, 26 deselected`, each under `pytest.warns(DeprecationWarning)` |
+| 5 | a third-party device is still drawn from its own vocabulary | `pytest tests/test_drawer_ir.py -k legacy` | `6 passed, 5 deselected`; `test_drawer_keeps_legacy_qdev_compatibility` is kept byte-identical |
 | 6 | the three drawer test modules together | `pytest tests/test_drawer_ir.py tests/unit/test_drawer_mpl_kernels.py tests/unit/test_drawer_input_ownership.py` | `45 passed` |
-| 7 | no counter moves and no site is retired | `python tools/check_qubit_vocabulary.py` | exit 0; `341 of 341 baseline sites retired, 11 kept as deprecated aliases`; `117 of 122 attribute sites retired, 5 kept as deprecated aliases`; `10 of 10 definition names retired`; `[boundary].measured_private` still `226` |
-| 8 | the drawer is still clean under the project's linters | `ruff check flagquantum tests tools` and `black --check flagquantum tests tools` | `All checks passed!` / `1425 files would be left unchanged` |
-| 9 | the change is typed cleanly | `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | `Success: no issues found in 624 source files` |
-| 10 | the change stays inside its ownership | `python tools/check_team_scope.py --require-classified --base fd4abac1` | `8 changed paths: (shared) 5, compiler 3` |
-| 11 | the broad lane loses the failure this fixes and gains none | `pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"` | `3 failed, 7450 passed, 373 skipped, 720 deselected`; the three are the pre-existing failures on the same base, and `test_drawer_keeps_legacy_qdev_compatibility` is no longer among them |
+| 7 | no counter moves and no site is retired | `python tools/check_qubit_vocabulary.py` | exit 0, byte-identical before and after: `131 of 341 baseline sites retired, 11 kept as deprecated aliases`; `83 of 122 attribute sites retired, 3 kept as deprecated aliases`; `4 of 10 definition names retired`; `[boundary].measured_private` still `331` |
+| 8 | the drawer is still clean under the project's linters | `ruff check flagquantum tests tools` and `black --check flagquantum tests tools` | `All checks passed!` / `1499 files would be left unchanged` |
+| 9 | the change is typed cleanly | `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | `checked 646 source files`; the 22 remaining errors are the `sched_getaffinity` `attr-defined` reports in `benchmarking/socket_local_throughput.py`, identical on this branch and on `main` because the attribute is Linux-only and this checkout is macOS |
+| 10 | the change stays inside its ownership | `python tools/check_team_scope.py --require-classified --base 721ce1a4` | 8 changed paths, all classified: the drawer and its tests are `core`, the record and the reference page are shared |
+| 11 | the lane that installs `viz` loses this failure and gains none | the `coverage` job's own selection, `pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"` | see the run recorded on the pull request; the 16 drawer failures are gone and no new drawer failure appears |
 
-`matplotlib` is not installed in this checkout, so rows 3 and 4 were run with it
-made importable on `PYTHONPATH`; the module skips itself without it, which is
-the behaviour row 3's "before" column depends on. `mypy --strict` is clean on
-`flagquantum` in both configurations; with `matplotlib` importable it begins
-type-checking the renderer and reports twenty pre-existing `matplotlib` stub
-complaints that the project's own lanes never see, because no lane pairs
-`matplotlib` with `mypy`.
+`matplotlib` is a `viz` extra that this checkout had to install for rows 3, 4, 5
+and 6; without it the module skips itself, which is the behaviour row 3's
+"before" column depends on. The `coverage` job is the only lane in `ci.yml`
+whose install line names `viz`, which is why the failure reached CI there and
+nowhere else.
 
 ## The catch-up this fix owes
 

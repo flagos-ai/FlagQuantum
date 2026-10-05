@@ -149,7 +149,7 @@ reason = "documents a live deprecated alias: `fq.Circuit(n_wires=2)` still const
 keywords = ["n_wires="]
 
 [docstring]
-measured_tokens = 43
+measured_tokens = 45
 measured_reproduce = "python -c \"import sys; sys.path.insert(0, 'tools'); from census_wire_vocabulary import docstring_census as f; print(len(f()))\""
 owner = "WD-2"
 condition = "exempt: each entry names the containers and the token multiset they may show, and the gate reconciles per container, so a second occurrence inside an already-exempt docstring needs its own row; every other docstring and comment in the package must show none, and the comparison is a multiset rather than a total, so moving a token from an exempt docstring to a live one cannot balance out"
@@ -225,6 +225,7 @@ identifier = [
     "flagquantum/qec/dem_construction.py::_Mechanism::wire",
     "flagquantum/qec/dem_construction.py::_Mechanism::wire",
     "flagquantum/qec/dem_construction.py::_checked_wire::wire",
+    "flagquantum/qec/dem_construction.py::_forced_flip::wire",
 ]
 reason = "the definition's own field or parameter carries this spelling, and a docstring that documents a name has to use that name"
 [[docstring.keep]]
@@ -233,6 +234,11 @@ identifier = [
     "flagquantum/runtime/execution_plan.py::ExecutionPlan::shardable_wires",
 ]
 reason = "a live attribute name on the public surface"
+[[docstring.keep]]
+identifier = [
+    "flagquantum/compiler/pipeline.py::_optimize_to_fixed_point::_WireLocalProgram",
+]
+reason = "a live private class name a module-scope comment names when it lists what each pass reads"
 [[docstring.keep]]
 identifier = [
     "flagquantum/drawer/ir_adapter.py::_op_qubits::wires",

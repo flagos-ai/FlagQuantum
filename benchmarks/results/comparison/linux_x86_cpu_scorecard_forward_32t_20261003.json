@@ -1,0 +1,1737 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "cross_framework_simulator_workload_corpus",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 1.9275845138399479,
+          "qiskit_aer": 4.564950130762709
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 1.8619006149354548e-16,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 3.1401849173675503e-16,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.01712151989340782,
+            "mean_seconds": 0.015619211164968354,
+            "median_seconds": 0.015614785254001617,
+            "min_seconds": 0.013895612210035324,
+            "relative_median_absolute_deviation": 0.046004568225401415,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.015287002548575401,
+              0.014896433800458908,
+              0.013895612210035324,
+              0.01712151989340782,
+              0.016733309254050255,
+              0.015614785254001617,
+              0.015785815194249153
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.03185445815324783,
+            "mean_seconds": 0.030455861506717547,
+            "median_seconds": 0.030098818242549896,
+            "min_seconds": 0.02987481839954853,
+            "relative_median_absolute_deviation": 0.0074421474356990884,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.03185445815324783,
+              0.030098818242549896,
+              0.02987481839954853,
+              0.030036000534892082,
+              0.029945021495223045,
+              0.030828220769762993,
+              0.03055369295179844
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.07435347884893417,
+            "mean_seconds": 0.0716698866869722,
+            "median_seconds": 0.0712807159870863,
+            "min_seconds": 0.07080169208347797,
+            "relative_median_absolute_deviation": 0.0017902954915215872,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.07080169208347797,
+              0.0712807159870863,
+              0.07435347884893417,
+              0.07115907222032547,
+              0.07141215167939663,
+              0.07127376645803452,
+              0.07140832953155041
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "19e20dcbac2c0de0cca818f9046975cca7ddeb9ae4c0ec45cdf79e0e7e2c0508",
+        "gate_count": 146,
+        "gate_density_per_wire": 8.11111111111111,
+        "logical_depth": 42,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 0.8947368421052632,
+        "opcode_histogram": {
+          "cx": 34,
+          "rx": 36,
+          "ry": 36,
+          "rz": 36,
+          "rzz": 2,
+          "swap": 2
+        },
+        "parameterized_gate_count": 110,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 108,
+        "two_qubit_gate_count": 38,
+        "two_qubit_max_wire_span": 17,
+        "two_qubit_mean_wire_span": 2.5789473684210527
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 146,
+        "ir_content_hash": "ec19f1ff0bcab30ea7a9db81f03c2b501d5d8d93af774f27739ef59974dc72de",
+        "n_wires": 18,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 3.107401053184351,
+          "qiskit_aer": 0.5998708425082271
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 5.79553433516819e-16,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 5.578801654593729e-16,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.23055021464824677,
+            "mean_seconds": 0.22551099663334234,
+            "median_seconds": 0.22539366967976093,
+            "min_seconds": 0.22006094083189964,
+            "relative_median_absolute_deviation": 0.019830670553319073,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.2252790778875351,
+              0.23055021464824677,
+              0.22006094083189964,
+              0.22092396207153797,
+              0.22539366967976093,
+              0.225833835080266,
+              0.23053527623414993
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.7133314553648233,
+            "mean_seconds": 0.7016376507069383,
+            "median_seconds": 0.7003885265439749,
+            "min_seconds": 0.6937002371996641,
+            "relative_median_absolute_deviation": 0.008889175470741209,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.6937002371996641,
+              0.6941626500338316,
+              0.7060082834213972,
+              0.7067140229046345,
+              0.7133314553648233,
+              0.6971583794802427,
+              0.7003885265439749
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.1452538836747408,
+            "mean_seconds": 0.13778530753084592,
+            "median_seconds": 0.13520709052681923,
+            "min_seconds": 0.13372448459267616,
+            "relative_median_absolute_deviation": 0.0109654451431967,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.13483311235904694,
+              0.13520709052681923,
+              0.1337884869426489,
+              0.14105666987597942,
+              0.14063342474400997,
+              0.13372448459267616,
+              0.1452538836747408
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "3ee6fcff845158635079b940f1f9005c0fef68e75f2fb73aab159c833dac2bb7",
+        "gate_count": 178,
+        "gate_density_per_wire": 8.090909090909092,
+        "logical_depth": 50,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 0.9130434782608695,
+        "opcode_histogram": {
+          "cx": 42,
+          "rx": 44,
+          "ry": 44,
+          "rz": 44,
+          "rzz": 2,
+          "swap": 2
+        },
+        "parameterized_gate_count": 134,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 132,
+        "two_qubit_gate_count": 46,
+        "two_qubit_max_wire_span": 21,
+        "two_qubit_mean_wire_span": 2.652173913043478
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 178,
+        "ir_content_hash": "bde728e3d94982379a5092b2ad804e3481de1c6c89e7a6f8fc1b8a3ee11c6659",
+        "n_wires": 22,
+        "name": "hardware_efficient_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 3.7406192021666413,
+          "qiskit_aer": 5.363785992692049
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 6.915986201183377e-18,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 6.4004670240660345e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.016848159953951836,
+            "mean_seconds": 0.014532151498964854,
+            "median_seconds": 0.014108585193753242,
+            "min_seconds": 0.012571783736348152,
+            "relative_median_absolute_deviation": 0.06956508881325196,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.013498786836862564,
+              0.013440342620015144,
+              0.014108585193753242,
+              0.015090050175786018,
+              0.016848159953951836,
+              0.016167351976037025,
+              0.012571783736348152
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.054591137915849686,
+            "mean_seconds": 0.05274920937206064,
+            "median_seconds": 0.05277484469115734,
+            "min_seconds": 0.05151629261672497,
+            "relative_median_absolute_deviation": 0.014510216060767269,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.05151629261672497,
+              0.05354061909019947,
+              0.051781123504042625,
+              0.05277484469115734,
+              0.054591137915849686,
+              0.05296496860682964,
+              0.05207547917962074
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.07918541878461838,
+            "mean_seconds": 0.07647269405424595,
+            "median_seconds": 0.07567543163895607,
+            "min_seconds": 0.07548528909683228,
+            "relative_median_absolute_deviation": 0.0009582568527105658,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.07797437533736229,
+              0.07548528909683228,
+              0.07567388005554676,
+              0.07571154832839966,
+              0.07918541878461838,
+              0.07560291513800621,
+              0.07567543163895607
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "7bb5bb0e891e1fb7006eb0bf27fbe259413a96e8b8fef71d0a0bf4bcd3a18392",
+        "gate_count": 267,
+        "gate_density_per_wire": 14.833333333333334,
+        "logical_depth": 135,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 0.3333333333333333,
+        "opcode_histogram": {
+          "cx": 96,
+          "h": 18,
+          "rz": 144,
+          "swap": 9
+        },
+        "parameterized_gate_count": 144,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 162,
+        "two_qubit_gate_count": 105,
+        "two_qubit_max_wire_span": 17,
+        "two_qubit_mean_wire_span": 2.5619047619047617
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 267,
+        "ir_content_hash": "c93af891d5132c260b3dc4e4879f4caba625a1351a52ba8320a90c15481abe3d",
+        "n_wires": 18,
+        "name": "truncated_qft_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 5.147143279297948,
+          "qiskit_aer": 0.6190307135922222
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 2.2671640258178867e-18,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 1.9807564380462583e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.25200860016047955,
+            "mean_seconds": 0.22265968471765518,
+            "median_seconds": 0.23589039593935013,
+            "min_seconds": 0.18562365882098675,
+            "relative_median_absolute_deviation": 0.06832920923696094,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.23589039593935013,
+              0.25200860016047955,
+              0.23842071555554867,
+              0.18562365882098675,
+              0.20493553206324577,
+              0.1975284442305565,
+              0.24421044625341892
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 1.241326130926609,
+            "mean_seconds": 1.2162692424442088,
+            "median_seconds": 1.214161666110158,
+            "min_seconds": 1.1905169133096933,
+            "relative_median_absolute_deviation": 0.014622015892687731,
+            "sample_count": 7,
+            "samples_seconds": [
+              1.196408174932003,
+              1.2241677436977625,
+              1.214161666110158,
+              1.1905169133096933,
+              1.2335133459419012,
+              1.241326130926609,
+              1.2137907221913338
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.15352684631943703,
+            "mean_seconds": 0.146526909034167,
+            "median_seconds": 0.14602340012788773,
+            "min_seconds": 0.14207751490175724,
+            "relative_median_absolute_deviation": 0.00904205020590666,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.15352684631943703,
+              0.1452847570180893,
+              0.14674034528434277,
+              0.14602340012788773,
+              0.14734375104308128,
+              0.14207751490175724,
+              0.14469174854457378
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "95feaf4b5a300401ccb203bee8c6c5cf651c4826593fd840054b2766daf1b9fd",
+        "gate_count": 333,
+        "gate_density_per_wire": 15.136363636363637,
+        "logical_depth": 167,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 0.3282442748091603,
+        "opcode_histogram": {
+          "cx": 120,
+          "h": 22,
+          "rz": 180,
+          "swap": 11
+        },
+        "parameterized_gate_count": 180,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 202,
+        "two_qubit_gate_count": 131,
+        "two_qubit_max_wire_span": 21,
+        "two_qubit_mean_wire_span": 2.7251908396946565
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 333,
+        "ir_content_hash": "5e7a5896d30b94e3f85d6abd0bcfe7b87bf81ab1498b1eeb2fc18565a579dd89",
+        "n_wires": 22,
+        "name": "truncated_qft_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 0.9140186501057252,
+          "qiskit_aer": 3.0451751550766413
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 1.665338786128148e-16,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 1.2048525617609313e-16,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.023888839408755302,
+            "mean_seconds": 0.022154276924473897,
+            "median_seconds": 0.022492635995149612,
+            "min_seconds": 0.020679611712694168,
+            "relative_median_absolute_deviation": 0.06207380112792347,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.023888839408755302,
+              0.022763334214687347,
+              0.020679611712694168,
+              0.02095912955701351,
+              0.023391207680106163,
+              0.022492635995149612,
+              0.020905179902911186
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.024896491318941116,
+            "mean_seconds": 0.021157304357205118,
+            "median_seconds": 0.020558688789606094,
+            "min_seconds": 0.020353276282548904,
+            "relative_median_absolute_deviation": 0.004089564154913104,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.020607559010386467,
+              0.020353276282548904,
+              0.020538998767733574,
+              0.020474612712860107,
+              0.020671503618359566,
+              0.020558688789606094,
+              0.024896491318941116
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.07055867835879326,
+            "mean_seconds": 0.06912602111697197,
+            "median_seconds": 0.06849401630461216,
+            "min_seconds": 0.06833602860569954,
+            "relative_median_absolute_deviation": 0.002306591253314812,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.06922269612550735,
+              0.06847874447703362,
+              0.06849401630461216,
+              0.06838891096413136,
+              0.07055867835879326,
+              0.06833602860569954,
+              0.0704030729830265
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "250c0c2f8b30f32e9d4fca719dfd2c61515ac96dbf7f9221c1af03f70f5de7df",
+        "gate_count": 108,
+        "gate_density_per_wire": 6.0,
+        "logical_depth": 8,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 0.16666666666666666,
+        "opcode_histogram": {
+          "cx": 15,
+          "cz": 21,
+          "h": 25,
+          "s": 28,
+          "x": 19
+        },
+        "parameterized_gate_count": 0,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 72,
+        "two_qubit_gate_count": 36,
+        "two_qubit_max_wire_span": 17,
+        "two_qubit_mean_wire_span": 6.277777777777778
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 108,
+        "ir_content_hash": "eb973056ca79cfc5f32ac9cd2467c3c42c632698ee06e78244b654f535a284a1",
+        "n_wires": 18,
+        "name": "random_clifford_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 1.601964442737457,
+          "qiskit_aer": 0.4382582242195043
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 9.97470760334628e-18,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 9.414471522714405e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.3003503382205963,
+            "mean_seconds": 0.2948605774768761,
+            "median_seconds": 0.2944269310683012,
+            "min_seconds": 0.28966412134468555,
+            "relative_median_absolute_deviation": 0.011191834870101716,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.29650774225592613,
+              0.2991269398480654,
+              0.3003503382205963,
+              0.2944269310683012,
+              0.29113175347447395,
+              0.2928162161260843,
+              0.28966412134468555
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.47953723557293415,
+            "mean_seconds": 0.4717684742063284,
+            "median_seconds": 0.4716614745557308,
+            "min_seconds": 0.46796922013163567,
+            "relative_median_absolute_deviation": 0.001896025139683535,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.4723873473703861,
+              0.47953723557293415,
+              0.4716614745557308,
+              0.46796922013163567,
+              0.47076719254255295,
+              0.46829565055668354,
+              0.4717611987143755
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.1329149827361107,
+            "mean_seconds": 0.12859862058290414,
+            "median_seconds": 0.12903502397239208,
+            "min_seconds": 0.12395370937883854,
+            "relative_median_absolute_deviation": 0.024093458850778977,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.12395370937883854,
+              0.12903502397239208,
+              0.12950531020760536,
+              0.12618843093514442,
+              0.13266676291823387,
+              0.1329149827361107,
+              0.12592612393200397
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "d90f4b1e27943d9c6adfc3666b2fdaea463dceb61072fa4bcff7001d626bf496",
+        "gate_count": 132,
+        "gate_density_per_wire": 6.0,
+        "logical_depth": 8,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 0.06818181818181818,
+        "opcode_histogram": {
+          "cx": 21,
+          "cz": 23,
+          "h": 29,
+          "s": 27,
+          "x": 32
+        },
+        "parameterized_gate_count": 0,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 88,
+        "two_qubit_gate_count": 44,
+        "two_qubit_max_wire_span": 21,
+        "two_qubit_mean_wire_span": 8.5
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 132,
+        "ir_content_hash": "3883e84b8cb7eff8c2309c2f5251b1a30f823989e7b4eedc6c3824ac6d9a8e43",
+        "n_wires": 22,
+        "name": "random_clifford_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 2.155490073623973,
+          "qiskit_aer": 4.298489570952548
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 4.242986104350744e-17,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 5.776915683787074e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.017840221524238586,
+            "mean_seconds": 0.017022344948990003,
+            "median_seconds": 0.01681552454829216,
+            "min_seconds": 0.016504213213920593,
+            "relative_median_absolute_deviation": 0.018513328768158147,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.017840221524238586,
+              0.017408009618520737,
+              0.01654665544629097,
+              0.016504213213920593,
+              0.017393674701452255,
+              0.01681552454829216,
+              0.01664811559021473
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.03645507991313934,
+            "mean_seconds": 0.036246610273207934,
+            "median_seconds": 0.03624569624662399,
+            "min_seconds": 0.036093395203351974,
+            "relative_median_absolute_deviation": 0.0016714407433787307,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.03623275272548199,
+              0.03645507991313934,
+              0.03611941076815128,
+              0.036093395203351974,
+              0.03627365827560425,
+              0.03624569624662399,
+              0.03630627878010273
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.07270636595785618,
+            "mean_seconds": 0.07227344917399543,
+            "median_seconds": 0.0722813569009304,
+            "min_seconds": 0.07175282202661037,
+            "relative_median_absolute_deviation": 0.004561049934909144,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.07270636595785618,
+              0.07258385606110096,
+              0.07264930382370949,
+              0.07198876142501831,
+              0.07175282202661037,
+              0.0722813569009304,
+              0.07195167802274227
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "337324f78ba12d5d266bb143bcddae15ab5d7679d1705c87b34f7a91b183ee8c",
+        "gate_count": 178,
+        "gate_density_per_wire": 9.88888888888889,
+        "logical_depth": 12,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 34,
+          "ry": 72,
+          "rz": 72
+        },
+        "parameterized_gate_count": 144,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 144,
+        "two_qubit_gate_count": 34,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 178,
+        "ir_content_hash": "609117f5ecca2f52cd3013a69b0b047f7fadfd1d3616e024ab3d15fd54571279",
+        "n_wires": 18,
+        "name": "local_brickwork_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 2.1378995154007243,
+          "qiskit_aer": 0.35201242453752274
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 3.1352007529942907e-17,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 4.3089637234616164e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.41725174710154533,
+            "mean_seconds": 0.40846934435623033,
+            "median_seconds": 0.4071088805794716,
+            "min_seconds": 0.3991277161985636,
+            "relative_median_absolute_deviation": 0.01960449590180338,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.3999215327203274,
+              0.41725174710154533,
+              0.4170162212103605,
+              0.40271567553281784,
+              0.41614363715052605,
+              0.3991277161985636,
+              0.4071088805794716
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.9082814082503319,
+            "mean_seconds": 0.8756106386759451,
+            "median_seconds": 0.8703578785061836,
+            "min_seconds": 0.8650003634393215,
+            "relative_median_absolute_deviation": 0.001979047104235457,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.8703578785061836,
+              0.8691805973649025,
+              0.9082814082503319,
+              0.8689014799892902,
+              0.8754723854362965,
+              0.8720803577452898,
+              0.8650003634393215
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.1578787826001644,
+            "mean_seconds": 0.14456538004534586,
+            "median_seconds": 0.1433073841035366,
+            "min_seconds": 0.13246573321521282,
+            "relative_median_absolute_deviation": 0.043959630851852005,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.1578787826001644,
+              0.13246573321521282,
+              0.13732010684907436,
+              0.14960712380707264,
+              0.15144256688654423,
+              0.1433073841035366,
+              0.1399359628558159
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "8bf7af9904138c5103b355cdbba72eddd5041f7375e0f5553951b103457e8634",
+        "gate_count": 218,
+        "gate_density_per_wire": 9.909090909090908,
+        "logical_depth": 12,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 42,
+          "ry": 88,
+          "rz": 88
+        },
+        "parameterized_gate_count": 176,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 176,
+        "two_qubit_gate_count": 42,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 218,
+        "ir_content_hash": "848537ce1be3d121ec2e53b51e5761c76c8867a7f03e8b00ac7ed341ac18692d",
+        "n_wires": 22,
+        "name": "local_brickwork_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 3.6877553372045413,
+          "qiskit_aer": 9.45309909931306
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 3.469446951953614e-18,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 7.806255641895632e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.008801940828561783,
+            "mean_seconds": 0.008328755785311972,
+            "median_seconds": 0.00847022607922554,
+            "min_seconds": 0.007443184033036232,
+            "relative_median_absolute_deviation": 0.014952001333503979,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.00847022607922554,
+              0.008563991636037827,
+              0.008486999198794365,
+              0.007443184033036232,
+              0.008191369473934174,
+              0.008801940828561783,
+              0.00834357924759388
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.03185511566698551,
+            "mean_seconds": 0.031243576002972468,
+            "median_seconds": 0.03123612143099308,
+            "min_seconds": 0.030536208301782608,
+            "relative_median_absolute_deviation": 0.009305198969693373,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.03185511566698551,
+              0.03123612143099308,
+              0.03139449469745159,
+              0.031677816063165665,
+              0.030536208301782608,
+              0.031059812754392624,
+              0.030945463106036186
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.08102041110396385,
+            "mean_seconds": 0.07996867703539985,
+            "median_seconds": 0.08006988652050495,
+            "min_seconds": 0.07870965264737606,
+            "relative_median_absolute_deviation": 0.007438866734099154,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.07982950657606125,
+              0.08019664511084557,
+              0.07928912155330181,
+              0.08066551573574543,
+              0.08006988652050495,
+              0.08102041110396385,
+              0.07870965264737606
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "0aba227d8b132984012a2b8bd4d40e14131da726b506de3129cb6a9bd3ba08f6",
+        "gate_count": 189,
+        "gate_density_per_wire": 10.5,
+        "logical_depth": 35,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 0.1111111111111111,
+        "opcode_histogram": {
+          "cz": 153,
+          "h": 18,
+          "ry": 18
+        },
+        "parameterized_gate_count": 18,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 36,
+        "two_qubit_gate_count": 153,
+        "two_qubit_max_wire_span": 17,
+        "two_qubit_mean_wire_span": 6.333333333333333
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 189,
+        "ir_content_hash": "f4e2fd8ef19710fe7f3cdfc927d5a2096f7b60580d325f36e8cfb9fe599faafc",
+        "n_wires": 18,
+        "name": "dense_nonlocal_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 4.421372375962857,
+          "qiskit_aer": 1.7652793472779775
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 1.1926223897340549e-18,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 2.8189256484623115e-18,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.12828198447823524,
+            "mean_seconds": 0.12235107805047717,
+            "median_seconds": 0.1223945152014494,
+            "min_seconds": 0.11515890993177891,
+            "relative_median_absolute_deviation": 0.010770817342946982,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.1223945152014494,
+              0.12828198447823524,
+              0.12466556392610073,
+              0.11515890993177891,
+              0.12107622623443604,
+              0.12313605472445488,
+              0.12174429185688496
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.5429387670010328,
+            "mean_seconds": 0.5391605320785727,
+            "median_seconds": 0.5411517284810543,
+            "min_seconds": 0.5332445874810219,
+            "relative_median_absolute_deviation": 0.003302287373255775,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.5356255564838648,
+              0.53724355250597,
+              0.5429387670010328,
+              0.5425423085689545,
+              0.5411517284810543,
+              0.5413772240281105,
+              0.5332445874810219
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.22398691065609455,
+            "mean_seconds": 0.21681664564779826,
+            "median_seconds": 0.21606050990521908,
+            "min_seconds": 0.20991811901330948,
+            "relative_median_absolute_deviation": 0.01597389020090528,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.2126091830432415,
+              0.21606050990521908,
+              0.21502593345940113,
+              0.22321661561727524,
+              0.21689924784004688,
+              0.22398691065609455,
+              0.20991811901330948
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "5fd02d5e1ab2b4001d7ca5ddaf4cba6a6005f60f794733861703f43d86d4e80a",
+        "gate_count": 275,
+        "gate_density_per_wire": 12.5,
+        "logical_depth": 43,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 0.09090909090909091,
+        "opcode_histogram": {
+          "cz": 231,
+          "h": 22,
+          "ry": 22
+        },
+        "parameterized_gate_count": 22,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 44,
+        "two_qubit_gate_count": 231,
+        "two_qubit_max_wire_span": 21,
+        "two_qubit_mean_wire_span": 7.666666666666667
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 275,
+        "ir_content_hash": "9e142a7dfde613233692e833d17d79112cdcd843f487e6835b8d0896368e9e2a",
+        "n_wires": 22,
+        "name": "dense_nonlocal_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 2.0630612562159216,
+          "qiskit_aer": 5.670008374261014
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 6.938893903907228e-17,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 6.245004513516506e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.013452963903546333,
+            "mean_seconds": 0.011960956933242934,
+            "median_seconds": 0.011646173894405365,
+            "min_seconds": 0.01153695210814476,
+            "relative_median_absolute_deviation": 0.008233517132049109,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.012304423376917839,
+              0.01153695210814476,
+              0.011646173894405365,
+              0.011550284922122955,
+              0.013452963903546333,
+              0.011676229536533356,
+              0.01155967079102993
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.024907009676098824,
+            "mean_seconds": 0.0241497629987342,
+            "median_seconds": 0.024026770144701004,
+            "min_seconds": 0.023944415152072906,
+            "relative_median_absolute_deviation": 0.000867490682033733,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.02400592714548111,
+              0.024012882262468338,
+              0.024124007672071457,
+              0.023944415152072906,
+              0.024907009676098824,
+              0.024027328938245773,
+              0.024026770144701004
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.06651920638978481,
+            "mean_seconds": 0.06598968378135137,
+            "median_seconds": 0.06603390350937843,
+            "min_seconds": 0.06544767133891582,
+            "relative_median_absolute_deviation": 0.00634962820663911,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.06603390350937843,
+              0.0656146127730608,
+              0.06651920638978481,
+              0.06544767133891582,
+              0.06604804657399654,
+              0.06646628491580486,
+              0.06579806096851826
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "de0f7bad9a341ebff60950f7149d3ea4c128c9e1582456c142d1c096cbd08f69",
+        "gate_count": 122,
+        "gate_density_per_wire": 6.777777777777778,
+        "logical_depth": 10,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 18,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 9,
+          "h": 9,
+          "ry": 72,
+          "swap": 32
+        },
+        "parameterized_gate_count": 72,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 81,
+        "two_qubit_gate_count": 41,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 122,
+        "ir_content_hash": "909c633659fb684474ed319fbab1c9738de1c79ea6fe7c29f6c8720d11be0ce2",
+        "n_wires": 18,
+        "name": "swap_routing_statevector",
+        "seed": 7319
+      }
+    },
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {
+          "pennylane_lightning_qubit": 22.511689790617943,
+          "qiskit_aer": 4.224376224130488
+        },
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          },
+          "pennylane_lightning_qubit": {
+            "max_abs_error": 3.469446951953614e-17,
+            "passed": true
+          },
+          "qiskit_aer": {
+            "max_abs_error": 4.163336342344337e-17,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.027749188244342804,
+            "mean_seconds": 0.025448025071195195,
+            "median_seconds": 0.026105064898729324,
+            "min_seconds": 0.022656967863440514,
+            "relative_median_absolute_deviation": 0.020357472859533144,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.026636498048901558,
+              0.026105064898729324,
+              0.027749188244342804,
+              0.02268792688846588,
+              0.02620553784072399,
+              0.026094991713762283,
+              0.022656967863440514
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        },
+        "pennylane_lightning_qubit": {
+          "end_to_end": {
+            "max_seconds": 0.6124648563563824,
+            "mean_seconds": 0.5925460495054722,
+            "median_seconds": 0.5876691229641438,
+            "min_seconds": 0.5828063674271107,
+            "relative_median_absolute_deviation": 0.0022015010735669132,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.5882390271872282,
+              0.6028167586773634,
+              0.6124648563563824,
+              0.5863753687590361,
+              0.5874508451670408,
+              0.5876691229641438,
+              0.5828063674271107
+            ]
+          },
+          "versions": {
+            "pennylane": "0.45.1",
+            "pennylane-lightning": "0.45.0"
+          }
+        },
+        "qiskit_aer": {
+          "end_to_end": {
+            "max_seconds": 0.11499574407935143,
+            "mean_seconds": 0.11127025341348988,
+            "median_seconds": 0.11027761548757553,
+            "min_seconds": 0.10639859922230244,
+            "relative_median_absolute_deviation": 0.031779376025380626,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.10956969857215881,
+              0.1096621360629797,
+              0.10639859922230244,
+              0.11027761548757553,
+              0.11420581117272377,
+              0.11378216929733753,
+              0.11499574407935143
+            ]
+          },
+          "versions": {
+            "qiskit": "2.5.1",
+            "qiskit-aer": "0.17.2"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "d8180aa68261ebc05d93fc5a18aee384be5150f909be348e461aabab36a22fa7",
+        "gate_count": 150,
+        "gate_density_per_wire": 6.818181818181818,
+        "logical_depth": 10,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 1.0,
+        "opcode_histogram": {
+          "cx": 11,
+          "h": 11,
+          "ry": 88,
+          "swap": 40
+        },
+        "parameterized_gate_count": 88,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 99,
+        "two_qubit_gate_count": 51,
+        "two_qubit_max_wire_span": 1,
+        "two_qubit_mean_wire_span": 1.0
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true,
+          "pennylane_lightning_qubit": true,
+          "qiskit_aer": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 150,
+        "ir_content_hash": "38a95d0dbbe187081945a8664e6491162e29ccdec3cef67486e5e769f9dd51c6",
+        "n_wires": 22,
+        "name": "swap_routing_statevector",
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_process_single_device",
+  "engines": [
+    "flagquantum_native",
+    "qiskit_aer",
+    "pennylane_lightning_qubit"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "32",
+      "OMP_NUM_THREADS": "32",
+      "OPENBLAS_NUM_THREADS": "32"
+    },
+    "torch": "2.13.0+cu130",
+    "torch_threads": 32
+  },
+  "hostname": "redacted",
+  "methodology": {
+    "calls_per_sample": 1,
+    "compilation_or_device_preparation_included": true,
+    "conversion_included": true,
+    "engine_order": "rotated_per_iteration_within_one_process",
+    "exact_statevector": true,
+    "feature_schema": "flagquantum.simulator_workload_features.v1",
+    "hidden_fallback_allowed": false,
+    "iterations": 7,
+    "measurement_scope": "end_to_end_user_facing_run_call",
+    "qiskit_max_parallel_threads": 32,
+    "result_retrieval_included": true,
+    "warmup": 2
+  },
+  "n_wires": [
+    18,
+    22
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "python": "3.12.13",
+  "release_gate_allowed": false,
+  "runner": "simulator_workload_corpus",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.simulator_workload_corpus.v1",
+  "workloads": [
+    "hardware_efficient_statevector",
+    "truncated_qft_statevector",
+    "random_clifford_statevector",
+    "local_brickwork_statevector",
+    "dense_nonlocal_statevector",
+    "swap_routing_statevector"
+  ],
+  "world_size": 1
+}

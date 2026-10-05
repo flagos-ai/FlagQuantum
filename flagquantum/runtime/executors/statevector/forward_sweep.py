@@ -296,7 +296,7 @@ class _ShardedForwardSweep:
                 and not torch.is_grad_enabled()
                 and len(instruction_swaps) == 1
                 and len(instruction.wires) == 1
-                and instruction_swaps[0].sharded_logical_wire
+                and instruction_swaps[0].sharded_logical_qubit
                 == int(instruction.wires[0])
                 and matrix.shape == (2, 2)
                 and matrix.dtype == self.shard_state.amplitudes.dtype
@@ -306,7 +306,7 @@ class _ShardedForwardSweep:
         )
         fused_swap_gate = transpose_decision.accelerated
         for swap_index, swap in enumerate(instruction_swaps):
-            rank_bit_position = self.ir.n_wires - swap.sharded_physical_wire - 1
+            rank_bit_position = self.ir.n_wires - swap.sharded_physical_qubit - 1
             checkpoint_mode = _ket_checkpoint_mode()
             if checkpoint_mode == "all" or (
                 checkpoint_mode == "inter_node"
@@ -325,8 +325,8 @@ class _ShardedForwardSweep:
                 rank=self.rank,
                 n_qubits=self.ir.n_wires,
                 rank_bits=self.plan.rank_address_bits,
-                local_physical_qubit=swap.local_physical_wire,
-                sharded_physical_qubit=swap.sharded_physical_wire,
+                local_physical_qubit=swap.local_physical_qubit,
+                sharded_physical_qubit=swap.sharded_physical_qubit,
                 process_group=self.process_group,
                 output=self.shard_state.amplitudes,
                 send_buffer=self.layout_send_buffer,
@@ -340,11 +340,11 @@ class _ShardedForwardSweep:
             if fused_swap_gate:
                 self.kernel_dispatch_evidence.record(transpose_decision)
             (
-                self.persistent_mapping[swap.local_logical_wire],
-                self.persistent_mapping[swap.sharded_logical_wire],
+                self.persistent_mapping[swap.local_logical_qubit],
+                self.persistent_mapping[swap.sharded_logical_qubit],
             ) = (
-                self.persistent_mapping[swap.sharded_logical_wire],
-                self.persistent_mapping[swap.local_logical_wire],
+                self.persistent_mapping[swap.sharded_logical_qubit],
+                self.persistent_mapping[swap.local_logical_qubit],
             )
             self.peak_scratch = max(
                 self.peak_scratch,
@@ -811,6 +811,10 @@ class _ShardedForwardSweep:
                 runtime_supported=instruction.name == "cx",
                 device_type=self.shard_state.amplitudes.device.type,
                 dtype=str(self.shard_state.amplitudes.dtype).removeprefix("torch."),
+                shape=(
+                    int(self.shard_state.amplitudes.shape[0]),
+                    int(self.shard_state.amplitudes.shape[1]),
+                ),
             )
             if instruction.name == "cx":
                 self.kernel_dispatch_evidence.record(cx_decision)

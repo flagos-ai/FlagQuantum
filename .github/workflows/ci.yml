@@ -322,7 +322,7 @@ jobs:
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
-        run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
+        run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
 
   qiskit-optional:
     runs-on: ubuntu-latest
@@ -493,7 +493,9 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 
   package:
-    runs-on: ubuntu-latest
+    # Ubuntu 22.04 keeps the distributable native extension honest on GCC 11,
+    # which is still the default compiler on a maintained Linux LTS release.
+    runs-on: ubuntu-22.04
     # One of the eight GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a

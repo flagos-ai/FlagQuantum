@@ -31,21 +31,20 @@ from ....simulation.statevector.operations import (
 )
 from ...distributed.identity import DistributedIdentity
 from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
-from .environment import get_bool, mode
+from .environment import mode
 from .errors import FullStateMaterializationError
 from .kernel_dispatch import (
     KernelDecision,
     KernelDispatchEvidence,
     select_cataloged_triton_kernel,
 )
-from .models import (
-    DistributedStatevectorPlan,
-    StatevectorShardState,
-)
+from .models import DistributedStatevectorPlan, StatevectorShardState
 from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
+_TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset((1, 1 << e) for e in (10, 16, 20, 24))
+_TRITON_LOCAL_CX_DEFAULT_SHAPES = frozenset({(1, 1 << 24)})
 
 
 def _is_diagonal_instruction(name: str) -> bool:
@@ -76,13 +75,9 @@ def _triton_local_1q_decision(
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    shape: tuple[int, int],
 ) -> KernelDecision:
-    requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
-        "1",
-        "true",
-        "on",
-        "yes",
-    }
+    requested = _triton_local_1q_requested(shape)
     return select_cataloged_triton_kernel(
         "local_1q",
         request=KernelRequest(
@@ -103,11 +98,21 @@ def _triton_local_1q_decision(
     )
 
 
+def _triton_local_1q_requested(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, while retaining an explicit override."""
+
+    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q")
+    if configured is None:
+        return shape in _TRITON_LOCAL_1Q_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
+
+
 def _triton_local_cx_decision(
     *,
     runtime_supported: bool = True,
     device_type: str,
     dtype: str,
+    shape: tuple[int, int],
 ) -> KernelDecision:
     return select_cataloged_triton_kernel(
         "local_cx",
@@ -121,7 +126,7 @@ def _triton_local_cx_decision(
             providers=("triton",),
         ),
         implementation_id="FQKI-TRITON-SV-002-A",
-        requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
+        requested=_triton_local_cx_requested(shape),
         runtime_supported=runtime_supported,
         device_runtime_provider="pytorch",
         compiler_backend="cuda",
@@ -129,11 +134,21 @@ def _triton_local_cx_decision(
     )
 
 
-def _triton_local_cx_enabled(*, device_type: str, dtype: str) -> bool:
+def _triton_local_cx_requested(shape: tuple[int, int]) -> bool:
+    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_CX")
+    if configured is None:
+        return shape in _TRITON_LOCAL_CX_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
+
+
+def _triton_local_cx_enabled(
+    *, device_type: str, dtype: str, shape: tuple[int, int]
+) -> bool:
     return bool(
         _triton_local_cx_decision(
             device_type=device_type,
             dtype=dtype,
+            shape=shape,
         ).accelerated
     )
 
@@ -199,12 +214,11 @@ def communication_aware_qubit_layout(
 ) -> tuple[CircuitIR, tuple[int, ...]]:
     """Relabel qubits to minimize forward or full-training-step communication.
 
-    ``local_world_size`` is the placement the plan resolved. It is passed rather
-    than read from ``LOCAL_WORLD_SIZE``: that variable describes the world
-    torchrun was handed, so a subgroup run reports a two-node world as
-    single-node, and an unlaunched process would let ambient environment decide
-    which qubit carries the rank bit. When it is omitted the world is assumed to
-    be one node, which is the placement-free choice.
+    ``local_world_size`` is the placement the plan resolved, passed rather than
+    read from ``LOCAL_WORLD_SIZE``: that variable describes the world torchrun
+    was handed, so a subgroup run reports a two-node world as single-node, and an
+    unlaunched process would let ambient environment decide which qubit carries
+    the rank bit. Omitting it assumes one node, the placement-free choice.
     """
 
     rank_bits = int(world_size).bit_length() - 1
@@ -306,14 +320,12 @@ def communication_aware_qubit_layout(
         mapping = [0] * ir.n_wires
         for physical, logical in enumerate(local_logical):
             mapping[logical] = physical
-        ordered_sharded = sorted(
-            sharded_logical,
-            key=(
-                lambda qubit: (
-                    (qubit_activity[qubit], qubit) if topology_aware else (qubit,)
-                )
-            ),
-        )
+        if topology_aware:
+            ordered_sharded = sorted(
+                sharded_logical, key=lambda qubit: (qubit_activity[qubit], qubit)
+            )
+        else:
+            ordered_sharded = sorted(sharded_logical)
         for offset, logical in enumerate(ordered_sharded):
             mapping[logical] = ir.n_wires - rank_bits + offset
         permutation = tuple(mapping)
@@ -628,6 +640,10 @@ def _vectorized_local_gate(
         runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+        shape=(
+            int(shard_state.amplitudes.shape[0]),
+            int(shard_state.amplitudes.shape[1]),
+        ),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
@@ -647,9 +663,7 @@ def _vectorized_local_gate(
             amplitudes.numel() * amplitudes.element_size(),
         )
     if triton_decision.accelerated:
-        from ....kernels.triton.statevector_gates import (
-            apply_complex64_local_1q,
-        )
+        from ....kernels.triton.statevector_gates import apply_complex64_local_1q
 
         bit_position = plan.n_qubits - qubits[0] - 1 - rank_bits
         amplitudes = apply_complex64_local_1q(
@@ -919,9 +933,7 @@ def _vectorized_cross_shard_cx(
     control_sharded = control in plan.sharded_qubits
     target_sharded = target in plan.sharded_qubits
     if control_sharded == target_sharded:
-        raise ValueError(
-            "specialized cross-shard CX requires exactly one sharded qubit"
-        )
+        raise ValueError("cross-shard CX requires exactly one sharded qubit")
 
     if control_sharded:
         position = plan.sharded_qubits.index(control)

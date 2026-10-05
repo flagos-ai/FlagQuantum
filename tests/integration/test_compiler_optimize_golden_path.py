@@ -20,5 +20,6 @@ def test_compiler_optimize_user_example_runs_end_to_end() -> None:
     )
 
     assert "FlagQuantum compiler optimization check passed" in completed.stdout
-    assert "instructions: 6 -> 3" in completed.stdout
+    assert "instructions: 8 -> 3" in completed.stdout
+    assert "optimized: ['rx', 'u3', 'cx']" in completed.stdout
     assert "execution path: local_statevector" in completed.stdout

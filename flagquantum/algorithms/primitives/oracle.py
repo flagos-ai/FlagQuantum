@@ -379,7 +379,7 @@ def append_bit_oracle(
         target: The qubit XORed with the predicate's value. It must not be a register qubit.
         ancillas: The qubits the ladder folds onto, ``max(len(qubits) - 2, 0)`` of them, none
             at all at two qubits or fewer. **Each must be in ``|0>`` on entry** and each is
-            restored to ``|0>`` on exit. They must be connected in the order the ladder computes
+            restored to ``|0>`` on exit. They must be ordered in the order the ladder computes
             them: ``ancillas[i]`` carries the conjunction of ``qubits[:i + 2]``.
 
     Raises:

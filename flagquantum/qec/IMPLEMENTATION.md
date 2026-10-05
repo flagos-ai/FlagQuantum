@@ -177,6 +177,68 @@ combined prior is the single `p` whose factor is that product, so regrouping the
 factors leaves every detector rate and every observable rate unchanged. The sum
 rule does not preserve them, and is offered for the caller who means it.
 
+A model can also state that mechanisms are alternatives rather than independent,
+and `dem_alternatives.py` owns that reading. `DemError.error_id` is an optional
+non-negative label; the mechanisms sharing one are mutually exclusive, so at most
+one of them fires in a shot, which is how a correlated or decomposed fault is
+stated. It is the one statement the parity matrices cannot carry, because two
+columns of a parity matrix are independent by construction, which is why it lives
+on the mechanism's own record and why every entry point either carries it or
+refuses the model: `from_memory_circuit` and `from_code_matrices` produce no ids,
+`from_stim_text` cannot meet one, and `error_ids` projects the vector back out in
+the sense upstream gives that name — one entry per mechanism, mechanisms sharing
+an entry being alternatives, and `None`, upstream's `nullopt`, exactly when no
+mechanism states an id, which is what every construction route here produces and
+what stim's text always describes.
+
+The identifiers are given a distribution rather than left as a bare flag, because
+"these are correlated" is not yet a model. The members of a group are read as
+disjoint pieces of one shot: each keeps the probability it states, the left-over
+mass is the group firing none of them, and a target's marginal rate over the group
+is the sum of the members that touch it rather than their parity. Two independent
+mechanisms of 0.1 and 0.2 give a detector they both flip a rate of 0.26, and the
+same two stated as alternatives give 0.30. Sampling follows the same reading,
+drawing one uniform per group and landing the shot in one member's interval or in
+the left-over mass, so a member fires in exactly the shots the model says it does
+while the shots in which the group fires at all follow the group's mass rather
+than the larger share two independent draws would give. A group that sums to
+exactly one is admitted — the group then fires every shot — and a group of one
+member excludes nothing and behaves as if it were unstated. A group whose
+probabilities sum *above* one is refused rather than renormalized: renormalizing
+would change every member's stated rate and leave nothing to read back, so the
+refusal names the id and the sum. `stated_ids()` and `exclusive_groups()` are the
+model's statement of what it excluded — empty and empty respectively exactly when
+it is independent — and `error_ids` is the label vector, whose values are opaque
+and whose numbering is therefore a normalization: two models that differ only in
+how their ids are numbered are the same model, and what is a fact about a model is
+the partition the vector induces.
+
+An id is a statement about the distribution, so an operation that assumes
+independence refuses an id-carrying model by naming the ids rather than dropping
+the structure, and each refusal is at the call site where that operation's own
+premise is the thing to explain. `to_stim_text()` refuses, because the format
+reads every error instruction as an independent mechanism and printing would
+therefore state a different model at the same probabilities.
+`merge_duplicate_mechanisms()` refuses, because both of its rules combine
+mechanisms by assuming independence and either would invent a shot in which two
+alternatives both fired.
+`MinimumWeightMatchingDecoder.from_detector_error_model` and the decoding graph
+behind it refuse, because one weight per mechanism is the weight of a fault that
+fires alone, while a group of alternatives is one fault whose weight is the
+negative log-likelihood of the group. What no route here does yet is the
+operation that would resolve the refusal rather than avoid it: folding a group
+under its exclusivity into the single mechanism a matcher can weigh. That is the
+gap the alignment contract records against `dem_canonicalize`, upstream's
+`canonicalize_for_rounds` family, and it is more load-bearing now than it was
+before the ids landed, because three call sites refuse a model for want of it.
+
+`tests/qec/test_dem_error_ids.py` pins the statement, its arithmetic and its
+refusals: the exact marginals against the parity formula they replace, a sampled
+rate against the exact one inside a stated standard-error bound, the absence of
+any shot in which two members of one group fire, the three refusal messages, and
+that a model with no ids draws and weighs exactly as it did before the field
+existed.
+
 Construction is exact and does not sample. On the forced route each mechanism's
 signature comes from one forced execution: the single error is injected into the
 circuit source, the source is lowered and executed twice, and the two shots must
@@ -288,16 +350,37 @@ that follow it, in the declarations and in the error mechanisms alike, and
 successive instructions accumulate. A `^` separator partitions the groups a
 composite mechanism decomposes into; those groups are a decoder's business and
 the signature is the symmetric difference of the line's targets, so a repeated
-target cancels and the groups are not retained. An observable count that only the
-error targets state is inferred from them, because stim declares the observable
-exactly when no mechanism references it; a declared count still governs.
+target cancels and the groups are not retained by default. An observable count
+that only the error targets state is inferred from them, because stim declares the
+observable exactly when no mechanism references it; a declared count still governs.
+
+The separator's groups are also available to a caller that wants them, because a
+matching decoder needs one graphlike component per edge and upstream exposes the
+same choice as `dem_from_stim_text(dem_text, use_decomp_suggestions=True)`.
+`DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)` returns one
+mechanism per group, each at the probability the line states, which is the
+decomposition the separators carry: on a rotated surface code at distance five and
+two rounds it turns 536 mechanisms into 1042. That reading is a different model
+from the line and is not an equivalent statement of it, because two components that
+each fire independently at probability `p` do not reproduce one mechanism at
+probability `p`. Held to stim's own sampler on the same text, the default reading's
+worst marginal misses by 0.0016 on the observables and this one misses by 0.048,
+which is what makes the tolerance in
+`test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not`
+evidence rather than decoration. The expanded model is a model in its own right --
+it prints and re-reads unchanged -- and it is the default reading that states the
+line stim wrote.
 
 What remains refused is a `repeat` block, a `#` comment, a declaration that skips
 an index, and a malformed line. The `repeat` refusal is deliberate rather than
 pending: expanding a block means interpreting a nested instruction stream, and
 `str(model.flattened())` already states the same instructions without the block.
 `flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit.
+block for a long enough circuit. One more line is refused by the suggested reading
+alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
+nothing, and a component with no targets has no mechanism to become, so the reader
+refuses it and names the default reading -- which states that line as `D1` -- as
+the route that states it.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
@@ -322,12 +405,40 @@ repetition code cannot supply that discrimination: at distance three, three roun
 and one percent noise the two readings of `^` differ by at most 0.0024, so the
 test uses a circuit whose decompositions actually merge groups.
 
-The text is lossy in the last digit, because stim prints 17 significant digits.
-Over that sweep the largest relative difference between an in-memory probability
-and the printed one was 4.9e-16, so the printed value is the one this reader
-states. A round-trip assertion must compare against a re-read of the printed text
-rather than against the in-memory model, or it reports differences that the
-printing caused.
+The text is exact on this side, and on stim's side the loss depends on the width
+stim's printer was built with rather than on the value. `to_stim_text()` writes a
+probability with `repr`, the shortest decimal that reads back as the identical
+double, so over twenty thousand swept probabilities no written value returned as a
+different one. stim's `str()` writes at
+`std::setprecision(std::numeric_limits<long double>::digits10 + 1)`, so the number
+of digits follows the platform's `long double`: nineteen significant digits where
+that type is the x86 80-bit extended one, which is the Linux CI platform, and
+sixteen where it is a double, which is arm64 macOS. Seventeen significant decimal
+digits name every double uniquely, so at nineteen digits the reprint returned
+every one of the swept probabilities unchanged and at sixteen about a quarter of
+them came back as a different value. That is a measured format rather than an
+estimate. The reader therefore states the printed value, because the printed
+value is what the interchange carried.
+
+Where the width is the narrower one, the drift stim introduces is bounded by one
+part in `10**15`. Sixteen significant decimal digits round to within half a unit
+in the last of them, and reading that decimal back as a double adds at most one
+binary unit in the last place, which is under `2**-51` of the value; the two
+together stay under the bound. The sweeps confirm it rather than assume it: the
+worst relative difference between an in-memory probability and the one stim
+printed was `5.4e-16` over the pinned sweep and `4.9e-16` over the earlier
+developer sweep, both inside the bound. Widths at or above seventeen digits need
+no bound at all, because they round nothing away.
+`tests/qec/test_dem_stim_text_precision.py` reads the width off stim's own output
+and then holds the digit count, the direction of the loss and the bound against
+that width, and it is a separate file because it measures stim's writer rather
+than this package's model.
+
+A round-trip assertion must compare against a re-read of the printed text rather
+than against the in-memory model, or it reports differences that the printing
+caused. That applies to text stim wrote on a platform whose `long double` is a
+double; this package's own writer needs no such allowance on any platform, which
+the same file demonstrates.
 
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
@@ -551,3 +662,62 @@ extra rather than a build dependency. That cross-check is
 than here: the two decoders agree on the cheapest weight of every syndrome and on
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
+
+## Reaching a decoder by name
+
+`registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
+reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
+**options)` and registers one with a decorator, and this module offers
+`get_decoder(name, source, **options)`, `register_decoder(name, *,
+replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
+those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
+two registrations this package ships.
+
+Three things about it are narrower than upstream on purpose, and each is a
+decision rather than an omission.
+
+The source argument is a *carrier*, not a decoder setting, which is why the three
+accepted forms are the three a caller can hold a model in: the detector error
+model, stim's text for one, and the decoding graph the model defines. A model is
+lifted through the class's own `from_detector_error_model`; a graph is passed to
+the constructor, because the graph is already the thing a matcher searches and
+rebuilding a model from it would lose the observable labels the caller has in
+hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+parity-check matrix is not a carrier, although upstream's
+`H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
+model and a round count rather than defaulting them, so a factory that lifted a
+matrix would also be choosing the noise the caller decodes against. The caller
+who holds the matrix and the noise together does the lifting.
+
+The registry holds the detector-error-model family alone. The repetition-code
+decoders in this layer take an ordered syndrome history rather than detection
+events, and `DetectorErrorModelDecoder` requires
+`from_detector_error_model`, so one name space over two input protocols would
+make a name mean one of two things. They stay directly constructed, which is also
+why the registry is a module of its own rather than methods on `Decoder`.
+
+Registration is checked at registration time, while the registering module is
+being imported. `register_decoder` refuses a name that is not a non-empty string,
+a second registration of a name unless the caller passes `replace=True`, and a
+class missing `decode` or `from_detector_error_model` — the two members every
+decoder in this family shares. A `TypeError` at import time, naming the member
+that is missing, is a better failure than an `AttributeError` at the first call,
+where the name is all the caller has to go on.
+
+`get_decoder` fails closed in two more places. An unregistered name raises
+`ValueError` and lists the names that are registered, rather than reaching any
+implementation, and a source that is not one of the three carriers raises
+`TypeError` naming `DecodingGraph`, since that is the carrier a caller is most
+likely to have held. `**options` goes to whichever route the source selects and
+is not filtered here, so passing the text reader's `use_decomp_suggestions` to
+the graph route raises rather than being dropped.
+
+The optional implementation is registered whether or not it is installed, so
+`pymatching` is part of this package's surface rather than the extra's: asking
+for it without the extra raises the error that names the extra, instead of a name
+that silently is not there. The adapter module is imported, but it reaches
+PyMatching through a function rather than at import time, so `import
+flagquantum.qec` does not import `pymatching` — a test starts a fresh interpreter
+and measures that rather than asserting it. No name is preferred over another, so
+`get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
+happens to be installed; the cross-check is never reached by accident.

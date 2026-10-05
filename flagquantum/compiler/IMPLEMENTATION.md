@@ -60,6 +60,19 @@ this layer.
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
 expert-facing entry point.
+`one_qubit_optimization.py` owns the same-wire run fold that
+`pipeline._optimize_to_fixed_point` runs beside the identity, self-inverse, and
+adjacent-rotation passes: it composes a maximal run of single-qubit gates on one
+wire into one `u3`, plus a `phase` or an `rz` for any determinant a bare `u3`
+cannot carry, and it is a private helper. It is exact, because FlagQuantum IR has
+no global-phase field for a dropped phase to go to, and it declines a run one
+z-rotation/pulse alphabet already spells, because the target lowering would
+re-spell the fold into more gates than the run had. Its convention table, which
+resolves the three opcodes whose runtime matrix is not already in the `U3`
+convention `one_qubit_synthesis.py` tabulates, is pinned against
+`flagquantum.simulation` by
+`tests/unit/test_compilation_one_qubit_optimization.py`; this layer may not
+import that module.
 `two_qubit_synthesis.py` owns the two-qubit KAK angles, the entangler table, and
 the entangler cost behind the same decompositions: it turns a 4x4 unitary into a
 supercontrolled entangler repeated one to three times, with one one-qubit factor

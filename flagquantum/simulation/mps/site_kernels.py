@@ -205,11 +205,12 @@ def _record_mps_qubit_probability_route() -> None:
     """Record one catalog-authorized MPS-007 execution."""
 
     _STATS.triton_qubit_probability_calls += 1
-    _log_triton_catalog_route(
-        kind="wire_probabilities",
-        semantic_id="mps.measurement.wire_probabilities.local",
-        implementation_id="FQKI-TRITON-MPS-007-A",
-    )
+    if _STATS.triton_qubit_probability_calls == 1:
+        _log_triton_catalog_route(
+            kind="wire_probabilities",
+            semantic_id="mps.measurement.wire_probabilities.local",
+            implementation_id="FQKI-TRITON-MPS-007-A",
+        )
 
 
 def _record_mps_qubit_probability_fallback() -> None:

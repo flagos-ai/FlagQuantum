@@ -25,6 +25,7 @@ from .program import (
 )
 
 _CLIFFORD_PHASE_MAP_CACHE_BYTES = 128 * 1024 * 1024
+_MIN_NATIVE_SCALAR_MATCHING_AMPLITUDES = 1 << 16
 _CLIFFORD_PHASE_MAP_CACHE: dict[
     tuple[
         int,
@@ -36,6 +37,16 @@ _CLIFFORD_PHASE_MAP_CACHE: dict[
     ],
     torch.Tensor,
 ] = {}
+
+
+def native_clifford_matching_enabled() -> bool:
+    """Return whether the native matching kernel is enabled and loadable."""
+
+    return bool(
+        os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_clifford_matching_available()
+    )
 
 
 def _clifford_phase_map_cache_bytes() -> int:
@@ -196,13 +207,17 @@ def native_clifford_matching_compile_enabled(
             for value in _matrix_tensors(instruction.matrix)
         )
     )
+    scalar_matching = bool(
+        batch_size == 1
+        and state.shape[1] >= _MIN_NATIVE_SCALAR_MATCHING_AMPLITUDES
+        and os.getenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
     return bool(
         state.device.type == "cpu"
-        and batch_size >= 2
+        and (batch_size >= 2 or scalar_matching)
         and not requires_grad
-        and native_cpu_clifford_matching_available()
-        and os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
-        not in {"0", "false", "off", "no"}
+        and native_clifford_matching_enabled()
     )
 
 

@@ -15,8 +15,10 @@ checked_by = "tools/check_qec_cudaq_alignment.py"
 # are two different artifacts and the parity matrix records them as one.
 # ---------------------------------------------------------------------------
 
-# Product surface: the cudaq-qec library (NVIDIA/cudaqx libs/qec).
-baseline = "CUDA-Q QEC (the cudaq-qec library, NVIDIA/cudaqx libs/qec)"
+# Product surface: the cudaq-qec library (NVIDIA/cudaq-qec, which is where
+# libs/qec lives; the repository was named NVIDIA/cudaqx when this checklist was
+# written and the old name now redirects to the new one).
+baseline = "CUDA-Q QEC (the cudaq-qec library, NVIDIA/cudaq-qec libs/qec)"
 baseline_versions = ["0.15.1", "0.16.0.post1"]
 baseline_versions_source = "contracts/cudaq-parity-matrix.toml:cudaq_versions"
 baseline_docs = "https://nvidia.github.io/cudaq-qec/ (documented as v0.8.0)"
@@ -46,11 +48,19 @@ format_standards = [
 
 # Provenance, and the limit of it. Row baselines quote the recorded CUDA-Q
 # surface of the quantum_error_correction domain, measured from a live CUDA-Q
-# 0.16.0 install. Field baselines were re-read from NVIDIA/cudaqx main
+# 0.16.0 install. Field baselines were re-read from the cudaq-qec source tree
 # (libs/qec/python, libs/qec/lib, docs/sphinx) and from the CUDA-Q core API docs
 # when this checklist was written.
-provenance = "rows: contracts/cudaq-parity-matrix.toml (live 0.16.0 install reading); fields: NVIDIA/cudaqx main libs/qec + CUDA-Q core API docs (source re-read)"
-provenance_limit = "No cudaq-qec release maps to the pinned CUDA-Q versions in this repository (the component's release line runs 0.1.0 to 0.8.0, the repository pins 0.15.1 and 0.16.0.post1, and the two lines are disjoint), so a field row proves the upstream surface exists today, not that it exists at the pinned baseline. The same limit is recorded as provenance_limit in contracts/cudaq-parity-matrix.toml, and the component version and release index above are checked against that contract rather than asserted here. Rows are marked provenance_unverified where the pinned-baseline form is not the form that was read."
+#
+# The tree that source read names has been renamed since: the API answers 301
+# for NVIDIA/cudaqx and the git remote resolves it to NVIDIA/cudaq-qec, which is
+# where libs/qec lives now, so the source read is recorded against the name that
+# serves it. The revision read is
+# 8df583e621ed39c3af08e0373aa3d51a6c0b9d21, the tree the checkout resolved to
+# when the negatives below were settled; a later reader reproduces the reading
+# by taking that revision rather than a branch name that moves.
+provenance = "rows: contracts/cudaq-parity-matrix.toml (live 0.16.0 install reading); fields: cudaq-qec source tree (NVIDIA/cudaq-qec, formerly NVIDIA/cudaqx) at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 + CUDA-Q core API docs (source re-read)"
+provenance_limit = "No cudaq-qec release maps to the pinned CUDA-Q versions in this repository (the component's release line runs 0.1.0 to 0.8.0, the repository pins 0.15.1 and 0.16.0.post1, and the two lines are disjoint), so a field row proves the upstream surface exists today, not that it exists at the pinned baseline. The same limit is recorded as provenance_limit in contracts/cudaq-parity-matrix.toml, and the component version and release index above are checked against that contract rather than asserted here. A row carries provenance_unverified when its upstream side is a search result the row does not pin to a revision, because such a negative cannot be repeated from what the row states; naming the revision the search was taken at is what removes the mark, so no row carries it at this revision of the contract and the rule stays enforced by the tool rather than by an example."
 
 status_values = ["aligned", "partial", "absent", "out_of_scope"]
 verdict_values = ["equivalent", "renamed", "reshaped", "absent", "extra"]
@@ -69,7 +79,7 @@ domain_items = ["cudaq-qec codes expressed as kernels, with numerical experiment
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
 baseline = "Code classes registered by a decorator, each exposing kernels through operation_encodings (notably qec.operation.stabilizer_round), with get_parity_z/x() and get_observables_z/x() bridged to CssCodes(hz, hx, lz, lx) by css_matrices_from_code(code)."
-target = "A declared code record that yields distance, data and ancilla wires, checks, stabilizers and logical observables, so that a memory circuit and its detector and observable layouts are derived from the code rather than asserted beside it."
+target = "A declared code record that yields distance, data wires, the ancilla total and its X-type and Z-type bands, checks, stabilizers and logical observables, reachable by name, so that a memory circuit and its detector and observable layouts are derived from the code rather than asserted beside it."
 symbols_present = [
     "flagquantum.qec.StabilizerCode",
     "flagquantum.qec.RepetitionCode",
@@ -79,21 +89,34 @@ symbols_present = [
     "flagquantum.qec.SteaneCode",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
+    "flagquantum.qec.ancilla_bands",
+    "flagquantum.qec.get_code",
+    "flagquantum.qec.code_names",
+    "flagquantum.qec.register_code",
+    "flagquantum.qec.StabilizerCode.num_x_stabilizers",
+    "flagquantum.qec.StabilizerCode.num_z_stabilizers",
 ]
-symbols_absent = ["CssCodes", "CssNoise", "stabilizer_round"]
+symbols_absent = [
+    "CssCodes",
+    "CssNoise",
+    "stabilizer_round",
+    "operation_encodings",
+]
 negative_search = ["symbol:flagquantum.qec.color_code"]
 evidence = [
     "flagquantum/qec/codes.py",
+    "flagquantum/qec/circuit.py",
     "flagquantum/qec/dem_construction.py",
     "tests/qec/test_codes.py",
+    "tests/qec/test_code_registry.py",
     "tests/qec/test_surface_code.py",
 ]
-next_action = "The X half the previous revision of this row recorded as dropped is now read. flagquantum.qec.css_code_matrices lifts a code record into flagquantum.qec.CssCodeMatrices, which carries hz, hx, lz and lx together instead of a Z-type pair, so a code with both bases reaches both detector bands and both observable blocks, and flagquantum.qec.SteaneCode is the first record that exercises them. The drop was silent, so it is replaced by a refusal: a logical observable that is neither pure X nor pure Z stops the read with the offending index named rather than being read as one of the two. Two gaps remain and neither is a declaration limit. The rate record is uniform, so a code reaches a model but not a per-location noise profile, and dem_code_capacity_noise carries that. And the record set is one code per family, so a colour code has no record even though the CSS shape now admits one; symbol:flagquantum.qec.color_code states that absence. Note in the same pass that upstream encodes a code as a set of kernels, so aligning to that shape is a decision about this repository's circuit model, not a small addition."
-fail_closed = "symbols_absent names the two matrix-level records and the operation-registration name, so the row stops claiming a matrix-level gap the day one appears; the negative search names the colour code, which is the family the record set still does not carry. The surface patch is exercised by tests/qec/test_surface_code.py, and tests/qec/test_dem_code_matrices.py holds the matrix record to reading every declared block rather than a Z-type subset: a code declaring both readouts produces both observable blocks, an X-only code still produces a model, a mixed-type observable is refused with its index named, and a check acting outside the declared data wires is refused rather than silently widened."
+next_action = "The five counts, the per-basis split and the name-keyed record set are all read now. flagquantum.qec.StabilizerCode declares num_ancilla_x_qubits and num_ancilla_z_qubits beside num_ancilla_qubits, and num_x_stabilizers and num_z_stabilizers beside those, which is the full accessor list upstream's own code record carries: cudaq::qec::code declares get_num_data_qubits, get_num_ancilla_qubits, get_num_ancilla_x_qubits, get_num_ancilla_z_qubits, get_num_x_stabilizers and get_num_z_stabilizers as pure virtuals, and this protocol answers all six. The two bands are derived from the checks by flagquantum.qec.ancilla_bands rather than declared beside them, so a record cannot report a split its checks contradict: the builder compares the stated counts against the derived bands and refuses a record where they disagree, while a flag or idle ancilla stays in neither band and is unaffected. The two stabilizer counts are that same derived quantity rather than a second derivation: in each of the three code classes upstream ships one ancilla measures one stabilizer, so a stabilizer count and the band count of the same basis are one number, and stating it twice would be two answers to one question. flagquantum.qec.get_code builds a record by name, flagquantum.qec.code_names lists the names, and flagquantum.qec.register_code puts one there with the members checked at registration, so the factory half of upstream's get_code and get_available_codes pair is reached the way the decoder registry already was. The colour code is withdrawn from this row rather than left as its gap: upstream's headers declare no colour code and no concrete code type at all, only the abstract cudaq::qec::code, the css_code_matrices and css_noise_params records, and the three families its own factory names -- Steane, repetition and surface -- of which this repository now carries one of each. Two gaps remain and neither is a declaration limit. An arbitrary stabilizer list still has no route in, which is upstream's second get_code overload: that overload builds the named record and then overwrites its stabilizer list, which is a shape this repository deliberately does not mirror, because the counts above are derived from the checks and a record whose stabilizer list was swapped under it would report one split while its checks stated another. A check also states one ancilla and one CNOT direction fixed by its type, so a mixed X-and-Z stabilizer is refused rather than half-read, and a logical observable that is neither pure X nor pure Z is refused with its index named. And a code here is a record that builds one source, where upstream's code is a map from an operation to the kernel that performs it, so a code carrying its own preparation, measurement or logical-operation kernels would need a second shape; symbol:flagquantum.qec.operation_encodings states that absence. Note that the second gap is a decision about this repository's circuit model rather than a small addition."
+fail_closed = "symbols_absent names the two matrix-level upstream records, upstream's stabilizer-round kernel type and the per-operation kernel map, so the row stops claiming a kernel-set gap the day one of those names appears; the negative search names the colour code, which neither this record set nor upstream's factory carries. The accessor list is held by tests/qec/test_code_registry.py, which reads the derived split against the stated counts for every shipped record, reads the two stabilizer counts against the number of checks of each basis and against the two bands, refuses an ancilla that measures both bases, and exercises the registry's duplicate, unknown-name, unknown-option and missing-member refusals; tests/qec/test_dem_code_matrices.py holds the matrix record to reading every declared block rather than a Z-type subset: a code declaring both readouts produces both observable blocks, an X-only code still produces a model, a mixed-type observable is refused with its index named, and a check acting outside the declared data wires is refused rather than silently widened."
 
 [[rows]]
 id = "qec_detector_annotations"
-status = "partial"
+status = "aligned"
 floor = "now"
 floor_override_reason = "The quantum_error_correction domain has no capability row of its own for detector annotations; the surface items are listed under cudaq_surface and the construction half is folded into qec_code_library, whose priority is now. The floor follows the row this feeds."
 domain_items = [
@@ -102,8 +125,8 @@ domain_items = [
 ]
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
-baseline = "In a CUDA-Q kernel body: detector(m0, ...) declares one detector as a parity constraint over measurement handles, detectors(prev, curr) pairs two equal-length handle vectors element-wise into cross-round detectors, and logical_observable(m0, ...) declares an observable. Handles come from mz/mx/my and are discriminated with to_bools or to_integer; the compiler intercepts the annotations, so calling them at host scope raises."
-target = "Detector and observable identity derived from the code and carried by the circuit record, so a decoder is configured by the detection events it consumes rather than by an asserted count."
+baseline = "In a CUDA-Q kernel body: detector(m0, ...) declares one detector as a parity constraint over measurement handles, detectors(prev, curr) pairs two equal-length handle vectors element-wise into cross-round detectors, and logical_observable(m0, ...) declares an observable, so detector and observable identity is a statement in the kernel rather than in a table beside it. Handles come from mz/mx/my and are values rather than column indices: the same handle is what to_bools turns into a boolean vector on one line and what to_integer packs into one integer on another, and both readings take the measurement that was taken, not a second one. The compiler intercepts the annotations, so calling them at host scope raises."
+target = "Detector and observable identity derived from the code and carried by the circuit record rather than asserted beside it, and every measurement the experiment records addressable by a handle whose outcome a caller reads off as a boolean vector or as an integer, so a decoder is configured by the detection events it consumes and host logic over a mid-circuit measurement does not need a column index."
 symbols_present = [
     "flagquantum.qec.build_memory_circuit",
     "flagquantum.qec.DetectorLayout",
@@ -111,6 +134,14 @@ symbols_present = [
     "flagquantum.qec.Detector",
     "flagquantum.qec.LogicalObservable",
     "flagquantum.qec.MeasurementRef",
+    "flagquantum.qec.MemoryCircuit.measurement_refs",
+    "flagquantum.qec.MeasurementSamples",
+    "flagquantum.qec.MeasurementSamples.outcome",
+    "flagquantum.qec.MeasurementSamples.vector",
+    "flagquantum.qec.MeasurementSamples.integer",
+    "flagquantum.qec.MeasurementSamples.shots",
+    "flagquantum.qec.MeasurementSamples.num_handles",
+    "flagquantum.qec.sample_memory_measurements",
 ]
 symbols_absent = [
     "flagquantum.qec.detector",
@@ -121,41 +152,43 @@ symbols_absent = [
 ]
 evidence = [
     "flagquantum/qec/circuit.py",
+    "flagquantum/qec/sampling.py",
     "tests/qec/test_memory_circuit.py",
     "tests/qec/test_memory_circuit_execution.py",
+    "tests/qec/test_measurement_handles.py",
 ]
-next_action = "Decide the annotation form deliberately. This layer sets detector and observable identity in a layout object beside a source string; CUDA-Q sets it in the kernel body, where the compiler needs the annotation to survive into IR. If the kernel-annotation form is adopted it needs a handle type, an interception rule and a host-scope refusal, and the layout object has to survive as the record of what the annotations meant. The measurement-handle half is the harder one: to_bools and to_integer are what make a mid-circuit measurement usable in host logic, and nothing here has an equivalent."
-fail_closed = "Five named absences, so the row cannot silently drift into claiming a kernel-level annotation surface; the layouts are validated dense and ordered by the records themselves, and the terminal-readout-only rule on LogicalObservable is a construction-time refusal rather than a convention. The three annotation names are checked as dotted paths because `detectors` and `detector` occur here as field and parameter names, where a bare-name search would be noise."
+fail_closed = "The row's own surface is closed and the five absences are what keep it from closing further than it can. Detector and observable identity is derived and validated: the layout count is the code's checks and rounds rather than a caller's number, every reference is tied to a declared wire and round, and the observable readout is refused unless it is terminal and matches the declared support exactly. The handle layer is closed against the layout layer rather than beside it: MemoryCircuit.measurement_refs is read off the code and the round count, so a handle is a name the experiment declares and never a column a caller guessed, and tests/qec/test_measurement_handles.py recomputes every detector's parity and every observable's flip from the handles that detector and observable name and requires the two readings of one run to agree shot for shot, so the record and the events cannot drift into two stories about one shot. A reading is refused rather than clamped when it does not fit: a handle the experiment does not record raises with the handle named, an empty reading raises, a reading addressed by anything but a MeasurementRef raises as a type error, and a record whose tensor is not two-dimensional or whose column count does not match its handle vector raises, so a mis-shaped reading cannot be silently truncated to the shorter of the two. The order a caller asks in is the order it gets -- vector is one boolean per handle per shot in the order named and integer packs that same order with the first handle least significant -- and the tests pin the packing against the bit vector rather than against a second call of the same method, so two orders name two integers and neither can be read as the other's. What the handle layer does not do is decide which handles are deterministic, and the tests say so by measurement rather than by convention: a noiseless run reads a Z-type check's ancilla as 0 in every round, an X-type check's ancilla as unbiased, and an individual terminal data wire as unbiased, while every detector and every observable reads 0 -- so a handle-level rate can never be reported as a channel rate, and the round-zero X-type bits the layouts drop are readable without being mistaken for pinned ones. The three annotation names stay checked as dotted paths because `detectors` and `detector` occur here as field and parameter names, where a bare-name search would be noise, and the two handle-reading names stay absent because this layer reads a handle on the record that holds it rather than through a per-measurement conversion call."
 
 [[rows]]
 id = "qec_syndrome_extraction_owner"
-status = "partial"
+status = "aligned"
 floor = "now"
 floor_override_reason = "Inventory correction rather than a capability: the matrix lists extract_syndrome as cudaq-qec surface, the confirmed owner is the CUDA-Q Logical preview, and CUDA-Q QEC's own extraction route is sample_memory_circuit. The floor is now because a wrong baseline sends work in the wrong direction, not because anything has to be built."
 domain_items = ["extract_syndrome"]
 dependency_class = "none"
 maturity_ref = "stabilizer_code_memory_circuit"
-baseline = "The quantum_error_correction domain's recorded CUDA-Q surface lists extract_syndrome. The confirmed owner of that name is cudaq.logical.extract_syndrome in the CUDA-Q Logical preview, which states it does not simulate, sample or decode and emits no detector error models. CUDA-Q QEC's own extraction routes are sample_memory_circuit / x_sample_memory_circuit / z_sample_memory_circuit and the decoder_context_from_memory_circuit helper; a cudaq-qec function named extract_syndrome was not found. UNVERIFIED at the pinned 0.16.0.post1 install."
+baseline = "The quantum_error_correction domain's recorded CUDA-Q surface lists extract_syndrome. The confirmed owner of that name is cudaq.logical.extract_syndrome in the CUDA-Q Logical preview, which states it does not simulate, sample or decode and emits no detector error models. The name is absent from the cudaq-qec tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 -- a whole-tree search returns no occurrence in its headers, its library sources, its Python bindings, its unittests or its documentation -- and the extraction routes that tree does carry are sample_memory_circuit with its x_ and z_ variants and the decoder_context_from_memory_circuit helper, declared in libs/qec/include/cudaq/qec/experiments.h."
 target = "A syndrome-extraction route named for what it does, and a parity matrix whose surface item names the right owner."
 symbols_present = [
     "flagquantum.qec.sample_memory_circuit",
     "flagquantum.qec.run_repetition_memory_experiment",
+    "flagquantum.qec.decoder_context_from_memory_circuit",
+    "flagquantum.qec.DecoderContext",
 ]
 symbols_absent = [
     "extract_syndrome",
     "x_sample_memory_circuit",
     "z_sample_memory_circuit",
-    "decoder_context_from_memory_circuit",
 ]
 evidence = [
     "flagquantum/qec/sampling.py",
     "flagquantum/qec/repetition.py",
     "flagquantum/qec/noise.py",
+    "flagquantum/qec/context.py",
     "contracts/cudaq-parity-matrix.toml",
 ]
-provenance_unverified = true
-next_action = "The fork this row was opened on is decided, and it was decided the way the row's own next_action asked: the extraction route here is named `sample_memory_circuit`, which is cudaq-qec's name for it, so this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`. What remains is one half of the pair and one inventory edit, neither of which this row owns. The decoder-context helper is absent and is tracked by `qec_dem_construction`; and the matrix's surface item still reads `extract_syndrome` in the inventory, which is correct as a record of what a live CUDA-Q install lists and is explained by the `extract_syndrome` entry in `baseline.surface_ownership` rather than repaired here."
-fail_closed = "The row asserts the correction in prose and marks itself UNVERIFIED; the row turns red if any of the four remaining names appears in the tree, so a future implementation under one of them has to revisit the claim instead of inheriting it. `sample_memory_circuit` left that list the day it was implemented, which is the row working as intended rather than a claim that drifted."
+next_action = "Both halves of the cudaq-qec extraction route are here now, and the row records the choice that put it on that route. `sample_memory_circuit` is cudaq-qec's name for the sampler, which is why this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`; and `decoder_context_from_memory_circuit` is the helper that hands a decoder the model together with the maps that say where each detector's parity is read, so a caller no longer assembles the pieces beside the sampler. Nothing remains on either half. The matrix's surface item still reads `extract_syndrome`, and that is the right text for it: the item is a record of what a live CUDA-Q install lists, and the `extract_syndrome` entry in `baseline.surface_ownership` names its owner as the logical preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec surface to migrate to. Renaming it would make the inventory disagree with the install it records. The two per-basis sampler names stay absent on purpose: a basis is a component of the context here rather than a second entry point, so adopting them would be a second way to ask for one thing. The negative that held this row at `partial` was the provenance of the absence, not the absence itself, and the tree read above is what settles it."
+fail_closed = "The row turns red if either remaining name appears in the tree, so a future implementation under one of them has to revisit the claim instead of inheriting it. `sample_memory_circuit` and `decoder_context_from_memory_circuit` each left that list the day it was implemented, which is the row working as intended rather than a claim that drifted. The upstream negative is held to the named revision rather than to prose: the baseline names the revision it was read at, and the two names the row keeps absent are the two the tree reaches by other means."
 
 [[rows]]
 id = "qec_dem_construction"
@@ -177,6 +210,9 @@ symbols_present = [
     "flagquantum.qec.build_memory_circuit",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
+    "flagquantum.qec.decoder_context_from_memory_circuit",
+    "flagquantum.qec.DecoderContext",
+    "flagquantum.qec.DecoderInputs",
 ]
 symbols_absent = [
     "dem_from_kernel",
@@ -184,23 +220,25 @@ symbols_absent = [
     "dem_from_stim_text",
     "dem_from_memory_circuit",
     "z_dem_from_memory_circuit",
-    "DecoderContext",
 ]
 evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
     "flagquantum/qec/noise.py",
+    "flagquantum/qec/context.py",
     "tests/qec/test_dem_from_memory_circuit.py",
     "tests/qec/test_dem_signatures.py",
     "tests/qec/test_dem_code_matrices.py",
     "tests/qec/test_dem_code_matrices_stim.py",
+    "tests/qec/test_dem_rate_overrides.py",
+    "tests/qec/test_decoder_context.py",
 ]
-next_action = "Two of the three gaps the previous revision of this row listed are closed and the third is pinned elsewhere. The X and Z detector bands that an hx/lx pair implies are reachable now: the matrix route reads both parity blocks and both logical blocks, and the phase and Y fault families alongside the data-flip one, so a mechanism carries the observable rows of either basis. The rate record is the remaining limit -- it states uniform scalars, so an independent px/py/pz/pm split and per-location rates are still out of reach -- and dem_code_capacity_noise carries that rather than this row. What is left in construction itself is a context object that carries the model plus the maps a decoder needs (upstream decoder_context_from_memory_circuit is exactly that), and a model that comes out of a kernel's own annotations, which this repository cannot do until the annotation row moves."
-fail_closed = "A non-Pauli channel is refused with a stated reason rather than decomposed, and construction is bounded by the statevector ceiling, which is why the modelled rotated-surface distance stops at three; the matrix route is not bounded by it at all, because it reads a support rather than executing a program. The per-error observable of a mechanism is not asserted from the source but read off the layout after the flip on the circuit route, and derived from the logical matrix on the matrix route. The two routes describe different experiments and the difference is pinned rather than glossed: the matrix route has no terminal data readout, so its detector count is num_rounds * num_checks while a memory circuit's is one band per round plus a terminal detector per Z-type check, and tests/qec/test_dem_code_matrices_stim.py asserts both geometries against the assumption each one states. The same file hands the matrix route's declared shape and every mechanism rate to stim's own error analysis one readout basis at a time, and pins the single place where a persisting data fault makes the model claim a band the experiment does not, as the exact relation between the two mechanism sets rather than as a tolerance, so the divergence cannot widen unnoticed. A matrix that is not binary, is not two-dimensional, or disagrees with another block about the number of data qubits is refused rather than coerced."
+next_action = "Every gap the previous revisions of this row listed is closed and what is left is stated rather than implied. The X and Z detector bands that an hx/lx pair implies are reachable now: the matrix route reads both parity blocks and both logical blocks, and the phase and Y fault families alongside the data-flip one, so a mechanism carries the observable rows of either basis. The rate record is no longer one of them: it carries the four fault families as four scalars and the same four overrides per qubit and per check, and both construction routes read an element through the same accessor, so a location can be given its own rate while its neighbours keep theirs and a quiet location between two noisy ones enumerates no mechanism at all. The context object is no longer one of them either: `decoder_context_from_memory_circuit` builds the model once and the context returns it a basis at a time together with the maps that say which measurements compose each detector and each observable, so a decoder is handed both halves instead of the caller threading them by hand. What is left in construction itself is one route: a model that comes out of a kernel's own annotations, which this repository cannot do until the annotation row moves, because the parity is stated in a layout beside the source rather than in the kernel body a compiler would have to carry it out of."
+fail_closed = "A non-Pauli channel is refused with a stated reason rather than decomposed, and construction is bounded by the statevector ceiling, which is why the modelled rotated-surface distance stops at three; the matrix route is not bounded by it at all, because it reads a support rather than executing a program. A context is built from the same construction route rather than a second one, so it cannot state a model the construction route would not, and it refuses a model whose detector or observable count disagrees with the circuit it is read over. A basis component refuses an id-carrying model rather than dropping the correlation or merging two members of a group of alternatives, and refuses an empty basis rather than returning a model with no detector. The per-error observable of a mechanism is not asserted from the source but read off the layout after the flip on the circuit route, and derived from the logical matrix on the matrix route. The two routes describe different experiments and the difference is pinned rather than glossed: the matrix route has no terminal data readout, so its detector count is num_rounds * num_checks while a memory circuit's is one band per round plus a terminal detector per Z-type check, and tests/qec/test_dem_code_matrices_stim.py asserts both geometries against the assumption each one states. The same file hands the matrix route's declared shape and every mechanism rate to stim's own error analysis one readout basis at a time, and pins the single place where a persisting data fault makes the model claim a band the experiment does not, as the exact relation between the two mechanism sets rather than as a tolerance, so the divergence cannot widen unnoticed. A matrix that is not binary, is not two-dimensional, or disagrees with another block about the number of data qubits is refused rather than coerced."
 
 [[rows]]
 id = "qec_dem_matrices_and_rates"
-status = "partial"
+status = "aligned"
 floor = "now"
 floor_override_reason = "Data-shape row, not a capability row of its own: the matrices and rates this row pins are what qec_dem_construction and qec_decoder_family consume, and both of those are now."
 domain_items = ["cudaq-qec library"]
@@ -211,24 +249,45 @@ target = "The parity matrices and the per-error rates a matcher needs, in the or
 symbols_present = [
     "flagquantum.qec.DetectorErrorModel.detector_error_matrix",
     "flagquantum.qec.DetectorErrorModel.observables_flips_matrix",
+    "flagquantum.qec.DetectorErrorModel.error_rates",
     "flagquantum.qec.DetectorErrorModel.detector_rates",
     "flagquantum.qec.DetectorErrorModel.observable_rates",
     "flagquantum.qec.DetectorErrorModel.num_errors",
+    "flagquantum.qec.DetectorErrorModel.error_ids",
+    "flagquantum.qec.DetectorErrorModel.stated_error_ids",
+    "flagquantum.qec.DetectorErrorModel.exclusive_groups",
     "flagquantum.qec.DemError",
+    "flagquantum.qec.DemError.error_id",
     "flagquantum.qec.DetectorErrorModel.from_code_matrices",
     "flagquantum.qec.css_code_matrices",
     "flagquantum.qec.CssCodeMatrices",
+    "flagquantum.qec.PhenomenologicalNoise",
+    "flagquantum.qec.PhenomenologicalNoise.data_flip_per_qubit",
+    "flagquantum.qec.PhenomenologicalNoise.phase_flip_per_qubit",
+    "flagquantum.qec.PhenomenologicalNoise.both_flip_per_qubit",
+    "flagquantum.qec.PhenomenologicalNoise.measurement_flip_per_check",
+    "flagquantum.qec.PhenomenologicalNoise.data_flip_rates",
+    "flagquantum.qec.PhenomenologicalNoise.phase_flip_rates",
+    "flagquantum.qec.PhenomenologicalNoise.both_flip_rates",
+    "flagquantum.qec.PhenomenologicalNoise.measurement_flip_rates",
+    "flagquantum.qec.MeasurementMap",
+    "flagquantum.qec.DecoderInputs.measurement_to_detectors",
+    "flagquantum.qec.DecoderInputs.measurement_to_observables",
+    "flagquantum.qec.decoder_context_from_memory_circuit",
 ]
-symbols_absent = ["error_ids", "canonicalize_for_rounds", "measurement_to_detectors"]
 evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
+    "flagquantum/qec/decoding_graph.py",
+    "flagquantum/qec/context.py",
     "tests/qec/test_dem_rates.py",
     "tests/qec/test_dem_sampling.py",
+    "tests/qec/test_dem_error_ids.py",
     "tests/qec/test_dem_code_matrices.py",
+    "tests/qec/test_dem_rate_overrides.py",
+    "tests/qec/test_decoder_context.py",
 ]
-next_action = "Keep the orientation pinned to (detectors, errors) and (observables, errors): it is the same orientation as upstream and the same as stim's ecosystem. The code-capacity input side carries every block a code declares now: css_code_matrices reads hz, hx, lz and lx into one CssCodeMatrices record and DetectorErrorModel.from_code_matrices turns it into the same (detectors, errors) orientation, so a caller whose matrices come from a code rather than from a recorded circuit reaches a model without building a circuit, on either readout basis. Three additions would still close the row. An error-id column, because mutually exclusive errors are how a correlated or decomposed mechanism is expressed and there is no way to say it here. A rates vector, because a matcher wants the column vector and this model stores a record per error. And a context object, because upstream carries the DEM and the maps together and here a caller threads three tuples by hand."
-fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. Three named absences cover the three additions, so the row moves when one lands rather than staying quietly stale."
+fail_closed = "The orientation is asserted by tests/qec/test_dem_rates.py, and the sampling path is the model's own arithmetic rather than the circuit simulator, so a DEM-sampled rate can never be reported as a circuit-sampled one. The matrix route asserts the same orientation on its own inputs rather than reusing the circuit route's geometry: tests/qec/test_dem_code_matrices.py pins the code-capacity detector count at num_rounds times num_checks, which deliberately differs from the memory-circuit count, so neither geometry can be reported as the other's, and pins the column order the X block takes after the Z block and the X observable rows after the Z rows, so a caller cannot read one block's columns as the other's. The id column is fail-closed on both sides of its own change: a group whose probabilities sum above one is refused rather than renormalized, so no member's stated rate is quietly changed, and the three operations that assume independence refuse an id-carrying model instead of dropping the structure, which is what to_stim_text (the format cannot state it), merge_duplicate_mechanisms (either rule would invent a shot in which two alternatives both fired) and the decoding graph (one weight per mechanism is the weight of a fault that fires alone) each do by naming the ids. tests/qec/test_dem_error_ids.py pins the refusal messages, the exact rates, the sampled rates against the exact ones at a stated standard-error bound, and the absence of any shot in which two members of one group fire. The rate column is fail-closed against the one way it could disagree with the matrices: it is projected from the same normalized mechanism sequence the columns are taken from rather than from the caller's argument order, so a model states its mechanisms in one order and every column view is read from that order, and tests/qec/test_dem_rates.py pins each entry against the column it weights rather than against the vector alone. Canonicalization is not a gap this row is waiting on: the round structure a matcher would read is the absent field row dem_canonicalize, whose negative search names canonicalize_for_rounds, and the seam work behind it is qec_dem_chunking's. This row's own surface is closed, which is why it is aligned rather than partial."
 
 [[rows]]
 id = "qec_dem_merge"
@@ -303,9 +362,10 @@ evidence = [
     "tests/qec/test_dem_stim_text.py",
     "tests/qec/test_dem_stim_interop.py",
     "tests/qec/test_dem_stim_reference_rates.py",
+    "tests/qec/test_dem_stim_text_precision.py",
 ]
-next_action = "The interchange is present in both directions and independently checked: stim's own error analysis builds the model from a gate-for-gate transcription and agrees on shape, mechanism count and pair rates. What the two entry points share is narrowness at the input end rather than the absence of one: a model comes either from one circuit record plus one noise record or from the two matrices the matrix route reads, and a stimulus for neither is accepted, so an arbitrary annotated circuit still has no route to a model. The text is also lossy in the last printed digit."
-fail_closed = "A round trip is compared against a re-read of the text rather than against the in-memory record, because stim prints 17 significant digits; the reference-rate test shares nothing with the FlagQuantum side but the gate sequence and the noise model. The matrix route's own stim check does the same for the code-capacity geometry, and it is a separate transcription on purpose because the two experiments do not have the same detector count. The reader refuses repeat, comments, skipped-index declarations and malformed lines by name rather than guessing."
+next_action = "The interchange is present in both directions and independently checked: stim's own error analysis builds the model from a gate-for-gate transcription and agrees on shape, mechanism count and pair rates. What the two entry points share is narrowness at the input end rather than the absence of one: a model comes either from one circuit record plus one noise record or from the two matrices the matrix route reads, and a stimulus for neither is accepted, so an arbitrary annotated circuit still has no route to a model. The text half is now pinned rather than described. stim's writer prints at numeric_limits<long double>::digits10 + 1 -- a measured width that follows the platform rather than a constant of stim: nineteen significant digits where long double is the x86 80-bit extended type, which is the Linux CI platform, and sixteen where it is a double, which is arm64 macOS. Seventeen digits name a double uniquely, so at nineteen digits a probability that leaves through stim's own printer returns as the identical double and at sixteen it can return as a different one, while the same probability written by this package cannot on either. The drift a stim round trip introduces at the narrower width is bounded by one part in 10**15, which follows from the format and is confirmed against the pinned sweep at a 5.4e-16 worst case, so the caveat is a tolerance a caller can carry rather than a warning. Both readings of a `^` separator are now offered rather than one, under upstream's own flag name: the default states the line stim wrote, and `use_decomp_suggestions=True` expands each component at the line's probability, which is the graphlike decomposition a matcher consumes. The difference between them is measured against stim's own sampler rather than asserted, and only the default one passes the tolerance. What remains is the input side: a model still comes either from one circuit record plus one noise record or from the matrices the matrix route reads, and a stimulus for neither is accepted, so an arbitrary annotated circuit has no route to a model."
+fail_closed = "A round trip through stim is compared against a re-read of the text rather than against the in-memory record and carries the one-part-in-10**15 bound, because stim prints 16 significant digits on the platform whose long double is a double and its printer is the side that loses the value there; at 19 digits, where long double is the x86 80-bit extended type, the same round trip is exact, and a round trip through this package's own writer needs no allowance on any platform. tests/qec/test_dem_stim_text_precision.py reads the width off stim's own output, pins the two widths this repository's test platforms show, and then holds the loss and the bound against whichever width it read, so a stim release that changed its precision fails there instead of invalidating this row. The reference-rate test shares nothing with the FlagQuantum side but the gate sequence and the noise model. The matrix route's own stim check does the same for the code-capacity geometry, and it is a separate transcription on purpose because the two experiments do not have the same detector count. The reader refuses repeat, comments, skipped-index declarations and malformed lines by name rather than guessing. The two readings of a separator are held apart by stim's own sampler on the same text, with a tolerance only the default reading passes, so a change that made the default expand components the way the suggestion does would fail there instead of passing quietly; a component that cancels to nothing is refused by the suggested reading alone, with the default reading named as the route that states the line."
 
 [[rows]]
 id = "qec_stim_sampling_join"
@@ -329,9 +389,11 @@ evidence = [
     "flagquantum/simulation/stabilizer/engine.py",
     "flagquantum/qec/dem.py",
     "tests/qec/test_sampling_memory_circuit.py",
+    "tests/qec/test_data_fault_families.py",
+    "tests/qec/test_dem_rate_overrides.py",
     "tests/team/simulation/test_stabilizer_positioned_noise.py",
 ]
-next_action = "The join is present for one channel and one code grammar, and the row stays partial on scope rather than on correctness. A noise location is a data flip at a round boundary or a measurement flip at a check's readout, which is exactly the two mechanisms PhenomenologicalNoise names; a depolarizing or damping channel placed after a gate has no location here, so an arbitrary annotated circuit is still declined rather than sampled. The baseline's x_ and z_ variants have no counterpart either, because the code record is a Z-memory record and the sampler inherits that refusal. The remaining work is therefore a location grammar that reads its placements off generic circuit structure rather than off the memory-circuit round loop, which is what a channel after a named gate would need."
+next_action = "The join is present for one code grammar and one channel, and the row stays partial on scope rather than on correctness. Every family the noise record states is now a location on the sampler route as it already was on the construction routes. A noise location is a data fault at a round boundary or a flip at a check's readout, the four families are the record's own four fields rather than a Pauli letter chosen here, each location carries the rate the record's own element names it with so a per-qubit or per-check profile is sampled as stated, and the sampler and the construction routes enumerate the same families in the same order under the same names. The engine still executes one channel, so the Z and Y data families are placed as that single bit flip conjugated by h and by sdg/s: one draw at that family's rate rather than a pair of independent bit flips, and a family the conjugation could not express would be refused rather than sampled as a nearby Pauli. What the sampler still cannot place is a depolarizing or damping channel and any channel bound to a named gate rather than to a round boundary, so an arbitrary annotated circuit is still declined rather than sampled. The baseline's x_ and z_ variants have no counterpart either, because the code record is a Z-memory record and the sampler inherits that refusal. The remaining work is therefore a location grammar that reads its placements off generic circuit structure rather than off the memory-circuit round loop, which is what a channel after a named gate would need."
 fail_closed = "A program that is not `rounds` identical blocks measuring each check once in the declared order is refused with a stated reason rather than sampled, so a misattributed mechanism cannot be returned as a plausible rate; the engine refuses any channel other than the bit-flip pair, a lowered measurement node, and a non-Clifford opcode by name. The join is a distinct entry point from the model, and the tests assert that the model's own sampler and this one are reached independently, so a sampled rate can never be silently relabelled as the model's."
 
 [[rows]]
@@ -343,7 +405,7 @@ domain_items = ["GPU decoders", "circuit-to-DEM round trip"]
 dependency_class = "B_open_neutral"
 maturity_ref = "detector_error_matching_decoder"
 baseline = "A decoder registry: get_decoder(name, H_or_dem_text_or_sparse_matrix, **options) plus a registration decorator, over base-class methods decode / decode_batch / decode_async / get_block_size / get_syndrome_size / get_version and result records DecoderResult(converged, result, opt_results) and BatchDecoderResult, with an empty batch yielding a (0, 0) result and a (0,) converged vector. Ship names include single_error_lut, example_byod, chromobius, tensor_network_decoder, sliding_window and nv-qldpc-decoder. In-tree Apache-2.0 plugin sources exist for chromobius, pymatching and the example lookup decoder; the qLDPC decoder ships as a closed-source binary under the NVIDIA Software License."
-target = "A decoder contract over detection events with a minimum-weight perfect matching implementation that is the authority, and Apache-2.0 matching and belief-propagation libraries integrated behind an optional extra as cross-checks."
+target = "A decoder contract over detection events reached through a name-keyed registry, with a minimum-weight perfect matching implementation that is the authority, and Apache-2.0 matching and belief-propagation libraries integrated behind an optional extra as cross-checks."
 symbols_present = [
     "flagquantum.qec.Decoder",
     "flagquantum.qec.StreamingDecoder",
@@ -357,29 +419,36 @@ symbols_present = [
     "flagquantum.qec.MatchingDecodeResult",
     "flagquantum.qec.PyMatchingDecoder",
     "flagquantum.qec.MatchingDependencyError",
+    "flagquantum.qec.get_decoder",
+    "flagquantum.qec.register_decoder",
+    "flagquantum.qec.decoder_names",
+    "flagquantum.qec.DetectorErrorModelDecoder",
+    "flagquantum.qec.AUTHORITY_NAME",
+    "flagquantum.qec.CROSS_CHECK_NAME",
 ]
 symbols_absent = [
-    "get_decoder",
     "BeliefPropagationDecoder",
     "SlidingWindowDecoder",
     "DecoderResult",
 ]
 negative_search = [
-    "flagquantum/qec/registry.py",
+    "flagquantum/qec/plugins",
 ]
 evidence = [
     "flagquantum/qec/adapters.py",
     "flagquantum/qec/decoders.py",
     "flagquantum/qec/decoding_graph.py",
     "flagquantum/qec/matching.py",
+    "flagquantum/qec/registry.py",
     "flagquantum/qec/types.py",
     "tests/qec/test_adapters_pymatching.py",
+    "tests/qec/test_decoder_registry.py",
     "tests/qec/test_decoding_graph.py",
     "tests/qec/test_matching_decoder.py",
     "tests/qec/test_repetition_memory.py",
 ]
-next_action = "The three halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly, and the PyMatching cross-check behind the `pymatching` extra. The cross-check landed as a comparison of two selections rather than as an equality of two instruments, because the two instruments are not equal: PyMatching reports 3.9020747171643912 for a mechanism this package states as 3.9020746947749574, so the graph PyMatching minimizes over is not exactly this one and two explanations closer than that difference can be ordered differently on the two sides. What is asserted is therefore the cheapest weight on every syndrome, the observables wherever the cheapest explanation is unique, and the two refusals as the same set -- with a pinned tie on the distance-three repetition code so that the tie clause is a demonstrated fact rather than a place a disagreement could hide. What is left is scope and plumbing, in this order. A registry, which is what makes the DEM-text entry point and an upstream-shaped get_decoder(name, ...) possible; the row keeps get_decoder absent deliberately, because a registry is a separate decision from a decoder and a name-keyed factory has no second caller yet. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. And a hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. Do not chase the closed-source NVIDIA decoder: interface shape only, and note that upstream's open chromobius and pymatching plugins are themselves the precedent for integrating rather than reimplementing."
-fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The four named absences are the registry, the two decoder families the matcher does not cover, and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution. The cross-check fails closed in two places of its own rather than approximating a translation: a detector pair carrying two mechanisms is refused instead of being merged with PyMatching's `independent` strategy, which would collapse the pair and lose the logical-label difference, and a detector that no mechanism flips is refused because PyMatching infers its detector count from the edges it is given, so the syndrome vector would otherwise be renumbered. A graph outside the translation's domain is therefore refused by name while the matcher still answers it, so the cross-check's narrower domain is never reported as the authority's."
+next_action = "The four halves this row's order named have landed: a decoding graph whose edge weight is log((1-p)/p) and which carries observable labels, a self-implemented minimum-weight matcher over it that decodes a detector error model's syndrome exactly, the PyMatching cross-check behind the `pymatching` extra, and a name-keyed registry over both. The cross-check landed as a comparison of two selections rather than as an equality of two instruments, because the two instruments are not equal: PyMatching reports 3.9020747171643912 for a mechanism this package states as 3.9020746947749574, so the graph PyMatching minimizes over is not exactly this one and two explanations closer than that difference can be ordered differently on the two sides. What is asserted is therefore the cheapest weight on every syndrome, the observables wherever the cheapest explanation is unique, and the two refusals as the same set -- with a pinned tie on the distance-three repetition code so that the tie clause is a demonstrated fact rather than a place a disagreement could hide. The registry landed as the factory half only, and it is deliberately narrower than the baseline's: `get_decoder(name, source, **options)` takes the three carriers a caller can hold a model in -- the model, stim's text for one, and the graph the model defines -- and not `H_or_dem_text_or_sparse_matrix`, because lifting a parity-check matrix would also mean choosing the noise model and round count that `from_code_matrices` reads rather than defaults. The registered family is detector error model decoders alone; the repetition-code decoders stay directly constructed, since a registry holding two input protocols would make one name mean one of two things. What is left is scope, in this order. Belief propagation with ordered statistics decoding and a sliding-window decoder, which are the two upstream families the matcher does not cover and which need the chunk seams upstream expresses as DemChunkSpec. A hyperedge-decomposition front end, which is what would widen the matcher's graphlike scope rather than leaving a mechanism of three detectors refused. And the plugin boundary itself, which is the field this row still records as absent: the adapter is a concrete class registered under a name rather than a plugin loaded across a version boundary, and it is the open chromobius and pymatching plugins upstream ships that are the precedent for integrating rather than reimplementing. Do not chase the closed-source NVIDIA decoder: interface shape only."
+fail_closed = "The row is `partial` and not `aligned` on purpose: a graphlike-only matcher with an enumerated pairing is not the decoder family the baseline ships. The three named absences are the two decoder families the matcher does not cover and the upstream result record, so the row moves the day one lands. The matcher refuses a hyperedge and a syndrome above its defect budget with a stated reason rather than projecting or truncating, and its weight is checked against brute force and against the exhaustive enumeration of the model's own distribution, so the correctness claim rests on the detector error model it reads and on no external distribution. The cross-check fails closed in two places of its own rather than approximating a translation: a detector pair carrying two mechanisms is refused instead of being merged with PyMatching's `independent` strategy, which would collapse the pair and lose the logical-label difference, and a detector that no mechanism flips is refused because PyMatching infers its detector count from the edges it is given, so the syndrome vector would otherwise be renumbered. A graph outside the translation's domain is therefore refused by name while the matcher still answers it, so the cross-check's narrower domain is never reported as the authority's. The registry fails closed in three places: an unregistered name raises and lists the names that are registered rather than falling back to any implementation, a class missing either of the two members the family shares is refused at registration time -- while the registering module is being imported -- rather than at the first caller, and a source that is not one of the three carriers is refused by type. The optional implementation is registered whether or not it is installed, so its name is part of this package's surface and asking for it without PyMatching raises the error that names the extra instead of a name that silently is not there; and no name is preferred over another, so the authority is returned for its own name wherever the extra happens to be present."
 
 [[rows]]
 id = "qec_decoder_configuration"
@@ -457,7 +526,7 @@ domain_row = "qec_stim_user_migration"
 domain_items = ["for-stim-users migration"]
 dependency_class = "none"
 maturity_ref = "detector_error_model"
-baseline = "The quantum_error_correction domain records a for-stim-users migration surface item, and it now records what that item is not: cudaq-qec ships no for-stim-users page, and the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, with a companion Stim emission page. Both of those state that the layer does no detector annotations, no detector error models and no sampling, and that the trimmed product has no shot-level target to emit toward. The cudaq-qec documentation index and its Python API page were read and carry no for-stim-users page, so the counterpart is cudaq-qec's own Stim surface rather than a page to translate: dem_from_stim_text for reading stim text, dem_sampling for sampling a model, and the decoder framework's Stim DEM entry point. UNVERIFIED whether a cudaq-qec migration page exists that was not reachable."
+baseline = "The quantum_error_correction domain records a for-stim-users migration surface item, and it now records what that item is not: cudaq-qec ships no for-stim-users page, and the only page with that title in the CUDA-Q documentation belongs to the logical preview layer, with a companion Stim emission page. Both of those state that the layer does no detector annotations, no detector error models and no sampling, and that the trimmed product has no shot-level target to emit toward. The question of whether a cudaq-qec migration page exists was settled by reading the whole documentation tree rather than its index: the tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 has no page with that title, and its docs/sphinx directory is the complete document set, because a page that is not in the tree is not published from it. The counterpart is therefore cudaq-qec's own Stim surface rather than a page to translate: dem_from_stim_text for reading stim text, dem_sampling for sampling a model, and the decoder framework's Stim DEM entry point."
 target = "A documented statement of what a stim user finds here, what they do not, and which of their habits transfer."
 symbols_absent = ["stim_migration_guide"]
 negative_search = [
@@ -465,9 +534,8 @@ negative_search = [
     "docs/roadmap/QEC_PARITY.md",
 ]
 evidence = ["flagquantum/qec/README.md", "flagquantum/qec/IMPLEMENTATION.md"]
-provenance_unverified = true
 next_action = "Documentation and conformance work that only becomes meaningful once the DEM surface stops moving. The matrix half of this finding has landed: the surface item's owner is now recorded in the parity contract's `baseline.surface_ownership`, which attributes it to the preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec Surface to migrate to. What remains is the document itself. The material for it already exists: IMPLEMENTATION.md records the stim sweeps, the refusals and the lossy-digit caveat, so a migration document would be that rewritten in a stim user's terms plus an explicit list of stim habits that do not transfer (repeat blocks, comments, skipped indices, ^ separators, error-id correlation)."
-fail_closed = "An absent guide path and an absent roadmap path, so the row turns red when the document is written; the row is marked UNVERIFIED because the negative was a documentation search, not a source read."
+fail_closed = "An absent guide path and an absent roadmap path, so the row turns red when the document is written. The upstream negative is held the same way: the baseline names the revision whose tree was listed, so the absence of a for-stim-users page is a statement about a revision a reader can take rather than about what a documentation index happened to show."
 
 # ---------------------------------------------------------------------------
 # Field rows: the same discipline one level down, over the detector error model
@@ -502,20 +570,16 @@ note = "Same orientation, same entries, same container difference as the detecto
 [[fields]]
 id = "dem_error_rates"
 cudaq_symbol = "DetectorErrorModel.error_rates -- one rate per error mechanism, length equal to the number of columns"
-flagquantum_symbol = "flagquantum.qec.DemError.probability"
+flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.error_rates"
 verdict = "reshaped"
-note = "The rates are the same quantity, stored per column upstream and per error record here. A caller that wants the vector must project it out of the error tuple; nothing exposes it as a vector, and the local detector_rates and observable_rates are different quantities again (marginals over detector and over observable, not per mechanism)."
+note = "The rates are the same quantity and now the same vector, reached from a different shape of storage: upstream keeps one parallel rate vector beside the matrices, here each mechanism's rate is a field of its own record (flagquantum.qec.DemError.probability) and flagquantum.qec.DetectorErrorModel.error_rates projects the vector back out, so the two views cannot drift the way a stored pair of parallel arrays can. The reshape that remains is the projection rather than the quantity: the vector is a tuple of plain floats and a read-only property, where upstream returns its own container from a method, and it is derived per read rather than stored. What it deliberately is not is a distribution: every entry is the rate its own mechanism states, so a model whose mechanisms exclude one another reports each member's own rate and the folding stays in DetectorErrorModel.detector_rates and DetectorErrorModel.observable_rates, which are different quantities again (marginals over detectors and over observables, not per mechanism). The order is the model's normalized mechanism order, which is the order of the matrices' columns, so entry i and column i describe the same mechanism rather than the caller's argument order."
 
 [[fields]]
 id = "dem_error_ids"
 cudaq_symbol = "DetectorErrorModel.error_ids -- optional; errors sharing an id are mutually exclusive (correlated), a documented loss of the stim-text path where it is always empty"
-flagquantum_symbol = ""
-verdict = "absent"
-negative_search = [
-    "symbol:flagquantum.qec.DemError.error_id",
-    "symbol:flagquantum.qec.DetectorErrorModel.error_ids",
-]
-note = "This is the one field with no local counterpart at all: a model here cannot say that two mechanisms are alternatives rather than independent, which is what a decomposed or correlated error needs. Merging the parity rule performs is the opposite operation."
+flagquantum_symbol = "flagquantum.qec.DemError.error_id"
+verdict = "reshaped"
+note = "The correlation is now stated, in the record rather than in a parallel vector. Upstream keeps an optional vector parallel to error_rates whose entry i is the id of mechanism i; here the id is a field of the mechanism's own record and flagquantum.qec.DetectorErrorModel.error_ids projects the same vector back out, None when no mechanism states one, which is upstream's nullopt and the state stim's text always describes. Three things the upstream declaration does not fix are fixed here and are the reason this is `reshaped` rather than `renamed`. Exclusivity needs a distribution to be a statement at all, so the members of a group are read as disjoint pieces of one shot: each keeps the probability it states, the left-over mass is the group firing none of them, and a group whose probabilities sum above one is refused rather than renormalized because renormalizing would change every rate the caller read. The marginal rates and the sampling path honour the groups, so a detector's rate over a group is the sum of the members touching it instead of their parity. And the two operations that assume independence refuse an id-carrying model instead of silently discarding the structure: stim text cannot state the correlation, so to_stim_text names the ids it would lose, merge_duplicate_mechanisms names them because combining by either rule invents a shot in which two alternatives both fired, and the decoding graph refuses because one weight per mechanism is the weight of a fault that fires alone. What is still absent is an operation that folds a group under exclusivity, which is what dem_canonicalize records."
 
 [[fields]]
 id = "dem_counts"
@@ -544,15 +608,14 @@ id = "dem_from_stim_text"
 cudaq_symbol = "cudaq_qec.dem_from_stim_text(dem_text, use_decomp_suggestions=False) -> DetectorErrorModel, via stim's own parser and iter_flatten_error_instructions; only relative D* and L* targets, probability in [0,1]"
 flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.from_stim_text"
 verdict = "renamed"
-note = "Same operation, same parser choice (stim's text is the format, and both sides let stim define what is legal), reached as a free function upstream and a classmethod here. The refusals differ in kind, not in spirit: upstream states two losses on the stim path (always-empty error ids, ignored separators unless suggestions are requested) where this repository refuses the constructs it cannot represent (repeat blocks, comments, skipped indices, malformed lines)."
+note = "Same operation, same parser choice (stim's text is the format, and both sides let stim define what is legal), reached as a free function upstream and a classmethod here. Both readings of a `^` separator are offered under upstream's own flag name, and the default is the one stim itself means: the signature is the symmetric difference of the line's targets, and `use_decomp_suggestions=True` returns one mechanism per component at the probability the line states, which is the graphlike decomposition a matcher consumes. What remains of upstream's two stated losses is the error-id one, and it is a property of the record rather than of the reader: upstream leaves error ids null on this path too. The rest of the refusals differ in kind, not in spirit -- upstream hands the text to stim and states what it loses, where this repository refuses the constructs its own record cannot hold (repeat blocks, comments, skipped indices, malformed lines) rather than dropping them."
 
 [[fields]]
 id = "dem_to_stim_text"
 cudaq_symbol = "no writer found in the cudaq-qec bindings or libraries; stim text in the CUDA-Q stack is produced by cudaq.DEMResult.dem (core, a string property) and by the Logical preview CLI"
 flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.to_stim_text"
 verdict = "extra"
-note = "A negative result on the upstream side, not a mismatch: the format standard is stim, and this repository emits it directly from a model. The row is extra rather than aligned because there is nothing to align to at this layer. UNVERIFIED as a true absence, since it is a search result over fetched sources rather than a documented statement, and the produced-text path upstream lives one layer up in CUDA-Q core."
-provenance_unverified = true
+note = "A negative result on the upstream side, not a mismatch: the format standard is stim, and this repository emits it directly from a model. The row is extra rather than aligned because there is nothing to align to at this layer. The absence is a search over the whole tree at 8df583e621ed39c3af08e0373aa3d51a6c0b9d21 -- no writer of stim detector error model text in libs/qec, its Python bindings, its unittests or its documentation -- where the examples that do produce such text hold a stim object and write str() of it, and the produced-text path in the CUDA-Q stack lives one layer up in CUDA-Q core's DEMResult.dem. The search is a negative rather than a documented statement, which is why the verdict is extra rather than aligned, but it is a negative a reader can repeat at the named revision."
 
 [[fields]]
 id = "dem_from_css_matrices"
@@ -562,21 +625,21 @@ verdict = "reshaped"
 negative_search = [
     "symbol:flagquantum.qec.extended_dem_from_code_matrices",
 ]
-note = "Both build a model of a code-capacity experiment -- num_rounds bands of one detector per check, each round compared with the round before it, and no terminal data readout -- from matrices rather than from a simulated circuit. The detector bands and the observable rows are no longer a difference: both sides carry the four CSS blocks, so both report the X and Z detector bands and the lz and lx observable rows, and a logical observable that is neither pure X nor pure Z is refused here with its index named rather than half-read as one of the two. Two differences remain. Upstream takes one object carrying all four parity matrices plus a CssNoise; here flagquantum.qec.css_code_matrices builds the four blocks into flagquantum.qec.CssCodeMatrices and that record is the argument, but the rate record is uniform scalars rather than a CssNoise, which dem_code_capacity_noise carries. And upstream returns a detector_error_model alongside an extended_dem_from_css_matrices sibling carrying a sparse H and O, for which there is no counterpart here; that is the absence the negative search names."
+note = "Both build a model of a code-capacity experiment -- num_rounds bands of one detector per check, each round compared with the round before it, and no terminal data readout -- from matrices rather than from a simulated circuit. The detector bands and the observable rows are no longer a difference: both sides carry the four CSS blocks, so both report the X and Z detector bands and the lz and lx observable rows, and a logical observable that is neither pure X nor pure Z is refused here with its index named rather than half-read as one of the two. Two differences remain. Upstream takes one object carrying all four parity matrices plus a CssNoise; here flagquantum.qec.css_code_matrices builds the four blocks into flagquantum.qec.CssCodeMatrices and that record is the argument while the rates arrive as a separate flagquantum.qec.PhenomenologicalNoise, where upstream hands one CssNoise in beside the matrices; that split is what dem_code_capacity_noise records, and it is now a difference in the carrier rather than in the rates, because the four families and their per-qubit and per-check overrides are stated on both sides. And upstream returns a detector_error_model alongside an extended_dem_from_css_matrices sibling carrying a sparse H and O, for which there is no counterpart here; that is the absence the negative search names."
 
 [[fields]]
 id = "dem_from_memory_circuit"
 cudaq_symbol = "x_dem_from_memory_circuit / z_dem_from_memory_circuit (code, operation, numRounds, noise_model, decompose_errors=False), with decoder_context_from_memory_circuit returning a context that executes dem_from_kernel once and exposes x, z and full components"
 flagquantum_symbol = "flagquantum.qec.DetectorErrorModel.from_memory_circuit"
 verdict = "reshaped"
-note = "Both build a T-round model of a code's memory experiment. Upstream takes a code, an operation, a round count and a whole noise model, and is split by basis; here the circuit carries the round count and the basis, and the noise record is two uniform scalars. The context object is the part with no local counterpart: upstream hands back the model plus the maps a decoder needs, where here the caller assembles the pieces."
+note = "Both build a T-round model of a code's memory experiment. Upstream takes a code, an operation, a round count and a whole noise model, and is split by basis; here the circuit carries the round count and the basis, and the noise record states the four families with an optional per-qubit and per-check override each. The context object is no longer a difference: upstream hands back the model plus the maps a decoder needs through decoder_context_from_memory_circuit, and here flagquantum.qec.decoder_context_from_memory_circuit does the same, returning a flagquantum.qec.DecoderContext whose full_component, x_component and z_component each return a flagquantum.qec.DecoderInputs -- the model together with both maps -- and whose num_measurements states the width those maps index. What differs inside the context is where the basis split comes from. Upstream needs a boundary-aware canonicalization variant because its D matrix is laid out in uniform per-round blocks, so a memory experiment's narrower first and last detector layers have to be described to it separately; here the layout states the boundary detectors itself, so the Z component is a projection and the union is the model as built, with no separate bookkeeping. And upstream's context is lazy because it stores raw circuit analysis and canonicalizes on demand, where this one builds its model eagerly, because the analysis it would defer is the construction the context exists to do once."
 
 [[fields]]
 id = "dem_code_capacity_noise"
 cudaq_symbol = "CssNoise(px, py, pz, pm, px_per_qubit, py_per_qubit, pz_per_qubit, pm_per_check) -- scalar rates uniform, per-element vectors overriding, per-check rates with Z checks first"
 flagquantum_symbol = "flagquantum.qec.PhenomenologicalNoise"
 verdict = "reshaped"
-note = "Both are phenomenological rate records over a memory experiment, and this is the widest single gap in the construction contract. Upstream expresses independent X, Y and Z data rates plus a measurement rate, each also per qubit or per check; here it is one data-flip scalar and one measurement-flip scalar. Per-location rates are therefore not expressible, and neither is an asymmetric X/Z channel, which the Y rate implies. Both construction routes now consume this record, and the matrix route consumes only its two scalars as well: reading a support needs no execution, so the row's absence is now a statement about the record rather than about a route's reach, and it stays open until the record itself carries the split."
+note = "Both are phenomenological rate records over a memory experiment, and the four fault families now line up one for one. Upstream states independent X, Y and Z data rates plus a measurement rate, each also expressible per qubit or per check; here the four scalars are data_flip, phase_flip, both_flip and measurement_flip, which are upstream's px, pz, py and pm by fault rather than by position -- the X fault is px, the Z fault pz and the Y fault py, while upstream declares px, py, pz and pm, so its Z and Y fields change places. The per-element vectors line up the same way: data_flip_per_qubit / phase_flip_per_qubit / both_flip_per_qubit against px_per_qubit / pz_per_qubit / py_per_qubit, indexed by the code's own data_wires order, and measurement_flip_per_check against pm_per_check, indexed by matrix row with the Z-type checks first. The override rule is upstream's as well: a stated vector replaces its scalar wholesale rather than element by element, which is why a vector that does not name every element is refused instead of partially applied, and an element whose effective rate is zero enumerates no mechanism on either construction route. Both routes and the sampler resolve an element through the same accessors, so the three cannot read one vector three ways, and the two per-check orders -- the matrix row and the code's declaration order, which the rotated surface code interleaves -- are related by one named translation rather than by a convention each route re-states. One difference remains and it is the carrier rather than the rates: upstream folds the record into the argument its matrix entry point takes, so the record and the matrices it is read against arrive together and the vector lengths are known to the record, where here the record is a standalone frozen dataclass whose vectors are validated against a code the caller supplies at read time."
 
 [[fields]]
 id = "dem_canonicalize"
@@ -615,9 +678,9 @@ note = "Upstream a model is a sequence of chunks with named seams that can be st
 [[fields]]
 id = "dem_measurement_to_detector_map"
 cudaq_symbol = "decoder_init.measurement_to_detectors() (D, detectors by raw measurements), the d_sparse helper, and dem_chunks_to_d_sparse / dem_chunks_to_o_sparse / dem_chunks_to_pcm"
-flagquantum_symbol = "flagquantum.qec.DetectorLayout"
+flagquantum_symbol = "flagquantum.qec.MeasurementMap"
 verdict = "reshaped"
-note = "The same information -- which measurements compose each deterministic parity -- lives here on the circuit layout as ordered MeasurementRef records (round index, wire) rather than on the model as a sparse matrix. The direction differs as well: upstream reads a stored D matrix, here the measurement-to-detector relation is what construction is driven by and the fault-to-detector relation is recovered by forcing each mechanism rather than read off a matrix."
+note = "The same information -- which measurements compose each deterministic parity -- is one row per detector or observable of the measurements whose parity it is. Upstream reaches it two ways: a stored dense (detectors, raw measurements) matrix on decoder_init, and free-function sparse helpers for a realtime decoder configuration. Here flagquantum.qec.MeasurementMap is one record that does both, because the row structure is what it stores: dense() projects to upstream's orientation and flattened() to the -1-terminated sparse form d_sparse produces, with the terminator being what makes a row that reads nothing visible to a sparse reader. The composition is closed on both sides: a row is a parity, so it is sorted, it may not name one measurement twice because two reads of one measurement cancel, and an index outside the buffer the map states is refused. Two differences remain and neither is a mismatch of meaning. The carrier: here the map is handed to a decoder beside the model through flagquantum.qec.DecoderInputs, where upstream it hangs off decoder_init, which is the same pairing reached from the other end. And the chunk-scoped helpers -- dem_chunks_to_d_sparse, dem_chunks_to_o_sparse, dem_chunks_to_pcm, with their seam convention and their whole-round-interior-rows refusal -- have no counterpart, because a model here is monolithic and dem_seam_and_chunk_api records that absence. The relation on the circuit side is still a separate reading: what construction is driven by is the layout's ordered flagquantum.qec.DetectorLayout records, and the map is derived from them rather than the other way round, which is the direction difference the previous revision of this row recorded and which the map makes explicit rather than implicit."
 
 [[fields]]
 id = "kernel_annotation_surface"
@@ -637,13 +700,9 @@ note = "The record this row exists for: dem_from_kernel and DEMResult are CUDA-Q
 [[fields]]
 id = "decoder_registry"
 cudaq_symbol = "qec.get_decoder(name, H_or_dem_text_or_sparse_matrix, **options) and the @qec.decoder('name') registration decorator, which requires a decode method and refuses to register a class without one"
-flagquantum_symbol = ""
-verdict = "absent"
-negative_search = [
-    "symbol:flagquantum.qec.get_decoder",
-    "flagquantum/qec/registry.py",
-]
-note = "No registry and no text entry point: a decoder is constructed directly and configured by constructor argument. This is the structural difference behind the whole decoder row, because a registry is what lets one call site accept either a matrix or DEM text and choose an implementation by name, which is the shape the DEM-centered design converged on."
+flagquantum_symbol = "flagquantum.qec.get_decoder"
+verdict = "reshaped"
+note = "The local counterpart is flagquantum.qec.get_decoder(name, source, **options) over flagquantum.qec.register_decoder(name, *, replace=False), with flagquantum.qec.decoder_names() naming what is registered; those three plus flagquantum.qec.DetectorErrorModelDecoder are the registry's whole surface. Both sides are a name-keyed factory plus a registration decorator that refuses a class without a decode method, and the local one is deliberately narrower in two places. Its source argument takes the three carriers a caller can hold a model in -- the detector error model, stim's text for one, and the decoding graph the model defines -- where upstream takes H_or_dem_text_or_sparse_matrix; a parity-check matrix is not a carrier here because lifting one would also mean choosing the noise model and round count that DetectorErrorModel.from_code_matrices reads rather than defaults, so the caller who holds the matrix and the noise together does the lifting. Its registry holds the detector-error-model family alone, where upstream's holds lookup, matching, belief-propagation and qLDPC decoders side by side; the repetition-code decoders here take an ordered syndrome history rather than detection events, and one name space over two input protocols would make a name mean one of two things. Registration is checked at registration time rather than at the first call, which is the upstream behaviour too: a class missing decode or from_detector_error_model is refused while the registering module is being imported, and a second registration of one name is refused unless the caller says replace. The optional implementation is registered unconditionally and imported lazily, so the name is part of this package's surface rather than the extra's, and asking for it without PyMatching raises the error naming the extra instead of a name that silently is not there."
 
 [[fields]]
 id = "decoder_result_record"

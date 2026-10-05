@@ -19,6 +19,8 @@ from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
+    _triton_local_1q_requested,
+    _triton_local_cx_requested,
     _vectorized_cross_shard_cx,
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
@@ -73,7 +75,7 @@ def test_flagos_exchange_uses_provider_neutral_wait():
     assert cuda_request.block_current_stream_calls == 1
 
 
-def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypatch):
+def test_cx_segment_default_window_and_override(monkeypatch):
     monkeypatch.setattr(
         "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
         lambda: True,
@@ -88,13 +90,27 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     )
 
     monkeypatch.delenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", raising=False)
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(2, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "0")
-    assert not _triton_local_cx_segment_enabled(scheduled)
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
+
+
+def test_local_cx_default_window_and_override(monkeypatch):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", raising=False)
+    assert _triton_local_cx_requested((1, 1 << 24))
+    assert not _triton_local_cx_requested((1, 1 << 20))
+    assert not _triton_local_cx_requested((2, 1 << 24))
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    assert _triton_local_cx_requested((1, 1 << 20))
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "0")
+    assert not _triton_local_cx_requested((1, 1 << 24))
 
 
 def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
@@ -112,6 +128,7 @@ def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
     decision = _triton_local_cx_segment_decision(
         device_type="cuda",
         dtype="complex64",
+        shape=(1, 1 << 24),
     )
 
     assert decision.accelerated
@@ -133,6 +150,7 @@ def test_local_cx_segment_decision_reports_catalog_mismatch(
     decision = _triton_local_cx_segment_decision(
         device_type=device_type,
         dtype=dtype,
+        shape=(1, 1 << 24),
     )
 
     assert not decision.accelerated
@@ -414,7 +432,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         for record in dispatch["decisions"]
     } == {
         ("local_1q", "disabled_by_policy", 2),
-        ("local_cx", "input_not_supported", 1),
+        ("local_cx", "disabled_by_policy", 1),
     }
     local_1q_dispatch = next(
         record for record in dispatch["decisions"] if record["feature"] == "local_1q"
@@ -439,7 +457,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         "semantic_id": "statevector.apply.cnot.local",
         "implementation": "pytorch_eager",
         "integration_path": "pytorch",
-        "fallback": True,
+        "fallback": False,
         "implementation_id": None,
         "catalog_mismatches": ("device",),
     }
@@ -1143,3 +1161,25 @@ def test_a_program_that_trains_keeps_a_separate_output_buffer():
     assert any(matrix.requires_grad for matrix in trained.matrices)
     assert trained.local_output_in_place is False
     assert inferred.local_output_in_place is True
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected"),
+    (
+        ((1, 1 << 10), True),
+        ((1, 1 << 16), True),
+        ((1, 1 << 20), True),
+        ((1, 1 << 24), True),
+        ((1, 1 << 12), False),
+        ((2, 1 << 20), False),
+    ),
+)
+def test_local_1q_default_window_and_override(monkeypatch, shape, expected):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", raising=False)
+    assert _triton_local_1q_requested(shape) is expected
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0")
+    assert not _triton_local_1q_requested(shape)
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
+    assert _triton_local_1q_requested(shape)

@@ -26,6 +26,9 @@ _EXPORT_MODULES = {
     "repeated_rx_rz_tangents": "single_qubit_loop",
     "ry_rz_pair": "statevector_gates",
     "single_qubit_matrix": "statevector_gates",
+    "statevector_marginal_probabilities": "statevector_measurement",
+    "statevector_pauli_expectation": "statevector_measurement",
+    "statevector_probabilities": "statevector_measurement",
     "repeated_rxx_ryy_rzz_tangents": "two_qubit_pauli_tangent",
 }
 
@@ -39,6 +42,11 @@ if TYPE_CHECKING:
         cx_sequence,
         ry_rz_pair,
         single_qubit_matrix,
+    )
+    from .statevector_measurement import (
+        statevector_marginal_probabilities,
+        statevector_pauli_expectation,
+        statevector_probabilities,
     )
     from .two_qubit_pauli_tangent import repeated_rxx_ryy_rzz_tangents
 
@@ -65,5 +73,8 @@ __all__ = [
     "repeated_rx_rz_tangents",
     "ry_rz_pair",
     "single_qubit_matrix",
+    "statevector_marginal_probabilities",
+    "statevector_pauli_expectation",
+    "statevector_probabilities",
     "repeated_rxx_ryy_rzz_tangents",
 ]

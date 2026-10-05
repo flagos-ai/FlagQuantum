@@ -40,24 +40,24 @@ def _env_int(name: str, default: int) -> int:
     return int(os.environ.get(name, str(default)))
 
 
-def build_reference_circuit(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires)
+def build_reference_circuit(n_qubits: int) -> fq.Circuit:
+    circuit = fq.Circuit(n_qubits)
     circuit.h(0)
-    if n_wires > 1:
+    if n_qubits > 1:
         circuit.rx(1, theta=0.2)
-    if n_wires > 2:
-        circuit.x(n_wires - 1).rx(n_wires - 1, theta=0.4).cx(0, n_wires - 1)
-    if n_wires > 3:
-        circuit.rz(n_wires - 1, theta=-0.3).cx(1, n_wires - 2)
-    if n_wires > 4:
-        circuit.x(n_wires - 2)
+    if n_qubits > 2:
+        circuit.x(n_qubits - 1).rx(n_qubits - 1, theta=0.4).cx(0, n_qubits - 1)
+    if n_qubits > 3:
+        circuit.rz(n_qubits - 1, theta=-0.3).cx(1, n_qubits - 2)
+    if n_qubits > 4:
+        circuit.x(n_qubits - 2)
     return circuit
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--world-size", type=int, default=_env_int("WORLD_SIZE", 1))
-    parser.add_argument("--n-wires", type=int, default=4)
+    parser.add_argument("--n-qubits", type=int, default=4)
     parser.add_argument("--distribution", default=None)
     parser.add_argument("--topology", default=None)
     parser.add_argument("--backend", default=os.environ.get("FQ_DIST_BACKEND", "gloo"))
@@ -104,7 +104,7 @@ def _barrier(label: str, rank: int, *, enabled: bool) -> None:
 def run_statevector_correctness(
     *,
     world_size: int,
-    n_wires: int,
+    n_qubits: int,
     distribution: str | None = None,
     topology: str | None = None,
     backend: str = "gloo",
@@ -132,7 +132,7 @@ def run_statevector_correctness(
     )
 
     _barrier("after_init", rank, enabled=verbose)
-    circuit = build_reference_circuit(n_wires)
+    circuit = build_reference_circuit(n_qubits)
     plan = plan_distributed_statevector(circuit, world_size=world_size)
     validation = plan.validate()
     report = plan.execute_dry_run()
@@ -196,7 +196,7 @@ def main() -> None:
     args = parse_args()
     result = run_statevector_correctness(
         world_size=args.world_size,
-        n_wires=args.n_wires,
+        n_qubits=args.n_qubits,
         distribution=args.distribution,
         topology=args.topology,
         backend=args.backend,

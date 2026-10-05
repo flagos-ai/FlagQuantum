@@ -66,6 +66,26 @@ def test_catalog_routes_report_actual_triton_compiler(
     }
 
 
+def test_wire_probability_route_keeps_counts_and_deduplicates_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        site_kernels,
+        "triton_compiler_provenance",
+        lambda: ("flagtree", "0.7.0", "flagtree", "resolved"),
+    )
+    reset_site_kernel_stats(clear_cache=True)
+
+    site_kernels._record_mps_qubit_probability_route()
+    site_kernels._record_mps_qubit_probability_route()
+
+    assert site_kernel_stats()["triton_qubit_probability_calls"] == 2
+    (event,) = site_kernel_cache_events()
+    assert event["kind"] == "wire_probabilities"
+    assert event["semantic_id"] == "mps.measurement.wire_probabilities.local"
+    assert event["implementation_id"] == "FQKI-TRITON-MPS-007-A"
+
+
 def test_rank_local_ry_bucket_matches_eager_values_and_gradients():
     torch.manual_seed(7)
     tensors = torch.randn(3, 2, 2, 2, 3, dtype=torch.complex64, requires_grad=True)

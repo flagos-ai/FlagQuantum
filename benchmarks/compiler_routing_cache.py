@@ -111,7 +111,7 @@ def main() -> None:
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
-        n_qubits=args.n_wires,
+        n_wires=args.n_wires,
         gate_count=args.gate_count,
         path_cache_capacity=args.path_cache_capacity,
         strategy=args.strategy,

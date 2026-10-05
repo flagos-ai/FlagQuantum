@@ -14,7 +14,12 @@ from collections import Counter
 import pytest
 
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import (
+    CodeCheck,
+    RepetitionCode,
+    RotatedSurfaceCode,
+    ancilla_bands,
+)
 from flagquantum.qec.pauli import Pauli
 
 pytestmark = pytest.mark.unit
@@ -205,6 +210,22 @@ class _XMemoryCode:
     @property
     def num_ancilla_qubits(self) -> int:
         return 1
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
 
     @property
     def data_qubits(self) -> tuple[int, ...]:

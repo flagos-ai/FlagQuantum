@@ -617,7 +617,7 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
         example_params = params_seed[0].detach() if params_seed.ndim == 4 else params_seed.detach()
         if str(config["pennylane_interface"]) == "jax":
             value_and_grad = _build_pennylane_value_and_grad(
-                n_wires=int(config["n_wires"]),
+                n_qubits=int(config["n_wires"]),
                 parameter_shape=tuple(int(dim) for dim in example_params.shape),
                 observable=str(config["observable"]),
                 pennylane_device=str(config["pennylane_device"]),
@@ -635,7 +635,7 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
             )
         else:
             loss = _build_pennylane_torch_loss(
-                n_wires=int(config["n_wires"]),
+                n_qubits=int(config["n_wires"]),
                 observable=str(config["observable"]),
                 pennylane_device=str(config["pennylane_device"]),
                 pennylane_device_kwargs=dict(config["pennylane_device_kwargs"]),
@@ -751,7 +751,7 @@ def main() -> None:
         backend="jax",
         interface="torch",
         mode="tensor_network" if args.flagquantum_mode == "tn" else args.flagquantum_mode,
-        n_wires=args.n_wires,
+        n_qubits=args.n_wires,
         observable="z_sum" if args.observable == "z_sum" else "hamiltonian",
         hamiltonian=hamiltonian,
         jit=not args.no_flagquantum_jit,
@@ -803,7 +803,7 @@ def main() -> None:
                 )
             elif args.pennylane_interface == "jax":
                 pennylane_value_and_grad = _build_pennylane_value_and_grad(
-                    n_wires=args.n_wires,
+                    n_qubits=args.n_wires,
                     parameter_shape=tuple(int(dim) for dim in example_params.shape),
                     observable=args.observable,
                     pennylane_device=args.pennylane_device,
@@ -821,7 +821,7 @@ def main() -> None:
                 )
             else:
                 pennylane_loss = _build_pennylane_torch_loss(
-                    n_wires=args.n_wires,
+                    n_qubits=args.n_wires,
                     observable=args.observable,
                     pennylane_device=args.pennylane_device,
                     pennylane_device_kwargs=pennylane_device_kwargs,
