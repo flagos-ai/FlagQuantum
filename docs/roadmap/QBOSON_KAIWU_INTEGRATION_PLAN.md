@@ -26,7 +26,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   decides whether an input may be accepted, but every returned matrix is
   exactly symmetric for the stricter Remote boundary. Boolean, complex,
   string, nonfinite, and negative scalar controls fail with owned boundary
-  errors. Optional conformance tests match Kaiwu Community 1.0.7 at revision
+  errors. Symmetry normalization avoids intermediate overflow, while
+  QUBO conversion, independent energy evaluation, and precision reporting
+  reject finite inputs whose derived values overflow. Optional conformance
+  tests match Kaiwu Community 1.0.7 at revision
   `b648b531c034bd6ae9b7a34fed994c717967cc72` for energy and QUBO conversion.
 - The public Kaiwu Community tree does not contain a simulated-annealing
   optimizer; the replacement test therefore uses its real `IsingSolver`

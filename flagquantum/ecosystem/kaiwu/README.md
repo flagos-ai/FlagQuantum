@@ -39,6 +39,10 @@ nonzero tolerance is averaged with its transpose so the returned value is
 exactly symmetric and can pass the stricter Remote receipt identity boundary.
 Scalar tolerance, offset, and bias arguments must be finite real numbers;
 booleans, strings, and complex values are rejected rather than coerced.
+Normalization uses half-scaled operands so two finite extreme coefficients do
+not overflow merely while being averaged. Conversion, energy evaluation, and
+precision evidence still fail closed if their actual derived matrix, bias,
+energy, dequantized value, or error becomes nonfinite.
 
 `KaiwuSampler` never enables integer scaling implicitly. Set its
 `integer_target_range` only after choosing and recording a precision policy.

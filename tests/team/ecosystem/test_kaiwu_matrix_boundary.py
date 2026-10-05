@@ -84,6 +84,15 @@ def test_canonicalize_rejects_invalid_symmetry_tolerance(tolerance: object) -> N
         )
 
 
+def test_canonicalize_symmetry_normalization_avoids_finite_input_overflow() -> None:
+    largest = torch.finfo(torch.float64).max
+
+    result = canonicalize_ising_matrix([[largest, largest], [largest, largest]])
+
+    assert bool(torch.isfinite(result).all())
+    assert result.tolist() == [[largest, largest], [largest, largest]]
+
+
 def test_ising_energy_matches_independent_reference_and_bias() -> None:
     matrix = [[0.5, 1.25, -0.5], [1.25, -1.0, 0.75], [-0.5, 0.75, 2.0]]
     spins = _all_spins(3)
@@ -105,6 +114,13 @@ def test_ising_energy_matches_independent_reference_and_bias() -> None:
 def test_ising_energy_rejects_invalid_bias(bias: object) -> None:
     with pytest.raises(KaiwuMatrixValidationError):
         ising_energy([[0.0]], [1], bias=bias)  # type: ignore[arg-type]
+
+
+def test_ising_energy_rejects_finite_coefficients_that_overflow_evaluation() -> None:
+    largest = torch.finfo(torch.float64).max
+
+    with pytest.raises(KaiwuMatrixValidationError, match="overflowed"):
+        ising_energy([[largest, largest], [largest, largest]], [1, 1])
 
 
 def test_qubo_auxiliary_encoding_has_exhaustive_energy_parity() -> None:
@@ -140,6 +156,13 @@ def test_qubo_auxiliary_encoding_has_exhaustive_energy_parity() -> None:
 def test_qubo_encoding_rejects_invalid_offset(offset: object) -> None:
     with pytest.raises(KaiwuMatrixValidationError):
         encode_qubo_as_ising([[0.0]], offset=offset)  # type: ignore[arg-type]
+
+
+def test_qubo_encoding_rejects_finite_coefficients_that_overflow_conversion() -> None:
+    largest = torch.finfo(torch.float64).max
+
+    with pytest.raises(KaiwuMatrixValidationError, match="overflowed"):
+        encode_qubo_as_ising([[largest, largest], [largest, largest]])
 
 
 def test_decode_qubo_spins_is_batch_safe_and_gauge_invariant() -> None:

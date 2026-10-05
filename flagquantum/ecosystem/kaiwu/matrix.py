@@ -137,7 +137,10 @@ def canonicalize_ising_matrix(
         raise KaiwuMatrixValidationError(
             "Ising matrix must be symmetric within symmetry_tolerance"
         )
-    return (canonical + canonical.transpose(0, 1)) / 2.0
+    normalized = canonical * 0.5 + canonical.transpose(0, 1) * 0.5
+    if not bool(torch.isfinite(normalized).all()):
+        raise KaiwuMatrixValidationError("Ising symmetry normalization overflowed")
+    return normalized
 
 
 def encode_qubo_as_ising(
@@ -168,6 +171,8 @@ def encode_qubo_as_ising(
     encoded[:width, width] = auxiliary_couplings
     encoded[width, :width] = auxiliary_couplings
     bias = finite_offset + float((qubo.sum() + qubo.diagonal().sum()).item()) / 4.0
+    if not bool(torch.isfinite(encoded).all()) or not isfinite(bias):
+        raise KaiwuMatrixValidationError("QUBO-to-Ising conversion overflowed")
     return QuboIsingEncoding(matrix=encoded, bias=bias)
 
 
@@ -233,6 +238,8 @@ def ising_energy(
     energies = (
         -torch.einsum("bi,ij,bj->b", spin_tensor, canonical, spin_tensor) + finite_bias
     )
+    if not bool(torch.isfinite(energies).all()):
+        raise KaiwuMatrixValidationError("Ising energy evaluation overflowed")
     return energies[0] if was_vector else energies
 
 
@@ -275,6 +282,10 @@ def prepare_integer_precision(
 
     dequantized = quantized.to(dtype=torch.float64) / scale_factor
     absolute_error = (canonical - dequantized).abs()
+    if not bool(torch.isfinite(dequantized).all()) or not bool(
+        torch.isfinite(absolute_error).all()
+    ):
+        raise KaiwuPrecisionError("integer precision evidence overflowed")
     return IntegerPrecisionReport(
         quantized=quantized.clone(),
         dequantized=dequantized.clone(),
