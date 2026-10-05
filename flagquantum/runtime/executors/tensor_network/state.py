@@ -364,7 +364,7 @@ class DistributedTensorNetworkExpectation:
         return {
             "state_mode": "distributed_tensor_network_expectation",
             "output_target": "local_observables",
-            "observable_qubits": self.observable_qubits,
+            "observable_wires": self.observable_qubits,
             "slice_tasks": len(self.tasks),
             "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),

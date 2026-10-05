@@ -1280,7 +1280,7 @@ def test_distributed_local_observable_avoids_full_state_materialization():
         atol=1e-6,
     )
     assert summary["output_target"] == "local_observables"
-    assert summary["observable_qubits"] == (0, 2, 5)
+    assert summary["observable_wires"] == (0, 2, 5)
     assert summary["full_state_materialized"] is False
     assert (
         summary["reduction_payload_bytes"]

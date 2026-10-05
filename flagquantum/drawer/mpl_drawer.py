@@ -16,11 +16,11 @@ from .ir_adapter import _detected_qubit_count, to_drawable_circuit
 #: Presentation options this drawer accepts, under their pre-qubit names.
 #:
 #: These travel through ``**kwargs`` rather than being declared parameters, so no
-#: census counts them and no static check sees them. A caller still writing
-#: ``show_qubit_labels=False`` used to be obeyed and would now be silently
-#: ignored -- the diagram comes back with exactly the labels the caller asked to
-#: hide, and nothing says why. So the legacy spelling is honoured and warned
-#: about, the way every other migrated name is.
+#: census counts them and no static check sees them. A caller still writing the
+#: pre-qubit spelling of ``show_qubit_labels`` with ``False`` used to be obeyed
+#: and would now be silently ignored -- the diagram comes back with exactly the
+#: labels the caller asked to hide, and nothing says why. So the legacy spelling
+#: is honoured and warned about, the way every other migrated name is.
 LEGACY_OPTION_SPELLINGS: dict[str, str] = {
     "wire_options": "qubit_options",
     "show_wire_labels": "show_qubit_labels",

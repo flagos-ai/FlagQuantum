@@ -197,7 +197,7 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
         jax_rank_mask_for_touched_delta,
     )
 
@@ -228,7 +228,7 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
 
     for rank in range(world_size):
         global_indices, amplitudes, indices = shards[rank]
-        basis_out = jax_basis_indices_for_wires(
+        basis_out = jax_basis_indices_for_qubits(
             global_indices, n_qubits=n_wires, qubits=wires
         )
         updated = jnp.zeros_like(amplitudes)
@@ -281,7 +281,7 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
     )
 
     n_wires = 2
@@ -295,7 +295,7 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
     source = jnp.asarray(
         (rng.standard_normal(2) + 1j * rng.standard_normal(2)).astype(np.complex64)
     ).reshape(1, -1)
-    basis_out = jax_basis_indices_for_wires(
+    basis_out = jax_basis_indices_for_qubits(
         global_indices, n_qubits=n_wires, qubits=wires
     )
     plain = (rng.standard_normal((4, 4)) + 1j * rng.standard_normal((4, 4))).astype(
@@ -413,7 +413,7 @@ def test_jax_apply_local_statevector_gate_rejects_a_sharded_touched_wire():
         jax_apply_local_statevector_gate,
     )
 
-    with pytest.raises(RuntimeError, match="touches sharded wires"):
+    with pytest.raises(RuntimeError, match="touches sharded qubits"):
         jax_apply_local_statevector_gate(
             jnp.ones((1, 2), dtype=jnp.complex64),
             jnp.asarray([1, 3]),

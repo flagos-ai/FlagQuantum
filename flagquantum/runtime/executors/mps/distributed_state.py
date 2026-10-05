@@ -458,7 +458,7 @@ class DistributedMPSState:
                 ),
                 "boundary_syncs": tuple(
                     {
-                        "left_qubit": item.left_qubit,
+                        "left_wire": item.left_qubit,
                         "right_wire": item.right_qubit,
                         "left_rank": item.left_rank,
                         "right_rank": item.right_rank,
@@ -489,7 +489,7 @@ class DistributedMPSState:
                 "rank_shards": tuple(
                     {
                         "rank": shard.rank,
-                        "qubits": shard.qubits,
+                        "wires": shard.qubits,
                         "left_boundary": shard.left_boundary,
                         "right_boundary": shard.right_boundary,
                     }
@@ -500,7 +500,7 @@ class DistributedMPSState:
         site_ownership = tuple(
             {
                 "rank": int(shard.rank),
-                "qubits": tuple(int(qubit) for qubit in shard.qubits),
+                "wires": tuple(int(qubit) for qubit in shard.qubits),
                 "ownership_semantics": "mps_site_range",
             }
             for shard in self.shards
@@ -509,7 +509,7 @@ class DistributedMPSState:
             {
                 "left_rank": int(shard.rank),
                 "right_rank": int(shard.rank + 1),
-                "left_qubit": int(shard.right_boundary),
+                "left_wire": int(shard.right_boundary),
                 "right_wire": int(shard.right_boundary + 1),
                 "ownership_semantics": "adjacent_rank_boundary_bond",
             }

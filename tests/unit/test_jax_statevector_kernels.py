@@ -28,13 +28,13 @@ def test_jax_basis_indices_for_wires_matches_reference():
     import numpy as np
 
     from flagquantum.simulation.jax.statevector.kernels import (
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
     )
 
     n_wires = 5
     wires = (0, 2, 4)
     global_indices = jnp.arange(2**n_wires)
-    got = jax_basis_indices_for_wires(global_indices, n_qubits=n_wires, qubits=wires)
+    got = jax_basis_indices_for_qubits(global_indices, n_qubits=n_wires, qubits=wires)
     expected = [_pack_bits(idx, n_wires, wires) for idx in range(2**n_wires)]
     assert np.array_equal(np.asarray(got), np.asarray(expected))
 

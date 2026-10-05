@@ -353,7 +353,7 @@ def test_a_reset_naming_more_than_one_wire_is_refused() -> None:
         Instruction(name="reset", wires=(0, 1), metadata={"is_dynamic": True}),
     )
 
-    with pytest.raises(CapabilityError, match="one wire"):
+    with pytest.raises(CapabilityError, match="one qubit"):
         sample_noisy_measurements(program, shots=2, seed=1)
 
 

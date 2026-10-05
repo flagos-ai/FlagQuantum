@@ -46,7 +46,7 @@ CANONICAL_QUBIT_KEY = "qubits"
 
 #: The key a pre-qubit-vocabulary object may use instead. Read here and dropped
 #: on the way through, so no renderer ever meets it.
-LEGACY_QUBIT_KEYS = ("qubits",)
+LEGACY_QUBIT_KEYS = ("wires",)
 
 
 def _op_qubits(op: Mapping[str, Any]) -> list[Any]:

@@ -323,8 +323,11 @@ def _jax_mps_boundary_protocol(
 ) -> dict[str, Any]:
     tier = _communication_tier(left_rank, right_rank, local_world_size=local_world_size)
     return {
-        "left_qubit": int(left_qubit),
-        "right_qubit": int(right_qubit),
+        # The payload keys stay on the pre-qubit spelling: `boundary_exchange`,
+        # `evidence` and `training_records` subscript them by name and this slice
+        # does not own them, so renaming them here would silently drop every route.
+        "left_wire": int(left_qubit),
+        "right_wire": int(right_qubit),
         "left_rank": int(left_rank),
         "right_rank": int(right_rank),
         "owner_rank": int(left_rank),

@@ -715,7 +715,7 @@ class TensorNetworkExpectationPlan(_TensorNetworkPathPlan):
             "n_nodes": len(self.nodes),
             "n_edges": len({label for node in self.nodes for label in node.labels}),
             "n_qubits": self.n_qubits,
-            "observable_qubits": self.observable_qubits,
+            "observable_wires": self.observable_qubits,
             "path_length": len(self.path),
             "greedy_cost": self.contraction_cost("greedy")["estimated_cost"],
             "greedy_peak_size": self.contraction_cost("greedy")["peak_size"],

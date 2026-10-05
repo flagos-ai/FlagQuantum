@@ -166,7 +166,7 @@ def test_mps_wire_probability_runtime_uses_catalog(monkeypatch) -> None:
 
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-6)
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 1
+    assert stats["triton_qubit_probability_calls"] == 1
     assert stats["wire_probability_fallback_calls"] == 0
     assert catalog_routes == ["FQKI-TRITON-MPS-007-A"]
     (route_event,) = site_kernel_cache_events()
@@ -201,7 +201,7 @@ def test_mps_wire_probability_kill_switch_uses_reference(monkeypatch) -> None:
 
     torch.testing.assert_close(actual, expected, rtol=2e-5, atol=2e-6)
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 0
+    assert stats["triton_qubit_probability_calls"] == 0
     assert stats["wire_probability_fallback_calls"] == 1
     assert site_kernel_cache_events() == ()
 
@@ -218,5 +218,5 @@ def test_public_mps_sampling_routes_each_wire(monkeypatch) -> None:
 
     assert torch.equal(samples, torch.zeros_like(samples))
     stats = site_kernel_stats()
-    assert stats["triton_wire_probability_calls"] == 3
+    assert stats["triton_qubit_probability_calls"] == 3
     assert stats["wire_probability_fallback_calls"] == 0
