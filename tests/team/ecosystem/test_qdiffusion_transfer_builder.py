@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,26 @@ from examples.qdiffusion_kaiwu.build_transfer_bundle import build_transfer_bundl
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import verify_transfer_bundle
 
 pytestmark = pytest.mark.unit
+
+
+def test_builder_file_entrypoint_runs_outside_repository(tmp_path: Path) -> None:
+    script = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "build_transfer_bundle.py"
+    )
+
+    completed = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--flagquantum-root" in completed.stdout
 
 
 def _git(path: Path, *arguments: str) -> str:

@@ -10,7 +10,10 @@ import re
 import subprocess
 from pathlib import Path
 
-from examples.qdiffusion_kaiwu.verify_transfer_bundle import verify_transfer_bundle
+if __package__:
+    from examples.qdiffusion_kaiwu.verify_transfer_bundle import verify_transfer_bundle
+else:  # Direct execution through the documented file path.
+    from verify_transfer_bundle import verify_transfer_bundle
 
 PLUGIN_REVISION = "f047bce7b1077449967bbe9e9fab5741542b48d4"
 COMMUNITY_REVISION = "b648b531c034bd6ae9b7a34fed994c717967cc72"
