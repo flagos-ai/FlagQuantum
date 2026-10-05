@@ -1,12 +1,12 @@
 """Declare a stabilizer code this package does not ship, and run it end to end.
 
-The three code records this package ships -- the repetition code, the rotated
-surface code, and the Steane code -- each state their own wires, checks,
-logical operators, and distance.  This script takes the other route: it writes a
-code down as parity-check matrices and lets the record do the rest.  That is the
-route a user needs when the code they care about is not one of the three, and it
-is the route a Calderbank-Shor-Steane family needs before it can reach a
-detector error model at all.
+Four code records this package ships -- the repetition code, the rotated surface
+code, the Steane code, and the triangular colour code -- each state their own
+wires, checks, logical operators, and distance.  This script takes the other
+route: it writes a code down as parity-check matrices and lets the record do the
+rest.  That is the route a user needs when the code they care about is not one of
+the four, and it is the route a Calderbank-Shor-Steane family needs before it can
+reach a detector error model at all.
 
 Two codes are worth walking through, and they answer two different questions.
 

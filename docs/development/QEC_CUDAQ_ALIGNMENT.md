@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Three records declared — repetition, rotated surface and Steane — and each feeds both the circuit and the matrix route in either readout basis; the record set is still one code per family, so a colour code has no record and a mixed-type observable is refused. |
+| `qec_code_record` | partial | now | `qec_code_library` | Four records declared — repetition, rotated surface, Steane and triangular colour — and each feeds both the circuit and the matrix route in either readout basis; the colour record is the first whose matrices are derived from a rule about its lattice rather than transcribed, and the record set is still one code per family, so a qLDPC or bivariate-bicycle code has no record and a mixed-type observable is refused. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -178,6 +178,22 @@ missing classmethod alone would therefore register a decoder that does not
 satisfy the protocol it is registered under, so naming it is a protocol decision
 that this row records rather than takes, and the capability itself is owned
 where it belongs.
+
+The colour patch is the first shipped family whose decoding evidence is this
+route rather than the matcher's, and it says what the row's own scope boundary
+means in practice. A face on the patch's edge spans four qubits and a face in its
+bulk spans six, so one data fault lights three detectors and the model is not
+graphlike; `MinimumWeightMatchingDecoder.from_detector_error_model` refuses it
+with the same hyperedge refusal it gives the Steane model, while the
+belief-propagation decoder answers it. `tests/qec/test_colour_memory_execution.py`
+records what that answer is worth: it decodes every one of the distance-three
+patch's seven single faults as they come out of an executed circuit and predicts
+the observable flip each fault caused, and at distance five it decodes every
+syndrome the model itself samples -- four thousand of them -- with each correction
+reproducing the syndrome it was handed. The same file states the limit: the
+distance-three patch is the Steane code up to a qubit relabelling, so its model's
+mechanism-weight histogram is the Steane model's row for row, and nothing here
+separates the two families or claims a threshold.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -329,9 +345,18 @@ What stays open is the rate record, not the fault family. `hx` and `lx` are read
 but upstream's `CssNoise` also carries `px`/`py`/`pz`/`pm` per qubit or per check
 and here the record states uniform scalars, so a per-location profile is still
 not expressible. That limit is carried by `dem_code_capacity_noise`, which stays
-`reshaped`. The record set is the other thing the code-row target implies and
-does not yet have: a colour code has no record even though the CSS shape now
-admits one, which is the absence `symbol:flagquantum.qec.color_code` states.
+`reshaped`. The record set is the other thing the code-row target implies, and
+it has grown by one: the triangular colour code is declared as
+`flagquantum.qec.triangular_colour_code`, which derives its patch from its
+distance instead of transcribing a table, so the family is stated as a rule about
+its lattice rather than copied out of another framework's source. What the record
+set still does not have is a second family beyond the four, which is the absence
+`symbol:flagquantum.qec.qldpc_code` and
+`symbol:flagquantum.qec.bivariate_bicycle_code` state. The colour patch is worth
+naming for one further reason: its two check families are literally one matrix,
+because every face carries one X-type and one Z-type stabilizer, so it is the
+second self-dual record here and the first that exercises the both-basis readout
+on a lattice nobody wrote down.
 
 **What `qec_logical_operations` closed, and what it did not.** The row was
 `absent` on all three of its named operations and on an absent module path. Of

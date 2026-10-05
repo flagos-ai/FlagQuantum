@@ -66,8 +66,8 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wir
 indices; a `StabilizerCode` is a value that declares its distance, wire layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
-implement it.
+layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode` and
+`triangular_colour_code` are the four records that implement it.
 
 `CssCode` is the second way into that protocol, and it is the way in for a code
 this package does not declare. It takes the four CSS blocks as plain sequences of
@@ -120,10 +120,21 @@ Two limits survive the new route because they belong to the protocol rather than
 to it, and saying so is the honest boundary: a `CodeCheck` states one ancilla and
 one CNOT direction chosen by the check's type, so a mixed X-and-Z stabilizer still
 has no row here, and `build_memory_circuit` still refuses a declared product that
-is neither pure X nor pure Z. The named qLDPC, Reichardt, Floquet and colour
-families remain absent as *records* -- a matrix has a route in, but no such matrix
-is shipped -- and that is now a question of which codes are written down here
-rather than of whether one can be.
+is neither pure X nor pure Z. The named qLDPC, Reichardt and Floquet families
+remain absent as *records* -- a matrix has a route in, and one family now arrives
+that way without a caller writing it, but none of these three does. What the
+colour record changes about the layer above it is the shape of a check: a face on
+the triangular patch's edge spans four qubits and a face in its bulk spans six, so
+`triangular_colour_code` is the first record whose checks are not all of one
+weight, and its two check blocks are literally one matrix because every face
+carries both stabilizers. A check still names one ancilla and one CNOT direction,
+so a weight-six face is six CNOTs onto one ancilla rather than a second ancilla,
+and the patch stays inside the protocol. It is also the first record here whose
+matrices are derived from a rule about its lattice rather than transcribed, which
+is what keeps a declaration from being copied out of another framework's source;
+`tests/qec/test_colour_code.py` holds the derivation to the closed forms its
+distance implies, and it is the record's own numbers rather than a comparison
+against another framework's patch that stand behind them.
 
 Detector semantics are fixed. A detector is a measurement parity that is
 deterministic in the noiseless circuit. Which parity that is depends on the
@@ -589,7 +600,8 @@ signatures that fired, and this one goes through a stabilizer engine. Held
 against the rates the model *states* — not against a second sample of the same
 route — the realization's sampled detector and observable rates departed by at
 most 2.01 standard errors over the hand-written models and the memory-circuit
-models of the three codes together, at 100000 shots with one seed, and a group
+models of the three codes that suite builds together, at 100000 shots with one
+seed, and a group
 whose masses sum to exactly one flips the detector its members share on every one
 of those shots rather than on 99.99% of them. At probability one the check is
 exact instead of statistical, so a frame placed at the wrong wire fails as a

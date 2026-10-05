@@ -21,6 +21,7 @@ from .codes import (
     RotatedSurfaceCode,
     StabilizerCode,
     SteaneCode,
+    triangular_colour_code,
 )
 from .context import (
     DecoderContext,
@@ -140,4 +141,5 @@ __all__ = (
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",
+    "triangular_colour_code",
 )

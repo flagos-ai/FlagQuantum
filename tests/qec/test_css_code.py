@@ -1,12 +1,14 @@
 """Unit coverage for the code record built from a parity-check matrix.
 
-Three records in this package are written down as a family -- a repetition
-lattice, a rotated surface lattice, the Steane code -- and each states its own
-checks, its own logical operators and its own distance. This record is the fourth
-route: the matrices are the input, so a code this package never wrote down can
-still be a `~flagquantum.qec.StabilizerCode` and walk the rest of the path. The
-tests here pin the algebra that route relies on and the refusals that keep a set
-of matrices from being read as a code it is not.
+Four records in this package are written down as a family -- a repetition
+lattice, a rotated surface lattice, the Steane code, the triangular colour patch
+-- and each states its own checks, its own logical operators and its own
+distance, the colour patch deriving them from a rule about its lattice rather
+than tabulating them. This record is the fifth route: the matrices are the input,
+so a code this package never wrote down can still be a
+`~flagquantum.qec.StabilizerCode` and walk the rest of the path. The tests here
+pin the algebra that route relies on and the refusals that keep a set of matrices
+from being read as a code it is not.
 
 What this file proves
 ---------------------

@@ -287,7 +287,7 @@ by row, with the Z-type checks first.
 ## Declare a code this package does not ship
 
 The other direction of the same record: `CssCode` takes the four blocks a caller
-writes and returns the same kind of code record the three declared families
+writes and returns the same kind of code record the four declared families
 return, so a code no record here declares reaches the memory circuit, the model,
 the sampler and the decoder through the same `StabilizerCode` protocol.
 
@@ -325,6 +325,40 @@ the data-qubit count.
 A check still states one ancilla and one CNOT direction chosen by the check's
 type, so the CSS class is what this route admits: a mixed X-and-Z stabilizer has
 no row here, exactly as it has no check in the declared records.
+
+## Derive a family from its lattice
+
+The two routes meet in one place: `triangular_colour_code` derives a family's
+matrices from a rule about its lattice and returns the same `CssCode` a caller
+would otherwise have written out, so the family is stated once rather than
+transcribed.
+
+```python
+from flagquantum.qec import triangular_colour_code
+
+colour = triangular_colour_code(5)
+print(colour.num_data_qubits, colour.num_ancilla_qubits, colour.distance)  # 19 18 5
+weights = {
+    max(len(check.stabilizer.z_wires), len(check.stabilizer.x_wires))
+    for check in colour.checks
+}
+print(sorted(weights))  # [4, 6]
+```
+
+Each check appears once with one of its two types populated, so a check's weight
+is the larger of its two supports rather than either one alone.
+
+Two things about it are worth knowing before reading its checks. Every face
+carries one X-type and one Z-type stabilizer, so the two check blocks are the same
+matrix and the patch is read out in either basis; and a face on the triangle's
+edge spans four qubits while a face in its bulk spans six, so one data fault
+lights three detectors and the model is **not** graphlike — the matcher refuses it
+and the belief-propagation decoder answers it. The distance is searched for over
+the derived matrices exactly as it is for a code a caller writes, so the reported
+distance is a property of the patch and not of the logical string the record
+declares. At distance three that patch is the Steane code under a relabelling of
+its wires; the family grows away from it, and either way nothing downstream can
+tell which route produced the record.
 
 ## Give one location its own rate
 
