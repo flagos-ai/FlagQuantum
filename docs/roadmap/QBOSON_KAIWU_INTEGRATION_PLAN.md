@@ -116,6 +116,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   to image ID `sha256:3aea769f...` on `jp-a800-171` and
   `sha256:fd2afb63...` on `jp-a800-172`. The development runner therefore now
   requires and records the full per-host image ID and refuses mutable tags.
+- Read-only filesystem reconnaissance found no transferred QBoson integration
+  archive, pinned Kaiwu PyTorch Plugin checkout, Kaiwu 1.3.1 wheel, or isolated
+  Kaiwu installation on either validation host. The existing checkout on
+  `jp-a800-172` is revision `e07a642de9e10fc948c4c131210a243ec13b7c01`
+  and does not contain this integration; the corresponding directory on
+  `jp-a800-171` is not a Git checkout. No source was uploaded or remote file
+  modified during this check.
 - The bounded container runner now executes the pinned plugin's actual
   QDiffusion proposal, conditioned Boltzmann energy, FlagQuantum sampler,
   objective, backward, optimizer update, and one-step guided generation path.
