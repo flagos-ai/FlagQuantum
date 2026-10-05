@@ -224,11 +224,14 @@ def _launch(
     output_parts = torch.empty(
         batch, left_dim * 2, 2 * right_dim, 2, dtype=torch.float32, device=left.device
     )
-    grid = lambda meta: (
-        triton.cdiv(left_dim * 2, meta["block_rows"]),
-        triton.cdiv(2 * right_dim, meta["block_columns"]),
-        batch,
-    )
+
+    def grid(meta: dict[str, int]) -> tuple[int, int, int]:
+        return (
+            triton.cdiv(left_dim * 2, meta["block_rows"]),
+            triton.cdiv(2 * right_dim, meta["block_columns"]),
+            batch,
+        )
+
     _two_site_forward_kernel[grid](
         torch.view_as_real(left.resolve_conj().resolve_neg()),
         torch.view_as_real(gate.resolve_conj().resolve_neg()),
