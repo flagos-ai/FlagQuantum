@@ -35,6 +35,21 @@ def test_strict_json_preserves_syntax_failure_type() -> None:
         loads_json_strict('{"missing":')
 
 
+@pytest.mark.parametrize(
+    "encoded",
+    (
+        '{"value": NaN}',
+        '{"value": Infinity}',
+        '{"value": -Infinity}',
+        '{"value": 1e999}',
+        '{"nested": [{"value": -1e999}]}',
+    ),
+)
+def test_strict_json_rejects_nonfinite_numbers_at_every_depth(encoded: str) -> None:
+    with pytest.raises(ValueError, match="non-finite number"):
+        loads_json_strict(encoded)
+
+
 def test_qdiffusion_evidence_readers_do_not_use_ambiguous_json_loads() -> None:
     source_root = Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu"
     violations = []

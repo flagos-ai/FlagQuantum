@@ -385,7 +385,9 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   parser that rejects duplicate object keys at every nesting level. A source
   scan in the credential-free golden path prevents frozen config, environment
   lock, preflight, transfer, component, or final manifest readers from silently
-  returning to last-key-wins parsing.
+  returning to last-key-wins parsing. The parser also rejects non-standard
+  `NaN`/`Infinity` constants and numeric exponents that decode to nonfinite
+  floats anywhere in nested evidence.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

@@ -260,3 +260,5 @@ files that are present in the bundle but absent from its manifest.
 All frozen configuration, lock, preflight, transfer, component, and final
 manifest JSON readers also reject duplicate object keys at every nesting level;
 a byte-identical evidence file cannot rely on last-key-wins interpretation.
+The same parser rejects non-standard `NaN`/`Infinity` constants and finite JSON
+spellings whose decoded float would overflow, including inside nested metadata.
