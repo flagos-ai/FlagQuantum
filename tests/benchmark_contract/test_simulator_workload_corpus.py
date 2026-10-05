@@ -92,6 +92,9 @@ def test_native_only_corpus_smoke_records_real_timings() -> None:
     assert payload["methodology"]["measurement_scope"] == (
         "end_to_end_user_facing_run_call"
     )
+    assert payload["environment"]["cpu_model"]
+    affinity = payload["environment"]["cpu_affinity"]
+    assert affinity is None or all(isinstance(cpu, int) for cpu in affinity)
     assert len(payload["cases"]) == len(WORKLOAD_NAMES)
     for case in payload["cases"]:
         timing = case["engines"]["flagquantum_native"]["end_to_end"]
