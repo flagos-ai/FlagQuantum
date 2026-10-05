@@ -61,7 +61,10 @@
     "energy_temperature": 1.25,
     "disable_resample": false,
     "resample_ratio": 0.2,
-    "resample_top_p": 0.9
+    "resample_top_p": 0.9,
+    "portability_training_seed": 1701,
+    "portability_fixture_index": 0,
+    "portability_steps": 3
   },
   "evaluation": {
     "pair_mode": "order",

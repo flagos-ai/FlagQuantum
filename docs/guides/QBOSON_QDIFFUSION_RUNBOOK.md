@@ -361,6 +361,40 @@ This stage uses the A800 but consumes no additional QBoson quota. Preserve one
 evaluation record per seed; final application metrics must be assembled across
 the complete preregistered seed set rather than selected post hoc.
 
+On the configured replay host, load the preregistered seed's exact best energy
+checkpoint and the training run's hashed test FASTA. The fixed replay performs
+one objective call and three guided steps with the frozen four candidates, for
+a conservative 17-call budget:
+
+```bash
+python examples/qdiffusion_kaiwu/qdiffusion_portability_replay_live.py \
+  --config /absolute/evidence/acceptance-config.json \
+  --plugin-root /absolute/src/kaiwu-pytorch-plugin \
+  --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --base-checkpoint /absolute/artifacts/dplm_150m \
+  --tokenizer /absolute/artifacts/dplm_150m \
+  --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
+  --artifact-preflight-output /absolute/evidence/replay-preflight.json \
+  --training-record /absolute/evidence/seed-1701-training.json \
+  --training-run-directory /absolute/transferred/seed-1701/RUN_DIRECTORY \
+  --trained-checkpoint /absolute/transferred/seed-1701/RUN_DIRECTORY/checkpoints/BEST.pt \
+  --sdk-checkpoint-dir /absolute/private/kaiwu-checkpoints \
+  --output /absolute/evidence/jp-a800-172-portability.json \
+  --execution-host jp-a800-172 \
+  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-172 \
+  --source-revision FULL_FLAGQUANTUM_REVISION \
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --project-no APPROVED_PROJECT \
+  --task-prefix qdiffusion-portability \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
+```
+
+The runner verifies the checkpoint remains inside the recorded run directory,
+recomputes its digest, verifies every referenced training artifact, and records
+repeat retrieval without resubmission. This demonstrates portability between
+the two available A800 environments only; it is not multi-node or distributed
+execution.
+
 ## 10. Assemble and validate final evidence
 
 The live-system probe record is an attempt record, not by itself the final

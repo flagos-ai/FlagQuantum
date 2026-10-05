@@ -57,6 +57,10 @@ def _frozen_config() -> dict[str, Any]:
             "resample_ratio": 0.2,
             "resample_top_p": 0.9,
             "max_steps": 64,
+            "sequence_count": 32,
+            "portability_training_seed": 1701,
+            "portability_fixture_index": 0,
+            "portability_steps": 3,
         },
     }
 

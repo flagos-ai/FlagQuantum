@@ -154,6 +154,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   that chain, loads one frozen checkpoint file without implicit download, checks
   aligned sequence identities, and computes candidate cosine/L2 evidence on the
   primary A800 without spending further QBoson quota.
+- A quota-guarded replay-host runner now verifies and loads the exact selected
+  primary-host checkpoint, rebuilds the DPLM model from frozen local artifacts,
+  executes one preregistered held-out fixture through a fresh FlagQuantum remote
+  sampler, checks repeat retrieval, and records provider and precision evidence.
+  This is a portability gate, not multi-node execution or a second training run.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

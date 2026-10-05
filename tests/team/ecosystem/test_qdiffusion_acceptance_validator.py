@@ -81,6 +81,9 @@ def _config() -> dict[str, Any]:
             "disable_resample": False,
             "resample_ratio": 0.2,
             "resample_top_p": 0.9,
+            "portability_training_seed": 1701,
+            "portability_fixture_index": 0,
+            "portability_steps": 3,
         },
         "evaluation": {"pair_mode": "order", "pooling": "mean", "batch_size": 1},
         "seeds": [1701, 1702, 1703],
@@ -343,3 +346,25 @@ def test_config_rejects_protein_budget_below_worst_case_estimate() -> None:
     _validate_config(config, errors)
 
     assert any("worst-case workflow estimate of 71269" in error for error in errors)
+
+
+def test_config_rejects_portability_fixture_outside_frozen_lane() -> None:
+    config = _config()
+    config["generation"]["portability_training_seed"] = 9999
+    config["generation"]["portability_fixture_index"] = 32
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("expected one frozen seed" in error for error in errors)
+    assert any("outside the frozen sequence set" in error for error in errors)
+
+
+def test_config_rejects_system_budget_below_portability_estimate() -> None:
+    config = _config()
+    config["remote_call_budget"] = 16
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("portability replay estimate of 17" in error for error in errors)

@@ -142,3 +142,12 @@ sequence-quality summaries. It loads ESM2 exclusively through
 counts, then emits cosine/L2 plus sequence-quality metrics in a private record.
 That record remains candidate evidence until it is assembled with all frozen
 seeds and the two independent system-gate records.
+
+`qdiffusion_portability_replay_live.py` transfers one preregistered primary-host
+energy checkpoint and its hashed held-out FASTA to the replay host. It rebuilds
+the DPLM generator from frozen local artifacts, injects a fresh bounded
+`KaiwuSampler`, loads the exact trained energy weights, and runs one fixed
+objective plus a short guided generation. The fixture seed, record index, and
+step count are part of the frozen config; replay cannot silently select a better
+example. The command is quota-consuming and requires the same exact cost
+acknowledgement as other live paths.

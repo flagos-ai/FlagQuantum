@@ -1,0 +1,210 @@
+from __future__ import annotations
+
+import hashlib
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
+import numpy as np
+import pytest
+import torch
+
+from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
+    _verified_checkpoint,
+    run_portability_replay,
+)
+from flagquantum.remote.kaiwu import (
+    KaiwuTaskReceipt,
+    KaiwuTaskResult,
+    new_receipt,
+)
+from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+
+pytestmark = pytest.mark.unit
+
+
+class _CompletedClient:
+    def submit(
+        self,
+        matrix: FrozenIsingMatrix,
+        *,
+        task_name: str,
+        mode: KaiwuTaskMode,
+        requested_samples: int,
+        project_no: str | None,
+    ) -> KaiwuTaskReceipt:
+        return new_receipt(
+            task_name=task_name,
+            matrix=matrix,
+            mode=mode,
+            requested_samples=requested_samples,
+            project_no=project_no,
+            provider_task_id="fake-task",
+            provider_target="SPQC-fake",
+        )
+
+    def query_status(self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix) -> str:
+        del receipt, matrix
+        return "Completed"
+
+    def fetch_result(
+        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> KaiwuTaskResult:
+        sample = tuple(1 for _ in matrix)
+        samples = tuple(sample for _ in range(receipt.requested_samples))
+        energy = -sum(
+            sample[row] * matrix[row][column] * sample[column]
+            for row in range(len(matrix))
+            for column in range(len(matrix))
+        )
+        return KaiwuTaskResult(
+            receipt,
+            samples,
+            tuple(energy for _ in samples),
+            "Completed",
+            {"fallback_occurred": False},
+        )
+
+
+class _Generator:
+    def __init__(self, sampler: Any) -> None:
+        self.energy_model = SimpleNamespace(sampler=sampler)
+        self.sampler = sampler
+        self.tokenizer = SimpleNamespace(batch_decode=lambda *args, **kwargs: ["ACDE"])
+
+    def eval(self) -> _Generator:
+        return self
+
+    def to(self, device: torch.device) -> _Generator:
+        del device
+        return self
+
+    def objective(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+        del batch
+        self.sampler.solve(
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        return {"energy_objective": torch.tensor([0.25])}
+
+    def generate(self, target: torch.Tensor, *, max_steps: int) -> torch.Tensor:
+        del max_steps
+        self.sampler.solve(
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        return target
+
+
+def _config() -> dict[str, Any]:
+    return {
+        "remote_call_budget": 20,
+        "precision_policy": {
+            "name": "explicit-int8",
+            "target_min": -127,
+            "target_max": 127,
+        },
+        "training": {"freeze_proposal": True},
+        "dataset": {"max_length": 256, "sha256": "1" * 64},
+        "checkpoint": {"sha256": "2" * 64},
+        "tokenizer": {"sha256": "3" * 64},
+        "evaluation_model": {"sha256": "4" * 64},
+        "generation": {
+            "sequence_count": 1,
+            "num_candidates": 4,
+            "proposal_temperature": 0.3,
+            "proposal_noise_scale": 1.0,
+            "energy_temperature": 1.25,
+            "disable_resample": False,
+            "resample_ratio": 0.2,
+            "resample_top_p": 0.9,
+            "portability_training_seed": 1701,
+            "portability_fixture_index": 0,
+            "portability_steps": 3,
+        },
+    }
+
+
+def test_verified_checkpoint_requires_primary_digest(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_3.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    digest = hashlib.sha256(b"trained").hexdigest()
+    record = {
+        "trained_energy_checkpoint_name": checkpoint.name,
+        "trained_energy_checkpoint_sha256": digest,
+    }
+
+    assert _verified_checkpoint(tmp_path, checkpoint, record) == digest
+
+    checkpoint.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="digest differs"):
+        _verified_checkpoint(tmp_path, checkpoint, record)
+
+
+def test_portability_replay_runs_bounded_slice_without_false_acceptance(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "trained.pt"
+    checkpoint.write_bytes(b"trained")
+    builder = SimpleNamespace(
+        build_qdiffusion=lambda **kwargs: _Generator(kwargs["bm_sampler"])
+    )
+    runtime = SimpleNamespace(
+        load_trained_energy_weights=lambda *args: {},
+        seed_torch=lambda seed: None,
+        encode_sequence=lambda *args, **kwargs: torch.tensor([[1, 2, 3]]),
+    )
+    io_module = SimpleNamespace(read_fasta_records=lambda path: [("protein", "ACDE")])
+
+    record = run_portability_replay(
+        builder=builder,
+        runtime=runtime,
+        io_module=io_module,
+        client=_CompletedClient(),
+        config=_config(),
+        config_sha256="a" * 64,
+        artifact_preflight_sha256="e" * 64,
+        training_record_sha256="b" * 64,
+        test_fasta=tmp_path / "test.fasta",
+        base_checkpoint=tmp_path / "dplm",
+        trained_checkpoint=checkpoint,
+        trained_checkpoint_sha256=hashlib.sha256(b"trained").hexdigest(),
+        execution_host="jp-a800-172",
+        observed_hostname="host-172",
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        source_revision="c" * 40,
+        plugin_revision="d" * 40,
+        sdk_version="1.3.1",
+        project_no="project",
+        task_prefix="replay",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        device=torch.device("cpu"),
+        real_provider_transport=False,
+    )
+
+    assert record["run_completed"] is True
+    assert record["remote_call_count"] == 1
+    assert record["fixture"]["token_constraints_passed"] is True
+    assert (
+        record["trained_energy_checkpoint_sha256"]
+        == hashlib.sha256(b"trained").hexdigest()
+    )
+    assert record["transport"] == "injected_test"
+    assert record["acceptance"]["portability"] == "fail"
+
+
+def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_portability_replay_live.py"
+    ).read_text(encoding="utf-8")
+
+    assert "ACKNOWLEDGEMENT" in source
+    assert source.index("preflight_artifacts(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert 'role != "portability_replay"' in source
+    assert "not a second training run" in source

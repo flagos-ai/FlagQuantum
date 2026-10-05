@@ -102,6 +102,19 @@ def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
     return structural_calls + epoch_calls + generation_calls
 
 
+def _estimate_portability_remote_calls(config: dict[str, Any]) -> int | None:
+    generation = config.get("generation")
+    if not isinstance(generation, dict):
+        return None
+    candidates = generation.get("num_candidates")
+    steps = generation.get("portability_steps")
+    if type(candidates) is not int or candidates <= 0:
+        return None
+    if type(steps) is not int or steps <= 0:
+        return None
+    return 1 + candidates + steps * candidates
+
+
 def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
     if config.get("schema") != CONFIG_SCHEMA or config.get("version") != "1.0":
         errors.append("config: unsupported schema or version")
@@ -146,9 +159,33 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
             errors.append(f"config.{name}.sha256: expected a SHA-256 digest")
     generation = _mapping(config.get("generation"), "config.generation", errors)
-    for field in ("sequence_count", "max_steps", "num_candidates"):
+    for field in (
+        "sequence_count",
+        "max_steps",
+        "num_candidates",
+        "portability_steps",
+    ):
         if type(generation.get(field)) is not int or generation.get(field, 0) <= 0:
             errors.append(f"config.generation.{field}: expected a positive integer")
+    portability_seed = generation.get("portability_training_seed")
+    if type(portability_seed) is not int or portability_seed not in config.get(
+        "seeds", []
+    ):
+        errors.append(
+            "config.generation.portability_training_seed: expected one frozen seed"
+        )
+    portability_index = generation.get("portability_fixture_index")
+    if (
+        type(portability_index) is not int
+        or portability_index < 0
+        or (
+            type(generation.get("sequence_count")) is int
+            and portability_index >= generation["sequence_count"]
+        )
+    ):
+        errors.append(
+            "config.generation.portability_fixture_index: outside the frozen sequence set"
+        )
     for field in (
         "proposal_temperature",
         "proposal_noise_scale",
@@ -288,6 +325,16 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         or config.get("remote_call_budget", 0) <= 0
     ):
         errors.append("config.remote_call_budget: expected a positive integer")
+    portability_calls = _estimate_portability_remote_calls(config)
+    if (
+        portability_calls is not None
+        and type(config.get("remote_call_budget")) is int
+        and config["remote_call_budget"] < portability_calls
+    ):
+        errors.append(
+            "config.remote_call_budget: below the portability replay estimate of "
+            f"{portability_calls}"
+        )
     thresholds = _mapping(config.get("thresholds"), "config.thresholds", errors)
     if thresholds.get("uniqueness_baseline_fraction_min") != 0.95:
         errors.append("config.thresholds: uniqueness floor must remain 0.95")
