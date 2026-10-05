@@ -318,9 +318,17 @@ These are stated as boundaries rather than left for a caller to discover.
 - **Belief propagation with ordered statistics is not in the decoder registry.**
   `BeliefPropagationOsdDecoder` is constructed directly as above, because
   `register_decoder` requires a `from_detector_error_model` classmethod the class
-  does not carry, so `decoder_names()` names the in-tree matcher and the
-  PyMatching cross-check only. A hyperedge model therefore has no registry name
-  today.
+  does not carry, so `decoder_names()` names the in-tree matcher, the windowed
+  matcher and the PyMatching cross-check only. A hyperedge model therefore has no
+  registry name today.
+- **The registry's third name is the matcher, banded.** `get_decoder` reaches
+  `MinimumWeightMatchingDecoder` by name, and it reaches the same matcher over a
+  window by name too: `sliding_window_matching` cuts a history into bands of
+  detectors and matches one window at a time, which is how a syndrome longer than
+  the exact matcher's defect budget is answered at all. A history that fits the
+  budget needs no window and the matcher's name is the one to ask for; a history
+  that does not is the case the windowed name exists for, and its answer is an
+  answer about a window rather than about the whole history.
 - **Model sampling is not circuit sampling.** `dem_sampling` samples the detector
   error model, which is the object a decoder consumes. A study that needs
   circuit-level samples keeps `compile_detector_sampler`, and a study that needs

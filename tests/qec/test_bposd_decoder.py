@@ -742,6 +742,9 @@ def test_the_decoder_is_outside_the_registry_by_contract_not_by_omission() -> No
 
     from flagquantum.qec.decoding_graph import DecodingGraph
     from flagquantum.qec.registry import (
+        AUTHORITY_NAME,
+        CROSS_CHECK_NAME,
+        SLIDING_WINDOW_NAME,
         DetectorErrorModelDecoder,
         decoder_names,
         register_decoder,
@@ -763,4 +766,8 @@ def test_the_decoder_is_outside_the_registry_by_contract_not_by_omission() -> No
     # The refusal is not enough on its own: the name has to stay free, or a
     # later registration would silently take a name this one was refused.
     assert "belief_propagation_osd" not in decoder_names()
-    assert decoder_names() == ("minimum_weight_matching", "pymatching")
+    assert set(decoder_names()) == {
+        AUTHORITY_NAME,
+        CROSS_CHECK_NAME,
+        SLIDING_WINDOW_NAME,
+    }

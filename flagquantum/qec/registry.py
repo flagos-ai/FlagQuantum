@@ -43,6 +43,18 @@ in-tree matcher is the authority for a decoded syndrome and the PyMatching
 adapter is the cross-check that keeps that claim independent of the matcher's own
 implementation, so the two are registered side by side and the caller chooses.
 
+**The windowed member is the authority, not a third claim.** ``sliding_window_matching``
+is registered against the decoder that decides a syndrome a band of detectors at a
+time and calls the authority's matcher on each band, so it is the same authority
+read through a window rather than a second opinion about the same syndrome. It is
+registered beside the other two because a call site that already chooses a decoder
+by name -- the reason this factory exists -- is exactly the call site that wants
+the matcher that finishes a history the exact matcher refuses, and choosing it by
+name keeps the caller from having to reach the class directly. The name carries
+one obligation the other two do not: a window narrower than the whole graph
+decides a band rather than the history, so a caller that names it states
+``commit`` and ``window`` when the default band is not the one it wants.
+
 **The source argument carries a model; it does not configure a decoder.** Upstream
 takes ``H_or_dem_text_or_sparse_matrix``, and this factory takes the three forms
 a caller can hold a model in: the model, stim's text for one, and the decoding
@@ -62,11 +74,14 @@ from .adapters import PyMatchingDecoder
 from .decoding_graph import DecodingGraph
 from .dem import DetectorErrorModel
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
+from .sliding_window import SlidingWindowMatchingDecoder
 
 #: The name of the implementation this package is authoritative for.
 AUTHORITY_NAME = "minimum_weight_matching"
 #: The name of the optional implementation this package is cross-checked against.
 CROSS_CHECK_NAME = "pymatching"
+#: The name of the authority used one band of detectors at a time.
+SLIDING_WINDOW_NAME = "sliding_window_matching"
 
 _DecoderT = TypeVar("_DecoderT", bound="DetectorErrorModelDecoder")
 
@@ -251,3 +266,4 @@ def get_decoder(
 
 register_decoder(AUTHORITY_NAME)(MinimumWeightMatchingDecoder)
 register_decoder(CROSS_CHECK_NAME)(PyMatchingDecoder)
+register_decoder(SLIDING_WINDOW_NAME)(SlidingWindowMatchingDecoder)

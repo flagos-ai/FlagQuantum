@@ -284,8 +284,8 @@ document exists, and the guide states it in the place a reader will hit it: the
 Stim integration this route lands on is itself `partial`, so
 `qec_stim_user_migration` cannot be `supported` while the thing it documents is
 not. The `^` separator is the first half. The default reading states the line as
-written and is not graphlike, so both registered decoders refuse it -- 113 of the
-219 mechanisms of a distance-3, two-round rotated surface code flip more than two
+written and is not graphlike, so every registered decoder that reads a pair-graph
+refuses it -- 113 of the 219 mechanisms of a distance-3, two-round rotated surface code flip more than two
 detectors -- while the reading a matcher accepts,
 `use_decomp_suggestions=True` followed by `merge_duplicate_mechanisms()`, is
 measurably a different distribution: against stim's own sampler at 200000 shots
@@ -299,11 +299,12 @@ with ordered statistics differs on 1.7 percent of them. The second half is the
 registry: belief propagation with ordered statistics decodes a hyperedge model and
 is reachable from the package, but `register_decoder` requires a
 `from_detector_error_model` classmethod that class does not carry, so
-`decoder_names()` holds the matcher and the cross-check alone. Naming only the
-graphlike reading as the migration route would have been a silent numerical
-downgrade of the model the caller handed over, so the guide states the tradeoff
-instead, and the test that keeps it true executes every fence in one namespace and
-compares each print against the transcript quoted under it.
+`decoder_names()` holds the matcher, the windowed reading of it and the
+cross-check. Naming only the graphlike reading as the migration route would have
+been a silent numerical downgrade of the model the caller handed over, so the
+guide states the tradeoff instead, and the test that keeps it true executes every
+fence in one namespace and compares each print against the transcript quoted
+under it.
 
 `backend_asynchronous_multi_qpu` moved from `unsupported` to `partial` in the
 same wave, on a distinction the row's own reason had blurred. Submitted once,

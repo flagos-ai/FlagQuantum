@@ -835,17 +835,126 @@ naming them, rather than answered partially.
 express a surface-code correction over `distance**2` data wires in the Z basis.
 The result states the predicted observables, the mechanisms selected in graph
 order, and their total weight, and the decoder therefore does not implement the
-repetition-only `Decoder` protocol either. Nothing is built on top of this result
-yet: there is no logical-error-rate estimator, no threshold scan, and no
-connection to the memory-experiment result records. The implementation imports
-`heapq`, `math`, `dataclasses`, and `numbers` and nothing else, so no new
-dependency is introduced; `stim` and `pymatching` are not imported by it, and the
-cross-check against `pymatching` is a separate module behind the `pymatching`
-extra rather than a build dependency. That cross-check is
+repetition-only `Decoder` protocol either. The one thing built on this result is
+the windowed decoder in `sliding_window.py`, whose own section follows: it returns
+this record unchanged, because a band's answer is the same kind of answer as the
+whole graph's. Nothing else is: there is no logical-error-rate estimator, no
+threshold scan, and no connection to the memory-experiment result records. The
+implementation imports `heapq`, `math`, `dataclasses`, and `numbers` and nothing
+else, so no new dependency is introduced; `stim` and `pymatching` are not imported
+by it, and the cross-check against `pymatching` is a separate module behind the
+`pymatching` extra rather than a build dependency. That cross-check is
 `flagquantum/qec/adapters.py`, and what it established is stated there rather
 than here: the two decoders agree on the cheapest weight of every syndrome and on
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
+
+## Deciding a history a band at a time
+
+`sliding_window.py` exists for the one thing the exact matcher above cannot do,
+and the reason is the budget rather than the model. The matcher enumerates the
+ways to pair the defective detectors, so its cost is exponential in the defect
+count and its `max_defects` is what bounds the patch a decode can cover. A
+syndrome's defect count grows with the number of rounds, and the package's own
+distance-three patch carries well over a hundred defective detectors over 200
+rounds at three percent noise -- 110 to 191 across forty seeded shots against a
+budget of 20 -- which is far past any enumeration the matcher will pay for and is
+also what a decode of a real experiment's history looks like. Upstream states this
+family as a decoder named `sliding_window`; this module is the same technique over
+a decoding graph this package already builds.
+
+The detectors are cut into windows of `window` consecutive detectors advancing by
+`commit`; each window is decoded by `MinimumWeightMatchingDecoder` over the graph
+of the mechanisms that begin inside it, and the mechanisms of that answer whose
+first endpoint lies in the window's leading `commit` detectors are committed while
+the rest are left for a later window, whether or not the window reaches the end of
+the graph. A committed mechanism toggles its endpoints
+out of the residual syndrome, and each window decides its band against what the
+windows before it left behind. A mechanism therefore belongs to exactly one
+window: the one whose band holds its first endpoint.
+
+Three facts make a band's decision the same decision the whole graph would have
+made about it. The window holds every mechanism whose first endpoint is inside it,
+and a mechanism incident to a detector of the band begins at or before that
+detector, so every mechanism incident to the band is in the window. Every such
+mechanism is committed, because committing is exactly the test `first < start +
+commit`. And the window's answer is a T-join of the window's syndrome, so a band
+detector has odd degree in that answer precisely when the residual called it
+defective. Together they say the committed mechanisms toggle each band detector
+exactly as often as it needs, so each band is explained as it is decided and the
+residual is empty once the last window has been decided. That is checked rather
+than assumed: a non-empty residual raises `CapabilityError` naming the detectors.
+The check is the reason a defect in the committing arithmetic fails loudly instead
+of returning a correction that merely looks like one, and it is a check rather
+than an argument because the induction above rests on each window's answer being
+what the window's syndrome needs, which is the matcher's claim and not this
+module's.
+
+A mechanism that begins inside the window and ends past its last detector is still
+a mechanism of the model, and the window offers it to the matcher as a step to the
+model's boundary rather than dropping it. Dropping it is what would leave a
+detector of the band with nothing to pair against, so keeping it is what makes the
+band answerable at all. It is never committed either, and the floor is what proves
+that rather than a separate test: a mechanism the window cannot follow ends at or
+past the window's last detector, so its first endpoint would be at or past
+`start + commit` if it were inside the band, which the floor puts at or before the
+window's last detector. What reaches the caller is therefore always a mechanism
+the model has. The
+window's answer does treat the region past its last detector as boundary, which is
+the approximation a window makes: a mechanism of that region is seen as reaching
+the model's boundary rather than as continuing, which can make a band's decision
+cheaper than the history supports. What survives the approximation is the record.
+Every committed mechanism is a mechanism of the model, and the committed
+mechanisms have the whole syndrome as their odd-degree set, so they are a genuine
+T-join and their total weight is at least the exact matcher's for the same
+syndrome. Both are measured rather than asserted, over four codes and every legal
+window, along with the identity that fixes the whole design: with one window
+covering the whole graph the decoder is `MinimumWeightMatchingDecoder` mechanism
+for mechanism, which is what makes it a replacement for the matcher rather than a
+second implementation beside it.
+
+The window has a floor, and the constructor refuses a narrower one by name. A
+mechanism begins at or before the band's last detector and spans at most the
+model's widest mechanism, so with `window >= commit + span` every mechanism
+starting inside the band ends before the window's last detector and the window
+never treats it as a boundary step. `span` is measured from the graph rather than
+declared, and a window that already reaches the end of the graph is admitted
+whatever its width, since nothing is past its last detector then — which is the
+admission that keeps the one-window identity reachable. The band is committed
+whether or not the window reaches the graph's end: a window is not widened into
+authority over the detectors past its band, and the one-window identity survives
+because with a single window the band is the whole graph. The default band is one
+`span`, which for a memory circuit is one syndrome round because the widest
+mechanism of a memory model connects a detector to its counterpart one round
+later; the default window is three bands.
+
+What the narrow window buys is finite work per syndrome: the defect budget bounds
+a window's syndrome rather than the whole history's, which is how a syndrome the
+exact matcher refuses becomes a syndrome this decoder answers. On the four long
+syndromes measured — 122, 164, 480 and 1600 detectors, where the exact matcher
+declined 11, 25, 40 and 40 of 40 shots — the windowed decoder answered all 40 at
+a band of one span and a window of two. What it costs is that a narrow window is a
+decision about a window: the mechanisms it selects can differ from the exact
+matcher's even where the observables agree, and the observable agreement is bought
+with the window's width rather than guaranteed. Agreement improves with the width
+and not monotonically at every width: over five short codes and 400 shots each, at
+a window of two bands the disagreements were 0, 1, 2, 7 and 12, at three bands 0,
+2, 1, 2 and 7, at four bands 0, 0, 0, 0 and 4, and at five bands the widest of
+them refused one shot of the 400 while the others agreed on every one — so width
+buys agreement and not monotonically. Widening is not free in the other direction
+either, because a wider window also collects more defects and reaches the same
+budget the exact matcher has: on the 480-detector patch a window of 48 detectors
+answered all 40 shots, a window of 96 answered 24, and a window of 160 answered
+one, at the default budget of 20 defects. No threshold and no logical error rate
+is estimated here, and no accuracy claim is made for a window narrower than the
+whole graph.
+
+There is no streaming entry point and no chunk seam to feed one. The decoder takes
+a whole syndrome and answers it band by band, and the seams a streaming decoder
+needs are the `DemChunkSpec` family upstream states and this package does not
+have. The module imports `math`, `dataclasses`, `numbers`, `collections.abc` and
+this package, so no dependency is added and the window arithmetic costs nothing
+beyond the matcher calls it makes.
 
 ## A decoder for the hyperedge
 
@@ -910,7 +1019,8 @@ module exists to answer. Adding a `from_detector_error_model` classmethod and a
 `graph` property that raised on the models this decoder is for would put a class
 under a name whose stated contract it cannot satisfy, which is a worse failure
 than the one the registry was built to prevent, so the class is constructed
-directly while the matcher and the cross-check are reached by name. Naming it
+directly while the matcher, the windowed reading of it and the cross-check are
+reached by name. Naming it
 would mean widening or splitting the protocol first, and that is a decision about
 the registry rather than a missing method on this decoder.
 `tests/qec/test_bposd_decoder.py` measures the exclusion rather than repeating
@@ -922,10 +1032,12 @@ offered stays free.
 The module imports `torch` and the standard library and nothing else, so no
 dependency is added and no second source of truth for linear algebra appears; a
 test starts a fresh interpreter and measures that. It is a decoder for one model
-at a time: there is no batching, no streaming, no sliding window, no
-logical-error-rate estimator and no threshold sweep, and it is not wired to the
-stim sampling path, so a syndrome it decodes comes from the caller rather than
-from this package's sampler.
+at a time: there is no batching, no streaming and no logical-error-rate estimator
+and no threshold sweep, and it is not wired to the stim sampling path, so a
+syndrome it decodes comes from the caller rather than from this package's
+sampler. The sliding window is the windowed route in `sliding_window.py` and not
+this decoder: this one answers a hyperedge model a matcher cannot graph, and that
+one bands a graph the matcher can search.
 
 ## Reaching a decoder by name
 
@@ -934,8 +1046,9 @@ reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
 **options)` and registers one with a decorator, and this module offers
 `get_decoder(name, source, **options)`, `register_decoder(name, *,
 replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
-those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
-two registrations this package ships.
+those three are written against. `AUTHORITY_NAME`, `CROSS_CHECK_NAME` and
+`SLIDING_WINDOW_NAME` name the three registrations this package ships: the
+authority, the optional cross-check, and the same authority read through a window.
 
 Three things about it are narrower than upstream on purpose, and each is a
 decision rather than an omission.
@@ -960,9 +1073,20 @@ events, and `DetectorErrorModelDecoder` requires
 make a name mean one of two things. They stay directly constructed, which is also
 why the registry is a module of its own rather than methods on `Decoder`. The
 belief-propagation decoder is the third case and the narrower one: it reads a
-detector error model like the registered two, and stays out because the protocol
+detector error model like the registered three, and stays out because the protocol
 also promises the `DecodingGraph` that was built, which is exactly what a
 hyperedge model cannot produce. The section above states that reason in full.
+
+The windowed decoder is registered rather than kept out, and the distinction is
+what the protocol promises. It builds the graph the model defines and holds it, so
+it carries the `DecodingGraph` the protocol requires, and its `decode` reads
+detection events and returns the same `MatchingDecodeResult` the authority
+returns; what it adds is a band width and a window width, and those are
+`**options` of one constructor just as `max_defects` already is. Registering it
+also does not make the authority ambiguous, because a name reaches one class and
+nothing compares two: the windowed name is the one a caller asks for when the
+history is longer than the matcher's budget, and the authority's name is the one
+it asks for otherwise.
 
 Registration is checked at registration time, while the registering module is
 being imported. `register_decoder` refuses a name that is not a non-empty string,

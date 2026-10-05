@@ -29,6 +29,8 @@ from pathlib import Path
 
 import pytest
 
+from flagquantum.qec import decoder_names
+
 pytestmark = pytest.mark.integration
 
 stim = pytest.importorskip("stim")
@@ -170,7 +172,12 @@ def test_the_qec_golden_path_runs_and_reports_its_premises():
     # column count is the model's rather than the sampler's, so this pair pins the
     # default and the reading at once.
     assert values["sampled detection events"] == "(4000, 42)"
-    assert values["registered decoders"] == "minimum_weight_matching, pymatching"
+    # The registry is read rather than restated: the golden path prints whatever
+    # names it holds, and this pins the family the guide documents as reachable
+    # by name instead of a count that would move with every registration.
+    registered = [name.strip() for name in values["registered decoders"].split(",")]
+    assert set(registered) == set(decoder_names())
+    assert "minimum_weight_matching" in registered
     assert values["default reading"] == "219 mechanisms, 113 hyperedges"
     assert values["graphlike reading"] == "78 mechanisms, unique True"
     assert values["matcher on default"].startswith("CapabilityError")

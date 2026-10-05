@@ -57,11 +57,11 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
 | `qec_dem_matrices_and_rates` | partial | now | — | Orientation matches, the error-id column and the context object landed; no per-mechanism rates vector, no canonicalization. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
-| `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
+| `qec_dem_chunking` | absent | later | — | No chunks and no seams, so the windowed decoder decides a whole history band by band rather than consuming a stream. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a belief-propagation decoder with ordered statistics all landed; no sliding window, no name for the hyperedge decoder, no plugin boundary. |
-| `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a windowed reading of it registered beside the exact one, its PyMatching cross-check, a name-keyed registry, and a belief-propagation decoder with ordered statistics all landed; no streaming entry point over a chunk seam, no name for the hyperedge decoder, no plugin boundary. |
+| `qec_decoder_configuration` | absent | later | — | A band and a window are constructor options of one decoder rather than a configuration schema over several; a schema waits until a selection has to carry settings a caller cannot state at the constructor. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | partial | later | `qec_logical_operations` | Product rotation landed as a code-declaration operation: a candidate logical product is certified against the code's own checks and one observable's partner is derived over GF(2); lattice surgery and distillation are still absent. |
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
@@ -423,8 +423,10 @@ searches for, `flagquantum/qec/lattice_surgery.py` and
 about the operator and not about a probability: a certified product is not
 thereby a corrected logical qubit, and no protocol that measures or protects one
 is built here. The remaining work is a patch identity that survives a round
-boundary, which is the same prerequisite the chunk and seam row names for its own
-sliding window, and it is not delivered by either row today.
+boundary, which is the same prerequisite the chunk and seam row names for a
+streamed decode, and it is not delivered by either row today. The windowed
+matcher in the decoder row reads a whole history one band at a time and needs no
+such identity, because it never holds two chunks of a history at once.
 
 ## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
@@ -684,8 +686,9 @@ refuses.
    be `aligned` while the thing it documents is not. What that costs is measured
    rather than asserted — the default reading of a decomposed mechanism gives an
    observable marginal 2.1 standard errors from stim's own sampler at 200000
-   shots and both registered decoders refuse the model because it is not
-   graphlike, while the graphlike reading is accepted and misses by 56.
+   shots and every registered decoder that reads a pair-graph refuses the model
+   because it is not graphlike, while the graphlike reading is accepted and
+   misses by 56.
 
 4. **`qec_stim_integration` named one maturity entry for two capabilities.** The
    row pointed at `stabilizer_sampling`, which is the sampling half, while the
@@ -827,9 +830,9 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_from_css_matrices` | reshaped | Same code-capacity geometry, reached from two keyword matrices instead of one four-matrix record; `hx`/`lx` and the extended-record sibling have no counterpart. The rates arrive as a separate `PhenomenologicalNoise` rather than folded into one `CssNoise`, and the vectors are read against these matrices. |
 | `dem_from_memory_circuit` | reshaped | Upstream takes code + operation + rounds + noise model and is split by basis; here the circuit carries rounds and basis, and the noise record states the four families with a per-qubit and per-check override each. The context matches, but upstream canonicalizes lazily against a uniform per-round D layout and here the components are projections of the model as built. |
 | `dem_code_capacity_noise` | reshaped | The four families line up one for one against X/Y/Z data rates plus a measurement rate, scalars and per-qubit/per-check vectors alike, with the same wholesale override. The difference is the carrier: a standalone record read beside a code rather than a field of the matrix entry point's argument, so the vector lengths are validated against a count the reader supplies. |
-| `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, but a sliding window would need it. |
+| `dem_canonicalize` | absent | No round-structure operation; the matcher decodes across rounds without one, and the windowed reading of it needs none either, because its bands are cut on detector index rather than on a canonical round layout -- a streamed decode over chunks is where such an operation would be needed. |
 | `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |
-| `dem_seam_and_chunk_api` | absent | Monolithic model; no chunk, no seam, nothing to slide a window over. |
+| `dem_seam_and_chunk_api` | absent | Monolithic model; no chunk and no seam, so the windowed decoder cuts bands out of a whole history instead of consuming chunks of one. |
 | `dem_measurement_to_detector_map` | reshaped | One `MeasurementMap` record against a stored dense D matrix plus free-function sparse helpers: it projects to both forms, but the chunk-scoped helpers have no counterpart. |
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |
 | `kernel_dem_from_kernel` | absent | CUDA-Q core derives the DEM from the kernel's own annotations; here it is assembled by hand. |

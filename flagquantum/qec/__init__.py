@@ -53,6 +53,7 @@ from .pauli import Pauli
 from .registry import (
     AUTHORITY_NAME,
     CROSS_CHECK_NAME,
+    SLIDING_WINDOW_NAME,
     DetectorErrorModelDecoder,
     decoder_names,
     get_decoder,
@@ -60,6 +61,7 @@ from .registry import (
 )
 from .repetition import run_repetition_memory_experiment
 from .sampling import sample_memory_circuit
+from .sliding_window import SlidingWindowMatchingDecoder
 from .types import (
     Correction,
     DecodeResult,
@@ -119,6 +121,8 @@ __all__ = (
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
     "RotatedSurfaceCode",
+    "SLIDING_WINDOW_NAME",
+    "SlidingWindowMatchingDecoder",
     "StabilizerCode",
     "SteaneCode",
     "SyndromeRound",

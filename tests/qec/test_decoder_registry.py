@@ -44,6 +44,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
     AUTHORITY_NAME,
     CROSS_CHECK_NAME,
+    SLIDING_WINDOW_NAME,
     DecodingGraph,
     DetectorErrorModel,
     DetectorErrorModelDecoder,
@@ -86,7 +87,9 @@ def test_the_registry_names_the_authority_and_the_cross_check() -> None:
     assert names == tuple(sorted(names))
 
 
-@pytest.mark.parametrize("name", [AUTHORITY_NAME, CROSS_CHECK_NAME])
+@pytest.mark.parametrize(
+    "name", [AUTHORITY_NAME, CROSS_CHECK_NAME, SLIDING_WINDOW_NAME]
+)
 def test_every_registered_name_builds_a_decoder_that_decodes(name: str) -> None:
     """Every name answers on every host, and the optional one says which host it is.
 
@@ -247,7 +250,7 @@ def test_a_registration_can_be_replaced_when_the_caller_says_so() -> None:
 
 def test_the_registry_keeps_the_input_family_and_not_the_repetition_decoders() -> None:
     registered = set(decoder_names())
-    assert {"minimum_weight_matching", "pymatching"} == registered
+    assert {AUTHORITY_NAME, CROSS_CHECK_NAME, SLIDING_WINDOW_NAME} == registered
     assert RepetitionLookupDecoder is not None
     assert not hasattr(RepetitionLookupDecoder, "from_detector_error_model")
     assert isinstance(get_decoder(AUTHORITY_NAME, _model()), DetectorErrorModelDecoder)

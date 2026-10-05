@@ -79,6 +79,37 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
+A syndrome the budget refuses is the case `sliding_window.py` exists for. A
+memory experiment's defect count grows with its rounds, so a long history is
+exactly where the exact matcher stops answering; the windowed decoder answers it
+by deciding a band of detectors at a time against a window of them, with the
+budget bounding one window's syndrome rather than the whole history's. It returns
+the same result record as the matcher, and with one window over the whole graph it
+selects the same mechanisms. A narrow window is a decision about a window, so
+observable agreement is bought with the width and not guaranteed, and no threshold
+or logical error rate is estimated from it:
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    SlidingWindowMatchingDecoder,
+    build_memory_circuit,
+)
+
+long_model = DetectorErrorModel.from_memory_circuit(
+    build_memory_circuit(RepetitionCode(distance=3), rounds=60),
+    noise=PhenomenologicalNoise(data_flip=0.04, measurement_flip=0.04),
+).merge_duplicate_mechanisms()
+bands = SlidingWindowMatchingDecoder.from_detector_error_model(long_model)
+print(bands.commit, bands.window, bands.mechanism_span)
+```
+
+`get_decoder("sliding_window_matching", model, commit=..., window=...)` reaches
+the same decoder by name, and `get_decoder("minimum_weight_matching", model)`
+reaches the exact matcher.
+
 One fault stated twice is a second refusal, and merging is the repair. A model
 whose mechanisms repeat a signature — the same detectors *and* the same
 observables — is one a matcher must not weight, because the graph would hold two
@@ -561,6 +592,9 @@ is the runnable form of the same route.
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model decoder,
+[sliding_window.py](sliding_window.py) for the same decoder over a band of
+detectors at a time, [bposd.py](bposd.py) for the hyperedge decoder,
+[registry.py](registry.py) for reaching a decoder by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
