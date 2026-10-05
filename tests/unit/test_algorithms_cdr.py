@@ -774,7 +774,10 @@ def test_the_assumptions_and_limitations_name_what_the_unit_does_not_do() -> Non
     assert "same noise" in text
     assert "affine" in text
     assert "no confidence interval" in text
-    assert "Readout-error mitigation is absent" in text
+    # Readout-error mitigation now exists as its own unit, so the sentence this
+    # asserts is that it is separate rather than that it is missing; asserting the
+    # old wording would pin the unit's removal instead of its boundary.
+    assert "Readout-error mitigation is a separate unit beside this one" in text
     assert "circuit folding" in text
     assert CDR_LIMITATIONS and all(statement for statement in CDR_LIMITATIONS)
 

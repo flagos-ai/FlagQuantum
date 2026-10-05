@@ -771,7 +771,7 @@ def test_the_declared_limitations_name_what_the_unit_does_not_do() -> None:
     assert "sampling_overhead is gamma squared" in text
     assert "survives the combination" in text
     assert "four terms per single-qubit noise location" in text
-    assert "Readout-error mitigation is absent" in text
+    assert "readout-error mitigation is a third" in text
     assert "Clifford data regression is a separate unit beside this one" in text
     assert "no gate-folding scale factor is offered" in text
     assumptions = " ".join(PEC_ASSUMPTIONS)

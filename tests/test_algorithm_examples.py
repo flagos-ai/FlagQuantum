@@ -47,6 +47,7 @@ SCRIPTS = (
     "error_mitigation",
     "pec",
     "cdr",
+    "readout_mitigation",
     "spsa_optimizer",
     "nelder_mead_optimizer",
     "trotter",
@@ -129,6 +130,19 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "cdr": (
         "affine in the noisy one",
         "never exploited",
+    ),
+    # Two halves again. "the confusion the model declares is the device's readout
+    # behaviour" is the assumption the inversion rests on and the reason a
+    # corrected vector landing on the ideal one is a statement about the model
+    # rather than about a device, and "not a free improvement" is what the method
+    # gives up to be exact: inverting a stochastic matrix amplifies sampling
+    # noise, and the amplification is reported as a number rather than absorbed.
+    # Neither phrase covers its half's supporting detail -- the uncovered qubits
+    # that are left alone, or the negative mass a corrected vector is allowed to
+    # carry -- both of which can be dropped while the phrase remains.
+    "readout_mitigation": (
+        "is the device's readout behaviour",
+        "not a free improvement",
     ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
@@ -473,6 +487,72 @@ def test_cdr_example_fits_the_noise_and_reads_the_residual() -> None:
         "CapabilityError -- instruction 1 'ccx' is not a Clifford gate"
     )
     _assert_premise("cdr", output)
+    assert "take away" in output
+
+
+def test_readout_mitigation_example_corrects_and_reports_what_it_cost() -> None:
+    output = _run("readout_mitigation")
+
+    assert (
+        "readout-error mitigation -- flagquantum.algorithms.readout_mitigation"
+        in output
+    )
+    # The correction is exact on the one-qubit case and carries the uncovered
+    # qubit through untouched, so the error is the floor of inverting one 2 by 2
+    # matrix rather than a value fitted to the assertion.
+    assert _labelled(output, "blocks") == "[[1]]"
+    assert _labelled(output, "covered qubits") == "[1]"
+    assert _labelled(output, "uncovered qubits") == "[0]"
+    assert (
+        _labelled(output, "measured")
+        == "['0.080000', '0.920000', '0.000000', '0.000000']"
+    )
+    assert _labelled(output, "corrected") == (
+        "['0.000000000000', '1.000000000000', '0.000000000000', '0.000000000000']"
+    )
+    assert float(_labelled(output, "largest error")) < 1e-15
+    # A correlated pair is one block of four rows, not two one-qubit blocks.
+    assert _labelled(output, "block width") == "4"
+    assert _labelled(output, "smallest singular value") == "0.760000"
+    # The reported amplification is the whole map's, and it is the product over
+    # blocks rather than the worst block's. The identity steps assert the product
+    # rather than pinned overheads, so a different but equally correct confusion
+    # moves all three numbers together instead of breaking one of them.
+    one = float(_labelled(output, "one-qubit amplification"))
+    pair = float(_labelled(output, "pair amplification"))
+    assert one > 1.0 and pair > 1.0
+    assert pair == pytest.approx(float(_labelled(output, "pair condition number")))
+    # The one-qubit plan is a single block, so there the product is the block's
+    # own amplification. The correlated pair amplifies *more* at a smaller
+    # per-qubit error than the singleton does at a larger one, because its
+    # smallest singular value is further from zero -- which is the reason the
+    # number is reported per device rather than inferred from the error rates.
+    assert pair > one
+    # The cost is quoted per shot: the bound the example prints is the one-qubit
+    # amplification over the square root of the count it printed, so the two
+    # numbers cannot drift apart without one of them being wrong.
+    # Both numbers are printed at nine decimals, so the tolerance is the print's
+    # own rounding rather than a number chosen to make this pass.
+    shots = int(_labelled(output, "shots"))
+    bound = float(_labelled(output, "standard error bound"))
+    assert abs(bound - one / shots**0.5) < 1e-9
+    # A corrected vector is not obliged to be a distribution: the negative mass is
+    # summed and the result says which side of the simplex it landed on instead of
+    # being clipped into one.
+    assert _labelled(output, "skewed corrected") == "['1.166667', '-0.166667']"
+    assert float(_labelled(output, "negative mass")) > 0.0
+    assert _labelled(output, "is_physical") == "False"
+    # The histogram path reads qubit 0 leftmost and normalizes by its own total.
+    assert _labelled(output, "total shots") == "4000"
+    # Three refusals, each naming what it measured: a singular value against the
+    # floor, a block width against the ceiling's matrix size, and a key length
+    # against the plan's width.
+    assert "smallest singular value" in _labelled(output, "a maximally confused qubit")
+    assert "exceeds the 10-qubit ceiling" in _labelled(output, "a block of 11 qubits")
+    assert "not a 2-character bit string" in _labelled(
+        output, "a one-character histogram"
+    )
+    _assert_premise("readout_mitigation", output)
     assert "take away" in output
 
 

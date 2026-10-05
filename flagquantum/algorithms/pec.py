@@ -39,8 +39,8 @@ A spectrum that comes within the same tolerance of zero is refused for the same
 reason: the weights would exceed ``1e6`` and the exact combination's own rounding
 would dominate the answer it reported.
 
-**What is not here.** Readout-error mitigation is absent, and Clifford data
-regression is a separate unit beside this one --
+**What is not here.** Clifford data regression is a separate unit beside this
+one --
 :func:`flagquantum.algorithms.run_cdr` fits the noise's effect on near-Clifford
 circuits rather than inverting a channel. The estimate is a point value with no
 confidence interval, because this slice combines exact state expectations rather
@@ -148,8 +148,11 @@ PEC_LIMITATIONS: tuple[str, ...] = (
     "The program is re-executed once per term from its IR, and an IR begins at the "
     "all-zero state, so a circuit that declares its own input state is refused "
     "rather than measured from a different state than the one it declares.",
-    "Readout-error mitigation is absent, and Clifford data regression is a "
-    "separate unit beside this one rather than a mode of it, so no gate-folding "
+    "Clifford data regression is a separate unit beside this one rather than a "
+    "mode of it, and readout-error mitigation is a third: "
+    ":func:`flagquantum.algorithms.plan_readout_mitigation` inverts a declared "
+    "classical confusion on a measured vector rather than a channel on a state, "
+    "so no gate-folding "
     "scale factor is offered either: the inverse is built from the channel's Pauli "
     "transfer matrix rather than by folding gates, so the cost is reported as a "
     "term count rather than as a fold count.",

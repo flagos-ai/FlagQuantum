@@ -17,6 +17,8 @@ python -m examples.algorithms.qarm
 python -m examples.algorithms.svd
 python -m examples.algorithms.error_mitigation
 python -m examples.algorithms.pec
+python -m examples.algorithms.cdr
+python -m examples.algorithms.readout_mitigation
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
@@ -60,6 +62,14 @@ What they show:
   nearest quarter turn, with the residual that exposes a premise which did not
   hold printed beside a two-point fit's residual reported as absent and a
   three-point fit's reported as a measurement.
+- [`readout_mitigation.py`](readout_mitigation.py): a declared readout confusion
+  inverted off a measured distribution, one block per readout rule, with the
+  amplification the correction costs printed beside the corrected vector, the
+  negative mass a corrected vector is allowed to carry summed and reported rather
+  than clipped away, a correlated pair shown inverted as one block rather than as
+  two marginals, and three refusals printed by measured quantity: a singular
+  value against the floor, a block width against the ceiling, and a bit-string
+  length against the plan's width.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.

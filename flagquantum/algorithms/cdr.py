@@ -53,7 +53,8 @@ than the target fits a correction for a difference that is not there.
 **What is not here.** The estimate is a point value with no error bound and no
 confidence interval, because this slice evaluates exact state expectations rather
 than samples; nothing guarantees it is closer to the ideal value than the
-unmitigated one. Readout-error mitigation is absent. Circuit folding is absent.
+unmitigated one. Circuit folding is absent, and readout-error mitigation is a
+separate unit beside this one.
 
 Only the single-parameter rotations ``rx``, ``ry``, ``rz``, ``phase`` and ``u1``
 are snapped, and a program containing none of them is refused with that list,
@@ -199,8 +200,11 @@ CDR_LIMITATIONS: tuple[str, ...] = (
     "model names an operation the rewrite removes, rather than trained under "
     "less noise than the target; a caller who needs it supplies variants and owns "
     "the claim that those circuits receive the declared noise.",
-    "Readout-error mitigation is absent, and a model that declares a readout rule "
-    "is refused rather than measured without it: readout confusion is a classical "
+    "Readout-error mitigation is a separate unit beside this one -- "
+    ":func:`flagquantum.algorithms.plan_readout_mitigation` inverts a declared "
+    "classical confusion on a measured vector, after measurement -- and a model "
+    "that declares a readout rule is refused rather than measured without it, "
+    "because readout confusion is a classical "
     "misassignment applied after measurement, so it is not part of rho and this "
     "path cannot see it, while correcting a value that omits it would return a "
     "state-preparation estimate under the name of a measured one.",

@@ -16,6 +16,7 @@ from . import pec as pec
 from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
+from . import readout_mitigation as readout_mitigation
 from . import spsa as spsa
 from . import svd as svd
 from . import trotter as trotter
@@ -99,6 +100,20 @@ from .pec import (
     pauli_twirl_decomposition,
     run_pec,
 )
+from .readout_mitigation import (
+    MAX_CORRELATED_BLOCK_QUBITS,
+    NORMALIZATION_TOLERANCE,
+    READOUT_MITIGATION_ASSUMPTIONS,
+    READOUT_MITIGATION_LIMITATIONS,
+    READOUT_MITIGATION_SCHEMA,
+    SINGULAR_VALUE_FLOOR,
+    ReadoutBlock,
+    ReadoutMitigationPlan,
+    ReadoutMitigationResult,
+    plan_readout_mitigation,
+    run_readout_mitigation,
+    run_readout_mitigation_counts,
+)
 from .spsa import SPSAOptimizer
 from .trotter import (
     TROTTER_ORDERS,
@@ -172,9 +187,22 @@ __all__ = [
     "pec",
     "qaoa_circuit",
     "qaoa_loss",
+    "MAX_CORRELATED_BLOCK_QUBITS",
+    "NORMALIZATION_TOLERANCE",
+    "READOUT_MITIGATION_ASSUMPTIONS",
+    "READOUT_MITIGATION_LIMITATIONS",
+    "READOUT_MITIGATION_SCHEMA",
+    "ReadoutBlock",
+    "ReadoutMitigationPlan",
+    "ReadoutMitigationResult",
+    "SINGULAR_VALUE_FLOOR",
+    "plan_readout_mitigation",
     "qarm",
     "quantum_kernel",
     "qubo",
+    "readout_mitigation",
+    "run_readout_mitigation",
+    "run_readout_mitigation_counts",
     "run_hybrid_vqe",
     "run_layerwise_vqe",
     "run_vqe",

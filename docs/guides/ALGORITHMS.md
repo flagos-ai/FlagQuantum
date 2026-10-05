@@ -1165,7 +1165,9 @@ and no confidence interval is computed or reported. That is why a noise model th
 a readout rule is refused rather than measured without it. Classical readout confusion is
 applied after measurement, so it is not in `rho`, and extrapolating a curve that omits it
 would return a state-preparation estimate under the name of a measured one. The refusal is
-by name rather than a silent omission; readout-error mitigation is absent from this unit.
+by name rather than a silent omission, and the correction itself is a separate unit —
+[readout-error mitigation](#readout-error-mitigation) below, which inverts a declared
+confusion on a measured vector rather than on a state.
 `variance_amplification` is the factor by which the fitted weights would amplify the
 variance of a shot-based estimate of the same points — it is a property of the scale grid
 and the fitted degree alone, and it is not a measured variance.
@@ -1492,12 +1494,134 @@ A training set whose noisy values do not separate is refused at a declared floor
 the span rather than fitted on rounding, and the training set is capped at `64` circuits,
 which is `128` exact simulations.
 
-**Not here:** readout-error mitigation, and any error bound, confidence interval or guarantee
-of improvement over the unmitigated value. Nothing here is cheaper than the target it
+**Not here:** any error bound, confidence interval or guarantee of improvement over the
+unmitigated value — and readout-error mitigation, which is a separate unit beside this one:
+[readout-error mitigation](#readout-error-mitigation) below corrects a measured vector for a
+declared confusion, while this unit fits a value that was never read out through one. Nothing here is cheaper than the target it
 corrects, and no claim is made that the training circuits being Clifford saved this path any
 simulation. No demonstration here is a performance, scaling, hardware or fault-tolerance
 claim: the whole path is single-process CPU density-matrix work on two-wire circuits, and the
 noise it fits is the one the caller declared.
+
+## Readout-error mitigation
+
+`readout_mitigation.py` is the fourth error-mitigation unit and the one the other three named
+as absent. It corrects a **measured distribution** for a classical confusion the caller's
+`NoiseModel` declares. `plan_readout_mitigation(noise_model, n_qubits=...)` returns a
+`ReadoutMitigationPlan`: one `ReadoutBlock` per readout rule, each carrying the declared
+confusion, its exact inverse, its smallest singular value, its condition number and its
+amplification; `run_readout_mitigation(observed, plan, shots=...)` applies the plan to a
+distribution and returns a `ReadoutMitigationResult`; `run_readout_mitigation_counts(counts,
+plan)` does the same for a histogram the runtime keys with qubit `0` leftmost.
+
+**The correction is the transpose inverse, and that transposition is the whole of the index
+convention.** A calibration table is written with the **true** value as the row index; the
+runtime's flat index space is a column vector whose qubit `0` is the most significant bit, and
+`NoiseModel.apply_readout_probabilities` applies the declared matrix **transposed** to it. The
+block's correcting operator is therefore `inv(P.T)`, not `inv(P)`. The two agree on a symmetric
+confusion and differ on every asymmetric one, so the unit asserts the relation directly rather
+than through agreement with a symmetric table: on `((0.9, 0.1), (0.2, 0.8))` the two inverses
+differ by `0.09` in the maximum entry.
+
+**A rule on several qubits is one block, not its marginals.** `ReadoutRule((0, 1), error)`
+names a two-qubit confusion, and inverting it as two one-qubit rules would invert a different
+operator: the correlated table this unit is measured on does not factorize, and its joint form
+read as a matrix has a second singular value of `3.4e-01` rather than the zero a tensor product
+would leave. A plain `ReadoutError` naming one qubit is one block of two rows; a
+`CorrelatedReadoutError` on `k` qubits is one block of `2**k` rows. Blocks are disjoint because
+a qubit named by two rules is refused — the forward path would confuse it twice and the
+inverse of a doubled confusion is not the correction of either — and they are ordered by their
+first qubit so two plans built from the same rules in a different order are the same plan.
+
+**The amplification is the whole map's, and it composes as a product.** The number the unit
+reports is `||inv(M)||_1` of the whole map, which is the factor by which a shot-based estimate
+of anything read off the corrected vector has its standard error multiplied. For a map that is
+the tensor product of disjoint blocks that norm is exactly the **product** of the blocks' own
+`||inv(P_b)||_1`, not the worst block's — the two coincide only when there is one block.
+`plan.sampling_overhead` is that product and `plan.summary()["limiting_block"]` names the
+factor that dominates it. The standard error bound the result carries is the plan's
+amplification over the square root of the shot count, `||inv(M)||_1 / sqrt(N)`, which follows
+because `||M^-T w||_inf <= ||w||_inf ||M^-T||_inf` and `||M^-T||_inf = ||M^-1||_1`. The exact
+per-component variance of the corrected weight is the full covariance `(diag(d) - d d^T)/N`
+with `d = M p` the **device** distribution, not the `sum_i v_i**2 d_i (1 - d_i)` a naive
+per-outcome reading gives — the `(v^T d)^2` term is what the naive form drops, and dropping it
+was measured `40%` low (`0.0463` against `0.0643`) on the two-wire case the unit is tested on.
+
+**The corrected vector is not obliged to be a distribution.** The inverse of a stochastic
+matrix has negative entries whenever the confusion is invertible and is not a permutation, so
+a corrected vector routinely carries negative mass; on the measured case `[0.9, 0.1]` under a
+`0.2` symmetric confusion it reads `[1.166667, -0.166667]`, with the negative mass summed and
+reported beside it. **Clipping that mass would return a different vector under the same name**,
+so it is not clipped: `negative_mass` is the sum of the negative entries, `total_variation` is
+the L1 distance to the observed vector, and `is_physical` states which side of the simplex the
+result landed on rather than asserting that it must be inside. Nothing here refits, smooths or
+projects onto the simplex, and no maximum-likelihood correction is offered.
+
+**The premise is the model's and nothing here checks it.** The correction is exact exactly
+when the declared confusion is the device's confusion. A readout error that is miscalibrated,
+that drifts between calibration and use, or that is correlated in a way the model does not
+carry survives the inversion untouched, and a corrected vector that lands on the ideal one is
+a statement about **the model** before it is a statement about a device. The unit is also not
+a free improvement: the amplification it reports is the price, it is paid in shots rather than
+in gates, and a device confused on many qubits pays the product of its blocks' amplifications.
+
+```python
+import torch
+
+from flagquantum.algorithms import plan_readout_mitigation, run_readout_mitigation
+from flagquantum.noise import NoiseModel, ReadoutError, ReadoutRule
+
+model = NoiseModel(
+    readout_rules=[ReadoutRule((1,), ReadoutError(((0.92, 0.08), (0.08, 0.92))))]
+)
+plan = plan_readout_mitigation(model, n_qubits=2)
+print(plan.covered_qubits, plan.uncovered_qubits)
+# (1,) (0,)
+
+observed = torch.tensor([0.08, 0.92, 0.0, 0.0], dtype=torch.float64)
+result = run_readout_mitigation(observed, plan, shots=4000)
+print([f"{value:.12f}" for value in result.probabilities.tolist()])
+# ['0.000000000000', '1.000000000000', '0.000000000000', '0.000000000000']
+
+print(f"{plan.sampling_overhead:.9f}", f"{result.standard_error_bound:.9f}")
+# 1.190476190 0.018823081
+```
+
+Qubit `0` there carries no rule, so it is left exactly where it was and is recorded as
+uncovered rather than given a guessed confusion; the error against the exact distribution is
+`1.1e-16`, which is the float64 floor of inverting one `2 by 2` matrix rather than a value
+fitted to an assertion.
+
+**Coverage is computed, not trusted.** The plan derives which qubits its rules cover, checks
+that they are disjoint and in range, and reports the rest as uncovered: an uncovered qubit is
+left untouched because the correction is the identity there rather than because its confusion
+was assumed to be zero. The plan's `identity` is a digest of the confusion, the width and
+nothing else, so two plans built from the same rules in a different order are the same plan and
+a plan whose confusion changed is a different one.
+
+**Refusals, each by name.** A block whose smallest singular value reaches the declared floor —
+`1e-6` by default, `SINGULAR_VALUE_FLOOR`, matched to the decomposition tolerance
+`probabilistic error cancellation` uses — is refused rather than inverted, because the inverse's
+magnitude grows as the reciprocal of that singular value and the correction would report
+weights no shot count can support; the refusal prints the singular value it measured and the
+floor it was given, and the floor is the caller's, so a tighter one refuses more. A qubit named
+by two readout rules is refused rather than composed. A correlated block wider than
+`MAX_CORRELATED_BLOCK_QUBITS` qubits is refused before its matrix is built, because inverting
+it needs a `2048 by 2048` float64 matrix and its singular values. A correlated rule whose
+declared width disagrees with the size of its matrix is refused by the noise model itself, so
+the two cannot disagree. A histogram whose keys are not all the plan's width, whose total is
+zero, or whose counts are negative or boolean is refused; an observed distribution whose rows
+fall further from one than `NORMALIZATION_TOLERANCE` is refused, and one inside that tolerance
+is corrected rather than rescaled silently.
+
+**Not here:** any smoothing, refitting or maximum-likelihood projection that would restore
+positivity; any tensored approximation for a block wider than the ceiling; any correction of a
+confusion the model does not carry; and any assumption that the declared confusion is the
+device's. This unit also carries no error bound beyond the amplification-over-`sqrt(N)` bound
+above, which is a bound on the corrected weight's standard error and not a bound on the
+correction's error against the truth. No demonstration here is a performance, scaling or
+hardware claim: the whole path is single-process CPU linear algebra on vectors the caller
+supplies, and the confusion it inverts is the one the caller declared.
 
 ## SPSA optimization
 

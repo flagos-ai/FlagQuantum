@@ -111,8 +111,11 @@ _ZERO_ARGUMENT_LIMITATIONS: tuple[str, ...] = (
     "shots, reports no confidence interval, and its estimate carries no measured "
     "uncertainty; variance_amplification is the factor a shot-based estimate "
     "would inherit from the same weights.",
-    "Readout-error mitigation is absent, and a model that declares a readout rule "
-    "is refused rather than measured without it: readout confusion is a classical "
+    "Readout-error mitigation is a separate unit beside this one -- "
+    ":func:`flagquantum.algorithms.plan_readout_mitigation` inverts a declared "
+    "classical confusion on a measured vector, after measurement -- and a model "
+    "that declares a readout rule is refused rather than measured without it, "
+    "because readout confusion is a classical "
     "misassignment applied after measurement, so it is not part of rho and this "
     "path cannot see it, while extrapolating a curve that omits it would return a "
     "state-preparation estimate under the name of a measured one.",

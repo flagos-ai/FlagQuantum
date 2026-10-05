@@ -45,7 +45,8 @@ executed by `tests/test_algorithm_examples.py`.
   simulation cost is saved here and no capacity claim follows. A model that
   names an operation the rewrite removes is refused rather than fitted on
   circuits that receive less noise than the target, and a model that declares a
-  readout rule is refused for the same reason `error_mitigation.py` refuses one.
+  readout rule is refused rather than trained around it, and
+  `readout_mitigation.py` is the unit that corrects for one.
   The estimate carries no error bound: the fit's residual is the only diagnostic
   that exposes an affine premise that does not hold, and it is reported as absent
   for a two-point fit rather than as an arithmetic zero.
@@ -66,7 +67,23 @@ executed by `tests/test_algorithm_examples.py`.
   transfer spectrum reaches zero, are refused by name; `gamma` and the `gamma**2`
   shot cost a sampled implementation would pay are reported beside the estimate,
   together with the term count the run actually spends. Readout-error mitigation
-  is absent, and Clifford data regression is a separate unit beside it.
+  and Clifford data regression are separate units beside it.
+- `readout_mitigation.py`: readout-error mitigation — a declared classical
+  confusion is inverted off a measured distribution. `NoiseModel`'s readout rules
+  are grouped into blocks, one block per rule, a rule naming several qubits being
+  inverted as one block rather than as its marginals; each block's inverse is
+  applied to the measured vector and the block's amplification — the induced
+  1-norm of its inverse, which is what a shot-based estimate inherits — is
+  reported, composing over blocks as a **product** rather than as the worst
+  block's. The correction is not forced onto the simplex: a corrected vector
+  routinely carries negative mass, and it is summed and reported beside the
+  vector rather than clipped, because clipping would return a different vector
+  under the same name. A block whose smallest singular value reaches the declared
+  floor is refused by name rather than inverted into weights no shot count can
+  support, a qubit named by two rules is refused rather than confused twice, and
+  a correlated block wider than the ceiling is refused before its matrix is
+  built. The premise is that the declared confusion is the device's confusion and
+  nothing here checks that.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has
