@@ -96,7 +96,10 @@ def _data_family_rates(
 
 
 def _memory_circuit_entries(
-    circuit: MemoryCircuit, noise: PhenomenologicalNoise
+    circuit: MemoryCircuit,
+    noise: PhenomenologicalNoise,
+    *,
+    decompose_composite_faults: bool = False,
 ) -> tuple[int, int, tuple[Entry, ...]]:
     """Return the model shape and every mechanism a memory circuit contains.
 
@@ -107,6 +110,27 @@ def _memory_circuit_entries(
     match its layouts fails closed with a stated reason instead of building a
     model that misdescribes it.
 
+    ``decompose_composite_faults`` decides how a composite data fault -- the Y
+    family, one fault that is an X flip and a Z flip at one location -- is
+    enumerated. Read the default way, it is one mechanism whose signature is the
+    XOR of the two parts, which is what the fault does and what
+    :mod:`tests.qec.test_data_fault_families` pins. Read the other way, it is two
+    faults, the X part and the Z part, each enumerated at the parent's own rate
+    and forced at the parent's own round and qubit. The two readings describe
+    different distributions and not two encodings of one: read together the parts
+    always fire together, read apart they fire independently, so a detector's
+    marginal flip rate is the same under both to floating-point rounding while the
+    joint law is not. What the second reading buys is a mechanism of at most two
+    detectors where the first states one of more, which is the shape a
+    minimum-weight matcher weights -- the parts of a composite fault are read off
+    the program exactly as the X and Z faults of their own families are, so they
+    are as graphlike as those families are and no more.
+
+    A part that flips nothing is an entry with an empty signature, which
+    ``DetectorErrorModel._merge_mechanisms`` drops for every construction route
+    alike; no separate rule is stated here, so a part cannot be dropped under one
+    reading and kept under the other.
+
     The detector and observable counts come from the circuit's own layouts rather
     than from a count re-derived from the code, so the returned shape and the
     returned signatures are read from one authority.
@@ -116,29 +140,35 @@ def _memory_circuit_entries(
         raise TypeError("circuit must be a MemoryCircuit")
     if not isinstance(noise, PhenomenologicalNoise):
         raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(decompose_composite_faults, bool):
+        raise TypeError("decompose_composite_faults must be a bool")
     entries: list[Entry] = []
     for mechanism in _mechanisms(circuit, noise):
-        if mechanism.kind in _FAULT_GATES:
-            source = _inject_data_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                wire=mechanism.wire,
-                kind=mechanism.kind,
-            )
-        elif mechanism.kind == "measurement":
-            source = _inject_measurement_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                ancilla_wire=mechanism.wire,
-            )
-        else:
-            # Unreachable through ``_mechanisms``, which sets the field from the
-            # annotation; stated for a caller that builds records itself, where a
-            # bare ``else`` would read an unknown kind as a measurement flip
-            # whenever the qubit is a declared ancilla.
-            raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
-        detectors, observables = _forced_signature(circuit, source)
-        entries.append((mechanism.probability, detectors, observables))
+        kinds: tuple[str, ...] = (mechanism.kind,)
+        if decompose_composite_faults and mechanism.kind == _COMPOSITE_KIND:
+            kinds = _COMPOSITE_PARTS
+        for kind in kinds:
+            if kind in _FAULT_GATES:
+                source = _inject_data_flip(
+                    circuit,
+                    round_index=mechanism.round_index,
+                    wire=mechanism.wire,
+                    kind=kind,
+                )
+            elif kind == "measurement":
+                source = _inject_measurement_flip(
+                    circuit,
+                    round_index=mechanism.round_index,
+                    ancilla_wire=mechanism.wire,
+                )
+            else:
+                # Unreachable through ``_mechanisms``, which sets the field from
+                # the annotation; stated for a caller that builds records itself,
+                # where a bare ``else`` would read an unknown kind as a
+                # measurement flip whenever the qubit is a declared ancilla.
+                raise ValueError(f"unknown mechanism kind {kind!r}")
+            detectors, observables = _forced_signature(circuit, source)
+            entries.append((mechanism.probability, detectors, observables))
     return len(circuit.detectors), len(circuit.observables), tuple(entries)
 
 
@@ -524,6 +554,14 @@ _FAULT_GATES: Mapping[str, tuple[str, ...]] = MappingProxyType(
         "both": ("H", "X", "H", "X"),
     }
 )
+
+# The composite family and the two single-Pauli parts it is the XOR of. The
+# sequence is stated once so a decomposition cannot name the parts in one order
+# here and another wherever the same fault is described, and so the claim that the
+# parts cover the composite exactly is a property of one tuple rather than of two
+# literals that happen to agree.
+_COMPOSITE_KIND: _MechanismKind = "both"
+_COMPOSITE_PARTS: tuple[_MechanismKind, ...] = ("data", "phase")
 
 
 @dataclass(frozen=True)

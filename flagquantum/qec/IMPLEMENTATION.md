@@ -129,8 +129,20 @@ model is exact for Pauli noise in the reference gate set.
 descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
 `from_memory_circuit` calls: it enumerates the locations a noise record
 configures, injects one at a time into the source program the circuit carries,
-and reads the flip set off the circuit's own detector and observable layouts.
-`_code_matrix_entries` is the **read** route: it takes the four CSS blocks
+and reads the flip set off the circuit's own detector and observable layouts. Its
+`decompose_composite_faults` argument is a second *reading* of those locations and
+not a second route: with it on, the one composite fault a memory circuit states —
+the Y family, an X flip and a Z flip at one location — is enumerated as those two
+parts at the parent's rate, each forced through the same injector at the parent's
+own round and wire, instead of as one mechanism whose signature is their XOR. The
+parts fire together in the composite fault and independently when read apart, so
+the two readings share every detector and observable marginal to floating-point
+rounding and share no joint law, and the mechanism sets are asserted to differ.
+The default is the combined reading; the option exists so that the
+minimum-weight matcher, which refuses a mechanism of three detectors, can be
+handed the shape it weights, and a repetition code or a one-round surface
+experiment reaches the same model either way. `_code_matrix_entries` is the
+**read** route: it takes the four CSS blocks
 (`hz[k, q]` is one when a Z-type check `k` sees data qubit `q`, `hx`, and the
 logical-operator matrices `lz` and `lx` in the same convention), and derives every
 signature combinatorially, with nothing lowered or executed.
