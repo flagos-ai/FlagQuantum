@@ -166,6 +166,26 @@ def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
         _write_private_json(path, payload)
 
 
+@pytest.mark.parametrize("unsafe_kind", ("missing", "public", "symlink"))
+def test_private_record_rejects_unsafe_parent(tmp_path: Path, unsafe_kind: str) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "missing":
+        path = tmp_path / "missing" / "smoke.json"
+    elif unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        path = private_parent / "smoke.json"
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        path = linked_parent / "smoke.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        _write_private_json(path, {"secrets_redacted": True})
+
+    assert not path.exists()
+
+
 @pytest.mark.parametrize(
     ("credential", "payload"),
     (

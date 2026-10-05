@@ -127,7 +127,9 @@ same identity for bounded polling, and writes a new mode-0600 record without
 credentials or raw vendor exception text. Both resolved credential values are
 scanned recursively through nested keys and values before JSON serialization,
 so escaped quotes, backslashes, or newlines cannot bypass the refusal check. It
-has no simulator fallback.
+has no simulator fallback. Its output parent must already be a private,
+non-symlink directory; live evidence is published without replacement only
+after both file contents and parent-directory metadata are synchronized.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private
 checkpoint directory, and an explicitly selected project. The acknowledgement

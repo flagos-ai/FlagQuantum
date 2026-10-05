@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import platform
 import socket
 from datetime import datetime, timezone
@@ -19,6 +18,7 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
     HOSTS,
@@ -321,11 +321,7 @@ def _write_private_redacted_json(
 ) -> None:
     if _contains_forbidden_value(payload, forbidden_values):
         raise RuntimeError("refusing to write evidence containing a credential value")
-    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-        stream.write(encoded)
+    write_private_json_exclusive(path, payload)
 
 
 def main() -> None:

@@ -154,6 +154,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   marker. Injected clients remain test evidence even when they return plausible
   provider identities, and the live command writes its diagnostic record but
   exits nonzero whenever hardware acceptance remains closed.
+- Smoke, system, training, evaluation, and replay records now require an
+  existing private, non-symlink output directory. Their shared exclusive writer
+  synchronizes file contents and parent-directory metadata, so live evidence
+  cannot be silently placed in a public or replaceable directory and then fail
+  final assembly for a preventable local-permission error.
 - A read-only host recheck confirmed that the SSH validation aliases differ
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and

@@ -4,6 +4,7 @@ import importlib
 import json
 import os
 import platform
+import stat
 from pathlib import Path
 
 import pytest
@@ -200,6 +201,50 @@ def test_private_writer_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
             payload,
             forbidden_values=("user-id-secret", "sdk-code-secret"),
         )
+
+
+def test_private_writer_syncs_file_and_parent_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    synced_types: list[int] = []
+    real_fsync = os.fsync
+
+    def record_fsync(descriptor: int) -> None:
+        synced_types.append(os.fstat(descriptor).st_mode)
+        real_fsync(descriptor)
+
+    monkeypatch.setattr("examples.qdiffusion_kaiwu.private_io.os.fsync", record_fsync)
+
+    _write_private_redacted_json(
+        tmp_path / "durable.json",
+        {"secrets_redacted": True},
+        forbidden_values=(),
+    )
+
+    assert any(stat.S_ISREG(mode) for mode in synced_types)
+    assert any(stat.S_ISDIR(mode) for mode in synced_types)
+
+
+@pytest.mark.parametrize("unsafe_kind", ("missing", "public", "symlink"))
+def test_private_writer_rejects_unsafe_parent(tmp_path: Path, unsafe_kind: str) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    if unsafe_kind == "missing":
+        path = tmp_path / "missing" / "record.json"
+    elif unsafe_kind == "public":
+        private_parent.chmod(0o755)
+        path = private_parent / "record.json"
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        path = linked_parent / "record.json"
+
+    with pytest.raises(ValueError, match="existing private, non-symlink"):
+        _write_private_redacted_json(
+            path, {"secrets_redacted": True}, forbidden_values=()
+        )
+
+    assert not path.exists()
 
 
 def test_live_system_validates_source_preflight_before_credentials() -> None:
