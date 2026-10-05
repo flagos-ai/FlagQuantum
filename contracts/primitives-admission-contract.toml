@@ -1,0 +1,340 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# `flagquantum.algorithms.primitives` is the one package in the repository whose public surface
+# is admitted by a stated rule rather than by a public-API decision. The rule has three
+# dimensions -- distribution semantics, differentiability, and the consumer that admits each
+# export -- and this contract is the measured record of all three for every export.
+#
+# The rule is stated for contributors in three places at three lengths. That is deliberate: the
+# one-sentence version lives where an importer reads it, the full version where the package is
+# documented, and the algorithm guide states it where a user asks why a unit is or is not in the
+# package. Three statements of one rule can drift, so this contract names the files and the
+# marker each one has to contain, and the gate checks the markers rather than trusting them.
+schema = "flagquantum_primitives_admission_contract_v1"
+maturity = "development_evidence"
+package = "flagquantum/algorithms/primitives"
+implementation = "flagquantum/algorithms/primitives/__init__.py"
+# The vocabulary is owned by `flagquantum/core/contracts.py` and read from there by the gate;
+# this list has to equal its `DistributionSemantics` arguments, in order.
+semantics_source = "flagquantum/core/contracts.py"
+default_semantics = "single_device_fast_path"
+authorization = [
+    "docs/api-changes/FQ-ALGORITHMS-PRIMITIVES-ADMISSION-20261019.md",
+]
+
+distribution_semantics_vocabulary = [
+    "single_device_fast_path",
+    "sharded_across_ranks",
+    "rank_local_replicated_kernel",
+    "manual_sliced_tensor_contraction",
+    "observable_term_parallel",
+    "data_parallel_replicated",
+    "replicated_per_rank",
+]
+
+# The files that state the rule for contributors, and the phrase each dimension is stated with.
+# One list, because it is one rule: a file that states two of the three dimensions is stating a
+# different rule, and the gate requires every marker in every file below.
+stated_in = [
+    "flagquantum/algorithms/primitives/__init__.py",
+    "flagquantum/algorithms/primitives/README.md",
+    "docs/guides/ALGORITHMS.md",
+]
+
+# The three dimensions of the rule.
+[[dimension]]
+name = "distribution_semantics"
+marker = "distribution semantics"
+
+[[dimension]]
+name = "differentiability"
+marker = "differentiability"
+
+[[dimension]]
+name = "consumers"
+marker = "consumer"
+
+# The three answers the differentiability dimension accepts. `no_tensor_argument` and
+# `classical_tensor_input` are the two that hold today; `differentiable_tensor_input` has no row
+# yet, and it is declared rather than left unexpressible so that the first export to claim a
+# gradient has to name the test that proves it instead of asserting one.
+[differentiability]
+
+[[differentiability.shape]]
+name = "no_tensor_argument"
+statement = "The export takes no torch.Tensor, so there is no tensor path and nothing is claimed."
+[[differentiability.shape]]
+name = "classical_tensor_input"
+statement = "The export takes a torch.Tensor and reads it as classical data: the values are consumed by a classical computation and emitted as fixed gate angles, so no gradient flows back to the argument and the contract records the command that showed it."
+[[differentiability.shape]]
+name = "differentiable_tensor_input"
+statement = "The export takes a torch.Tensor and the gradient flows back through it; the contract names the existing test that proves it, function by function."
+
+# One row per export of the package, ordered as the package orders its `__all__`. Every field
+# below except the differentiability judgement is measured from the tree by
+# `tools/check_primitives_admission_contract.py --measure`; the judgement is stated per export
+# and the gate requires the two to agree.
+
+[[primitive]]
+name = "AmplitudeOperator"
+module = "flagquantum/algorithms/primitives/types.py"
+admission_basis = "confirmed"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/amplitude_estimation.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A protocol. It declares a plain-application method and three amplitude-level methods, so it has no tensor argument and no gradient of its own; the differentiability of one of its implementations belongs to that implementation."
+
+[[primitive]]
+name = "ControlledUnitary"
+module = "flagquantum/algorithms/primitives/types.py"
+admission_basis = "grounded_expectation"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = ["flagquantum/algorithms/primitives/phase_estimation.py"]
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A protocol whose three methods take a circuit and qubit indices. It carries no tensor, so there is nothing here to differentiate, and a differentiable implementation declares that in its own module."
+
+[[primitive]]
+name = "PhaseEstimationSpec"
+module = "flagquantum/algorithms/primitives/phase_estimation.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A frozen specification of two register widths, a precision, and a success probability. It holds numbers, not tensors."
+
+[[primitive]]
+name = "Predicate"
+module = "flagquantum/algorithms/primitives/types.py"
+admission_basis = "shared"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/grover.py", "flagquantum/algorithms/kmedians.py"]
+package_consumers = ["flagquantum/algorithms/primitives/oracle.py"]
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A type alias for a callable read as an integer. The integer is classical, so no gradient path exists and none is implied."
+
+[[primitive]]
+name = "append_arbitrary_state"
+module = "flagquantum/algorithms/primitives/state_preparation.py"
+admission_basis = "shared"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/pca.py", "flagquantum/algorithms/svd.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = true
+differentiability_shape = "classical_tensor_input"
+differentiable = false
+differentiability_note = "The amplitude vector is read as classical data: the rotation angles are solved from its values and emitted as plain floats, and the vector is detached on entry. No gradient reaches the caller's tensor, and none is claimed."
+differentiability_reproduce = '''python -c "import torch; from flagquantum.algorithms.primitives import arbitrary_state; a = torch.tensor([0.6, 0.8], dtype=torch.complex128, requires_grad=True); c = arbitrary_state(a); print(a.grad_fn, [i.name for i in c._instructions])"'''
+
+[[primitive]]
+name = "append_bit_oracle"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits X and multi-controlled X from a classical bit predicate that is evaluated in Python while the gates are chosen."
+
+[[primitive]]
+name = "append_comparator"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits reversible comparators from two registers given as sequences of qubit indices; the only numbers involved are indices."
+
+[[primitive]]
+name = "append_multi_controlled_x"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "shared"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/grover.py", "flagquantum/algorithms/qarm.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits a multi-controlled X from control and target indices; the controls are integers, not tensors."
+
+[[primitive]]
+name = "append_phase_estimation"
+module = "flagquantum/algorithms/primitives/phase_estimation.py"
+admission_basis = "shared"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/amplitude_estimation.py", "flagquantum/algorithms/pca.py", "flagquantum/algorithms/svd.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits the estimation circuit from a unitary object and two qubit index lists. The phase it reads is the unitary's, so any gradient is the unitary's to provide."
+
+[[primitive]]
+name = "append_phase_oracle"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "confirmed"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/grover.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Phase kickback synthesized from a truth table enumerated classically; the cost is classical and fixed before the circuit exists."
+
+[[primitive]]
+name = "append_qft"
+module = "flagquantum/algorithms/primitives/qft.py"
+admission_basis = "grounded_expectation"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = ["flagquantum/algorithms/primitives/phase_estimation.py"]
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits fixed rotation angles determined by the qubit count; there is no tensor in the signature to differentiate."
+
+[[primitive]]
+name = "arbitrary_state"
+module = "flagquantum/algorithms/primitives/state_preparation.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = true
+differentiability_shape = "classical_tensor_input"
+differentiable = false
+differentiability_note = "The amplitude vector is read as classical data: the angles are solved from its values and emitted as plain floats, and the vector is detached on entry. A requires_grad argument therefore receives no gradient, and the docstring says so."
+differentiability_reproduce = '''python -c "import torch; from flagquantum.algorithms.primitives import arbitrary_state; a = torch.tensor([0.6, 0.8], dtype=torch.complex128, requires_grad=True); c = arbitrary_state(a); print(a.grad_fn, [i.name for i in c._instructions])"'''
+
+[[primitive]]
+name = "bit_oracle"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Builds a bit-oracle circuit from a classical predicate whose truth table is enumerated in Python."
+
+[[primitive]]
+name = "marked_states"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "confirmed"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/grover.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Returns a tuple of basis-state integers for a classical predicate; a Python collection is not a differentiable argument."
+
+[[primitive]]
+name = "phase_estimation_circuit"
+module = "flagquantum/algorithms/primitives/phase_estimation.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Constructs a circuit from a unitary object and a counting width; the signature carries no tensor."
+
+[[primitive]]
+name = "phase_oracle"
+module = "flagquantum/algorithms/primitives/oracle.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Builds a phase-oracle circuit from a classical predicate whose truth table is enumerated in Python."
+
+[[primitive]]
+name = "qft"
+module = "flagquantum/algorithms/primitives/qft.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "Emits fixed rotation angles determined by the qubit count; there is no tensor in the signature to differentiate."
+
+[[primitive]]
+name = "uniform_state"
+module = "flagquantum/algorithms/primitives/state_preparation.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A Hadamard on every qubit. The signature carries a qubit count and nothing to differentiate."
+
+
+# An export the rule refused. The rule's first measured finding was a protocol that no module,
+# test, or example consumed; the repair is a deletion, and a deletion that is not written down
+# is indistinguishable from an accident.
+[[retired_export]]
+name = "StatePreparationOperator"
+was_ground = "public_unit, on the assumption that third-party state-preparation operators would implement it"
+reason = "the measurement found no consumer anywhere: no algorithm module, no test, no example, and no benchmark named it, so the assumption was the whole of its support"
+replaced_by = "nothing: a caller prepares a state with `arbitrary_state` or `append_arbitrary_state`, and a class that wants a protocol implements the existing `ControlledUnitary` or `AmplitudeOperator` instead"
