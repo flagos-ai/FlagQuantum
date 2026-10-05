@@ -120,7 +120,7 @@ def _metrics(*, cosine: float, uniqueness: float, repeat: float) -> dict[str, fl
 
 
 def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
-    return {
+    record = {
         "schema": "flagquantum.qboson_qdiffusion_acceptance",
         "version": "1.0",
         "source_revision": _REVISION,
@@ -179,6 +179,28 @@ def _record(host: str, role: str, config_sha256: str) -> dict[str, Any]:
             "application": "pass" if role == "primary" else "not_run",
         },
     }
+    if role == "primary":
+        record["application_evidence"] = {
+            "aggregation": "arithmetic_mean_across_frozen_seeds",
+            "records": [
+                {
+                    "seed": seed,
+                    "training_record_sha256": str(index) * 64,
+                    "evaluation_record_sha256": str(index + 3) * 64,
+                    "trained_energy_checkpoint_sha256": "1" * 64,
+                }
+                for index, seed in enumerate((1701, 1702, 1703), start=1)
+            ],
+        }
+    else:
+        record["portability_evidence"] = {
+            "record_sha256": "7" * 64,
+            "training_seed": 1701,
+            "training_record_sha256": "1" * 64,
+            "trained_energy_checkpoint_sha256": "1" * 64,
+            "acceptance": "pass",
+        }
+    return record
 
 
 def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
@@ -368,3 +390,29 @@ def test_config_rejects_system_budget_below_portability_estimate() -> None:
     _validate_config(config, errors)
 
     assert any("portability replay estimate of 17" in error for error in errors)
+
+
+def test_component_bundle_is_required_for_assembled_records(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    changed["component_bundle_required"] = True
+    _replace_record(manifest_path, 0, changed)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("does not contain every source record" in error for error in errors)
+    assert any(
+        "do not reference the exact component bundle" in error for error in errors
+    )
+
+
+def test_application_evidence_must_cover_frozen_seed_order(tmp_path: Path) -> None:
+    manifest_path, records = _bundle(tmp_path)
+    changed = copy.deepcopy(records[0])
+    changed["application_evidence"]["records"].reverse()
+    _replace_record(manifest_path, 0, changed)
+
+    assert any(
+        "seed order differs from config" in error
+        for error in validate_acceptance(manifest_path)
+    )

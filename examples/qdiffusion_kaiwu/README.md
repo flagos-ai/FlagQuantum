@@ -151,3 +151,12 @@ objective plus a short guided generation. The fixture seed, record index, and
 step count are part of the frozen config; replay cannot silently select a better
 example. The command is quota-consuming and requires the same exact cost
 acknowledgement as other live paths.
+
+`assemble_acceptance.py` is the only path from component records to the final
+two-host manifest. It requires exactly one successful training and ESM2 record
+for every frozen seed, verifies each evaluation links to its training record,
+checks the replay uses the preregistered seed's exact checkpoint, computes
+arithmetic means across all seed metrics, and reruns the fail-closed acceptance
+validator. The output directory is new and mode-restricted; it includes hashed
+copies of every component record so deleting or replacing a source record makes
+the final manifest invalid.

@@ -159,6 +159,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   executes one preregistered held-out fixture through a fresh FlagQuantum remote
   sampler, checks repeat retrieval, and records provider and precision evidence.
   This is a portability gate, not multi-node execution or a second training run.
+- A final evidence assembler now requires both passing system components, one
+  passing replay component, and paired training/evaluation components for every
+  frozen seed. It recomputes cross-seed means, validates all hash links, copies
+  the exact components into a private bundle, and invokes the fail-closed final
+  validator; selective seed reporting and component replacement are rejected.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

@@ -589,6 +589,42 @@ def _validate_application(
         errors.append("primary: guided generation contains invalid sequences")
     if primary.get("attempted_seeds") != config.get("seeds"):
         errors.append("primary: attempted seeds differ from the frozen seed set")
+    application_evidence = _mapping(
+        primary.get("application_evidence"), "primary.application_evidence", errors
+    )
+    if application_evidence.get("aggregation") != "arithmetic_mean_across_frozen_seeds":
+        errors.append("primary: unexpected seed aggregation policy")
+    evidence_records = application_evidence.get("records")
+    if not isinstance(evidence_records, list) or len(evidence_records) != len(
+        config.get("seeds", [])
+    ):
+        errors.append("primary: application evidence does not cover every seed")
+    else:
+        evidence_seeds = [record.get("seed") for record in evidence_records]
+        if evidence_seeds != config.get("seeds"):
+            errors.append(
+                "primary: application evidence seed order differs from config"
+            )
+        for index, record in enumerate(evidence_records):
+            if not isinstance(record, dict):
+                errors.append(
+                    f"primary.application_evidence.records[{index}]: expected object"
+                )
+                continue
+            for field in (
+                "training_record_sha256",
+                "evaluation_record_sha256",
+                "trained_energy_checkpoint_sha256",
+            ):
+                digest = record.get(field)
+                if (
+                    not isinstance(digest, str)
+                    or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                ):
+                    errors.append(
+                        f"primary.application_evidence.records[{index}].{field}: "
+                        "expected a SHA-256 digest"
+                    )
     acceptance = _mapping(primary.get("acceptance"), "primary.acceptance", errors)
     if acceptance.get("application") != "pass":
         errors.append("primary: application acceptance did not pass")
@@ -625,6 +661,34 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         errors.append("manifest.config: SHA-256 mismatch")
     config = _mapping(_read_json(config_path), "config", errors)
     _validate_config(config, errors)
+
+    component_payloads: dict[str, dict[str, Any]] = {}
+    raw_components = manifest.get("component_records")
+    if raw_components is not None:
+        if not isinstance(raw_components, list):
+            errors.append("manifest.component_records: expected a list")
+        else:
+            for index, raw_entry in enumerate(raw_components):
+                entry = _mapping(
+                    raw_entry, f"manifest.component_records[{index}]", errors
+                )
+                component_path = resolve_member(
+                    entry.get("path"),
+                    f"manifest.component_records[{index}].path",
+                )
+                if component_path is None:
+                    continue
+                digest = _sha256(component_path)
+                if entry.get("sha256") != digest:
+                    errors.append(
+                        f"manifest.component_records[{index}]: SHA-256 mismatch"
+                    )
+                    continue
+                component_payloads[digest] = _mapping(
+                    _read_json(component_path),
+                    f"component_record[{index}]",
+                    errors,
+                )
 
     entries = manifest.get("records")
     if not isinstance(entries, list) or len(entries) != 2:
@@ -663,6 +727,31 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         return errors
     primary = by_host[primary_host]
     replay = by_host[replay_host]
+    if primary.get("component_bundle_required") is True:
+        expected_component_count = 3 + 2 * len(config.get("seeds", []))
+        if len(component_payloads) != expected_component_count:
+            errors.append(
+                "manifest: component bundle does not contain every source record"
+            )
+        expected_schema_counts = {
+            "flagquantum.qboson_qdiffusion_system_live_probe": 2,
+            "flagquantum.qboson_qdiffusion_portability_replay": 1,
+            "flagquantum.qboson_qdiffusion_protein_training": len(
+                config.get("seeds", [])
+            ),
+            "flagquantum.qboson_qdiffusion_protein_evaluation": len(
+                config.get("seeds", [])
+            ),
+        }
+        observed_schema_counts = {
+            schema: sum(
+                payload.get("schema") == schema
+                for payload in component_payloads.values()
+            )
+            for schema in expected_schema_counts
+        }
+        if observed_schema_counts != expected_schema_counts:
+            errors.append("manifest: component record schema counts are incomplete")
     if primary.get("run_role") != "primary":
         errors.append("manifest: configured primary host lacks the primary role")
     if replay.get("run_role") != "portability_replay":
@@ -674,6 +763,23 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         != "not_run"
     ):
         errors.append("replay: application acceptance must be explicitly not_run")
+    portability_evidence = _mapping(
+        replay.get("portability_evidence"), "replay.portability_evidence", errors
+    )
+    if portability_evidence.get("acceptance") != "pass":
+        errors.append("replay: portability evidence did not pass")
+    expected_portability_seed = _mapping(
+        config.get("generation"), "config.generation", errors
+    ).get("portability_training_seed")
+    if portability_evidence.get("training_seed") != expected_portability_seed:
+        errors.append("replay: portability evidence uses another training seed")
+    for field in ("record_sha256", "training_record_sha256"):
+        portability_digest = portability_evidence.get(field)
+        if (
+            not isinstance(portability_digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", portability_digest) is None
+        ):
+            errors.append(f"replay.portability_evidence.{field}: expected SHA-256")
     revisions = {record.get("source_revision") for record in records}
     plugin_revisions = {
         record.get("kaiwu_pytorch_plugin_revision") for record in records
@@ -690,6 +796,52 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         errors.append(
             "manifest: both hosts must use the same trained energy checkpoint"
         )
+    shared_checkpoint_digest = next(iter(trained_checkpoint_digests), None)
+    if (
+        portability_evidence.get("trained_energy_checkpoint_sha256")
+        != shared_checkpoint_digest
+    ):
+        errors.append("replay: portability checkpoint differs from host records")
+    application_evidence = _mapping(
+        primary.get("application_evidence"), "primary.application_evidence", errors
+    )
+    evidence_records = application_evidence.get("records")
+    if isinstance(evidence_records, list):
+        selected = [
+            record
+            for record in evidence_records
+            if isinstance(record, dict)
+            and record.get("seed") == expected_portability_seed
+        ]
+        if (
+            len(selected) != 1
+            or selected[0].get("trained_energy_checkpoint_sha256")
+            != shared_checkpoint_digest
+            or selected[0].get("training_record_sha256")
+            != portability_evidence.get("training_record_sha256")
+        ):
+            errors.append(
+                "manifest: portability evidence is not linked to the selected seed checkpoint"
+            )
+    if primary.get("component_bundle_required") is True:
+        referenced_component_hashes = {
+            primary.get("system_evidence_sha256"),
+            replay.get("system_evidence_sha256"),
+            portability_evidence.get("record_sha256"),
+        }
+        if isinstance(evidence_records, list):
+            for record in evidence_records:
+                if isinstance(record, dict):
+                    referenced_component_hashes.add(
+                        record.get("training_record_sha256")
+                    )
+                    referenced_component_hashes.add(
+                        record.get("evaluation_record_sha256")
+                    )
+        if referenced_component_hashes != set(component_payloads):
+            errors.append(
+                "manifest: final records do not reference the exact component bundle"
+            )
     task_sets = []
     for record in records:
         raw_task_ids = record.get("qboson_task_ids")

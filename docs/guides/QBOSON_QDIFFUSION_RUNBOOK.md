@@ -395,6 +395,33 @@ repeat retrieval without resubmission. This demonstrates portability between
 the two available A800 environments only; it is not multi-node or distributed
 execution.
 
+## 11. Assemble the immutable evidence bundle
+
+After both system probes, the portability replay, and every configured
+training/evaluation seed pass, assemble them without manually copying metrics:
+
+```bash
+python examples/qdiffusion_kaiwu/assemble_acceptance.py \
+  --config /absolute/evidence/acceptance-config.json \
+  --primary-system /absolute/evidence/jp-a800-171-system.json \
+  --replay-system /absolute/evidence/jp-a800-172-system.json \
+  --portability /absolute/evidence/jp-a800-172-portability.json \
+  --training-record /absolute/evidence/seed-1701-training.json \
+  --training-record /absolute/evidence/seed-1702-training.json \
+  --training-record /absolute/evidence/seed-1703-training.json \
+  --evaluation-record /absolute/evidence/seed-1701-evaluation.json \
+  --evaluation-record /absolute/evidence/seed-1702-evaluation.json \
+  --evaluation-record /absolute/evidence/seed-1703-evaluation.json \
+  --evidence-dir /absolute/final/qboson-qdiffusion-acceptance
+```
+
+The target directory must not exist. The assembler verifies component schemas,
+config identities, host roles, seed coverage, training/evaluation links, and
+the selected portability checkpoint before averaging metrics. It copies every
+source record into a private component directory, hashes those copies, creates
+the two final host records and manifest, then runs `validate_acceptance.py` on
+the result. Missing, extra, replaced, or selectively omitted seed records fail.
+
 ## 10. Assemble and validate final evidence
 
 The live-system probe record is an attempt record, not by itself the final
