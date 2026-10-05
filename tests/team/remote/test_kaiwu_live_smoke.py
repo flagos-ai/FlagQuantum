@@ -166,16 +166,30 @@ def test_private_record_is_exclusive_and_mode_0600(tmp_path: Path) -> None:
         _write_private_json(path, payload)
 
 
+@pytest.mark.parametrize(
+    ("credential", "payload"),
+    (
+        (
+            "sdk-code-secret",
+            {"provider_result_schema": {"fields": ["sdk-code-secret"]}},
+        ),
+        (
+            'sdk"code\\secret\nline',
+            {"nested": [{"failure": 'sdk"code\\secret\nline'}]},
+        ),
+        ("user-id-secret", {"provider-user-id-secret": True}),
+    ),
+)
 def test_private_record_rejects_credentials_before_file_creation(
-    tmp_path: Path,
+    tmp_path: Path, credential: str, payload: dict[str, object]
 ) -> None:
     path = tmp_path / "smoke.json"
 
     with pytest.raises(RuntimeError, match="credentials"):
         _write_private_json(
             path,
-            {"provider_result_schema": {"fields": ["sdk-code-secret"]}},
-            forbidden_values=("user-id-secret", "sdk-code-secret"),
+            payload,
+            forbidden_values=("unrelated-secret", credential),
         )
 
     assert not path.exists()

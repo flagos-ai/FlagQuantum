@@ -120,7 +120,10 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   when provider task or target identity is unavailable.
 - That smoke command now passes an explicit in-memory credential object after
   offline environment verification and scans both resolved credential values
-  against the complete serialized evidence before creating its output file.
+  through every nested evidence key and value before JSON serialization and
+  file creation. The QDiffusion system, training, and replay writers use the
+  same pre-serialization rule, so JSON escaping cannot hide a credential from
+  the refusal check.
 - Phase 2 smoke evidence now binds acceptance to an explicit real-SDK transport
   marker. Injected clients remain test evidence even when they return plausible
   provider identities, and the live command writes its diagnostic record but

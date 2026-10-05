@@ -125,7 +125,8 @@ supplying a wheel does not turn it into an approved artifact.
 It submits one fixed optimization task and one fixed sampling task, uses the
 same identity for bounded polling, and writes a new mode-0600 record without
 credentials or raw vendor exception text. Both resolved credential values are
-scanned against the complete serialized record before the file is created. It
+scanned recursively through nested keys and values before JSON serialization,
+so escaped quotes, backslashes, or newlines cannot bypass the refusal check. It
 has no simulator fallback.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private

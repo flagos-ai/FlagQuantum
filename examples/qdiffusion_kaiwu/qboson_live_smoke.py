@@ -130,16 +130,30 @@ def run_live_smoke(
     }
 
 
+def _contains_forbidden_value(value: object, forbidden_values: tuple[str, ...]) -> bool:
+    if isinstance(value, str):
+        return any(forbidden and forbidden in value for forbidden in forbidden_values)
+    if isinstance(value, dict):
+        return any(
+            _contains_forbidden_value(key, forbidden_values)
+            or _contains_forbidden_value(item, forbidden_values)
+            for key, item in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(_contains_forbidden_value(item, forbidden_values) for item in value)
+    return False
+
+
 def _write_private_json(
     path: Path,
     payload: dict[str, Any],
     *,
     forbidden_values: tuple[str, ...] = (),
 ) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
-    if any(value and value in encoded for value in forbidden_values):
+    if _contains_forbidden_value(payload, forbidden_values):
         raise RuntimeError("refusing to persist a smoke record containing credentials")
+    encoded = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
         stream.write(encoded)

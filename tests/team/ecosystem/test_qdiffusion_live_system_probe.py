@@ -156,16 +156,27 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("credential", "payload"),
+    (
+        ("sdk-code-secret", {"failure": "vendor echoed sdk-code-secret"}),
+        (
+            'sdk"code\\secret\nline',
+            {"failure": {"nested": 'vendor sdk"code\\secret\nline echoed'}},
+        ),
+        ("user-id-secret", {"metadata-user-id-secret": "present in a key"}),
+    ),
+)
 def test_private_writer_rejects_credentials_before_creating_file(
-    tmp_path: Path,
+    tmp_path: Path, credential: str, payload: dict[str, object]
 ) -> None:
     path = tmp_path / "record.json"
 
     with pytest.raises(RuntimeError, match="credential"):
         _write_private_redacted_json(
             path,
-            {"failure": "vendor echoed sdk-code-secret"},
-            forbidden_values=("user-id-secret", "sdk-code-secret"),
+            payload,
+            forbidden_values=("unrelated-secret", credential),
         )
 
     assert not path.exists()
