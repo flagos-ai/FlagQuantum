@@ -315,16 +315,17 @@ def test_aggregate_validation_rejects_noncanonical_decision() -> None:
         validate_evidence(changed)
 
 
-def test_checked_in_a800_evidence_is_canonical_and_retains_opt_in() -> None:
+def test_checked_in_a800_evidence_authorizes_only_kernel() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
-    assert not payload["direct_win_over_projected_eager_on_all_cases"]
-    assert not payload["direct_win_over_materialized_pytorch_on_all_cases"]
-    assert not payload["catalog_win_over_projected_eager_on_all_cases"]
-    assert not payload["catalog_win_over_compiled_projected_on_all_cases"]
-    assert not payload["public_factorization_win_over_eager_on_all_cases"]
+    assert payload["direct_win_over_projected_eager_on_all_cases"]
+    assert payload["direct_win_over_materialized_pytorch_on_all_cases"]
+    assert payload["catalog_win_over_projected_eager_on_all_cases"]
+    assert payload["catalog_win_over_compiled_projected_on_all_cases"]
+    assert payload["public_factorization_win_over_eager_on_all_cases"]
     assert payload["direct_memory_win_over_projected_eager_on_all_cases"]
     assert payload["direct_memory_win_over_materialized_pytorch_on_all_cases"]
-    assert payload["projected_kernel_dispatch_decision"] == "retain_opt_in"
+    assert payload["projected_kernel_dispatch_decision"] == "eligible_for_default"
+    assert payload["projected_kernel_dispatch_blockers"] == []
     assert payload["fixed_rank_rollout_decision"] == "retain_opt_in"
