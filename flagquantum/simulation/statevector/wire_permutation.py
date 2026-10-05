@@ -1,4 +1,4 @@
-"""Cached whole-state wire permutations for CPU product-state execution."""
+"""Cached whole-state qubit permutations for CPU product-state execution."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _wire_permutation_index(
     *,
     device: torch.device,
 ) -> torch.Tensor:
-    """Build a gather table from ascending logical wires to current tensor axes."""
+    """Build a gather table from ascending logical qubits to current tensor axes."""
 
     canonical_source = tuple(int(wire) for wire in source_wires)
     if len(set(canonical_source)) != len(canonical_source):
@@ -60,7 +60,7 @@ def _apply_wire_permutation_gather(
     state: torch.Tensor,
     source_wires: Sequence[int],
 ) -> torch.Tensor:
-    """Materialize ascending logical-wire order with one cached gather."""
+    """Materialize ascending logical-qubit order with one cached gather."""
 
     index = _wire_permutation_index(source_wires, device=state.device)
     flat_state = state.reshape(state.shape[0], -1)

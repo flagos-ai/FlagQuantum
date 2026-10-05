@@ -103,8 +103,8 @@ FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
 The example uses the public `flagquantum.runtime.run_distributed` entry point.
 It compares the rank-owned CUDA state with a CPU reference, requires the runtime
 to select Triton, and prints the measured compiler distribution and integration
-path. On one GPU, every circuit wire is local. In a sharded statevector, this
-kernel is eligible only for a wire whose amplitude pairs remain on the same
+path. On one GPU, every circuit qubit is local. In a sharded statevector, this
+kernel is eligible only for a qubit whose amplitude pairs remain on the same
 rank. The ordinary single-GPU `fq.run(..., mode="statevector")` path currently
 uses the local simulator instead of this distributed-statevector kernel.
 
@@ -115,7 +115,7 @@ python -m examples.target_aware_compilation
 ```
 
 The example targets a five-qubit line, checks every emitted two-qubit operation
-against that connectivity, verifies logical-wire restoration, and executes the
+against that connectivity, verifies logical-qubit restoration, and executes the
 compiled IR against the original result.
 
 ## Start in one minute

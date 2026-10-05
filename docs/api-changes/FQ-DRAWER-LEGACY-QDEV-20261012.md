@@ -79,7 +79,7 @@ exists; inference is the fallback for objects that report none.
   and `draw_mpl` keep their signatures; nothing in `docs/public_api_v1.json`
   moves, and the drawer is not part of the Stable Core surface.
 * No census counter moves. `[boundary].measured_private` stays `331` on this
-  tree: private code keeps `wire` names by the contract's own `private_note`, and
+  tree: private code keeps `qubit` names by the contract's own `private_note`, and
   this change is not a slice retiring one. `_draw_qubits` therefore keeps its
   pre-qubit parameter name, with a comment saying why.
 * No frozen payload key moves. `CircuitIR.n_wires` and

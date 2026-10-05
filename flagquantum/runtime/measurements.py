@@ -95,7 +95,7 @@ class _DensityMatrixTarget:
                 torch.Tensor,
                 self.noise_model.apply_readout_probabilities(
                     probabilities,
-                    n_wires=self.n_wires,
+                    n_qubits=self.n_wires,
                 ),
             )
             indices = torch.arange(
@@ -177,16 +177,16 @@ def _reduced_joint_marginal(
     *,
     n_wires: int,
 ) -> torch.Tensor:
-    """Sum a full probability distribution down to the requested wires.
+    """Sum a full probability distribution down to the requested qubits.
 
     ``probabilities`` is one value per basis state, ``(batch, 2 ** n_wires)`` and
-    big-endian per wire, which is the convention a density matrix's diagonal and
+    big-endian per qubit, which is the convention a density matrix's diagonal and
     a statevector's squared amplitudes already share. Reducing that tensor is a
     reshape and a sum, so the cost is one pass over a distribution that is
     already in memory rather than one full-state contraction per parity term.
 
-    The axes that survive come out in wire order, so a request that named its
-    wires out of order is permuted back before the reshape. Getting that wrong
+    The axes that survive come out in qubit order, so a request that named its
+    qubits out of order is permuted back before the reshape. Getting that wrong
     would silently transpose the marginal rather than fail, which is why the
     order is restored here, in the one place every caller goes through.
 
@@ -239,7 +239,7 @@ def _ideal_probabilities(output: Any, n_wires: int) -> torch.Tensor | None:
     returns ``None`` and keeps the parity path. That is not a preference but a
     boundary: those targets can answer ``probabilities()`` by materialising a
     dense state of ``2 ** n_wires`` amplitudes, which is the cost they exist to
-    avoid, and at 24 wires that made a 0.5 ms marginal take 330 ms.
+    avoid, and at 24 qubits that made a 0.5 ms marginal take 330 ms.
     """
 
     if not isinstance(output, torch.Tensor) or not output.is_complex():
@@ -291,7 +291,7 @@ def _joint_marginal_probabilities(
     if noise_model is not None:
         probabilities = noise_model.apply_readout_probabilities(
             probabilities,
-            n_wires=n_wires,
+            n_qubits=n_wires,
         )
     return _reduced_joint_marginal(probabilities, wires, n_wires=n_wires)
 
@@ -582,13 +582,13 @@ def _pauli_basis_distribution(
 ) -> torch.Tensor:
     """The joint distribution of a Pauli-basis readout over ``wires``.
 
-    When every requested wire is read in the Z basis the distribution *is* the
+    When every requested qubit is read in the Z basis the distribution *is* the
     computational-basis marginal, so a dense result gives it by reduction. Each
     bit then carries the same meaning on both sides: ``+1`` is an even number of
     set bits, which is a Z eigenvalue of ``+1`` and therefore the computational
     bit ``0``.
 
-    A request that reads any wire in X or Y is a genuinely different measurement
+    A request that reads any qubit in X or Y is a genuinely different measurement
     and keeps the parity reconstruction, which needs one full-state contraction
     per non-empty subset of ``wires``.
     """
@@ -666,7 +666,7 @@ def _marginal_probabilities(
     the dense-result surface, so deleting it would withdraw a capability instead
     of replacing an implementation.
 
-    The cost is exponential in the number of wires because each of those
+    The cost is exponential in the number of qubits because each of those
     expectations is a separate contraction over the whole state, and the
     arithmetic is reconstructed rather than read: one term per non-empty subset,
     summed with alternating signs and divided by ``2 ** len(wires)``. Because

@@ -67,7 +67,7 @@ native adjoint implementation but disables the reusable-output CPU CX gather,
 providing a paired A/B baseline for forward-path changes. FlagQuantum's public entry point is
 `hamiltonian.expectation(circuit, differentiation="adjoint")`; this initial
 contract supports a batch size of one and real, constant-coefficient Z/ZZ terms.
-The optimized single-process CPU path composes adjacent same-wire gates, applies
+The optimized single-process CPU path composes adjacent same-qubit gates, applies
 whole CX sequences as one permutation, reuses the forward observable diagonal,
 and evaluates analytic RX/RY/RZ/RZZ VJPs without materializing a derivative
 state. Set `FQ_NATIVE_CPU_ADJOINT=0` to reproduce the Python direct-layout A/B,
@@ -80,12 +80,12 @@ observable diagonal in a bounded 256 MiB LRU cache. Use
 `FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE=0` for direct rollback.
 Native CPU RX/RY/RZ adjoint layers use full-layer, structure-specialized wide
 tiles with tile-local gradient accumulation. Adjacent fixed Hadamards use the
-same 11-wire policy while updating ket and adjoint together. Use
+same 11-qubit policy while updating ket and adjoint together. Use
 `flagquantum_adjoint_rotation_tile_rollback` for paired measurements or set
-`FQ_NATIVE_CPU_ADJOINT_WIDE_TILES=0` to restore the legacy 48-gate, two-wire
+`FQ_NATIVE_CPU_ADJOINT_WIDE_TILES=0` to restore the legacy 48-gate, two-qubit
 rotation tiles and separate fixed-layer state passes.
 The rotation reverse sweep directly enumerates zero/one amplitude-pair blocks;
-same-wire RZ/RY/RX Euler triples additionally keep each pair in registers across
+same-qubit RZ/RY/RX Euler triples additionally keep each pair in registers across
 all three gradients and inverse rotations. Use
 `flagquantum_adjoint_euler_triple_rollback` for paired measurements or set
 `FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES=0` to restore the prior per-gate,

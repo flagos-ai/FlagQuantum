@@ -27,6 +27,8 @@ def test_two_site_autograd_matches_direct_contraction(
     monkeypatch: pytest.MonkeyPatch, batched_gate: bool, dtype: torch.dtype
 ) -> None:
     triton = ModuleType("triton")
+    triton.Config = lambda *args, **kwargs: None
+    triton.autotune = lambda **kwargs: lambda function: function
     triton.jit = lambda function: function
     language = ModuleType("triton.language")
     triton.language = language

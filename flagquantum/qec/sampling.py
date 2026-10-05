@@ -16,7 +16,7 @@ call outright, so the placement is derived here from the lowered program rather
 than written into the experiment.
 
 Which Pauli a data error is is the other half of the join, and it is the part
-the engine constrains. The engine executes one channel -- a single-wire bit
+the engine constrains. The engine executes one channel -- a single-qubit bit
 flip -- so the record's Z and Y families are placed as that channel conjugated
 by the Clifford that turns the flip into the Pauli they name, which is one draw
 at that family's rate rather than a pair of independent bit flips. A family the
@@ -277,7 +277,7 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
         )
     block = len(instructions) // rounds
     # Two rounds are the same round when they execute the same operations on the
-    # same wires. They are not the same records: a lowered measurement carries
+    # same qubits. They are not the same records: a lowered measurement carries
     # the absolute classical bit it writes, which necessarily differs per round,
     # so equality of the whole instruction would refuse every program.
     template = tuple(
@@ -366,8 +366,8 @@ def _noise_locations(
         for round_index in range(memory.rounds):
             start = round_index * plan.block
             locations.extend(
-                _NoiseLocation(kind, round_index, int(wire), start, rates[position])
-                for position, wire in enumerate(data_wires)
+                _NoiseLocation(kind, round_index, int(qubit), start, rates[position])
+                for position, qubit in enumerate(data_wires)
                 if rates[position]
             )
     for round_index in range(memory.rounds):
@@ -484,9 +484,9 @@ def _sample_record(
     plan = _measurement_plan(circuit)
     locations = _noise_locations(circuit, plan, noise)
     program = _noisy_program(plan, locations)
-    data_wires = tuple(circuit.code.data_qubits)
+    data_qubits = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
-        program, shots=shots, terminal_wires=data_wires, seed=seed
+        program, shots=shots, terminal_qubits=data_qubits, seed=seed
     )
     return plan, record
 

@@ -144,7 +144,7 @@ def jax_sharded_mps_parameter_value_and_grad(
             circuit = circuit_builder(_JAXParameterProxy(parameter_array))
             rank_tensors, *_ = _jax_parameterized_mps_rank_tensors(
                 circuit,
-                n_wires=int(n_qubits),
+                n_qubits=int(n_qubits),
                 bsz=bsz,
                 shard_plans=shard_plans,
                 complex_bytes=complex_bytes,
@@ -159,10 +159,10 @@ def jax_sharded_mps_parameter_value_and_grad(
                 )
             return _jax_sharded_mps_z_sum_from_rank_tensors(
                 rank_tensors,
-                n_wires=int(n_qubits),
+                n_qubits=int(n_qubits),
                 bsz=bsz,
                 complex_bytes=complex_bytes,
-                observable_wires=observable_qubits,
+                observable_qubits=observable_qubits,
             )
         finally:
             _set_active_jax_compute_dtype(previous_dtype)
@@ -188,7 +188,7 @@ def jax_sharded_mps_parameter_value_and_grad(
             boundary_protocols,
         ) = _jax_parameterized_mps_rank_tensors(
             summary_circuit,
-            n_wires=int(n_qubits),
+            n_qubits=int(n_qubits),
             bsz=bsz,
             shard_plans=shard_plans,
             complex_bytes=complex_bytes,

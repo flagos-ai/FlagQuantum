@@ -60,7 +60,7 @@ on a local distributed test to predict production behavior.
 A valid distributed MPS/TN benchmark must report:
 
 - distribution semantics: `sharded_across_ranks`
-- per-rank owned tensors, wires, slices, or contraction tasks
+- per-rank owned tensors, qubits, slices, or contraction tasks
 - per-rank peak memory
 - communication volume and collective/P2P counts
 - node count, rank placement, and whether communication is intra-node or

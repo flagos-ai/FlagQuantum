@@ -179,7 +179,7 @@ specific extensions.
 
 ### 4.4 Results
 
-Separate stable measurement/count/sample/shot/status and logical-wire/classical-bit
+Separate stable measurement/count/sample/shot/status and logical-qubit/classical-bit
 ordering from execution facts and provider extensions. Execution facts include
 requested/actual target, fallback, device, and calibration snapshots. Raw provider
 fields, diagnostics, and proprietary results must not alter stable result equality

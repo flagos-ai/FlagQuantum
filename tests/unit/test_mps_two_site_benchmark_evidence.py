@@ -88,9 +88,7 @@ def _run(
                 "runtime_forward_eligible": (
                     batch * left_bond * middle_bond * right_bond >= 2**12
                 ),
-                "runtime_backward_eligible": (
-                    batch * left_bond * middle_bond * right_bond >= 2**18
-                ),
+                "runtime_backward_eligible": False,
                 "dtype": "complex64",
                 "layout": "contiguous_mps_two_site_and_shared_or_batched_gate",
                 "maximum_forward_absolute_error": 1e-6,
@@ -132,7 +130,7 @@ def _run(
         "measurement": {
             "clock": "time.perf_counter",
             "synchronization": "torch.cuda.synchronize after each invocation group",
-            "warmup": 2,
+            "warmup": 100,
             "repeats": 3,
             "group_size": 4,
             "seed": 270001,
@@ -217,23 +215,20 @@ def test_merge_requires_full_host_and_compiler_cross_product() -> None:
         merge_runs(_matrix()[:-1], required_hosts=("jp-a800-171", "jp-a800-172"))
 
 
-def test_aggregate_retains_opt_in_when_one_catalog_direction_loses() -> None:
+def test_aggregate_rejects_a_runtime_forward_regression() -> None:
     payload = merge_runs(
         _matrix(
-            catalog_forward_eager=1.1,
+            catalog_forward_eager=0.9,
             catalog_forward_compiled=1.2,
             catalog_backward_eager=1.1,
-            catalog_backward_compiled=0.9,
+            catalog_backward_compiled=1.2,
         ),
         required_hosts=("jp-a800-171", "jp-a800-172"),
     )
 
-    validate_evidence(payload)
-    assert payload["catalog_forward_win_over_eager_on_all_cases"]
-    assert payload["catalog_forward_win_over_compiled_on_all_cases"]
-    assert payload["catalog_forward_backward_win_over_eager_on_all_cases"]
-    assert not payload["catalog_forward_backward_win_over_compiled_on_all_cases"]
-    assert payload["dispatch_selection_decision"] == "retain_opt_in"
+    assert not payload["performance_gate_passed"]
+    with pytest.raises(ValueError, match="performance_gate_passed"):
+        validate_evidence(payload)
 
 
 def test_aggregate_retains_opt_in_without_end_to_end_factorization_evidence() -> None:
@@ -248,6 +243,9 @@ def test_aggregate_retains_opt_in_without_end_to_end_factorization_evidence() ->
     )
 
     validate_evidence(payload)
+    assert payload["performance_gate_passed"]
+    assert payload["runtime_scope"] == "inference_forward_only"
+    assert payload["backward_measurements_are_diagnostic"] is True
     assert payload["catalog_forward_win_over_eager_on_all_cases"]
     assert payload["catalog_forward_win_over_compiled_on_all_cases"]
     assert payload["catalog_forward_backward_win_over_eager_on_all_cases"]
@@ -259,7 +257,13 @@ def test_aggregate_retains_opt_in_without_end_to_end_factorization_evidence() ->
 
 
 def test_aggregate_validation_rejects_noncanonical_decision() -> None:
-    payload = merge_runs(_matrix(), required_hosts=("jp-a800-171", "jp-a800-172"))
+    payload = merge_runs(
+        _matrix(
+            catalog_forward_eager=1.1,
+            catalog_forward_compiled=1.2,
+        ),
+        required_hosts=("jp-a800-171", "jp-a800-172"),
+    )
     changed = copy.deepcopy(payload)
     changed["dispatch_selection_decision"] = "eligible_for_default"
 
@@ -271,12 +275,12 @@ def test_checked_in_a800_evidence_is_canonical_and_retains_opt_in() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
-    assert not payload["direct_forward_win_on_all_cases"]
-    assert not payload["direct_forward_backward_win_on_all_cases"]
-    assert not payload["catalog_forward_win_over_eager_on_all_cases"]
+    assert payload["direct_forward_win_on_all_runtime_cases"]
+    assert payload["catalog_forward_win_over_eager_on_all_runtime_cases"]
     assert payload["catalog_forward_win_over_compiled_on_all_cases"]
-    assert not payload["catalog_forward_backward_win_over_eager_on_all_cases"]
-    assert payload["catalog_forward_backward_win_over_compiled_on_all_cases"]
+    assert payload["performance_gate_passed"]
+    assert payload["runtime_scope"] == "inference_forward_only"
+    assert payload["backward_measurements_are_diagnostic"] is True
     assert payload["dispatch_selection_decision"] == "retain_opt_in"
     assert payload["default_dispatch_blockers"] == [
         "catalog-route evidence excludes the downstream MPS factorization"

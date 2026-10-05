@@ -142,13 +142,13 @@ def _worker_subprocess_main(payload_text: str) -> int:
     threads = int(payload["threads"])
     engine = cast(EngineName, payload["engine"])
     workload = cast(WorkloadName, payload["workload"])
-    n_wires = int(payload["n_wires"])
+    n_qubits = int(payload["n_wires"])
     warmup = int(payload["warmup"])
     tasks = int(payload["tasks"])
     seed = int(payload["seed"])
 
     assigned_cpus = _configure_worker(cpu_group, threads)
-    circuit = build_workload(workload, n_wires=n_wires, seed=seed)
+    circuit = build_workload(workload, n_qubits=n_qubits, seed=seed)
     execute = _engine_callable(engine, circuit, seed=seed, threads=threads)
     output: torch.Tensor | None = None
     for _ in range(warmup):
@@ -182,7 +182,7 @@ def _worker_subprocess_main(payload_text: str) -> int:
     if engine == "flagquantum_native":
         max_error = 0.0
     else:
-        reference_circuit = build_workload(workload, n_wires=n_wires, seed=seed)
+        reference_circuit = build_workload(workload, n_qubits=n_qubits, seed=seed)
         reference = _engine_callable(
             "flagquantum_native",
             reference_circuit,

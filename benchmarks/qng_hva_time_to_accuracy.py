@@ -44,7 +44,7 @@ def run(backend,n_wires,depth,steps,seed,lr,damping,wall_budget_seconds=None,com
             torch.cuda.synchronize();geometry_started=time.perf_counter()
             if backend=="reference_qng":metric=reference_geometry(n_wires,depth,parameters,block)
             else:
-                state,tangents=heisenberg_hva_forward_tangents(initial,parameters.detach(),n_wires=n_wires,depth=depth);metric=block_metric(state,tangents,block)
+                state,tangents=heisenberg_hva_forward_tangents(initial,parameters.detach(),n_qubits=n_wires,depth=depth);metric=block_metric(state,tangents,block)
             identity=torch.eye(count,device="cuda");direction=torch.linalg.solve(metric+damping*identity,gradient)
             with torch.no_grad():parameters.add_(-lr*direction)
             torch.cuda.synchronize();geometry_seconds=time.perf_counter()-geometry_started

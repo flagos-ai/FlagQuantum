@@ -93,7 +93,7 @@ def run_jax_sharded_mps(
     jax_device = _resolve_jax_device(device)
     shard_plans = _mps_shards(ir.n_wires, resolved_world_size)
     rank_tensors = _initialize_jax_mps_rank_tensors(
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         shard_plans=shard_plans,
         dtype=jax_dtype,
@@ -129,9 +129,9 @@ def run_jax_sharded_mps(
                 instruction, torch_dtype=torch_dtype, jax_dtype=jax_dtype
             )
             matrix = _jnp_device_put(matrix, jax_device)
-            wire = int(instruction.wires[0])
-            rank_tensors[owner][wire] = _apply_one_jax_mps_tensor(
-                rank_tensors[owner][wire], matrix
+            qubit = int(instruction.wires[0])
+            rank_tensors[owner][qubit] = _apply_one_jax_mps_tensor(
+                rank_tensors[owner][qubit], matrix
             )
             owned_instruction_count += 1
             sharded_kernel_count += 1
@@ -146,22 +146,22 @@ def run_jax_sharded_mps(
             )
             matrix = _jnp_device_put(matrix, jax_device)
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
-            left_wire = min(first, second)
+            left_qubit = min(first, second)
             left, right, split_info = _apply_two_jax_mps_tensors(
-                rank_tensors[owner][left_wire],
-                rank_tensors[owner][left_wire + 1],
+                rank_tensors[owner][left_qubit],
+                rank_tensors[owner][left_qubit + 1],
                 matrix,
                 max_bond=max_bond,
                 cutoff=cutoff,
                 reverse=first > second,
             )
-            rank_tensors[owner][left_wire] = left
-            rank_tensors[owner][left_wire + 1] = right
+            rank_tensors[owner][left_qubit] = left
+            rank_tensors[owner][left_qubit + 1] = right
             step_error = float(split_info["discarded_weight"])
             truncation_error += step_error
             max_truncation_error = max(max_truncation_error, step_error)
             record = _jax_split_record(
-                split_info, bond=left_wire, max_bond=max_bond, cutoff=cutoff
+                split_info, bond=left_qubit, max_bond=max_bond, cutoff=cutoff
             )
             if record is not None:
                 truncation_records.append(record)
@@ -200,8 +200,8 @@ def run_jax_sharded_mps(
             if record is not None:
                 truncation_records.append(record)
             protocol = _jax_mps_boundary_protocol(
-                left_wire=boundary.left_qubit,
-                right_wire=boundary.right_qubit,
+                left_qubit=boundary.left_qubit,
+                right_qubit=boundary.right_qubit,
                 left_rank=boundary.left_rank,
                 right_rank=boundary.right_rank,
                 local_world_size=resolved_local_world_size,
@@ -219,7 +219,7 @@ def run_jax_sharded_mps(
             "JAX sharded MPS does not support this instruction without a full-MPS/statevector fallback. "
             "Supported gates are one-site gates, adjacent two-site gates within one shard, and adjacent "
             f"two-site gates across a shard boundary. Unsupported instruction {instruction.name!r} "
-            f"on wires {tuple(instruction.wires)}."
+            f"on qubits {tuple(instruction.wires)}."
         )
         if strict_sharded:
             raise RuntimeError(message)
@@ -250,7 +250,7 @@ def run_jax_sharded_mps(
 def _jax_parameterized_mps_rank_tensors(
     circuit: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     shard_plans: Sequence[Any],
     complex_bytes: int,
@@ -276,7 +276,7 @@ def _jax_parameterized_mps_rank_tensors(
 
     jax_dtype = _jax_complex_dtype(complex_bytes)
     rank_tensors = _initialize_jax_mps_rank_tensors(
-        n_wires=int(n_wires),
+        n_qubits=int(n_qubits),
         bsz=int(bsz),
         shard_plans=shard_plans,
         dtype=jax_dtype,
@@ -298,9 +298,9 @@ def _jax_parameterized_mps_rank_tensors(
                 instruction, complex_bytes=complex_bytes
             )
             matrix = _jnp_device_put(matrix, device)
-            wire = int(instruction.wires[0])
-            rank_tensors[owner][wire] = _apply_one_jax_mps_tensor(
-                rank_tensors[owner][wire], matrix
+            qubit = int(instruction.wires[0])
+            rank_tensors[owner][qubit] = _apply_one_jax_mps_tensor(
+                rank_tensors[owner][qubit], matrix
             )
             owned_instruction_count += 1
             sharded_kernel_count += 1
@@ -315,19 +315,19 @@ def _jax_parameterized_mps_rank_tensors(
             )
             matrix = _jnp_device_put(matrix, device)
             first, second = int(instruction.wires[0]), int(instruction.wires[1])
-            left_wire = min(first, second)
+            left_qubit = min(first, second)
             left, right, split_info = _apply_two_jax_mps_tensors(
-                rank_tensors[owner][left_wire],
-                rank_tensors[owner][left_wire + 1],
+                rank_tensors[owner][left_qubit],
+                rank_tensors[owner][left_qubit + 1],
                 matrix,
                 max_bond=max_bond,
                 cutoff=cutoff,
                 reverse=first > second,
             )
-            rank_tensors[owner][left_wire] = left
-            rank_tensors[owner][left_wire + 1] = right
+            rank_tensors[owner][left_qubit] = left
+            rank_tensors[owner][left_qubit + 1] = right
             record = _jax_split_record(
-                split_info, bond=left_wire, max_bond=max_bond, cutoff=cutoff
+                split_info, bond=left_qubit, max_bond=max_bond, cutoff=cutoff
             )
             if record is not None:
                 truncation_records.append(record)
@@ -363,8 +363,8 @@ def _jax_parameterized_mps_rank_tensors(
             if record is not None:
                 truncation_records.append(record)
             protocol = _jax_mps_boundary_protocol(
-                left_wire=boundary.left_qubit,
-                right_wire=boundary.right_qubit,
+                left_qubit=boundary.left_qubit,
+                right_qubit=boundary.right_qubit,
                 left_rank=boundary.left_rank,
                 right_rank=boundary.right_rank,
                 local_world_size=local_world_size,
@@ -378,7 +378,7 @@ def _jax_parameterized_mps_rank_tensors(
             continue
         raise RuntimeError(
             "JAX sharded MPS parameter reverse mode does not support this instruction without a "
-            f"full-MPS/statevector fallback: {instruction.name!r} on wires {tuple(instruction.wires)}."
+            f"full-MPS/statevector fallback: {instruction.name!r} on qubits {tuple(instruction.wires)}."
         )
     return (
         rank_tensors,

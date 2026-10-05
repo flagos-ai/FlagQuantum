@@ -34,7 +34,7 @@ def _rx_rz_sequence_kernel_match(*, device_type: str, dtype: str) -> KernelMatch
 def _require_rx_rz_sequence_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _rx_rz_sequence_kernel_match(device_type=device_type, dtype=dtype),

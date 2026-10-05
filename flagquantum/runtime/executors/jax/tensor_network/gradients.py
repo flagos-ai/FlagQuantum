@@ -92,7 +92,7 @@ def _jax_parameterized_tn_state_nodes(
                 tensor=tensor,
                 labels=output_labels + input_labels,
                 name=f"{index}:{instruction.name}",
-                metadata={"wires": qubits},
+                metadata={"qubits": qubits},
             )
         )
     return nodes, current_labels, next_label
@@ -146,7 +146,7 @@ def _jax_parameterized_tn_expectation_nodes(
                 tensor=matrix,
                 labels=(int(bra_outputs[qubit]), int(ket_outputs[qubit])),
                 name=f"obs_{qubit}",
-                metadata={"wire": int(qubit)},
+                metadata={"qubit": int(qubit)},
             )
         )
     return tuple(nodes), (0,)
@@ -171,7 +171,7 @@ def _static_expectation_plan_for_parameterized_tn(
     normalized = str(observable)
     if normalized in {"z", "z_sum"}:
         qubits = (
-            tuple(range(base.n_wires))
+            tuple(range(base.n_qubits))
             if observable_qubits is None
             else tuple(int(qubit) for qubit in observable_qubits)
         )
@@ -395,10 +395,10 @@ def jax_sliced_tensor_network_value_and_grad(
         )
         return _jax_tn_loss_from_output(
             reduced,
-            n_wires=plan.n_wires,
+            n_qubits=plan.n_qubits,
             bsz=plan.bsz,
             observable=observable,
-            observable_wires=observable_qubits,
+            observable_qubits=observable_qubits,
         )
 
     value_and_grad = jax.value_and_grad(_loss)
@@ -432,7 +432,7 @@ def jax_sliced_tensor_network_value_and_grad(
         slicing=slicing,
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_qubits=plan.n_wires,
+        n_qubits=plan.n_qubits,
         bsz=plan.bsz,
         complex_bytes=complex_bytes,
         local_world_size=resolved_local_world_size,

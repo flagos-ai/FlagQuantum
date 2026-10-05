@@ -10,9 +10,9 @@ import triton
 import triton.language as tl
 
 if TYPE_CHECKING:
-    from ._jit import jit
+    from ._jit import autotune, jit
 else:
-    from triton import jit
+    from triton import autotune, jit
 
 
 class _TwoSiteContext(Protocol):
@@ -22,6 +22,31 @@ class _TwoSiteContext(Protocol):
     def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
 
 
+@autotune(
+    configs=[
+        triton.Config(
+            {"block_rows": 16, "block_columns": 16},
+            num_warps=4,
+            num_stages=2,
+        ),
+        triton.Config(
+            {"block_rows": 16, "block_columns": 16},
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {"block_rows": 32, "block_columns": 32},
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {"block_rows": 32, "block_columns": 32},
+            num_warps=8,
+            num_stages=2,
+        ),
+    ],
+    key=["left_dim", "bond_dim", "right_dim", "batched_gate"],
+)
 @jit
 def _two_site_forward_kernel(
     left_parts: tl.tensor,
@@ -199,13 +224,14 @@ def _launch(
     output_parts = torch.empty(
         batch, left_dim * 2, 2 * right_dim, 2, dtype=torch.float32, device=left.device
     )
-    block_rows = 16 if left_dim * 2 <= 16 else 32
-    block_columns = 16 if 2 * right_dim <= 16 else 32
-    grid = (
-        triton.cdiv(left_dim * 2, block_rows),
-        triton.cdiv(2 * right_dim, block_columns),
-        batch,
-    )
+
+    def grid(meta: dict[str, int]) -> tuple[int, int, int]:
+        return (
+            triton.cdiv(left_dim * 2, meta["block_rows"]),
+            triton.cdiv(2 * right_dim, meta["block_columns"]),
+            batch,
+        )
+
     _two_site_forward_kernel[grid](
         torch.view_as_real(left.resolve_conj().resolve_neg()),
         torch.view_as_real(gate.resolve_conj().resolve_neg()),
@@ -215,10 +241,6 @@ def _launch(
         bond_dim=bond_dim,
         right_dim=right_dim,
         batched_gate=batched_gate,
-        block_rows=block_rows,
-        block_columns=block_columns,
-        num_warps=4,
-        num_stages=3,
     )
     return torch.view_as_complex(output_parts)
 

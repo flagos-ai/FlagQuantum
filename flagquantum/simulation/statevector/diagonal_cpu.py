@@ -13,7 +13,7 @@ def _apply_cross_wire_diagonal_cpu(
     wires: Sequence[int],
     n_wires: int,
 ) -> torch.Tensor:
-    """Apply several one-wire diagonals with one pass over a CPU statevector."""
+    """Apply several single-qubit diagonals with one pass over a CPU statevector."""
 
     return _apply_disjoint_diagonal_regions_cpu(
         state,
@@ -29,7 +29,7 @@ def _apply_disjoint_diagonal_regions_cpu(
     wire_groups: Sequence[Sequence[int]],
     n_wires: int,
 ) -> torch.Tensor:
-    """Apply wire-disjoint one- or two-wire diagonals in one statevector pass."""
+    """Apply qubit-disjoint one- or two-qubit diagonals in one statevector pass."""
 
     normalized_groups = tuple(
         tuple(int(wire) for wire in wires) for wires in wire_groups

@@ -87,7 +87,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-004 | `mps.environment.transfer_identity_z` | `fused_mps_environment_transfer` |
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
-| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_wire_probabilities` |
+| FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_qubit_probabilities` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
 | FQK-MEAS-003 | `measurement.probabilities.marginal.statevector` | `statevector_marginal_probabilities` |
@@ -483,6 +483,29 @@ development evidence, not a framework-wide algorithm or distributed
 scalability claim. Reproduce or validate it with
 [`benchmarks/statevector_pauli_rotation_tangent_dispatch.py`](../../benchmarks/statevector_pauli_rotation_tangent_dispatch.py).
 
+`FQKI-TRITON-GR-006-A` propagates the state and every parameter tangent through
+the bond-resolved-phase Heisenberg HVA. The fused augmented-state path supplies
+the explicit Jacobian used by quantum natural-gradient metric construction
+without replaying one reverse-mode pass per parameter.
+
+The checked-in
+[`heisenberg_hva_forward_tangent_dispatch_a800.json`](../../benchmarks/results/local/heisenberg_hva_forward_tangent_dispatch_a800.json)
+artifact records six fixed wire-count and depth shapes from the two-wire,
+depth-one boundary through ten wires on `jp-a800-171` and `jp-a800-172` under
+stock Triton 3.7.1 and FlagTree 0.7.0. The independent baseline propagates the
+same state and parameter-major analytic tangents with ordinary PyTorch
+operations, is checked against finite differences, and is also compiled with
+`torch.compile`. Maximum state and tangent absolute errors are `1.20e-7` and
+`1.50e-7`; their maximum relative L2 errors are `3.80e-7` and `3.69e-7`.
+Across the full measured window, catalog dispatch reaches at least `4.194x`
+the speed of PyTorch eager and `6.416x` the speed of `torch.compile`. The
+runner rejects any case below either `1.0x` performance floor or the state and
+tangent tolerances, so GR-006-A is `provisional` for this measured CUDA
+`complex64` window. This is bounded single-device development evidence, not a
+framework-wide QNG, HVA, or distributed scalability claim. Reproduce or
+validate it with
+[`benchmarks/heisenberg_hva_forward_tangent_dispatch.py`](../../benchmarks/heisenberg_hva_forward_tangent_dispatch.py).
+
 MPS canonical-transfer absorption is lowered to rank-three batched matrix
 multiplication before provider selection. Its current runtime path uses
 `torch.bmm`: A800 measurements show that the experimental NUM-001 Triton
@@ -615,27 +638,33 @@ scalability claim. Reproduce or validate it with
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
 entry for contiguous CUDA `complex64` tensors outside reverse execution once
-the contraction contains at least `2**12` elements for forward-only calls or
-`2**18` elements when gradients are required. Equal-shape spatial buckets use
-the same catalog route from `2**18` elements. Calls outside those contracts
-retain the existing PyTorch contraction, and both routes feed the unchanged
-downstream SVD or QR factorization.
+the contraction contains at least `2**12` elements. The optimized route is
+inference-forward-only: calls requiring gradients retain the differentiable
+PyTorch contraction because the current custom autograd backward recomputes an
+intermediate and does not provide a repeatable speedup. Equal-shape spatial
+buckets use the same catalog route from `2**18` elements when none of their
+inputs requires gradients. Calls outside those contracts retain the existing
+PyTorch contraction, and both routes feed the unchanged downstream SVD or QR
+factorization. Catalog authorization is cached by device and dtype, and the
+Triton launch is autotuned by contraction shape and gate batching.
 
 The checked-in
 [`mps_two_site_dispatch_a800.json`](../../benchmarks/results/local/mps_two_site_dispatch_a800.json)
-artifact preserves 30 synchronized groups of 10 invocations for each of four
-fixed contraction shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
-3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape combinations,
-the catalog-authorized contraction ranges from `0.81x` to `1.45x` versus eager
-PyTorch and from `3.12x` to `4.41x` versus its warm compiled reference for the
-forward direction. Forward plus backward ranges from `0.97x` to `1.30x` versus
-eager and from `1.84x` to `2.37x` versus warm compiled. Maximum forward
+artifact preserves 50 synchronized groups of 10 invocations for each of four
+fixed contraction shapes after 100 warmups on `jp-a800-171` and
+`jp-a800-172`, under stock Triton 3.7.1 and FlagTree 0.7.0. Across all 16 host,
+compiler, and shape combinations, the catalog-authorized forward contraction
+ranges from `1.03x` to `1.73x` versus eager PyTorch and from `3.78x` to `5.02x`
+versus its warm compiled reference. The direct wrapper ranges from `1.10x` to
+`1.81x` versus eager. Forward plus backward remains a diagnostic measurement,
+ranging from `0.98x` to `1.30x` versus eager; it is not runtime-eligible and is
+not part of the performance gate. Maximum forward
 absolute and relative L2 error are `4.20e-9` and `2.95e-7`; maximum gradient
-absolute and relative L2 error are `3.49e-7` and `3.33e-7`. The direct wrapper
-ranges from `0.68x` to `2.14x` for forward and `0.95x` to `1.21x` for forward
-plus backward. Because neither eager comparison wins on every measured shape,
-and because this microbenchmark excludes the downstream MPS factorization, the
-canonical aggregate records `retain_opt_in`. The warm compiled complex baseline
+absolute and relative L2 error are `3.49e-7` and `3.33e-7`. The v2 evidence
+contract rejects any runtime-eligible forward case at or below `1.0x`; the
+canonical aggregate records `performance_gate_passed`. MPS-001 is therefore
+`provisional`, while dispatch remains `retain_opt_in` because this
+microbenchmark excludes the downstream MPS factorization. The warm compiled complex baseline
 also carries PyTorch Inductor's warning that complex code generation may be
 worse than eager, so it is a compatibility baseline rather than evidence of an
 optimized complex kernel. This is bounded development hardware evidence, not a
@@ -809,7 +838,7 @@ artifact preserves 30 synchronized groups of 100 invocations for each case on
 Across the fixed sequential-sampling shape matrix, the direct kernel wrapper is
 `2.14x` to `3.42x` faster than the equivalent PyTorch reduction, with maximum
 absolute error `8.94e-8`. After removing redundant normalization and replacing
-per-wire host synchronization with device-side asynchronous validation, the
+per-qubit host synchronization with device-side asynchronous validation, the
 complete public dispatch path is `1.27x` to `1.40x` faster across all 16
 host/compiler/shape cases. The canonical aggregate records
 `eligible_for_default`, and MPS-007 is now a `provisional` implementation with
@@ -956,10 +985,11 @@ Implementation maturity is independent:
   policies are maintained.
 
 The current 26 semantics and 33 implementations are implemented. SV-001-A
-through SV-008-A, GR-001-A through GR-002-A, MPS-003 through MPS-007, and
-MEAS-001 through MEAS-003 are provisional after their evidenced
-default-dispatch promotions;
-the other 15 implementations remain experimental.
+through SV-008-A, GR-001-A through GR-002-A, MPS-001, MPS-003 through MPS-007,
+and MEAS-001 through MEAS-003 are provisional after evidenced support-window
+validation; MPS-001 remains opt-in for the end-to-end reason above, while the
+other listed routes have evidenced default-dispatch promotions;
+the other 14 implementations remain experimental.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

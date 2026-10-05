@@ -32,7 +32,7 @@ def _ry_rz_pair_kernel_match(*, device_type: str, dtype: str) -> KernelMatchResu
 
 
 def _require_ry_rz_pair_kernel(*, device_type: str, dtype: str) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _ry_rz_pair_kernel_match(device_type=device_type, dtype=dtype),
@@ -61,8 +61,8 @@ def _apply_cataloged_ry_rz_pair(
         state,
         ry_angles,
         rz_angles,
-        wire=wire,
-        n_wires=n_wires,
+        qubit=wire,
+        n_qubits=n_wires,
     )
 
 

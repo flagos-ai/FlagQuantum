@@ -131,11 +131,11 @@ def test_product_state_routes_h_and_s_through_fixed_clifford_kernel(
     def record_fixed_kernel(
         state: torch.Tensor,
         name: str,
-        wire: int,
-        n_wires: int,
+        qubit: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         observed.add(name)
-        return apply_fixed(state, name, wire, n_wires)
+        return apply_fixed(state, name, qubit, n_qubits)
 
     monkeypatch.setattr(
         product_state,
@@ -203,11 +203,11 @@ def test_wide_product_component_attempts_native_mixed_matching(
         step: _StatevectorCliffordMatchingStep,
         state: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
         **kwargs: object,
     ) -> tuple[torch.Tensor, None]:
         del step, kwargs
-        widths.append(n_wires)
+        widths.append(n_qubits)
         return state.clone(), None
 
     monkeypatch.setattr(
@@ -321,11 +321,11 @@ def test_wide_product_component_uses_native_static_clifford_with_rollback(
     def record_native(
         output: torch.Tensor,
         gate_codes: torch.Tensor,
-        wires: torch.Tensor,
+        qubits: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
     ) -> bool:
-        observed.append((gate_codes.dtype, wires.dtype, n_wires))
+        observed.append((gate_codes.dtype, qubits.dtype, n_qubits))
         return False
 
     monkeypatch.setattr(product_state, "fused_static_clifford_layer_", record_native)

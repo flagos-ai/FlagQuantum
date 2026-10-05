@@ -129,8 +129,8 @@ def _case(
             state,
             ry_angles,
             rz_angles,
-            wire=wire,
-            n_wires=n_wires,
+            qubit=wire,
+            n_qubits=n_wires,
         )
 
     def pytorch_reference() -> torch.Tensor:

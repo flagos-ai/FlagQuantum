@@ -26,7 +26,7 @@ def test_mps_two_site_dispatch_binds_exact_catalog_implementation() -> None:
     assert implementation.semantic_id == "mps.contract.two_site_gate"
     assert implementation.implementation_id == "FQKI-TRITON-MPS-001-A"
     assert implementation.symbol == "fused_mps_two_site"
-    assert implementation.directions == ("forward", "backward")
+    assert implementation.directions == ("forward",)
 
 
 @pytest.mark.parametrize(
@@ -145,3 +145,32 @@ def test_mps_state_single_and_bucket_paths_use_catalog(monkeypatch) -> None:
     assert single.triton_two_site_regions == 1
     assert bucket.triton_two_site_regions == 2
     assert catalog_routes == ["FQKI-TRITON-MPS-001-A"] * 2
+
+
+@pytest.mark.gpu
+@pytest.mark.triton
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_mps_state_training_preserves_eager_two_site_route(monkeypatch) -> None:
+    monkeypatch.setenv("FQ_TRITON_MPS_TWO_SITE", "1")
+
+    def reject_catalog_route(*args, **kwargs):
+        raise AssertionError("training must preserve the eager two-site route")
+
+    monkeypatch.setattr(
+        two_site_dispatch,
+        "_apply_cataloged_mps_two_site",
+        reject_catalog_route,
+    )
+    gate = torch.randn(
+        4,
+        4,
+        device="cuda",
+        dtype=torch.complex64,
+        requires_grad=True,
+    )
+    state = _interior_bond_state(4, 64)
+
+    state.apply_two(gate, 1)
+
+    assert state.triton_two_site_regions == 0
+    assert state.eager_two_site_regions == 1

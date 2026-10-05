@@ -4,14 +4,14 @@ A gate whose matrix is diagonal in the computational basis multiplies each basis
 state by a phase and moves amplitude nowhere: it is a monomial in ``Z``. Every
 computational-basis measurement downstream of it therefore returns the outcome it
 would have returned without it, so the gate can be dropped as soon as nothing but
-such a measurement reads its wires:
+such a measurement reads its qubits:
 
     z(0) measure(0)              # `z` is unobservable here
     z(0) h(0) measure(0)         # `h` is not, and `z` is not adjacent to one
-    cz(0, 1) measure(0) measure(1)   # diagonal, both wires read out
+    cz(0, 1) measure(0) measure(1)   # diagonal, both qubits read out
 
 The rule is one sentence long: **remove a diagonal gate when the next instruction
-on every one of its wires is an unconditional measurement.** ``measure`` and
+on every one of its qubits is an unconditional measurement.** ``measure`` and
 ``reset`` are not declared opcodes, so a ``measure`` is one of the two
 instructions the optimizer can meet that the operator schema cannot describe; the
 predicate below identifies it by name and refuses to reason about a conditional
@@ -31,26 +31,26 @@ list would have: ``u3(0, phi, lam)``, ``rx(0)`` and ``ry(0)`` are diagonal and
 are removed, and ``remove_identity_gates`` cannot take them because none of the
 three is the identity on the nose.
 
-Two-wire diagonality has no such declaration to read. `one_qubit_synthesis`
-covers one wire, `two_qubit_synthesis` is a Weyl-chamber synthesis whose
+Two-qubit diagonality has no such declaration to read. `one_qubit_synthesis`
+covers one qubit, `two_qubit_synthesis` is a Weyl-chamber synthesis whose
 coordinates do not distinguish a diagonal operator from a locally equivalent
 one, and `basis_translation`'s equivalence table is keyed on reaching a target
-basis rather than on a matrix shape. The four declared two-wire opcodes whose
+basis rather than on a matrix shape. The four declared two-qubit opcodes whose
 matrix is diagonal for *every* angle are therefore named here, each with its
-closed form on the index convention ``2 * bit(wires[0]) + bit(wires[1])``:
+closed form on the index convention ``2 * bit(operand[0]) + bit(operand[1])``:
 
     cz           diag(1, 1, 1, -1)
     cphase(t)    diag(1, 1, 1, exp(1j*t))
     crz(t)       diag(1, 1, exp(-1j*t/2), exp(1j*t/2))
     rzz(t)       diag(exp(-1j*t/2), exp(1j*t/2), exp(1j*t/2), exp(-1j*t/2))
 
-The remaining seven two-wire opcodes -- ``cx``, ``cy``, ``crx``, ``cry``,
+The remaining seven two-qubit opcodes -- ``cx``, ``cy``, ``crx``, ``cry``,
 ``swap``, ``rxx`` and ``ryy`` -- carry a nonzero off-diagonal entry at every
 angle and are diagonal for none. Because the classification is per *opcode* here
 rather than per value, this is the one place in the pass where a list is the
 honest answer; `tests/unit/test_compilation_diagonal_before_measure.py` measures
-the whole two-wire set out of the runtime gate matrices and asserts that this
-list equals it, so the day Core declares a fifth diagonal two-wire opcode the
+the whole two-qubit set out of the runtime gate matrices and asserts that this
+list equals it, so the day Core declares a fifth diagonal two-qubit opcode the
 test fails rather than the pass silently missing it. The single-qubit half is
 measured the same way, against all eighteen declared single-qubit unitaries at
 several angles.
@@ -66,11 +66,11 @@ but a condition is exactly the event this pass cannot see the whole program
 across, and a false removal is a program change while a declined one is only a
 missed optimization.
 
-**A wire whose next instruction is not a measurement blocks the removal.** That
+**A qubit whose next instruction is not a measurement blocks the removal.** That
 covers the three shapes worth naming: a non-diagonal gate between the candidate
-and the measurement, no measurement at all on one of a two-wire candidate's
-wires, and the end of the program. It is the same requirement Qiskit 1.2.4's
-`RemoveDiagonalGatesBeforeMeasure` implements, whose two-wire branch demands that
+and the measurement, no measurement at all on one of a two-qubit candidate's
+qubits, and the end of the program. It is the same requirement Qiskit 1.2.4's
+`RemoveDiagonalGatesBeforeMeasure` implements, whose two-qubit branch demands that
 *every* quantum successor of the gate be a ``Measure``.
 
 **A removed gate does not block the gate behind it.** A run of diagonal gates
@@ -104,10 +104,10 @@ _CONDITION_KEYS = ("conditions", "condition_clauses")
 #: declare, and which `runtime.dynamic` puts on every instruction it rewrites.
 _DYNAMIC_FLAG = "is_dynamic"
 
-# The declared two-wire unitary opcodes whose matrix is diagonal in the
+# The declared two-qubit unitary opcodes whose matrix is diagonal in the
 # computational basis for every angle, with the closed forms stated in the module
 # docstring. A unit test measures this set out of the runtime gate matrices over
-# the whole declared two-wire unitary set, so a new Core opcode fails that test
+# the whole declared two-qubit unitary set, so a new Core opcode fails that test
 # instead of being silently declined here.
 _DIAGONAL_TWO_WIRE = frozenset({"cz", "cphase", "crz", "rzz"})
 

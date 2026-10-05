@@ -198,7 +198,7 @@ class DistributedMPSState:
         self.shards = (
             tuple(shards)
             if shards is not None
-            else _mps_shards(local_state.n_wires, self.world_size)
+            else _mps_shards(local_state.n_qubits, self.world_size)
         )
         self.context = context
         self.local_shard_tensors = dict(local_shard_tensors or {})
@@ -225,7 +225,7 @@ class DistributedMPSState:
 
     @property
     def n_qubits(self) -> int:
-        return self.local_state.n_wires
+        return self.local_state.n_qubits
 
     @property
     def bsz(self) -> int:
@@ -773,7 +773,7 @@ class ShardedMPSState:
             "state_mode": "sharded_mps",
             "rank": self.rank,
             "world_size": self.world_size,
-            "n_wires": self.n_qubits,
+            "n_qubits": self.n_qubits,
             "batch_size": self.bsz,
             "local_tensor_wires": tuple(sorted(self.local_tensors)),
             "local_tensor_count": len(self.local_tensors),

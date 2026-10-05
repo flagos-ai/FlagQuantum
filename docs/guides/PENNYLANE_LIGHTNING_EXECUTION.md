@@ -39,7 +39,7 @@ occurred. PennyLane scripts, devices, and native result objects do not cross the
 ecosystem boundary.
 
 QuantumScript does not retain idle wires. The bridge constructs Lightning with
-the complete FlagQuantum wire range so statevector dimensions and wire
+the complete FlagQuantum qubit range so statevector dimensions and qubit
 positions remain unchanged; this preservation is recorded in provenance.
 
 ## Initial support boundary
@@ -48,7 +48,7 @@ positions remain unchanged; this preservation is recorded in provenance.
   counts;
 - one fully bound, unbatched FlagQuantum circuit;
 - `complex64` and `complex128` statevectors;
-- explicit ordered wire selection for samples and counts;
+- explicit ordered qubit selection for samples and counts;
 - no gradients, QNodes, noise model, dynamic circuit, automatic routing, GPU,
   alternative PennyLane device, or fallback.
 

@@ -61,7 +61,7 @@ class MPSState(MPSPlanningMixin):
         self.spatial_two_site_bucketed_gate_count = 0
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         return len(self.tensors)
 
     @property
@@ -94,7 +94,7 @@ class MPSState(MPSPlanningMixin):
     @classmethod
     def zero(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         bsz: int = 1,
         device: torch.device | str = "cpu",
@@ -103,7 +103,7 @@ class MPSState(MPSPlanningMixin):
     ) -> "MPSState":
         out_dtype = dtype or getattr(torch, get_runtime_config().complex_dtype)
         tensors = []
-        for _ in range(int(n_wires)):
+        for _ in range(int(n_qubits)):
             tensor = torch.zeros(bsz, 1, 2, 1, dtype=out_dtype, device=device)
             tensor[:, 0, 0, 0] = 1
             tensors.append(tensor)
@@ -116,7 +116,7 @@ class MPSState(MPSPlanningMixin):
     def from_statevector(
         cls,
         state: torch.Tensor,
-        n_wires: int,
+        n_qubits: int,
         *,
         config: MPSConfig | None = None,
     ) -> "MPSState":
@@ -132,12 +132,12 @@ class MPSState(MPSPlanningMixin):
             state = state.reshape(1, -1)
         cfg = config or MPSConfig()
         bsz = state.shape[0]
-        rest = state.reshape(bsz, 1, 2 ** int(n_wires))
+        rest = state.reshape(bsz, 1, 2 ** int(n_qubits))
         tensors: list[torch.Tensor] = []
         truncation_errors: list[float] = []
         truncation_records: list[MPSTruncationRecord] = []
         left_dim = 1
-        for wire in range(int(n_wires) - 1):
+        for qubit in range(int(n_qubits) - 1):
             rest = rest.reshape(bsz, left_dim * 2, -1)
             per_batch = []
             next_parts = []
@@ -159,7 +159,7 @@ class MPSState(MPSPlanningMixin):
                 truncation_errors.append(step_error)
             truncation_records.append(
                 MPSTruncationRecord(
-                    bond=wire,
+                    bond=qubit,
                     kept_rank=int(rank),
                     original_rank=max(int(s.shape[0]) for _, s, _ in svds),
                     discarded_weight=float(step_error),
@@ -175,7 +175,7 @@ class MPSState(MPSPlanningMixin):
         out = cls(tensors, config=cfg)
         out.truncation_errors.extend(truncation_errors)
         out.truncation_records.extend(truncation_records)
-        out.orthogonality_center = int(n_wires) - 1
+        out.orthogonality_center = int(n_qubits) - 1
         out._canonical_center_valid = True
         return out
 
@@ -196,20 +196,20 @@ class MPSState(MPSPlanningMixin):
         normalized = []
         for bitstring in bitstrings:
             if isinstance(bitstring, int):
-                if bitstring < 0 or bitstring >= 2**self.n_wires:
+                if bitstring < 0 or bitstring >= 2**self.n_qubits:
                     raise ValueError("integer bitstring is outside the state space")
-                bits = tuple(int(bit) for bit in f"{bitstring:0{self.n_wires}b}")
+                bits = tuple(int(bit) for bit in f"{bitstring:0{self.n_qubits}b}")
             elif isinstance(bitstring, str):
-                if len(bitstring) != self.n_wires or set(bitstring) - {"0", "1"}:
+                if len(bitstring) != self.n_qubits or set(bitstring) - {"0", "1"}:
                     raise ValueError(
-                        "bitstring must contain exactly n_wires binary digits"
+                        "bitstring must contain exactly n_qubits binary digits"
                     )
                 bits = tuple(int(bit) for bit in bitstring)
             else:
                 bits = tuple(int(bit) for bit in bitstring)
-                if len(bits) != self.n_wires or any(bit not in {0, 1} for bit in bits):
+                if len(bits) != self.n_qubits or any(bit not in {0, 1} for bit in bits):
                     raise ValueError(
-                        "bitstring must contain exactly n_wires binary values"
+                        "bitstring must contain exactly n_qubits binary values"
                     )
             normalized.append(bits)
         if not normalized:
@@ -255,7 +255,7 @@ class MPSState(MPSPlanningMixin):
     def canonicalize(self) -> "MPSState":
         rebuilt = type(self).from_statevector(
             self.to_statevector(),
-            self.n_wires,
+            self.n_qubits,
             config=self.config,
         )
         self.tensors = rebuilt.tensors
@@ -271,7 +271,7 @@ class MPSState(MPSPlanningMixin):
         if self.bsz != 1:
             rebuilt = type(self).from_statevector(
                 self.to_statevector(),
-                self.n_wires,
+                self.n_qubits,
                 config=self.config,
             )
             self.tensors = rebuilt.tensors
@@ -280,16 +280,16 @@ class MPSState(MPSPlanningMixin):
             self.orthogonality_center = rebuilt.orthogonality_center
             self._canonical_center_valid = True
             return self
-        for wire in range(self.n_wires - 1):
-            tensor = self.tensors[wire]
+        for qubit in range(self.n_qubits - 1):
+            tensor = self.tensors[qubit]
             _, left_dim, physical_dim, right_dim = tensor.shape
             matrix = tensor[0].reshape(left_dim * physical_dim, right_dim)
             q, r = torch.linalg.qr(matrix, mode="reduced")
             new_right_dim = q.shape[-1]
-            self.tensors[wire] = q.reshape(1, left_dim, physical_dim, new_right_dim)
-            next_tensor = self.tensors[wire + 1]
-            self.tensors[wire + 1] = torch.einsum("ab,cbsr->casr", r, next_tensor)
-        self.orthogonality_center = self.n_wires - 1
+            self.tensors[qubit] = q.reshape(1, left_dim, physical_dim, new_right_dim)
+            next_tensor = self.tensors[qubit + 1]
+            self.tensors[qubit + 1] = torch.einsum("ab,cbsr->casr", r, next_tensor)
+        self.orthogonality_center = self.n_qubits - 1
         self._canonical_center_valid = True
         return self
 
@@ -301,7 +301,7 @@ class MPSState(MPSPlanningMixin):
                 type(self)
                 .from_statevector(
                     self.to_statevector(),
-                    self.n_wires,
+                    self.n_qubits,
                     config=self.config,
                 )
                 .move_orthogonality_center(0)
@@ -381,51 +381,51 @@ class MPSState(MPSPlanningMixin):
             raise ValueError(f"MPS gate {name!r} requires a fixed matrix.")
         return matrix.to(device=self.device, dtype=self.dtype)
 
-    def expectation_z(self, wires: Iterable[int] | int | None = None) -> torch.Tensor:
-        if wires is None:
-            target_wires = tuple(range(self.n_wires))
-        elif isinstance(wires, int):
-            target_wires = (wires,)
+    def expectation_z(self, qubits: Iterable[int] | int | None = None) -> torch.Tensor:
+        if qubits is None:
+            target_qubits = tuple(range(self.n_qubits))
+        elif isinstance(qubits, int):
+            target_qubits = (qubits,)
         else:
-            target_wires = tuple(int(wire) for wire in wires)
-        if len(target_wires) > 1:
-            return self._expectation_single_site_z(target_wires)
+            target_qubits = tuple(int(qubit) for qubit in qubits)
+        if len(target_qubits) > 1:
+            return self._expectation_single_site_z(target_qubits)
         z_op = self._fixed_gate_matrix("z")
         values = []
-        for wire in target_wires:
-            values.append(self._expectation_product_ops({wire: z_op}))
+        for qubit in target_qubits:
+            values.append(self._expectation_product_ops({qubit: z_op}))
         return torch.stack(values, dim=-1)
 
     def expectation_z_sum(
-        self, wires: Iterable[int] | int | None = None
+        self, qubits: Iterable[int] | int | None = None
     ) -> torch.Tensor:
-        if wires is None:
-            targets = tuple(range(self.n_wires))
-        elif isinstance(wires, int):
-            targets = (int(wires),)
+        if qubits is None:
+            targets = tuple(range(self.n_qubits))
+        elif isinstance(qubits, int):
+            targets = (int(qubits),)
         else:
-            targets = tuple(int(wire) for wire in wires)
+            targets = tuple(int(qubit) for qubit in qubits)
         real_dtype = torch.float32 if self.dtype == torch.complex64 else torch.float64
         if not targets:
             return torch.zeros(self.bsz, dtype=real_dtype, device=self.device)
-        if any(wire < 0 or wire >= self.n_wires for wire in targets):
-            raise ValueError("expectation_z_sum wire index out of range.")
-        if self.n_wires <= int(self.config.dense_observable_wires):
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in targets):
+            raise ValueError("expectation_z_sum qubit index out of range.")
+        if self.n_qubits <= int(self.config.dense_observable_qubits):
             return self._expectation_z_sum_dense(targets)
         target_counts: dict[int, int] = {}
-        for wire in targets:
-            target_counts[wire] = target_counts.get(wire, 0) + 1
+        for qubit in targets:
+            target_counts[qubit] = target_counts.get(qubit, 0) + 1
 
         env = torch.ones(self.bsz, 1, 1, dtype=self.dtype, device=self.device)
         acc = torch.zeros_like(env)
-        for wire, tensor in enumerate(self.tensors):
+        for qubit, tensor in enumerate(self.tensors):
             next_acc = torch.einsum(
                 "bij,bipr,bjps->brs",
                 acc,
                 torch.conj(tensor),
                 tensor,
             )
-            count = target_counts.get(wire, 0)
+            count = target_counts.get(qubit, 0)
             if count:
                 z_env = torch.einsum(
                     "bij,bir,bjs->brs",
@@ -456,9 +456,9 @@ class MPSState(MPSPlanningMixin):
     ) -> torch.Tensor:
         """Evaluate weighted ``Z_i`` and adjacent ``Z_i Z_{i+1}`` in one sweep."""
 
-        if any(wire < 0 or wire >= self.n_wires for wire in z_coefficients):
-            raise ValueError("Z coefficient references a wire outside the MPS")
-        if any(wire < 0 or wire >= self.n_wires - 1 for wire in zz_coefficients):
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in z_coefficients):
+            raise ValueError("Z coefficient references a qubit outside the MPS")
+        if any(qubit < 0 or qubit >= self.n_qubits - 1 for qubit in zz_coefficients):
             raise ValueError("ZZ coefficient references a bond outside the MPS")
 
         env = torch.ones(self.bsz, 1, 1, dtype=self.dtype, device=self.device)
@@ -483,16 +483,16 @@ class MPSState(MPSPlanningMixin):
                 tensor[:, :, 1, :],
             )
 
-        for wire, tensor in enumerate(self.tensors):
+        for qubit, tensor in enumerate(self.tensors):
             next_total = transfer(total, tensor)
-            if wire in z_coefficients:
+            if qubit in z_coefficients:
                 coefficient = torch.as_tensor(
-                    z_coefficients[wire], dtype=self.dtype, device=self.device
+                    z_coefficients[qubit], dtype=self.dtype, device=self.device
                 )
                 next_total = next_total + coefficient * transfer_z(env, tensor)
-            if wire - 1 in zz_coefficients:
+            if qubit - 1 in zz_coefficients:
                 coefficient = torch.as_tensor(
-                    zz_coefficients[wire - 1], dtype=self.dtype, device=self.device
+                    zz_coefficients[qubit - 1], dtype=self.dtype, device=self.device
                 )
                 next_total = next_total + coefficient * transfer_z(pending_z, tensor)
             pending_z = transfer_z(env, tensor)
@@ -500,22 +500,22 @@ class MPSState(MPSPlanningMixin):
             total = next_total
         return torch.real(total[:, 0, 0])
 
-    def _expectation_z_sum_dense(self, wires: Sequence[int]) -> torch.Tensor:
+    def _expectation_z_sum_dense(self, qubits: Sequence[int]) -> torch.Tensor:
         state = self.to_statevector()
         probs = torch.abs(state) ** 2
         weights = _z_sum_dense_weights(
-            self.n_wires,
-            tuple(int(wire) for wire in wires),
+            self.n_qubits,
+            tuple(int(qubit) for qubit in qubits),
             device=self.device,
             dtype=probs.real.dtype,
         )
         return probs @ weights
 
-    def _expectation_single_site_z(self, wires: Sequence[int]) -> torch.Tensor:
-        targets = tuple(int(wire) for wire in wires)
+    def _expectation_single_site_z(self, qubits: Sequence[int]) -> torch.Tensor:
+        targets = tuple(int(qubit) for qubit in qubits)
         target_set = set(targets)
-        if any(wire < 0 or wire >= self.n_wires for wire in targets):
-            raise ValueError("expectation_z wire index out of range.")
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in targets):
+            raise ValueError("expectation_z qubit index out of range.")
 
         left_envs: list[torch.Tensor] = [
             torch.ones(self.bsz, 1, 1, dtype=self.dtype, device=self.device)
@@ -530,44 +530,44 @@ class MPSState(MPSPlanningMixin):
                 )
             )
 
-        right_envs: list[torch.Tensor | None] = [None] * (self.n_wires + 1)
-        right_envs[self.n_wires] = torch.ones(
+        right_envs: list[torch.Tensor | None] = [None] * (self.n_qubits + 1)
+        right_envs[self.n_qubits] = torch.ones(
             self.bsz, 1, 1, dtype=self.dtype, device=self.device
         )
-        for wire in range(self.n_wires - 1, -1, -1):
-            tensor = self.tensors[wire]
-            right_envs[wire] = torch.einsum(
+        for qubit in range(self.n_qubits - 1, -1, -1):
+            tensor = self.tensors[qubit]
+            right_envs[qubit] = torch.einsum(
                 "bipr,bmps,brs->bim",
                 torch.conj(tensor),
                 tensor,
-                right_envs[wire + 1],
+                right_envs[qubit + 1],
             )
 
         values: dict[int, torch.Tensor] = {}
-        for wire in sorted(target_set):
-            tensor = self.tensors[wire]
-            right_env = right_envs[wire + 1]
+        for qubit in sorted(target_set):
+            tensor = self.tensors[qubit]
+            right_env = right_envs[qubit + 1]
             assert right_env is not None
-            values[wire] = torch.real(
+            values[qubit] = torch.real(
                 torch.einsum(
                     "bij,bir,bjs,brs->b",
-                    left_envs[wire],
+                    left_envs[qubit],
                     torch.conj(tensor[:, :, 0, :]),
                     tensor[:, :, 0, :],
                     right_env,
                 )
                 - torch.einsum(
                     "bij,bir,bjs,brs->b",
-                    left_envs[wire],
+                    left_envs[qubit],
                     torch.conj(tensor[:, :, 1, :]),
                     tensor[:, :, 1, :],
                     right_env,
                 )
             )
-        return torch.stack([values[wire] for wire in targets], dim=-1)
+        return torch.stack([values[qubit] for qubit in targets], dim=-1)
 
     def expectation_z_and_nearest_neighbor_zz(
-        self, wires: Sequence[int]
+        self, qubits: Sequence[int]
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Evaluate many local Z and adjacent ZZ terms in one environment sweep.
 
@@ -575,9 +575,9 @@ class MPSState(MPSPlanningMixin):
         particularly important for batched spacetime-observation workloads.
         """
 
-        targets = tuple(int(wire) for wire in wires)
-        if any(wire < 0 or wire >= self.n_wires for wire in targets):
-            raise ValueError("observable wire index out of range")
+        targets = tuple(int(qubit) for qubit in qubits)
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in targets):
+            raise ValueError("observable qubit index out of range")
         left_envs = [torch.ones(self.bsz, 1, 1, dtype=self.dtype, device=self.device)]
         for tensor in self.tensors:
             left_envs.append(
@@ -588,15 +588,15 @@ class MPSState(MPSPlanningMixin):
                     tensor,
                 )
             )
-        right_envs: list[torch.Tensor | None] = [None] * (self.n_wires + 1)
+        right_envs: list[torch.Tensor | None] = [None] * (self.n_qubits + 1)
         right_envs[-1] = torch.ones(
             self.bsz, 1, 1, dtype=self.dtype, device=self.device
         )
-        for wire in range(self.n_wires - 1, -1, -1):
-            tensor = self.tensors[wire]
-            right_env = right_envs[wire + 1]
+        for qubit in range(self.n_qubits - 1, -1, -1):
+            tensor = self.tensors[qubit]
+            right_env = right_envs[qubit + 1]
             assert right_env is not None
-            right_envs[wire] = torch.einsum(
+            right_envs[qubit] = torch.einsum(
                 "bipr,bmps,brs->bim",
                 torch.conj(tensor),
                 tensor,
@@ -605,15 +605,15 @@ class MPSState(MPSPlanningMixin):
         z_op = self._fixed_gate_matrix("z")
         z_values = []
         zz_values = []
-        for wire in targets:
-            tensor = self.tensors[wire]
-            right_env = right_envs[wire + 1]
+        for qubit in targets:
+            tensor = self.tensors[qubit]
+            right_env = right_envs[qubit + 1]
             assert right_env is not None
             z_values.append(
                 torch.real(
                     torch.einsum(
                         "bij,bipr,pq,bjqs,brs->b",
-                        left_envs[wire],
+                        left_envs[qubit],
                         torch.conj(tensor),
                         z_op,
                         tensor,
@@ -621,13 +621,13 @@ class MPSState(MPSPlanningMixin):
                     )
                 )
             )
-            if wire + 1 < self.n_wires:
-                next_tensor = self.tensors[wire + 1]
-                after_pair = right_envs[wire + 2]
+            if qubit + 1 < self.n_qubits:
+                next_tensor = self.tensors[qubit + 1]
+                after_pair = right_envs[qubit + 2]
                 assert after_pair is not None
                 inserted = torch.einsum(
                     "bij,bipr,pq,bjqs->brs",
-                    left_envs[wire],
+                    left_envs[qubit],
                     torch.conj(tensor),
                     z_op,
                     tensor,
@@ -658,8 +658,8 @@ class MPSState(MPSPlanningMixin):
         return z, zz
 
     def _expectation_product_ops(self, ops: dict[int, torch.Tensor]) -> torch.Tensor:
-        if any(wire < 0 or wire >= self.n_wires for wire in ops):
-            raise ValueError("observable wire index out of range")
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in ops):
+            raise ValueError("observable qubit index out of range")
         env = torch.ones(
             self.bsz,
             1,
@@ -668,8 +668,8 @@ class MPSState(MPSPlanningMixin):
             device=self.device,
         )
         identity = self._fixed_gate_matrix("i")
-        for wire, tensor in enumerate(self.tensors):
-            op = ops.get(wire, identity)
+        for qubit, tensor in enumerate(self.tensors):
+            op = ops.get(qubit, identity)
             env = torch.einsum(
                 "bij,bipr,pq,bjqs->brs",
                 env,
@@ -690,18 +690,18 @@ class MPSState(MPSPlanningMixin):
         y_set = set(y or ())
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
-            raise ValueError("A wire can appear in only one of x, y, or z.")
+            raise ValueError("A qubit can appear in only one of x, y, or z.")
 
         ops: dict[int, torch.Tensor] = {}
-        for name, wires in (("x", x), ("y", y), ("z", z)):
-            if not wires:
+        for name, qubits in (("x", x), ("y", y), ("z", z)):
+            if not qubits:
                 continue
             matrix = GATE_MAT_DICT[name]
             if not isinstance(matrix, torch.Tensor):
                 raise ValueError("Pauli observables require fixed gate matrices.")
             operator = matrix.to(device=self.device, dtype=self.dtype)
-            for wire in wires:
-                ops[int(wire)] = operator
+            for qubit in qubits:
+                ops[int(qubit)] = operator
         return self._expectation_product_ops(ops)
 
     def sample(
@@ -733,10 +733,10 @@ class MPSState(MPSPlanningMixin):
 
         return sample_mps_indices(self, shots, generator=generator)
 
-    def _wire_probabilities(self, wire: int) -> torch.Tensor:
+    def _qubit_probabilities(self, qubit: int) -> torch.Tensor:
         from .wire_probability_dispatch import _mps_wire_probabilities
 
-        return _mps_wire_probabilities(self, int(wire))
+        return _mps_wire_probabilities(self, int(qubit))
 
     def _normalize(self) -> None:
         norm_squared = self._expectation_product_ops({})
@@ -768,7 +768,7 @@ class MPSState(MPSPlanningMixin):
             for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 index = int(key)
                 out_key: str | int = (
-                    index if format == "int" else f"{index:0{self.n_wires}b}"
+                    index if format == "int" else f"{index:0{self.n_qubits}b}"
                 )
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)
@@ -784,7 +784,7 @@ class MPSState(MPSPlanningMixin):
                 raise ValueError("MPS channel instructions require Kraus operators.")
             self.apply_channel_trajectory(instruction.matrix, instruction.wires)
             return self
-        wires = tuple(instruction.wires)
+        qubits = tuple(instruction.wires)
         slots = getattr(instruction, "parameter_slots", ())
         direct_theta = (
             parameter_bindings[slots[0]]
@@ -792,7 +792,7 @@ class MPSState(MPSPlanningMixin):
             else None
         )
         if (
-            len(wires) == 1
+            len(qubits) == 1
             and instruction.matrix is None
             and instruction.name in {"rx", "ry", "rz"}
             and (direct_theta is not None or "theta" in instruction.params)
@@ -804,7 +804,7 @@ class MPSState(MPSPlanningMixin):
                     if direct_theta is not None
                     else instruction.params["theta"]
                 ),
-                wires[0],
+                qubits[0],
             )
             return self
         matrix = gate_matrix(
@@ -814,17 +814,17 @@ class MPSState(MPSPlanningMixin):
             dtype=self.dtype,
             parameter_bindings=parameter_bindings,
         )
-        if len(wires) == 1:
-            self.apply_one(matrix, wires[0])
-        elif len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
-            self.apply_two(matrix, min(wires), reverse=wires[0] > wires[1])
-        elif len(wires) == 2:
-            self.apply_two_remote(matrix, wires)
+        if len(qubits) == 1:
+            self.apply_one(matrix, qubits[0])
+        elif len(qubits) == 2 and abs(qubits[0] - qubits[1]) == 1:
+            self.apply_two(matrix, min(qubits), reverse=qubits[0] > qubits[1])
+        elif len(qubits) == 2:
+            self.apply_two_remote(matrix, qubits)
         else:
-            dense = _apply_matrix(self.to_statevector(), matrix, wires, self.n_wires)
+            dense = _apply_matrix(self.to_statevector(), matrix, qubits, self.n_qubits)
             rebuilt = type(self).from_statevector(
                 dense,
-                self.n_wires,
+                self.n_qubits,
                 config=self.config,
             )
             self.tensors = rebuilt.tensors
@@ -834,29 +834,29 @@ class MPSState(MPSPlanningMixin):
             self._canonical_center_valid = True
         return self
 
-    def _validate_wire(self, wire: int) -> None:
-        """Refuse a wire the state does not have.
+    def _validate_qubit(self, qubit: int) -> None:
+        """Refuse a qubit the state does not have.
 
         A negative index is otherwise a valid Python index that selects a
-        different site, so the gate would land on the wrong wire and the state
+        different site, so the gate would land on the wrong qubit and the state
         would stay well formed and normalized: no exception to catch and no
         flag to inspect. An index past the last site reached a raw list
         ``IndexError`` instead of the ``ValueError`` this class already raises
-        for an out-of-range observable wire.
+        for an out-of-range observable qubit.
         """
-        if wire < 0 or wire >= self.n_wires:
-            raise ValueError("wire index out of range")
+        if qubit < 0 or qubit >= self.n_qubits:
+            raise ValueError("qubit index out of range")
 
-    def apply_one(self, matrix: torch.Tensor, wire: int) -> None:
-        self._validate_wire(int(wire))
-        tensor = self.tensors[int(wire)]
-        self.tensors[int(wire)], routed = _apply_mps_one_site(tensor, matrix)
+    def apply_one(self, matrix: torch.Tensor, qubit: int) -> None:
+        self._validate_qubit(int(qubit))
+        tensor = self.tensors[int(qubit)]
+        self.tensors[int(qubit)], routed = _apply_mps_one_site(tensor, matrix)
         self.triton_one_site_regions += int(routed)
 
-    def apply_parametric_one(self, name: str, theta: Any, wire: int) -> None:
+    def apply_parametric_one(self, name: str, theta: Any, qubit: int) -> None:
         """Apply one batched ``rx``/``ry``/``rz`` through the shared parameter rule.
 
-        This single-wire fast path skipped ``gate_matrix``, and read the caller's angle
+        This single-qubit fast path skipped ``gate_matrix``, and read the caller's angle
         with ``reshape(-1)``, which *flattens* a bracketed shape instead of refusing it:
 
         * ``(3, 3)``, ``(3, 1)`` and ``(1, 3)`` all flattened to three angles;
@@ -882,8 +882,8 @@ class MPSState(MPSPlanningMixin):
             raise ValueError(f"Gate {name!r} requires parameters.")
         angle = parameters[:, 0]
 
-        self._validate_wire(int(wire))
-        tensor = self.tensors[int(wire)]
+        self._validate_qubit(int(qubit))
+        tensor = self.tensors[int(qubit)]
         view_shape = (self.bsz, 1, 1)
         if name == "rz":
             phase0 = torch.exp((-0.5j * angle).to(self.dtype)).reshape(view_shape)
@@ -905,21 +905,21 @@ class MPSState(MPSPlanningMixin):
                 out1 = sin * zero + cos * one
             else:
                 raise ValueError(f"Unsupported parametric one-qubit gate {name!r}.")
-        self.tensors[int(wire)] = torch.stack((out0, out1), dim=2)
+        self.tensors[int(qubit)] = torch.stack((out0, out1), dim=2)
 
     def apply_channel_trajectory(
         self,
         kraus_ops: Sequence[torch.Tensor],
-        wires: Sequence[int],
+        qubits: Sequence[int],
         *,
         generator: torch.Generator | None = None,
     ) -> None:
-        wires = tuple(int(wire) for wire in wires)
-        if len(wires) != 1:
+        qubits = tuple(int(qubit) for qubit in qubits)
+        if len(qubits) != 1:
             dense = self.to_statevector()
             ops = [op.to(device=self.device, dtype=self.dtype) for op in kraus_ops]
             branches = tuple(
-                _apply_matrix(dense, op, wires, self.n_wires) for op in ops
+                _apply_matrix(dense, op, qubits, self.n_qubits) for op in ops
             )
             probabilities = torch.stack(
                 [torch.sum(torch.abs(branch) ** 2, dim=-1) for branch in branches],
@@ -944,7 +944,7 @@ class MPSState(MPSPlanningMixin):
             )
             rebuilt = type(self).from_statevector(
                 state,
-                self.n_wires,
+                self.n_qubits,
                 config=self.config,
             )
             self.tensors = rebuilt.tensors
@@ -954,12 +954,12 @@ class MPSState(MPSPlanningMixin):
             self._canonical_center_valid = True
             return
 
-        wire = wires[0]
+        qubit = qubits[0]
         ops = [op.to(device=self.device, dtype=self.dtype) for op in kraus_ops]
         branch_probs = []
         for op in ops:
             branch_probs.append(
-                torch.clamp(self._local_effect_probability(op, wire), min=0)
+                torch.clamp(self._local_effect_probability(op, qubit), min=0)
             )
         branch_weights = torch.stack(branch_probs, dim=-1)
         totals = branch_weights.sum(dim=-1, keepdim=True)
@@ -977,19 +977,21 @@ class MPSState(MPSPlanningMixin):
         for batch in range(self.bsz):
             choice = int(choices[batch].item())
             op = ops[choice]
-            tensor = self.tensors[wire][batch : batch + 1]
+            tensor = self.tensors[qubit][batch : batch + 1]
             updated = torch.einsum(
                 "pq,blqr->blpr",
                 op,
                 tensor,
             )
             branch_norm = torch.sqrt(branch_weights[batch, choice])
-            self.tensors[wire][batch : batch + 1] = updated / branch_norm.to(self.dtype)
+            self.tensors[qubit][batch : batch + 1] = updated / branch_norm.to(
+                self.dtype
+            )
 
-    def _local_effect_probability(self, op: torch.Tensor, wire: int) -> torch.Tensor:
-        self.move_orthogonality_center(int(wire))
+    def _local_effect_probability(self, op: torch.Tensor, qubit: int) -> torch.Tensor:
+        self.move_orthogonality_center(int(qubit))
         effect = torch.conj(op).transpose(-1, -2) @ op
-        tensor = self.tensors[int(wire)]
+        tensor = self.tensors[int(qubit)]
         return torch.real(
             torch.einsum(
                 "blpr,pq,blqr->b",
@@ -1000,9 +1002,9 @@ class MPSState(MPSPlanningMixin):
         )
 
     def apply_two(
-        self, matrix: torch.Tensor, left_wire: int, *, reverse: bool = False
+        self, matrix: torch.Tensor, left_qubit: int, *, reverse: bool = False
     ) -> None:
-        """Apply a two-site gate to `left_wire` and the wire after it.
+        """Apply a two-site gate to `left_qubit` and the qubit after it.
 
         The two tensors are contracted into one, the gate is applied to the joint
         index, and the result is split back by SVD under the configured bond limit
@@ -1015,11 +1017,11 @@ class MPSState(MPSPlanningMixin):
         `reverse` swaps the two physical indices so the same routine serves the
         backward sweep.
         """
-        self._validate_wire(int(left_wire))
-        self._validate_wire(int(left_wire) + 1)
-        canonical_split = self._split_preserves_center(int(left_wire))
-        left = self.tensors[int(left_wire)]
-        right = self.tensors[int(left_wire) + 1]
+        self._validate_qubit(int(left_qubit))
+        self._validate_qubit(int(left_qubit) + 1)
+        canonical_split = self._split_preserves_center(int(left_qubit))
+        left = self.tensors[int(left_qubit)]
+        right = self.tensors[int(left_qubit) + 1]
         full_rank = min(int(left.shape[1]) * 2, int(right.shape[3]) * 2)
         fixed_rank = self.config.max_bond
         fixed_rank_enabled = _opt_in_environment_flag("FQ_MPS_FIXED_RANK_QR")
@@ -1034,9 +1036,9 @@ class MPSState(MPSPlanningMixin):
             left_out, right_out = fixed_rank_two_site_range_qr(
                 left, matrix, right, int(fixed_rank)
             )
-            self.tensors[int(left_wire)] = left_out
-            self.tensors[int(left_wire) + 1] = right_out
-            self.orthogonality_center = int(left_wire) + 1
+            self.tensors[int(left_qubit)] = left_out
+            self.tensors[int(left_qubit) + 1] = right_out
+            self.orthogonality_center = int(left_qubit) + 1
             self._canonical_center_valid = canonical_split
             self.fixed_rank_qr_regions += 1
             self.svd_gradient_method = "fixed_rank_range_qr"
@@ -1045,7 +1047,7 @@ class MPSState(MPSPlanningMixin):
             self.truncation_errors.append(float("nan"))
             self.truncation_records.append(
                 MPSTruncationRecord(
-                    bond=int(left_wire),
+                    bond=int(left_qubit),
                     kept_rank=int(fixed_rank),
                     original_rank=full_rank,
                     discarded_weight=float("nan"),
@@ -1061,7 +1063,6 @@ class MPSState(MPSPlanningMixin):
         requires_grad = (
             left.requires_grad or matrix.requires_grad or right.requires_grad
         )
-        fused_threshold = 2**18 if requires_grad else 2**12
         triton_enabled = os.getenv(
             "FQ_TRITON_MPS_TWO_SITE", "0"
         ).strip().lower() not in {
@@ -1074,15 +1075,16 @@ class MPSState(MPSPlanningMixin):
             triton_enabled
             and left.is_cuda
             and left.dtype == torch.complex64
+            and not requires_grad
             and not reverse
-            and contraction_volume >= fused_threshold
+            and contraction_volume >= 2**12
         ):
             from .two_site_dispatch import _apply_cataloged_mps_two_site
 
             fused = _apply_cataloged_mps_two_site(left, matrix, right)
             self._split_pair(
                 fused.reshape(self.bsz, left.shape[1], 2, 2, right.shape[3]),
-                int(left_wire),
+                int(left_qubit),
             )
             self.triton_two_site_regions += 1
             return
@@ -1098,29 +1100,29 @@ class MPSState(MPSPlanningMixin):
         theta = theta.reshape(self.bsz, left.shape[1], 2, 2, right.shape[3])
         if reverse:
             theta = theta.transpose(2, 3)
-        self._split_pair(theta, int(left_wire))
+        self._split_pair(theta, int(left_qubit))
 
     def apply_two_bucket(
-        self, matrices: Sequence[torch.Tensor], left_wires: Sequence[int]
+        self, matrices: Sequence[torch.Tensor], left_qubits: Sequence[int]
     ) -> None:
         """Apply disjoint adjacent gates in equal-shape spatial buckets."""
 
         buckets: dict[tuple[tuple[int, ...], tuple[int, ...]], list[int]] = {}
-        for position, wire in enumerate(left_wires):
-            left = self.tensors[int(wire)]
-            right = self.tensors[int(wire) + 1]
+        for position, qubit in enumerate(left_qubits):
+            left = self.tensors[int(qubit)]
+            right = self.tensors[int(qubit) + 1]
             key = (tuple(left.shape), tuple(right.shape))
             buckets.setdefault(key, []).append(position)
         for positions in buckets.values():
             if len(positions) < 2:
                 position = positions[0]
-                self.apply_two(matrices[position], int(left_wires[position]))
+                self.apply_two(matrices[position], int(left_qubits[position]))
                 continue
             self.spatial_two_site_bucket_count += 1
             self.spatial_two_site_bucketed_gate_count += len(positions)
-            wires = [int(left_wires[position]) for position in positions]
-            left = torch.stack([self.tensors[wire] for wire in wires])
-            right = torch.stack([self.tensors[wire + 1] for wire in wires])
+            qubits = [int(left_qubits[position]) for position in positions]
+            left = torch.stack([self.tensors[qubit] for qubit in qubits])
+            right = torch.stack([self.tensors[qubit + 1] for qubit in qubits])
             gates = torch.stack(
                 [
                     (
@@ -1141,6 +1143,11 @@ class MPSState(MPSPlanningMixin):
                 _opt_in_environment_flag("FQ_TRITON_MPS_TWO_SITE")
                 and flat_left.is_cuda
                 and flat_left.dtype == torch.complex64
+                and not (
+                    flat_left.requires_grad
+                    or flat_gates.requires_grad
+                    or flat_right.requires_grad
+                )
                 and volume >= 2**18
             )
             if use_triton:
@@ -1164,12 +1171,12 @@ class MPSState(MPSPlanningMixin):
                 right_dim=right_dim,
                 config=self.config,
             )
-            for wire, (left_out, right_out, split_info) in zip(
-                wires, split, strict=True
+            for qubit, (left_out, right_out, split_info) in zip(
+                qubits, split, strict=True
             ):
-                self.tensors[wire] = left_out
-                self.tensors[wire + 1] = right_out
-                self.orthogonality_center = wire + 1
+                self.tensors[qubit] = left_out
+                self.tensors[qubit + 1] = right_out
+                self.orthogonality_center = qubit + 1
                 self._canonical_center_valid = False
                 discarded_weight = float(split_info["discarded_weight"])
                 if split_info["method"] == "svd":
@@ -1178,7 +1185,7 @@ class MPSState(MPSPlanningMixin):
                     )
                     self.truncation_records.append(
                         MPSTruncationRecord(
-                            bond=wire,
+                            bond=qubit,
                             kept_rank=int(split_info["rank"]),
                             original_rank=int(split_info["original_rank"]),
                             discarded_weight=discarded_weight,
@@ -1190,30 +1197,30 @@ class MPSState(MPSPlanningMixin):
                 if discarded_weight > 0:
                     self.truncation_errors.append(discarded_weight)
 
-    def apply_two_remote(self, matrix: torch.Tensor, wires: Sequence[int]) -> None:
-        first, second = int(wires[0]), int(wires[1])
+    def apply_two_remote(self, matrix: torch.Tensor, qubits: Sequence[int]) -> None:
+        first, second = int(qubits[0]), int(qubits[1])
         if first == second:
-            raise ValueError("A two-wire gate requires distinct wires.")
+            raise ValueError("A two-qubit gate requires distinct qubits.")
         left = min(first, second)
         right = max(first, second)
-        for wire in range(right - 1, left, -1):
-            self.apply_swap(wire)
+        for qubit in range(right - 1, left, -1):
+            self.apply_swap(qubit)
         self.apply_two(matrix, left, reverse=first > second)
-        for wire in range(left + 1, right):
-            self.apply_swap(wire)
+        for qubit in range(left + 1, right):
+            self.apply_swap(qubit)
 
-    def apply_swap(self, left_wire: int) -> None:
-        self.apply_two(self._fixed_gate_matrix("swap"), left_wire)
+    def apply_swap(self, left_qubit: int) -> None:
+        self.apply_two(self._fixed_gate_matrix("swap"), left_qubit)
         self.local_swap_count += 1
 
-    def _split_preserves_center(self, left_wire: int) -> bool:
+    def _split_preserves_center(self, left_qubit: int) -> bool:
         return self._canonical_center_valid and self.orthogonality_center in (
-            left_wire,
-            left_wire + 1,
+            left_qubit,
+            left_qubit + 1,
         )
 
-    def _split_pair(self, theta: torch.Tensor, left_wire: int) -> None:
-        canonical_split = self._split_preserves_center(int(left_wire))
+    def _split_pair(self, theta: torch.Tensor, left_qubit: int) -> None:
+        canonical_split = self._split_preserves_center(int(left_qubit))
         bsz, left_dim, _, _, right_dim = theta.shape
         matrix = theta.reshape(bsz, left_dim * 2, 2 * right_dim)
         left_tensor, right_tensor, split_info = _split_pair_matrix(
@@ -1222,16 +1229,16 @@ class MPSState(MPSPlanningMixin):
             right_dim=right_dim,
             config=self.config,
         )
-        self.tensors[left_wire] = left_tensor
-        self.tensors[left_wire + 1] = right_tensor
-        self.orthogonality_center = int(left_wire) + 1
+        self.tensors[left_qubit] = left_tensor
+        self.tensors[left_qubit + 1] = right_tensor
+        self.orthogonality_center = int(left_qubit) + 1
         self._canonical_center_valid = canonical_split
         discarded_weight = float(split_info["discarded_weight"])
         if split_info["method"] == "svd":
             self.svd_gradient_method = str(split_info.get("gradient_method", "exact"))
             self.truncation_records.append(
                 MPSTruncationRecord(
-                    bond=int(left_wire),
+                    bond=int(left_qubit),
                     kept_rank=int(split_info["rank"]),
                     original_rank=int(split_info["original_rank"]),
                     discarded_weight=discarded_weight,

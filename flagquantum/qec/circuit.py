@@ -174,7 +174,7 @@ class MemoryCircuit:
         subset its layouts happen to reference, and it is read off the code and
         the round count, so it needs no lowering: one handle per check per
         syndrome round -- the source measures every check once every round -- in
-        round-major order, then one handle per data wire for the terminal
+        round-major order, then one handle per data qubit for the terminal
         readout. A position in this vector is what names a recorded bit.
 
         The two sets need not coincide in either direction, which is why the

@@ -18,7 +18,7 @@ profile and injects one X error before syndrome extraction:
 from flagquantum.qec import ErrorEvent, ErrorSchedule, run_repetition_memory_experiment
 
 result = run_repetition_memory_experiment(
-    error_schedule=ErrorSchedule((ErrorEvent(round_index=0, wire=1),)),
+    error_schedule=ErrorSchedule((ErrorEvent(round_index=0, qubit=1),)),
     rounds=3,
     shots=16,
     seed=0,
@@ -190,7 +190,7 @@ domain is narrower than the authority's and never the reverse.
 ## Build a model from matrices, without a circuit
 
 A code whose checks and logical operators are known as matrices needs no gadget
-and no wire layout. `css_code_matrices` reads a code record into one
+and no qubit layout. `css_code_matrices` reads a code record into one
 `CssCodeMatrices` record carrying all four CSS blocks, and `from_code_matrices`
 derives the mechanisms from it:
 

@@ -34,8 +34,8 @@ in the final round remain visible but unconfirmed. The corresponding modes are
 `RepetitionNoiseProfile` maps code-specific circuit locations onto the existing
 backend-neutral `NoiseModel`: a data bit-flip channel is sampled after matching
 parity-check CNOTs, syndrome readout confusion applies to ancilla measurements,
-and optional final readout confusion applies to data wires. Because the middle
-data wire participates in two check CNOTs per round while each edge wire
+and optional final readout confusion applies to data qubits. Because the middle
+data qubit participates in two check CNOTs per round while each edge qubit
 participates in one, its configured channel has two opportunities per round.
 Finite-shot sweeps report observations and event counts; they are not threshold
 or logical-suppression evidence.
@@ -62,8 +62,8 @@ performance claim follows from the workflow.
 ## Code-independent records
 
 `pauli.py`, `codes.py`, and `circuit.py` add a code-independent layer beside the
-frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wire
-indices; a `StabilizerCode` is a value that declares its distance, wire layout,
+frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qubit
+indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
 layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
@@ -87,12 +87,12 @@ a declared logical observable.
 
 The detector count is validated against the code's declared checks and the
 configured round count, and every reference is validated against the code's
-declared wires: a detector's terminal readouts must name declared data wires and
-its syndrome measurements must name declared ancilla wires inside the configured
-rounds, and an observable's readout must name declared data wires and match the
+declared qubits: a detector's terminal readouts must name declared data qubits and
+its syndrome measurements must name declared ancilla qubits inside the configured
+rounds, and an observable's readout must name declared data qubits and match the
 code's declared logical operators. The validation is membership-based. It does not
 check that a detector names the *same* check in each round, that a terminal
-detector's data wires are the support of the check it belongs to, or that the
+detector's data qubits are the support of the check it belongs to, or that the
 `source` text is the program those layouts describe, so a hand-built layout can
 still be semantically wrong while satisfying every check.
 
@@ -120,7 +120,7 @@ physical error mechanism, named by the detectors and the logical observables it
 flips; `DetectorErrorModel` is a set of them over a fixed detector and observable
 count, with its parity matrices, its exact marginal rates, seeded sampling, and
 stim text interchange. `from_memory_circuit` builds the model of a memory circuit
-under a `PhenomenologicalNoise`: one mechanism per data wire per round, and one
+under a `PhenomenologicalNoise`: one mechanism per data qubit per round, and one
 per check measurement per round, minus the locations whose probability is zero,
 with the mechanisms that flip the same detectors and observables merged. The
 model is exact for Pauli noise in the reference gate set.
@@ -156,7 +156,7 @@ is the one place the two descriptions genuinely diverge; that divergence is
 pinned as the exact relation between the two mechanism sets rather than as a
 tolerance.
 
-Both routes carry the same single fault family: a data wire's bit flip and a
+Both routes carry the same single fault family: a data qubit's bit flip and a
 check's syndrome bit flipped at readout. The phase-flip family an `hx`/`lx` pair
 describes, and the independent `px`/`py`/`pz`/`pm` rates upstream states, are not
 expressible through one data-flip scalar and one measurement-flip scalar; that
@@ -319,10 +319,10 @@ to 0.1794.
 
 The forced route is a forced execution, so it is bounded by the
 statevector amplitude ceiling rather than by the detector error model's own cost.
-A rotated surface code is `distance**2` data wires plus one ancilla per check:
-`distance=2` is 7 wires and `distance=3` is 17, and both build in seconds, while
-`distance=4` is 31 wires (2**31 amplitudes) and did not complete in forty-five
-minutes, and `distance=5` is 49 wires and fails on the allocator. The modelled
+A rotated surface code is `distance**2` data qubits plus one ancilla per check:
+`distance=2` is 7 qubits and `distance=3` is 17, and both build in seconds, while
+`distance=4` is 31 qubits (2**31 amplitudes) and did not complete in forty-five
+minutes, and `distance=5` is 49 qubits and fails on the allocator. The modelled
 rotated-surface distance is therefore three. Reaching five and seven needs a
 signature route that does not materialise the state — either a first-party
 Clifford propagation in this layer, which is a second implementation of an
@@ -459,15 +459,15 @@ Stage 5 documentation sweep's.
 
 One representational boundary is explicit and enforced. A `CodeCheck` states one
 ancilla and one CNOT direction, and the direction is fixed by the check's type
-rather than left to the caller: a Z-type check controls from each data wire in
+rather than left to the caller: a Z-type check controls from each data qubit in
 the stabilizer's support into an ancilla prepared in `|0>`, and an X-type check
-controls from an ancilla prepared in `|+>` into each data wire. Both gadgets
+controls from an ancilla prepared in `|+>` into each data qubit. Both gadgets
 leave the ancilla's Z-basis readout equal to the check's eigenvalue, which is
 what makes the two symmetric. A mixed X-and-Z stabilizer is still refused, since
 it needs a second ancilla and a second gadget that this record does not describe.
 
 `RotatedSurfaceCode` is the first code here that needs both check types. Data
-qubits occupy wires `0..distance**2 - 1`, indexed so lattice site `(i, j)` is wire
+qubits occupy qubits `0..distance**2 - 1`, indexed so lattice site `(i, j)` is qubit
 `j * distance + i`, and ancillas follow them in lattice order. An X-type ancilla
 sits on an interior column at odd lattice parity, a Z-type ancilla on an interior
 row at even lattice parity, and each check's support is the up to four data
@@ -500,7 +500,7 @@ shows the complementary syndromes directly -- a Z error fires exactly the X-type
 detectors adjacent to the data qubit and no Z-type detector, and an X error on
 the logical row fires exactly the Z-type round-zero detectors and flips the
 observable. Only the distance-three patch is executed through that simulator: it
-draws each shot from the full output distribution, so a 17-wire patch costs a
+draws each shot from the full output distribution, so a 17-qubit patch costs a
 `2**17`-way draw and a distance-five patch would need `2**49`.
 
 ## A decoder over the detector error model
@@ -569,7 +569,7 @@ and every weight is 3.8918, and the rotated surface code at distance three gives
 edges of which 20 reach the boundary, with six of the weights at 3.1991 and the
 other 39 at 3.8918. Every mechanism in both models flips one detector or two, so
 neither model reaches the hyperedge refusal. A matrix-route model is graphlike
-only while it stays inside one round: at two rounds the middle data wire of the
+only while it stays inside one round: at two rounds the middle data qubit of the
 distance-3 repetition code flips the same check in both detector bands, which is
 a four-detector mechanism, and `from_detector_error_model` refuses it as a
 hyperedge rather than projecting it onto a pair.
@@ -646,9 +646,9 @@ Detectors that no chain of mechanisms connects are refused with a `CapabilityErr
 naming them, rather than answered partially.
 
 `MatchingDecodeResult` is deliberately not the repetition-code `DecodeResult`. A
-`Correction` carries a wire in `{0, 1, 2}` and an X basis only, and
+`Correction` carries a qubit in `{0, 1, 2}` and an X basis only, and
 `PauliFrame.from_corrections` is enforced to agree with it, so neither record can
-express a surface-code correction over `distance**2` data wires in the Z basis.
+express a surface-code correction over `distance**2` data qubits in the Z basis.
 The result states the predicted observables, the mechanisms selected in graph
 order, and their total weight, and the decoder therefore does not implement the
 repetition-only `Decoder` protocol either. Nothing is built on top of this result

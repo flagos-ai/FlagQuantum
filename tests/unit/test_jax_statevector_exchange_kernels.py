@@ -134,9 +134,9 @@ def test_jax_local_positions_for_gate_input_matches_reference():
     for local_input_basis in range(2 ** len(local_gate_wires)):
         got = jax_local_positions_for_gate_input(
             global_indices,
-            n_wires=n_wires,
-            local_wires=local_wires,
-            local_gate_wires=local_gate_wires,
+            n_qubits=n_wires,
+            local_qubits=local_wires,
+            local_gate_qubits=local_gate_wires,
             local_input_basis=local_input_basis,
         )
         expected = _local_positions_reference(
@@ -167,10 +167,10 @@ def test_jax_gate_basis_in_for_delta_and_local_input_matches_reference():
         for local_input_basis in range(2 ** len(local_gate_wires)):
             got = jax_gate_basis_in_for_delta_and_local_input(
                 global_indices,
-                n_wires=n_wires,
-                wires=wires,
-                touched_sharded_wires=touched,
-                local_gate_wires=local_gate_wires,
+                n_qubits=n_wires,
+                qubits=wires,
+                touched_sharded_qubits=touched,
+                local_gate_qubits=local_gate_wires,
                 delta_code=delta_code,
                 local_input_basis=local_input_basis,
             )
@@ -197,7 +197,7 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
         jax_rank_mask_for_touched_delta,
     )
 
@@ -228,8 +228,8 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
 
     for rank in range(world_size):
         global_indices, amplitudes, indices = shards[rank]
-        basis_out = jax_basis_indices_for_wires(
-            global_indices, n_wires=n_wires, wires=wires
+        basis_out = jax_basis_indices_for_qubits(
+            global_indices, n_qubits=n_wires, qubits=wires
         )
         updated = jnp.zeros_like(amplitudes)
         for delta_code in range(2 ** len(touched)):
@@ -242,11 +242,11 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
                 global_indices,
                 jnp.asarray(matrix),
                 basis_out,
-                n_wires=n_wires,
-                wires=wires,
-                touched_sharded_wires=touched,
-                local_wires=local_wires,
-                local_gate_wires=local_gate_wires,
+                n_qubits=n_wires,
+                qubits=wires,
+                touched_sharded_qubits=touched,
+                local_qubits=local_wires,
+                local_gate_qubits=local_gate_wires,
                 delta_code=delta_code,
             )
         expected = np.asarray(matrix) @ psi
@@ -264,11 +264,11 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
                 global_indices,
                 jnp.asarray(matrix),
                 basis_out,
-                n_wires=n_wires,
-                wires=wires,
-                touched_sharded_wires=touched,
-                local_wires=local_wires,
-                local_gate_wires=local_gate_wires,
+                n_qubits=n_wires,
+                qubits=wires,
+                touched_sharded_qubits=touched,
+                local_qubits=local_wires,
+                local_gate_qubits=local_gate_wires,
                 delta_code=0,
             )
             assert not np.allclose(got, np.asarray(local_only).reshape(-1), atol=1e-4)
@@ -281,7 +281,7 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
 
     from flagquantum.simulation.jax.statevector.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
     )
 
     n_wires = 2
@@ -295,8 +295,8 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
     source = jnp.asarray(
         (rng.standard_normal(2) + 1j * rng.standard_normal(2)).astype(np.complex64)
     ).reshape(1, -1)
-    basis_out = jax_basis_indices_for_wires(
-        global_indices, n_wires=n_wires, wires=wires
+    basis_out = jax_basis_indices_for_qubits(
+        global_indices, n_qubits=n_wires, qubits=wires
     )
     plain = (rng.standard_normal((4, 4)) + 1j * rng.standard_normal((4, 4))).astype(
         np.complex64
@@ -308,11 +308,11 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
         global_indices,
         jnp.asarray(plain.reshape(1, 4, 4)),
         basis_out,
-        n_wires=n_wires,
-        wires=wires,
-        touched_sharded_wires=touched,
-        local_wires=local_wires,
-        local_gate_wires=local_gate_wires,
+        n_qubits=n_wires,
+        qubits=wires,
+        touched_sharded_qubits=touched,
+        local_qubits=local_wires,
+        local_gate_qubits=local_gate_wires,
         delta_code=0,
     )
 
@@ -322,11 +322,11 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
         global_indices,
         jnp.asarray(plain),
         basis_out,
-        n_wires=n_wires,
-        wires=wires,
-        touched_sharded_wires=touched,
-        local_wires=local_wires,
-        local_gate_wires=local_gate_wires,
+        n_qubits=n_wires,
+        qubits=wires,
+        touched_sharded_qubits=touched,
+        local_qubits=local_wires,
+        local_gate_qubits=local_gate_wires,
         delta_code=0,
     )
     assert np.allclose(np.asarray(got), np.asarray(expected), atol=1e-6)
@@ -359,8 +359,8 @@ def test_jax_apply_local_statevector_gate_matches_a_dense_application():
         jnp.asarray(indices),
         jnp.asarray(matrix),
         (0,),
-        n_wires=n_wires,
-        sharded_wires=sharded_wires,
+        n_qubits=n_wires,
+        sharded_qubits=sharded_wires,
         diagonal=False,
     )
 
@@ -393,8 +393,8 @@ def test_jax_apply_local_statevector_gate_diagonal_matches_dense():
         jnp.asarray(indices),
         jnp.asarray(np.diag(diagonal_values)),
         wires,
-        n_wires=n_wires,
-        sharded_wires=sharded_wires,
+        n_qubits=n_wires,
+        sharded_qubits=sharded_wires,
         diagonal=True,
     )
 
@@ -413,14 +413,14 @@ def test_jax_apply_local_statevector_gate_rejects_a_sharded_touched_wire():
         jax_apply_local_statevector_gate,
     )
 
-    with pytest.raises(RuntimeError, match="touches sharded wires"):
+    with pytest.raises(RuntimeError, match="touches sharded qubits"):
         jax_apply_local_statevector_gate(
             jnp.ones((1, 2), dtype=jnp.complex64),
             jnp.asarray([1, 3]),
             jnp.eye(2, dtype=jnp.complex64),
             (1,),
-            n_wires=2,
-            sharded_wires=(1,),
+            n_qubits=2,
+            sharded_qubits=(1,),
             diagonal=False,
             gate_name="h",
         )
@@ -454,8 +454,8 @@ def test_jax_combine_pair_exchanged_statevector_matches_a_dense_application():
         partner,
         jnp.asarray(indices),
         jnp.asarray(matrix),
-        n_wires=n_wires,
-        wire=wire,
+        n_qubits=n_wires,
+        qubit=wire,
     )
 
     # Rank `rank` owns the amplitudes whose sharded bit equals `rank`, so the
@@ -495,9 +495,9 @@ def test_jax_sharded_statevector_loss_sums_over_shards(observable: str):
             jnp.asarray(_shard_indices(n_wires, sharded_wires, rank))
             for rank in range(2)
         ],
-        n_wires=n_wires,
+        n_qubits=n_wires,
         observable=observable,
-        observable_wires=wires,
+        observable_qubits=wires,
     )
 
     expected = 0.0
@@ -524,9 +524,9 @@ def test_jax_sharded_statevector_loss_defaults_to_every_wire():
     got = jax_sharded_statevector_loss(
         [jnp.asarray([[0.5, 0.5, 0.5, 0.5]], dtype=jnp.complex64)],
         [jnp.arange(4)],
-        n_wires=2,
+        n_qubits=2,
         observable="z",
-        observable_wires=None,
+        observable_qubits=None,
     )
 
     # Uniform amplitudes cancel every Z sign, so the sum is zero.
@@ -547,17 +547,17 @@ def test_jax_sharded_statevector_loss_rejects_unsupported_inputs():
         jax_sharded_statevector_loss(
             [amplitudes],
             [indices, indices],
-            n_wires=1,
+            n_qubits=1,
             observable="z",
-            observable_wires=(0,),
+            observable_qubits=(0,),
         )
     with pytest.raises(ValueError, match="observable='z_sum'"):
         jax_sharded_statevector_loss(
             [amplitudes],
             [indices],
-            n_wires=1,
+            n_qubits=1,
             observable="pauli_x",
-            observable_wires=(0,),
+            observable_qubits=(0,),
         )
 
 
@@ -572,7 +572,7 @@ def test_jax_sharded_statevector_rank_loss_rejects_unsupported_observable():
         jax_sharded_statevector_rank_loss(
             jnp.asarray([[0.5, 0.5]], dtype=jnp.complex64),
             jnp.arange(2),
-            n_wires=1,
+            n_qubits=1,
             observable="pauli_x",
-            observable_wires=(0,),
+            observable_qubits=(0,),
         )

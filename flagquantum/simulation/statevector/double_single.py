@@ -80,18 +80,18 @@ def _broadcast_matrix_entry(
 def apply_double_single_gate(
     state: DoubleSingleComplexTensor,
     matrix: DoubleSingleComplexTensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> DoubleSingleComplexTensor:
     """Apply one Double-Single gate matrix to a flat statevector."""
 
-    wires = tuple(int(wire) for wire in wires)
-    remaining = tuple(wire for wire in range(n_wires) if wire not in wires)
-    permutation = remaining + wires
-    inverse = tuple(permutation.index(wire) for wire in range(n_wires))
-    gate_dimension = 2 ** len(wires)
-    logical_shape = (2,) * n_wires
+    qubits = tuple(int(qubit) for qubit in qubits)
+    remaining = tuple(qubit for qubit in range(n_qubits) if qubit not in qubits)
+    permutation = remaining + qubits
+    inverse = tuple(permutation.index(qubit) for qubit in range(n_qubits))
+    gate_dimension = 2 ** len(qubits)
+    logical_shape = (2,) * n_qubits
     values = _view_state(
         state,
         logical_shape=logical_shape,
@@ -157,7 +157,7 @@ def normalize_double_single_state(
 def run_double_single_statevector(
     encoded_gates: Iterable[tuple[DoubleSingleComplexTensor, Sequence[int]]],
     *,
-    n_wires: int,
+    n_qubits: int,
     device: torch.device,
     renormalize_every: int,
 ) -> tuple[DoubleSingleComplexTensor, int]:
@@ -165,7 +165,7 @@ def run_double_single_statevector(
 
     if renormalize_every < 0:
         raise ValueError("renormalize_every must be non-negative")
-    high = torch.zeros(2**n_wires, dtype=torch.float32, device=device)
+    high = torch.zeros(2**n_qubits, dtype=torch.float32, device=device)
     high[0] = 1.0
     zero = torch.zeros_like(high)
     state = DoubleSingleComplexTensor(
@@ -173,8 +173,8 @@ def run_double_single_statevector(
         DoubleSingleTensor(torch.zeros_like(high), torch.zeros_like(high)),
     )
     normalization_count = 0
-    for gate_number, (matrix, wires) in enumerate(encoded_gates, start=1):
-        state = apply_double_single_gate(state, matrix, wires, n_wires=n_wires)
+    for gate_number, (matrix, qubits) in enumerate(encoded_gates, start=1):
+        state = apply_double_single_gate(state, matrix, qubits, n_qubits=n_qubits)
         if renormalize_every and gate_number % renormalize_every == 0:
             state = normalize_double_single_state(state)
             normalization_count += 1
@@ -186,18 +186,18 @@ def double_single_pauli_term_expectation(
     ops: Sequence[tuple[int, str]],
     coefficient: DoubleSingleTensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     matrix_for_op: Callable[[int, str], DoubleSingleComplexTensor],
 ) -> DoubleSingleTensor:
     """Evaluate one real-coefficient Pauli term in Double-Single arithmetic."""
 
     transformed = state
-    for wire, name in ops:
+    for qubit, name in ops:
         transformed = apply_double_single_gate(
             transformed,
-            matrix_for_op(wire, name),
-            (wire,),
-            n_wires=n_wires,
+            matrix_for_op(qubit, name),
+            (qubit,),
+            n_qubits=n_qubits,
         )
     products = state.real.multiply(transformed.real).add(
         state.imag.multiply(transformed.imag)

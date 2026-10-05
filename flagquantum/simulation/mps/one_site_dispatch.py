@@ -60,7 +60,7 @@ def _mps_one_site_kernel_match(*, device_type: str, dtype: str) -> KernelMatchRe
 def _require_mps_one_site_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _mps_one_site_kernel_match(device_type=device_type, dtype=dtype),

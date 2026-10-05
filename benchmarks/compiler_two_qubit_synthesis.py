@@ -706,7 +706,7 @@ def product_split(basis: Basis) -> dict[str, Any]:
             if basis.entangler is None or basis.z_rotation is None
             else synthesize_two_qubit(
                 matrix,
-                wires=(0, 1),
+                qubits=(0, 1),
                 entangler=basis.entangler,
                 z_rotation=basis.z_rotation,
                 pulse_opcode=basis.pulse_opcode,
@@ -755,7 +755,7 @@ def entangler_table() -> list[dict[str, Any]]:
         for entangler in SUPERCONTROLLED_ENTANGLERS:
             leaves = synthesize_two_qubit(
                 instruction.matrix,
-                wires=(0, 1),
+                qubits=(0, 1),
                 entangler=entangler,
                 z_rotation="rz",
                 pulse_opcode="sx",
@@ -877,7 +877,7 @@ def _qiskit_anchor() -> dict[str, Any]:
             target = np.array(instruction.matrix, dtype=complex)
             leaves = synthesize_two_qubit(
                 instruction.matrix,
-                wires=(0, 1),
+                qubits=(0, 1),
                 entangler=entangler,
                 z_rotation="rz",
                 pulse_opcode="sx",

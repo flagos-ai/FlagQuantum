@@ -135,7 +135,7 @@ class HttpQuantumProvider(QuantumProvider):
         transport: QuantumCloudTransport | None = None,
         timeout: float = 30.0,
         default_backend: str = "default",
-        default_n_wires: int = 32,
+        default_n_qubits: int = 32,
     ) -> None:
         self.provider = provider
         self.base_url = base_url.rstrip("/")
@@ -144,7 +144,7 @@ class HttpQuantumProvider(QuantumProvider):
         self.transport = transport or UrllibTransport()
         self.timeout = float(timeout)
         self.default_backend = default_backend
-        self.default_n_wires = int(default_n_wires)
+        self.default_n_qubits = int(default_n_qubits)
 
     def _url(self, path: str, **values: Any) -> str:
         return self.base_url + path.format(**values)
@@ -171,7 +171,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_qubits=n_qubits or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_qubits,
                     metadata={"source": "fallback"},
                 ),
             )
@@ -184,7 +184,7 @@ class HttpQuantumProvider(QuantumProvider):
                 row.get(
                     "n_wires",
                     row.get(
-                        "nqubits", row.get("qubits", n_qubits or self.default_n_wires)
+                        "nqubits", row.get("qubits", n_qubits or self.default_n_qubits)
                     ),
                 )
             )
@@ -205,7 +205,7 @@ class HttpQuantumProvider(QuantumProvider):
                 CloudBackendProfile(
                     provider=self.provider,
                     name=self.default_backend,
-                    n_qubits=n_qubits or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_qubits,
                     metadata={"source": "empty-list-fallback"},
                 )
             )

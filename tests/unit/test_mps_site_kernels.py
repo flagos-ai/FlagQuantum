@@ -76,10 +76,10 @@ def test_wire_probability_route_keeps_counts_and_deduplicates_metadata(
     )
     reset_site_kernel_stats(clear_cache=True)
 
-    site_kernels._record_mps_wire_probability_route()
-    site_kernels._record_mps_wire_probability_route()
+    site_kernels._record_mps_qubit_probability_route()
+    site_kernels._record_mps_qubit_probability_route()
 
-    assert site_kernel_stats()["triton_wire_probability_calls"] == 2
+    assert site_kernel_stats()["triton_qubit_probability_calls"] == 2
     (event,) = site_kernel_cache_events()
     assert event["kind"] == "wire_probabilities"
     assert event["semantic_id"] == "mps.measurement.wire_probabilities.local"

@@ -44,7 +44,7 @@ forward-reading.
 IR and backend-native payload fields are unchanged. The deprecated
 `observable_wires` property remains available on RuntimePolicy, while
 `CloudBackendProfile.n_wires` and its constructor keyword remain compatibility
-aliases during the same migration window. `discover_backends(n_wires=...)`
+aliases during the same migration window, as does `OpenQASMImport.n_wires`. `discover_backends(n_wires=...)`
 likewise delegates to `list_devices(n_qubits=...)` with a deprecation warning.
 The affected candidate signatures
 are updated for this explicitly requested migration; the historical baseline
@@ -140,20 +140,20 @@ schema's own version bump. See
 and [its decision record](../development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_ATTRIBUTES.md).
 
 Aliases are owed only where the name is reachable from `fq.*`. On the attribute
-surface that is `fq.Circuit.n_wires`, `fq.MeasurementResult.wires`, and
-`fq.OutputRequest.wires`; everything else is renamed in place in the same release.
+surface that is `fq.Circuit.n_qubits`, `fq.MeasurementResult.qubits`, and
+`fq.OutputRequest.qubits`; everything else is renamed in place in the same release.
 
 ## Spellings the census cannot see
 
 The scanner reads names — parameters, attributes, definitions — and reports
 string literals without judging them. Further user-visible spellings are
 reachable exactly the way a parameter is, and none is on a ledger. They are
-listed here so that "the ledger is clean" is not read as "no user-visible `wire`
+listed here so that "the ledger is clean" is not read as "no user-visible `qubit`
 is left":
 
 | Spelling | Where a user meets it | Disposition |
 |---|---|---|
-| `wire_options`, `show_wire_labels`, `active_wire_notches` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | **migrated**: the canonical spellings are `qubit_options`, `show_qubit_labels`, and `active_qubit_notches`; the old three are translated by `flagquantum.drawer.mpl_drawer.resolve_legacy_options` and warn, exactly as a parameter alias does |
+| `qubit_options`, `show_qubit_labels`, `active_qubit_notches` | keyword arguments to `Circuit.draw(**kwargs)` and `draw_mpl(**kwargs)`, which forward to the drawers instead of declaring a parameter | **migrated**: the canonical spellings are `qubit_options`, `show_qubit_labels`, and `active_qubit_notches`; the old three are translated by `flagquantum.drawer.mpl_drawer.resolve_legacy_options` and warn, exactly as a parameter alias does |
 | `n_wires`, `wires` on a *legacy* device object | the two spellings a third-party qdev reports, read by `flagquantum.drawer.ir_adapter.to_drawable_circuit` | **accepted, not published**: read at one boundary and immediately re-expressed as `n_qubits`/`qubits`, so no renderer ever meets them |
 | `wires` | the keyword a captured hybrid program must use — `qp.H(wires=...)`, `qp.measure(wires=...)`, `qp.reset(wires=...)` — required by the capture layer, which rejects any other keyword | open; renaming it changes the source language, not a signature |
 | `wire_start`, `wire_end`, `owned_wires` | dictionary keys returned by `runtime.planner.topology.rank_ownership` | kept; no reader in the package builds them into a qubit-named contract, and the parameter the caller passes is already `n_qubits` |

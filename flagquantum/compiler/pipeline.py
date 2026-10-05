@@ -73,7 +73,7 @@ def _replace_param(instruction: Instruction, key: str, value: Any) -> Instructio
 def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
     """Remove every gate that is exactly the identity operator.
 
-    A single-wire instruction is decided by `is_identity_one_qubit`, which reads
+    A single-qubit instruction is decided by `is_identity_one_qubit`, which reads
     the angle triple the operator schema declares rather than a table of opcode
     names kept here: that deletes the explicit `i`/`id` set this pass used to
     carry and admits `u3(0, phi, lam)` when `phi + lam` vanishes, a zero-angle
@@ -84,12 +84,12 @@ def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
     to record the sign. The import is local because `one_qubit_synthesis` reads
     `_is_zero` from this module.
 
-    A multi-wire instruction keeps the older rule, which reads the angle
+    A multi-qubit instruction keeps the older rule, which reads the angle
     parameter `_ROTATION_PARAM` names for its opcode, because
     `canonical_euler_angles` describes the single-qubit group only. That leaves
     the `crz(0)`, `rxx(0)`, `cphase(0)` and `rzz(0)` removals this pass already
-    performed untouched, and it declines a two-wire half turn for the same reason
-    the single-wire branch does: `rzz(2*pi)` is `-I`.
+    performed untouched, and it declines a two-qubit half turn for the same reason
+    the single-qubit branch does: `rzz(2*pi)` is `-I`.
     """
 
     from .one_qubit_synthesis import is_identity_one_qubit
@@ -106,17 +106,17 @@ def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
 
 
 class _WireLocalProgram:
-    """Instructions in program order, indexed by the latest writer of each wire.
+    """Instructions in program order, indexed by the latest writer of each qubit.
 
-    Both merge passes need the most recent instruction that touches a wire set,
+    Both merge passes need the most recent instruction that touches a qubit set,
     and they need to remove or rewrite it. Scanning the output list for that
     instruction costs the length of the untouched prefix, which is quadratic on a
-    circuit whose gates share no wire -- the shape a routing pass produces on a
-    wide device. Indexing by wire instead makes a pass linear in the gates times
-    their wires.
+    circuit whose gates share no qubit -- the shape a routing pass produces on a
+    wide device. Indexing by qubit instead makes a pass linear in the gates times
+    their qubits.
 
     ``position`` is the insertion sequence number. Sequence numbers only
-    increase, so the largest live one touching a wire is also the latest one in
+    increase, so the largest live one touching a qubit is also the latest one in
     program order, and positions do not shift when an earlier instruction is
     removed.
     """
@@ -143,11 +143,11 @@ class _WireLocalProgram:
             self._last_by_wire.setdefault(wire, []).append(self._position)
 
     def pop(self, position: int) -> None:
-        """Remove the instruction at ``position``, a wire's latest writer.
+        """Remove the instruction at ``position``, a qubit's latest writer.
 
         Both passes only ever remove the instruction they just looked up, so the
-        removed one is by construction the latest writer of every wire it touches
-        and the per-wire stack needs no repair beyond dropping its top entry.
+        removed one is by construction the latest writer of every qubit it touches
+        and the per-qubit stack needs no repair beyond dropping its top entry.
         """
 
         instruction = self._instructions.pop(position)
@@ -157,7 +157,7 @@ class _WireLocalProgram:
             stack.pop()
 
     def rewrite(self, position: int, instruction: Instruction) -> None:
-        """Replace the instruction at ``position``, keeping the wires it touches."""
+        """Replace the instruction at ``position``, keeping the qubits it touches."""
 
         assert instruction.wires == self._instructions[position].wires
         self._instructions[position] = instruction
@@ -170,7 +170,7 @@ class _WireLocalProgram:
 
 
 def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
-    """Remove identical self-inverse gates adjacent on their wires."""
+    """Remove identical self-inverse gates adjacent on their qubits."""
 
     program = _WireLocalProgram()
     for instruction in ir:
@@ -192,7 +192,7 @@ def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
 
 
 def merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
-    """Merge rotations adjacent on their wires."""
+    """Merge rotations adjacent on their qubits."""
 
     program = _WireLocalProgram()
     for instruction in ir:
@@ -226,7 +226,7 @@ def merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
 
 
 def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
-    """ASAP-schedule instructions without reversing per-wire dependencies."""
+    """ASAP-schedule instructions without reversing per-qubit dependencies."""
 
     layers: list[list[Instruction]] = []
     last_layer_by_wire: dict[int, int] = {}
@@ -267,7 +267,7 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
         previous_count = len(ir)
         # First, because a reset this pass can remove is removable whatever the passes
         # below do, and removing it hands them a shorter program. The loop, not this
-        # ordering, is what earns the reach on a wire the passes below only empty out
+        # ordering, is what earns the reach on a qubit the passes below only empty out
         # later: `x(0) x(0) reset(0)` needs a second round.
         ir = remove_zero_state_resets(ir)
         # Second, for the same reason: a diagonal gate read out only by measurements is

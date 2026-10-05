@@ -13,7 +13,7 @@ detectors that fired -- into the mechanisms that explain it and the logical
 observables those mechanisms flip. The repetition-code decoders in
 :mod:`flagquantum.qec.decoders` are not in this registry and are not in it by
 omission: their input is an ordered syndrome history and their output is a
-correction on a known data wire, which is a different protocol over a different
+correction on a known data qubit, which is a different protocol over a different
 record. Registering both under one name space would make a name mean one of two
 things and make the factory's argument mean one of two things, so the registry
 holds one family and the other stays directly constructed.

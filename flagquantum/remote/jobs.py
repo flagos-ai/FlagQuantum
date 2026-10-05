@@ -144,7 +144,7 @@ class RemoteJob:
                 )
             return counts_result(
                 native,
-                n_wires=r.n_wires,
+                n_qubits=r.n_wires,
                 output_name=r.output_name,
                 compiler=r.compiler,
                 target=r.target,

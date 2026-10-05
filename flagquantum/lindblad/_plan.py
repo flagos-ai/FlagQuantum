@@ -226,7 +226,7 @@ def build_lindblad_plan(
     ).detach()
     hamiltonian_matrix = _normalize_hamiltonian(
         hamiltonian,
-        n_wires=n_qubits,
+        n_qubits=n_qubits,
         dim=dimension,
         dtype=dtype,
         device=resolved_device,
@@ -240,7 +240,7 @@ def build_lindblad_plan(
     )
     collapse_terms = _normalize_collapse_terms(
         collapse_operators,
-        n_wires=n_qubits,
+        n_qubits=n_qubits,
         dim=dimension,
         dtype=dtype,
         device=resolved_device,
@@ -338,7 +338,7 @@ def _decode_request(
             dtype=dtype,
             field="initial_density_matrix",
         ),
-        "n_wires": n_qubits,
+        "n_qubits": n_qubits,
         "times": times,
         "collapse_operators": collapse_operators,
         "observables": observables,

@@ -429,7 +429,7 @@ def carries_noise_channels(circuit_or_ir: Any) -> bool:
 
     A program is noisy because it carries channels, not because a caller passed a
     model: `lower_noise_model` writes the same instructions either way, and a
-    channel built directly by `Circuit` is on the wire already. Reading the
+    channel built directly by `Circuit` is on the qubit already. Reading the
     program keeps one answer for both routes.
     """
 

@@ -107,7 +107,7 @@ are otherwise unchanged.
 - Added `fq.twin.compose_region_twin()` and immutable `TwinRegionModel` for
   offline measurement-distribution prediction across a connected union of
   compatible local Twin cells. Composition remaps local calibration and noise
-  semantics into one regional wire order and fails closed on overlap conflicts;
+  semantics into one regional qubit order and fails closed on overlap conflicts;
   it does not infer cross-cell correlated noise or turn local evidence into
   regional accuracy. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
 
@@ -242,8 +242,8 @@ are otherwise unchanged.
   without changing the `ExecutionResult` return type or silently selecting a
   compiler, provider, or fallback.
 - Added `fq.compile(circuit, compiler="qsteed", target="quafu:<backend>")` as
-  the direct compiler-selection journey. QSteed results retain logical wire
-  numbers and carry an ordered physical `target_qubits` mapping through
+  the direct compiler-selection journey. QSteed results retain logical qubit
+numbers and carry an ordered physical `target_qubits` mapping through
   deployment; Quafu submission now uses `compiler=None` and no deprecated
   top-level compile flag.
 - Added explicit discovery for independently installed circuit-compiler plugins
@@ -307,8 +307,9 @@ are otherwise unchanged.
 - `fq.Circuit(n_qubits=...)` is now the preferred public spelling for circuit
   size, with `n_qubits` and Qiskit-compatible `num_qubits` properties.
   Positional construction and the `n_wires`/`nqubits` keyword aliases remain
-  compatible, while conflicting counts now fail during construction. Internal
-  IR, compiler, and runtime mappings continue to use wire terminology.
+  compatible, while conflicting counts now fail during construction. Serialized
+  IR and compiler payload keys are unchanged: renaming a key that a saved plan is
+  read back through is a schema version bump, not a vocabulary change.
 - Generated gate methods now accept optional semantic qubit keywords without
   removing concise positional calls: single-qubit gates use `qubit=`,
   controlled gates use `control=`/`target=`, and symmetric two-qubit gates use
@@ -338,7 +339,7 @@ are otherwise unchanged.
   rematerialization, explicit gate adjoints, and cross-rank VJP reduction.
 - An experimental PyTorch-native distributed statevector forward executor now
   runs validated unitary IR with rank-local amplitude ownership across local and
-  multi-sharded-wire gates on Gloo or NCCL. Full-state materialization is
+  multi-sharded-qubit gates on Gloo or NCCL. Full-state materialization is
   forbidden and forward-only training/release blockers remain explicit.
 - Correctness infrastructure now generates deterministic circuit properties,
   covers every registered operator/lowering pair, versions numerical

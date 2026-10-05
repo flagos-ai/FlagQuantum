@@ -445,7 +445,7 @@ def test_kraus_channel_rejects_non_trace_preserving_operators():
 def test_noise_model_round_trip_preserves_stable_identity():
     model = (
         fqn.NoiseModel()
-        .add(("x", "sx"), phase_damping_channel(0.2), wires=1)
+        .add(("x", "sx"), phase_damping_channel(0.2), qubits=1)
         .add("cx", depolarizing_channel(0.03))
         .add_readout(0, ReadoutError(((0.98, 0.02), (0.07, 0.93))))
     )
@@ -464,7 +464,7 @@ def test_readout_confusion_is_classical_and_wire_local():
     )
     ideal = torch.tensor([[0.0, 1.0, 0.0, 0.0]])  # true |01>
 
-    observed = model.apply_readout_probabilities(ideal, n_wires=2)
+    observed = model.apply_readout_probabilities(ideal, n_qubits=2)
 
     assert torch.allclose(observed, torch.tensor([[0.2, 0.8, 0.0, 0.0]]))
     assert torch.allclose(observed.sum(dim=-1), torch.ones(1))
@@ -509,7 +509,7 @@ def test_correlated_readout_confusion_preserves_joint_assignment_errors():
     )
 
     observed = model.apply_readout_probabilities(
-        torch.tensor([0.0, 0.0, 1.0, 0.0]), n_wires=2
+        torch.tensor([0.0, 0.0, 1.0, 0.0]), n_qubits=2
     )
 
     assert observed.tolist() == pytest.approx(matrix[2])
@@ -617,7 +617,7 @@ def test_a_rule_naming_a_gate_absent_from_the_program_is_refused():
     [((5,), 5), ((1,), 1), ((-1,), -1), ((0, 3), 3), ((0, 1), 1)],
 )
 def test_a_rule_naming_a_wire_outside_the_program_is_refused(wires, offending):
-    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), wires=wires)
+    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), qubits=wires)
 
     with pytest.raises(ValueError) as refused:
         lower_noise_model(fq.Circuit(1).h(0), model)
@@ -629,7 +629,7 @@ def test_a_rule_naming_a_wire_outside_the_program_is_refused(wires, offending):
 
 
 def test_a_rule_held_to_a_wire_the_program_has_still_lowers():
-    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), wires=(0,))
+    model = fqn.NoiseModel().add(("h",), depolarizing_channel(0.01), qubits=(0,))
 
     lowered = lower_noise_model(fq.Circuit(1).h(0), model)
     channels = [item for item in lowered if item.metadata.get("is_channel")]

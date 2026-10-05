@@ -306,7 +306,7 @@ def render_rotation_tile_markdown(
 def render_forward_wide_tile_markdown(
     payload: Mapping[str, Any], *, artifact_name: str
 ) -> str:
-    """Render the eight/six-wire forward rotation-tile comparison."""
+    """Render the eight/six-qubit forward rotation-tile comparison."""
 
     methodology = payload["methodology"]
     rollback_name = "flagquantum_adjoint_forward_wide_tile_rollback"

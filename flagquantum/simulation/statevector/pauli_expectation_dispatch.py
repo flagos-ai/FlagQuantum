@@ -82,7 +82,7 @@ def _statevector_pauli_expectation_kernel_match(
 def _require_statevector_pauli_expectation_kernel(
     *, device_type: str, dtype: str, direction: KernelDirection
 ) -> KernelImplementation:
-    """Return the wired MEAS-002 implementation or fail closed."""
+    """Return the connected MEAS-002 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _statevector_pauli_expectation_kernel_match(

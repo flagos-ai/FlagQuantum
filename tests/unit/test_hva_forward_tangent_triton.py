@@ -18,7 +18,7 @@ def test_hva_forward_tangents_match_statevector_jacobian(n_wires, depth):
     zero = torch.zeros_like(parameters)
     initial = fqa.heisenberg_hva(n_wires, depth, zero).state().detach().reshape(-1)
     actual_state, actual_tangents = heisenberg_hva_forward_tangents(
-        initial, parameters.detach(), n_wires=n_wires, depth=depth
+        initial, parameters.detach(), n_qubits=n_wires, depth=depth
     )
 
     def state(value):

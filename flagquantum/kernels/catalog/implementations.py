@@ -202,6 +202,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "heisenberg_hva_forward_tangents",
         layouts=("flat_statevector", "parameter_major_tangents"),
         directions=("jacobian",),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-MPS-001-A",
@@ -209,7 +210,8 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_two_site",
         "fused_mps_two_site",
         layouts=("mps_two_site",),
-        directions=("forward", "backward"),
+        directions=("forward",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
@@ -262,7 +264,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "FQKI-TRITON-MPS-007-A",
         "mps.measurement.wire_probabilities.local",
         "mps_wire_probabilities",
-        "fused_mps_wire_probabilities",
+        "fused_mps_qubit_probabilities",
         layouts=("mps_site_tensor",),
         maturity="provisional",
         internal_fallback=True,

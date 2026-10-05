@@ -24,7 +24,7 @@ print(prediction.ideal_probabilities)
 ```
 
 This path is offline. It does not contact a provider or submit a hardware task.
-The logical wire order maps directly to the ordered physical `qubits` tuple.
+The logical qubit order maps directly to the ordered physical `qubits` tuple.
 
 ## Native Quafu calibration
 
@@ -592,9 +592,9 @@ experiment rather than stored as a terminal operation on `Circuit`.
 
 Couplers are directed because an executed two-qubit gate may not have equivalent
 evidence in the reverse direction. Single-qubit operations need no coupler.
-Operations on more than two wires are outside the first contract. Circuit depth
-is computed from instruction dependencies on logical wires, then the ordered
-Twin mapping translates every two-wire instruction to physical qubits.
+Operations on more than two qubits are outside the first contract. Circuit depth
+is computed from instruction dependencies on logical qubits, then the ordered
+Twin mapping translates every two-qubit instruction to physical qubits.
 
 This object can only narrow the supplied evidence. It does not infer support
 from provider topology, compose independently validated cells, estimate a new
@@ -622,7 +622,7 @@ print(coverage.missing_qubits)
 print(coverage.missing_directed_couplers)
 ```
 
-The mapping is mandatory and ordered: logical wire `i` maps to
+The mapping is mandatory and ordered: logical qubit `i` maps to
 `physical_qubits[i]`. Composition rejects different targets, calibration
 capture times, mismatched evidence identities, and disconnected cells. It uses
 the most conservative common operation, instruction-count, and depth boundary.
@@ -653,7 +653,7 @@ print(prediction.twin_probabilities)
 print(prediction.total_variation_from_ideal)
 ```
 
-The mapping must exactly equal the model's canonical regional wire order.
+The mapping must exactly equal the model's canonical regional qubit order.
 Composition fails closed if overlapping cells disagree on qubit calibration,
 gate duration, gate-noise channels, or readout noise. An unscoped gate-noise
 rule is accepted only when every cell declares the same channel. No correlated

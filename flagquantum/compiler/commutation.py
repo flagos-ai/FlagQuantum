@@ -2,7 +2,7 @@
 
 A commuting-block partition is the precondition almost every reduction needs.
 `merge_self_inverse` and `merge_adjacent_rotations` in `pipeline` only look at the
-latest writer of a wire, so a single gate standing between a pair hides it:
+latest writer of a qubit, so a single gate standing between a pair hides it:
 `cx(0, 1) rz(0) cx(0, 1)` is one `rz(0)`, and neither pass sees it, because `rz`
 on the *control* of a `cx` commutes with it and the pair annihilates across the
 gap. This module answers the two questions that reduction needs: do these two
@@ -24,7 +24,7 @@ that carries most of the reach, because a circuit is wide and most pairs never
 touch.
 
 **No rule reads a parameter value.** Every rule below is a statement about
-opcodes, wires, and two declared opcode classes, and each of them holds for *every*
+opcodes, qubits, and two declared opcode classes, and each of them holds for *every*
 value of every parameter. So a trainable rotation and a batch of angles are
 decided exactly like a compile-time constant, and nothing here can detach a
 gradient or pin a program to one batch entry. That is the property a table of
@@ -66,16 +66,16 @@ _DIAGONAL_ENTANGLER = frozenset({"cz", "cphase", "crz", "rzz"})
 #: The Ising entanglers, each `exp(-i theta/2 P)` for a Pauli product `P` on the two
 #: qubits -- `XX`, `YY`, and `ZZ`. Two properties decide the pair, and the rule
 #: below reads them rather than approximating them. Two of one opcode commute
-#: whatever their wires are, because every factor is the same Pauli and Paulis
+#: whatever their qubits are, because every factor is the same Pauli and Paulis
 #: commute with themselves: `X_1 X_2` and `X_0 X_1` multiply to `X_0 X_2` in either
-#: order. Two of *different* opcodes commute only on the same wires, where
-#: `(X_0 Y_0)(X_1 Y_1)` is `-Z_0 Z_1` in either order; on wires that merely
+#: order. Two of *different* opcodes commute only on the same qubits, where
+#: `(X_0 Y_0)(X_1 Y_1)` is `-Z_0 Z_1` in either order; on qubits that merely
 #: overlap, `X_1 X_2` and `Y_0 Y_1` share qubit 1 with factors `X` and `Y`, which
 #: anticommute, so the exponentials do too.
 _ISING_ENTANGLER = frozenset({"rxx", "ryy", "rzz"})
 
-#: Two-qubit opcodes that are unchanged by exchanging their two wires, so `swap`
-#: commutes with each of them on the same ordered wires: `swap` *is* that exchange.
+#: Two-qubit opcodes that are unchanged by exchanging their two qubits, so `swap`
+#: commutes with each of them on the same ordered qubits: `swap` *is* that exchange.
 #: This is the whole content of the class -- exchange symmetry alone does not make
 #: its members commute with each other, and `cz` against `rxx` is the counterexample
 #: that says so: `Z (x) Z` and `X (x) X` anticommute, and `cz` is a scalar multiple
@@ -87,7 +87,7 @@ _WIRE_EXCHANGE_SYMMETRIC = frozenset({"cz", "cphase", *sorted(_ISING_ENTANGLER)}
 
 #: Two families of controlled opcodes that each act as the identity on the
 #: control's `|0>` branch and as a Pauli-family operator on its `|1>` branch, so
-#: two members of one family on the same wires commute for any angles. `cx` and
+#: two members of one family on the same qubits commute for any angles. `cx` and
 #: `cy` are the parameter-free ends of their families and `crx` and `cry` the
 #: rotations, which is why `cx` against `crx` is a pair this rule has to state:
 #: `crx` alone is in `_SINGLE_GENERATOR`, but the pair is two different opcodes
@@ -98,7 +98,7 @@ _PAULI_FAMILIES = (
 )
 
 #: Opcodes of the form `exp(-i theta/2 G)` for one Hermitian generator `G`, so any
-#: two of them sharing an opcode and their wires commute for any angles.
+#: two of them sharing an opcode and their qubits commute for any angles.
 _SINGLE_GENERATOR = frozenset(
     {
         "rx",
@@ -116,7 +116,7 @@ _SINGLE_GENERATOR = frozenset(
     }
 )
 
-#: For each controlled opcode, the wire positions that act as controls. A diagonal
+#: For each controlled opcode, the qubit positions that act as controls. A diagonal
 #: single-qubit gate on a control commutes with the whole controlled operator,
 #: which is `sum_a |a><a|_control (x) U_a`: a diagonal gate scales `|a>` by a
 #: scalar, and that scalar pulls out of every term. `cz`, `crz`, and `cphase` are
@@ -153,7 +153,7 @@ _TARGET_PAULI: Mapping[str, tuple[int, frozenset[str]]] = MappingProxyType(
 
 #: Every opcode the structural rules below can answer "yes" for. An opcode outside
 #: this set still commutes by disjointness, and still commutes with the same
-#: opcode on the same wires through `_is_same_operator_family`; what it cannot do
+#: opcode on the same qubits through `_is_same_operator_family`; what it cannot do
 #: is commute with a *different* operator it touches. Stating the set here keeps
 #: the reach of the rule source a readable fact rather than something to be
 #: reconstructed from the branches of `commute`.
@@ -201,9 +201,9 @@ def _is_declared(instruction: Instruction) -> bool:
 
 
 def _is_same_operator_family(left: Instruction, right: Instruction) -> bool:
-    """Whether both are one opcode on the same wires that commutes with itself.
+    """Whether both are one opcode on the same qubits that commutes with itself.
 
-    Two instructions of one opcode on one set of wires commute when the opcode is
+    Two instructions of one opcode on one set of qubits commute when the opcode is
     fixed -- an operator always commutes with itself -- or when it is
     `exp(-i theta/2 G)`, because two such exponentials add their angles whichever
     order they are applied in. Nothing else qualifies: two different `u3` triples
@@ -226,7 +226,7 @@ def _one_against_controlled(single: Instruction, controlled: Instruction) -> boo
     """Whether the single-qubit ``single`` commutes with ``controlled``.
 
     ``controlled`` has to be the multi-qubit operator and ``single`` the gate
-    placed on one of its wires; the caller tries both assignments because the two
+    placed on one of its qubits; the caller tries both assignments because the two
     instructions arrive in program order rather than in role order.
     """
 
@@ -275,7 +275,7 @@ def commute(left: Instruction, right: Instruction) -> bool:
 
     # Every rule below states that two operators are simultaneously diagonal in
     # the computational basis of the whole register. Diagonal matrices commute
-    # whatever wires they sit on and whichever order the wires are named in, so
+    # whatever qubits they sit on and whichever order the qubits are named in, so
     # this one branch covers a single-qubit `rz` against another, a single-qubit
     # `rz` against a `cz`, and a `cz` against a `cphase`.
     if left_opcode in _DIAGONAL_ONE_QUBIT | _DIAGONAL_ENTANGLER and (
@@ -283,12 +283,12 @@ def commute(left: Instruction, right: Instruction) -> bool:
     ):
         return True
     if left_opcode in _ISING_ENTANGLER and right_opcode in _ISING_ENTANGLER:
-        # One opcode twice commutes on any wires, and two different opcodes commute
-        # only when they sit on the same wires. See `_ISING_ENTANGLER`.
+        # One opcode twice commutes on any qubits, and two different opcodes commute
+        # only when they sit on the same qubits. See `_ISING_ENTANGLER`.
         return left_opcode == right_opcode or left.wires == right.wires
 
     # The remaining two rules need the two operators to act on the same ordered
-    # wires: `swap` against an exchange-symmetric operator, and the `cx`/`crx`
+    # qubits: `swap` against an exchange-symmetric operator, and the `cx`/`crx`
     # family pair, which no branch above reaches because the two are different
     # opcodes.
     if left.wires == right.wires:
@@ -310,7 +310,7 @@ class CommutationAnalysis:
     """The commuting blocks of a circuit, one ordered partition per qubit.
 
     Qiskit's `CommutationAnalysis` is an `AnalysisPass` that writes
-    `property_set["commutation_set"]`, keyed by DAG node and wire. This carries
+    `property_set["commutation_set"]`, keyed by DAG node and qubit. This carries
     the same structure as a value keyed by program position, which is what the IR
     has: ``blocks_by_qubit[qubit]`` is an ordered tuple of blocks, each a tuple of
     instruction positions in program order, and ``block_index`` answers which

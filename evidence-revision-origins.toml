@@ -89,11 +89,11 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
 # unobtainable pin sat inside a walked artifact unasked. The second,
-# `0e2d57204cb4fdd3f002de94367346923f7d1b33`, was published after this table was
-# first written by `benchmarks/results/local/mps_two_site_dispatch_a800.json`, and
-# the branch that introduced it was deleted when its pull request merged, so the
-# object is exactly as unobtainable as the rest of the class: three counted `git fetch`
-# attempts served it by name, and no ref of this repository reaches it.
+# `9613eb6b5d58b5470c641f6068b9ac5ef848af1f`, was published by the v2
+# replacement of `benchmarks/results/local/mps_two_site_dispatch_a800.json`.
+# It is the fixed source revision measured before the aggregate and documentation
+# commits, so a shallow CI checkout of the pull-request head does not contain it.
+# The repository remote serves the object by its full name.
 #
 # The fortieth, `aaa3a70c698dc629c37baa2719607444aa3b6381`, entered from a third
 # direction, and it is the reason the walk now reads a revision written in prose. The
@@ -763,7 +763,7 @@ origin = "unreferenced_object"
 path = "benchmarks/results/local/mps_two_site_dispatch_a800.json"
 
 [[artifact.revision]]
-value = "0e2d57204cb4fdd3f002de94367346923f7d1b33"
+value = "9613eb6b5d58b5470c641f6068b9ac5ef848af1f"
 origin = "unreferenced_object"
 
 

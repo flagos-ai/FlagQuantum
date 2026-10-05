@@ -65,12 +65,70 @@ def _package(tmp_path: Path, files: dict[str, str]) -> Path:
     return tmp_path / "flagquantum"
 
 
-def _unretired_parameters() -> list[str]:
-    """The parameters the contract has not retired yet, alphabetically."""
+def _unretire_a_parameter(contract: dict[str, Any]) -> str:
+    """Drop one retirement row and return the site it had retired.
+
+    Every parameter is retired once the migration finishes, and that is the
+    point of the program rather than a reason to delete the rule that proves a
+    retirement is recorded. The fixture therefore un-retires the alphabetically
+    first site in place of waiting for a slice to leave work behind, which is
+    also why the two tests below mutate a copy instead of reading the live tree.
+    """
+
+    identifier = min(str(entry) for entry in contract["retirement"]["sites"])
+    contract["retirement"]["sites"] = [
+        entry for entry in contract["retirement"]["sites"] if str(entry) != identifier
+    ]
+    return identifier
+
+
+def _unretire_a_definition(contract: dict[str, Any]) -> str:
+    """Drop one definition retirement row and return the site it had retired.
+
+    Same reason as `_unretire_a_parameter`: the migration ends with every name
+    retired, and the rules that prove a retirement is recorded still have to be
+    proved afterwards. The fixture reads the exemplar out of the contract instead
+    of hard-coding one, because `WQ-7` and `WQ-8` each moved the literal the test
+    used to name.
+    """
+
+    identifier = min(str(row["site"]) for row in contract["definition_ledger"]["sites"])
+    contract["definition_retirement"]["sites"] = [
+        entry
+        for entry in contract["definition_retirement"]["sites"]
+        if str(entry) != identifier
+    ]
+    return identifier
+
+
+def _alias_parameters() -> list[str]:
+    """The parameter spellings the contract keeps as forwarders, alphabetically."""
 
     contract = _contract()
     retired = {str(entry) for entry in contract["retirement"]["sites"]}
-    return sorted(set(map(str, contract["ledger"]["canonical"])) - retired)
+    alias = sorted(str(row["site"]) for row in contract["aliases"]["declared"])
+    assert alias and not retired & set(alias)
+    return alias
+
+
+def _wire_named_package(tmp_path: Path, identifier: str) -> Path:
+    """A one-file package in which `identifier` still carries its wire name.
+
+    The inverse of `_renamed_package`, for the same reason: the file is copied
+    out of the real tree and the spelling is put back, so a fixture that needs a
+    live `wire` name does not depend on some slice having left one behind. The
+    migration has none left, and a hard-coded stub would stop matching the module
+    the ledger names the moment that module changes.
+    """
+
+    relative = identifier.split("::", 1)[0]
+    name = identifier.rsplit("::", 1)[1]
+    source = (_ROOT / relative).read_text(encoding="utf-8")
+    replacement = _CENSUS.replacement_name(name)
+    return _package(
+        tmp_path,
+        {relative: re.sub(rf"\b{re.escape(replacement)}\b", name, source)},
+    )
 
 
 def _unretired_attributes() -> list[str]:
@@ -123,6 +181,222 @@ def test_the_checked_in_contract_passes() -> None:
     assert _errors(_contract()) == ()
 
 
+def test_the_gate_reports_docstring_progress() -> None:
+    """A docstring is what `help()` prints, and no other ledger reads it.
+
+    The four keyword ledgers read an AST signature or a documented keyword. A
+    docstring is neither, so without this surface a package whose every parameter
+    was renamed could still explain those parameters in the old vocabulary and the
+    gate would report a finished migration.
+    """
+
+    contract = _contract()
+    kept = sum(len(row.get("identifier", ())) for row in contract["docstring"]["keep"])
+    scanned = _CENSUS.docstring_census(_ROOT / "flagquantum")
+    assert scanned, "the docstring census found nothing to reconcile"
+    assert kept == len(scanned) == int(contract["docstring"]["measured_tokens"])
+
+
+def test_an_unrecorded_docstring_token_is_reported() -> None:
+    """The default: a wire-named token in a docstring and no row for it.
+
+    Dropping a row is the only way to reach this branch from the real contract --
+    the gate reads the live package, so a fixture package cannot be substituted
+    without leaving every other ledger reporting at once. The branch is what a
+    docstring that was never migrated meets, and the census test above proves the
+    reading it is compared against.
+    """
+
+    contract = _contract()
+    dropped = contract["docstring"]["keep"].pop(0)
+    container = dropped["identifier"][0].rsplit("::", 1)[0]
+    errors = _errors(contract)
+    _some(errors, "docstring publishes a wire-named token")
+    assert any(container in message for message in errors), (container, errors)
+
+
+def test_a_docstring_exemption_permitting_more_than_the_tree_shows_is_reported() -> (
+    None
+):
+    """The row pins the whole multiset, so it cannot be widened to absorb a site."""
+
+    contract = _contract()
+    row = contract["docstring"]["keep"][0]
+    container = row["identifier"][0].rsplit("::", 1)[0]
+    row["identifier"] = [*row["identifier"], f"{container}::phantom_wire"]
+    _some(_errors(contract), "is exempt")
+
+
+def test_a_stale_docstring_exemption_is_reported() -> None:
+    """A row whose container no longer shows the token is dead weight, not insurance."""
+
+    contract = _contract()
+    row = contract["docstring"]["keep"][0]
+    row["identifier"] = [
+        row["identifier"][0].rsplit("::", 1)[0] + "::a_token_that_is_not_there"
+    ]
+    _some(_errors(contract), "is exempt")
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = [
+        "flagquantum/_api.py::a_definition_that_does_not_exist::n_wires"
+    ]
+    _some(_errors(contract), "is stale")
+
+
+def test_a_docstring_exemption_without_a_reason_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["keep"][0]["reason"] = ""
+    _some(_errors(contract), "states no reason")
+
+
+def test_a_docstring_exemption_without_an_identifier_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = []
+    _some(_errors(contract), "missing an identifier")
+
+
+def test_a_docstring_identifier_that_is_not_a_container_token_key_is_reported() -> None:
+    """The key has to name a container, so a bare token cannot be an exemption."""
+
+    contract = _contract()
+    contract["docstring"]["keep"][0]["identifier"] = ["just_a_token"]
+    _some(_errors(contract), "container::token")
+
+
+def test_a_docstring_measurement_that_disagrees_with_the_scan_is_reported() -> None:
+    contract = _contract()
+    contract["docstring"]["measured_tokens"] = (
+        int(contract["docstring"]["measured_tokens"]) + 1
+    )
+    _some(_errors(contract), "measured_tokens must equal the live scan")
+
+
+@pytest.mark.parametrize("field", ["owner", "condition"])
+def test_an_unowned_docstring_surface_is_reported(field: str) -> None:
+    contract = _contract()
+    contract["docstring"][field] = ""
+    _some(_errors(contract), f"docstring {field} is unowned")
+
+
+def test_the_docstring_surface_is_not_the_documentation_surface() -> None:
+    """The two are separate ledgers, because the two reach a user differently.
+
+    `[documentation]` reconciles a keyword argument a reader copies into a script;
+    a documented keyword is a signature under another spelling, which is why an
+    exemption there names a *file* and the whole multiset of spellings it may show.
+    `[docstring]` reconciles prose attached to code that already exists, which is
+    why an exemption here names a *container* and one token. Merging them would let
+    a reworded docstring pay for a stale example.
+    """
+
+    contract = _contract()
+    assert "docstring" in contract and "documentation" in contract
+    assert "measured_tokens" in contract["docstring"]
+    assert "measured_keywords" in contract["documentation"]
+    assert "keep" in contract["docstring"]
+    assert "exempt" in contract["documentation"]
+
+
+def test_the_gate_reports_docstring_example_progress() -> None:
+    """A `>>>` block is a program, so its tokens are code and not a sentence.
+
+    `[docstring]` reads prose; a `>>>` block inside the same docstring is run by
+    `doctest`. Reading them as one surface is what let `Instruction.wires` become
+    `.qubits` in the `Circuit.compose` example, where the vocabulary gate saw a
+    token disappear and every dictionary said the migration was finished while the
+    example raised `AttributeError`.
+    """
+
+    contract = _contract()
+    pinned = sum(
+        len(row.get("identifier", ())) for row in contract["docstring_example"]["keep"]
+    )
+    scanned = _CENSUS.docstring_example_tokens(_ROOT / "flagquantum")
+    assert scanned, "the docstring example census found nothing to reconcile"
+    assert (
+        pinned == len(scanned) == int(contract["docstring_example"]["measured_tokens"])
+    )
+    assert "condition" in contract["docstring_example"]
+    assert "owner" in contract["docstring_example"]
+
+
+def test_an_unrecorded_docstring_example_token_is_reported() -> None:
+    """The default: an executable wire-named token and no row for it."""
+
+    contract = _contract()
+    dropped = contract["docstring_example"]["keep"].pop(0)
+    container = dropped["identifier"][0].rsplit("::", 1)[0]
+    errors = _errors(contract)
+    _some(errors, "docstring example shows a wire-named token")
+    assert any(container in message for message in errors), (container, errors)
+
+
+def test_a_docstring_example_exemption_wider_than_the_tree_is_reported() -> None:
+    """The row pins the whole multiset, so it cannot be widened to absorb a code token."""
+
+    contract = _contract()
+    row = contract["docstring_example"]["keep"][0]
+    container = row["identifier"][0].rsplit("::", 1)[0]
+    row["identifier"] = [*row["identifier"], f"{container}::phantom_wire"]
+    _some(_errors(contract), "is exempt")
+
+
+def test_a_stale_docstring_example_exemption_is_reported() -> None:
+    """A row naming a container with no executable token is dead weight."""
+
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = [
+        "flagquantum/circuit.py::Circuit.compose::a_token_that_is_not_there"
+    ]
+    _some(_errors(contract), "is exempt")
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = [
+        "flagquantum/_api.py::a_definition_that_does_not_exist::n_wires"
+    ]
+    _some(_errors(contract), "docstring example exemption")
+    _some(_errors(contract), "is stale")
+
+
+def test_a_docstring_example_exemption_without_a_reason_is_reported() -> None:
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["reason"] = ""
+    _some(_errors(contract), "docstring example exemption")
+    _some(_errors(contract), "states no reason")
+
+
+def test_a_docstring_example_exemption_without_an_identifier_is_reported() -> None:
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = []
+    _some(_errors(contract), "docstring example exemption is missing an identifier")
+
+
+def test_a_docstring_example_identifier_that_is_not_a_container_token_key_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["docstring_example"]["keep"][0]["identifier"] = ["just_a_token"]
+    _some(_errors(contract), "container::token")
+
+
+def test_a_docstring_example_measurement_that_disagrees_with_the_scan_is_reported() -> (
+    None
+):
+    contract = _contract()
+    contract["docstring_example"]["measured_tokens"] = (
+        int(contract["docstring_example"]["measured_tokens"]) + 1
+    )
+    _some(
+        _errors(contract), "docstring example measured_tokens must equal the live scan"
+    )
+
+
+@pytest.mark.parametrize("field", ("owner", "condition"))
+def test_an_unowned_docstring_example_surface_is_reported(field: str) -> None:
+    contract = _contract()
+    contract["docstring_example"][field] = ""
+    _some(_errors(contract), f"docstring example {field} is unowned")
+
+
 def test_the_gate_reports_progress_per_slice() -> None:
     """Retirement moves a site from `remaining` to `retired`, never off the books.
 
@@ -152,7 +426,7 @@ def test_the_gate_reports_attribute_progress_per_slice() -> None:
 
 
 def test_the_gate_reports_definition_progress_per_slice() -> None:
-    """A renamed parameter inside `infer_n_wires_from_dense_state` is not done.
+    """A renamed parameter inside `infer_n_qubits_from_dense_state` is not done.
 
     The name of a module-level public function or class is the third door: it is
     neither a parameter nor a class attribute, so without this surface the gate
@@ -161,7 +435,7 @@ def test_the_gate_reports_definition_progress_per_slice() -> None:
 
     rows = _GATE.slice_progress(_contract(), "definition")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert sum(retired for _, retired, _ in rows) == 4
+    assert sum(retired for _, retired, _ in rows) == 10
     assert sum(retired + remaining for _, retired, remaining in rows) == 10
 
 
@@ -290,23 +564,29 @@ def test_a_baseline_line_deleted_without_a_retirement_entry_is_reported() -> Non
     """The rule that makes the ledger a record of what was owed, not a live count.
 
     Deleting a line retires nothing: the site is still spelled `wire` in the code
-    and now no ledger entry covers it. The fixture deletes a line that has not
-    been retired, because deleting one that has would also break the retirement
-    table's anchor on the baseline.
+    and now no baseline entry covers it. Both halves of the baseline are checked,
+    because the migration ended with them in different states -- every canonical
+    line is retired, so deleting one is caught by the line that retired it, while
+    every alias line is still live code, so deleting one leaves a spelling on disk
+    that the baseline no longer covers.
     """
 
     contract = _contract()
-    retired = set(contract["retirement"]["sites"])
-    removed = next(
-        identifier
-        for identifier in contract["ledger"]["canonical"]
-        if identifier not in retired
-    )
+    removed = min(str(entry) for entry in contract["retirement"]["sites"])
     contract["ledger"]["canonical"].remove(removed)
     errors = _errors(contract)
     _one(errors, "ledger length")
-    _some(errors, "outside the ledger")
+    _some(errors, "retirement names sites outside the baseline")
     _some(errors, removed)
+
+    contract = _contract()
+    aliased = min(str(row["site"]) for row in contract["aliases"]["declared"])
+    contract["aliases"]["declared"] = [
+        row for row in contract["aliases"]["declared"] if str(row["site"]) != aliased
+    ]
+    errors = _errors(contract)
+    _some(errors, "outside the ledger")
+    _some(errors, aliased)
 
 
 def test_a_fabricated_retirement_entry_is_reported() -> None:
@@ -318,7 +598,9 @@ def test_a_fabricated_retirement_entry_is_reported() -> None:
     """
 
     contract = _contract()
-    claimed = _unretired_parameters()[0]
+    # A live alias is the one kind of site that is deliberately still spelled
+    # `wire`, so claiming it as retired is exactly the fabrication to report.
+    claimed = _alias_parameters()[0]
     assert claimed not in contract["retirement"]["sites"]
     contract["retirement"]["sites"].append(claimed)
     errors = _errors(contract)
@@ -329,16 +611,17 @@ def test_a_fabricated_retirement_entry_is_reported() -> None:
 def test_a_rename_without_a_retirement_entry_is_reported(tmp_path: Path) -> None:
     """Renaming a site is not enough; the ledger has to record it as retired.
 
-    The report truncates its list of sites, so the fixture renames the
-    alphabetically first identifier the ledger has not yet retired -- the one the
-    truncation is guaranteed to name -- and asserts on it by name rather than
-    trusting the count. `WQ-5` landed the site this fixture used to hard-code, so
-    it reads the live exemplar out of the contract instead.
+    The report truncates its list of sites, so the fixture un-retires the
+    alphabetically first identifier -- the one the truncation is guaranteed to
+    name -- and asserts on it by name rather than trusting the count. `WQ-5`
+    landed the site this fixture used to hard-code, and `WQ-8` retired the last
+    one, so it no longer reads the exemplar out of the live contract.
     """
 
-    first = _unretired_parameters()[0]
+    contract = _contract()
+    first = _unretire_a_parameter(contract)
     package = _renamed_package(tmp_path, first)
-    errors = _GATE.contract_errors(_contract(), package_root=package)
+    errors = _GATE.contract_errors(contract, package_root=package)
     _some(errors, "neither live nor retired")
     _some(errors, first)
 
@@ -934,32 +1217,52 @@ def test_the_report_names_the_aliases_apart_from_retirement(
 
     "remaining" alone cannot say whether the wire spelling is still on disk
     because nobody got to it or because a forwarder deliberately answers it. The
-    report prints both numbers, and the parameter line already distinguishes its
-    eleven declared aliases from the canonical sites it has yet to retire.
+    report prints both numbers, on every surface that has an alias table.
+
+    `WQ-8` exhausted both tables -- every canonical parameter and every canonical
+    attribute is now either retired or a declared forwarder -- so the numbers are
+    read out of the contract instead of being asserted as literals. The point is
+    the split, and the split is exactly what the frozen tables say it is.
     """
 
     contract = _contract()
-    retired = {str(row["site"]) for row in contract["attribute_retirement"]["sites"]}
-    aliased = {str(row["site"]) for row in contract["attribute_aliases"]["sites"]}
-    candidate = next(
-        identifier
-        for identifier in sorted(map(str, contract["attribute_ledger"]["canonical"]))
-        if identifier not in retired and identifier not in aliased
-    )
-    contract["attribute_aliases"]["sites"].append(
-        {
-            "site": candidate,
-            "replacement": _CENSUS.replacement_name(candidate.rsplit("::", 1)[1]),
-        }
-    )
-    contract["other_surfaces"]["public_attribute_aliased"] = 3
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
+
+    for surface, index, label, ledger, table in (
+        ("parameter", 0, "baseline sites", "ledger", "canonical"),
+        ("attribute", 8, "attribute sites", "attribute_ledger", "canonical"),
+    ):
+        total = len(contract[ledger][table])
+        retired = len(
+            {
+                str(entry.get("site", "")) if isinstance(entry, dict) else str(entry)
+                for entry in contract[
+                    "retirement" if surface == "parameter" else "attribute_retirement"
+                ]["sites"]
+            }
+        )
+        aliased = len(_GATE.aliased_sites(contract, surface))
+        assert aliased > 0
+        assert (
+            f"{retired} of {total} {label} retired, "
+            f"{aliased} kept as deprecated aliases"
+        ) in lines[index]
+        # The alias is not progress, and how that shows differs by surface. A
+        # parameter alias is declared outside the canonical ledger, so the
+        # remaining column is zero while eleven forwarders are still live; an
+        # attribute alias is drawn from the live ledger, so all five of them are
+        # counted as remaining. Neither surface reports either as retired, which
+        # is the fact a reviewer reads the report for.
+        rows = _GATE.slice_progress(contract, surface)
+        assert sum(done for _, done, _ in rows) == retired
+        left = sum(left for _, _, left in rows)
+        assert left + retired == total
+        assert left == (0 if surface == "parameter" else aliased)
+
     assert (
-        "131 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+        f"{len(contract['definition_ledger']['sites'])} definition names" in lines[16]
     )
-    assert "83 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
-    assert "4 of 10 definition names retired" in lines[16]
 
 
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
@@ -1111,41 +1414,36 @@ def test_a_definition_rename_without_a_retirement_entry_is_reported(
 ) -> None:
     """A rename is not done until the ledger records it.
 
-    The fixture renames the alphabetically first definition name in the ledger.
-    The live scan no longer sees the old spelling, so the entry is neither live
-    nor retired -- which is what stops a slice from renaming the code and editing
-    the ledger away in the same commit.
+    The fixture un-retires the alphabetically first definition name in the ledger
+    and renames it in a copy of its own file. The live scan no longer sees the old
+    spelling, so the entry is neither live nor retired -- which is what stops a
+    slice from renaming the code and editing the ledger away in the same commit.
     """
 
-    first = min(str(row["site"]) for row in _definition_rows(_contract()))
+    contract = _contract()
+    first = _unretire_a_definition(contract)
     assert first == (
         "flagquantum/benchmarking/statevector_cpu_paths.py"
         "::build_two_wire_diagonal_chain"
     )
-    package = _package(
-        tmp_path,
-        {
-            "flagquantum/algorithms/amplitude_estimation.py": (
-                "def amplitude_estimation_circuit(n_counting_wires):\n"
-                "    return n_counting_wires\n"
-            ),
-            "flagquantum/benchmarking/statevector_cpu_paths.py": (
-                "def build_two_qubit_diagonal_chain(qubits):\n" "    return qubits\n"
-            ),
-        },
-    )
-    errors = _GATE.contract_errors(_contract(), package_root=package)
+    package = _renamed_package(tmp_path, first)
+    errors = _GATE.contract_errors(contract, package_root=package)
     _some(errors, "neither live nor retired")
     _some(errors, first)
 
 
-def test_a_fabricated_definition_retirement_is_reported() -> None:
-    """The other direction: claiming a rename that the code does not show."""
+def test_a_fabricated_definition_retirement_is_reported(tmp_path: Path) -> None:
+    """The other direction: claiming a rename that the code does not show.
+
+    The fixture points the scan at an unmodified copy of the file, so the old
+    spelling is genuinely still there and the retirement row is a lie.
+    """
 
     contract = _contract()
-    live = min(str(row["site"]) for row in _definition_rows(contract))
-    contract["definition_retirement"] = {"sites": [live]}
-    errors = _errors(contract)
+    live = _unretire_a_definition(contract)
+    contract["definition_retirement"]["sites"] = [live]
+    package = _wire_named_package(tmp_path, live)
+    errors = _GATE.contract_errors(contract, package_root=package)
     _some(errors, "still exist")
     _some(errors, live)
 
@@ -1158,15 +1456,25 @@ def test_a_definition_retirement_outside_the_baseline_is_reported() -> None:
     _one(_errors(contract), "outside the baseline")
 
 
-def test_a_definition_rename_that_disagrees_with_the_rule_is_reported() -> None:
+def test_a_definition_rename_that_disagrees_with_the_rule_is_reported(
+    tmp_path: Path,
+) -> None:
+    """A ledger row may not name a replacement the substitution rule forbids.
+
+    The rule check only runs on a row whose site is still live, so the fixture
+    un-retires one and scans the unmodified file it names -- the site is on disk
+    under its old spelling and the ledger disagrees with what the census would
+    have proposed for it.
+    """
+
     contract = _contract()
+    live = _unretire_a_definition(contract)
     row = next(
-        entry
-        for entry in _definition_rows(contract)
-        if entry["site"].endswith("::infer_n_wires_from_dense_state")
+        entry for entry in _definition_rows(contract) if str(entry["site"]) == live
     )
-    row["replacement"] = "infer_n_qubit_indices"
-    _some(_errors(contract), "must be replaced by")
+    row["replacement"] = "build_two_qubit_indices_diagonal_chain"
+    package = _wire_named_package(tmp_path, live)
+    _some(_GATE.contract_errors(contract, package_root=package), "must be replaced by")
 
 
 def test_a_definition_without_a_kind_is_reported() -> None:

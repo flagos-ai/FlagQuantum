@@ -85,7 +85,7 @@ def _braket_coupling_map(properties: Any, n_wires: int) -> Any:
                     edges.add((left, right))
     if not edges:
         return None
-    return CouplingMap(n_wires=n_wires, edges=tuple(sorted(edges)))
+    return CouplingMap(n_qubits=n_wires, edges=tuple(sorted(edges)))
 
 
 def _braket_dynamic_groups(properties: Any) -> tuple[tuple[int, ...], ...]:

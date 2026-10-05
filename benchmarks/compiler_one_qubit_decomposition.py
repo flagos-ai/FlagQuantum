@@ -292,7 +292,7 @@ def _candidate_words(
                 z_rotation=z_rotation,
                 pulse_opcode=pulse_opcode,
             ),
-            wires=(0,),
+            qubits=(0,),
             metadata={},
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,

@@ -1,4 +1,4 @@
-"""Physical locality of multi-wire instructions across every routing strategy.
+"""Physical locality of multi-qubit instructions across every routing strategy.
 
 A three-or-more-wire instruction can only stay in a routed program when the
 device carries the couplings its operands actually interact over, because no
@@ -20,7 +20,7 @@ from flagquantum.compiler.directed_topology import (
     route_to_directed_topology,
 )
 from flagquantum.compiler.routing import (
-    _MULTI_WIRE_OPERAND_PAIRS,
+    _MULTI_QUBIT_OPERAND_PAIRS,
     ROUTING_STRATEGIES,
     CouplingMap,
     route_to_topology,
@@ -83,11 +83,11 @@ def _snapshot() -> TargetCapabilitySnapshot:
 def _missing_couplings(
     coupling: CouplingMap, opcode: str, wires: tuple[int, ...]
 ) -> tuple[tuple[int, int], ...]:
-    """Return the couplings the device lacks for one multi-wire instruction."""
+    """Return the couplings the device lacks for one multi-qubit instruction."""
 
     return tuple(
         (wires[left], wires[right])
-        for left, right in _MULTI_WIRE_OPERAND_PAIRS[opcode]
+        for left, right in _MULTI_QUBIT_OPERAND_PAIRS[opcode]
         if not coupling.has_edge(wires[left], wires[right])
     )
 
@@ -109,16 +109,16 @@ def test_every_core_multi_wire_opcode_has_a_connectivity_rule() -> None:
         schema.opcode for schema in OPERATOR_SCHEMAS.values() if schema.arity >= 3
     }
     assert core_multi_wire, "Core declares no multi-wire opcode; the check is vacuous"
-    assert core_multi_wire <= set(_MULTI_WIRE_OPERAND_PAIRS), (
+    assert core_multi_wire <= set(_MULTI_QUBIT_OPERAND_PAIRS), (
         "Core multi-wire opcodes without a routing connectivity rule: "
-        f"{sorted(core_multi_wire - set(_MULTI_WIRE_OPERAND_PAIRS))}"
+        f"{sorted(core_multi_wire - set(_MULTI_QUBIT_OPERAND_PAIRS))}"
     )
 
 
 def test_connectivity_rules_are_two_wire_interactions_of_their_opcode() -> None:
     """A rule names real operand pairs of the opcode it belongs to."""
 
-    for opcode, pairs in _MULTI_WIRE_OPERAND_PAIRS.items():
+    for opcode, pairs in _MULTI_QUBIT_OPERAND_PAIRS.items():
         arity = OPERATOR_SCHEMAS[opcode].arity
         assert pairs, opcode
         assert all(
@@ -142,10 +142,10 @@ def test_device_local_multi_wire_instruction_is_emitted_verbatim(strategy: str) 
 
 @pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
 def test_off_device_multi_wire_instruction_fails_closed(strategy: str) -> None:
-    """A multi-wire instruction the device cannot host must be refused."""
+    """A multi-qubit instruction the device cannot host must be refused."""
 
     source = fq.Circuit(5).x(0).ccx(0, 2, 4)
-    with pytest.raises(ValueError, match="multi-wire instruction"):
+    with pytest.raises(ValueError, match="multi-qubit instruction"):
         route_to_topology(source, _TRIANGLE_AND_TAIL, strategy=strategy)
 
 
@@ -199,13 +199,13 @@ def test_layout_that_moves_a_multi_wire_instruction_off_device_fails_closed(
     """A layout choice must not silently relocate a wide gate off the device."""
 
     source = fq.Circuit(5).cx(1, 4).ccx(0, 1, 2)
-    with pytest.raises(ValueError, match="multi-wire instruction"):
+    with pytest.raises(ValueError, match="multi-qubit instruction"):
         route_to_topology(source, _TRIANGLE_AND_TAIL, strategy=strategy)
 
 
 def test_directed_routing_refuses_off_device_multi_wire_instruction() -> None:
     source = fq.Circuit(5).x(0).ccx(0, 2, 4)
-    with pytest.raises(ValueError, match="multi-wire instruction"):
+    with pytest.raises(ValueError, match="multi-qubit instruction"):
         route_to_directed_topology(source.to_ir(), _DIRECTED_TRIANGLE_AND_TAIL)
 
 
@@ -221,13 +221,13 @@ def test_compiler_compile_refuses_off_device_multi_wire_instruction() -> None:
     """The user-facing entry must not emit a program the device cannot run."""
 
     source = fq.Circuit(5).x(0).ccx(0, 2, 4)
-    with pytest.raises(ValueError, match="multi-wire instruction"):
+    with pytest.raises(ValueError, match="multi-qubit instruction"):
         compile_circuit(source, coupling_map=_TRIANGLE_AND_TAIL)
 
 
 def test_topology_legalization_refuses_off_device_multi_wire_instruction() -> None:
     source = fq.Circuit(5).x(0).ccx(0, 2, 4).to_ir()
-    with pytest.raises(TopologyLegalizationError, match="multi-wire instruction"):
+    with pytest.raises(TopologyLegalizationError, match="multi-qubit instruction"):
         legalize_circuit_topology(
             source,
             coupling_map=_TRIANGLE_AND_TAIL,

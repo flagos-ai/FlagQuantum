@@ -523,7 +523,7 @@ def scale_noise_model(model: NoiseModel, factor: float) -> NoiseModel:
     scaled = NoiseModel(device_profile=model.device_profile)
     for rule in model.rules:
         scaled.add(
-            rule.gate_names, _scaled_channel(rule.channel, number), wires=rule.wires
+            rule.gate_names, _scaled_channel(rule.channel, number), qubits=rule.wires
         )
     # Copied verbatim rather than rebuilt: a readout rule is a classical
     # misassignment, not a gate error, and re-deriving one here would be a second

@@ -37,7 +37,7 @@ class MPSPlanningMixin(ABC):
 
     @property
     @abstractmethod
-    def n_wires(self) -> int: ...
+    def n_qubits(self) -> int: ...
 
     @property
     @abstractmethod
@@ -97,7 +97,7 @@ class MPSPlanningMixin(ABC):
             else self.mixed_canonical_residual()
         )
         return MPSBondProfile(
-            n_wires=self.n_wires,
+            n_qubits=self.n_qubits,
             batch_size=self.bsz,
             bond_dims=bond_dims,
             max_bond=self.max_bond,
@@ -238,7 +238,7 @@ class MPSPlanningMixin(ABC):
         windows = []
         for bond in adaptive.hot_bonds:
             left = max(0, bond - window_radius)
-            right = min(self.n_wires - 1, bond + 1 + window_radius)
+            right = min(self.n_qubits - 1, bond + 1 + window_radius)
             windows.append((left, right))
         merged: list[tuple[int, int]] = []
         for left, right in sorted(windows):
@@ -259,7 +259,7 @@ class MPSPlanningMixin(ABC):
         refinement = self.local_refinement_plan()
         return {
             "state_mode": "mps",
-            "n_wires": profile.n_wires,
+            "n_qubits": profile.n_qubits,
             "batch_size": profile.batch_size,
             "bond_dims": profile.bond_dims,
             "max_bond": profile.max_bond,

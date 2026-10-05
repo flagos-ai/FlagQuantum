@@ -47,12 +47,12 @@ if TYPE_CHECKING:
 
 _PRODUCT_STATE_MIN_WIRES = 16
 _PRODUCT_STATE_MAX_ESTIMATED_WORK_RATIO = 0.30
-# Static 18- and 20-wire Clifford plans measured 1.96x and 2.97x faster at
+# Static 18- and 20-qubit Clifford plans measured 1.96x and 2.97x faster at
 # estimated ratios 0.350 and 0.317. Keep the evidence-bound extension narrow;
 # every other program retains the established conservative ceiling.
 _PRODUCT_STATE_MAX_STATIC_CLIFFORD_WORK_RATIO = 0.36
 # Weighted phase-graph plans measured faster than dense graph execution at
-# estimated ratios below 0.45 on 18 and 22 wires. This extension is selected
+# estimated ratios below 0.45 on 18 and 22 qubits. This extension is selected
 # only when the compiled plan contains that exact static graph step.
 _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO = 0.45
 _STATIC_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "x", "y", "z", "cx", "cz", "swap"})
@@ -70,7 +70,7 @@ def _cpu_product_state_execution_enabled() -> bool:
 
 
 def _cpu_product_state_swap_remapping_enabled() -> bool:
-    """Whether product components treat SWAP as wire remapping."""
+    """Whether product components treat SWAP as qubit remapping."""
 
     return _environment_flag("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", default=True)
 
@@ -104,11 +104,11 @@ def _cpu_product_state_deferred_swap_enabled() -> bool:
 def _apply_fixed_clifford_gate(
     state: torch.Tensor,
     name: str,
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
 ) -> torch.Tensor:
-    axis = int(wire) + 1
-    tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
+    axis = int(qubit) + 1
+    tensor = state.reshape((state.shape[0],) + (2,) * n_qubits)
     zero, one = tensor.unbind(dim=axis)
     if name == "h":
         scale = 2**-0.5
@@ -120,7 +120,7 @@ def _apply_fixed_clifford_gate(
     elif name == "z":
         values = (zero, -one)
     else:
-        return _apply_single_qubit_fixed(state, name, wire, n_wires)
+        return _apply_single_qubit_fixed(state, name, qubit, n_qubits)
     return torch.stack(values, dim=axis).reshape(state.shape)
 
 
@@ -147,16 +147,16 @@ def _apply_fixed_clifford_layer(
 ) -> torch.Tensor:
     """Apply one disjoint H/S/X layer with bounded passes over a component."""
 
-    n_wires = len(component.wires)
-    local_gates = tuple((name, component.wires.index(wire)) for name, wire in gates)
+    n_qubits = len(component.qubits)
+    local_gates = tuple((name, component.qubits.index(qubit)) for name, qubit in gates)
     if len(local_gates) == 1:
-        name, wire = local_gates[0]
+        name, qubit = local_gates[0]
         if name == "x":
-            return _apply_fixed_permutation(component.state, name, (wire,), n_wires)
-        return _apply_fixed_clifford_gate(component.state, name, wire, n_wires)
+            return _apply_fixed_permutation(component.state, name, (qubit,), n_qubits)
+        return _apply_fixed_clifford_gate(component.state, name, qubit, n_qubits)
 
     if (
-        n_wires >= _PRODUCT_STATE_NATIVE_STATIC_CLIFFORD_MIN_WIRES
+        n_qubits >= _PRODUCT_STATE_NATIVE_STATIC_CLIFFORD_MIN_WIRES
         and not component.state.requires_grad
         and _cpu_product_state_native_static_clifford_enabled()
     ):
@@ -175,30 +175,30 @@ def _apply_fixed_clifford_layer(
             output,
             gate_codes,
             wires,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
         ):
             return output
 
     state = component.state
-    for name, wire in local_gates:
+    for name, qubit in local_gates:
         if name == "h":
-            state = _apply_fixed_clifford_gate(state, name, wire, n_wires)
+            state = _apply_fixed_clifford_gate(state, name, qubit, n_qubits)
 
-    s_wires = tuple(wire for name, wire in local_gates if name == "s")
-    if s_wires:
-        factor_shape = [1] * (n_wires + 1)
+    s_qubits = tuple(qubit for name, qubit in local_gates if name == "s")
+    if s_qubits:
+        factor_shape = [1] * (n_qubits + 1)
         phases = torch.ones((), device=state.device, dtype=state.dtype)
         local_phase = torch.tensor((1, 1j), device=state.device, dtype=state.dtype)
-        for wire in s_wires:
-            factor_shape[wire + 1] = 2
+        for qubit in s_qubits:
+            factor_shape[qubit + 1] = 2
             phases = phases.unsqueeze(-1) * local_phase
-        tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
+        tensor = state.reshape((state.shape[0],) + (2,) * n_qubits)
         state = (tensor * phases.reshape(factor_shape)).reshape(state.shape)
 
-    x_wires = tuple(wire for name, wire in local_gates if name == "x")
-    if x_wires:
-        tensor = state.reshape((state.shape[0],) + (2,) * n_wires)
-        state = torch.flip(tensor, dims=tuple(wire + 1 for wire in x_wires)).reshape(
+    x_qubits = tuple(qubit for name, qubit in local_gates if name == "x")
+    if x_qubits:
+        tensor = state.reshape((state.shape[0],) + (2,) * n_qubits)
+        state = torch.flip(tensor, dims=tuple(qubit + 1 for qubit in x_qubits)).reshape(
             state.shape
         )
     return state
@@ -206,7 +206,7 @@ def _apply_fixed_clifford_layer(
 
 @dataclass(frozen=True)
 class _ProductComponent:
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     state: torch.Tensor
 
 
@@ -217,19 +217,19 @@ def _apply_product_clifford_matching(
 ) -> _ProductComponent:
     """Apply one matching after its edges have joined product components."""
 
-    wire_set = set(component.wires)
+    wire_set = set(component.qubits)
     controls = tuple(
-        component.wires.index(control)
+        component.qubits.index(control)
         for control, target in zip(step.controls, step.targets, strict=True)
         if control in wire_set and target in wire_set
     )
     targets = tuple(
-        component.wires.index(target)
+        component.qubits.index(target)
         for control, target in zip(step.controls, step.targets, strict=True)
         if control in wire_set and target in wire_set
     )
     cz_edges = tuple(
-        (component.wires.index(left), component.wires.index(right))
+        (component.qubits.index(left), component.qubits.index(right))
         for left, right in step.cz_edges
         if left in wire_set and right in wire_set
     )
@@ -240,13 +240,13 @@ def _apply_product_clifford_matching(
     )
     matching_state: torch.Tensor | None = None
     if (
-        len(component.wires) >= _PRODUCT_STATE_NATIVE_MIXED_CLIFFORD_MIN_WIRES
+        len(component.qubits) >= _PRODUCT_STATE_NATIVE_MIXED_CLIFFORD_MIN_WIRES
         and controls
     ):
         matching_state, _ = apply_native_clifford_matching(
             local_step,
             component.state,
-            n_wires=len(component.wires),
+            n_qubits=len(component.qubits),
             scratch=None,
             reuse_output=False,
             owns_state=False,
@@ -257,7 +257,7 @@ def _apply_product_clifford_matching(
             execution_statistics["native_cpu_clifford_matching_regions"] = (
                 execution_statistics.get("native_cpu_clifford_matching_regions", 0) + 1
             )
-        return _ProductComponent(component.wires, matching_state)
+        return _ProductComponent(component.qubits, matching_state)
 
     matching_state = component.state
     if controls:
@@ -266,7 +266,7 @@ def _apply_product_clifford_matching(
                 matching_state,
                 controls,
                 targets,
-                len(component.wires),
+                len(component.qubits),
             )
         else:
             for control, target in zip(controls, targets, strict=True):
@@ -274,20 +274,20 @@ def _apply_product_clifford_matching(
                     matching_state,
                     "cx",
                     (control, target),
-                    len(component.wires),
+                    len(component.qubits),
                 )
     if cz_edges:
-        signs, wires = _cz_graph_signs_cpu(cz_edges, device=matching_state.device)
+        signs, qubits = _cz_graph_signs_cpu(cz_edges, device=matching_state.device)
         matching_state = _apply_cz_graph_cpu(
             matching_state,
             signs,
-            wires,
-            len(component.wires),
+            qubits,
+            len(component.qubits),
         )
-    return _ProductComponent(component.wires, matching_state)
+    return _ProductComponent(component.qubits, matching_state)
 
 
-def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], ...]:
+def _step_qubit_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], ...]:
     if isinstance(step, _StatevectorGateStep):
         return (tuple(step.instruction.wires),)
     if isinstance(step, _StatevectorFusedGateStep):
@@ -299,9 +299,9 @@ def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], .
             tuple(
                 sorted(
                     {
-                        wire
+                        qubit
                         for control, target, _ in step.edges
-                        for wire in (control, target)
+                        for qubit in (control, target)
                     }
                 )
             ),
@@ -313,7 +313,7 @@ def _step_wire_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], .
     return ()
 
 
-def _swap_wires(step: _StatevectorProgramStep) -> tuple[int, int] | None:
+def _swap_qubits(step: _StatevectorProgramStep) -> tuple[int, int] | None:
     if not isinstance(step, _StatevectorGateStep):
         return None
     if canonical_opcode(step.instruction.name) != "swap":
@@ -344,43 +344,45 @@ def _is_static_clifford_step(step: _StatevectorProgramStep) -> bool:
 
 def product_state_execution_is_beneficial(
     program: Sequence[_StatevectorProgramStep],
-    n_wires: int,
+    n_qubits: int,
     *,
     enable_swap_remapping: bool = True,
 ) -> bool:
     """Select plans whose component work is far below dense execution work."""
 
-    if n_wires < _PRODUCT_STATE_MIN_WIRES or not program:
+    if n_qubits < _PRODUCT_STATE_MIN_WIRES or not program:
         return False
-    component_by_wire = list(range(n_wires))
-    component_members = {wire: {wire} for wire in range(n_wires)}
+    component_by_qubit = list(range(n_qubits))
+    component_members = {qubit: {qubit} for qubit in range(n_qubits)}
 
-    def merge(wires: Sequence[int]) -> int:
-        component_ids = tuple(dict.fromkeys(component_by_wire[wire] for wire in wires))
+    def merge(qubits: Sequence[int]) -> int:
+        component_ids = tuple(
+            dict.fromkeys(component_by_qubit[qubit] for qubit in qubits)
+        )
         merged_id = component_ids[0]
         for component_id in component_ids[1:]:
-            moved_wires = component_members.pop(component_id)
-            component_members[merged_id].update(moved_wires)
-            for wire in moved_wires:
-                component_by_wire[wire] = merged_id
+            moved_qubits = component_members.pop(component_id)
+            component_members[merged_id].update(moved_qubits)
+            for qubit in moved_qubits:
+                component_by_qubit[qubit] = merged_id
         return len(component_members[merged_id])
 
     def remap_swap(left: int, right: int) -> tuple[int, ...]:
-        left_id = component_by_wire[left]
-        right_id = component_by_wire[right]
+        left_id = component_by_qubit[left]
+        right_id = component_by_qubit[right]
         if left_id == right_id:
             return (len(component_members[left_id]),)
         component_members[left_id].remove(left)
         component_members[left_id].add(right)
         component_members[right_id].remove(right)
         component_members[right_id].add(left)
-        component_by_wire[left], component_by_wire[right] = right_id, left_id
+        component_by_qubit[left], component_by_qubit[right] = right_id, left_id
         return (
             len(component_members[left_id]),
             len(component_members[right_id]),
         )
 
-    estimated_work = 2**n_wires
+    estimated_work = 2**n_qubits
     operation_count = 0
     static_clifford = True
     contains_controlled_phase_graph = False
@@ -389,19 +391,19 @@ def product_state_execution_is_beneficial(
         contains_controlled_phase_graph = contains_controlled_phase_graph or isinstance(
             step, _StatevectorControlledPhaseGraphStep
         )
-        swap_wires = _swap_wires(step)
-        if enable_swap_remapping and swap_wires is not None:
-            left, right = swap_wires
+        swap_qubits = _swap_qubits(step)
+        if enable_swap_remapping and swap_qubits is not None:
+            left, right = swap_qubits
             estimated_work += sum(2**size for size in remap_swap(left, right))
             operation_count += 1
             continue
-        groups = _step_wire_groups(step)
+        groups = _step_qubit_groups(step)
         if not groups:
             return False
-        for wires in groups:
-            estimated_work += 2 ** merge(wires)
+        for qubits in groups:
+            estimated_work += 2 ** merge(qubits)
             operation_count += 1
-    dense_work = max(len(program), operation_count) * 2**n_wires
+    dense_work = max(len(program), operation_count) * 2**n_qubits
     if contains_controlled_phase_graph:
         maximum_ratio = _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO
     elif static_clifford:
@@ -412,35 +414,35 @@ def product_state_execution_is_beneficial(
 
 
 def _merge_components(
-    components: dict[int, _ProductComponent], wires: Sequence[int]
+    components: dict[int, _ProductComponent], qubits: Sequence[int]
 ) -> _ProductComponent:
     selected: list[_ProductComponent] = []
     seen: set[int] = set()
-    for wire in wires:
-        component = components[wire]
+    for qubit in qubits:
+        component = components[qubit]
         identity = id(component)
         if identity not in seen:
             selected.append(component)
             seen.add(identity)
     if len(selected) == 1:
         return selected[0]
-    selected.sort(key=lambda component: component.wires)
-    concatenated_wires = tuple(wire for item in selected for wire in item.wires)
+    selected.sort(key=lambda component: component.qubits)
+    concatenated_qubits = tuple(qubit for item in selected for qubit in item.qubits)
     merged = selected[0].state
     for item in selected[1:]:
         merged = (merged.unsqueeze(-1) * item.state.unsqueeze(1)).reshape(1, -1)
-    ordered_wires = tuple(sorted(concatenated_wires))
-    if concatenated_wires != ordered_wires:
-        axes = {wire: index + 1 for index, wire in enumerate(concatenated_wires)}
+    ordered_qubits = tuple(sorted(concatenated_qubits))
+    if concatenated_qubits != ordered_qubits:
+        axes = {qubit: index + 1 for index, qubit in enumerate(concatenated_qubits)}
         merged = (
-            merged.reshape((1,) + (2,) * len(concatenated_wires))
-            .permute((0,) + tuple(axes[wire] for wire in ordered_wires))
+            merged.reshape((1,) + (2,) * len(concatenated_qubits))
+            .permute((0,) + tuple(axes[qubit] for qubit in ordered_qubits))
             .reshape(1, -1)
             .contiguous()
         )
-    component = _ProductComponent(ordered_wires, merged)
-    for wire in ordered_wires:
-        components[wire] = component
+    component = _ProductComponent(ordered_qubits, merged)
+    for qubit in ordered_qubits:
+        components[qubit] = component
     return component
 
 
@@ -450,35 +452,37 @@ def _relabel_component(
     *,
     defer_materialization: bool,
 ) -> _ProductComponent:
-    relabeled_wires = tuple(substitutions.get(wire, wire) for wire in component.wires)
+    relabeled_qubits = tuple(
+        substitutions.get(qubit, qubit) for qubit in component.qubits
+    )
     if defer_materialization:
-        return _ProductComponent(relabeled_wires, component.state)
+        return _ProductComponent(relabeled_qubits, component.state)
     return _canonicalize_component(
-        _ProductComponent(relabeled_wires, component.state), use_gather=False
+        _ProductComponent(relabeled_qubits, component.state), use_gather=False
     )
 
 
 def _canonicalize_component(
     component: _ProductComponent, *, use_gather: bool
 ) -> _ProductComponent:
-    """Return a component whose tensor axes follow ascending logical wires."""
+    """Return a component whose tensor axes follow ascending logical qubits."""
 
-    relabeled_wires = component.wires
-    ordered_wires = tuple(sorted(relabeled_wires))
-    if relabeled_wires != ordered_wires:
+    relabeled_qubits = component.qubits
+    ordered_qubits = tuple(sorted(relabeled_qubits))
+    if relabeled_qubits != ordered_qubits:
         if use_gather:
-            state = _apply_wire_permutation_gather(component.state, relabeled_wires)
+            state = _apply_wire_permutation_gather(component.state, relabeled_qubits)
         else:
-            axes = {wire: index + 1 for index, wire in enumerate(relabeled_wires)}
+            axes = {qubit: index + 1 for index, qubit in enumerate(relabeled_qubits)}
             state = (
                 component.state.reshape(
-                    (component.state.shape[0],) + (2,) * len(relabeled_wires)
+                    (component.state.shape[0],) + (2,) * len(relabeled_qubits)
                 )
-                .permute((0,) + tuple(axes[wire] for wire in ordered_wires))
+                .permute((0,) + tuple(axes[qubit] for qubit in ordered_qubits))
                 .reshape(component.state.shape)
                 .contiguous()
             )
-        return _ProductComponent(ordered_wires, state)
+        return _ProductComponent(ordered_qubits, state)
     return component
 
 
@@ -515,8 +519,8 @@ def _remap_swap_components(
             ),
         )
     for component in updated_components:
-        for wire in component.wires:
-            components[wire] = component
+        for qubit in component.qubits:
+            components[qubit] = component
 
 
 def _controlled_phase_matrix(
@@ -542,14 +546,14 @@ def _apply_step(
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None,
     enable_fixed_clifford: bool,
 ) -> torch.Tensor:
-    global_wires: tuple[int, ...]
+    global_qubits: tuple[int, ...]
     if isinstance(step, _StatevectorControlledPhaseGraphStep):
-        global_wires = tuple(
+        global_qubits = tuple(
             sorted(
                 {
-                    wire
+                    qubit
                     for control, target, _ in step.edges
-                    for wire in (control, target)
+                    for qubit in (control, target)
                 }
             )
         )
@@ -557,34 +561,34 @@ def _apply_step(
             id(step),
             str(component.state.device),
             component.state.dtype,
-            len(global_wires),
+            len(global_qubits),
         )
         factors = None if constant_cache is None else constant_cache.get(key)
         if factors is None:
-            factors, built_wires = _controlled_phase_graph_factors_cpu(
+            factors, built_qubits = _controlled_phase_graph_factors_cpu(
                 step.edges,
                 device=component.state.device,
                 dtype=component.state.dtype,
             )
-            if built_wires != global_wires:
+            if built_qubits != global_qubits:
                 raise RuntimeError(
-                    "compiled controlled-phase graph wire order changed unexpectedly"
+                    "compiled controlled-phase graph qubit order changed unexpectedly"
                 )
             if constant_cache is not None:
                 constant_cache[key] = factors
-        local_wires = tuple(component.wires.index(wire) for wire in global_wires)
+        local_qubits = tuple(component.qubits.index(qubit) for qubit in global_qubits)
         return _apply_controlled_phase_graph_cpu(
             component.state,
             factors,
-            local_wires,
-            len(component.wires),
+            local_qubits,
+            len(component.qubits),
         )
     if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
-        global_wires = (step.control, step.target)
+        global_qubits = (step.control, step.target)
         matrix = _controlled_phase_matrix(step, component.state)
         diagonal = True
     elif isinstance(step, _StatevectorFusedGateStep):
-        global_wires = step.wires
+        global_qubits = step.wires
         matrix = _fused_gate_matrix(
             step,
             bsz=1,
@@ -595,16 +599,16 @@ def _apply_step(
         diagonal = step.diagonal
     else:
         instruction = step.instruction
-        global_wires = tuple(instruction.wires)
+        global_qubits = tuple(instruction.wires)
         name = canonical_opcode(instruction.name)
-        local_wires = tuple(component.wires.index(wire) for wire in global_wires)
+        local_qubits = tuple(component.qubits.index(qubit) for qubit in global_qubits)
         if name in {"x", "cx", "swap"}:
             return _apply_fixed_permutation(
-                component.state, name, local_wires, len(component.wires)
+                component.state, name, local_qubits, len(component.qubits)
             )
         if enable_fixed_clifford and name in _FIXED_SINGLE_QUBIT_CLIFFORD_GATES:
             return _apply_fixed_clifford_gate(
-                component.state, name, local_wires[0], len(component.wires)
+                component.state, name, local_qubits[0], len(component.qubits)
             )
         matrix = _gate_matrix(
             instruction,
@@ -614,20 +618,20 @@ def _apply_step(
             parameter_bindings=parameter_bindings,
         )
         diagonal = _diagonal_region((instruction,))
-    local_wires = tuple(component.wires.index(wire) for wire in global_wires)
+    local_qubits = tuple(component.qubits.index(qubit) for qubit in global_qubits)
     apply = _apply_diagonal_matrix if diagonal else _apply_matrix
     return apply(
         component.state,
         matrix,
-        local_wires,
-        len(component.wires),
+        local_qubits,
+        len(component.qubits),
     )
 
 
 def execute_product_state_program(
     program: Sequence[_StatevectorProgramStep],
     *,
-    n_wires: int,
+    n_qubits: int,
     device: torch.device,
     dtype: torch.dtype,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
@@ -643,7 +647,7 @@ def execute_product_state_program(
     zero = torch.zeros((1, 2), device=device, dtype=dtype)
     zero[:, 0] = 1
     components = {
-        wire: _ProductComponent((wire,), zero.clone()) for wire in range(n_wires)
+        qubit: _ProductComponent((qubit,), zero.clone()) for qubit in range(n_qubits)
     }
     index = 0
     while index < len(program):
@@ -652,26 +656,26 @@ def execute_product_state_program(
             first_gate = _fixed_clifford_layer_gate(step)
             if first_gate is not None:
                 gates = [first_gate]
-                occupied_wires = {first_gate[1]}
+                occupied_qubits = {first_gate[1]}
                 cursor = index + 1
                 while cursor < len(program):
                     candidate = _fixed_clifford_layer_gate(program[cursor])
-                    if candidate is None or candidate[1] in occupied_wires:
+                    if candidate is None or candidate[1] in occupied_qubits:
                         break
                     gates.append(candidate)
-                    occupied_wires.add(candidate[1])
+                    occupied_qubits.add(candidate[1])
                     cursor += 1
                 if len(gates) >= 2:
                     gates_by_component: dict[
                         int, tuple[_ProductComponent, list[tuple[str, int]]]
                     ] = {}
-                    for name, wire in gates:
-                        component = components[wire]
+                    for name, qubit in gates:
+                        component = components[qubit]
                         matching_entry = gates_by_component.get(id(component))
                         if matching_entry is None:
                             matching_entry = (component, [])
                             gates_by_component[id(component)] = matching_entry
-                        matching_entry[1].append((name, wire))
+                        matching_entry[1].append((name, qubit))
                     if not any(
                         len(component_gates) >= 2
                         for _, component_gates in gates_by_component.values()
@@ -679,17 +683,17 @@ def execute_product_state_program(
                         gates_by_component.clear()
                     for component, component_gates in gates_by_component.values():
                         updated = _ProductComponent(
-                            component.wires,
+                            component.qubits,
                             _apply_fixed_clifford_layer(component, component_gates),
                         )
-                        for wire in updated.wires:
-                            components[wire] = updated
+                        for qubit in updated.qubits:
+                            components[qubit] = updated
                     if gates_by_component:
                         index = cursor
                         continue
-        swap_wires = _swap_wires(step)
-        if enable_swap_remapping and swap_wires is not None:
-            left, right = swap_wires
+        swap_qubits = _swap_qubits(step)
+        if enable_swap_remapping and swap_qubits is not None:
+            left, right = swap_qubits
             _remap_swap_components(
                 components,
                 left,
@@ -702,16 +706,16 @@ def execute_product_state_program(
             if not enable_clifford_matching:
                 for control, target in zip(step.controls, step.targets, strict=True):
                     component = _merge_components(components, (control, target))
-                    local_wires = (
-                        component.wires.index(control),
-                        component.wires.index(target),
+                    local_qubits = (
+                        component.qubits.index(control),
+                        component.qubits.index(target),
                     )
                     state = _apply_fixed_permutation(
-                        component.state, "cx", local_wires, len(component.wires)
+                        component.state, "cx", local_qubits, len(component.qubits)
                     )
-                    updated = _ProductComponent(component.wires, state)
-                    for wire in updated.wires:
-                        components[wire] = updated
+                    updated = _ProductComponent(component.qubits, state)
+                    for qubit in updated.qubits:
+                        components[qubit] = updated
                 index += 1
                 continue
 
@@ -730,14 +734,16 @@ def execute_product_state_program(
                 edge_entry[1].append((control, target))
 
             for component, edges in edges_by_component.values():
-                controls = tuple(component.wires.index(control) for control, _ in edges)
-                targets = tuple(component.wires.index(target) for _, target in edges)
+                controls = tuple(
+                    component.qubits.index(control) for control, _ in edges
+                )
+                targets = tuple(component.qubits.index(target) for _, target in edges)
                 if len(edges) >= _PRODUCT_STATE_CX_GATHER_MINIMUM_LENGTH:
                     state = _apply_cx_sequence_gather(
                         component.state,
                         controls,
                         targets,
-                        len(component.wires),
+                        len(component.qubits),
                     )
                 else:
                     state = component.state
@@ -746,11 +752,11 @@ def execute_product_state_program(
                             state,
                             "cx",
                             (control, target),
-                            len(component.wires),
+                            len(component.qubits),
                         )
-                updated = _ProductComponent(component.wires, state)
-                for wire in updated.wires:
-                    components[wire] = updated
+                updated = _ProductComponent(component.qubits, state)
+                for qubit in updated.qubits:
+                    components[qubit] = updated
             index += 1
             continue
         if isinstance(step, _StatevectorCliffordMatchingStep):
@@ -769,11 +775,11 @@ def execute_product_state_program(
                 updated = _apply_product_clifford_matching(
                     component, step, execution_statistics
                 )
-                for wire in updated.wires:
-                    components[wire] = updated
+                for qubit in updated.qubits:
+                    components[qubit] = updated
             index += 1
             continue
-        groups = _step_wire_groups(step)
+        groups = _step_qubit_groups(step)
         if len(groups) != 1 or not isinstance(
             step,
             (
@@ -786,7 +792,7 @@ def execute_product_state_program(
             raise TypeError(f"unsupported product-state program step: {type(step)!r}")
         component = _merge_components(components, groups[0])
         updated = _ProductComponent(
-            component.wires,
+            component.qubits,
             _apply_step(
                 component,
                 step,
@@ -795,10 +801,10 @@ def execute_product_state_program(
                 enable_fixed_clifford,
             ),
         )
-        for wire in updated.wires:
-            components[wire] = updated
+        for qubit in updated.qubits:
+            components[qubit] = updated
         index += 1
-    final_component = _merge_components(components, tuple(range(n_wires)))
+    final_component = _merge_components(components, tuple(range(n_qubits)))
     return _canonicalize_component(
         final_component, use_gather=enable_deferred_swap
     ).state
