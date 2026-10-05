@@ -32,10 +32,12 @@ Python version evidence.
 `KaiwuSDKClient` is pinned to the documented Kaiwu 1.3.1 behavior. It uses the
 SDK's `task_name + ising_matrix` checkpoint identity so polling and restoration
 query the same task instead of creating a new identity. It deliberately does
-not interpret undocumented `get_task_result` fields. As a result, current SDK
-documentation is sufficient for idempotent execution but not for a provider
-task ID or provider-reported target; hardware acceptance remains closed until a
-real pinned response establishes those mappings.
+not interpret undocumented `get_task_result` fields. After completion it may
+record only a value-free schema of that documented result dictionary to support
+review of a real response. As a result, current SDK documentation is sufficient
+for idempotent execution but not for a provider task ID or provider-reported
+target; hardware acceptance remains closed until a real pinned response
+establishes those mappings.
 
 Before the first SDK task operation, the client atomically saves a mode-0600
 FlagQuantum recovery bundle in the configured checkpoint directory. An

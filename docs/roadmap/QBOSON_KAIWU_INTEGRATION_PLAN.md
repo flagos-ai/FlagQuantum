@@ -79,6 +79,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   leaking vendor failures fail closed. Because documented APIs do not expose a
   stable provider task ID or provider-reported target, the client records those
   evidence gaps and cannot yet satisfy hardware acceptance.
+- The 1.3.1 documentation declares `get_task_result(ising_matrix) -> dict` but
+  does not document that dictionary's fields; the current 1.4.1 documentation
+  still does not define provider task-ID or target keys. The pinned client now
+  records a value-free schema of the returned dictionary (field names, value
+  types, lengths, dtypes, and shapes) after completion. Raw values are never
+  retained, and this diagnostic structure does not automatically map or accept
+  a provider identity.
 - Before its first SDK operation, that client now atomically persists a
   mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
   This closes the ambiguous-submission window: a process restart reuses the

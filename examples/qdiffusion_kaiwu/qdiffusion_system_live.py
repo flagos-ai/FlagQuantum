@@ -211,6 +211,11 @@ def run_live_system_probe(
         "pinned_sdk_client": verified_provider_transport,
         "provider_identity_complete": provider_identity_complete,
         "provider_reported_target": provider_identity_complete,
+        "provider_result_schema": (
+            sampler.last_result.metadata.get("provider_result_schema")
+            if sampler.last_result is not None
+            else None
+        ),
         "qboson_target": next(iter(targets)) if len(targets) == 1 else None,
         "qboson_task_ids": [
             receipt["provider_task_id"]

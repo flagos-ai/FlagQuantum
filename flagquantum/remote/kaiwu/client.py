@@ -35,7 +35,9 @@ class KaiwuSDKClient:
     The SDK documents ``task_name + ising_matrix`` as task identity and returns
     ``None`` from ``solve`` while that task is incomplete. This client calls
     ``solve`` once for initial submission and again only to query that same
-    identity. It does not interpret undocumented ``get_task_result`` fields.
+    identity. It records only a value-free structural description of the
+    documented ``get_task_result`` dictionary and does not interpret its
+    undocumented fields.
 
     Consequently, provider task IDs and provider-reported target labels remain
     unavailable. Real acceptance must stay closed until a pinned SDK response
@@ -67,6 +69,7 @@ class KaiwuSDKClient:
         self._environment = environment
         self._optimizers: dict[str, Any] = {}
         self._solutions: dict[str, tuple[tuple[int, ...], ...]] = {}
+        self._result_schemas: dict[str, dict[str, Any]] = {}
 
     @property
     def environment(self) -> KaiwuSDKEnvironment:
@@ -236,6 +239,7 @@ class KaiwuSDKClient:
         samples = self._solve_identity(receipt, matrix)
         if samples is None:
             raise KaiwuSDKError("Kaiwu CIM task is incomplete")
+        result_schema = self._inspect_result_schema(receipt, matrix)
         energies = tuple(self._energy(matrix, sample) for sample in samples)
         return KaiwuTaskResult(
             receipt=receipt,
@@ -248,8 +252,89 @@ class KaiwuSDKClient:
                 "task_identity_basis": "task_name+ising_matrix",
                 "provider_task_id_available": False,
                 "provider_target_available": False,
+                "provider_result_schema": result_schema,
             },
         )
+
+    def _inspect_result_schema(
+        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> dict[str, Any]:
+        """Describe documented result fields without retaining provider values."""
+
+        key = self._identity_key(receipt)
+        cached = self._result_schemas.get(key)
+        if cached is not None:
+            return cached
+        optimizer = self._optimizer(receipt)
+        getter = getattr(optimizer, "get_task_result", None)
+        if not callable(getter):
+            schema = {"available": False, "reason": "method_unavailable"}
+            self._result_schemas[key] = schema
+            return schema
+        try:
+            import numpy as np
+
+            with self._checkpoint_context():
+                raw = getter(np.asarray(matrix, dtype=np.float64))
+        except Exception:
+            schema = {"available": False, "reason": "inspection_failed"}
+            self._result_schemas[key] = schema
+            return schema
+        schema = {
+            "available": True,
+            "result": self._describe_value(raw, include_mapping_fields=True),
+        }
+        self._result_schemas[key] = schema
+        return schema
+
+    @classmethod
+    def _describe_value(
+        cls, value: Any, *, include_mapping_fields: bool = False
+    ) -> dict[str, Any]:
+        """Return JSON-safe type/shape metadata with no raw provider values."""
+
+        value_type = f"{type(value).__module__}.{type(value).__qualname__}"
+        if isinstance(value, dict):
+            if not all(isinstance(key, str) for key in value):
+                return {"type": value_type, "length": len(value), "string_keys": False}
+            fields = sorted(value)
+            description: dict[str, Any] = {
+                "type": value_type,
+                "length": len(value),
+                "string_keys": True,
+                "fields": fields,
+            }
+            if include_mapping_fields:
+                description["field_schemas"] = {
+                    field: cls._describe_value(value[field]) for field in fields
+                }
+            return description
+        shape = getattr(value, "shape", None)
+        dtype = getattr(value, "dtype", None)
+        if shape is not None and dtype is not None:
+            try:
+                normalized_shape = [int(size) for size in shape]
+            except (TypeError, ValueError):
+                normalized_shape = []
+            return {
+                "type": value_type,
+                "shape": normalized_shape,
+                "dtype": str(dtype),
+            }
+        if isinstance(value, (list, tuple)):
+            return {
+                "type": value_type,
+                "length": len(value),
+                "element_types": sorted(
+                    {
+                        f"{type(element).__module__}.{type(element).__qualname__}"
+                        for element in value
+                    }
+                ),
+            }
+        if isinstance(value, (str, bytes)):
+            return {"type": value_type, "length": len(value)}
+        return {"type": value_type}
 
     @staticmethod
     def _energy(matrix: FrozenIsingMatrix, sample: tuple[int, ...]) -> float:
@@ -260,4 +345,4 @@ class KaiwuSDKClient:
         )
         if not math.isfinite(energy):
             raise KaiwuSDKError("Kaiwu result energy is not finite")
-        return energy
+        return float(energy)

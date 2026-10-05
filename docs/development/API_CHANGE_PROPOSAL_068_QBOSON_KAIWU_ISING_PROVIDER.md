@@ -91,6 +91,10 @@ sampler.last_job.save("private-receipt.json")
 The example is illustrative and does not approve these names as stable. In
 particular, the SDK client cannot be promoted until a real pinned response
 establishes provider task-ID, target, and terminal-state mappings.
+The prototype may persist a value-free schema of the documented
+`get_task_result` dictionary—field names, types, lengths, dtypes, and shapes—to
+support that review. It must not persist raw provider values or infer a mapping
+from field names alone.
 
 ## Ising and QUBO semantics
 

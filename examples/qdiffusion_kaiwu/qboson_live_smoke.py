@@ -48,6 +48,7 @@ def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
         "provider_target_available": result.metadata.get(
             "provider_target_available", receipt.provider_target is not None
         ),
+        "provider_result_schema": result.metadata.get("provider_result_schema"),
     }
 
 

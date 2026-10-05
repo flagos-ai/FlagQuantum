@@ -65,7 +65,13 @@ class _CompletedClient:
             samples=samples,
             energies=tuple(energy for _ in samples),
             raw_status="Completed",
-            metadata={"fallback_occurred": False},
+            metadata={
+                "fallback_occurred": False,
+                "provider_result_schema": {
+                    "available": False,
+                    "reason": "test_client",
+                },
+            },
         )
 
 
@@ -89,6 +95,10 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["provider_identity_complete"] is False
     assert record["hardware_acceptance"] is False
     assert record["fallback_occurred"] is False
+    assert all(
+        task["provider_result_schema"] == {"available": False, "reason": "test_client"}
+        for task in record["tasks"]
+    )
 
 
 def test_live_smoke_accepts_complete_provider_identity() -> None:

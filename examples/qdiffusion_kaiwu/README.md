@@ -112,6 +112,8 @@ python examples/qdiffusion_kaiwu/qboson_live_smoke.py \
 Successful tasks alone do not make this an acceptance record. The script keeps
 `hardware_acceptance=false` until the pinned SDK mapping supplies both a stable
 provider task ID and a provider-reported target for every task.
+It also records a value-free schema of the documented SDK result dictionary so
+the missing mapping can be reviewed without persisting raw provider values.
 
 ## Live QDiffusion system probe
 

@@ -27,6 +27,7 @@ class _FakeOptimizer:
     responses: ClassVar[list[object]] = []
     created_options: ClassVar[list[dict[str, object]]] = []
     solve_calls: ClassVar[int] = 0
+    result_calls: ClassVar[int] = 0
 
     def __init__(self, **options: object) -> None:
         self.created_options.append(options)
@@ -38,12 +39,23 @@ class _FakeOptimizer:
             return self.responses.pop(0)
         return np.array([[1, -1]] * 10, dtype=np.int8)
 
+    def get_task_result(self, matrix: np.ndarray) -> dict[str, object]:
+        assert matrix.tolist() == [[0.0, 1.0], [1.0, 0.0]]
+        type(self).result_calls += 1
+        return {
+            "task_id": "provider-task-secret-value",
+            "machine_name": "provider-target-secret-value",
+            "status": "completed",
+            "solutions": np.array([[1, -1]] * 10, dtype=np.int8),
+        }
+
 
 @pytest.fixture(autouse=True)
 def _reset_fake() -> None:
     _FakeOptimizer.responses = []
     _FakeOptimizer.created_options = []
     _FakeOptimizer.solve_calls = 0
+    _FakeOptimizer.result_calls = 0
 
 
 def _client(
@@ -196,6 +208,56 @@ def test_result_is_independently_scored_and_marks_evidence_gaps(
     assert result.metadata["provider_target_available"] is False
     assert result.receipt.provider_task_id is None
     assert result.receipt.provider_target is None
+    schema = result.metadata["provider_result_schema"]
+    assert schema["available"] is True
+    assert schema["result"]["fields"] == [
+        "machine_name",
+        "solutions",
+        "status",
+        "task_id",
+    ]
+    assert schema["result"]["field_schemas"]["task_id"] == {
+        "type": "builtins.str",
+        "length": len("provider-task-secret-value"),
+    }
+    assert schema["result"]["field_schemas"]["solutions"] == {
+        "type": "numpy.ndarray",
+        "shape": [10, 2],
+        "dtype": "int8",
+    }
+    encoded = json.dumps(schema)
+    assert "provider-task-secret-value" not in encoded
+    assert "provider-target-secret-value" not in encoded
+    assert _FakeOptimizer.result_calls == 1
+
+
+def test_result_schema_failure_is_redacted_and_nonfatal(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def failing_result(self: _FakeOptimizer, matrix: np.ndarray) -> object:
+        del self, matrix
+        raise RuntimeError("provider-task-secret sdk-code-secret")
+
+    monkeypatch.setattr(_FakeOptimizer, "get_task_result", failing_result)
+    client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="schema-failure",
+        mode="sampling",
+        requested_samples=10,
+    )
+
+    result = job.result()
+
+    assert result.samples
+    assert result.metadata["provider_result_schema"] == {
+        "available": False,
+        "reason": "inspection_failed",
+    }
+    encoded = json.dumps(result.metadata)
+    assert "provider-task-secret" not in encoded
+    assert "sdk-code-secret" not in encoded
 
 
 def test_same_matrix_with_different_task_name_creates_distinct_sdk_identity(

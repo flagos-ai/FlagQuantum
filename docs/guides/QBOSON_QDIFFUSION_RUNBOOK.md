@@ -181,6 +181,13 @@ private run environment. The command has no simulator fallback. It exits with
 hardware acceptance closed if the pinned SDK mapping cannot supply stable
 provider task and target identities.
 
+The smoke record includes a redacted `provider_result_schema` from the SDK's
+documented `get_task_result` dictionary. It contains field names and structural
+metadata only—never task values, result strings, credentials, or raw vendor
+errors. Use it to review candidate task-ID and target mappings against an
+approved SDK response; do not promote acceptance based only on a suggestive key
+name.
+
 Stop here if authentication, quota, provider status, spin validation, energy
 recomputation, task identity, or target identity is unresolved. Do not move to
 QDiffusion by replacing the provider with a local solver.
