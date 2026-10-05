@@ -66,6 +66,13 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   selected lane. SDK import is lazy, `license.init` receives the in-memory pair,
   and vendor exception text is discarded to prevent credential leakage. This
   is fake-module contract evidence; no license has been initialized yet.
+- A pinned Kaiwu 1.3.1 client now implements the documented checkpoint model:
+  submission calls `solve` once, later polls use the same task-name and matrix
+  identity, restoration recreates that identity, and completed spins are
+  independently scored. SDK globals are scoped and restored, and malformed or
+  leaking vendor failures fail closed. Because documented APIs do not expose a
+  stable provider task ID or provider-reported target, the client records those
+  evidence gaps and cannot yet satisfy hardware acceptance.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

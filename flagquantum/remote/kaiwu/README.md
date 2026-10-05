@@ -29,6 +29,14 @@ FlagQuantum-owned exceptions; vendor exception text is discarded because it
 may contain authorization values. The function returns only non-secret SDK and
 Python version evidence.
 
+`KaiwuSDKClient` is pinned to the documented Kaiwu 1.3.1 behavior. It uses the
+SDK's `task_name + ising_matrix` checkpoint identity so polling and restoration
+query the same task instead of creating a new identity. It deliberately does
+not interpret undocumented `get_task_result` fields. As a result, current SDK
+documentation is sufficient for idempotent execution but not for a provider
+task ID or provider-reported target; hardware acceptance remains closed until a
+real pinned response establishes those mappings.
+
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the
 credential helpers, its experimental entry points expose a Kaiwu-specific

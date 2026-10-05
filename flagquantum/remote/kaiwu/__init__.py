@@ -5,6 +5,7 @@ while its provider contract is under review.
 """
 
 from ._credentials import KaiwuCredentials, resolve_kaiwu_credentials
+from .client import KaiwuSDKClient
 from .contracts import (
     KaiwuJobStatus,
     KaiwuTaskClient,
@@ -32,6 +33,7 @@ __all__ = (
     "KaiwuJobStatus",
     "KaiwuLicenseInitializationError",
     "KaiwuRemoteJob",
+    "KaiwuSDKClient",
     "KaiwuSDKEnvironment",
     "KaiwuSDKError",
     "KaiwuSDKUnavailableError",
