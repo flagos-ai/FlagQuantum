@@ -118,6 +118,11 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   remote task while retaining separate error reports; the acceptance validator
   rejects missing reports, invalid scale ranges, and negative or inconsistent
   aggregate errors.
+- The Phase 5 runbook now covers frozen inputs, approved source transfer,
+  development rehearsal, SDK-lane verification, quota-guarded smoke and system
+  execution, interruption and same-identity resume, independent two-host runs,
+  the primary protein experiment, final manifest validation, failure
+  classification, and claim boundaries.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
