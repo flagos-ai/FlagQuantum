@@ -68,11 +68,28 @@ those two accessors read the bands rather than deriving the same number a second
 time.
 
 A detector is a measurement parity that is deterministic in the noiseless
-circuit. Because both the initial state and the terminal data readout are in the
-Z basis, a Z-type check declares a detector in every round plus one terminal
-detector, while an X-type check declares one for every round after the first. A
-code whose declared logical observable is not Z-type is refused rather than
-measured under premises that do not hold for it.
+circuit, and which parity that is is stated relative to the experiment's readout
+basis. Under the default Z basis a Z-type check declares a detector in every round
+plus one terminal detector, while an X-type check declares one for every round
+after the first; under an X basis the two classes swap, because the preparation
+and the terminal readout are then in that basis:
+
+```python
+from flagquantum.qec import SteaneCode, build_memory_circuit
+
+z_memory = build_memory_circuit(SteaneCode(), rounds=3)
+x_memory = build_memory_circuit(SteaneCode(), rounds=3, readout_basis="x")
+print(z_memory.readout_basis, x_memory.readout_basis)
+print(x_memory.observables.observables[0].pauli)
+```
+
+The basis is a field of the record rather than a second entry point, and it is
+checked against the observables the code declares rather than assumed from them: a
+code that declares no logical observable in the requested basis is refused, rather
+than measured under premises that do not hold for it. CUDA-Q QEC derives the same
+basis from the preparation kernel it is handed and offers `x_` and `z_` model
+entry points beside the full one; here one record states it and one builder reads
+it.
 
 ## Decode a detection-event syndrome
 
@@ -228,8 +245,8 @@ This route is the code-capacity experiment, so its detector geometry is not the
 memory circuit's. A fault in round `r` reaches the detector band of round `r` and
 the band of round `r + 1`, and the final round has no band after it, so the
 detector count is `num_rounds * num_checks` with no terminal readout — where a
-memory circuit gains a terminal detector per Z-type check because it measures its
-data qubits. Both geometries are pinned to their own route and neither stands for
+memory circuit gains a terminal detector per check of the readout basis it is
+built in, because it measures its data qubits. Both geometries are pinned to their own route and neither stands for
 the other. The rates are read against these matrices: the per-qubit vectors are
 indexed by column, in the code's own `data_wires` order, and the per-check vector
 by row, with the Z-type checks first.
@@ -364,11 +381,32 @@ placed immediately *before* the readout of the check it corrupts. A Z or Y data
 fault is placed at that same boundary, as the one channel the engine has wrapped
 in the conjugation that names the Pauli. Neither position exists in the source
 program, whose bounded hybrid capture refuses a channel call outright, so both are
-derived from the lowered program — and the program must lower to `rounds` identical
-blocks measuring each check once in the code's declared order. A program that
-lowers to anything else, a channel that is not the bit-flip pair, and a lowered
-measurement node are each refused with a stated reason rather than sampled under an
-attribution that may be wrong.
+derived from the lowered program — and the program must lower to the experiment's
+readout rotation around `rounds` identical blocks measuring each check once in the
+code's declared order. The rotation belongs to the experiment rather than to a
+round, so the plan states its length as one offset beside the round block instead
+of folding the two together; it is one gate per data qubit at each end, not a
+block measuring every check. A program that lowers to anything else, a channel
+that is not the bit-flip pair, and a lowered measurement node are each refused
+with a stated reason rather than sampled under an attribution that may be wrong.
+
+The same sampler reads either basis of a code that declares a logical observable
+of each type, because the basis is a field of the record rather than a second
+entry point:
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    SteaneCode,
+    build_memory_circuit,
+    sample_memory_circuit,
+)
+
+defect = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, measurement_flip=0.03)
+x_memory = build_memory_circuit(SteaneCode(), rounds=3, readout_basis="x")
+x_sample = sample_memory_circuit(x_memory, noise=defect, shots=1000, seed=0)
+print(x_memory.readout_basis, x_sample.detectors.shape)
+```
 
 Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
@@ -378,9 +416,10 @@ two to each other rather than letting either stand for the other.
 
 A detection event is a parity of recorded bits. Sometimes the bit itself is what a
 caller wants, and there is exactly one kind of bit that no layout names: round zero
-of a patch measures an X-type check whose outcome is not deterministic under the
-all-zero preparation, so no detector may name it, and it is still measured and
-still recorded. `measurement_refs` names every recorded bit and
+of a patch measures the check class its preparation does not stabilize — an X-type
+check under the all-zero preparation, a Z-type check under the `|+>` one — whose
+outcome is not deterministic, so no detector may name it, and it is still measured
+and still recorded. `measurement_refs` names every recorded bit and
 `sample_memory_measurements` returns them:
 
 ```python

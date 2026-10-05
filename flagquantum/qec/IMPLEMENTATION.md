@@ -66,24 +66,32 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qub
 indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
-implement it.
+layout. `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` are the three
+records that implement it, and the last is the one that declares a logical
+observable in each readout basis.
 
-Detector semantics are fixed. A detector is a measurement parity that is
-deterministic in the noiseless circuit. Which parity that is depends on the
-check's type, because both the initial state and the terminal data readout are in
-the Z basis. A Z-type check is deterministic in round zero and again at the
-terminal readout, so it declares one detector per round comparing that round
-against its predecessor -- where the first round is compared against the known
-all-zero prior state -- plus one detector comparing the final syndrome round
-against the terminal data readout. An X-type check is deterministic in neither
-place and declares only a detector for every round after the first, comparing two
-consecutive syndrome rounds. The count is therefore
-`nz * (rounds + 1) + nx * (rounds - 1)`, which reduces to the earlier
-`len(checks) * (rounds + 1)` exactly when every check is Z-type; for a
-distance-`d` repetition code, whose `len(checks)` is `d - 1` and which has no
-X-type check, it equals `(d - 1) * (rounds + 1)`. Logical failure is the parity of
-a declared logical observable.
+Detector semantics are fixed, and they are stated relative to the experiment's
+readout basis. A detector is a measurement parity that is deterministic in the
+noiseless circuit. Which parity that is depends on the check's type and on the
+basis the data qubits are prepared and read in, because the preparation and the
+terminal readout use one basis. A check whose stabilizer is of that basis' own
+type is deterministic in round zero and again at the terminal readout, so it
+declares one detector per round comparing that round against its predecessor --
+where the first round is compared against the known prior state, `|0...0>` in the
+Z basis and `|+...+>` in the X one, which the source reaches by one `H` per data
+qubit before the round loop -- plus one detector comparing the final syndrome
+round against the terminal data readout. A check of the other type is
+deterministic in neither place and declares only a detector for every round after
+the first, comparing two consecutive syndrome rounds. Both classes are still
+measured every round, because an error of the other Pauli type is precisely what
+this readout cannot see. With `nz` Z-type checks and `nx` X-type checks the
+Z-basis count is therefore `nz * (rounds + 1) + nx * (rounds - 1)`, and the
+X-basis count `nx * (rounds + 1) + nz * (rounds - 1)`; either reduces to the
+earlier `len(checks) * (rounds + 1)` exactly when every check is of the basis'
+own type, and for a distance-`d` repetition code, whose `len(checks)` is `d - 1`
+and which has no X-type check, the Z-basis count is `(d - 1) * (rounds + 1)`.
+Logical failure is the parity of a declared logical observable, and the one a
+given basis reads is the code's declared observable of that basis' type.
 
 The detector count is validated against the code's declared checks and the
 configured round count, and every reference is validated against the code's
@@ -487,19 +495,28 @@ qubits diagonally adjacent to it, so the checks that would fall outside the patc
 are truncated to weight two. The declared logical observable is `Z` on the data
 row `j == 0`.
 
-The X-type checks change what a memory experiment has to declare. Both the
-initial state and the terminal data readout are in the Z basis, so a Z-type check
-is deterministic in round zero and again at the terminal readout and gets
-`rounds + 1` detectors, while an X-type check is deterministic only against the
-round before it and gets `rounds - 1`. The X-type checks are still measured every
-round, because a Z error is precisely what the Z-basis readout cannot see: it
-commutes with every Z stabilizer and anticommutes with the X stabilizers over
-that data qubit, so it is reported as a change in an X-type check between two
-consecutive rounds. An X error is reported in the complementary way, by the
-round-zero and terminal detectors of the Z-type checks. `build_memory_circuit`
-refuses a code whose declared logical observable is not Z-type, because under a
-Z-basis readout such a code would be measured under premises that do not hold
-for it.
+The X-type checks change what a memory experiment has to declare, and the readout
+basis is what decides which of the two classes the experiment's detectors treat as
+its own. Under the default Z basis both the initial state and the terminal data
+readout are in that basis, so a Z-type check is deterministic in round zero and
+again at the terminal readout and gets `rounds + 1` detectors, while an X-type
+check is deterministic only against the round before it and gets `rounds - 1`.
+The X-type checks are still measured every round, because a Z error is precisely
+what the Z-basis readout cannot see: it commutes with every Z stabilizer and
+anticommutes with the X stabilizers over that data qubit, so it is reported as a
+change in an X-type check between two consecutive rounds. An X error is reported
+in the complementary way, by the round-zero and terminal detectors of the Z-type
+checks. `build_memory_circuit` states the readout basis as a field of the record,
+defaulting to Z, and refuses a code that declares no logical observable in the
+requested basis, because such a code would be measured under premises that do not
+hold for it. Under an X basis the two roles swap, which is the same rule read over
+the other class rather than a second rule: the preparation is one `H` per data
+qubit before the round loop and the same gates again before the terminal readout,
+the X-type checks become the round-zero and terminal detectors, the Z-type checks
+the ones compared only between consecutive rounds, and the observable read is the
+code's declared X-type one. `SteaneCode` declares a logical observable of each
+type, so it is the record that can be read either way, and a basis it cannot
+support is refused by name.
 
 That layout is checked against `stim`'s generated `surface_code:rotated_memory_z`
 at 28 (`distance`, `rounds`) points: distances two through eight and rounds one

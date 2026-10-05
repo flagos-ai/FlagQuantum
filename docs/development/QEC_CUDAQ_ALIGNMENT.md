@@ -356,9 +356,62 @@ no other parameter-free single-qubit gate, by composing `H X H` and `H X H X`
 instead of emitting a conjugation. What has no location here is therefore not a
 Pauli family but a *placement*: a depolarizing or damping channel, and any
 channel bound to a named gate rather than to a round boundary. The baseline's
-`x_` and `z_` variants have no counterpart either, because the code record is a
-Z-memory record. The row stays `partial` on that scope, not on the connection or
-on which families reach a sampled record.
+`x_` and `z_` variants are no longer one of them: the record states its readout
+basis, the sampler reads it, and the rotation that basis adds to the lowered
+program is a stated offset beside the round block rather than a round of its
+own, so an X-basis experiment's faults land where its own model puts them. The
+entry points themselves stay absent on purpose, because a basis is a field of
+the record here rather than a second way to ask for one thing. The row stays
+`partial` on that scope, not on the connection or on which families reach a
+sampled record.
+
+**What this round closed instead: the readout basis.** The remaining gap the
+row named first was the basis, and it is closed on both routes at once because
+it closed in the record. Upstream derives a memory experiment's basis from the
+preparation kernel it is handed — `is_z_prep = statePrep == prep0 || prep1` —
+and offers `x_dem_from_memory_circuit` and `z_dem_from_memory_circuit` beside
+the full one; there is no flag anywhere in its signature, because the circuit
+already says which experiment was built. Here the same information has to be
+stated, and the reason is a difference in what a record is: upstream is handed
+a code *and* an operation, where this record builds one source from a code
+alone, so a code that declares a logical observable of each type describes two
+experiments and nothing in the record would say which one was asked for. So
+`MemoryCircuit` carries `readout_basis`, defaulting to `"z"`, and it is
+checked against the code rather than trusted: the builder refuses a basis the
+code has no logical observable for, naming both the basis and the type, so a
+`RotatedSurfaceCode`, which declares a Z observable only, cannot be read out in
+X by asking nicely. `SteaneCode` is the record that can be read either way.
+The two upstream entry points therefore stay absent *by name* — the checklist
+now lists `x_dem_from_memory_circuit` in `symbols_absent` beside its Z twin —
+because a basis is a component of the record here, not a second way to ask for
+one thing.
+
+What the basis changes is one rule read over the other check class, not a
+second rule. The preparation and the terminal readout share a basis, so the
+check class of *that* basis is the one deterministic before the first round and
+after the last, and it is the class that gets the round-zero and terminal
+detectors and the observable rows; the other class is deterministic only
+against the round before it. The count is the same formula with the two classes
+exchanged, and the source states the change by rotating: `H` on every data
+qubit before the round loop and the same `H` gates again before the terminal
+readout. That is one instruction per data qubit at each end, which is why the
+sampler states it as a length rather than as a round — a round is a block that
+measures every check once, and a plan that read the rotation as one would
+attribute a fault to the wrong round or refuse the program outright. The
+rotation is the whole difference between the two lowered programs: both bases
+lower to exactly one `for round_index in range(rounds):` anchor and the same
+round body, which is what the construction route's fault injection reads off,
+and the location counts, the round block and the readout offsets inside it are
+identical between the two. Both halves are pinned, and they are pinned
+separately rather than by one comparison standing for the other:
+`test_the_model_and_the_sampler_agree_in_either_readout_basis` runs the exact
+forced comparison and the pair-rate comparison in each basis,
+`test_the_readout_basis_decides_which_data_fault_moves_the_observable` requires
+the fault family that moves the observable to swap between them and the other
+family to move nothing, and
+`test_the_readout_basis_swaps_which_round_zero_handles_are_pinned` requires the
+pinned and free round-zero handles to swap, so an implementation that ignored
+the field and always prepared in Z would fail all three.
 One placement is worth recording because it is invisible to any parity
 comparison: the code gadgets prepare their ancilla with the CNOTs immediately
 preceding the readout, so moving a measurement channel one instruction earlier
@@ -431,8 +484,8 @@ as one record, `flagquantum.qec.css_code_matrices`, which lifts a code record in
 geometry rather than the memory circuit's, and the difference is a difference
 between two experiments rather than between two implementations: the matrix route
 has no terminal data readout, so its detector count is `num_rounds * num_checks`
-where a memory circuit's is one band per round plus a terminal detector per Z-type
-check. Both geometries are pinned separately and neither is allowed to stand for
+where a memory circuit's is one band per round plus a terminal detector per check
+of the readout basis it is built in. Both geometries are pinned separately and neither is allowed to stand for
 the other — `tests/qec/test_dem_code_matrices_stim.py` hands stim a circuit that
 states the model's assumption and requires stim's own error analysis to reproduce
 the shape and every mechanism's signature and rate;
@@ -582,11 +635,12 @@ two-dimensional or whose column count does not match its handle vector raises
 rather than being truncated to the shorter of the two.
 
 The measured part of the layer is the border between determinism and freedom, and
-it is asserted as a rate rather than as a convention. A noiseless run reads a
-Z-type check's ancilla as 0 in every round — a Z-type check leaves the all-zero
-state alone — an X-type check's ancilla as unbiased, and an individual terminal
-data wire as unbiased, because the X-type gadgets entangle the data with their
-ancillae; and every detector and every observable reads 0, because the layouts
+it is asserted as a rate rather than as a convention. A noiseless run reads the readout
+basis' own check class as 0 in every round — a check of that class leaves the
+prepared state alone — the other class as unbiased, the two swapping places when
+the experiment is prepared and read out in the other basis, and an individual
+terminal data wire as unbiased, because the gadgets of the other class entangle
+the data with their ancillae; and every detector and every observable reads 0, because the layouts
 name parities rather than handles. The two failure modes that pins are symmetric:
 a channel rate read off a single handle would be a rate read off the state, and a
 detector claimed to be a bit would be a parity claimed to be a measurement. Under
