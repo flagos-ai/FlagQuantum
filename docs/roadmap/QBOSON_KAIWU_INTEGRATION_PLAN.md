@@ -24,6 +24,14 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   non-serializable, and environment discovery requires the complete dedicated
   `QBOSON_USER_ID` plus `QBOSON_SDK_CODE` pair. No vendor SDK import or network
   operation occurs during credential resolution.
+- A Kaiwu-specific experimental task lifecycle now covers single submission,
+  normalized status, fail-closed result validation, bounded waiting, private
+  receipt persistence, and restore without resubmission. Its in-memory fake
+  proves timeout and recovery semantics, spin and energy validation, matrix
+  identity, sample-count limits, and explicit `fallback_occurred=false`. It is
+  deliberately not exported from `flagquantum.remote`; the proprietary SDK
+  adapter and real provider-state mapping remain unimplemented until the pinned
+  SDK can be inspected.
 - Pulling a Python 3.10 container from Docker Hub on `jp-a800-171` timed out.
   This is an environment provisioning constraint, not evidence of an SDK or
   FlagQuantum defect. A pinned Python 3.10/Kaiwu environment must be supplied

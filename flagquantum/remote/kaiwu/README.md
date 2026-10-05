@@ -23,8 +23,11 @@ No credential value may enter logs, exceptions, checkpoints, receipts, or test
 fixtures.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
-and result contracts remain under architecture review. Its current entry points
-are `KaiwuCredentials` and `resolve_kaiwu_credentials`.
+and result contracts remain under architecture review. In addition to the
+credential helpers, its experimental entry points expose a Kaiwu-specific
+submit/status/result/wait/save/restore lifecycle. The lifecycle is tested with
+an injected fake client and does not import the proprietary SDK. A timeout
+never implies cancellation or a replacement submission.
 
 Run the credential boundary checks from the repository root:
 
