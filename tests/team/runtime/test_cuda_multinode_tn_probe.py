@@ -17,6 +17,12 @@ assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement check, so a probe constant that drifted from the committed
+#: manifest fails at import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
+
 _A800_ARTIFACT = (
     _ROOT / "artifacts" / "cuda_multinode_tn_a800_jp171_jp172_20260930.json"
 )
@@ -174,7 +180,8 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
     assert evidence["status"] == "passed"
     assert evidence["scope"] == {
-        "checked_bitstrings": ["00000", "10000", "00001", "10001"],
+        "checked_bitstrings": list(_MODULE.CHECKED_BITSTRINGS),
+        "depth": _MODULE.DEPTH,
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
         "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
@@ -183,16 +190,21 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         # infer it from the observation block.
         "exported_product": "full_tensor_network_state",
         "local_world_size": 1,
-        "n_wires": 5,
+        "n_wires": _MODULE.N_WIRES,
         "node_count": 2,
-        "observable_wires": [0, 4],
+        "observable_wires": list(_MODULE.OBSERVABLE_WIRES),
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         # The cut is declared rather than chosen at run time, because the
         # automatic slicer optimizes peak memory and can pick a label whose
         # partials are zero on one rank -- a partition that reports sharding
         # while one rank does the arithmetic.
-        "slice_count": 4,
-        "sliced_labels": [6, 7],
-        "sliced_label_multiplicities": {"6": 2, "7": 2},
+        "slice_count": _MODULE.EXPECTED_SLICE_COUNT,
+        "sliced_labels": list(_MODULE.SLICED_LABELS),
+        "sliced_label_multiplicities": {
+            str(label): count
+            for label, count in _MODULE._sliced_label_multiplicities().items()
+        },
         "slices_per_rank": 2,
         "world_size": 2,
     }
@@ -200,6 +212,26 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # well as in the blockers.
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The measured workload is the release contract's own narrowest matched-speed
+    # rung rather than a hand-written circuit, and the artifact says so by naming
+    # the frozen file and the digest of the bytes it read. The declared and bound
+    # leaf counts have to agree, because the point of the observation is that the
+    # parameterization is a measured fact rather than a declaration beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert frozen["manifest"] == "benchmarks/manifests/tensor_network_release_v1.json"
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 14
+    assert frozen["depth"] == _MODULE.DEPTH == 6
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 84
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    assert frozen == _ARTIFACT_FROZEN_CIRCUIT
+    assert (
+        frozen["manifest_sha256"]
+        == hashlib.sha256(
+            (_ROOT / frozen["manifest"]).read_bytes(),
+        ).hexdigest()
+    )
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -463,7 +495,6 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # retired by the observation that justifies them, so a reader cannot find one
     # here and cannot find one silently missing either.
     assert sorted(evidence["claim_blockers"]) == [
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
     ]
     # The blockers this probe exists to remove must be gone: an artifact that
@@ -487,6 +518,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
         "sliced_label_multiplicities": dict.fromkeys(_MODULE.SLICED_LABELS, 2),
         "world_size": 2,
         "local_world_size": 1,
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
         "network": {
             "evidence_level": "observed_debug_log",
             "route": "infiniband",
@@ -541,14 +573,14 @@ def test_the_cut_width_sweep_derives_both_topology_blockers(
     evidence = _MODULE._artifact(**_artifact_kwargs())["evidence"]
     blockers = set(evidence["claim_blockers"])
 
-    # The pair is fixed by the lane and the circuit is a toy one, so neither can
-    # be retracted by anything this run does. They have to stay. The staging
-    # blocker is retracted by the same default shape, because the profiled region
-    # this helper describes is one that leaked nothing across the host boundary;
-    # the full-state-gather blocker stays because this helper describes a run
-    # whose only whole-state read is the validation comparison.
+    # The pair is fixed by the lane, so it cannot be retracted by anything this
+    # run does and it has to stay. The staging blocker is retracted by the same
+    # default shape, because the profiled region this helper describes is one
+    # that leaked nothing across the host boundary; the full-state-gather blocker
+    # stays because this helper describes a run whose only whole-state read is
+    # the validation comparison. The circuit is not declared: the default shape
+    # runs the release contract's own rung, so that blocker is retracted too.
     assert sorted(blockers) == [
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
         "validation_only_tiny_full_state_gather",
     ]
@@ -619,9 +651,26 @@ def test_the_route_measurement_and_staging_are_each_derived(
     )
     assert "rdma_not_tested" in blockers(network={})
 
-    # An absent measurement is not a measurement of zero, and a measurement is
-    # not a production one: the toy-circuit blocker survives both.
+    # An absent measurement is not a measurement of zero.
     assert "production_performance_not_measured" in blockers(performance=None)
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 83},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 84.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in blockers()
 
     # A profiler that could not run has shown nothing, and a transfer it did see
     # is a finding that keeps the blocker rather than one that hides it.
@@ -699,14 +748,12 @@ def test_the_export_leg_is_the_only_materialization_that_retracts_the_gather(
         }
     )
 
-    # The complete leg retracts it, and retracts nothing else: the pair and the
-    # circuit are declared boundaries that no leg of this run can move.
+    # The complete leg retracts it, and retracts nothing else: the pair is a
+    # declared boundary that no leg of this run can move, while the circuit is
+    # the release contract's own rung and is therefore not a boundary at all.
     exported = blockers(export={**materialized, "product": _MODULE.EXPORTED_PRODUCT})
     assert "validation_only_tiny_full_state_gather" not in exported
-    assert exported == {
-        "toy_circuit_parameters_only",
-        "two_node_pair_only_no_wider_topology",
-    }
+    assert exported == {"two_node_pair_only_no_wider_topology"}
 
 
 def test_the_export_leg_refuses_a_state_it_did_not_materialize() -> None:

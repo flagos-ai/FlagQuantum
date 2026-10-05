@@ -92,9 +92,10 @@ MINIMUM_SWEPT_WIDTHS = 2
 #: that agrees with a hand-written declaration; it is deliberately the loosest
 #: value the three contracts allow, because a floor taken from one lane's
 #: contract would make another lane's own frozen workload unreachable.
-#: `tests/benchmark_contract/test_multinode_probe_parameterization.py` recomputes
-#: the minimum from the three committed manifests, so a refrozen contract that
-#: moves it fails the suite instead of silently rotting this number.
+#: `tests/unit/test_claim_boundary.py::test_the_parameterization_floor_is_the_contracts_own_minimum`
+#: recomputes the minimum from the three committed manifests, so a refrozen
+#: contract that moves it fails the suite instead of silently rotting this
+#: number.
 MINIMUM_RELEASE_CIRCUIT_PARAMETERS = 31
 
 

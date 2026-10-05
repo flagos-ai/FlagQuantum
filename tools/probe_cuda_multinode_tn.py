@@ -21,6 +21,14 @@ every slice but one of a key exactly zero, which would let a reduction that
 dropped a rank still reproduce the reference value. The pair below gives four
 non-zero slices, two per rank, and each rank a non-zero share of the gradient.
 
+The measured workload is the release contract's own narrowest matched-speed rung
+-- fourteen wires, six layers, one trainable leaf per wire per layer, so
+eighty-four leaves -- read at run time from
+`benchmarks/manifests/tensor_network_release_v1.json` and checked against the
+circuit the probe builds. It is a rung of that contract rather than a probe
+circuit, so the parameterization the recorded numbers belong to is the one the
+contract declares and not a toy of the probe's own choosing.
+
 It makes no scale claim: the scope, the claim flags and the blockers in the
 artifact say exactly how narrow the shape is.
 """
@@ -45,7 +53,6 @@ import torch.distributed as dist
 
 import flagquantum as fq
 from flagquantum.runtime.audit.claim_boundary import (
-    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_TWO_NODE_PAIR_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
     ClaimBoundaryError,
@@ -58,6 +65,7 @@ from flagquantum.runtime.audit.claim_boundary import (
     observed_network_route,
     slice_count_claim_blockers,
     staging_claim_blockers,
+    toy_circuit_claim_blockers,
     transport_claim_blockers,
 )
 from flagquantum.runtime.distributed.transport_observability import (
@@ -79,9 +87,26 @@ from flagquantum.simulation.tensor_network.entrypoints import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-#: Five wires keeps the exact reference cheap while still giving the contraction
-#: a deep enough graph that slicing splits it into independent work.
-N_WIRES = 5
+#: The release contract this probe's measured workload is a rung of, and the rung
+#: itself: the narrowest entry of that contract's matched-speed ladder, which is
+#: the smallest shape its own release evidence says one device completes. The
+#: circuit, its depth and its parameter count are read from the file rather than
+#: restated here, so the artifact records the declaration it was held to.
+RELEASE_MANIFEST = ROOT / "benchmarks/manifests/tensor_network_release_v1.json"
+RELEASE_CONFIGURATION = "matched_speed_14q_l6_s4"
+
+#: Fourteen wires, the released rung's width. It is deep enough that slicing
+#: splits the contraction into independent work and wide enough that the exact
+#: reference is still one device's statevector.
+N_WIRES = 14
+#: The released rung's layer count. Each layer rotates every wire and then closes
+#: a ring of adjacent couplings, so the graph's depth grows with this and a cut
+#: of it separates work rather than one node.
+DEPTH = 6
+#: One independent trainable leaf per wire per layer, which is what the release
+#: contract declares for this rung and what the frozen manifest's own entry
+#: states.
+PARAMETER_COUNT = N_WIRES * DEPTH
 COMPLEX_DTYPE = torch.complex128
 REAL_DTYPE = torch.float64
 
@@ -100,12 +125,9 @@ TRAINING_LR = 0.05
 CHECKPOINT_STEPS = 2
 RESUMED_STEPS = 4
 
-#: The parameters the trainable circuit binds. Fixed so that the reference and
+#: The parameters the differential circuit binds. Fixed so that the reference and
 #: the distributed run are the same function of the same numbers.
 TRAINABLE_VALUES = (0.23, -0.37)
-#: A second, distinct parameter point, so the forward legs are not measured at
-#: the point the gradient legs and the training trajectory start from.
-FORWARD_VALUES = (0.31, -0.23)
 
 #: The measurement leg `--measure` asks for. The training legs already report a
 #: duration per phase, but each is one unsynchronized reading of work thousands
@@ -146,15 +168,14 @@ EXPORTED_STATE_DISTRIBUTION = "replicated_full_state_after_all_reduce"
 #: that is not an eigenstate of the measured observable.
 PHASE_ROTATION = 0.6
 
-#: The two sliced internal labels, two slices each. They are the contracted
-#: edges of the two multi-index nodes that carry the entangling `rxx`, which is
-#: what makes the pair well conditioned: the four slice values are 0.8177,
-#: -0.0109, -0.1431 and +0.0019, and the rank sums against a total of 0.6656 are
-#: 0.6746 and -0.0090 at two ranks, or the four slice values themselves at four.
-#: A reduction that silently dropped any rank would be wrong by at least 0.0019,
-#: which is seven orders of magnitude above the tolerance, rather than agreeing
-#: by accident.
-SLICED_LABELS = (6, 7)
+#: The two sliced internal labels, two slices each. They are contracted edges of
+#: the graph rather than single-node indices, and each is carried by exactly two
+#: nodes, which is what makes the pair a real cut. The pair is well conditioned
+#: on this circuit: the measured slice partials against a total of 0.6656 are
+#: 0.8068 and -0.1412 at two ranks, so a reduction that silently dropped either
+#: rank would be wrong by 0.14, nine orders of magnitude above the tolerance,
+#: rather than agreeing by accident.
+SLICED_LABELS = (14, 15)
 
 #: The slice count the task plan must resolve to: two sliced labels of dimension
 #: two each, so four combinations. How many of those each rank owns is the world
@@ -180,7 +201,12 @@ OBSERVABLE_WIRES = (0, N_WIRES - 1)
 #: The amplitudes the forward leg checks. They are pairwise distinct and all
 #: non-zero, and they differ in the low and the high wire, so a bit-order error
 #: cannot agree by accident.
-CHECKED_BITSTRINGS = ("00000", "10000", "00001", "10001")
+CHECKED_BITSTRINGS = (
+    "0" * N_WIRES,
+    "1" + "0" * (N_WIRES - 1),
+    "0" * (N_WIRES - 1) + "1",
+    "1" + "0" * (N_WIRES - 2) + "1",
+)
 
 
 def _canonical_sha256(payload: dict[str, Any]) -> str:
@@ -251,17 +277,109 @@ def _phase(device: torch.device | None) -> torch.Tensor | float:
     return torch.tensor(PHASE_ROTATION, dtype=REAL_DTYPE, device=device)
 
 
+def _forward_angles(*, device: torch.device | None = None) -> tuple[torch.Tensor, ...]:
+    """The released rung's own leaves, one per wire per layer.
+
+    The values are the construction the release contract's producer uses for this
+    ladder, so the circuit the probe measures is the rung's circuit rather than a
+    probe circuit that merely carries the rung's parameter count. They are plain
+    leaves rather than `nn.Parameter`s: this forward is not differentiated -- the
+    gradient leg has its own differential circuit -- and a parameter's gradient
+    metadata is state the measured region would carry for nothing.
+    """
+
+    return tuple(
+        torch.tensor(
+            0.05 * (layer + 1) + 0.01 * wire,
+            dtype=REAL_DTYPE,
+            device=device,
+        )
+        for layer in range(DEPTH)
+        for wire in range(N_WIRES)
+    )
+
+
 def _forward_circuit(
     *, device: torch.device | None = None, dtype: torch.dtype = COMPLEX_DTYPE
 ) -> fq.Circuit:
-    """The same circuit shape at a fixed parameter point."""
+    """The release contract's narrowest matched-speed rung.
 
-    parameters = [
-        torch.tensor(value, dtype=REAL_DTYPE, device=device) for value in FORWARD_VALUES
-    ]
+    Every wire carries a rotation of its own in every layer and each layer closes
+    a ring of adjacent couplings, so the circuit binds ``N_WIRES * DEPTH``
+    independent leaves and the contraction graph is deep enough that the frozen
+    cut splits it into independent work.
+    """
+
+    angles = _forward_angles(device=device)
     circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
-    _bind_trainable(circuit, *parameters, _phase(device))
+    for layer in range(DEPTH):
+        for wire in range(N_WIRES):
+            circuit.ry(wire, angles[layer * N_WIRES + wire])
+        for wire in range(N_WIRES):
+            circuit.cx(wire, (wire + 1) % N_WIRES)
     return circuit
+
+
+def _frozen_circuit_observation() -> dict[str, Any]:
+    """What the measured workload bound, and the frozen file it was read from.
+
+    Read at run time from the release contract rather than restated here, because
+    a copy of the numbers is a second source of truth: the artifact records the
+    digest of the file it read, so a reader can compare the declaration against
+    the committed manifest and against the leaf count the built circuit reported.
+    The rung named here is the narrowest one that contract's own single-device
+    measurement says completes, so the shape measured is one the contract has
+    already accepted rather than one chosen to be measurable.
+    """
+
+    manifest = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))
+    speed = manifest["speed_workload"]
+    floors = [
+        item
+        for item in speed["measured_single_device_floor"]
+        if item["name"] == RELEASE_CONFIGURATION
+    ]
+    if len(floors) != 1:
+        raise RuntimeError(
+            f"{RELEASE_MANIFEST} names {len(floors)} single-device floor entries "
+            f"called {RELEASE_CONFIGURATION!r}"
+        )
+    floor = floors[0]
+    for field, expected in (("qubits", N_WIRES), ("layers", DEPTH)):
+        if int(floor[field]) != expected:
+            raise RuntimeError(
+                f"frozen rung {RELEASE_CONFIGURATION!r} declares {field}="
+                f"{floor[field]!r}, but this probe binds {expected!r}"
+            )
+    if str(floor["status"]) != "completed":
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} is recorded as "
+            f"{floor['status']!r} rather than completed on one device"
+        )
+    declared = int(floor["parameter_count"])
+    if declared != PARAMETER_COUNT:
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} declares {declared} "
+            f"parameters, but this probe binds {PARAMETER_COUNT}"
+        )
+    circuit = _forward_circuit()
+    bound = len(
+        {
+            id(value)
+            for instruction in circuit.to_ir().instructions
+            for value in instruction.params.values()
+            if isinstance(value, torch.Tensor)
+        }
+    )
+    return {
+        "manifest": str(RELEASE_MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": hashlib.sha256(RELEASE_MANIFEST.read_bytes()).hexdigest(),
+        "configuration": RELEASE_CONFIGURATION,
+        "n_wires": N_WIRES,
+        "depth": DEPTH,
+        "declared_parameter_count": declared,
+        "bound_parameter_count": bound,
+    }
 
 
 def _trainable_circuit(
@@ -1202,9 +1320,11 @@ def _training_observations(
 def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """Every blocker this run's own observations can retract.
 
-    The declared part of the boundary -- the pair of hosts and the toy circuit
-    -- is not decided here, because nothing inside the run can retract it. What
-    is decided here is only what the run observed.
+    The pair of hosts is declared rather than decided, because nothing inside the
+    run can widen the topology. The parameterization is not: the workload is the
+    release contract's own narrowest rung, read from that contract at run time
+    and checked against the circuit this run built, so the run observes the
+    count rather than asserting it.
 
     Called once while the artifact is assembled and again after the route has
     been read, because that observation arrives after the process group is gone
@@ -1214,7 +1334,8 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
 
     cut_widths = observations["cut_widths"]
     return claim_blockers(
-        [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
+        [BLOCKER_TWO_NODE_PAIR_ONLY],
+        toy_circuit_claim_blockers(observations),
         gather_claim_blockers(
             production_materialization=bool(
                 observations["production_full_state_materialization"]
@@ -1242,6 +1363,7 @@ def _artifact(
     host_staging: dict[str, Any],
     cut_widths: dict[str, Any],
     export: dict[str, Any] | None,
+    frozen_circuit: dict[str, Any],
 ) -> dict[str, Any]:
     # One dict, put into the evidence and then read back by the derivation, so
     # the blockers cannot be decided from a different set of observations than
@@ -1253,6 +1375,7 @@ def _artifact(
     # to return the state, so its materialization is one the workload needs, and
     # only that one retracts the blocker.
     observations: dict[str, Any] = {
+        "frozen_circuit": frozen_circuit,
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
@@ -1283,6 +1406,9 @@ def _artifact(
         "scope": {
             "dtype": "complex128",
             "n_wires": N_WIRES,
+            "depth": DEPTH,
+            "parameter_count": PARAMETER_COUNT,
+            "release_configuration": RELEASE_CONFIGURATION,
             "world_size": world_size,
             "local_world_size": local_world_size,
             "node_count": world_size // local_world_size,
@@ -1404,6 +1530,7 @@ def probe(
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
         sliced_label_multiplicities = _require_sliced_labels_are_a_cut()
+        frozen_circuit = _frozen_circuit_observation()
         placement = _contraction_arguments(
             device=device,
             rank=rank,
@@ -1751,6 +1878,7 @@ def probe(
                 host_staging=host_staging,
                 cut_widths=cut_widths,
                 export=export,
+                frozen_circuit=frozen_circuit,
             )
         dist.barrier()
     finally:

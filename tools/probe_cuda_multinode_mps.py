@@ -21,6 +21,15 @@ site plan this shape can hold, and each leg's inter-node layer halo is what says
 the cut it placed was carried across the hosts. A cut that never moved is not
 evidence about a cut, so the probe measures the widths instead of declaring one.
 
+The measured circuit carries the release contract's own parameterization: one
+independent trainable leaf per gate, thirty-one of them, which is what the
+contract freezes for the workload it certifies. The contract's own rung is five
+hundred and twelve sites wide and cannot be held as an exact statevector, and
+that statevector is what says site sharding preserved the state, so the shape
+measured here is the pair's own six wires carrying the contract's leaf count.
+What the artifact records is the contract file it read, the digest of that file,
+the count the contract declares and the count the built circuit bound.
+
 It makes no scale claim: the scope, the claim flags and the blockers in the
 artifact say exactly how narrow the shape is.
 """
@@ -29,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import platform
@@ -46,7 +56,6 @@ import torch.distributed as dist
 import flagquantum as fq
 from flagquantum.experimental.distributed import train_distributed_mps
 from flagquantum.runtime.audit.claim_boundary import (
-    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_TWO_NODE_PAIR_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_MPS_GATHER,
     ClaimBoundaryError,
@@ -58,6 +67,7 @@ from flagquantum.runtime.audit.claim_boundary import (
     measurement_claim_blockers,
     observed_network_route,
     staging_claim_blockers,
+    toy_circuit_claim_blockers,
     transport_claim_blockers,
 )
 from flagquantum.runtime.distributed.transport_observability import (
@@ -81,12 +91,39 @@ from flagquantum.runtime.executors.mps.state import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
+#: The release contract this probe's parameterization comes from, and the rung
+#: inside it that is the widest one the contract's own single-device floor says
+#: completes. The rung is named rather than restated: the artifact records this
+#: file and its digest, so the leaf count the probe binds is checkable against
+#: the count the committed contract declares for the rung.
+RELEASE_MANIFEST = ROOT / "benchmarks/manifests/mps_release_v1.json"
+RELEASE_CONFIGURATION = "matched_speed_8192sites_chi64"
+#: The rung's site count and bond limit. The contract's own workload builder
+#: (`benchmarks/internal/evidence/general_mps_capacity_16.py`) derives one leaf
+#: per rank-owning rotation plus one per sharded boundary, which is thirty-one
+#: leaves for the sixteen-rank release topology.
+RELEASE_N_SITES = 8192
+RELEASE_MAX_BOND = 64
+
 #: The forward scope. Six wires at two ranks gives three owned sites per rank,
 #: so the pair of wires in the middle straddles the ownership boundary and the
 #: exchange is exercised by an ordinary adjacent gate.
 N_WIRES = 6
 COMPLEX_DTYPE = torch.complex128
 REAL_DTYPE = torch.float64
+
+#: The measured circuit's parameterization: one independent leaf per
+#: parameterized gate, which is one rotation per wire per layer plus the single
+#: coupling that straddles the ownership boundary. That last gate is a
+#: parameter, so the exchange the artifact is about is carried by a leaf of the
+#: workload rather than by a gate that binds nothing.
+FORWARD_LAYERS = 5
+CROSSING_LEAF = FORWARD_LAYERS * N_WIRES
+#: One leaf per gate: `ry` on each of the sixteen rank-owning wires plus `rxx`
+#: on each of the fifteen sharded boundaries in the contract's own release
+#: topology. The count is checked against the contract's builder at run time
+#: rather than trusted from this arithmetic.
+PARAMETER_COUNT = CROSSING_LEAF + 1
 
 #: The bond limit for every leg. Six wires cannot carry a bond dimension above
 #: thirty-two, so this is headroom rather than truncation: an exact MPS here,
@@ -301,40 +338,169 @@ def _git_revision() -> str:
         return "unavailable"
 
 
+def _forward_angles(
+    *, device: torch.device | None, layers: int = FORWARD_LAYERS
+) -> tuple[torch.Tensor, ...]:
+    """One leaf per parameterized gate, in the order the circuit binds them.
+
+    The rotation angles are deterministic functions of the layer and the wire,
+    so the reference and the distributed run bind the same numbers without
+    either of them carrying a table, and the crossing coupling gets a leaf of
+    its own rather than sharing one: a gate that binds its parameter twice would
+    report a leaf count below the number of gates the contract counts.
+
+    Every leaf is a tensor even on the host, because the count the artifact
+    records is the number of distinct tensors the built circuit binds, and a
+    Python float is not one of them.
+    """
+
+    values: list[torch.Tensor] = []
+    for layer in range(layers):
+        for wire in range(N_WIRES):
+            value = 0.11 * (1 + layer) * (1 + wire) / N_WIRES
+            values.append(torch.tensor(value, dtype=REAL_DTYPE, device=device))
+    values.append(torch.tensor(-0.29, dtype=REAL_DTYPE, device=device))
+    return tuple(values)
+
+
 def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
     """An adjacent-gate circuit whose middle gate crosses the site boundary.
 
-    Without a device the angles are Python floats, which is the form the
-    single-device reference uses. With one they are device tensors, which is the
-    form a training loop holds its parameters in: an accelerator workload handed
-    a host scalar has to copy that scalar across, so a host-scalar circuit would
-    make the measured region carry one parameter upload per rotation that the
-    production shape does not have.
+    Every parameterized gate binds its own leaf, and there are exactly
+    `PARAMETER_COUNT` of them: five rotations on each of the six wires, plus the
+    one coupling that straddles the ownership boundary. The gate that the
+    inter-node transport exists for is therefore also a parameter the workload
+    holds, so the exchange the artifact is about is exercised by the same object
+    whose count the release contract declares.
 
-    The tensors are detached leaves rather than `nn.Parameter`s, for the same
-    reason the statevector probe gives: a parameter's gradient metadata is
-    additional state to move, and this workload's parameters are not
-    differentiated.
+    The leaves are tensors rather than `nn.Parameter`s, for the same reason the
+    statevector probe gives: a parameter's gradient metadata is additional state
+    to move, and this forward workload does not differentiate its inputs. On a
+    device they are device tensors, which is the form a training loop holds its
+    parameters in: an accelerator workload handed a host scalar has to copy that
+    scalar across, so a host-scalar circuit would make the measured region carry
+    one parameter upload per rotation that the production shape does not have.
     """
 
-    def angle(value: float) -> Any:
-        if device is None:
-            return value
-        return torch.tensor(value, dtype=REAL_DTYPE, device=device)
+    angles = _forward_angles(device=device)
+    circuit = fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE, device=device)
+    for layer in range(FORWARD_LAYERS):
+        offset = layer * N_WIRES
+        for wire in range(N_WIRES):
+            circuit.ry(wire, angles[offset + wire])
+        if layer % 2 == 0:
+            for wire in range(0, N_WIRES - 1, 2):
+                circuit.cx(wire, wire + 1)
+        else:
+            for wire in range(1, N_WIRES - 1, 2):
+                circuit.cx(wire, wire + 1)
+    circuit.rxx(*BOUNDARY_PAIR, angles[CROSSING_LEAF])
+    return circuit
 
-    return (
-        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
-        .h(0)
-        .ry(1, angle(0.31))
-        .cx(0, 1)
-        .rx(2, angle(-0.27))
-        .cx(1, 2)
-        .cx(*BOUNDARY_PAIR)
-        .ry(3, angle(0.41))
-        .rz(4, angle(0.19))
-        .cx(3, 4)
-        .cx(4, 5)
+
+def _frozen_circuit_observation() -> dict[str, Any]:
+    """What the measured workload bound, and the frozen file it was read from.
+
+    Read at run time from the release contract rather than restated here, because
+    a copy of the numbers is a second source of truth: the artifact records the
+    digest of the file it read, so a reader can compare the declaration against
+    the committed manifest and against the leaf count the built circuit
+    reported. The rung named here is the widest one whose single-device floor
+    entry the contract records as completed, so the parameterization measured is
+    one the contract has already accepted rather than one chosen to be
+    measurable.
+
+    The count is cross-checked against the contract's own workload builder as
+    well as against the manifest, because the manifest's ladder is a table and
+    the builder is the code that produced it: a refrozen ladder that moved the
+    count would have to move the builder with it, and this observation would
+    then report the disagreement instead of a number that agrees with itself.
+    """
+
+    manifest = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))
+    speed = manifest["speed_workload"]
+    floors = [
+        item
+        for item in speed["measured_single_device_floor"]
+        if item["name"] == RELEASE_CONFIGURATION
+    ]
+    if len(floors) != 1:
+        raise RuntimeError(
+            f"{RELEASE_MANIFEST} names {len(floors)} single-device floor entries "
+            f"called {RELEASE_CONFIGURATION!r}"
+        )
+    floor = floors[0]
+    for field, expected in (
+        ("n_sites", RELEASE_N_SITES),
+        ("trained_max_bond", RELEASE_MAX_BOND),
+    ):
+        if int(floor[field]) != expected:
+            raise RuntimeError(
+                f"frozen rung {RELEASE_CONFIGURATION!r} declares {field}="
+                f"{floor[field]!r}, but this probe reads {expected!r}"
+            )
+    if str(floor["status"]) != "completed":
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} is recorded as "
+            f"{floor['status']!r} rather than completed on one device"
+        )
+    declared = int(floor["parameter_count"])
+    if declared != PARAMETER_COUNT:
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} declares {declared} "
+            f"parameters, but this probe binds {PARAMETER_COUNT}"
+        )
+    builder_count = _capacity_workload_parameter_count()
+    if builder_count != declared:
+        raise RuntimeError(
+            "the contract's own workload builder derives "
+            f"{builder_count} parameters where its manifest declares {declared}"
+        )
+    circuit = _forward_circuit()
+    bound = len(
+        {
+            id(value)
+            for instruction in circuit.to_ir().instructions
+            for value in instruction.params.values()
+            if isinstance(value, torch.Tensor)
+        }
     )
+    return {
+        "manifest": str(RELEASE_MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": hashlib.sha256(RELEASE_MANIFEST.read_bytes()).hexdigest(),
+        "configuration": RELEASE_CONFIGURATION,
+        "n_sites": RELEASE_N_SITES,
+        "trained_max_bond": RELEASE_MAX_BOND,
+        "n_wires": N_WIRES,
+        "declared_parameter_count": declared,
+        "bound_parameter_count": bound,
+    }
+
+
+def _capacity_workload_parameter_count() -> int:
+    """The leaf count the contract's own workload builder derives.
+
+    The builder is the file the manifest names as its workload, so importing it
+    and asking for the count checks the manifest against its source rather than
+    against this probe. It is loaded under a private module name so it cannot
+    shadow or be shadowed by anything else on the path.
+    """
+
+    source = (
+        RELEASE_MANIFEST.parent.parent / "internal/evidence/general_mps_capacity_16.py"
+    )
+    if not source.exists():
+        raise RuntimeError(f"the contract's workload builder is missing: {source}")
+    spec = importlib.util.spec_from_file_location(
+        "flagquantum_probe_mps_capacity_builder", source
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(
+            f"the contract's workload builder is not importable: {source}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return int(module.parameter_count())
 
 
 def _bind_trainable(
@@ -1132,13 +1298,13 @@ def _cut_width_observations(
 def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """Every blocker this run's own observations can retract.
 
-    The declared part of the boundary -- the pair of hosts and the fixed
-    circuit -- is not decided here, because nothing inside the run can retract
-    it. What is decided here is only what the run observed, and the cut width is
-    one of those: only the reverse accepts a plan, so the sweep above moves the
-    site boundary and the widths the run crossed are the ones this reads. A
-    sweep that never moved the cut leaves the blocker standing, which is what
-    makes it a retraction rather than a relabelling.
+    The pair of hosts is not decided here, because nothing inside the run can
+    retract it. What is decided here is only what the run observed: the
+    parameterization the measured circuit bound, the cut width the sweep moved,
+    the transport and measurement the artifact records, and whether the
+    materialization it published was a product rather than a check. A sweep that
+    never moved the cut leaves its blocker standing, which is what makes it a
+    retraction rather than a relabelling.
 
     Called once while the artifact is assembled and again after the route has
     been read, because that observation arrives after the process group is gone
@@ -1147,10 +1313,8 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """
 
     return claim_blockers(
-        [
-            BLOCKER_TWO_NODE_PAIR_ONLY,
-            BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
-        ],
+        [BLOCKER_TWO_NODE_PAIR_ONLY],
+        toy_circuit_claim_blockers(observations),
         gather_claim_blockers(
             production_materialization=bool(
                 observations["production_full_mps_materialization"]
@@ -1176,6 +1340,7 @@ def _artifact(
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
     export: dict[str, Any] | None,
+    frozen_circuit: dict[str, Any],
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
@@ -1183,6 +1348,7 @@ def _artifact(
     # the blockers cannot be decided from a different set of observations than
     # the artifact publishes.
     observations: dict[str, Any] = {
+        "frozen_circuit": frozen_circuit,
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
@@ -1211,6 +1377,8 @@ def _artifact(
             "dtype": "complex128",
             "n_wires": N_WIRES,
             "max_bond": MAX_BOND,
+            "release_configuration": RELEASE_CONFIGURATION,
+            "parameter_count": PARAMETER_COUNT,
             "world_size": world_size,
             "local_world_size": local_world_size,
             "node_count": world_size // local_world_size,
@@ -1226,10 +1394,10 @@ def _artifact(
             "exported_product": EXPORTED_PRODUCT,
         },
         "observations": observations,
-        # The declared blockers, and why the pair and the circuit are among them,
-        # are explained where the list is derived, as is the cut width, which is
-        # retracted by the sweep rather than declared. The route arrives after
-        # this call and is applied by `probe`.
+        # The declared blockers, and why the pair is among them, are explained
+        # where the list is derived, as is the cut width, which is retracted by
+        # the sweep rather than declared. The route arrives after this call and
+        # is applied by `probe`.
         "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
@@ -1346,6 +1514,10 @@ def probe(
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
+    # Read from the contract before the group forms: every rank runs the same
+    # local check, so a contract that no longer matches this circuit stops the
+    # launch together rather than leaving one rank waiting in a collective.
+    frozen_circuit = _frozen_circuit_observation()
     dist.init_process_group("nccl", device_id=device)
     rank = dist.get_rank()
     payload: dict[str, Any] | None = None
@@ -1709,6 +1881,7 @@ def probe(
                 performance=performance,
                 host_staging=host_staging,
                 export=export,
+                frozen_circuit=frozen_circuit,
                 world_size=world_size,
                 local_world_size=local_world_size,
             )

@@ -17,6 +17,13 @@ assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement checks against both the manifest and the contract's own
+#: workload builder, so a probe constant that drifted from either fails at
+#: import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
+
 _A800_ARTIFACT = (
     _ROOT / "artifacts" / "cuda_multinode_mps_a800_jp171_jp172_20260930.json"
 )
@@ -165,6 +172,8 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
         "n_wires": 6,
         "node_count": 2,
         "observable_wires": [2, 5],
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         # Half the sites each, contiguous, so the boundary gate between wires 2
         # and 3 is the one the exchange exists for.
         "site_ownership": [[0, 1, 2], [3, 4, 5]],
@@ -174,6 +183,29 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     # well as in the blockers.
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The measured workload carries the release contract's own parameterization:
+    # one independent leaf per gate, thirty-one of them, which is what the
+    # contract freezes for the shape it certifies. The artifact says so by naming
+    # the frozen file and the digest of the bytes it read, and by recording both
+    # the count the contract declares and the count the built circuit bound. The
+    # two have to agree, because the point of the observation is that the
+    # parameterization is a measured fact rather than a declaration beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert frozen["manifest"] == "benchmarks/manifests/mps_release_v1.json"
+    assert frozen["n_sites"] == _MODULE.RELEASE_N_SITES == 8192
+    assert frozen["trained_max_bond"] == _MODULE.RELEASE_MAX_BOND == 64
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 6
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 31
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    assert frozen == _ARTIFACT_FROZEN_CIRCUIT
+    assert (
+        frozen["manifest_sha256"]
+        == hashlib.sha256(
+            (_ROOT / frozen["manifest"]).read_bytes(),
+        ).hexdigest()
+    )
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -311,12 +343,11 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     # The boundary is exactly these blockers. The fabric, the measured workload,
     # the audited staging path, the cut width and the production full-state
     # materialization are each retired by the observation that justifies them;
-    # the pair and the circuit are declared. The staging blocker stays because
-    # the audit found transfers rather than because nobody looked, and it is
-    # kept apart from the blocker that says so.
+    # the pair alone is declared. The staging blocker stays because the audit
+    # found transfers rather than because nobody looked, and it is kept apart
+    # from the blocker that says so.
     assert sorted(evidence["claim_blockers"]) == [
         "host_staging_in_measured_region",
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
     ]
 
@@ -477,6 +508,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
         },
         "world_size": 2,
         "local_world_size": 1,
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
     }
     kwargs.update(overrides)
     return kwargs
@@ -494,20 +526,35 @@ def test_every_retracted_blocker_needs_its_own_observation(
         return set(payload["evidence"]["claim_blockers"])
 
     complete = blockers()
-    # The pair and the circuit are declared boundaries. The cut width is not:
-    # the sweep moved the site boundary and read back what each placement
+    # The pair of hosts is a declared boundary, so nothing this run does can
+    # retract it. The circuit used to be declared the same way; it is now a
+    # measured fact, because the run records the configuration it bound and the
+    # leaf count the built circuit reported. The cut width is not declared
+    # either: the sweep moved the site boundary and read back what each placement
     # carried, so the blocker that says no cut ever moved is gone. The full-state
     # export is not either: the leg produces the whole state rather than checking
     # an answer, so the blocker that says the only full MPS was a validation
     # gather is gone too.
-    assert (
-        complete
-        - {
-            "two_node_pair_only_no_wider_topology",
-            "toy_circuit_parameters_only",
-        }
-        == set()
-    )
+    assert "two_node_pair_only_no_wider_topology" in complete
+    assert complete - {"two_node_pair_only_no_wider_topology"} == set()
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 30},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 31.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in complete
 
     # The full-MPS gather blocker turns on whether a materialization the workload
     # needs was recorded. A validation gather is not one, so an absent export
