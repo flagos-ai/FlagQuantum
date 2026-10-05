@@ -252,7 +252,17 @@ def _components(
                     "seed": seed,
                     "training_record_sha256": training_sha,
                     "experiment_config_sha256": config_sha256,
+                    "source_revision": "a" * 40,
+                    "kaiwu_pytorch_plugin_revision": "b" * 40,
+                    "python_version": "3.10.18",
+                    "torch_version": "2.7.0",
                     "execution_host": "jp-a800-171",
+                    "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+                    "observed_tensor_device": "cuda:0",
+                    "evaluation_model_sha256": "f" * 64,
+                    "provider_quota_consumed": False,
+                    "secrets_redacted": True,
+                    "acceptance": "candidate_evidence_only",
                     "source_preflight_sha256": source_preflight_sha256,
                     "transfer_manifest_sha256": transfer_manifest_sha256,
                     "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
@@ -738,6 +748,29 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     replay_sha = _write_json(replay_path, replay)
     manifest["records"][1]["sha256"] = replay_sha
     manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
+    tampered_evaluation["observed_gpu_model"] = "NVIDIA H100"
+    tampered_evaluation_sha = _write_json(component_paths[8], tampered_evaluation)
+    primary["application_evidence"]["records"][0][
+        "evaluation_record_sha256"
+    ] = tampered_evaluation_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][8]["sha256"] = tampered_evaluation_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "evaluation GPU is not an NVIDIA A800" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_evaluation_sha = _write_json(component_paths[8], evaluation_entries[0][0])
+    primary["application_evidence"]["records"][0][
+        "evaluation_record_sha256"
+    ] = restored_evaluation_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][8]["sha256"] = restored_evaluation_sha
 
     tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
     tampered_evaluation["guided_metrics"]["mean_cosine_distance"] = 0.99

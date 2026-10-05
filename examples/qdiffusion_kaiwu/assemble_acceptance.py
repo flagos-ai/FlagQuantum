@@ -38,6 +38,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
     _validate_application,
+    _validate_evaluation_component,
     _validate_portability_component_evidence,
     _validate_remote_sampling_component_evidence,
     _validate_system_record,
@@ -309,6 +310,16 @@ def assemble_records(
             raise ValueError(f"evaluation seed {seed} uses another frozen config")
         if record.get("execution_host") != config["primary_host"]:
             raise ValueError(f"evaluation seed {seed} is from the wrong host")
+        evaluation_errors: list[str] = []
+        _validate_evaluation_component(
+            record,
+            config=config,
+            config_sha256=config_sha256,
+            label=f"evaluation seed {seed}",
+            errors=evaluation_errors,
+        )
+        if evaluation_errors:
+            raise ValueError("; ".join(evaluation_errors))
         for field in (
             "source_preflight_sha256",
             "transfer_manifest_sha256",

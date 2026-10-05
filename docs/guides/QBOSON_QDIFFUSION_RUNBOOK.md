@@ -529,7 +529,13 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
 
 This stage uses the A800 but consumes no additional QBoson quota. Preserve one
 evaluation record per seed; final application metrics must be assembled across
-the complete preregistered seed set rather than selected post hoc.
+the complete preregistered seed set rather than selected post hoc. Assembly and
+independent validation require each evaluation component to match the frozen
+FlagQuantum/plugin/Python/Torch/environment lane, primary host, NVIDIA A800
+device, and exact ESM2 checkpoint digest. They also require bounded finite
+metrics, zero invalid sequences, secret redaction, and an explicit statement
+that this local evaluation consumed no provider quota and is candidate evidence
+only.
 
 On the configured replay host, load the preregistered seed's exact best energy
 checkpoint and the training run's hashed test FASTA. The fixed replay performs

@@ -884,6 +884,75 @@ def _validate_training_provider_evidence(
         errors.append(f"{label}: training precision evidence is incomplete")
 
 
+def _validate_evaluation_component(
+    record: dict[str, Any],
+    *,
+    config: dict[str, Any],
+    config_sha256: str,
+    label: str,
+    errors: list[str],
+) -> None:
+    if record.get("experiment_config_sha256") != config_sha256:
+        errors.append(f"{label}: evaluation uses another frozen config")
+    software = _mapping(config.get("software"), "config.software", errors)
+    for field in (
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "python_version",
+        "torch_version",
+        "environment_lock_sha256",
+    ):
+        if record.get(field) != software.get(field):
+            errors.append(f"{label}: evaluation {field} differs from config")
+    if record.get("execution_host") != config.get("primary_host"):
+        errors.append(f"{label}: evaluation is not from primary_host")
+    if record.get("observed_tensor_device") != "cuda:0":
+        errors.append(f"{label}: evaluation tensor work was not on cuda:0")
+    if "A800" not in str(record.get("observed_gpu_model", "")):
+        errors.append(f"{label}: evaluation GPU is not an NVIDIA A800")
+    evaluation_model = _mapping(
+        config.get("evaluation_model"), "config.evaluation_model", errors
+    )
+    if record.get("evaluation_model_sha256") != evaluation_model.get("sha256"):
+        errors.append(f"{label}: evaluation model differs from config")
+    if record.get("provider_quota_consumed") is not False:
+        errors.append(f"{label}: evaluation must not consume provider quota")
+    if record.get("secrets_redacted") is not True:
+        errors.append(f"{label}: evaluation secret redaction is not proven")
+    if record.get("acceptance") != "candidate_evidence_only":
+        errors.append(f"{label}: evaluation overstates its standalone acceptance")
+
+    nonnegative = {
+        "mean_cosine_distance",
+        "median_cosine_distance",
+        "mean_l2_distance",
+        "median_l2_distance",
+        "amino_acid_jsd",
+        "kmer2_jsd",
+        "kmer3_jsd",
+    }
+    ratios = {
+        "identity_to_reference_mean",
+        "uniqueness_ratio",
+        "repeat_ratio_ge4",
+        "length_match_ratio",
+    }
+    for field in ("baseline_metrics", "guided_metrics"):
+        metrics = _mapping(record.get(field), f"{label}.{field}", errors)
+        for metric in METRIC_NAMES:
+            value = _finite_number(
+                metrics.get(metric), f"{label}.{field}.{metric}", errors
+            )
+            if value is None:
+                continue
+            if metric in nonnegative and value < 0:
+                errors.append(f"{label}.{field}.{metric}: expected non-negative")
+            if metric in ratios and not 0 <= value <= 1:
+                errors.append(f"{label}.{field}.{metric}: expected a ratio in [0, 1]")
+            if metric == "invalid_sequence_count" and value != 0:
+                errors.append(f"{label}.{field}: invalid sequences were observed")
+
+
 def _validate_component_bundle(
     component_payloads: dict[str, dict[str, Any]],
     *,
@@ -1114,6 +1183,14 @@ def _validate_component_bundle(
 
     for seed, (_, training) in training_by_seed.items():
         _validate_training_provider_evidence(training, f"seed {seed}", errors)
+    for seed, (_, evaluation) in evaluation_by_seed.items():
+        _validate_evaluation_component(
+            evaluation,
+            config=config,
+            config_sha256=config_sha256,
+            label=f"seed {seed}",
+            errors=errors,
+        )
 
     for evidence in evidence_records:
         if not isinstance(evidence, dict) or type(evidence.get("seed")) is not int:
