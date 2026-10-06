@@ -326,6 +326,49 @@ def test_restore_rejects_parent_replacement_during_read(
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 
+def test_restore_rejects_receipt_replacement_during_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job = submit_kaiwu_task(
+        _MATRIX, client=_FakeClient(), task_name="replace-during-read"
+    )
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    moved = tmp_path / "opened-receipt.json"
+    real_load = jobs_module.json.load
+
+    def load_then_replace(*args: object, **kwargs: object) -> object:
+        result = real_load(*args, **kwargs)
+        receipt_path.rename(moved)
+        receipt_path.write_bytes(moved.read_bytes())
+        receipt_path.chmod(0o600)
+        return result
+
+    monkeypatch.setattr(jobs_module.json, "load", load_then_replace)
+
+    with pytest.raises(ValueError, match="changed during receipt access"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
+@pytest.mark.parametrize("constant", ("NaN", "Infinity", "-Infinity"))
+def test_restore_rejects_nonfinite_json_constants(
+    tmp_path: Path, constant: str
+) -> None:
+    receipt_path = tmp_path / "nonfinite.json"
+    receipt_path.write_text(
+        '{"matrix":[[0,'
+        + constant
+        + '],['
+        + constant
+        + ',0]],"receipt":{}}',
+        encoding="utf-8",
+    )
+    receipt_path.chmod(0o600)
+
+    with pytest.raises(ValueError, match="non-finite numeric constant"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
 def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
     job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="tamper-test")
     receipt_path = tmp_path / "receipt.json"

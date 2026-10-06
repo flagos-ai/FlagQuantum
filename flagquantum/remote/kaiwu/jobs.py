@@ -96,6 +96,10 @@ def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _reject_nonfinite_json_constant(_: str) -> None:
+    raise ValueError("Kaiwu receipt JSON contains a non-finite numeric constant")
+
+
 def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
     destination = Path(path)
     parent = destination.parent
@@ -178,11 +182,40 @@ def _read_private_json(path: str | Path) -> Any:
                 raise ValueError(
                     "Kaiwu receipt must be a private, regular, non-symlink file"
                 )
-            with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
-                descriptor = -1
+            with os.fdopen(
+                descriptor, "r", encoding="utf-8", closefd=False
+            ) as stream:
                 result = json.load(
-                    stream, object_pairs_hook=_reject_duplicate_json_keys
+                    stream,
+                    object_pairs_hook=_reject_duplicate_json_keys,
+                    parse_constant=_reject_nonfinite_json_constant,
                 )
+            after = os.fstat(descriptor)
+            stable_fields = (
+                "st_dev",
+                "st_ino",
+                "st_mode",
+                "st_size",
+                "st_mtime_ns",
+                "st_ctime_ns",
+            )
+            if any(
+                getattr(after, field) != getattr(metadata, field)
+                for field in stable_fields
+            ):
+                raise ValueError("Kaiwu receipt changed during receipt access")
+            try:
+                visible = source.lstat()
+            except OSError:
+                raise ValueError("Kaiwu receipt changed during receipt access") from None
+            if (
+                source.is_symlink()
+                or not stat.S_ISREG(visible.st_mode)
+                or visible.st_mode & 0o077
+                or (visible.st_dev, visible.st_ino)
+                != (metadata.st_dev, metadata.st_ino)
+            ):
+                raise ValueError("Kaiwu receipt changed during receipt access")
             _verify_open_directory_binding(
                 source.parent,
                 directory_metadata,

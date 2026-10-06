@@ -129,11 +129,14 @@ license. Recovery receipts are synced to a private temporary file and atomically
 published without replacement; resume rejects public, non-regular, or symlinked
 receipt files before any SDK task operation. Receipt reads and writes remain
 anchored to the opened private checkpoint directory and reject a replaced
-parent binding rather than following it. The client also freezes the checkpoint
-directory device/inode and rechecks it around every vendor operation. If that
-identity changes during a call, preserve the original directory and recovery
-bundle, classify the attempt as indeterminate, and do not retry automatically:
-the provider may already have received the task.
+parent binding rather than following it. A receipt read retains its no-follow
+leaf descriptor through strict parsing, then checks file metadata and visible
+inode binding; duplicate keys, non-standard nonfinite JSON constants, and
+same-content leaf replacement all fail without task submission. The client also
+freezes the checkpoint directory device/inode and rechecks it around every
+vendor operation. If that identity changes during a call, preserve the original
+directory and recovery bundle, classify the attempt as indeterminate, and do
+not retry automatically: the provider may already have received the task.
 
 Review the completed JSON and record its digest:
 

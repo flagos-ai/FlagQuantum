@@ -90,6 +90,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   directory binding; publication removes a candidate receipt if the parent is
   replaced before synchronization. Recovery also rejects duplicate JSON object
   keys at any nesting level rather than accepting an ambiguous last value.
+  Receipt reads now keep the no-follow file descriptor open through parsing and
+  recheck its complete stable metadata plus visible leaf binding afterwards;
+  leaf replacement and non-standard `NaN`/`Infinity` constants fail before a
+  recoverable job is constructed.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
