@@ -493,6 +493,32 @@ measured window. This is bounded single-device development evidence, not a
 release or distributed scalability claim. Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_controlled_matrix_probe.py`](../../benchmarks/internal/evidence/statevector_controlled_matrix_probe.py).
 
+The public local-statevector executor now selects SV-012-A for isolated CRX,
+CRY, and CRZ gates inside the exact measured CUDA `complex64` window:
+`(batch, amplitudes)` equal to `(1, 2**20)`, `(1, 2**24)`, or
+`(4, 2**20)`, with shared or batch-resolved `float32` angles. It materializes
+only the controlled gate's two-by-two target matrix; unsupported devices,
+dtypes, shapes, opcodes, gradient inputs, and fused multi-gate steps preserve
+the existing dense four-by-four route. Existing CX and diagonal-gate
+specializations keep precedence. Set `FQ_TRITON_CONTROLLED_MATRIX_1Q=0` to
+disable the route without changing circuit semantics.
+
+The checked-in
+[`statevector_controlled_matrix_dispatch_a800.json`](../../benchmarks/results/local/statevector_controlled_matrix_dispatch_a800.json)
+artifact records the public catalog dispatch against the dense product path
+starting from the same angle inputs. It contains 30 counterbalanced,
+synchronized groups of 10 invocations for four fixed cases on both A800 hosts
+under stock Triton 3.7.1 and FlagTree 0.7.0. The matrix covers CRX, CRY, and
+CRZ; ordered, reversed, and distant control/target positions; shared and
+batch-resolved parameters; and batches one and four. All 16
+host/compiler/shape cases meet the `1.0x` performance floor: observed speedups
+range from `1.289x` through `5.801x`, maximum absolute error is below
+`2.4e-7`, and maximum relative L2 error is below `2.2e-8`. The aggregate
+decision is `default_dispatch_enabled`. This remains bounded single-device
+development evidence, not a release or distributed scalability claim.
+Reproduce or validate it with
+[`benchmarks/statevector_controlled_matrix_dispatch.py`](../../benchmarks/statevector_controlled_matrix_dispatch.py).
+
 This semantic serves controlled rotations and controlled unitaries in QPE,
 QFT, amplitude amplification, Hamiltonian simulation, and variational
 circuits.
