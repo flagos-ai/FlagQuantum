@@ -319,6 +319,19 @@ def test_restore_rejects_public_parent_directory(tmp_path: Path) -> None:
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 
+def test_restore_rejects_directory_not_owned_by_effective_user(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="foreign-owner")
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    effective_uid = os.geteuid()
+    monkeypatch.setattr(jobs_module.os, "geteuid", lambda: effective_uid + 1)
+
+    with pytest.raises(ValueError, match="private, non-symlink directory"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
 def test_restore_rejects_unbounded_receipt_before_parsing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

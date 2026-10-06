@@ -135,7 +135,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   save cannot create a receipt that the restore path is required to reject. The
   descriptor reader itself consumes at most one byte beyond that bound before
   refusing input, so concurrent file growth cannot cause an unbounded parse
-  between the initial metadata check and the stable-file postflight.
+  between the initial metadata check and the stable-file postflight. Private
+  receipt parents, receipt leaves, and SDK checkpoint directories must belong
+  to the current effective UID as well as having owner-only mode bits; a
+  privileged process cannot trust another user's recovery state merely because
+  it is mode `0700` or `0600`.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -217,6 +218,28 @@ def test_checkpoint_replacement_before_submit_fails_without_sdk_operation(
     assert _FakeOptimizer.solve_calls == 0
     assert not any(checkpoint.iterdir())
     assert not any(moved.iterdir())
+
+
+def test_checkpoint_owner_change_before_submit_fails_without_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir(mode=0o700)
+    client, _ = _client(monkeypatch, checkpoint)
+    effective_uid = os.geteuid()
+    monkeypatch.setattr(client_module.os, "geteuid", lambda: effective_uid + 1)
+
+    with pytest.raises(KaiwuSDKError, match="binding changed"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="owner-changed-before-submit",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == 0
 
 
 def test_checkpoint_replacement_during_sdk_operation_fails_closed(

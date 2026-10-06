@@ -103,6 +103,9 @@ writer applies the same limit before creating a temporary file, so it cannot
 publish a receipt that the recovery boundary must later reject. Reads consume
 at most one byte beyond the limit from the already-open descriptor, so growth
 after the initial metadata check cannot turn the cap into an unbounded parse.
+Private parents, receipt files, and checkpoint directories must also be owned
+by the current effective UID; restrictive mode bits on another user's object
+are not treated as authoritative recovery state in a privileged process.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

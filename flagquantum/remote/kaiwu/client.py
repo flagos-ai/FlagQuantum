@@ -100,6 +100,7 @@ class KaiwuSDKClient:
                 path.is_symlink()
                 or not stat.S_ISDIR(resolved_metadata.st_mode)
                 or resolved_metadata.st_mode & 0o077
+                or resolved_metadata.st_uid != os.geteuid()
                 or (resolved_metadata.st_dev, resolved_metadata.st_ino)
                 != (checkpoint_metadata.st_dev, checkpoint_metadata.st_ino)
             ):
@@ -126,6 +127,7 @@ class KaiwuSDKClient:
             path.is_symlink()
             or not stat.S_ISDIR(current_checkpoint.st_mode)
             or current_checkpoint.st_mode & 0o077
+            or current_checkpoint.st_uid != os.geteuid()
             or (current_checkpoint.st_dev, current_checkpoint.st_ino)
             != (checkpoint_metadata.st_dev, checkpoint_metadata.st_ino)
         ):
@@ -203,6 +205,7 @@ class KaiwuSDKClient:
             self._checkpoint_dir.is_symlink()
             or not stat.S_ISDIR(metadata.st_mode)
             or metadata.st_mode & 0o077
+            or metadata.st_uid != os.geteuid()
             or (metadata.st_dev, metadata.st_ino) != self._checkpoint_identity
         ):
             raise KaiwuSDKError("Kaiwu checkpoint directory binding changed")

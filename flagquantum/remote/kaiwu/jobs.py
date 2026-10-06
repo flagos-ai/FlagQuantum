@@ -31,6 +31,13 @@ _MAX_PRIVATE_JSON_BYTES = 64 * 1024 * 1024
 _PRIVATE_JSON_READ_CHUNK_BYTES = 1024 * 1024
 
 
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate Kaiwu receipt ownership")
+    return int(getter())
+
+
 def _validate_private_directory(path: Path, *, description: str) -> None:
     try:
         metadata = path.lstat()
@@ -42,6 +49,7 @@ def _validate_private_directory(path: Path, *, description: str) -> None:
         path.is_symlink()
         or not stat.S_ISDIR(metadata.st_mode)
         or metadata.st_mode & 0o077
+        or metadata.st_uid != _effective_uid()
     ):
         raise ValueError(
             f"{description} must be an existing private, non-symlink directory"
@@ -62,6 +70,8 @@ def _verify_open_directory_binding(
         path.is_symlink()
         or not stat.S_ISDIR(visible.st_mode)
         or visible.st_mode & 0o077
+        or visible.st_uid != _effective_uid()
+        or descriptor_metadata.st_uid != _effective_uid()
         or (visible.st_dev, visible.st_ino)
         != (descriptor_metadata.st_dev, descriptor_metadata.st_ino)
     ):
@@ -79,7 +89,11 @@ def _open_private_directory(
         raise ValueError(f"{description} changed during receipt access") from None
     try:
         metadata = os.fstat(descriptor)
-        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o077:
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_mode & 0o077
+            or metadata.st_uid != _effective_uid()
+        ):
             raise ValueError(f"{description} changed during receipt access")
         _verify_open_directory_binding(path, metadata, description=description)
         return descriptor, metadata
@@ -203,6 +217,10 @@ def _read_private_json(path: str | Path) -> Any:
                 raise ValueError(
                     "Kaiwu receipt must be a private, regular, non-symlink file"
                 )
+            if metadata.st_uid != _effective_uid():
+                raise ValueError(
+                    "Kaiwu receipt must be owned by the current effective user"
+                )
             if metadata.st_size > _MAX_PRIVATE_JSON_BYTES:
                 raise ValueError("Kaiwu receipt exceeds the bounded size limit")
             encoded = _read_bounded_bytes(
@@ -237,6 +255,8 @@ def _read_private_json(path: str | Path) -> Any:
                 source.is_symlink()
                 or not stat.S_ISREG(visible.st_mode)
                 or visible.st_mode & 0o077
+                or visible.st_uid != _effective_uid()
+                or after.st_uid != _effective_uid()
                 or (visible.st_dev, visible.st_ino)
                 != (metadata.st_dev, metadata.st_ino)
             ):
