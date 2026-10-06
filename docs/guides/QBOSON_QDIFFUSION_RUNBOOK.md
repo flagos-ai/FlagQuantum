@@ -74,6 +74,28 @@ This validates local conversion and provider-boundary contracts without network
 access, credentials, quota, A800 access, or the proprietary SDK. It does not
 replace any live gate.
 
+Next, run the offline readiness audit before invoking any live command:
+
+```bash
+python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
+  --config /private/acceptance_config.json \
+  --environment-lock /private/environment_lock.json \
+  --plugin-root /src/kaiwu-pytorch-plugin \
+  --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
+  --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
+  --dataset /private/proteins.fasta \
+  --base-checkpoint /private/dplm_150m \
+  --tokenizer /private/dplm_150m \
+  --evaluation-model /private/esm2_t33_650M_UR50D.pt
+```
+
+Arguments may be omitted on an inventory run; missing prerequisites are reported
+with stable reason codes. The command only checks credential and project-variable
+presence, never their values, and performs no network or provider operation. A
+zero exit means all locally inspectable prerequisites for the protein experiment
+are present and valid. It is not evidence that QBoson, either A800 host, or the
+acceptance workload has run.
+
 ## Current environment facts
 
 As measured on 2026-10-05, both hosts expose NVIDIA A800-SXM4-80GB devices with

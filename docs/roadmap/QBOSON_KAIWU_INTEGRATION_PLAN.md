@@ -747,6 +747,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   (Python 3.12.14 and Torch 2.14.0), so it updates Phase 1 local conformance
   only; it does not establish the frozen Python 3.10/Torch 2.7/Kaiwu 1.3.1
   environment, A800 execution, provider use, or acceptance.
+- A value-free offline readiness command now composes the existing frozen-config,
+  quota, approved-SDK environment, two-host source-preflight, common transfer
+  manifest, and protein-artifact validators into one fail-closed inventory. It
+  reports only credential and project-variable presence, emits stable reason
+  codes for missing or invalid inputs, and performs no provider operation. This
+  closes the local handoff checklist but does not resolve the absent approval,
+  SDK artifact, credentials, quota, frozen protein assets, or any live evidence.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

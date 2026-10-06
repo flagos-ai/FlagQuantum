@@ -29,6 +29,30 @@ Passing this path is local conformance evidence only. It is not A800 or QBoson
 hardware evidence and cannot be included as a substitute component in the final
 acceptance bundle.
 
+Before any live invocation, run the value-free offline readiness audit. Every
+argument is optional so an initial run can enumerate missing inputs with stable
+reason codes; provide the complete set when performing the final preflight:
+
+```bash
+python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
+  --config /private/acceptance_config.json \
+  --environment-lock /private/environment_lock.json \
+  --plugin-root /src/kaiwu-pytorch-plugin \
+  --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
+  --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
+  --dataset /private/proteins.fasta \
+  --base-checkpoint /private/dplm_150m \
+  --tokenizer /private/dplm_150m \
+  --evaluation-model /private/esm2_t33_650M_UR50D.pt
+```
+
+The audit inspects credential and project-variable presence without recording
+their values, validates the frozen quota ceiling, approved SDK environment,
+common transfer manifest, and protein artifacts, and performs no network or
+provider operation. It exits zero only when the complete protein experiment is
+ready. A passing report is readiness information, not provider, execution,
+hardware, or acceptance evidence.
+
 `verify_transfer_bundle.py` is the pre-extraction gate for approved host
 transfers. It verifies the three colocated source archives against their
 reviewed manifest, binds their internal roots to declared revisions, and rejects

@@ -84,6 +84,7 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_protein_evaluate.py \
   tests/team/ecosystem/test_qdiffusion_protein_training_live.py \
   tests/team/ecosystem/test_qdiffusion_quota_plan.py \
+  tests/team/ecosystem/test_qdiffusion_readiness.py \
   tests/team/ecosystem/test_qdiffusion_source_preflight.py \
   tests/team/ecosystem/test_qdiffusion_sdk_approval.py \
   tests/team/ecosystem/test_qdiffusion_strict_json.py \
