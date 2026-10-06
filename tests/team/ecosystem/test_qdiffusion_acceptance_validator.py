@@ -4,12 +4,14 @@ import ast
 import copy
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from examples.qdiffusion_kaiwu import validate_acceptance as validator_module
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     COMPONENT_FIELDS_BY_SCHEMA,
     CONFIG_FIELDS,
@@ -1233,6 +1235,21 @@ def test_host_only_manifest_cannot_bypass_required_component_bundle(
 
     assert any("does not contain every source record" in error for error in errors)
     assert any("do not reference the exact component bundle" in error for error in errors)
+
+
+def test_validator_rejects_foreign_owned_manifest_before_parsing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    effective_uid = os.geteuid()
+    monkeypatch.setattr(
+        validator_module.os, "geteuid", lambda: effective_uid + 1
+    )
+
+    assert validate_acceptance(manifest_path) == [
+        "manifest: must be owned by the current effective user"
+    ]
 
 
 @pytest.mark.parametrize(

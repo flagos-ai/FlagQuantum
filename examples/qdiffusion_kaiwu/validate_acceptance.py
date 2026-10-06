@@ -76,6 +76,15 @@ UNAPPROVED_LICENSE_IDS = {
     "UNKNOWN",
     "UNLICENSED",
 }
+
+
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate acceptance evidence ownership")
+    return int(getter())
+
+
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
 RECORD_SCHEMA = "flagquantum.qboson_qdiffusion_acceptance"
 MANIFEST_SCHEMA = "flagquantum.qboson_qdiffusion_manifest"
@@ -3617,12 +3626,19 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     """Return all validation errors; an empty list means the evidence passes."""
 
     errors: list[str] = []
+    try:
+        effective_uid = _effective_uid()
+    except ValueError as exc:
+        return [f"manifest: cannot validate ownership: {exc}"]
     if not manifest_path.is_absolute():
         return ["manifest: path must be absolute"]
     if manifest_path.is_symlink() or not manifest_path.is_file():
         return ["manifest: must be a regular, non-symlink file"]
-    if manifest_path.stat().st_mode & 0o077:
+    manifest_metadata = manifest_path.stat()
+    if manifest_metadata.st_mode & 0o077:
         return ["manifest: must not be accessible by group or others"]
+    if manifest_metadata.st_uid != effective_uid:
+        return ["manifest: must be owned by the current effective user"]
     root = manifest_path.resolve().parent
     try:
         manifest_value, _, _ = _read_private_json(
@@ -3673,8 +3689,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         if not member.is_file():
             errors.append(f"{label}: file does not exist")
             return None
-        if member.stat().st_mode & 0o077:
+        member_metadata = member.stat()
+        if member_metadata.st_mode & 0o077:
             errors.append(f"{label}: file is accessible by group or others")
+            return None
+        if member_metadata.st_uid != effective_uid:
+            errors.append(f"{label}: file is not owned by the current effective user")
             return None
         return member
 
@@ -3699,10 +3719,16 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
                     )
                 else:
                     actual_directories.add(relative_name)
-                    if directory.stat().st_mode & 0o077:
+                    directory_metadata = directory.stat()
+                    if directory_metadata.st_mode & 0o077:
                         errors.append(
                             "manifest: evidence directory is accessible by group or "
                             f"others: {relative_name}"
+                        )
+                    if directory_metadata.st_uid != effective_uid:
+                        errors.append(
+                            "manifest: evidence directory is not owned by the current "
+                            f"effective user: {relative_name}"
                         )
             for name in file_names:
                 member = current / name
@@ -3717,6 +3743,11 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
                     )
                 else:
                     actual_files.add(relative_name)
+                    if member.stat().st_uid != effective_uid:
+                        errors.append(
+                            "manifest: evidence file is not owned by the current "
+                            f"effective user: {relative_name}"
+                        )
         if actual_files != declared_member_paths:
             errors.append(
                 "manifest: evidence files differ from the exact declared member set"

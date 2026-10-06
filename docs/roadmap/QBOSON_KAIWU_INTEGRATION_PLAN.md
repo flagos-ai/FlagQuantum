@@ -146,6 +146,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and leaf rechecks after descriptor-relative reads and during exclusive
   publication. Final acceptance assembly also freezes an output parent owned by
   that UID and rechecks ownership through validation and atomic publication.
+- Independent final validation requires the manifest, every declared member,
+  and every file and directory in the closed-world acceptance tree to belong to
+  the current effective UID; ownership is checked before manifest parsing and
+  repeated during member resolution and exact-tree validation.
 - Protein-training output roots, generated run directories, checkpoints, and
   retained workflow artifacts must be owned by the current effective UID.
   Stable source and artifact snapshots now include UID in their metadata
