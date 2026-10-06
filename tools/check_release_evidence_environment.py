@@ -89,18 +89,37 @@ def _output(command: Sequence[str]) -> str:
 
 
 def environment_errors(
-    *, world_size: int, seal_destination: Path | None = None
+    *,
+    world_size: int,
+    seal_destination: Path | None = None,
+    commit: str | None = None,
+    device_uuids: Sequence[str] | None = None,
 ) -> tuple[str, ...]:
-    commit = _output(("git", "rev-parse", "HEAD"))
-    devices = tuple(
-        line.strip()
-        for line in _output(
-            ("nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader")
-        ).splitlines()
-        if line.strip()
+    """Return the release-environment blockers for sealing on this host.
+
+    ``commit`` and ``device_uuids`` default to what this checkout and this host
+    report, which is what a fresh seal has to be checked against. A re-seal passes
+    the values recorded by the run it is re-sealing: the question there is whether
+    that run's provenance is complete, not whether the machine doing the
+    re-sealing happens to be the machine that measured it.
+    """
+
+    resolved_commit = (
+        commit if commit is not None else _output(("git", "rev-parse", "HEAD"))
+    )
+    devices = (
+        tuple(device_uuids)
+        if device_uuids is not None
+        else tuple(
+            line.strip()
+            for line in _output(
+                ("nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader")
+            ).splitlines()
+            if line.strip()
+        )
     )
     return readiness_errors(
-        commit=commit,
+        commit=resolved_commit,
         signing_key_present=bool(os.environ.get("FQ_EVIDENCE_SIGNING_KEY")),
         device_uuids=devices,
         world_size=world_size,

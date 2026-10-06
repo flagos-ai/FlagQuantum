@@ -231,3 +231,110 @@ def test_runtime_sealer_refuses_to_emit_without_protected_key(tmp_path, monkeypa
                 "7",
             ]
         )
+
+
+def test_runtime_sealer_requires_a_complete_provenance_source(tmp_path, monkeypatch):
+    """A fresh seal must state where its provenance comes from, either way."""
+
+    measurements = tmp_path / "measurements.json"
+    measurements.write_text(json.dumps({"world_size": 2}), encoding="utf-8")
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEY.decode())
+
+    with pytest.raises(SystemExit, match="sealing a fresh run requires"):
+        seal_main(
+            [
+                "--measurements",
+                str(measurements),
+                "--output",
+                str(tmp_path / "sealed.json"),
+                "--scope",
+                "two_gpu_semantic_regression",
+                "--world-size",
+                "2",
+            ]
+        )
+
+
+def test_runtime_sealer_reseal_reuses_the_recorded_provenance(tmp_path, monkeypatch):
+    """A re-seal states the run it re-seals, not the checkout doing the re-seal.
+
+    The sealer detects a fresh provenance from this host. Re-sealing an already
+    measured payload must not restamp it with this checkout's commit, this host's
+    devices, this host's topology or this host's raw-log digest, because the
+    payload would then describe a run that never happened.
+    """
+
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEY.decode())
+    recorded = _provenance(2)
+    original = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+        provenance=recorded,
+        evidence=_measured_payload(),
+        signing_key=KEY,
+    )
+    source = tmp_path / "measured.json"
+    source.write_text(json.dumps(original.summary()), encoding="utf-8")
+
+    measurements = tmp_path / "measurements.json"
+    measurements.write_text(
+        json.dumps(dict(original.summary()["evidence"], world_size=2)),
+        encoding="utf-8",
+    )
+    destination = tmp_path / "resealed.json"
+    assert (
+        seal_main(
+            [
+                "--measurements",
+                str(measurements),
+                "--output",
+                str(destination),
+                "--scope",
+                "two_gpu_semantic_regression",
+                "--world-size",
+                "2",
+                "--recorded-provenance",
+                str(source),
+                "--release-payload",
+            ]
+        )
+        == 0
+    )
+
+    resealed = json.loads(destination.read_text(encoding="utf-8"))
+    # The sealed document round-trips through JSON, so tuple-valued provenance
+    # fields come back as lists; compare against the round-tripped original.
+    assert (
+        resealed["provenance"]
+        == json.loads(json.dumps(original.summary()))["provenance"]
+    )
+    assert resealed["provenance"]["commit"] == recorded.commit
+    assert resealed["evidence"]["release_gate_allowed"] is True
+    valid, errors = verify_evidence_artifact(resealed, signing_key=KEY)
+    assert valid, errors
+
+
+def test_runtime_sealer_reseal_rejects_an_incomplete_record(tmp_path, monkeypatch):
+    """A recorded provenance missing a field fails closed rather than being filled."""
+
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEY.decode())
+    measurements = tmp_path / "measurements.json"
+    measurements.write_text(json.dumps({"world_size": 2}), encoding="utf-8")
+    partial = tmp_path / "partial.json"
+    partial.write_text(json.dumps({"commit": "a" * 40}), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="is missing 'workload_sha256'"):
+        seal_main(
+            [
+                "--measurements",
+                str(measurements),
+                "--output",
+                str(tmp_path / "sealed.json"),
+                "--scope",
+                "two_gpu_semantic_regression",
+                "--world-size",
+                "2",
+                "--recorded-provenance",
+                str(partial),
+            ]
+        )
