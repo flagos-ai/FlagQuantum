@@ -757,7 +757,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   Each input's immediate parent must also be a private real directory, and the
   publisher repeats that validation internally so a direct helper call cannot
   bypass the CLI gate. Its output parent is checked by the same rule before a
-  staging directory or final atomic rename is allowed.
+  staging directory or final atomic rename is allowed. Destination absence is
+  checked with no-follow metadata both before staging and after final
+  validation, so a dangling symlink cannot be mistaken for an unused path or
+  overwritten during publication.
 - Final assembly and independent validation now bind every private evidence
   member to one descriptor-anchored byte capture. Assembly refuses a config or
   component whose captured digest differs from the record used to construct

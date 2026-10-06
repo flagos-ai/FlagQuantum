@@ -827,7 +827,10 @@ creates the two final host records and manifest, then runs
 `validate_acceptance.py` on the result. Every input must be an absolute,
 mode-0600 regular file rather than a symlink. Assembly occurs in a private
 sibling staging directory and is atomically published only after final
-validation; a failed run does not leave the requested evidence directory.
+validation; a failed run does not leave the requested evidence directory. Both
+the initial and final absence checks use no-follow metadata: an existing entry,
+including a dangling symlink created before or during validation, is preserved
+and causes publication to fail.
 Subsequent validation repeats the private-file check for the manifest, config,
 environment lock, host records, and every component; it verifies that the lock
 digest equals the frozen config and rejects a symlink anywhere in a member path

@@ -714,6 +714,75 @@ def test_bundle_is_published_only_after_final_validation(
     assert destination.stat().st_mode & 0o077 == 0
 
 
+def test_bundle_publisher_does_not_replace_dangling_destination_symlink(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "config.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
+    component_path = tmp_path / "component.json"
+    _write_json(config_path, {"schema": "test.config", "version": "1.0"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
+    _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    destination = tmp_path / "acceptance"
+    destination.symlink_to(tmp_path / "missing-target", target_is_directory=True)
+
+    with pytest.raises(RuntimeError, match="evidence-dir already exists"):
+        _publish_acceptance_bundle(
+            destination,
+            config_path=config_path,
+            environment_lock_path=environment_lock_path,
+            config={
+                "primary_host": "jp-a800-171",
+                "replay_host": "jp-a800-172",
+            },
+            primary={},
+            replay={},
+            component_sources={"component.json": component_path},
+        )
+
+    assert destination.is_symlink()
+
+
+def test_bundle_publisher_detects_dangling_symlink_created_during_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
+    component_path = tmp_path / "component.json"
+    _write_json(config_path, {"schema": "test.config", "version": "1.0"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
+    _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    destination = tmp_path / "acceptance"
+
+    def create_destination(_: Path) -> list[str]:
+        destination.symlink_to(
+            tmp_path / "missing-target", target_is_directory=True
+        )
+        return []
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        create_destination,
+    )
+
+    with pytest.raises(RuntimeError, match="appeared during final validation"):
+        _publish_acceptance_bundle(
+            destination,
+            config_path=config_path,
+            environment_lock_path=environment_lock_path,
+            config={
+                "primary_host": "jp-a800-171",
+                "replay_host": "jp-a800-172",
+            },
+            primary={},
+            replay={},
+            component_sources={"component.json": component_path},
+        )
+
+    assert destination.is_symlink()
+    assert list(tmp_path.glob(".acceptance.staging-*")) == []
+
+
 def test_bundle_publisher_revalidates_component_parent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

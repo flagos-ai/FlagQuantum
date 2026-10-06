@@ -463,6 +463,19 @@ def _write_exclusive(path: Path, encoded: bytes) -> None:
         stream.write(encoded)
 
 
+def _require_absent_destination(path: Path, *, final_check: bool = False) -> None:
+    """Require a destination entry to be absent without following symlinks."""
+
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError:
+        raise RuntimeError("--evidence-dir could not be safely inspected") from None
+    stage = " appeared during final validation" if final_check else " already exists"
+    raise RuntimeError(f"--evidence-dir{stage}")
+
+
 def _json_bytes(value: object) -> bytes:
     return (
         json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"
@@ -538,6 +551,7 @@ def _publish_acceptance_bundle(
 ) -> None:
     """Validate in a private sibling directory before atomically publishing."""
 
+    _require_absent_destination(destination)
     config_bytes = read_private_bytes(
         config_path,
         label="frozen configuration",
@@ -594,8 +608,7 @@ def _publish_acceptance_bundle(
             raise RuntimeError(
                 "final acceptance validation failed: " + "; ".join(errors)
             )
-        if destination.exists():
-            raise RuntimeError("--evidence-dir appeared during final validation")
+        _require_absent_destination(destination, final_check=True)
         os.replace(staging, destination)
 
 
@@ -635,8 +648,10 @@ def main() -> None:
     ]
     if any(not path.is_absolute() for path in (*input_paths, args.evidence_dir)):
         parser.error("every path must be absolute")
-    if args.evidence_dir.exists():
-        parser.error("--evidence-dir must not already exist")
+    try:
+        _require_absent_destination(args.evidence_dir)
+    except RuntimeError as exc:
+        parser.error(str(exc))
     try:
         for path in input_paths:
             _require_private_input(path)
