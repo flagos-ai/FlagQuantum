@@ -12,7 +12,9 @@ the ladder is emitted rather than a matrix. The fourth group covers the refusals
 
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import pytest
 import torch
@@ -30,6 +32,8 @@ from flagquantum.core.ir import Instruction
 from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[2]
 
 #: One legal value per parameter name the registry declares, held strictly inside the
 #: range where a basis change and a phase ladder both do visible work. A value of `0` or a
@@ -469,12 +473,18 @@ def test_control_is_a_method_and_not_a_root_export() -> None:
 
     assert callable(fq.Circuit.control)
     assert "control" not in fq.__all__
-    # `control` is a method, so it adds no root export and the count does not move. The
-    # count itself is pinned by `tools/public_api_snapshot.py`; this is the same claim
-    # read from the other side, that the family is a family of methods. It reads 37
-    # here because `fq.density_matrix` joined that frozen list after this pin was
-    # written; the composition family contributed none of them.
-    assert len(fq.__all__) == 37
+    # The recorded Stable Core is the manifest's business, not this test's, so the
+    # claim is made against the manifest rather than against a transcription of its
+    # cardinality. `density_matrix` joined the exports under PR #541, which landed
+    # before #552 cut this file; the literal count this test used to carry was
+    # already stale on the branch that wrote it.
+    recorded = json.loads(
+        (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
+    )
+    assert "control" not in recorded["stable_exports"], (
+        "`control` is a method on `Circuit`; the recorded Stable Core must not "
+        "list it as an export"
+    )
 
 
 # --------------------------------------------------------------------------------------
