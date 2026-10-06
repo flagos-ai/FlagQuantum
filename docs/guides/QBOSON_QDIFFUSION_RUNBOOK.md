@@ -24,11 +24,14 @@ real-machine credits had been issued. Later authenticated views were
 inconsistent: one reported SPQC-1000 out of service, while a subsequent view
 reported it available with zero sampling credits and one optimization credit;
 the SDK page also relabeled the tutorial incomplete. The task table and 30-day
-task totals remained zero. Treat the tutorial notification and displayed
-optimization balance as account reconnaissance only, not as proof that the
-required quota pair is stable or approved. Do not submit a provider task until
-both required quota classes are shown consistently and separately approved for
-this validation.
+task totals remained zero. The authenticated Resource Bill subsequently showed
+the complete unused optimization balance as two SPQC-550 credits plus one
+SPQC-1000 credit, while every listed SPQC target had zero sampling credits and
+zero sampling use. The API view reported zero API applications and zero calls.
+Treat the tutorial notification and displayed optimization balances as account
+reconnaissance only, not as approval or as proof of an SDK project assignment.
+Do not submit a provider task until the required sampling allocation, project,
+and use approval are available and reviewed for this validation.
 
 On the same date, a credential-free platform support request asked for the
 Kaiwu 1.3.1 CPython 3.10 Linux package and its digest and terms, an SDK-capable

@@ -26,9 +26,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   later authenticated dashboard snapshot showed SPQC-1000 as available with
   zero sampling credits and one optimization credit, while the SDK page again
   labeled the beginner tutorial incomplete. The task table and 30-day totals
-  both remained zero. This is account-state reconnaissance, not approval to
-  spend the displayed optimization credit, and it does not satisfy the required
-  sampling quota. No provider task was submitted.
+  both remained zero. The account Resource Bill then resolved the cross-target
+  balance: two unused SPQC-550 optimization credits and one unused SPQC-1000
+  optimization credit are available, while SPQC-1, SPQC-550, and SPQC-1000 all
+  have zero sampling credits and zero sampling use. The API view reports zero
+  API applications and zero calls. This is account-state reconnaissance, not
+  approval to spend any displayed optimization credit, and it does not satisfy
+  the required sampling quota or establish an SDK project assignment. No
+  provider task was submitted.
 - On 2026-10-06 a credential-free support request was submitted through the
   authenticated platform. It asks QBoson for the Kaiwu 1.3.1 CPython 3.10 Linux
   distribution and its digest and terms, an SDK-capable project number,
