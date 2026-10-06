@@ -516,7 +516,7 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   private-output validation, credential clearing, persisted-failure redaction,
   printable canonical provider-identity validation, and exact plugin metadata
   provenance to that gate, the complete path passed at revision
-  `26cc02340818cd1fc6bd56b5df80a7d4a0efefcd` on 2026-10-06 with 477 tests and
+  `bb4a11bc0d3d71f77ca867993590bf721aea9632` on 2026-10-06 with 477 tests and
   no provider credentials present.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
