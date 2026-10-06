@@ -18,25 +18,53 @@ else:
 def _complex64_local_swap_kernel(
     state_parts: tl.tensor,
     output_parts: tl.tensor,
-    amplitude_count: tl.tensor,
-    total_amplitudes: tl.tensor,
+    group_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
     first_bit_position: tl.tensor,
     second_bit_position: tl.tensor,
-    BLOCK: tl.constexpr,  # noqa: N803
+    BLOCK_GROUPS: tl.constexpr,  # noqa: N803
 ) -> None:
-    linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
-    mask = linear < total_amplitudes
-    amplitude = linear % amplitude_count
-    first = (amplitude >> first_bit_position) & 1
-    second = (amplitude >> second_bit_position) & 1
-    source_amplitude = amplitude ^ ((first ^ second) << first_bit_position)
-    source_amplitude = source_amplitude ^ ((first ^ second) << second_bit_position)
-    batch_offset = linear - amplitude
-    source = batch_offset + source_amplitude
-    real = tl.load(state_parts + 2 * source, mask=mask, other=0.0)
-    imag = tl.load(state_parts + 2 * source + 1, mask=mask, other=0.0)
-    tl.store(output_parts + 2 * linear, real, mask=mask)
-    tl.store(output_parts + 2 * linear + 1, imag, mask=mask)
+    linear = tl.program_id(0) * BLOCK_GROUPS + tl.arange(0, BLOCK_GROUPS)
+    total_groups = group_count * batch_count
+    mask = linear < total_groups
+    batch = linear // group_count
+    group = linear - batch * group_count
+
+    low_bit = tl.minimum(first_bit_position, second_bit_position)
+    high_bit = tl.maximum(first_bit_position, second_bit_position)
+    low_mask = (1 << low_bit) - 1
+    low = group & low_mask
+    with_low_hole = ((group - low) << 1) | low
+    high_mask = (1 << high_bit) - 1
+    below_high = with_low_hole & high_mask
+    base = ((with_low_hole - below_high) << 1) | below_high
+
+    first_stride = 1 << first_bit_position
+    second_stride = 1 << second_bit_position
+    batch_base = batch * state_batch_stride + base
+    index00 = batch_base
+    index01 = batch_base + second_stride
+    index10 = batch_base + first_stride
+    index11 = batch_base + first_stride + second_stride
+
+    value00_real = tl.load(state_parts + 2 * index00, mask=mask, other=0.0)
+    value00_imag = tl.load(state_parts + 2 * index00 + 1, mask=mask, other=0.0)
+    value01_real = tl.load(state_parts + 2 * index01, mask=mask, other=0.0)
+    value01_imag = tl.load(state_parts + 2 * index01 + 1, mask=mask, other=0.0)
+    value10_real = tl.load(state_parts + 2 * index10, mask=mask, other=0.0)
+    value10_imag = tl.load(state_parts + 2 * index10 + 1, mask=mask, other=0.0)
+    value11_real = tl.load(state_parts + 2 * index11, mask=mask, other=0.0)
+    value11_imag = tl.load(state_parts + 2 * index11 + 1, mask=mask, other=0.0)
+
+    tl.store(output_parts + 2 * index00, value00_real, mask=mask)
+    tl.store(output_parts + 2 * index00 + 1, value00_imag, mask=mask)
+    tl.store(output_parts + 2 * index01, value10_real, mask=mask)
+    tl.store(output_parts + 2 * index01 + 1, value10_imag, mask=mask)
+    tl.store(output_parts + 2 * index10, value01_real, mask=mask)
+    tl.store(output_parts + 2 * index10 + 1, value01_imag, mask=mask)
+    tl.store(output_parts + 2 * index11, value11_real, mask=mask)
+    tl.store(output_parts + 2 * index11 + 1, value11_imag, mask=mask)
 
 
 def apply_complex64_local_swap(
@@ -80,23 +108,23 @@ def apply_complex64_local_swap(
         or output.dtype != state.dtype
         or output.device != state.device
         or not output.is_contiguous()
-        or output.data_ptr() == state.data_ptr()
     ):
-        raise ValueError(
-            "Triton SWAP output must be distinct, contiguous, and match input"
-        )
+        raise ValueError("Triton SWAP output must be contiguous and match input")
 
     bit_positions = tuple(n_qubits - 1 - qubit for qubit in normalized_qubits)
-    total_amplitudes = state.numel()
-    block = 256
-    _complex64_local_swap_kernel[(triton.cdiv(total_amplitudes, block),)](
+    group_count = amplitude_count // 4
+    block_groups = 256
+    _complex64_local_swap_kernel[
+        (triton.cdiv(state.shape[0] * group_count, block_groups),)
+    ](
         torch.view_as_real(state),
         torch.view_as_real(output),
-        amplitude_count,
-        total_amplitudes,
+        group_count,
+        state.shape[0],
+        state.stride(0),
         bit_positions[0],
         bit_positions[1],
-        BLOCK=block,
+        BLOCK_GROUPS=block_groups,
         num_warps=8,
         num_stages=2,
     )

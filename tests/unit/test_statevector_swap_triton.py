@@ -56,7 +56,16 @@ def test_local_swap_rejects_unsupported_contracts() -> None:
         apply_complex64_local_swap(state, qubits=(1, 1))
     with pytest.raises(ValueError, match="two distinct"):
         apply_complex64_local_swap(state, qubits=(0, 4))
-    with pytest.raises(ValueError, match="output must be distinct"):
-        apply_complex64_local_swap(state, qubits=(0, 1), output=state)
     with pytest.raises(ValueError, match="forward-only"):
         apply_complex64_local_swap(state.requires_grad_(), qubits=(0, 1))
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_local_swap_supports_exact_aliasing() -> None:
+    state = torch.randn(2, 1 << 10, device="cuda", dtype=torch.complex64)
+    expected = _reference(state, (1, 8))
+
+    actual = apply_complex64_local_swap(state, qubits=(1, 8), output=state)
+
+    assert actual.data_ptr() == state.data_ptr()
+    torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
