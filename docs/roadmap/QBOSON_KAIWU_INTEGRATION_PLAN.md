@@ -109,6 +109,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   selected lane. SDK import is lazy, `license.init` receives the in-memory pair,
   and vendor exception text is discarded to prevent credential leakage. This
   is fake-module contract evidence; no license has been initialized yet.
+- Client initialization now extends that credential-free preflight through the
+  pinned module structure: `license.init`, `CheckpointManager.save_dir`, and
+  callable `cim.CIMOptimizer` must all exist before credentials are resolved or
+  the license initializer runs. The already-preflighted module object is then
+  used for initialization, avoiding a second import with different structure.
 - A pinned Kaiwu 1.3.1 client now implements the documented checkpoint model:
   submission calls `solve` once, later polls use the same task-name and matrix
   identity, restoration recreates that identity, and completed spins are

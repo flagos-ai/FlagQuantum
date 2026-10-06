@@ -258,8 +258,10 @@ python3 -c 'import kaiwu; print(kaiwu.__version__)'
 
 The observed values must exactly match `acceptance_config.json`. A `+cu...`
 Torch build suffix is part of the observed version and must not be silently
-discarded. Importing FlagQuantum without Kaiwu installed must continue to work
-in the normal environment.
+discarded. The live client also checks `license.init`,
+`CheckpointManager.save_dir`, and callable `cim.CIMOptimizer` on that same
+module before credentials are resolved. Importing FlagQuantum without Kaiwu
+installed must continue to work in the normal environment.
 
 ## 5. Run the guarded provider smoke test
 

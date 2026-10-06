@@ -44,18 +44,8 @@ def _load_kaiwu_module() -> ModuleType:
         ) from None
 
 
-def initialize_kaiwu_license(
-    credentials: KaiwuCredentials | None = None,
-    *,
-    expected_version: str,
-) -> KaiwuSDKEnvironment:
-    """Initialize one pinned SDK license without retaining or exposing secrets.
-
-    Current Kaiwu documentation supports Python 3.10 only. Version and runtime
-    checks occur before credential resolution and before ``license.init``.
-    Vendor exception text is intentionally discarded because it may echo the
-    supplied authorization values.
-    """
+def _preflight_kaiwu_sdk(*, expected_version: str) -> ModuleType:
+    """Return one pinned SDK module after credential-free structural checks."""
 
     if not isinstance(expected_version, str) or not expected_version.strip():
         raise ValueError("expected_version must be a non-empty string")
@@ -78,6 +68,22 @@ def initialize_kaiwu_license(
     initializer = getattr(license_module, "init", None)
     if not callable(initializer):
         raise KaiwuSDKUnavailableError("Kaiwu SDK does not expose license.init")
+    return module
+
+
+def _initialize_preflighted_kaiwu_license(
+    module: ModuleType,
+    credentials: KaiwuCredentials | None,
+    *,
+    expected_version: str,
+) -> KaiwuSDKEnvironment:
+    """Initialize a module already checked by :func:`_preflight_kaiwu_sdk`."""
+
+    installed_version = getattr(module, "__version__", None)
+    license_module = getattr(module, "license", None)
+    initializer = getattr(license_module, "init", None)
+    if installed_version != expected_version.strip() or not callable(initializer):
+        raise KaiwuSDKUnavailableError("Kaiwu SDK changed after local preflight")
     user_id, sdk_code = resolve_kaiwu_credentials(credentials)
     try:
         initializer(user_id=user_id, sdk_code=sdk_code)
@@ -88,4 +94,23 @@ def initialize_kaiwu_license(
     return KaiwuSDKEnvironment(
         sdk_version=installed_version,
         python_version=platform.python_version(),
+    )
+
+
+def initialize_kaiwu_license(
+    credentials: KaiwuCredentials | None = None,
+    *,
+    expected_version: str,
+) -> KaiwuSDKEnvironment:
+    """Initialize one pinned SDK license without retaining or exposing secrets.
+
+    Current Kaiwu documentation supports Python 3.10 only. Version, runtime,
+    and license-entrypoint checks occur before credential resolution and before
+    ``license.init``. Vendor exception text is intentionally discarded because
+    it may echo the supplied authorization values.
+    """
+
+    module = _preflight_kaiwu_sdk(expected_version=expected_version)
+    return _initialize_preflighted_kaiwu_license(
+        module, credentials, expected_version=expected_version
     )

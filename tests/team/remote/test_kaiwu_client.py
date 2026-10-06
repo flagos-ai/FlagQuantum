@@ -14,6 +14,7 @@ from flagquantum.remote.kaiwu import (
     KaiwuSDKClient,
     KaiwuSDKEnvironment,
     KaiwuSDKError,
+    KaiwuSDKUnavailableError,
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
@@ -68,10 +69,12 @@ def _client(
     )
     monkeypatch.setattr(
         client_module,
-        "initialize_kaiwu_license",
+        "_initialize_preflighted_kaiwu_license",
         Mock(return_value=KaiwuSDKEnvironment("1.3.1", "3.10.18")),
     )
-    monkeypatch.setattr(client_module, "_load_kaiwu_module", Mock(return_value=module))
+    monkeypatch.setattr(
+        client_module, "_preflight_kaiwu_sdk", Mock(return_value=module)
+    )
     return KaiwuSDKClient(checkpoint_dir=checkpoint_dir), manager
 
 
@@ -79,7 +82,9 @@ def test_client_rejects_unsafe_checkpoint_directory_before_license(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     initializer = Mock()
-    monkeypatch.setattr(client_module, "initialize_kaiwu_license", initializer)
+    monkeypatch.setattr(
+        client_module, "_initialize_preflighted_kaiwu_license", initializer
+    )
     public = tmp_path / "public"
     public.mkdir(mode=0o755)
     public.chmod(0o755)
@@ -101,10 +106,42 @@ def test_client_rejects_an_unpinned_sdk_lane_before_license(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     initializer = Mock()
-    monkeypatch.setattr(client_module, "initialize_kaiwu_license", initializer)
+    monkeypatch.setattr(
+        client_module, "_initialize_preflighted_kaiwu_license", initializer
+    )
 
     with pytest.raises(ValueError, match="only the pinned Kaiwu 1.3.1"):
         KaiwuSDKClient(checkpoint_dir=tmp_path, expected_version="1.4.1")
+
+    initializer.assert_not_called()
+
+
+@pytest.mark.parametrize("missing", ("checkpoint_manager", "optimizer"))
+def test_client_sdk_structure_fails_before_license_initialization(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    missing: str,
+) -> None:
+    initializer = Mock(side_effect=AssertionError("license must not initialize"))
+    manager = (
+        SimpleNamespace(save_dir="original")
+        if missing != "checkpoint_manager"
+        else None
+    )
+    optimizer = _FakeOptimizer if missing != "optimizer" else None
+    module = SimpleNamespace(
+        common=SimpleNamespace(CheckpointManager=manager),
+        cim=SimpleNamespace(CIMOptimizer=optimizer),
+    )
+    monkeypatch.setattr(
+        client_module, "_preflight_kaiwu_sdk", Mock(return_value=module)
+    )
+    monkeypatch.setattr(
+        client_module, "_initialize_preflighted_kaiwu_license", initializer
+    )
+
+    with pytest.raises(KaiwuSDKUnavailableError):
+        KaiwuSDKClient(checkpoint_dir=tmp_path)
 
     initializer.assert_not_called()
 

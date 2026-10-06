@@ -34,8 +34,9 @@ from .jobs import (
 from .sdk import (
     KaiwuSDKEnvironment,
     KaiwuSDKError,
-    _load_kaiwu_module,
-    initialize_kaiwu_license,
+    KaiwuSDKUnavailableError,
+    _initialize_preflighted_kaiwu_license,
+    _preflight_kaiwu_sdk,
 )
 
 _SAFE_SCHEMA_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}")
@@ -120,11 +121,23 @@ class KaiwuSDKClient:
             != (checkpoint_metadata.st_dev, checkpoint_metadata.st_ino)
         ):
             raise ValueError("checkpoint_dir changed during initialization")
-        environment = initialize_kaiwu_license(
+        module = _preflight_kaiwu_sdk(expected_version=expected_version)
+        common = getattr(module, "common", None)
+        manager = getattr(common, "CheckpointManager", None)
+        cim = getattr(module, "cim", None)
+        optimizer_type = getattr(cim, "CIMOptimizer", None)
+        if manager is None or not hasattr(manager, "save_dir"):
+            raise KaiwuSDKUnavailableError(
+                "Kaiwu SDK does not expose CheckpointManager.save_dir"
+            )
+        if not callable(optimizer_type):
+            raise KaiwuSDKUnavailableError("Kaiwu SDK does not expose cim.CIMOptimizer")
+        environment = _initialize_preflighted_kaiwu_license(
+            module,
             credentials,
             expected_version=expected_version,
         )
-        self._module = _load_kaiwu_module()
+        self._module = module
         self._checkpoint_dir = path
         self._checkpoint_identity = (
             checkpoint_metadata.st_dev,

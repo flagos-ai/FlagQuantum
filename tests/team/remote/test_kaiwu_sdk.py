@@ -128,3 +128,30 @@ def test_missing_license_initializer_fails_before_credentials(
         initialize_kaiwu_license(expected_version="1.3.1")
 
     resolver.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "module",
+    (
+        SimpleNamespace(
+            __version__="1.4.1",
+            license=SimpleNamespace(init=lambda **kwargs: None),
+        ),
+        SimpleNamespace(__version__="1.3.1"),
+    ),
+)
+def test_preflighted_module_change_fails_before_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    module: SimpleNamespace,
+) -> None:
+    resolver = Mock(side_effect=AssertionError("credentials must not be resolved"))
+    monkeypatch.setattr(sdk_module, "resolve_kaiwu_credentials", resolver)
+
+    with pytest.raises(KaiwuSDKUnavailableError, match="changed after local preflight"):
+        sdk_module._initialize_preflighted_kaiwu_license(
+            module,
+            None,
+            expected_version="1.3.1",
+        )
+
+    resolver.assert_not_called()

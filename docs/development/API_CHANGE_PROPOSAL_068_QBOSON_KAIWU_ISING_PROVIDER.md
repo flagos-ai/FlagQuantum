@@ -167,6 +167,10 @@ provider values or infer a mapping from field names alone.
   exact caller-selected SDK version. The initial QDiffusion lane freezes Python
   3.10, Torch 2.7.0, NumPy 2.2.6, and Kaiwu 1.3.1 separately from the normal
   FlagQuantum environment.
+- Before resolving credentials, the pinned client verifies the same imported
+  module exposes `license.init`, `CheckpointManager.save_dir`, and callable
+  `cim.CIMOptimizer`. That preflighted module instance is the one whose license
+  is initialized and later used for task operations.
 - FlagQuantum keeps provider-neutral task modes as `optimization` and
   `sampling`, while the pinned 1.3.1 adapter passes the version-documented
   `quota` and `sample` values to `CIMOptimizer`. The newer 1.4.1 vocabulary is
