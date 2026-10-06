@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 from statistics import fmean
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
@@ -26,6 +27,13 @@ from examples.qdiffusion_kaiwu.verify_environment_lock import load_environment_l
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
+LICENSE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+() -]{0,127}")
+UNAPPROVED_LICENSE_IDS = {
+    "NOASSERTION",
+    "NONE",
+    "UNKNOWN",
+    "UNLICENSED",
+}
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
 RECORD_SCHEMA = "flagquantum.qboson_qdiffusion_acceptance"
 MANIFEST_SCHEMA = "flagquantum.qboson_qdiffusion_manifest"
@@ -459,9 +467,48 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         ):
             errors.append(f"config.{name}: all frozen identity fields are required")
     for name in ("dataset", "checkpoint", "tokenizer", "evaluation_model"):
-        digest = _mapping(config.get(name), f"config.{name}", errors).get("sha256")
+        artifact = _mapping(config.get(name), f"config.{name}", errors)
+        digest = artifact.get("sha256")
         if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
             errors.append(f"config.{name}.sha256: expected a SHA-256 digest")
+        for field in ("source_url", "license_evidence_url"):
+            value = artifact.get(field)
+            if not isinstance(value, str):
+                errors.append(f"config.{name}.{field}: expected an HTTPS URL")
+                continue
+            try:
+                parsed = urlsplit(value)
+                valid_url = (
+                    parsed.scheme == "https"
+                    and bool(parsed.hostname)
+                    and parsed.username is None
+                    and parsed.password is None
+                    and not parsed.fragment
+                )
+            except ValueError:
+                valid_url = False
+            if not valid_url:
+                errors.append(f"config.{name}.{field}: expected an HTTPS URL")
+        license_id = artifact.get("license_id")
+        if (
+            not isinstance(license_id, str)
+            or LICENSE_ID.fullmatch(license_id) is None
+            or license_id.upper() in UNAPPROVED_LICENSE_IDS
+        ):
+            errors.append(
+                f"config.{name}.license_id: expected an approved license identifier"
+            )
+        reviewed_at = artifact.get("license_reviewed_at")
+        try:
+            reviewed_timestamp = datetime.fromisoformat(
+                str(reviewed_at).replace("Z", "+00:00")
+            )
+            if reviewed_timestamp.tzinfo is None:
+                raise ValueError
+        except ValueError:
+            errors.append(
+                f"config.{name}.license_reviewed_at: expected a timezone-aware timestamp"
+            )
     generation = _mapping(config.get("generation"), "config.generation", errors)
     for field in (
         "sequence_count",

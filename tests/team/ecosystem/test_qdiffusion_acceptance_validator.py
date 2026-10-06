@@ -199,6 +199,10 @@ def _config() -> dict[str, Any]:
         "dataset": {
             "name": "frozen",
             "revision": "v1",
+            "source_url": "https://example.test/dataset.fasta",
+            "license_id": "CC-BY-4.0",
+            "license_evidence_url": "https://example.test/dataset-license",
+            "license_reviewed_at": "2026-10-05T00:00:00Z",
             "split": "deterministic-shuffle-v1",
             "sha256": "c" * 64,
             "min_length": 50,
@@ -207,11 +211,31 @@ def _config() -> dict[str, Any]:
             "validation_ratio": 0.05,
             "test_ratio": 0.05,
         },
-        "checkpoint": {"name": "dplm", "revision": "v1", "sha256": "d" * 64},
-        "tokenizer": {"name": "dplm", "revision": "v1", "sha256": "e" * 64},
+        "checkpoint": {
+            "name": "dplm",
+            "revision": "v1",
+            "source_url": "https://example.test/dplm",
+            "license_id": "Apache-2.0",
+            "license_evidence_url": "https://example.test/dplm-license",
+            "license_reviewed_at": "2026-10-05T00:00:00Z",
+            "sha256": "d" * 64,
+        },
+        "tokenizer": {
+            "name": "dplm",
+            "revision": "v1",
+            "source_url": "https://example.test/dplm",
+            "license_id": "Apache-2.0",
+            "license_evidence_url": "https://example.test/dplm-license",
+            "license_reviewed_at": "2026-10-05T00:00:00Z",
+            "sha256": "e" * 64,
+        },
         "evaluation_model": {
             "name": "esm2_t33_650M_UR50D",
             "revision": "v1",
+            "source_url": "https://example.test/esm2.pt",
+            "license_id": "MIT",
+            "license_evidence_url": "https://example.test/esm2-license",
+            "license_reviewed_at": "2026-10-05T00:00:00Z",
             "sha256": "f" * 64,
         },
         "training": {
@@ -718,6 +742,33 @@ def test_config_requires_environment_lock_digest() -> None:
     _validate_config(config, errors)
 
     assert any("environment_lock_sha256" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "value", "message"),
+    (
+        ("dataset", "source_url", "http://example.test/data", "expected an HTTPS URL"),
+        ("dataset", "source_url", "https://[broken", "expected an HTTPS URL"),
+        ("checkpoint", "license_id", "NOASSERTION", "approved license identifier"),
+        ("tokenizer", "license_evidence_url", "<required>", "expected an HTTPS URL"),
+        (
+            "evaluation_model",
+            "license_reviewed_at",
+            "2026-10-05",
+            "timezone-aware timestamp",
+        ),
+    ),
+)
+def test_config_rejects_unapproved_artifact_provenance(
+    section: str, field: str, value: object, message: str
+) -> None:
+    config = _config()
+    config[section][field] = value
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any(message in error for error in errors)
 
 
 @pytest.mark.parametrize(

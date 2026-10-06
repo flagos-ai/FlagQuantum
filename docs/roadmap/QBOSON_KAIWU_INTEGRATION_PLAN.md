@@ -290,6 +290,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   weights are not in the Git tree. The acceptance config now freezes tokenizer
   and ESM2 content hashes plus training settings, and both host records must
   share the trained primary-host energy-checkpoint digest.
+- Frozen protein inputs now also require HTTPS acquisition and license-evidence
+  URLs, an approved license identifier, and a timezone-aware review time. The
+  validator rejects insecure or credential-bearing URLs, fragments,
+  `NOASSERTION`, `UNKNOWN`, `UNLICENSED`, and placeholders before credentials
+  are resolved. The current candidate DPLM checkpoint exposes files but no
+  license metadata. Its official code repository is Apache-2.0 and describes
+  pretrained weights, but the exact separately hosted checkpoint bytes have not
+  been authoritatively linked to that notice. The checkpoint therefore remains
+  blocked rather than being treated as approved merely because it is publicly
+  downloadable. The asset intake runbook records that no model or dataset
+  download has yet been authorized or performed.
 - Protein training now rehashes the frozen config, dataset, shared base
   checkpoint/tokenizer tree, and ESM2 checkpoint after the workflow returns.
   Portability replay repeats that check and revalidates the transferred test

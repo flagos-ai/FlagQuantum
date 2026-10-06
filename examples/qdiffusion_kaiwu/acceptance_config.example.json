@@ -15,6 +15,10 @@
   "dataset": {
     "name": "<required>",
     "revision": "<required>",
+    "source_url": "https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29",
+    "license_id": "CC-BY-4.0",
+    "license_evidence_url": "https://www.uniprot.org/help/license",
+    "license_reviewed_at": "<required>",
     "split": "deterministic-shuffle-v1",
     "sha256": "<required>",
     "min_length": 50,
@@ -26,16 +30,28 @@
   "checkpoint": {
     "name": "<required>",
     "revision": "<required>",
+    "source_url": "https://huggingface.co/airkingbd/dplm_150m",
+    "license_id": "<required>",
+    "license_evidence_url": "<required>",
+    "license_reviewed_at": "<required>",
     "sha256": "<required>"
   },
   "tokenizer": {
     "name": "<required>",
     "revision": "<required>",
+    "source_url": "https://huggingface.co/airkingbd/dplm_150m",
+    "license_id": "<required>",
+    "license_evidence_url": "<required>",
+    "license_reviewed_at": "<required>",
     "sha256": "<required>"
   },
   "evaluation_model": {
     "name": "esm2_t33_650M_UR50D",
     "revision": "<required>",
+    "source_url": "https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt",
+    "license_id": "MIT",
+    "license_evidence_url": "https://huggingface.co/facebook/esm2_t33_650M_UR50D",
+    "license_reviewed_at": "<required>",
     "sha256": "<required>"
   },
   "training": {

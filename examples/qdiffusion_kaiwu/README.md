@@ -120,6 +120,16 @@ not trusted as acceptance evidence.
 
 Credentials never belong in the frozen configuration or evidence bundle.
 
+Each frozen protein input also records an HTTPS acquisition source, an approved
+license identifier, an HTTPS license-evidence source, and the timezone-aware
+time of that review. `NOASSERTION`, `UNKNOWN`, `UNLICENSED`, missing evidence,
+and placeholder values fail before credential resolution. A public download is
+not license approval. The current intake status and exact freeze procedure are
+recorded in [`ASSET_INTAKE.md`](ASSET_INTAKE.md); in particular, the candidate
+Hugging Face DPLM artifact has no license metadata and has not yet been linked
+authoritatively to the Apache-2.0 notice in the official code repository. It
+therefore remains a hard acceptance blocker.
+
 `build_environment_lock.py` builds the private dependency-lane lock directly
 from an explicitly reviewed wheel set. It reads each wheel's bounded METADATA,
 hashes its bytes, and requires an exact one-to-one name/version match with every
