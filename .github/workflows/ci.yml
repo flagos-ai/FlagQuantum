@@ -155,6 +155,8 @@ jobs:
         run: python tools/operator_manifest.py --check
       - name: Verify batch parameter-shift coverage against the opcode declaration
         run: python tools/check_parameter_shift_coverage_contract.py
+      - name: Verify parameter-shift Hessian against central differences
+        run: python tools/check_parameter_shift_hessian_contract.py
       - name: Verify runtime contract schema
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth

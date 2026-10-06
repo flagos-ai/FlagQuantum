@@ -31,6 +31,7 @@ must validate the resulting behavior directly.
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
 | `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose` and `Circuit.adjoint` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
 | `parameter-shift-coverage-contract.toml` | Which opcodes `batched_parameter_shift_gradient` can differentiate from one evaluation pair per parameter, measured against the opcode declaration for every registered opcode. |
+| `parameter-shift-hessian-contract.toml` | Which opcodes `fq.gradients.parameter_shift_hessian` can differentiate twice, the circuit cost of every cell of the matrix, every way it refuses, and its agreement with central differences of `fq.run`. |
 | `primitives-admission-contract.toml` | The admission rule of `flagquantum/algorithms/primitives`: every export with the admission basis it was admitted on, the consumer that grounds it, its distribution semantics, and its differentiability shape. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
