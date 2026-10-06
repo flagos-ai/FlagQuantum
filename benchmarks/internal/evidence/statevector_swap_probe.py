@@ -1,4 +1,4 @@
-"""Probe a direct local SWAP kernel against the product layout reference."""
+"""Probe a fused local SWAP sequence against repeated product materialization."""
 
 from __future__ import annotations
 
@@ -21,19 +21,19 @@ import torch
 BENCHMARK = "statevector_swap"
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_swap.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.statevector_swap.v1"
-SEMANTIC_ID = "statevector.apply.swap_2q.local"
+SEMANTIC_ID = "statevector.apply.swap_sequence.local"
 IMPLEMENTATION_ID = "FQKI-TRITON-SV-014-A"
 RUNNER = "benchmarks/internal/evidence/statevector_swap_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
-    (1, 1 << 16, (0, 1)),
-    (1, 1 << 20, (0, 19)),
-    (1, 1 << 20, (3, 17)),
-    (1, 1 << 24, (3, 19)),
-    (4, 1 << 20, (1, 18)),
+    (1, 1 << 16, ((0, 15), (1, 14))),
+    (1, 1 << 20, ((0, 19), (1, 18))),
+    (1, 1 << 20, ((0, 19), (1, 18), (2, 17), (3, 16))),
+    (1, 1 << 24, tuple((index, 23 - index) for index in range(8))),
+    (4, 1 << 20, tuple((index, 19 - index) for index in range(5))),
 )
-RESULT_NAMES = ("direct_kernel_wrapper", "pytorch_layout_swap_reference")
+RESULT_NAMES = ("direct_kernel_wrapper", "pytorch_swap_sequence_reference")
 _FULL_REVISION = re.compile(r"^[0-9a-f]{40}$")
 _MAXIMUM_ABSOLUTE_ERROR = 2.0e-5
 _MAXIMUM_RELATIVE_L2_ERROR = 1.0e-6
@@ -46,16 +46,15 @@ class TimingResult(TypedDict):
 
 def _reference(
     state: torch.Tensor,
-    qubits: tuple[int, int],
+    swaps: tuple[tuple[int, int], ...],
 ) -> torch.Tensor:
     from flagquantum.simulation.statevector.operations import _apply_fixed_permutation
 
-    return _apply_fixed_permutation(
-        state,
-        "swap",
-        qubits,
-        state.shape[1].bit_length() - 1,
-    )
+    output = state
+    n_qubits = state.shape[1].bit_length() - 1
+    for qubits in swaps:
+        output = _apply_fixed_permutation(output, "swap", qubits, n_qubits)
+    return output
 
 
 def _measure_group(operation: Callable[[], Any], group_size: int) -> float:
@@ -104,7 +103,9 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-014 matrix."""
 
     from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_swap import apply_complex64_local_swap
+    from flagquantum.kernels.triton.statevector_swap import (
+        apply_complex64_local_swap_sequence,
+    )
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for SV-014 benchmark evidence")
@@ -121,7 +122,7 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         )
 
     cases = []
-    for index, (batch, amplitudes, qubits) in enumerate(SHAPE_MATRIX):
+    for index, (batch, amplitudes, swaps) in enumerate(SHAPE_MATRIX):
         generator = torch.Generator(device="cuda").manual_seed(args.seed + index)
         state = torch.randn(
             batch,
@@ -130,12 +131,12 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
             device="cuda",
             dtype=torch.complex64,
         )
-        expected = _reference(state, qubits)
-        actual = apply_complex64_local_swap(state, qubits=qubits)
+        expected = _reference(state, swaps)
+        actual = apply_complex64_local_swap_sequence(state, swaps=swaps)
         torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
         direct, reference = _measure_pair(
-            partial(apply_complex64_local_swap, state, qubits=qubits),
-            partial(_reference, state, qubits),
+            partial(apply_complex64_local_swap_sequence, state, swaps=swaps),
+            partial(_reference, state, swaps),
             warmup=args.warmup,
             repeats=args.repeats,
             group_size=args.group_size,
@@ -146,10 +147,10 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
                 "shape": {
                     "batch": batch,
                     "amplitudes_per_batch": amplitudes,
-                    "qubits": list(qubits),
+                    "swaps": [list(pair) for pair in swaps],
                 },
                 "direct_kernel_wrapper": direct,
-                "pytorch_layout_swap_reference": reference,
+                "pytorch_swap_sequence_reference": reference,
                 "speedup_over_pytorch": reference["median_seconds_per_invocation"]
                 / direct["median_seconds_per_invocation"],
                 "maximum_absolute_error": float(torch.max(torch.abs(difference))),
@@ -243,9 +244,9 @@ def _validate_run(run: dict[str, Any]) -> None:
         {
             "batch": batch,
             "amplitudes_per_batch": amplitudes,
-            "qubits": list(qubits),
+            "swaps": [list(pair) for pair in swaps],
         }
-        for batch, amplitudes, qubits in SHAPE_MATRIX
+        for batch, amplitudes, swaps in SHAPE_MATRIX
     ]
     cases = run.get("cases")
     if (
@@ -276,7 +277,8 @@ def _validate_run(run: dict[str, Any]) -> None:
                 raise ValueError(f"SV-014 case {index} median is invalid")
             medians[result_name] = median
         speedup = (
-            medians["pytorch_layout_swap_reference"] / medians["direct_kernel_wrapper"]
+            medians["pytorch_swap_sequence_reference"]
+            / medians["direct_kernel_wrapper"]
         )
         if case.get("speedup_over_pytorch") != speedup:
             raise ValueError(f"SV-014 case {index} speedup is invalid")
@@ -313,9 +315,9 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         {
             "batch": batch,
             "amplitudes_per_batch": amplitudes,
-            "qubits": list(qubits),
+            "swaps": [list(pair) for pair in swaps],
         }
-        for batch, amplitudes, qubits in SHAPE_MATRIX
+        for batch, amplitudes, swaps in SHAPE_MATRIX
     ]
     if any([case["shape"] for case in run["cases"]] != expected_shapes for run in runs):
         raise ValueError("SV-014 evidence shape matrix mismatch")

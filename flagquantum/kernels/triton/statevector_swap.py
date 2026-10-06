@@ -1,4 +1,4 @@
-"""Native Triton application of a local statevector SWAP gate."""
+"""Native Triton application of a local statevector SWAP sequence."""
 
 from __future__ import annotations
 
@@ -14,90 +14,97 @@ else:
     from triton import jit
 
 
-@jit(do_not_specialize=["first_bit_position", "second_bit_position"])
-def _complex64_local_swap_out_kernel(
+@jit
+def _swap_source_bit_positions(
+    amplitude: tl.tensor,
+    first_bit_position: tl.tensor,
+    second_bit_position: tl.tensor,
+) -> tl.tensor:
+    first = (amplitude >> first_bit_position) & 1
+    second = (amplitude >> second_bit_position) & 1
+    difference = first ^ second
+    amplitude = amplitude ^ (difference << first_bit_position)
+    return amplitude ^ (difference << second_bit_position)
+
+
+@jit(
+    do_not_specialize=[
+        "first_0",
+        "second_0",
+        "first_1",
+        "second_1",
+        "first_2",
+        "second_2",
+        "first_3",
+        "second_3",
+        "first_4",
+        "second_4",
+        "first_5",
+        "second_5",
+        "first_6",
+        "second_6",
+        "first_7",
+        "second_7",
+    ]
+)
+def _complex64_local_swap_sequence_kernel(
     state_parts: tl.tensor,
     output_parts: tl.tensor,
     amplitude_count: tl.tensor,
     total_amplitudes: tl.tensor,
-    first_bit_position: tl.tensor,
-    second_bit_position: tl.tensor,
+    first_0: tl.tensor,
+    second_0: tl.tensor,
+    first_1: tl.tensor,
+    second_1: tl.tensor,
+    first_2: tl.tensor,
+    second_2: tl.tensor,
+    first_3: tl.tensor,
+    second_3: tl.tensor,
+    first_4: tl.tensor,
+    second_4: tl.tensor,
+    first_5: tl.tensor,
+    second_5: tl.tensor,
+    first_6: tl.tensor,
+    second_6: tl.tensor,
+    first_7: tl.tensor,
+    second_7: tl.tensor,
+    SWAP_COUNT: tl.constexpr,  # noqa: N803
     BLOCK: tl.constexpr,  # noqa: N803
 ) -> None:
     linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     mask = linear < total_amplitudes
     amplitude = linear % amplitude_count
-    first = (amplitude >> first_bit_position) & 1
-    second = (amplitude >> second_bit_position) & 1
-    source_amplitude = amplitude ^ ((first ^ second) << first_bit_position)
-    source_amplitude = source_amplitude ^ ((first ^ second) << second_bit_position)
-    source = linear - amplitude + source_amplitude
+    source = amplitude
+    if SWAP_COUNT > 0:
+        source = _swap_source_bit_positions(source, first_0, second_0)
+    if SWAP_COUNT > 1:
+        source = _swap_source_bit_positions(source, first_1, second_1)
+    if SWAP_COUNT > 2:
+        source = _swap_source_bit_positions(source, first_2, second_2)
+    if SWAP_COUNT > 3:
+        source = _swap_source_bit_positions(source, first_3, second_3)
+    if SWAP_COUNT > 4:
+        source = _swap_source_bit_positions(source, first_4, second_4)
+    if SWAP_COUNT > 5:
+        source = _swap_source_bit_positions(source, first_5, second_5)
+    if SWAP_COUNT > 6:
+        source = _swap_source_bit_positions(source, first_6, second_6)
+    if SWAP_COUNT > 7:
+        source = _swap_source_bit_positions(source, first_7, second_7)
+    source = linear - amplitude + source
     real = tl.load(state_parts + 2 * source, mask=mask, other=0.0)
     imag = tl.load(state_parts + 2 * source + 1, mask=mask, other=0.0)
     tl.store(output_parts + 2 * linear, real, mask=mask)
     tl.store(output_parts + 2 * linear + 1, imag, mask=mask)
 
 
-@jit(do_not_specialize=["first_bit_position", "second_bit_position"])
-def _complex64_local_swap_inplace_kernel(
-    state_parts: tl.tensor,
-    output_parts: tl.tensor,
-    group_count: tl.tensor,
-    batch_count: tl.tensor,
-    state_batch_stride: tl.tensor,
-    first_bit_position: tl.tensor,
-    second_bit_position: tl.tensor,
-    BLOCK_GROUPS: tl.constexpr,  # noqa: N803
-) -> None:
-    linear = tl.program_id(0) * BLOCK_GROUPS + tl.arange(0, BLOCK_GROUPS)
-    total_groups = group_count * batch_count
-    mask = linear < total_groups
-    batch = linear // group_count
-    group = linear - batch * group_count
-
-    low_bit = tl.minimum(first_bit_position, second_bit_position)
-    high_bit = tl.maximum(first_bit_position, second_bit_position)
-    low_mask = (1 << low_bit) - 1
-    low = group & low_mask
-    with_low_hole = ((group - low) << 1) | low
-    high_mask = (1 << high_bit) - 1
-    below_high = with_low_hole & high_mask
-    base = ((with_low_hole - below_high) << 1) | below_high
-
-    first_stride = 1 << first_bit_position
-    second_stride = 1 << second_bit_position
-    batch_base = batch * state_batch_stride + base
-    index00 = batch_base
-    index01 = batch_base + second_stride
-    index10 = batch_base + first_stride
-    index11 = batch_base + first_stride + second_stride
-
-    value00_real = tl.load(state_parts + 2 * index00, mask=mask, other=0.0)
-    value00_imag = tl.load(state_parts + 2 * index00 + 1, mask=mask, other=0.0)
-    value01_real = tl.load(state_parts + 2 * index01, mask=mask, other=0.0)
-    value01_imag = tl.load(state_parts + 2 * index01 + 1, mask=mask, other=0.0)
-    value10_real = tl.load(state_parts + 2 * index10, mask=mask, other=0.0)
-    value10_imag = tl.load(state_parts + 2 * index10 + 1, mask=mask, other=0.0)
-    value11_real = tl.load(state_parts + 2 * index11, mask=mask, other=0.0)
-    value11_imag = tl.load(state_parts + 2 * index11 + 1, mask=mask, other=0.0)
-
-    tl.store(output_parts + 2 * index00, value00_real, mask=mask)
-    tl.store(output_parts + 2 * index00 + 1, value00_imag, mask=mask)
-    tl.store(output_parts + 2 * index01, value10_real, mask=mask)
-    tl.store(output_parts + 2 * index01 + 1, value10_imag, mask=mask)
-    tl.store(output_parts + 2 * index10, value01_real, mask=mask)
-    tl.store(output_parts + 2 * index10 + 1, value01_imag, mask=mask)
-    tl.store(output_parts + 2 * index11, value11_real, mask=mask)
-    tl.store(output_parts + 2 * index11 + 1, value11_imag, mask=mask)
-
-
-def apply_complex64_local_swap(
+def apply_complex64_local_swap_sequence(
     state: torch.Tensor,
     *,
-    qubits: tuple[int, int],
+    swaps: tuple[tuple[int, int], ...],
     output: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Exchange two local statevector qubits without a layout permutation."""
+    """Apply two through eight ordered local SWAP gates in one state pass."""
 
     if (
         state.device.type != "cuda"
@@ -107,24 +114,27 @@ def apply_complex64_local_swap(
         or state.is_conj()
         or state.is_neg()
     ):
-        raise ValueError("Triton SWAP requires contiguous CUDA complex64 [B, 2**n]")
+        raise ValueError(
+            "Triton SWAP sequence requires contiguous CUDA complex64 [B, 2**n]"
+        )
     amplitude_count = int(state.shape[1])
     if (
         state.shape[0] < 1
         or amplitude_count < 4
         or amplitude_count & (amplitude_count - 1)
     ):
-        raise ValueError("Triton SWAP requires a nonempty power-of-two state")
+        raise ValueError("Triton SWAP sequence requires a nonempty power-of-two state")
     n_qubits = amplitude_count.bit_length() - 1
-    normalized_qubits = tuple(int(qubit) for qubit in qubits)
-    if (
-        len(normalized_qubits) != 2
-        or normalized_qubits[0] == normalized_qubits[1]
-        or any(not 0 <= qubit < n_qubits for qubit in normalized_qubits)
+    normalized_swaps = tuple((int(first), int(second)) for first, second in swaps)
+    if not 2 <= len(normalized_swaps) <= 8:
+        raise ValueError("Triton SWAP sequence requires two through eight gates")
+    if any(
+        first == second or not 0 <= first < n_qubits or not 0 <= second < n_qubits
+        for first, second in normalized_swaps
     ):
-        raise ValueError("Triton SWAP requires two distinct local qubits")
+        raise ValueError("Triton SWAP sequence requires distinct local qubits")
     if state.requires_grad:
-        raise ValueError("Triton SWAP is a forward-only kernel")
+        raise ValueError("Triton SWAP sequence is a forward-only kernel")
 
     output = torch.empty_like(state) if output is None else output
     if (
@@ -132,44 +142,34 @@ def apply_complex64_local_swap(
         or output.dtype != state.dtype
         or output.device != state.device
         or not output.is_contiguous()
+        or output.data_ptr() == state.data_ptr()
     ):
-        raise ValueError("Triton SWAP output must be contiguous and match input")
+        raise ValueError(
+            "Triton SWAP sequence output must be distinct, contiguous, and match input"
+        )
 
-    bit_positions = tuple(n_qubits - 1 - qubit for qubit in normalized_qubits)
-    state_parts = torch.view_as_real(state)
-    output_parts = torch.view_as_real(output)
-    if output.data_ptr() == state.data_ptr():
-        group_count = amplitude_count // 4
-        block_groups = 256
-        _complex64_local_swap_inplace_kernel[
-            (triton.cdiv(state.shape[0] * group_count, block_groups),)
-        ](
-            state_parts,
-            output_parts,
-            group_count,
-            state.shape[0],
-            state.stride(0),
-            bit_positions[0],
-            bit_positions[1],
-            BLOCK_GROUPS=block_groups,
-            num_warps=8,
-            num_stages=2,
-        )
-    else:
-        total_amplitudes = state.numel()
-        block = 256
-        _complex64_local_swap_out_kernel[(triton.cdiv(total_amplitudes, block),)](
-            state_parts,
-            output_parts,
-            amplitude_count,
-            total_amplitudes,
-            bit_positions[0],
-            bit_positions[1],
-            BLOCK=block,
-            num_warps=8,
-            num_stages=2,
-        )
+    reversed_bit_positions = [
+        (n_qubits - 1 - first, n_qubits - 1 - second)
+        for first, second in reversed(normalized_swaps)
+    ]
+    reversed_bit_positions.extend([(0, 0)] * (8 - len(reversed_bit_positions)))
+    flattened_positions = tuple(
+        position for pair in reversed_bit_positions for position in pair
+    )
+    total_amplitudes = state.numel()
+    block = 256
+    _complex64_local_swap_sequence_kernel[(triton.cdiv(total_amplitudes, block),)](
+        torch.view_as_real(state),
+        torch.view_as_real(output),
+        amplitude_count,
+        total_amplitudes,
+        *flattened_positions,
+        SWAP_COUNT=len(normalized_swaps),
+        BLOCK=block,
+        num_warps=8,
+        num_stages=2,
+    )
     return output
 
 
-__all__ = ["apply_complex64_local_swap"]
+__all__ = ["apply_complex64_local_swap_sequence"]
