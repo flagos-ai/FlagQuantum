@@ -71,6 +71,11 @@ from benchmarks.internal.evidence.mps_release_gate import (
 from benchmarks.internal.evidence.mps_release_gate import (
     load_manifest as _load_frozen_manifest,
 )
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    SERIAL_FRACTION_KEY,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
 from benchmarks.internal.evidence.speedup import (
     bootstrap_ratio_interval,
 )
@@ -1726,6 +1731,16 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             f"configurations: {sorted(left)} against {sorted(right)} for the "
             f"frozen {frozen_names}"
         )
+    # The threshold is a ratio against the speedup this workload's own arithmetic
+    # permits rather than against the world size. Against a fully partitionable
+    # workload the two coincide, and against this one they do not: two environment
+    # scans walk every site in a fixed global order, so a share of the per-site
+    # cost is a recurrence no partition divides. The share is fitted by the
+    # calibration the manifest is digest-bound to rather than read from the legs
+    # being compared, because a denominator taken from the measurement it judges
+    # would make the threshold depend on its own answer.
+    serial_fraction = frozen_serial_fraction(speed)
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
     table = []
     for rung in ladder:
         name = str(rung["name"])
@@ -1753,7 +1768,11 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
                 "sharded_median_seconds": right_seconds,
                 "speedup": speedup,
                 "speedup_confidence_interval": [lower, upper],
-                "scaling_efficiency": speedup / world,
+                "scaling_efficiency": speedup / ceiling,
+                # The denominator this one replaces stays on every rung so the two
+                # remain comparable at a glance and so a reader can see how much of
+                # the shortfall the serial part explains.
+                "linear_scaling_efficiency": speedup / world,
             }
         )
     accepted = next((item for item in table if item["name"] == acceptance), None)
@@ -1819,6 +1838,12 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             "speedup": accepted["speedup"],
             "speedup_confidence_interval": accepted["speedup_confidence_interval"],
             "scaling_efficiency": accepted["scaling_efficiency"],
+            "scaling_efficiency_definition": str(
+                speed["scaling_efficiency_definition"]
+            ),
+            "linear_scaling_efficiency": accepted["linear_scaling_efficiency"],
+            SERIAL_FRACTION_KEY: serial_fraction,
+            "shardable_ceiling_speedup": ceiling,
             "configurations": table,
             "hardware_inventory": [
                 str(record["device_name"]) for record in rank_records

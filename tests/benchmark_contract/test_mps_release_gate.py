@@ -33,6 +33,11 @@ from benchmarks.internal.evidence.mps_release_gate import (
     load_manifest,
 )
 from benchmarks.internal.evidence.mps_release_gate import main as gate_main
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    SERIAL_FRACTION_KEY,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
     EvidenceScope,
@@ -199,6 +204,14 @@ def _sharded_evidence(
         parameters = int(capacity["parameter_count"])
         workload_sha256 = str(capacity["workload_sha256"])
         premise_workload_sha256 = str(capacity["workload_sha256"])
+    # The scaling threshold is compared against the speedup the timed workload's own
+    # arithmetic permits, so the fixture reports that ceiling and the definition it
+    # divided by rather than a bare ratio. A payload naming the world-size
+    # denominator this contract replaced is refused by the gate, so the fixture is
+    # built the way the producer builds one.
+    serial_fraction = frozen_serial_fraction(manifest["speed_workload"])
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
+    speedup = 1.2
     return {
         "acceptance_case": acceptance_case,
         "state_mode": "mps",
@@ -290,9 +303,15 @@ def _sharded_evidence(
         "single_gpu_expected_oom": True,
         "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
         "capacity_failure_reason": "CUDA out of memory",
-        "speedup": 1.2,
+        "speedup": speedup,
         "speedup_confidence_interval": [1.1, 1.3],
-        "scaling_efficiency": 0.62,
+        "scaling_efficiency": speedup / ceiling,
+        "scaling_efficiency_definition": str(
+            manifest["speed_workload"]["scaling_efficiency_definition"]
+        ),
+        "linear_scaling_efficiency": speedup / world,
+        SERIAL_FRACTION_KEY: serial_fraction,
+        "shardable_ceiling_speedup": ceiling,
         "workload_sha256": workload_sha256,
         "capacity_premise_workload_sha256": premise_workload_sha256,
         "workload_body_sha256": frozen_workload_body_sha256(capacity),
@@ -538,6 +557,43 @@ PAYLOAD_BLOCKERS: tuple[tuple[str, str], ...] = (
     ),
     ("production_gpu_activity_not_well_formed", "gpu_activity", "unknown"),
 )
+# The scaling threshold is a ratio against the speedup the timed workload's own
+# arithmetic permits rather than against the world size, and this table refutes
+# one way a matched-speed payload could clear it without reporting that
+# measurement: by naming the denominator the contract replaced, by disagreeing
+# with the frozen serial fraction, by naming a ceiling that fraction does not
+# imply, by reporting an efficiency that is not the ratio of the two, or by
+# reporting the replaced denominator beside a ceiling-relative one. They are kept
+# apart from ``PAYLOAD_BLOCKERS`` because they belong to the matched-speed
+# payload specifically, while that table's entries are refused on whichever
+# production payload carries them.
+MATCHED_SPEED_EFFICIENCY_BLOCKERS: tuple[tuple[str, str, object], ...] = (
+    (
+        "matched_speed_scaling_efficiency_uses_a_replaced_definition",
+        "scaling_efficiency_definition",
+        "measured_speedup_over_world_size",
+    ),
+    (
+        "matched_speed_payload_serial_fraction_disagrees_with_contract",
+        "measured_serial_fraction",
+        0.5,
+    ),
+    (
+        "matched_speed_ceiling_disagrees_with_frozen_fraction",
+        "shardable_ceiling_speedup",
+        8.0,
+    ),
+    (
+        "matched_speed_scaling_efficiency_disagrees_with_its_ceiling",
+        "scaling_efficiency",
+        0.6,
+    ),
+    (
+        "matched_speed_linear_efficiency_disagrees_with_world",
+        "linear_scaling_efficiency",
+        0.5,
+    ),
+)
 
 
 def test_the_manifest_freezes_the_workload_the_topology_and_the_thresholds() -> None:
@@ -669,6 +725,7 @@ MANIFEST_STATE_BLOCKERS: tuple[str, ...] = (
     "single_device_world_cannot_be_a_release_payload",
     "capacity_premise_evidence_not_verifiable",
     "single_gpu_baseline_disagrees_with_frozen_premise",
+    "speed_scaling_calibration_not_verifiable",
 )
 # These three are refusals of the *envelope's* attestation rather than of a
 # payload field, so they are reached by staging the envelope the sealer would have
@@ -874,6 +931,39 @@ def test_every_payload_contract_blocker_is_reachable(
     assert blocker in blockers
 
 
+@pytest.mark.parametrize(
+    ("blocker", "field", "value"),
+    MATCHED_SPEED_EFFICIENCY_BLOCKERS,
+    ids=[item[0] for item in MATCHED_SPEED_EFFICIENCY_BLOCKERS],
+)
+def test_every_matched_speed_efficiency_blocker_is_reachable(
+    blocker: str, field: str, value: object
+) -> None:
+    """A payload cannot clear a measured threshold by choosing its denominator.
+
+    The efficiency the contract compares is a ratio against a ceiling the
+    workload's own fitted serial fraction implies. Each entry below alters the
+    matched-speed payload's own report of that ratio, or of the fraction and
+    ceiling it was computed from, so the refusal is reached by the payload
+    disagreeing with the frozen contract rather than by the contract being
+    unreadable. The refusal has to survive whether the reader recomputes the
+    ceiling or believes the payload, which is why the ceiling and the fraction are
+    both restated in the payload and checked.
+    """
+
+    manifest = _sealable_topology_manifest()
+    payloads = copy.deepcopy(_payloads(manifest))
+    matched = next(
+        payload for payload in payloads if payload["acceptance_case"] == "matched_speed"
+    )
+    matched[field] = value
+
+    passed, blockers = _read(manifest, payloads)
+
+    assert passed is False
+    assert blocker in blockers
+
+
 def test_every_manifest_state_blocker_is_reachable() -> None:
     """The blockers that describe the contract rather than one payload's fields."""
 
@@ -923,6 +1013,25 @@ def test_every_manifest_state_blocker_is_reachable() -> None:
     payloads[2]["speedup_confidence_interval"] = [0.99, 1.4]
     assert "missing_statistically_significant_speedup_artifact" in blockers_for(
         weak, payloads
+    )
+    # The efficiency threshold is a ratio against a ceiling the workload's own
+    # fitted serial fraction implies, so the fraction has to be re-readable from
+    # the artifact the contract is digest-bound to. A contract naming no artifact
+    # cannot be re-derived, and a contract whose calibration states a different
+    # fraction than the one it froze no longer follows from that artifact either;
+    # the gate names both rather than comparing payloads against a number a reader
+    # cannot reproduce.
+    uncalibrated = _sealable_topology_manifest()
+    uncalibrated_payloads = _payloads(uncalibrated)
+    uncalibrated["speed_workload"].pop("shardable_calibration_artifact")
+    assert "speed_scaling_calibration_not_verifiable" in blockers_for(
+        uncalibrated, uncalibrated_payloads
+    )
+    restated = _sealable_topology_manifest()
+    restated_payloads = _payloads(restated)
+    restated["speed_workload"]["measured_serial_fraction"] = 0.5
+    assert "speed_scaling_calibration_not_verifiable" in blockers_for(
+        restated, restated_payloads
     )
     # Every artifact sharded but none spanning hosts: transport scope is missing.
     single_node = _sealable_topology_manifest()
@@ -1089,6 +1198,7 @@ def test_the_blocker_vocabulary_is_fully_accounted_for() -> None:
     emitted = _emitted_blocker_names()
     accounted = (
         {item[0] for item in PAYLOAD_BLOCKERS}
+        | {item[0] for item in MATCHED_SPEED_EFFICIENCY_BLOCKERS}
         | set(MANIFEST_STATE_BLOCKERS)
         | set(ENVELOPE_BINDING_BLOCKERS)
         | {
@@ -1151,6 +1261,19 @@ README_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "missing_no_fallback_semantics",
             "production_payload_declares_fallback_events",
             "production_payload_declares_blockers",
+        ),
+    ),
+    (
+        # The bullet that says the scaling efficiency is a ratio against the
+        # workload's own ceiling, which the gate enforces by recomputing that
+        # ceiling and by reading the two ratios the payload reports against it.
+        "scaling_efficiency_is_measured_against_the_workloads_own_ceiling",
+        (
+            "matched_speed_scaling_efficiency_uses_a_replaced_definition",
+            "matched_speed_payload_serial_fraction_disagrees_with_contract",
+            "matched_speed_ceiling_disagrees_with_frozen_fraction",
+            "matched_speed_scaling_efficiency_disagrees_with_its_ceiling",
+            "matched_speed_linear_efficiency_disagrees_with_world",
         ),
     ),
 )

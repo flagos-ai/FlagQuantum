@@ -27,6 +27,9 @@ import torch
 from benchmarks import mps_release_evidence as producer
 from benchmarks.internal.evidence import mps_release_gate as gate
 from benchmarks.internal.evidence.mps_release_gate import MANIFEST as GATE_MANIFEST
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    shardable_ceiling_speedup,
+)
 from flagquantum.testing import MPSCapacityCertificationError
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
@@ -1022,7 +1025,26 @@ def test_the_assembled_speed_summary_states_the_whole_release_contract(
     # 4.0 s against 2.0 s over a world of two, from samples the interval is
     # resampled from, so a payload whose ratio drifted from its timings is caught.
     assert measurements["speedup"] == pytest.approx(2.0)
-    assert measurements["scaling_efficiency"] == pytest.approx(1.0)
+    # The efficiency is a ratio against the speedup the timed workload's own
+    # arithmetic permits rather than against the world size, so at a world of two
+    # the two denominators differ and the payload has to state which it divided
+    # by, what the frozen fraction is, and what ceiling that fraction implies. The
+    # world-size ratio is still reported beside it so the two stay comparable.
+    serial_fraction = float(FROZEN["speed_workload"]["measured_serial_fraction"])
+    ceiling = shardable_ceiling_speedup(serial_fraction, 2)
+    assert measurements["scaling_efficiency"] == pytest.approx(2.0 / ceiling)
+    assert measurements["linear_scaling_efficiency"] == pytest.approx(1.0)
+    assert measurements["measured_serial_fraction"] == pytest.approx(serial_fraction)
+    assert measurements["shardable_ceiling_speedup"] == pytest.approx(ceiling)
+    assert measurements["scaling_efficiency_definition"] == (
+        FROZEN["speed_workload"]["scaling_efficiency_definition"]
+    )
+    # Against this workload the two ratios are not interchangeable, which is the
+    # whole reason the contract names one: 2.0 / 2 is the efficiency of a workload
+    # that partitions perfectly, and this one does not.
+    assert measurements["scaling_efficiency"] != pytest.approx(
+        measurements["linear_scaling_efficiency"]
+    )
     lower, upper = measurements["speedup_confidence_interval"]
     assert lower < measurements["speedup"] < upper
     # Every rung is reported with its own ratio, not only the acceptance one.
