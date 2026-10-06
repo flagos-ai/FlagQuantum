@@ -83,6 +83,7 @@ import torch
 import flagquantum as fq
 from benchmarks.compiler_lookahead_swap import SEEDS, case_basis
 from flagquantum.compiler import compile as compile_program
+from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
 from flagquantum.compiler.routing import ROUTING_STRATEGIES, RoutingStrategySelection
 from flagquantum.core.ir import CircuitIR
 
@@ -90,6 +91,16 @@ SCHEMA = "flagquantum_compiler_routing_quality_benchmark_v1"
 
 #: The automatic selection is not a strategy; it names the one it resolves to.
 AUTOMATIC_SELECTION = "auto"
+
+#: The optimization level every count below is measured at.
+#:
+#: A retained count is what survives *after* the optimization passes that remove
+#: inserted SWAPs, so the level is part of what the number means rather than an
+#: implementation detail: on the 36-case contract basis, level 0 retains 716 SWAPs
+#: for ``restore_after_each_gate`` and level 2 retains 636. The level is named
+#: here, passed explicitly, and reported in the payload, so a run that silently
+#: measured a different one would publish a different number under this schema.
+OPTIMIZATION_LEVEL: int = DEFAULT_OPTIMIZATION_LEVEL
 
 #: Every entry a caller may pass as ``compile(routing_strategy=...)``.
 MEASURED_STRATEGIES: tuple[str, ...] = (*ROUTING_STRATEGIES, AUTOMATIC_SELECTION)
@@ -188,6 +199,7 @@ def run_benchmark(
                     program,
                     coupling_map=device,
                     routing_strategy=label,
+                    optimization_level=OPTIMIZATION_LEVEL,
                 )
             except (RuntimeError, ValueError) as error:
                 failures[label].append(f"{case.label}: {error}")
@@ -322,6 +334,7 @@ def run_benchmark(
             "plus the instruction count of the compiled program"
         ),
         "entry_point": "flagquantum.compiler.compile",
+        "optimization_level": OPTIMIZATION_LEVEL,
         "case_count": len(cases),
         "topologies": measured_topologies,
         "seeds": list(seeds),

@@ -22,9 +22,16 @@ from benchmarks.compiler_lookahead_swap import case_basis
 from benchmarks.compiler_routing_quality import (
     AUTOMATIC_SELECTION,
     MEASURED_STRATEGIES,
+    OPTIMIZATION_LEVEL,
+    retained_swap_count,
     run_benchmark,
 )
+from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import optimize
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    optimization_level_stages,
+)
 from flagquantum.compiler.routing import (
     ROUTING_STRATEGIES,
     RoutingStrategySelection,
@@ -252,4 +259,62 @@ def test_the_measured_automatic_selection_is_the_one_compile_actually_makes(
     assert differs_on_the_source_program > 0, (
         "this basis cannot distinguish selecting on the optimized program from "
         "selecting on the source program, so it cannot hold the recorded choice"
+    )
+
+
+def test_the_recorded_counts_are_measured_at_the_declared_optimization_level(
+    payload: dict,
+) -> None:
+    """A retained count depends on how much optimization ran after routing.
+
+    The recorded number is what is left *after* the passes that remove inserted
+    SWAPs, so a run at a level that runs fewer of them publishes a larger number
+    under the same schema. The level is therefore part of the reading, not an
+    implementation detail, and it is asserted here rather than left to whatever
+    the default happened to be when the number was taken.
+    """
+
+    assert payload["optimization_level"] == DEFAULT_OPTIMIZATION_LEVEL
+
+    # Non-vacuity: the basis must be able to tell the levels apart, or the field
+    # above would pin a reading that no level can change. The lower levels that
+    # run strictly fewer passes are replayed over the whole basis and their total
+    # has to come out different, in the direction the assertion claims: fewer
+    # passes remove fewer inserted SWAPs, so a lower level retains more.
+    case = case_basis(topologies=_BASIS_TOPOLOGIES, seeds=_BASIS_SEEDS)
+    records = {
+        record["case"]: record["retained_inserted_swap_count"]
+        for record in payload["case_records"]
+        if record["strategy"] == "restore_after_each_gate"
+    }
+    recorded_total = sum(records.values())
+    lower_levels = [
+        level
+        for level in range(OPTIMIZATION_LEVEL)
+        if optimization_level_stages(level)
+        != optimization_level_stages(OPTIMIZATION_LEVEL)
+    ]
+    assert lower_levels, "the declared level runs the same passes as every lower one"
+
+    totals = {}
+    for level in lower_levels:
+        totals[level] = sum(
+            retained_swap_count(
+                compile_program(
+                    program,
+                    coupling_map=device,
+                    routing_strategy="restore_after_each_gate",
+                    optimization_level=level,
+                )
+            )
+            for program, device in ((item.program(), item.device()) for item in case)
+        )
+    assert totals[lower_levels[-1]] != recorded_total, (
+        f"this basis retains {recorded_total} SWAPs at level {OPTIMIZATION_LEVEL} "
+        f"and {totals[lower_levels[-1]]} at level {lower_levels[-1]}, so it does "
+        f"not exercise the level it claims to record"
+    )
+    assert min(totals.values()) >= recorded_total, (
+        f"a lower optimization level removed SWAPs level {OPTIMIZATION_LEVEL} kept: "
+        f"{totals} against {recorded_total}"
     )

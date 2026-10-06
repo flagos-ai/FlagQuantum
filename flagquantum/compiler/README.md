@@ -634,15 +634,24 @@ post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
 automatic selection 4310, `restore_after_each_gate` 4660 and
 `persistent_layout` 4716, with every entry point routing all 140 programs, no
 two-wire operation off the device, and every compiled program equal to its source
-to `2.8e-16`. Two numbers there are worth carrying forward. The automatic
+to `2.8e-16`. These are the counts at the default optimization level, `2`: a
+caller who names a lower level runs fewer of the optimization passes that remove
+inserted SWAPs afterwards, so the level is part of what a retained count means.
+Two numbers there are worth carrying forward. The automatic
 selection never resolves to a SABRE strategy, because its cost estimate can rank
 only `restore_after_each_gate` and `persistent_layout`, and that scope costs
 `2.14` times what the best available strategy costs -- so the price of the
 restriction is measured rather than merely stated. And the estimate is good inside
 that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
-and lands within `1.005` of always picking the better one, with the eight misses
-all being programs where `persistent_layout` wins and the estimate took
-`restore_after_each_gate`. Those counts are a reading of the shipped router, and
+and lands within `1.005` of always picking the better one. The eight misses are
+not a bias in the estimate. It minimizes the SWAPs a plan *inserts*, as its
+objective field states: its planned count equals the router's planned count on all
+140 programs for both candidates, and its objective with its declared tie-break
+reproduces the selection on all 140. The misses are the gap between two questions.
+This benchmark scores the SWAPs *retained*, and the post-routing optimization
+removes 5.25% of one candidate's planned SWAPs and 5.49% of the other's, so a
+program where `persistent_layout` plans fewer and retains no fewer is scored as a
+miss. Those counts are a reading of the shipped router, and
 they are only reproducible because that router resolves a physical pair to one
 route: `CouplingMap.shortest_path` expands from the lower-indexed endpoint rather
 than from whichever endpoint the caller passed, so the two operand orders are
