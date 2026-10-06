@@ -154,8 +154,11 @@ credentials or raw vendor exception text. Both resolved credential values are
 scanned recursively through nested keys and values before JSON serialization,
 so escaped quotes, backslashes, or newlines cannot bypass the refusal check. It
 has no simulator fallback. Its output parent must already be a private,
-non-symlink directory; live evidence is published without replacement only
-after both file contents and parent-directory metadata are synchronized. A
+non-symlink directory, and the final path must not exist. Every quota-consuming
+entrypoint validates its final evidence destinations before credential
+resolution; the exclusive writer repeats that validation at publication time.
+Live evidence is published without replacement only after both file contents
+and parent-directory metadata are synchronized. A
 timeout, provider failure, malformed result, or keyboard interruption after a
 task receipt exists is converted into a failed attempted record; the smoke
 sequence stops without submitting its next task, and hardware acceptance stays
@@ -167,9 +170,9 @@ must be typed exactly so an ordinary test run cannot spend provider quota:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
-  --checkpoint-dir private-kaiwu-checkpoints \
+  --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
-  --output private-evidence/qboson-smoke.json \
+  --output /absolute/private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \
   --task-prefix flagquantum-smoke-20261005 \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE

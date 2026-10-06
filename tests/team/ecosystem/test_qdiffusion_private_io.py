@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_json_output_path,
+    write_private_json_exclusive,
+)
+
+pytestmark = pytest.mark.unit
+
+
+def test_validate_private_json_output_path_accepts_absent_private_target(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "record.json"
+
+    validate_private_json_output_path(output)
+
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("kind", ("file", "directory", "dangling_symlink"))
+def test_validate_private_json_output_path_rejects_existing_target(
+    tmp_path: Path, kind: str
+) -> None:
+    output = tmp_path / "record.json"
+    if kind == "file":
+        output.write_text("existing", encoding="utf-8")
+    elif kind == "directory":
+        output.mkdir()
+    else:
+        output.symlink_to(tmp_path / "missing-target")
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        validate_private_json_output_path(output)
+
+
+def test_validate_private_json_output_path_rejects_unsafe_parent(
+    tmp_path: Path,
+) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    public_parent = tmp_path / "public"
+    public_parent.mkdir(mode=0o755)
+    linked_parent = tmp_path / "linked"
+    linked_parent.symlink_to(private_parent, target_is_directory=True)
+
+    unsafe_paths = (
+        Path("relative.json"),
+        tmp_path / "missing" / "record.json",
+        public_parent / "record.json",
+        linked_parent / "record.json",
+    )
+    for output in unsafe_paths:
+        with pytest.raises(ValueError):
+            validate_private_json_output_path(output)
+
+
+def test_writer_rechecks_destination_and_never_overwrites_raced_file(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "record.json"
+    validate_private_json_output_path(output)
+    output.write_text("raced", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        write_private_json_exclusive(output, {"accepted": False})
+
+    assert output.read_text(encoding="utf-8") == "raced"
+
+
+def test_writer_publishes_valid_json_exclusively(tmp_path: Path) -> None:
+    output = tmp_path / "record.json"
+
+    write_private_json_exclusive(output, {"accepted": False})
+
+    assert json.loads(output.read_text(encoding="utf-8")) == {"accepted": False}
+    with pytest.raises(FileExistsError):
+        write_private_json_exclusive(output, {"accepted": True})

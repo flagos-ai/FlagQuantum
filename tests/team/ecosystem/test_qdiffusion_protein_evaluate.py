@@ -23,6 +23,19 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
 pytestmark = pytest.mark.unit
 
 
+def test_evaluation_preflights_private_output_before_workflow() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qdiffusion_protein_evaluate.py"
+    ).read_text(encoding="utf-8")
+
+    assert source.index(
+        "validate_private_json_output_path(args.output)"
+    ) < source.index("config, config_sha256 = _load_frozen_config(args.config)")
+
+
 def _provider_training_record() -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_qdiffusion_protein_training",

@@ -173,10 +173,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   provider identities, and the live command writes its diagnostic record but
   exits nonzero whenever hardware acceptance remains closed.
 - Smoke, system, training, evaluation, and replay records now require an
-  existing private, non-symlink output directory. Their shared exclusive writer
-  synchronizes file contents and parent-directory metadata, so live evidence
-  cannot be silently placed in a public or replaceable directory and then fail
-  final assembly for a preventable local-permission error.
+  existing private, non-symlink output directory and a final path that does not
+  already exist. Every quota-consuming entrypoint validates all final evidence
+  destinations before credential resolution, while the shared exclusive writer
+  repeats the check at publication time and synchronizes file contents and
+  parent-directory metadata. Invalid local destinations therefore fail before
+  provider initialization, and a raced file is never overwritten after quota
+  has been consumed.
 - Offline artifact preflight, environment-lock, transfer-verification, and A800
   development records now use that same durable writer. Missing, public, or
   symlinked output parents therefore fail before publication across both the

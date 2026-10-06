@@ -13,7 +13,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_json_output_path,
+    write_private_json_exclusive,
+)
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuRemoteJob,
@@ -210,6 +213,9 @@ def main() -> None:
             "--acknowledge-provider-cost must equal "
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
+    if not arguments.project_no.strip() or not arguments.task_prefix.strip():
+        parser.error("--project-no and --task-prefix must be non-empty")
+    validate_private_json_output_path(arguments.output)
 
     _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
     user_id, sdk_code = resolve_kaiwu_credentials()

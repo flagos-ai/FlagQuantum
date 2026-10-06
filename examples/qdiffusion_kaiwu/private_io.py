@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 
-def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
-    """Publish one JSON record without following or replacing unsafe paths."""
+def validate_private_json_output_path(path: Path) -> None:
+    """Validate an unused private JSON destination without changing the filesystem."""
 
     if not path.is_absolute():
         raise ValueError("evidence output path must be absolute")
@@ -30,6 +30,20 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         raise ValueError(
             "evidence parent must be an existing private, non-symlink directory"
         )
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError:
+        raise ValueError("evidence output path could not be safely inspected") from None
+    raise FileExistsError(f"evidence output path already exists: {path}")
+
+
+def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
+    """Publish one JSON record without following or replacing unsafe paths."""
+
+    validate_private_json_output_path(path)
+    parent = path.parent
 
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
@@ -56,4 +70,4 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-__all__ = ("write_private_json_exclusive",)
+__all__ = ("validate_private_json_output_path", "write_private_json_exclusive")

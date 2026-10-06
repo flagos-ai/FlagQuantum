@@ -28,6 +28,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     assert_artifacts_unchanged,
     preflight_artifacts,
 )
+from examples.qdiffusion_kaiwu.private_io import validate_private_json_output_path
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
     _validate_imported_module_tree,
@@ -424,6 +425,8 @@ def main() -> None:
     for label, path in path_arguments.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
+    validate_private_json_output_path(args.artifact_preflight_output)
+    validate_private_json_output_path(args.run_record)
 
     config, config_sha256 = _load_frozen_config(args.config)
     if args.requested_samples != config["requested_samples"]:

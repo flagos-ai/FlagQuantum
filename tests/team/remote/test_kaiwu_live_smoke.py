@@ -286,6 +286,9 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
     assert source.index("verify_environment_lock(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("validate_private_json_output_path(arguments.output)") < (
+        source.index("resolve_kaiwu_credentials()")
+    )
     assert source.index("resolve_kaiwu_credentials()") < source.index(
         "client = KaiwuSDKClient("
     )

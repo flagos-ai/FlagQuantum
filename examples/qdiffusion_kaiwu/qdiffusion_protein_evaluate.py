@@ -21,6 +21,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
     _artifact_identity,
 )
+from examples.qdiffusion_kaiwu.private_io import validate_private_json_output_path
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _validate_imported_module_tree,
 )
@@ -321,6 +322,7 @@ def main() -> None:
     }.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
+    validate_private_json_output_path(args.output)
 
     config, config_sha256 = _load_frozen_config(args.config)
     record, record_sha256 = _load_training_record(args.training_record)

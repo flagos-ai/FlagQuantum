@@ -20,7 +20,10 @@ from typing import Any
 
 import torch
 
-from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_json_output_path,
+    write_private_json_exclusive,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
     HOSTS,
@@ -452,6 +455,9 @@ def main() -> None:
             "--acknowledge-provider-cost must equal "
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
+    if not arguments.project_no.strip() or not arguments.task_prefix.strip():
+        parser.error("--project-no and --task-prefix must be non-empty")
+    validate_private_json_output_path(arguments.output)
     config, config_sha256 = _load_frozen_config(arguments.config)
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
