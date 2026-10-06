@@ -436,8 +436,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   declaring an unapproved dependency extra, and runs conversion, lifecycle,
   sampler, plugin, and live-probe contract tests without network access or
   provider quota. It is explicitly local conformance evidence rather than A800
-  or QBoson evidence. The complete path passed at revision
-  `e85b94e51d7f2cc976b7a71f7894590f1c592592` on 2026-10-06 with 397 tests and
+  or QBoson evidence. After adding the quota planner to that gate, the complete
+  path passed at revision
+  `bffd60ae61436f9a87cc2a53afcc718dc7b68044` on 2026-10-06 with 411 tests and
   no provider credentials present.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
