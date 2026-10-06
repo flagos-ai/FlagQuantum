@@ -779,6 +779,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   inode and rechecks its leaf and parent identity after parsing, while model
   trees retain the unchanged `tree-sha256-v1` path-aware digest format. A
   dataset swap between hashing and split validation therefore fails preflight.
+- ESM2 evaluation now retains those stable snapshots for every training FASTA
+  and quality JSON after matching the training record. Plugin FASTA reads are
+  bracketed by identity checks, quality JSON is parsed from its captured
+  descriptor, and both evaluation and portability replay revalidate the
+  original snapshots after consumption instead of relying only on a later
+  same-digest path lookup.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 

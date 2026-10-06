@@ -38,6 +38,7 @@ from examples.qdiffusion_kaiwu.private_io import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _load_training_record,
+    _revalidate_training_paths,
     _verified_training_paths,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
@@ -561,7 +562,7 @@ def main() -> None:
     artifact_postflight_error: BaseException | None = None
     try:
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
-        _verified_training_paths(args.training_run_directory, training_record)
+        _revalidate_training_paths(training_paths)
         _verified_checkpoint(
             args.training_run_directory, args.trained_checkpoint, training_record
         )

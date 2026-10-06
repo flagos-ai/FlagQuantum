@@ -233,6 +233,30 @@ def test_aligned_fasta_reader_rejects_header_drift(tmp_path: Path) -> None:
         _read_aligned_records(workflow, paths, expected_count=1)
 
 
+def test_aligned_fasta_reader_rejects_change_during_plugin_consumption(
+    tmp_path: Path,
+) -> None:
+    record, _ = _training_artifacts(tmp_path)
+    paths = _verified_training_paths(tmp_path, record)
+    calls = 0
+
+    def read_then_mutate(path: Path) -> list[tuple[str, str]]:
+        nonlocal calls
+        calls += 1
+        lines = path.read_text(encoding="utf-8").strip().splitlines()
+        if calls == 1:
+            path.write_text(">p1\nXXXX\n", encoding="utf-8")
+        return [(lines[0][1:], lines[1])]
+
+    workflow = SimpleNamespace(
+        read_fasta_records=read_then_mutate,
+        normalize_sequence=lambda sequence: sequence,
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        _read_aligned_records(workflow, paths, expected_count=1)
+
+
 def test_invalid_sequence_count_is_fail_closed() -> None:
     records = [("ok", "ACDE"), ("empty", ""), ("bad", "ACD-")]
 

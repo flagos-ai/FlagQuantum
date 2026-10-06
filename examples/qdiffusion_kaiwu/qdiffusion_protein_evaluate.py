@@ -37,6 +37,12 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    capture_regular_file,
+    open_captured_regular_file,
+    revalidate_regular_file,
+)
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_training_provider_evidence,
@@ -51,8 +57,14 @@ TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
 _MAX_TRAINING_RECORD_BYTES = 64 * 1024 * 1024
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+class _VerifiedTrainingPaths(dict[str, Path]):
+    """Training paths paired with the exact file identities already accepted."""
+
+    def __init__(
+        self, paths: dict[str, Path], snapshots: dict[str, RegularFileSnapshot]
+    ) -> None:
+        super().__init__(paths)
+        self.snapshots = snapshots
 
 
 def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleType]:
@@ -109,7 +121,7 @@ def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
 def _verified_training_paths(
     run_directory: Path,
     record: dict[str, Any],
-) -> dict[str, Path]:
+) -> _VerifiedTrainingPaths:
     if run_directory.name != record.get("run_directory_name"):
         raise ValueError("training run directory name differs from its record")
     raw_artifacts = record.get("workflow_artifacts")
@@ -123,6 +135,7 @@ def _verified_training_paths(
         "guided_quality",
     )
     paths: dict[str, Path] = {}
+    snapshots: dict[str, RegularFileSnapshot] = {}
     for name in required:
         identity = raw_artifacts.get(name)
         if not isinstance(identity, dict):
@@ -138,12 +151,36 @@ def _verified_training_paths(
             raise ValueError(
                 f"training record {name} escapes the run directory"
             ) from None
-        if candidate.is_symlink() or not candidate.is_file():
-            raise ValueError(f"training artifact is absent or symbolic: {name}")
-        if _sha256(candidate) != expected:
+        try:
+            snapshot = capture_regular_file(
+                candidate, label=f"training artifact {name}"
+            )
+        except ValueError:
+            raise ValueError(
+                f"training artifact is absent or symbolic: {name}"
+            ) from None
+        if snapshot.sha256 != expected:
             raise ValueError(f"training artifact digest mismatch: {name}")
         paths[name] = candidate
-    return paths
+        snapshots[name] = snapshot
+    return _VerifiedTrainingPaths(paths, snapshots)
+
+
+def _revalidate_training_paths(paths: dict[str, Path]) -> None:
+    if not isinstance(paths, _VerifiedTrainingPaths):
+        return
+    for name, snapshot in paths.snapshots.items():
+        revalidate_regular_file(snapshot, label=f"training artifact {name}")
+
+
+def _bind_training_paths(paths: dict[str, Path]) -> _VerifiedTrainingPaths:
+    if isinstance(paths, _VerifiedTrainingPaths):
+        return paths
+    snapshots = {
+        name: capture_regular_file(path, label=f"training artifact {name}")
+        for name, path in paths.items()
+    }
+    return _VerifiedTrainingPaths(dict(paths), snapshots)
 
 
 def _read_aligned_records(
@@ -156,6 +193,8 @@ def _read_aligned_records(
     list[tuple[str, str]],
     list[tuple[str, str]],
 ]:
+    paths = _bind_training_paths(paths)
+    _revalidate_training_paths(paths)
     groups: list[list[tuple[str, str]]] = []
     for name in ("test_fasta", "baseline_fasta", "guided_fasta"):
         records = [
@@ -163,6 +202,7 @@ def _read_aligned_records(
             for header, sequence in workflow.read_fasta_records(paths[name])
         ]
         groups.append(records)
+    _revalidate_training_paths(paths)
     if any(len(records) != expected_count for records in groups):
         raise ValueError("frozen FASTA counts differ from generation.sequence_count")
     headers = [[header for header, _ in records] for records in groups]
@@ -232,8 +272,16 @@ def _local_esm2_model(
     return model.eval().to(device), alphabet
 
 
-def _quality_metrics(path: Path) -> dict[str, Any]:
-    value = loads_json_strict(path.read_text(encoding="utf-8"))
+def _quality_metrics(
+    path: Path, snapshot: RegularFileSnapshot | None = None
+) -> dict[str, Any]:
+    if snapshot is None:
+        snapshot = capture_regular_file(path, label="training quality artifact")
+    with open_captured_regular_file(
+        snapshot, label="training quality artifact"
+    ) as stream:
+        encoded = stream.read()
+    value = loads_json_strict(encoded)
     if not isinstance(value, dict):
         raise ValueError("sequence quality summary must be a JSON object")
     return value
@@ -248,6 +296,7 @@ def evaluate_outputs(
     config: dict[str, Any],
     device: torch.device,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    paths = _bind_training_paths(paths)
     reference, baseline, guided = _read_aligned_records(
         workflow,
         paths,
@@ -286,7 +335,12 @@ def evaluate_outputs(
             pair_mode=evaluation["pair_mode"],
         )
         metrics = asdict(summary)
-        quality = _quality_metrics(paths[quality_name])
+        quality_snapshot = (
+            paths.snapshots[quality_name]
+            if isinstance(paths, _VerifiedTrainingPaths)
+            else None
+        )
+        quality = _quality_metrics(paths[quality_name], quality_snapshot)
         for field in (
             "identity_to_reference_mean",
             "amino_acid_jsd",
@@ -299,6 +353,7 @@ def evaluate_outputs(
             metrics[field] = quality.get(field)
         metrics["invalid_sequence_count"] = _invalid_sequence_count(records)
         results.append(metrics)
+    _revalidate_training_paths(paths)
     return results[0], results[1]
 
 
@@ -407,7 +462,7 @@ def main() -> None:
         or postflight_file_count != file_count
     ):
         raise RuntimeError("ESM2 checkpoint changed during protein evaluation")
-    _verified_training_paths(args.run_directory, record)
+    _revalidate_training_paths(paths)
     payload = {
         "schema": SCHEMA,
         "version": "1.0",
