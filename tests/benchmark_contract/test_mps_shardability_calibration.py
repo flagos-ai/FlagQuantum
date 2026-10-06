@@ -36,7 +36,7 @@ from benchmarks.build_mps_shardability_calibration import (
 pytestmark = pytest.mark.benchmark_contract
 
 RECORDS = Path("benchmarks/results/local/mps_matched_speed_shardability")
-CALIBRATION = Path("benchmarks/results/local/mps_matched_speed_shardability.json")
+CALIBRATION = RECORDS / "summary.json"
 MANIFEST = Path("benchmarks/manifests/mps_release_v1.json")
 
 
@@ -97,8 +97,12 @@ def test_the_committed_records_are_auxiliary_reports_the_audit_does_not_claim():
     a diagnostic that reaches the release gate is a claim nobody reviewed.
     """
 
-    records = sorted(RECORDS.glob("*.json"))
+    # The fit lives beside the records it reads, so the record inventory excludes
+    # it by name rather than by the directory holding nothing else. A stray
+    # payload dropped here still breaks the count below.
+    records = sorted(path for path in RECORDS.glob("*.json") if path != CALIBRATION)
 
+    assert CALIBRATION.is_file()
     assert len(records) == len(_ladder()) * 3
     assert audit_results._json_files(RECORDS) == []
     audit = audit_paths(records)

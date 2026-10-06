@@ -30,7 +30,7 @@ Reproduce
     python benchmarks/build_mps_shardability_calibration.py \
         --source-directory <sweep directory> \
         --manifest benchmarks/manifests/mps_release_v1.json \
-        --output benchmarks/results/local/mps_matched_speed_shardability.json \
+        --output benchmarks/results/local/mps_matched_speed_shardability/summary.json \
         --worlds 1 8 16
 
 The sweep directory defaults to the same layout as the committed copy under
