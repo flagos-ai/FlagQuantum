@@ -11,10 +11,13 @@ import pytest
 
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     COMPONENT_FIELDS_BY_SCHEMA,
+    METRIC_NAMES,
     _validate_component_bundle,
     _validate_component_field_set,
     _validate_config,
+    _validate_executable_component_nested_fields,
     _validate_precision_evidence,
+    _validate_provider_result_schema,
     _validate_sampling_receipt,
     validate_acceptance,
 )
@@ -89,6 +92,220 @@ def test_closed_component_fields_match_producer_payloads(
     producer_fields = max(candidates, key=len) | postflight_fields
 
     assert producer_fields == COMPONENT_FIELDS_BY_SCHEMA[schema]
+
+
+def test_provider_result_schema_rejects_values_and_inconsistent_descriptions() -> None:
+    valid = {
+        "available": True,
+        "result": {
+            "type": "builtins.dict",
+            "length": 1,
+            "string_keys": True,
+            "fields_safe": True,
+            "fields": ["solutions"],
+            "field_schemas": {
+                "solutions": {
+                    "type": "builtins.list",
+                    "length": 2,
+                    "element_types": ["builtins.list"],
+                    "element_type_scan_limit": 64,
+                }
+            },
+        },
+    }
+    errors: list[str] = []
+    _validate_provider_result_schema(valid, label="schema", errors=errors)
+    assert errors == []
+
+    for mutation in (
+        {**valid, "raw_result": {"sdk_code": "secret"}},
+        {
+            **valid,
+            "result": {
+                **valid["result"],
+                "field_schemas": {
+                    **valid["result"]["field_schemas"],
+                    "undeclared": {"type": "builtins.str", "length": 6},
+                },
+            },
+        },
+        {"available": False, "reason": "credential\nvalue"},
+    ):
+        errors = []
+        _validate_provider_result_schema(mutation, label="schema", errors=errors)
+        assert errors
+
+
+def test_system_component_nested_fields_reject_extensions_and_false_failures() -> None:
+    record = {
+        "schema": "flagquantum.qboson_qdiffusion_system_live_probe",
+        "precision_policy": {
+            "name": "explicit-int8",
+            "target_min": -127,
+            "target_max": 127,
+            "matrix_count": 1,
+            "scale_factor_min": 1.0,
+            "scale_factor_max": 1.0,
+            "max_abs_error": 0.0,
+            "mean_of_matrix_mean_abs_error": 0.0,
+        },
+        "failure": None,
+        "provider_result_schema": {"available": False, "reason": "test_fixture"},
+        "training": {
+            "objective": -0.5,
+            "gradient_norm": 1.0,
+            "parameter_delta_max": 0.1,
+        },
+        "generation": {
+            "generated_tokens": [[1, 2, 3]],
+            "token_constraints_passed": True,
+        },
+        "transfer_accounting": {
+            "matrix_origin_device": "cuda:0",
+            "sampler_boundaries": [],
+            "returned_sample_target_device": "cuda:0",
+        },
+        "limitations": [
+            "This bounded system probe does not run the frozen protein effectiveness experiment.",
+            "System acceptance remains failed without provider-reported task and target identities.",
+            "Two independent passing host records are required; this is one single-device run.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
+    }
+    errors: list[str] = []
+    _validate_executable_component_nested_fields(
+        record, label="system", errors=errors
+    )
+    assert errors == []
+
+    mutations = []
+    for field in (
+        "precision_policy",
+        "training",
+        "generation",
+        "transfer_accounting",
+    ):
+        changed = copy.deepcopy(record)
+        changed[field]["unexpected_secret_field"] = "must-not-pass"
+        mutations.append(changed)
+    changed = copy.deepcopy(record)
+    changed["provider_result_schema"]["raw_result"] = "must-not-pass"
+    mutations.append(changed)
+    changed = copy.deepcopy(record)
+    changed["failure"] = {"type": "RuntimeError", "message": "hidden"}
+    mutations.append(changed)
+    changed = copy.deepcopy(record)
+    changed["limitations"].append("unreviewed claim")
+    mutations.append(changed)
+
+    for mutation in mutations:
+        errors = []
+        _validate_executable_component_nested_fields(
+            mutation, label="system", errors=errors
+        )
+        assert errors
+
+
+def test_other_component_nested_fields_reject_extensions() -> None:
+    precision_policy = {
+        "name": "explicit-int8",
+        "target_min": -127,
+        "target_max": 127,
+        "matrix_count": 1,
+        "scale_factor_min": 1.0,
+        "scale_factor_max": 1.0,
+        "max_abs_error": 0.0,
+        "mean_of_matrix_mean_abs_error": 0.0,
+    }
+    artifact_names = (
+        "test_fasta",
+        "baseline_fasta",
+        "guided_fasta",
+        "training_history",
+        "sequence_metrics",
+        "baseline_quality",
+        "guided_quality",
+    )
+    training = {
+        "schema": "flagquantum.qboson_qdiffusion_protein_training",
+        "precision_policy": precision_policy,
+        "failure": None,
+        "workflow_artifacts": {
+            name: {"relative_path": f"{name}.json", "sha256": "a" * 64}
+            for name in artifact_names
+        },
+        "limitations": [
+            "This record covers one protein-training seed only.",
+            "ESM2 evaluation and two-host system acceptance are separate gates.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
+    }
+    evaluation = {
+        "schema": "flagquantum.qboson_qdiffusion_protein_evaluation",
+        "baseline_metrics": dict.fromkeys(METRIC_NAMES, 0.0),
+        "guided_metrics": dict.fromkeys(METRIC_NAMES, 0.0),
+    }
+    portability = {
+        "schema": "flagquantum.qboson_qdiffusion_portability_replay",
+        "precision_policy": precision_policy,
+        "failure": None,
+        "artifacts": {
+            "dataset_sha256": "a" * 64,
+            "base_checkpoint_sha256": "b" * 64,
+            "tokenizer_sha256": "c" * 64,
+            "evaluation_model_sha256": "d" * 64,
+            "trained_energy_checkpoint_sha256": "e" * 64,
+        },
+        "fixture": {
+            "training_seed": 1701,
+            "index": 0,
+            "steps": 1,
+            "energy_objective": -0.5,
+            "generated_length": 8,
+            "generated_sha256": "f" * 64,
+            "token_constraints_passed": True,
+        },
+        "limitations": [
+            "This is one fixed replay fixture, not a second training run.",
+            "Final acceptance also requires both system gates and all primary-host seeds.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
+    }
+    for record in (training, evaluation, portability):
+        errors: list[str] = []
+        _validate_executable_component_nested_fields(
+            record, label="component", errors=errors
+        )
+        assert errors == []
+
+    mutations = (
+        (
+            training,
+            lambda record: record["workflow_artifacts"]["test_fasta"].update(
+                unexpected_secret_field="must-not-pass"
+            ),
+        ),
+        (
+            evaluation,
+            lambda record: record["guided_metrics"].update(
+                unexpected_secret_field=0.0
+            ),
+        ),
+        (
+            portability,
+            lambda record: record["fixture"].update(
+                unexpected_secret_field="must-not-pass"
+            ),
+        ),
+    )
+    for source, mutate in mutations:
+        changed = copy.deepcopy(source)
+        mutate(changed)
+        errors = []
+        _validate_executable_component_nested_fields(
+            changed, label="component", errors=errors
+        )
+        assert errors
 
 
 def _complete_task_receipt() -> dict[str, Any]:

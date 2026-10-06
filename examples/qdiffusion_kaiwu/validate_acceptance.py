@@ -259,6 +259,96 @@ COMPONENT_FIELDS_BY_SCHEMA = {
     EVALUATION_COMPONENT_SCHEMA: EVALUATION_COMPONENT_FIELDS,
     PORTABILITY_COMPONENT_SCHEMA: PORTABILITY_COMPONENT_FIELDS,
 }
+PRECISION_POLICY_FIELDS = frozenset(
+    {
+        "name",
+        "target_min",
+        "target_max",
+        "matrix_count",
+        "scale_factor_min",
+        "scale_factor_max",
+        "max_abs_error",
+        "mean_of_matrix_mean_abs_error",
+    }
+)
+SYSTEM_TRAINING_FIELDS = frozenset(
+    {"objective", "gradient_norm", "parameter_delta_max"}
+)
+SYSTEM_GENERATION_FIELDS = frozenset(
+    {"generated_tokens", "token_constraints_passed"}
+)
+TRANSFER_ACCOUNTING_FIELDS = frozenset(
+    {
+        "matrix_origin_device",
+        "sampler_boundaries",
+        "returned_sample_target_device",
+    }
+)
+SAMPLER_BOUNDARY_FIELDS = frozenset(
+    {
+        "input_type",
+        "input_device",
+        "input_dtype",
+        "matrix_shape",
+        "original_matrix_sha256",
+        "submission_matrix_sha256",
+        "canonical_device",
+        "canonical_dtype",
+        "submission_storage",
+        "returned_storage",
+        "returned_dtype",
+        "returned_shape",
+        "cache_hit",
+    }
+)
+WORKFLOW_ARTIFACT_FIELDS = frozenset(
+    {
+        "test_fasta",
+        "baseline_fasta",
+        "guided_fasta",
+        "training_history",
+        "sequence_metrics",
+        "baseline_quality",
+        "guided_quality",
+    }
+)
+WORKFLOW_ARTIFACT_IDENTITY_FIELDS = frozenset({"relative_path", "sha256"})
+PORTABILITY_ARTIFACT_FIELDS = frozenset(
+    {
+        "dataset_sha256",
+        "base_checkpoint_sha256",
+        "tokenizer_sha256",
+        "evaluation_model_sha256",
+        "trained_energy_checkpoint_sha256",
+    }
+)
+PORTABILITY_FIXTURE_FIELDS = frozenset(
+    {
+        "training_seed",
+        "index",
+        "steps",
+        "energy_objective",
+        "generated_length",
+        "generated_sha256",
+        "token_constraints_passed",
+    }
+)
+SYSTEM_LIMITATIONS = (
+    "This bounded system probe does not run the frozen protein effectiveness experiment.",
+    "System acceptance remains failed without provider-reported task and target identities.",
+    "Two independent passing host records are required; this is one single-device run.",
+    "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+)
+TRAINING_LIMITATIONS = (
+    "This record covers one protein-training seed only.",
+    "ESM2 evaluation and two-host system acceptance are separate gates.",
+    "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+)
+PORTABILITY_LIMITATIONS = (
+    "This is one fixed replay fixture, not a second training run.",
+    "Final acceptance also requires both system gates and all primary-host seeds.",
+    "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+)
 TASK_RECEIPT_FIELDS = frozenset(
     {
         "schema",
@@ -356,6 +446,290 @@ def _validate_component_field_set(
     expected_fields = COMPONENT_FIELDS_BY_SCHEMA.get(record.get("schema"))
     if expected_fields is not None and set(record) != expected_fields:
         errors.append(f"{label}: field set differs from its closed schema")
+
+
+def _has_exact_fields(
+    value: Any, *, expected: frozenset[str], label: str, errors: list[str]
+) -> bool:
+    if not isinstance(value, dict) or set(value) != expected:
+        errors.append(f"{label}: field set differs from its closed schema")
+        return False
+    return True
+
+
+def _validate_provider_value_description(
+    value: Any,
+    *,
+    label: str,
+    allow_field_schemas: bool,
+    errors: list[str],
+) -> None:
+    """Validate value-free type metadata emitted by the pinned SDK client."""
+
+    if not isinstance(value, dict):
+        errors.append(f"{label}: provider value description is not an object")
+        return
+    value_type = value.get("type")
+    if (
+        not isinstance(value_type, str)
+        or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}", value_type) is None
+    ):
+        errors.append(f"{label}: provider value type is unsafe")
+
+    fields = set(value)
+    scalar_fields = {"type"}
+    length_fields = {"type", "length"}
+    sequence_fields = {
+        "type",
+        "length",
+        "element_types",
+        "element_type_scan_limit",
+    }
+    array_fields = {"type", "shape", "shape_safe", "dtype", "dtype_safe"}
+    mapping_prefix = {"type", "length", "string_keys", "fields_safe"}
+    if fields == scalar_fields:
+        return
+    if fields == length_fields:
+        if type(value.get("length")) is not int or value["length"] < 0:
+            errors.append(f"{label}: provider value length is invalid")
+        return
+    if fields == sequence_fields:
+        if type(value.get("length")) is not int or value["length"] < 0:
+            errors.append(f"{label}: provider sequence length is invalid")
+        element_types = value.get("element_types")
+        if (
+            not isinstance(element_types, list)
+            or element_types != sorted(set(element_types))
+            or any(
+                not isinstance(item, str)
+                or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}", item) is None
+                for item in element_types
+            )
+        ):
+            errors.append(f"{label}: provider sequence element types are invalid")
+        if value.get("element_type_scan_limit") != 64:
+            errors.append(f"{label}: provider sequence scan limit differs")
+        return
+    if fields == array_fields:
+        shape = value.get("shape")
+        if (
+            not isinstance(shape, list)
+            or len(shape) > 16
+            or any(type(size) is not int or size < 0 for size in shape)
+        ):
+            errors.append(f"{label}: provider array shape is invalid")
+        if type(value.get("shape_safe")) is not bool:
+            errors.append(f"{label}: provider array shape safety is invalid")
+        dtype = value.get("dtype")
+        if (
+            not isinstance(dtype, str)
+            or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}", dtype) is None
+        ):
+            errors.append(f"{label}: provider array dtype is unsafe")
+        if type(value.get("dtype_safe")) is not bool:
+            errors.append(f"{label}: provider array dtype safety is invalid")
+        return
+    if mapping_prefix.issubset(fields):
+        length = value.get("length")
+        if type(length) is not int or length < 0:
+            errors.append(f"{label}: provider mapping length is invalid")
+        string_keys = value.get("string_keys")
+        fields_safe = value.get("fields_safe")
+        if string_keys is None:
+            expected_fields = mapping_prefix | {"field_limit"}
+            valid_flags = fields_safe is False
+        elif string_keys is False:
+            expected_fields = mapping_prefix
+            valid_flags = fields_safe is False
+        elif string_keys is True and fields_safe is False:
+            expected_fields = mapping_prefix | {"field_limit"}
+            valid_flags = True
+        elif string_keys is True and fields_safe is True:
+            expected_fields = mapping_prefix | {"fields"}
+            if allow_field_schemas:
+                expected_fields.add("field_schemas")
+            valid_flags = True
+        else:
+            expected_fields = set()
+            valid_flags = False
+        if fields != expected_fields or not valid_flags:
+            errors.append(f"{label}: provider mapping description is inconsistent")
+            return
+        if "field_limit" in value and value.get("field_limit") != 64:
+            errors.append(f"{label}: provider mapping field limit differs")
+        if fields_safe is True:
+            names = value.get("fields")
+            if (
+                not isinstance(names, list)
+                or names != sorted(set(names))
+                or len(names) != length
+                or any(
+                    not isinstance(name, str)
+                    or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}", name)
+                    is None
+                    for name in names
+                )
+            ):
+                errors.append(f"{label}: provider mapping field names are invalid")
+                return
+            if allow_field_schemas:
+                descriptions = value.get("field_schemas")
+                if not isinstance(descriptions, dict) or set(descriptions) != set(
+                    names
+                ):
+                    errors.append(
+                        f"{label}: provider mapping field descriptions differ"
+                    )
+                    return
+                for name in names:
+                    _validate_provider_value_description(
+                        descriptions[name],
+                        label=f"{label}.{name}",
+                        allow_field_schemas=False,
+                        errors=errors,
+                    )
+        return
+    errors.append(f"{label}: provider value description has an unknown field set")
+
+
+def _validate_provider_result_schema(
+    value: Any, *, label: str, errors: list[str]
+) -> None:
+    if not isinstance(value, dict):
+        errors.append(f"{label}: provider result schema is not an object")
+        return
+    if set(value) == {"available", "reason"}:
+        reason = value.get("reason")
+        if (
+            value.get("available") is not False
+            or not isinstance(reason, str)
+            or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}", reason) is None
+        ):
+            errors.append(f"{label}: unavailable provider result schema is invalid")
+        return
+    if set(value) != {"available", "result"} or value.get("available") is not True:
+        errors.append(f"{label}: provider result schema field set is invalid")
+        return
+    _validate_provider_value_description(
+        value.get("result"),
+        label=f"{label}.result",
+        allow_field_schemas=True,
+        errors=errors,
+    )
+
+
+def _validate_executable_component_nested_fields(
+    record: dict[str, Any], *, label: str, errors: list[str]
+) -> None:
+    """Close nested evidence structures after the top-level schema check."""
+
+    schema = record.get("schema")
+    if schema in {
+        SYSTEM_COMPONENT_SCHEMA,
+        TRAINING_COMPONENT_SCHEMA,
+        PORTABILITY_COMPONENT_SCHEMA,
+    }:
+        _has_exact_fields(
+            record.get("precision_policy"),
+            expected=PRECISION_POLICY_FIELDS,
+            label=f"{label}.precision_policy",
+            errors=errors,
+        )
+        if record.get("failure") is not None:
+            errors.append(f"{label}: completed component retains a failure")
+
+    if schema == SYSTEM_COMPONENT_SCHEMA:
+        _validate_provider_result_schema(
+            record.get("provider_result_schema"),
+            label=f"{label}.provider_result_schema",
+            errors=errors,
+        )
+        _has_exact_fields(
+            record.get("training"),
+            expected=SYSTEM_TRAINING_FIELDS,
+            label=f"{label}.training",
+            errors=errors,
+        )
+        generation = record.get("generation")
+        if _has_exact_fields(
+            generation,
+            expected=SYSTEM_GENERATION_FIELDS,
+            label=f"{label}.generation",
+            errors=errors,
+        ):
+            tokens = generation["generated_tokens"]
+            if (
+                not isinstance(tokens, list)
+                or not tokens
+                or any(
+                    not isinstance(row, list)
+                    or not row
+                    or any(type(token) is not int or token < 0 for token in row)
+                    for row in tokens
+                )
+            ):
+                errors.append(f"{label}.generation: generated tokens are invalid")
+        transfers = record.get("transfer_accounting")
+        if _has_exact_fields(
+            transfers,
+            expected=TRANSFER_ACCOUNTING_FIELDS,
+            label=f"{label}.transfer_accounting",
+            errors=errors,
+        ):
+            boundaries = transfers["sampler_boundaries"]
+            if isinstance(boundaries, list):
+                for index, boundary in enumerate(boundaries):
+                    _has_exact_fields(
+                        boundary,
+                        expected=SAMPLER_BOUNDARY_FIELDS,
+                        label=f"{label}.transfer_accounting.sampler_boundaries[{index}]",
+                        errors=errors,
+                    )
+        if record.get("limitations") != list(SYSTEM_LIMITATIONS):
+            errors.append(f"{label}: system claim limitations differ")
+
+    elif schema == TRAINING_COMPONENT_SCHEMA:
+        artifacts = record.get("workflow_artifacts")
+        if _has_exact_fields(
+            artifacts,
+            expected=WORKFLOW_ARTIFACT_FIELDS,
+            label=f"{label}.workflow_artifacts",
+            errors=errors,
+        ):
+            for name, identity in artifacts.items():
+                _has_exact_fields(
+                    identity,
+                    expected=WORKFLOW_ARTIFACT_IDENTITY_FIELDS,
+                    label=f"{label}.workflow_artifacts.{name}",
+                    errors=errors,
+                )
+        if record.get("limitations") != list(TRAINING_LIMITATIONS):
+            errors.append(f"{label}: training claim limitations differ")
+
+    elif schema == EVALUATION_COMPONENT_SCHEMA:
+        for field in ("baseline_metrics", "guided_metrics"):
+            _has_exact_fields(
+                record.get(field),
+                expected=frozenset(METRIC_NAMES),
+                label=f"{label}.{field}",
+                errors=errors,
+            )
+
+    elif schema == PORTABILITY_COMPONENT_SCHEMA:
+        _has_exact_fields(
+            record.get("artifacts"),
+            expected=PORTABILITY_ARTIFACT_FIELDS,
+            label=f"{label}.artifacts",
+            errors=errors,
+        )
+        _has_exact_fields(
+            record.get("fixture"),
+            expected=PORTABILITY_FIXTURE_FIELDS,
+            label=f"{label}.fixture",
+            errors=errors,
+        )
+        if record.get("limitations") != list(PORTABILITY_LIMITATIONS):
+            errors.append(f"{label}: portability claim limitations differ")
 
 
 def _validate_sampling_receipt(
@@ -1401,6 +1775,7 @@ def _validate_portability_component_evidence(
     errors: list[str],
     *,
     expected_requested_samples: int | None = None,
+    config: dict[str, Any] | None = None,
 ) -> None:
     _validate_remote_sampling_component_evidence(record, label, errors)
     if record.get("artifact_inputs_unchanged") is not True:
@@ -1422,6 +1797,54 @@ def _validate_portability_component_evidence(
         or fixture.get("token_constraints_passed") is not True
     ):
         errors.append(f"{label}: portability token constraints did not pass")
+    if config is None:
+        return
+
+    artifacts = _mapping(record.get("artifacts"), f"{label}.artifacts", errors)
+    expected_artifacts = {
+        "dataset_sha256": _mapping(
+            config.get("dataset"), "config.dataset", errors
+        ).get("sha256"),
+        "base_checkpoint_sha256": _mapping(
+            config.get("checkpoint"), "config.checkpoint", errors
+        ).get("sha256"),
+        "tokenizer_sha256": _mapping(
+            config.get("tokenizer"), "config.tokenizer", errors
+        ).get("sha256"),
+        "evaluation_model_sha256": _mapping(
+            config.get("evaluation_model"), "config.evaluation_model", errors
+        ).get("sha256"),
+        "trained_energy_checkpoint_sha256": record.get(
+            "trained_energy_checkpoint_sha256"
+        ),
+    }
+    if artifacts != expected_artifacts:
+        errors.append(f"{label}: portability artifact identities differ from config")
+
+    generation = _mapping(config.get("generation"), "config.generation", errors)
+    fixture = _mapping(record.get("fixture"), f"{label}.fixture", errors)
+    expected_fixture = {
+        "training_seed": generation.get("portability_training_seed"),
+        "index": generation.get("portability_fixture_index"),
+        "steps": generation.get("portability_steps"),
+    }
+    for field, expected in expected_fixture.items():
+        if fixture.get(field) != expected:
+            errors.append(f"{label}: portability fixture {field} differs from config")
+    _finite_number(
+        fixture.get("energy_objective"),
+        f"{label}.fixture.energy_objective",
+        errors,
+    )
+    generated_length = fixture.get("generated_length")
+    if type(generated_length) is not int or generated_length <= 0:
+        errors.append(f"{label}: portability generated length is invalid")
+    generated_digest = fixture.get("generated_sha256")
+    if (
+        not isinstance(generated_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", generated_digest) is None
+    ):
+        errors.append(f"{label}: portability generated identity is invalid")
 
 
 def _validate_training_provider_evidence(
@@ -1828,6 +2251,11 @@ def _validate_provider_smoke_component(
             errors.append(f"{label}: task {index} provider task ID is unavailable")
         if task_record.get("provider_target_available") is not True:
             errors.append(f"{label}: task {index} provider target is unavailable")
+        _validate_provider_result_schema(
+            task_record.get("provider_result_schema"),
+            label=f"{label}.tasks[{index}].provider_result_schema",
+            errors=errors,
+        )
         if task_record.get("fallback_occurred") is not False:
             errors.append(f"{label}: task {index} fallback is not false")
         matrix_digest = task_record.get("matrix_sha256")
@@ -1975,6 +2403,9 @@ def _validate_component_bundle(
         if payload.get("version") != "1.0":
             errors.append(f"component {digest}: unsupported version")
         _validate_component_field_set(
+            payload, label=f"component {digest}", errors=errors
+        )
+        _validate_executable_component_nested_fields(
             payload, label=f"component {digest}", errors=errors
         )
         if (
@@ -2385,6 +2816,7 @@ def _validate_component_bundle(
         "replay",
         errors,
         expected_requested_samples=config.get("requested_samples"),
+        config=config,
     )
     if portability.get("acceptance") != {"portability": "pass"}:
         errors.append("replay: portability component did not pass")

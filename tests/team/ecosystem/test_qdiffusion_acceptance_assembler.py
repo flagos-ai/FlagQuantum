@@ -92,7 +92,10 @@ def _provider_smoke(
                 "maximum_energy": 2.0,
                 "provider_task_id_available": True,
                 "provider_target_available": True,
-                "provider_result_schema": {"type": "dict"},
+                "provider_result_schema": {
+                    "available": False,
+                    "reason": "test_fixture",
+                },
             }
             for mode in ("optimization", "sampling")
         ],
@@ -146,7 +149,10 @@ def _system(
         "real_provider_evidence": True,
         "provider_identity_complete": True,
         "provider_reported_target": True,
-        "provider_result_schema": {"type": "dict"},
+        "provider_result_schema": {
+            "available": False,
+            "reason": "test_fixture",
+        },
         "qboson_target": "SPQC-provider",
         "qboson_task_ids": [task_id],
         "task_receipts": [
@@ -206,7 +212,10 @@ def _system(
             "gradient_norm": 1.0,
             "parameter_delta_max": 0.01,
         },
-        "generation": {"token_constraints_passed": True},
+        "generation": {
+            "generated_tokens": [[1, 2, 3]],
+            "token_constraints_passed": True,
+        },
         "transfer_accounting": {
             "matrix_origin_device": "cuda:0",
             "sampler_boundaries": [
@@ -586,7 +595,7 @@ def _portability(
         "fixture": {
             "training_seed": 1701,
             "index": 0,
-            "steps": 1,
+            "steps": 3,
             "energy_objective": -0.5,
             "generated_length": 8,
             "generated_sha256": "a" * 64,
@@ -1401,6 +1410,44 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "remote component task receipts are missing" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    portability_sha = _write_json(component_paths[11], portability_record)
+    replay["portability_evidence"]["record_sha256"] = portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
+    tampered_portability["artifacts"]["dataset_sha256"] = "0" * 64
+    tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
+    replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = tampered_portability_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "portability artifact identities differ from config" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    portability_sha = _write_json(component_paths[11], portability_record)
+    replay["portability_evidence"]["record_sha256"] = portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
+    tampered_portability["fixture"]["steps"] = 2
+    tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
+    replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = tampered_portability_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "portability fixture steps differs from config" in error
         for error in validate_acceptance(manifest_path)
     )
 

@@ -377,6 +377,7 @@ def assemble_records(
         "portability replay",
         portability_errors,
         expected_requested_samples=config.get("requested_samples"),
+        config=config,
     )
     if portability_errors:
         raise ValueError("; ".join(portability_errors))

@@ -625,11 +625,23 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   remote components fails acceptance instead of overstating independent quota
   submissions.
 - The four executable QDiffusion component records now have closed top-level
-  schemas for system, training, evaluation, and portability evidence. Missing
-  producer fields or undeclared extensions fail final validation, and a source
-  contract test compares those schemas with the actual payload constructors so
-  a producer/validator drift cannot be hidden by hand-written acceptance
-  fixtures.
+  and evidence-bearing nested schemas for system, training, evaluation, and
+  portability evidence. Precision summaries, system training/generation and
+  transfer objects, workflow-artifact identities, evaluation metrics,
+  portability artifacts/fixture, and fixed claim limitations reject missing or
+  undeclared fields. Completed remote components must retain no failure. The
+  provider-result schema in both Phase 2 smoke and system evidence is restricted
+  to the pinned client's value-free type/shape grammar, preventing raw provider
+  values from hiding inside schema metadata. A source contract test compares
+  top-level schemas with the actual payload constructors so producer/validator
+  drift cannot be hidden by hand-written acceptance fixtures.
+- Portability replay validation now independently binds its dataset, base
+  checkpoint, tokenizer, evaluation model, and trained checkpoint identities to
+  the frozen config and selected training record. Its training seed, fixture
+  index, and step count must equal the preregistered generation lane, while the
+  retained objective, generated length, and generated-sequence digest must be
+  well formed. A structurally complete but cherry-picked replay can no longer
+  satisfy final acceptance.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

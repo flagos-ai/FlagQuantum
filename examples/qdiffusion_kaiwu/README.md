@@ -369,9 +369,16 @@ IDs and one common provider target, which is retained at record level and
 cross-checked against both tasks. Provider task IDs must also be globally unique
 across the smoke, both system probes, all training seeds, and portability
 replay. System, training, evaluation, and portability component records also
-use closed top-level field sets; missing producer fields and undeclared
-extensions are rejected, and tests bind those field sets to the actual payload
-constructors. The inputs must be absolute, private regular files rather than symlinks. Assembly
+use closed top-level and evidence-bearing nested field sets; missing producer
+fields, undeclared extensions, altered fixed limitations, or a completed remote
+component carrying a failure are rejected. Provider-result schemas retained by
+the Phase 2 smoke and system probe are limited to the pinned client's
+value-free type/shape grammar, not arbitrary provider values. Tests bind the
+top-level field sets to the actual payload constructors. Portability validation
+also rechecks all frozen artifact identities plus its preregistered training
+seed, fixture index, and replay step count; a different fixture cannot pass by
+retaining the same outer record shape. The inputs must be absolute, private
+regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed
 copies of every component record, so deleting or replacing a source record
