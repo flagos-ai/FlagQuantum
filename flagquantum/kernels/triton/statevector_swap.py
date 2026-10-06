@@ -104,7 +104,7 @@ def apply_complex64_local_swap_sequence(
     swaps: tuple[tuple[int, int], ...],
     output: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Apply two through eight ordered local SWAP gates in one state pass."""
+    """Apply four through eight ordered local SWAP gates in one state pass."""
 
     if (
         state.device.type != "cuda"
@@ -126,8 +126,8 @@ def apply_complex64_local_swap_sequence(
         raise ValueError("Triton SWAP sequence requires a nonempty power-of-two state")
     n_qubits = amplitude_count.bit_length() - 1
     normalized_swaps = tuple((int(first), int(second)) for first, second in swaps)
-    if not 2 <= len(normalized_swaps) <= 8:
-        raise ValueError("Triton SWAP sequence requires two through eight gates")
+    if not 4 <= len(normalized_swaps) <= 8:
+        raise ValueError("Triton SWAP sequence requires four through eight gates")
     if any(
         first == second or not 0 <= first < n_qubits or not 0 <= second < n_qubits
         for first, second in normalized_swaps

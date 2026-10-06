@@ -33,7 +33,6 @@ def _reference(
 @pytest.mark.parametrize(
     "swaps",
     (
-        ((0, 1), (2, 3)),
         ((0, 11), (1, 10), (2, 9), (3, 8)),
         ((7, 2), (11, 0), (4, 6), (1, 10), (3, 9)),
         tuple((index, 11 - index) for index in range(8)),
@@ -61,7 +60,7 @@ def test_local_swap_sequence_rejects_non_cuda_state() -> None:
     with pytest.raises(ValueError, match="contiguous CUDA complex64"):
         apply_complex64_local_swap_sequence(
             torch.randn(1, 16, dtype=torch.complex64),
-            swaps=((0, 1), (2, 3)),
+            swaps=((0, 1), (2, 3), (0, 2), (1, 3)),
         )
 
 
@@ -69,22 +68,26 @@ def test_local_swap_sequence_rejects_non_cuda_state() -> None:
 def test_local_swap_sequence_rejects_unsupported_contracts() -> None:
     state = torch.randn(2, 16, device="cuda", dtype=torch.complex64)
 
-    with pytest.raises(ValueError, match="two through eight"):
-        apply_complex64_local_swap_sequence(state, swaps=((0, 1),))
-    with pytest.raises(ValueError, match="two through eight"):
+    with pytest.raises(ValueError, match="four through eight"):
+        apply_complex64_local_swap_sequence(state, swaps=((0, 1),) * 3)
+    with pytest.raises(ValueError, match="four through eight"):
         apply_complex64_local_swap_sequence(state, swaps=((0, 1),) * 9)
     with pytest.raises(ValueError, match="distinct local"):
-        apply_complex64_local_swap_sequence(state, swaps=((0, 1), (2, 2)))
+        apply_complex64_local_swap_sequence(
+            state, swaps=((0, 1), (2, 3), (2, 2), (0, 3))
+        )
     with pytest.raises(ValueError, match="distinct local"):
-        apply_complex64_local_swap_sequence(state, swaps=((0, 1), (2, 4)))
+        apply_complex64_local_swap_sequence(
+            state, swaps=((0, 1), (2, 3), (2, 4), (0, 3))
+        )
     with pytest.raises(ValueError, match="forward-only"):
         apply_complex64_local_swap_sequence(
             state.requires_grad_(),
-            swaps=((0, 1), (2, 3)),
+            swaps=((0, 1), (2, 3), (0, 2), (1, 3)),
         )
     with pytest.raises(ValueError, match="output must be distinct"):
         apply_complex64_local_swap_sequence(
             state.detach(),
-            swaps=((0, 1), (2, 3)),
+            swaps=((0, 1), (2, 3), (0, 2), (1, 3)),
             output=state.detach(),
         )

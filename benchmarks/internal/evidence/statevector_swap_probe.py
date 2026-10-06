@@ -27,9 +27,9 @@ RUNNER = "benchmarks/internal/evidence/statevector_swap_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
-    (1, 1 << 16, ((0, 15), (1, 14))),
-    (1, 1 << 20, ((0, 19), (1, 18))),
+    (1, 1 << 16, ((0, 15), (1, 14), (2, 13), (3, 12))),
     (1, 1 << 20, ((0, 19), (1, 18), (2, 17), (3, 16))),
+    (1, 1 << 20, tuple((index, 19 - index) for index in range(6))),
     (1, 1 << 24, tuple((index, 23 - index) for index in range(8))),
     (4, 1 << 20, tuple((index, 19 - index) for index in range(5))),
 )
