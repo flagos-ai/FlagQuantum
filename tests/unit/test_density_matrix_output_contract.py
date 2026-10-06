@@ -16,8 +16,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import tomllib
 import torch
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - the 3.10 interpreter
+    import tomli as tomllib
 
 from flagquantum.simulation import density_matrix as density_matrix_module
 
