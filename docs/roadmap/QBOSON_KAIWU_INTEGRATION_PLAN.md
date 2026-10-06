@@ -625,6 +625,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   FlagQuantum imports are also proven not to resolve the optional vendor
   package. The repository boundary inventory rejects Kaiwu imports from Core,
   Runtime, and Simulation, preserving the planned `ecosystem + remote` split.
+- The draft boundary gate also imports both provider-specific subpackages under
+  a vendor-import trap and statically enforces the dependency direction:
+  `ecosystem/kaiwu` has no direct vendor import, while `remote/kaiwu` cannot
+  depend on Ecosystem, PyTorch, or the Kaiwu PyTorch Plugin. NumPy remains
+  permitted solely as SDK-boundary matrix marshalling. The only allowed vendor
+  import site is the lazy loader in `remote/kaiwu/sdk.py`.
 - Sampler calls now retain explicit transfer accounting for the plugin-produced
   CPU NumPy Ising matrix, canonical CPU float64 tensor, submitted host tuple,
   returned CPU int8 NumPy samples, cache use, and result shape. System evidence
