@@ -13,6 +13,7 @@ from ...core.operator_schema import canonical_opcode
 from ..native_cpu.permutation import (
     compact_cx_rzz_swap_images,
     fused_compact_cx_rzz_swap_out,
+    fused_cx_rzz_swap_sequence_inplace_,
 )
 from .program import (
     _StatevectorCXSequenceRZZSwapStep,
@@ -39,6 +40,12 @@ def _cpu_cx_rzz_swap_fusion_enabled() -> bool:
         "off",
         "no",
     }
+
+
+def _cpu_cx_rzz_swap_inplace_enabled(n_qubits: int) -> bool:
+    return n_qubits >= 27 and os.getenv(
+        "FQ_CPU_CX_RZZ_SWAP_INPLACE_CAPACITY", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
 
 
 def _fuse_swap_sequences(
@@ -148,9 +155,24 @@ def _apply_cx_rzz_swap_sequence(
     n_qubits: int,
     *,
     scratch: torch.Tensor | None = None,
+    owns_state: bool = False,
 ) -> torch.Tensor:
     """Apply one compiled static CX/RZZ/SWAP segment natively."""
 
+    if (
+        owns_state
+        and _cpu_cx_rzz_swap_inplace_enabled(n_qubits)
+        and fused_cx_rzz_swap_sequence_inplace_(
+            state,
+            step.controls,
+            step.targets,
+            n_qubits,
+            rzz_qubits=step.rzz_wires,
+            rzz_angle=step.rzz_angle,
+            swap_qubits=step.swap_wires,
+        )
+    ):
+        return state
     images = compact_cx_rzz_swap_images(
         step.controls, step.targets, step.swap_wires, n_qubits
     )

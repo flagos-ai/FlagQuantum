@@ -857,6 +857,7 @@ def _execute_statevector_program(
                 output,
                 circuit.n_qubits,
                 scratch=cx_rzz_swap_scratch,
+                owns_state=owns_output,
             )
             if owns_output and output.data_ptr() != previous.data_ptr():
                 cx_rzz_swap_scratch = previous

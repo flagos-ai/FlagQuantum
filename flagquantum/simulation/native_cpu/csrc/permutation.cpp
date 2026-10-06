@@ -4,6 +4,7 @@
 #include <torch/library.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <tuple>
@@ -208,6 +209,189 @@ at::Tensor& fused_compact_cx_rzz_swap_out_cpu(
             });
       });
   return output;
+}
+
+void fused_cx_rzz_swap_sequence_inplace_cpu(
+    at::Tensor& state,
+    const at::Tensor& controls,
+    const at::Tensor& targets,
+    int64_t n_wires,
+    int64_t first_wire,
+    int64_t second_wire,
+    int64_t swap_left,
+    int64_t swap_right,
+    double angle) {
+  TORCH_CHECK(state.device().is_cpu() && controls.device().is_cpu() &&
+                  targets.device().is_cpu(),
+              "CX/RZZ/SWAP inputs must be on CPU");
+  TORCH_CHECK(state.is_contiguous() && controls.is_contiguous() &&
+                  targets.is_contiguous(),
+              "CX/RZZ/SWAP inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(controls.dim() == 1 && controls.scalar_type() == at::kLong,
+              "controls must be a one-dimensional int64 tensor");
+  TORCH_CHECK(targets.sizes() == controls.sizes() &&
+                  targets.scalar_type() == at::kLong,
+              "targets must match controls and use int64");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "wire count must be in [2, 62]");
+  TORCH_CHECK(first_wire >= 0 && first_wire < n_wires && second_wire >= 0 &&
+                  second_wire < n_wires && first_wire != second_wire,
+              "RZZ wires must be distinct and in range");
+  TORCH_CHECK(swap_left >= 0 && swap_left < n_wires && swap_right >= 0 &&
+                  swap_right < n_wires && swap_left != swap_right,
+              "SWAP wires must be distinct and in range");
+  const int64_t width = state.size(1);
+  TORCH_CHECK(width == (int64_t{1} << n_wires),
+              "wire count must match state width");
+  const int64_t batch = state.size(0);
+  const uint64_t first_mask = uint64_t{1} << (n_wires - first_wire - 1);
+  const uint64_t second_mask = uint64_t{1} << (n_wires - second_wire - 1);
+  const uint64_t swap_left_mask = uint64_t{1} << (n_wires - swap_left - 1);
+  const uint64_t swap_right_mask = uint64_t{1} << (n_wires - swap_right - 1);
+  const int64_t* control_data = controls.const_data_ptr<int64_t>();
+  const int64_t* target_data = targets.const_data_ptr<int64_t>();
+
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_cx_rzz_swap_sequence_inplace_cpu", [&] {
+        using real_t = typename scalar_t::value_type;
+        scalar_t* state_data = state.data_ptr<scalar_t>();
+        bool adjacent_chain = controls.numel() > 0;
+        for (int64_t gate = 0; gate < controls.numel(); ++gate) {
+          const int64_t control = control_data[gate];
+          const int64_t target = target_data[gate];
+          TORCH_CHECK(control >= 0 && control < n_wires,
+                      "control wire is out of range");
+          TORCH_CHECK(target >= 0 && target < n_wires,
+                      "target wire is out of range");
+          TORCH_CHECK(control != target, "control and target wires must differ");
+          adjacent_chain = adjacent_chain && target == control + 1 &&
+              (gate == 0 || control == control_data[gate - 1] + 1);
+        }
+        if (adjacent_chain) {
+          constexpr int64_t adjacent_group_size = 4;
+          constexpr size_t adjacent_block_size =
+              size_t{1} << (adjacent_group_size + 1);
+          for (int64_t first_gate = 0; first_gate < controls.numel();
+               first_gate += adjacent_group_size) {
+            const int64_t gate_count = std::min(
+                adjacent_group_size, controls.numel() - first_gate);
+            const int64_t affected_bits = gate_count + 1;
+            const int64_t local_width = int64_t{1} << affected_bits;
+            const int64_t low_position =
+                n_wires - target_data[first_gate + gate_count - 1] - 1;
+            const uint64_t low_mask = (uint64_t{1} << low_position) - 1;
+            const int64_t block_count = width / local_width;
+            std::array<int64_t, adjacent_block_size> destinations{};
+            for (int64_t source = 0; source < local_width; ++source) {
+              int64_t destination = source;
+              for (int64_t gate = 0; gate < gate_count; ++gate) {
+                const int64_t control_bit = gate_count - gate;
+                if ((destination & (int64_t{1} << control_bit)) != 0) {
+                  destination ^= int64_t{1} << (control_bit - 1);
+                }
+              }
+              destinations[static_cast<size_t>(source)] = destination;
+            }
+            at::parallel_for(
+                int64_t{0}, batch * block_count, int64_t{64},
+                [&](int64_t begin, int64_t end) {
+                  std::array<scalar_t, adjacent_block_size> block;
+                  for (int64_t item = begin; item < end; ++item) {
+                    const int64_t row = item / block_count;
+                    const uint64_t compact =
+                        static_cast<uint64_t>(item - row * block_count);
+                    const uint64_t base = (compact & low_mask) |
+                        ((compact & ~low_mask) << affected_bits);
+                    for (int64_t source = 0; source < local_width; ++source) {
+                      const int64_t destination =
+                          destinations[static_cast<size_t>(source)];
+                      const int64_t source_index = row * width +
+                          static_cast<int64_t>(base) +
+                          (source << low_position);
+                      block[static_cast<size_t>(destination)] =
+                          state_data[source_index];
+                    }
+                    for (int64_t destination = 0;
+                         destination < local_width; ++destination) {
+                      const int64_t destination_index = row * width +
+                          static_cast<int64_t>(base) +
+                          (destination << low_position);
+                      state_data[destination_index] =
+                          block[static_cast<size_t>(destination)];
+                    }
+                  }
+                });
+          }
+        } else {
+          for (int64_t gate = 0; gate < controls.numel(); ++gate) {
+            const int64_t control = control_data[gate];
+            const int64_t target = target_data[gate];
+            const int64_t control_position = n_wires - control - 1;
+            const int64_t target_position = n_wires - target - 1;
+            const int64_t low_position =
+                std::min(control_position, target_position);
+            const int64_t high_position =
+                std::max(control_position, target_position);
+            const uint64_t control_mask = uint64_t{1} << control_position;
+            const uint64_t target_mask = uint64_t{1} << target_position;
+            const int64_t pair_count = width / 4;
+            at::parallel_for(
+                int64_t{0}, batch * pair_count, int64_t{4096},
+                [&](int64_t begin, int64_t end) {
+                  for (int64_t item = begin; item < end; ++item) {
+                    const int64_t row = item / pair_count;
+                    uint64_t basis = insert_zero_bit(
+                        static_cast<uint64_t>(item - row * pair_count),
+                        low_position);
+                    basis = insert_zero_bit(basis, high_position) | control_mask;
+                    const int64_t index =
+                        row * width + static_cast<int64_t>(basis);
+                    const int64_t peer =
+                        index ^ static_cast<int64_t>(target_mask);
+                    std::swap(state_data[index], state_data[peer]);
+                  }
+                });
+          }
+        }
+
+        const real_t half_angle = static_cast<real_t>(angle * 0.5);
+        const scalar_t even_phase(std::cos(half_angle), -std::sin(half_angle));
+        const scalar_t odd_phase(std::cos(half_angle), std::sin(half_angle));
+        at::parallel_for(
+            int64_t{0}, batch * width, int64_t{4096},
+            [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / width;
+                const uint64_t basis = static_cast<uint64_t>(item - row * width);
+                const bool left_set = (basis & swap_left_mask) != 0;
+                const bool right_set = (basis & swap_right_mask) != 0;
+                if (left_set && !right_set) {
+                  const int64_t peer = item ^ static_cast<int64_t>(
+                      swap_left_mask | swap_right_mask);
+                  const uint64_t peer_basis = basis ^
+                      (swap_left_mask | swap_right_mask);
+                  const bool basis_odd = ((basis & first_mask) != 0) !=
+                      ((basis & second_mask) != 0);
+                  const bool peer_odd = ((peer_basis & first_mask) != 0) !=
+                      ((peer_basis & second_mask) != 0);
+                  const scalar_t value = state_data[item];
+                  const scalar_t peer_value = state_data[peer];
+                  state_data[item] = peer_value *
+                      (peer_odd ? odd_phase : even_phase);
+                  state_data[peer] = value *
+                      (basis_odd ? odd_phase : even_phase);
+                } else if (left_set == right_set) {
+                  const bool odd = ((basis & first_mask) != 0) !=
+                      ((basis & second_mask) != 0);
+                  state_data[item] *= odd ? odd_phase : even_phase;
+                }
+              }
+            });
+      });
 }
 
 at::Tensor& fused_clifford_matching_out_cpu(
@@ -647,6 +831,10 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
       "Tensor(a!) output, int first_wire, int second_wire, float angle) "
       "-> Tensor(a!)");
   library.def(
+      "fused_cx_rzz_swap_sequence_inplace_(Tensor(a!) state, Tensor controls, "
+      "Tensor targets, int n_wires, int first_wire, int second_wire, "
+      "int swap_left, int swap_right, float angle) -> ()");
+  library.def(
       "fused_clifford_matching_out(Tensor state, Tensor cx_mapping, "
       "Tensor cz_edges, Tensor(a!) output, int n_wires, bool phase_encoded) "
       "-> Tensor(a!)");
@@ -669,6 +857,9 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_compact_cx_gather_out", fused_compact_cx_gather_out_cpu);
   library.impl(
       "fused_compact_cx_rzz_swap_out", fused_compact_cx_rzz_swap_out_cpu);
+  library.impl(
+      "fused_cx_rzz_swap_sequence_inplace_",
+      fused_cx_rzz_swap_sequence_inplace_cpu);
   library.impl("fused_clifford_matching_out", fused_clifford_matching_out_cpu);
   library.impl("fused_cx_adjoint_gather", fused_cx_adjoint_gather_cpu);
   library.impl(

@@ -292,6 +292,49 @@ def fused_compact_cx_rzz_swap_out(
     return True
 
 
+def fused_cx_rzz_swap_sequence_inplace_(
+    state: torch.Tensor,
+    controls: Sequence[int],
+    targets: Sequence[int],
+    n_qubits: int,
+    *,
+    rzz_qubits: tuple[int, int],
+    rzz_angle: float,
+    swap_qubits: tuple[int, int],
+) -> bool:
+    """Apply one static CX/RZZ/SWAP segment in place without state scratch."""
+
+    if (
+        not native_cpu_cx_rzz_swap_available()
+        or state.requires_grad
+        or state.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or state.ndim != 2
+        or not 1 < n_qubits < 63
+        or state.shape[1] != 1 << n_qubits
+        or len(controls) != len(targets)
+        or not state.is_contiguous()
+    ):
+        return False
+    first, second = (int(qubit) for qubit in rzz_qubits)
+    swap_left, swap_right = (int(qubit) for qubit in swap_qubits)
+    control_tensor = torch.tensor(tuple(controls), dtype=torch.int64)
+    target_tensor = torch.tensor(tuple(targets), dtype=torch.int64)
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_cx_rzz_swap_sequence_inplace_(
+            state,
+            control_tensor,
+            target_tensor,
+            n_qubits,
+            first,
+            second,
+            swap_left,
+            swap_right,
+            float(rzz_angle),
+        )
+    return True
+
+
 def fused_cx_adjoint_gather(
     ket: torch.Tensor,
     adjoint: torch.Tensor,

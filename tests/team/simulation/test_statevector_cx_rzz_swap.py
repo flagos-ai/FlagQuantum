@@ -3,8 +3,10 @@
 import pytest
 import torch
 
+import flagquantum.simulation.statevector.dense_fusion_cpu as dense_fusion_cpu
 from flagquantum import Circuit
 from flagquantum.simulation.native_cpu.permutation import (
+    fused_cx_rzz_swap_sequence_inplace_,
     native_cpu_cx_rzz_swap_available,
 )
 from flagquantum.simulation.statevector.dense_fusion_cpu import (
@@ -15,6 +17,16 @@ from flagquantum.simulation.statevector.program import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_cpu_cx_rzz_swap_inplace_capacity_has_threshold_and_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert dense_fusion_cpu._cpu_cx_rzz_swap_inplace_enabled(27)
+    assert not dense_fusion_cpu._cpu_cx_rzz_swap_inplace_enabled(26)
+
+    monkeypatch.setenv("FQ_CPU_CX_RZZ_SWAP_INPLACE_CAPACITY", "0")
+    assert not dense_fusion_cpu._cpu_cx_rzz_swap_inplace_enabled(27)
 
 
 def _segment_circuit(inputs: torch.Tensor, angle: float | torch.Tensor) -> Circuit:
@@ -90,3 +102,79 @@ def test_cpu_cx_rzz_swap_fusion_reuses_supplied_state_scratch() -> None:
 
     assert actual.data_ptr() == scratch.data_ptr()
     torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+
+def test_cpu_cx_rzz_swap_inplace_capacity_requires_owned_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = torch.randn((1, 2**6), dtype=torch.complex128)
+    step = _StatevectorCXSequenceRZZSwapStep(
+        controls=(0, 1),
+        targets=(1, 2),
+        rzz_wires=(0, 5),
+        rzz_angle=0.173,
+        swap_wires=(1, 4),
+    )
+    calls = 0
+
+    def apply_inplace(*args, **kwargs) -> bool:
+        nonlocal calls
+        calls += 1
+        return True
+
+    monkeypatch.setattr(
+        dense_fusion_cpu, "_cpu_cx_rzz_swap_inplace_enabled", lambda *args: True
+    )
+    monkeypatch.setattr(
+        dense_fusion_cpu, "fused_cx_rzz_swap_sequence_inplace_", apply_inplace
+    )
+
+    caller_owned = _apply_cx_rzz_swap_sequence(step, state, 6, owns_state=False)
+    assert calls == 0
+    assert caller_owned.data_ptr() != state.data_ptr()
+
+    executor_owned = _apply_cx_rzz_swap_sequence(step, state, 6, owns_state=True)
+    assert calls == 1
+    assert executor_owned.data_ptr() == state.data_ptr()
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize(
+    ("rzz_wires", "swap_wires"),
+    (
+        ((0, 15), (1, 14)),
+        ((2, 13), (3, 12)),
+    ),
+)
+def test_cpu_cx_rzz_swap_inplace_sequence_matches_out_of_place(
+    dtype: torch.dtype,
+    rzz_wires: tuple[int, int],
+    swap_wires: tuple[int, int],
+) -> None:
+    if not native_cpu_cx_rzz_swap_available():
+        pytest.skip("native CPU extension is unavailable")
+    generator = torch.Generator().manual_seed(4413)
+    state = torch.randn((1, 2**16), dtype=dtype, generator=generator)
+    step = _StatevectorCXSequenceRZZSwapStep(
+        controls=tuple(range(15)),
+        targets=tuple(range(1, 16)),
+        rzz_wires=rzz_wires,
+        rzz_angle=0.173,
+        swap_wires=swap_wires,
+    )
+    expected = _apply_cx_rzz_swap_sequence(step, state, 16)
+    actual = state.clone()
+    pointer = actual.data_ptr()
+
+    assert fused_cx_rzz_swap_sequence_inplace_(
+        actual,
+        step.controls,
+        step.targets,
+        16,
+        rzz_qubits=step.rzz_wires,
+        rzz_angle=step.rzz_angle,
+        swap_qubits=step.swap_wires,
+    )
+    tolerance = 2e-6 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    assert actual.data_ptr() == pointer
