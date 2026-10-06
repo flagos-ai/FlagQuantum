@@ -331,10 +331,16 @@ def run_portability_replay(
     portability_pass = bool(
         run_completed
         and verified_transport
+        and provider_use_proven
         and provider_identity_complete
+        and len(targets) == 1
         and retrieval_resubmitted is False
+        and device == torch.device("cuda:0")
+        and "A800" in observed_gpu
         and token_constraints_passed
         and generated_device == "cuda:0"
+        and isinstance(energy_objective, float)
+        and math.isfinite(energy_objective)
         and precision_complete
     )
     return {
@@ -363,7 +369,7 @@ def run_portability_replay(
         "qboson_hardware_used": provider_use_proven,
         "real_provider_evidence": provider_use_proven,
         "provider_identity_complete": provider_identity_complete,
-        "provider_reported_target": provider_identity_complete,
+        "provider_reported_target": provider_identity_complete and len(targets) == 1,
         "qboson_target": next(iter(targets)) if len(targets) == 1 else None,
         "qboson_task_ids": [
             receipt["provider_task_id"]

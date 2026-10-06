@@ -470,6 +470,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   finite objective and gradients, and positive finite gradient and parameter
   update. This prevents a direct helper call or future CLI refactor from
   emitting a passing component that only the final bundle validator rejects.
+- The portability producer applies the same fail-closed rule: a pass now
+  requires proven completed provider use, one consistent provider target,
+  A800 execution requested and observed on `cuda:0`, a finite energy objective,
+  validated tokens, non-resubmitting retrieval, and complete precision
+  evidence. Merely reporting a CUDA output device while the requested runtime
+  device was CPU cannot produce a passing replay record.
 - System-component acceptance now independently reconciles its exact SDK-client
   provenance, remote-call count, sampling receipts, matrix identities, requested
   sample counts, provider task IDs, and single provider target. Final summaries
