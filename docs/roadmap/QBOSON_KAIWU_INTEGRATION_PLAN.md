@@ -156,6 +156,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   update in that image, but it must remain classified as preliminary evidence
   because it neither uses the frozen composite Python 3.10/Torch 2.7/Kaiwu
   1.3.1 lane nor QBoson hardware.
+- A read-only 2026-10-06 inventory pass also examined eleven already-present,
+  immutable image IDs across the two hosts, including the common
+  `flagquantum/sc27-pennylane` and vLLM images plus the host-local `fq-mps`,
+  chemistry, SDD, TD, and FlagQuantum compatibility images. Every isolated
+  network-disabled probe reported Python 3.12.x with Torch 2.13.x or 2.14.x;
+  none supplied the required Python 3.10/Torch 2.7 pair. The same-content common
+  candidates were bound by full image IDs, while the identically named
+  `fq-mps008-stock:3.7.1` tag resolved to different full IDs on the two hosts
+  and was checked separately. This is environment-availability reconnaissance,
+  not package approval or acceptance evidence, and it does not justify relaxing
+  the frozen runtime contract.
 - The earlier configured-index probe found no `kaiwu==1.3.1` package, but that
   external state has changed. PyPI now publishes the Qboson-owned CPython 3.10
   Linux wheel `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`, uploaded on
