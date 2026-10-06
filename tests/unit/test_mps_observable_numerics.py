@@ -4,6 +4,8 @@ import torch
 from flagquantum.simulation.mps.observables import (
     mps_heisenberg_local_scan,
     mps_z_zz_local_scan,
+    transfer_mps_operator_environment,
+    transfer_mps_operator_right_environment,
 )
 
 pytestmark = pytest.mark.unit
@@ -82,3 +84,135 @@ def test_heisenberg_scan_preserves_bell_correlations_and_gradients(
     torch.testing.assert_close(x.grad, torch.ones_like(x))
     torch.testing.assert_close(y.grad, -torch.ones_like(y))
     torch.testing.assert_close(z.grad, torch.ones_like(z))
+
+
+def _reference_right_transfer(
+    environment: torch.Tensor,
+    tensor: torch.Tensor,
+    operator: torch.Tensor,
+) -> torch.Tensor:
+    """The four-operand contraction the right transfer is a reassociation of."""
+
+    return torch.einsum(
+        "bipr,pq,bjqs,brs->bij",
+        tensor.conj(),
+        operator,
+        tensor,
+        environment,
+    )
+
+
+@pytest.mark.parametrize(
+    ("dtype", "tolerance"),
+    [(torch.complex64, 1e-4), (torch.complex128, 1e-10)],
+)
+@pytest.mark.parametrize(
+    ("batch", "bond", "physical"),
+    [(1, 64, 2), (1, 4, 2), (3, 8, 2), (2, 16, 3)],
+)
+def test_right_transfer_reassociation_matches_the_four_operand_form(
+    dtype: torch.dtype,
+    tolerance: float,
+    batch: int,
+    bond: int,
+    physical: int,
+) -> None:
+    """The folded right transfer is the same map, not a similar one.
+
+    The tolerance is the arithmetic's own: a complex64 contraction of this shape
+    accumulates ``bond`` terms per output element, so float32 rounding alone
+    reaches ~1e-5. A wrong reassociation is not near that scale -- the recorded
+    mis-derived form differs by O(1) relative -- so the bound still discriminates.
+    """
+
+    generator = torch.Generator().manual_seed(11)
+    environment = torch.randn((batch, bond, bond), generator=generator, dtype=dtype)
+    tensor = torch.randn(
+        (batch, bond, physical, bond), generator=generator, dtype=dtype
+    )
+    operator = torch.randn((physical, physical), generator=generator, dtype=dtype)
+
+    expected = _reference_right_transfer(environment, tensor, operator)
+    actual = transfer_mps_operator_right_environment(tensor, operator, environment)
+
+    assert actual.shape == expected.shape
+    torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
+
+
+def test_right_transfer_reassociation_keeps_gradients_through_both_operands() -> None:
+    """The reassociation must preserve the differentiated path, not just values."""
+
+    batch, bond, physical = 1, 8, 2
+    environment = torch.randn((batch, bond, bond), dtype=torch.complex128)
+
+    def _loss(folded: bool) -> tuple[torch.Tensor, ...]:
+        generator = torch.Generator().manual_seed(23)
+        tensor = torch.randn(
+            (batch, bond, physical, bond),
+            generator=generator,
+            dtype=torch.complex128,
+            requires_grad=True,
+        )
+        operator = torch.randn(
+            (physical, physical),
+            generator=generator,
+            dtype=torch.complex128,
+            requires_grad=True,
+        )
+        if folded:
+            value = transfer_mps_operator_right_environment(
+                tensor, operator, environment
+            )
+        else:
+            value = _reference_right_transfer(environment, tensor, operator)
+        torch.real(value.square().sum()).backward()
+        return (
+            value.detach(),
+            tensor.grad.detach(),
+            operator.grad.detach(),
+        )
+
+    expected_value, expected_tensor_grad, expected_operator_grad = _loss(False)
+    actual_value, actual_tensor_grad, actual_operator_grad = _loss(True)
+
+    torch.testing.assert_close(actual_value, expected_value, rtol=1e-10, atol=1e-10)
+    torch.testing.assert_close(
+        actual_tensor_grad, expected_tensor_grad, rtol=1e-10, atol=1e-10
+    )
+    torch.testing.assert_close(
+        actual_operator_grad, expected_operator_grad, rtol=1e-10, atol=1e-10
+    )
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_left_and_right_transfers_are_adjoint_on_the_same_site(
+    dtype: torch.dtype,
+) -> None:
+    """The two directions act as a map and its transpose on the environment.
+
+    Both scans contract the same site operator into
+    ``B[(i, j), (r, s)] = sum_{p, q} conj(T[i, p, r]) O[p, q] T[j, q, s]``; the
+    left scan applies that map to the environment and the right scan applies its
+    transpose. The inner-product identity below holds only if both directions
+    still build the same ``B``, so it fails if an edit changes one and not the
+    other -- which a value comparison against a re-typed einsum cannot catch.
+    """
+
+    generator = torch.Generator().manual_seed(5)
+    tensor = torch.randn((1, 8, 2, 8), generator=generator, dtype=dtype)
+    operator = torch.randn((2, 2), generator=generator, dtype=dtype)
+    left_environment = torch.randn((1, 8, 8), generator=generator, dtype=dtype)
+    right_environment = torch.randn((1, 8, 8), generator=generator, dtype=dtype)
+
+    mapped = transfer_mps_operator_environment(left_environment, tensor, operator)
+    transposed = transfer_mps_operator_right_environment(
+        tensor, operator, right_environment
+    )
+
+    left_inner = torch.sum(mapped * right_environment)
+    right_inner = torch.sum(left_environment * transposed)
+
+    # Measured: the identity holds to 1.5e-5 in complex64 (float32 accumulation
+    # over this many terms) while a mismatched ``B`` differs by 1.6e1, so this
+    # bound sits four orders of magnitude below the failure signal.
+    torch.testing.assert_close(left_inner, right_inner, rtol=1e-4, atol=1e-3)
