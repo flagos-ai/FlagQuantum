@@ -1773,6 +1773,17 @@ def test_documented_protein_sources_match_review_candidates() -> None:
         "https://dl.fbaipublicfiles.com/fair-esm/models/"
         "esm2_t33_650M_UR50D.pt"
     )
+
+    intake_path = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "ASSET_INTAKE.md"
+    )
+    intake = intake_path.read_text(encoding="utf-8")
+    assert "49b7125a5d28c6418fcc2f3c4fe799352ac1488b" in intake
+    assert "595,359,662-byte LFS object" in intake
+    assert "ea4eaa99536b60ed76f945f71a1a5e604f08447ec3def5104a93ca6001a59961" in intake
     assert template["evaluation_model"]["license_id"] == "MIT"
     assert template["evaluation_model"]["license_evidence_url"] == (
         "https://github.com/facebookresearch/esm/blob/main/LICENSE"
