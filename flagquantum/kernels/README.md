@@ -364,7 +364,13 @@ contiguous CUDA `complex64` statevectors, a constant 4-by-4 matrix, two
 distinct local bit positions, and an optional matching output buffer. Exact
 input/output aliasing is supported because each Triton program loads its
 complete disjoint four-amplitude group before storing any result. Public
-statevector dispatch remains a separate review step.
+statevector dispatch is catalog-authorized before the Triton provider is
+imported. The default runtime window is a contiguous CUDA `complex64` state,
+a contiguous same-device constant 4-by-4 `complex64` matrix, batch size one or
+four, and `2**16` through `2**24` amplitudes per state. Requests with gradients,
+views, other dtypes, other batch sizes, or inputs outside that bounded window
+keep the general PyTorch layout/BMM path. Set
+`FQ_TRITON_TWO_QUBIT_MATRIX=0` to disable the route explicitly.
 
 The checked-in
 [`statevector_local_2q_a800.json`](../../benchmarks/results/local/statevector_local_2q_a800.json)
@@ -380,6 +386,18 @@ within this measured CUDA `complex64` window. This is bounded single-device
 development evidence, not a framework-wide, distributed, or release claim.
 Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_2q_probe.py`](../../benchmarks/internal/evidence/statevector_local_2q_probe.py).
+
+The public-path
+[`statevector_local_2q_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_2q_dispatch_a800.json)
+artifact repeats that five-shape matrix through `_apply_matrix`, including
+catalog authorization and rollout checks, against the exact public fallback.
+It records 30 counterbalanced, synchronized groups of 10 invocations on both
+A800 hosts and both compiler lanes. All 20 cases win at `1.046x` through
+`6.963x`; maximum absolute and relative L2 errors are `1.94e-6` and `7.22e-8`.
+This authorizes the bounded default route above, while remaining single-device
+development evidence rather than a distributed scalability or release claim.
+Reproduce or validate it with
+[`benchmarks/statevector_local_2q_dispatch.py`](../../benchmarks/statevector_local_2q_dispatch.py).
 
 `FQKI-TRITON-SV-010-A` applies one- or two-qubit diagonal operators directly
 to a flat statevector. It derives the operator-basis index from each

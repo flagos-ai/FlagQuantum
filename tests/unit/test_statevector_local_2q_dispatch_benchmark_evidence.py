@@ -27,6 +27,7 @@ from benchmarks.statevector_local_2q_dispatch import (
 pytestmark = pytest.mark.unit
 
 _REVISION = "0123456789abcdef0123456789abcdef01234567"
+_EVIDENCE_REVISION = "9fb7fb6f5405c0c18481ebf36dcb780c2843aeb3"
 _ARTIFACT = (
     Path(__file__).parents[2]
     / "benchmarks/results/local/statevector_local_2q_dispatch_a800.json"
@@ -129,10 +130,9 @@ def test_dispatch_merge_requires_full_host_compiler_matrix() -> None:
 
 
 def test_checked_in_dispatch_evidence_is_canonical_and_profitable() -> None:
-    if not _ARTIFACT.exists():
-        pytest.skip("formal A800 evidence is added after fixed-revision collection")
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
     validate_evidence(copy.deepcopy(payload))
+    assert payload["source_revision"] == _EVIDENCE_REVISION
     assert payload["public_speedup_range"][0] >= 1.0
     assert len(payload["runs"]) == 4
     assert sum(len(run["cases"]) for run in payload["runs"]) == 20
