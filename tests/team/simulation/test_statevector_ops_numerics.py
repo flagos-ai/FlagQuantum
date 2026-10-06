@@ -17,6 +17,7 @@ from flagquantum.simulation.statevector.cz_graph import (
     _cz_graph_signs_cpu,
     _fuse_cz_graphs,
 )
+from flagquantum.simulation.statevector.dense_fusion_cpu import _apply_swap_sequence
 from flagquantum.simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -42,6 +43,9 @@ from flagquantum.simulation.statevector.operations import (
     _instruction_matrix,
 )
 from flagquantum.simulation.statevector.program import _StatevectorCZGraphStep
+from flagquantum.simulation.statevector.single_qubit_cpu import (
+    apply_single_qubit_matrix_cpu,
+)
 from flagquantum.simulation.statevector.two_qubit_cpu import (
     _apply_adjacent_two_qubit_matrix_cpu,
     _apply_strided_two_qubit_matrix_cpu,
@@ -2342,6 +2346,72 @@ def test_cpu_controlled_phase_decomposition_fusion_matches_sequential_execution(
     assert fused_statistics["statevector_apply_count"] == 1
     assert fused_statistics["diagonal_fused_regions"] == 1
     assert fused_statistics["fused_gate_count"] == 5
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_owned_diagonal_matrix_updates_in_place_with_gradient_fallback(
+    dtype: torch.dtype,
+) -> None:
+    state = torch.randn((2, 16), dtype=dtype)
+    matrix = torch.diag(torch.tensor((1, 1j, -1j, -1), dtype=dtype))
+    expected = _apply_diagonal_matrix(state.clone(), matrix, (1, 3), 4)
+    storage = state.untyped_storage().data_ptr()
+
+    actual = _apply_diagonal_matrix(state, matrix, (1, 3), 4, inplace=True)
+
+    assert actual.untyped_storage().data_ptr() == storage
+    torch.testing.assert_close(actual, expected)
+
+    differentiable = torch.randn((2, 16), dtype=dtype, requires_grad=True)
+    fallback = _apply_diagonal_matrix(
+        differentiable,
+        matrix,
+        (1, 3),
+        4,
+        inplace=True,
+    )
+    assert (
+        fallback.untyped_storage().data_ptr()
+        != differentiable.untyped_storage().data_ptr()
+    )
+    assert torch.autograd.grad(fallback.real.sum(), differentiable)[0] is not None
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_single_qubit_and_swap_kernels_reuse_owned_scratch(
+    dtype: torch.dtype,
+) -> None:
+    state = torch.randn((2, 2**6), dtype=dtype)
+    matrix = torch.tensor(((0, 1), (1, 0)), dtype=dtype)
+    single_reference = apply_single_qubit_matrix_cpu(
+        state,
+        matrix,
+        qubit=3,
+        n_qubits=6,
+    )
+    single_scratch = torch.empty_like(state)
+    single_actual = apply_single_qubit_matrix_cpu(
+        state,
+        matrix,
+        qubit=3,
+        n_qubits=6,
+        output=single_scratch,
+    )
+
+    assert single_actual.data_ptr() == single_scratch.data_ptr()
+    torch.testing.assert_close(single_actual, single_reference)
+
+    swap_reference = _apply_swap_sequence(state, ((0, 5), (1, 4)), 6)
+    swap_scratch = torch.empty_like(state)
+    swap_actual = _apply_swap_sequence(
+        state,
+        ((0, 5), (1, 4)),
+        6,
+        scratch=swap_scratch,
+    )
+
+    assert swap_actual.data_ptr() == swap_scratch.data_ptr()
+    torch.testing.assert_close(swap_actual, swap_reference)
 
 
 def test_cpu_controlled_phase_decomposition_declines_trainable_angles(

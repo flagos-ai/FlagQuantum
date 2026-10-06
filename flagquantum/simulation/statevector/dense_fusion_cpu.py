@@ -128,12 +128,17 @@ def _apply_swap_sequence(
     state: torch.Tensor,
     swaps: Sequence[tuple[int, int]],
     n_qubits: int,
+    *,
+    scratch: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply a SWAP sequence as one final contiguous statevector copy."""
 
     tensor = state.reshape((state.shape[0],) + (2,) * n_qubits)
     for left, right in swaps:
         tensor = tensor.transpose(int(left) + 1, int(right) + 1)
+    if scratch is not None and scratch.shape == state.shape:
+        scratch.reshape(tensor.shape).copy_(tensor)
+        return scratch
     return tensor.reshape(state.shape)
 
 

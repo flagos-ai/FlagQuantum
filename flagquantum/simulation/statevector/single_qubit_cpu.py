@@ -12,12 +12,38 @@ def _preallocated_output_enabled() -> bool:
     return value not in {"0", "false", "off", "no"}
 
 
+class SingleQubitScratch:
+    """Own the reusable output buffer for allocation-free CPU gate chains."""
+
+    def __init__(self) -> None:
+        value = (
+            os.getenv("FQ_CPU_STATEVECTOR_SINGLE_QUBIT_SCRATCH_REUSE", "1")
+            .strip()
+            .lower()
+        )
+        self.enabled = value not in {"0", "false", "off", "no"}
+        self.output: torch.Tensor | None = None
+
+    def recycle(
+        self, previous: torch.Tensor, current: torch.Tensor, *, owns_previous: bool
+    ) -> None:
+        if (
+            self.enabled
+            and owns_previous
+            and current.data_ptr() != previous.data_ptr()
+            and not previous.requires_grad
+            and not current.requires_grad
+        ):
+            self.output = previous
+
+
 def apply_single_qubit_matrix_cpu(
     state: torch.Tensor,
     matrix: torch.Tensor,
     *,
     qubit: int,
     n_qubits: int,
+    output: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply one CPU gate by visiting contiguous amplitude pairs directly."""
 
@@ -39,7 +65,15 @@ def apply_single_qubit_matrix_cpu(
     if _preallocated_output_enabled() and not (
         state.requires_grad or matrix.requires_grad
     ):
-        result = torch.empty_like(state)
+        result = (
+            output
+            if output is not None
+            and output.shape == state.shape
+            and output.dtype == state.dtype
+            and output.device == state.device
+            and output.data_ptr() != state.data_ptr()
+            else torch.empty_like(state)
+        )
         result_paired = result.reshape(bsz, -1, 2, stride)
         result_zero = result_paired[:, :, 0, :]
         result_one = result_paired[:, :, 1, :]
@@ -55,4 +89,4 @@ def apply_single_qubit_matrix_cpu(
     return torch.stack((out_zero, out_one), dim=2).reshape(state.shape)
 
 
-__all__ = ("apply_single_qubit_matrix_cpu",)
+__all__ = ("SingleQubitScratch", "apply_single_qubit_matrix_cpu")

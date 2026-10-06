@@ -87,6 +87,7 @@ from .operations import (
     _cpu_swap_sequence_fusion_enabled,
     _cx_sequence_permutation_index,
     _diagonal_region,
+    _environment_flag,
     _fused_gate_matrix,
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceRZZSwapStep,
@@ -121,6 +122,7 @@ from .program import (
     _StatevectorCZGraphStep,
     _StatevectorHadamardControlledPhaseGraphStep,
 )
+from .single_qubit_cpu import SingleQubitScratch
 
 if TYPE_CHECKING:
     from ...circuit import Circuit
@@ -336,6 +338,7 @@ def _apply_gate_matrix(
     *,
     uses_diagonal_kernel: bool,
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+    output: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply one already-built gate matrix with the kernel that fits it.
 
@@ -355,8 +358,16 @@ def _apply_gate_matrix(
 
     if _use_elementwise_single_wire(state, wires):
         return _apply_single_wire_matrix(state, matrix, wires[0], n_wires)
-    apply_gate = _apply_diagonal_matrix if uses_diagonal_kernel else _apply_matrix
-    return apply_gate(state, matrix, wires, n_wires, layout=layout)
+    if uses_diagonal_kernel:
+        return _apply_diagonal_matrix(state, matrix, wires, n_wires, layout=layout)
+    return _apply_matrix(
+        state,
+        matrix,
+        wires,
+        n_wires,
+        layout=layout,
+        output=output,
+    )
 
 
 def _apply_fused_gate_step(
@@ -702,6 +713,7 @@ def _execute_statevector_program(
     owns_output = owns_input
     clifford_scratch: torch.Tensor | None = None
     cx_rzz_swap_scratch: torch.Tensor | None = None
+    single_qubit_scratch = SingleQubitScratch()
     for step in program:
         if isinstance(step, _StatevectorCliffordMatchingStep):
             native_output, clifford_scratch = apply_native_clifford_matching(
@@ -771,7 +783,13 @@ def _execute_statevector_program(
                 _controlled_phase_decomposition_matrix(circuit, step, output),
                 (step.control, step.target),
                 circuit.n_qubits,
+                inplace=owns_output
+                and _environment_flag(
+                    "FQ_CPU_INPLACE_CONTROLLED_PHASE_DECOMPOSITION",
+                    default=True,
+                ),
             )
+            owns_output = True
             continue
         if isinstance(step, _StatevectorDisjointDenseStep):
             native_output = apply_native_fixed_one_qubit_layer(
@@ -845,7 +863,14 @@ def _execute_statevector_program(
             owns_output = True
             continue
         if isinstance(step, _StatevectorSwapSequenceStep):
-            output = _apply_swap_sequence(output, step.swaps, circuit.n_qubits)
+            previous = output
+            output = _apply_swap_sequence(
+                output,
+                step.swaps,
+                circuit.n_qubits,
+                scratch=single_qubit_scratch.output,
+            )
+            single_qubit_scratch.recycle(previous, output, owns_previous=owns_output)
             owns_output = True
             continue
         if isinstance(step, _StatevectorRXRZLoopStep):
@@ -884,6 +909,7 @@ def _execute_statevector_program(
                 dtype=output.dtype,
                 parameter_bindings=parameter_bindings,
             )
+            previous = output
             output = _apply_gate_matrix(
                 output,
                 matrix,
@@ -891,7 +917,9 @@ def _execute_statevector_program(
                 circuit.n_qubits,
                 uses_diagonal_kernel=_diagonal_region((instruction,)),
                 layout=step.layout,
+                output=single_qubit_scratch.output,
             )
+            single_qubit_scratch.recycle(previous, output, owns_previous=owns_output)
     return output
 
 
