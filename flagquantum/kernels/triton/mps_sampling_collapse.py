@@ -1,4 +1,4 @@
-"""Fused sampled-wire collapse and boundary propagation for MPS states."""
+"""Fused sampled-qubit collapse and boundary propagation for MPS states."""
 
 from __future__ import annotations
 
@@ -223,7 +223,7 @@ def fused_mps_sampling_collapse(
     next_site: torch.Tensor,
     bits: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Collapse one sampled MPS wire and propagate its normalized boundary.
+    """Collapse one sampled MPS qubit and propagate its normalized boundary.
 
     The direct Triton implementation is forward-only and bounded to contiguous
     complex64 CUDA inputs with bond dimensions at most 64. Unsupported inputs
