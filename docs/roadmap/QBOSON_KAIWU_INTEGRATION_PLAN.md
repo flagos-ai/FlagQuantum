@@ -214,6 +214,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   vendor call itself. Exceptions from `np.asarray`, provider-controlled element
   comparison, list conversion, or integer conversion become a stable
   cause-free `KaiwuSDKError`; their dynamic text cannot enter logs or evidence.
+- The decoder inspects element types before integer normalization. A boolean
+  solution array containing `True` can no longer pass the numerical `+1`
+  comparison and be converted into apparently valid integer spin evidence.
 - Before its first SDK operation, that client now atomically persists a
   mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
   This closes the ambiguous-submission window: a process restart reuses the

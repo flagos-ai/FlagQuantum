@@ -315,12 +315,17 @@ class KaiwuSDKClient:
             array = np.asarray(raw_solution)
             if array.ndim != 2 or array.shape[1] != receipt.matrix_size:
                 raise KaiwuSDKError("Kaiwu CIM returned an invalid solution shape")
+            decoded = array.tolist()
+            if any(type(spin) is bool for row in decoded for spin in row):
+                raise KaiwuSDKError(
+                    "Kaiwu CIM returned values outside the spin domain"
+                )
             if not bool(np.all((array == -1) | (array == 1))):
                 raise KaiwuSDKError(
                     "Kaiwu CIM returned values outside the spin domain"
                 )
             solutions = tuple(
-                tuple(int(spin) for spin in row) for row in array.tolist()
+                tuple(int(spin) for spin in row) for row in decoded
             )
         except KaiwuSDKError:
             raise

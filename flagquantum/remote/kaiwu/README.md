@@ -83,7 +83,9 @@ through FlagQuantum-owned boundary errors.
 The pinned client applies the same redaction to result decoding after the
 vendor call: exceptions raised while converting or inspecting the returned
 array are replaced with a stable Kaiwu error without retaining an exception
-chain or vendor-controlled message.
+chain or vendor-controlled message. Boolean array elements are rejected before
+integer normalization, so `True == 1` cannot turn a non-spin provider value
+into an apparently valid `+1` sample.
 Both save and restore require the receipt's immediate parent to be an existing
 private, non-symlink directory; private file bits alone are insufficient when
 another user could replace the directory entry. Publication synchronizes both

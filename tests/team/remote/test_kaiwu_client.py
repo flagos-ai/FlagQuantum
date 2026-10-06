@@ -809,6 +809,7 @@ def test_same_matrix_with_different_task_name_creates_distinct_sdk_identity(
     ("response", "message"),
     (
         (np.array([[1, 0]] * 10), "spin domain"),
+        (np.array([[True, True]] * 10), "spin domain"),
         (np.array([[1, -1, 1]] * 10), "solution shape"),
     ),
 )
