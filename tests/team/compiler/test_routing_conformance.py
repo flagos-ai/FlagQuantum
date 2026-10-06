@@ -17,7 +17,8 @@ The contract has five parts:
 * every source instruction survives exactly once and keeps its source order
   against every instruction it shares a wire with;
 * the routing metadata carries the routing plan schema and counts what it emits;
-* routing is deterministic, and reusing a device changes only its cache telemetry.
+* routing is deterministic, a qubit pair resolves to one route in either
+  direction, and reusing a device changes only its cache telemetry.
 
 The order and determinism parts are what make a routed program usable by a
 consumer that is not a statevector simulation: a mid-circuit operation only
@@ -46,6 +47,7 @@ import flagquantum.compiler.pipeline as compiler_pipeline
 import flagquantum.compiler.topology_legalization as topology_legalization
 import flagquantum.runtime.dynamic.routing as dynamic_routing
 from flagquantum.compiler import CouplingMap, compile, route_to_topology
+from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.layout import Layout
 from flagquantum.compiler.topology_legalization import legalize_circuit_topology
 from flagquantum.core.ir import (
@@ -74,15 +76,23 @@ ROUTING_STRATEGIES = (
 # narrower widths are prefixes whose induced subgraph is still connected, so a
 # two-wire operation between any two used wires stays routable.
 #
+# ``ring6`` is the shortest cycle whose opposing qubits have two arcs of equal
+# length, so it is the only shape here where the shortest route between a pair is
+# not unique; ``ring5`` cannot express that, because one of its arcs is always
+# shorter. The route such a pair resolves to is a tie-break, and a tie-break that
+# depends on anything but the pair is a defect, so the shape is in the matrix on
+# purpose.
+#
 # A device is stored as its wire count and edges rather than as a built
 # ``CouplingMap`` because a ``CouplingMap`` carries the mutable shortest-path
 # cache it was measured with. Every case builds its own device so that no test
-# depends on the order in which the cases ran; the one test that wants a warm
-# device asks for one explicitly.
+# depends on the order in which the cases ran; the tests that want a warm device
+# ask for one explicitly.
 _TOPOLOGIES = (
     ("line4", 4, CouplingMap.line(4).edges, (2, 4)),
     ("ring5", 5, CouplingMap.ring(5).edges, (3, 5)),
     ("line6", 6, CouplingMap.line(6).edges, (3, 6)),
+    ("ring6", 6, CouplingMap.ring(6).edges, (3, 6)),
     ("grid3x3", 9, CouplingMap.grid(3, 3).edges, (6, 9)),
     ("line9", 9, CouplingMap.line(9).edges, (5, 9)),
 )
@@ -420,6 +430,72 @@ def _warm_cache_failures(router: _Router) -> list[str]:
     return failures
 
 
+def _path_canonicality_failures() -> list[str]:
+    """A pair must resolve to the same physical route in either direction.
+
+    The hop count between two physical qubits is unique, but the route is not: an
+    even ring has two arcs of equal length between opposing qubits, and the graph
+    that decides which of them a search reaches first is the same graph in both
+    directions. A device that reported one route for ``(a, b)`` and something
+    other than its reverse for ``(b, a)`` would make the route depend on how the
+    caller happened to order its operands, and on ``CouplingMap`` it would also
+    make the reverse entry the path cache stores under ``(b, a)`` disagree with
+    what a search for ``(b, a)`` would have found. Consumers compare and replay
+    plans, so the route has to be a property of the pair. Both devices that answer
+    the query are held to it: the routing planner reads ``CouplingMap`` and the
+    explicit-placement router reads ``DirectedCouplingMap``, which reaches the same
+    undirected graph and so has the same ties to break.
+    """
+
+    failures: list[str] = []
+    providers = (
+        ("CouplingMap", CouplingMap),
+        ("DirectedCouplingMap", DirectedCouplingMap),
+    )
+    for provider, device_type in providers:
+        for topology, n_wires, edges, _ in _TOPOLOGIES:
+            for left in range(n_wires):
+                for right in range(left + 1, n_wires):
+                    forward = device_type(n_wires, edges).shortest_path(left, right)
+                    backward = device_type(n_wires, edges).shortest_path(right, left)
+                    if forward != tuple(reversed(backward)):
+                        failures.append(
+                            f"{provider} on {topology}: {left}->{right} resolves to "
+                            f"{forward} while {right}->{left} resolves to {backward}"
+                        )
+    return failures
+
+
+def _device_history_failures(router: _Router) -> list[str]:
+    """A device that has answered other queries must route exactly as a cold one.
+
+    The shortest-path memo is the only mutable state a router reads from a device,
+    so a memo may change how long a route takes to find and never which route it
+    is. The warm-up below asks every ordered pair, from the highest index down, so
+    it visits the pairs in an order no routing pass would use and leaves both
+    directions of every pair memoized. A router whose plan still differs from the
+    cold plan was reading the memo as a tie-break.
+    """
+
+    failures: list[str] = []
+    for case in _cases():
+        cold = router(case.program, case.device(), case.strategy)
+        device = case.device()
+        for start in range(device.n_qubits - 1, -1, -1):
+            for goal in range(device.n_qubits - 1, -1, -1):
+                if start != goal:
+                    device.shortest_path(start, goal)
+        warm = router(case.program, device, case.strategy)
+        if [(item.name, item.wires) for item in cold] != [
+            (item.name, item.wires) for item in warm
+        ]:
+            failures.append(
+                f"{case.label}: a device that had answered other queries routed "
+                f"the same request differently"
+            )
+    return failures
+
+
 def test_the_matrix_covers_every_strategy_and_a_narrower_program() -> None:
     """Guard the coverage the other checks rely on.
 
@@ -432,7 +508,7 @@ def test_the_matrix_covers_every_strategy_and_a_narrower_program() -> None:
     assert {case.strategy for case in cases} == set(ROUTING_STRATEGIES)
     narrower = [case for case in cases if case.n_wires > case.program.n_wires]
     assert {case.strategy for case in narrower} == set(ROUTING_STRATEGIES)
-    assert len(cases) == 240
+    assert len(cases) == 288
 
 
 def test_routed_program_is_device_legal_and_preserves_the_source_state() -> None:
@@ -468,6 +544,16 @@ def test_a_routing_run_is_a_pure_function_of_its_request() -> None:
 def test_reusing_a_device_changes_only_its_cache_telemetry() -> None:
     assert not _warm_cache_failures(_shipped_router), "\n".join(
         _warm_cache_failures(_shipped_router)
+    )
+
+
+def test_a_pair_resolves_to_one_route_in_either_direction() -> None:
+    assert not _path_canonicality_failures(), "\n".join(_path_canonicality_failures())
+
+
+def test_a_device_that_answered_other_queries_routes_the_same_plan() -> None:
+    assert not _device_history_failures(_shipped_router), "\n".join(
+        _device_history_failures(_shipped_router)
     )
 
 
