@@ -146,6 +146,8 @@ def _dataset_profile(
 ) -> dict[str, int]:
     if not isinstance(snapshot, RegularFileSnapshot):
         raise ValueError("dataset artifact must be one FASTA file")
+    if snapshot.size > _MAX_DATASET_BYTES:
+        raise ValueError("dataset artifact exceeds the size bound")
     section = config.get("dataset")
     generation = config.get("generation")
     if not isinstance(section, dict) or not isinstance(generation, dict):
@@ -248,7 +250,7 @@ def _verify_dataset_source_archive(
     *,
     dataset_snapshot: RegularFileSnapshot | RegularTreeSnapshot,
     config: dict[str, Any],
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], RegularFileSnapshot]:
     """Prove the frozen FASTA is the exact decompression of its source archive."""
 
     if not isinstance(dataset_snapshot, RegularFileSnapshot):
@@ -288,10 +290,14 @@ def _verify_dataset_source_archive(
             ) as compressed,
             gzip.GzipFile(fileobj=compressed, mode="rb") as uncompressed,
         ):
-            while chunk := uncompressed.read(1024 * 1024):
+            while chunk := uncompressed.read(
+                min(1024 * 1024, dataset_snapshot.size - decompressed_bytes + 1)
+            ):
                 decompressed_bytes += len(chunk)
-                if decompressed_bytes > _MAX_DATASET_BYTES:
-                    raise ValueError("decompressed dataset exceeds the size bound")
+                if decompressed_bytes > dataset_snapshot.size:
+                    raise ValueError(
+                        "decompressed dataset exceeds the frozen FASTA size"
+                    )
                 decompressed_digest.update(chunk)
     except (EOFError, OSError):
         raise ValueError("dataset source archive is not valid gzip") from None
@@ -301,14 +307,17 @@ def _verify_dataset_source_archive(
         raise ValueError("decompressed dataset digest differs from the frozen FASTA")
     revalidate_regular_file(source_snapshot, label="dataset source archive")
     revalidate_regular_file(dataset_snapshot, label="dataset artifact")
-    return {
-        "source_archive_sha256": source_snapshot.sha256,
-        "source_archive_bytes": source_snapshot.size,
-        "source_archive_format": DATASET_SOURCE_FORMAT,
-        "decompression_policy": DATASET_DECOMPRESSION_POLICY,
-        "decompressed_sha256": dataset_snapshot.sha256,
-        "decompressed_bytes": dataset_snapshot.size,
-    }
+    return (
+        {
+            "source_archive_sha256": source_snapshot.sha256,
+            "source_archive_bytes": source_snapshot.size,
+            "source_archive_format": DATASET_SOURCE_FORMAT,
+            "decompression_policy": DATASET_DECOMPRESSION_POLICY,
+            "decompressed_sha256": dataset_snapshot.sha256,
+            "decompressed_bytes": dataset_snapshot.size,
+        },
+        source_snapshot,
+    )
 
 
 def _inspect_artifacts(
@@ -321,6 +330,7 @@ def _inspect_artifacts(
     dict[str, dict[str, Any]],
     dict[str, ArtifactSnapshot],
     dict[str, Any],
+    RegularFileSnapshot,
 ]:
     """Recompute the complete frozen input set without publishing evidence."""
 
@@ -359,12 +369,18 @@ def _inspect_artifacts(
             )
     if errors:
         raise ValueError("artifact preflight failed:\n- " + "\n- ".join(errors))
-    dataset_source = _verify_dataset_source_archive(
+    dataset_source, dataset_source_snapshot = _verify_dataset_source_archive(
         dataset_source_archive,
         dataset_snapshot=snapshots["dataset"],
         config=config,
     )
-    return config_sha256, artifacts, snapshots, dataset_source
+    return (
+        config_sha256,
+        artifacts,
+        snapshots,
+        dataset_source,
+        dataset_source_snapshot,
+    )
 
 
 def assert_artifacts_unchanged(
@@ -376,7 +392,7 @@ def assert_artifacts_unchanged(
 ) -> None:
     """Fail if any frozen input or the config changed after preflight."""
 
-    config_sha256, artifacts, _, dataset_source = _inspect_artifacts(
+    config_sha256, artifacts, _, dataset_source, _ = _inspect_artifacts(
         config_path,
         artifact_paths,
         dataset_source_archive=dataset_source_archive,
@@ -398,7 +414,7 @@ def preflight_artifacts(
 ) -> dict[str, Any]:
     """Hash all required local artifacts and fail if config identities differ."""
 
-    record, _ = preflight_artifacts_with_snapshots(
+    record, _, _ = preflight_artifacts_with_snapshots(
         config_path,
         artifact_paths,
         output_path,
@@ -413,10 +429,18 @@ def preflight_artifacts_with_snapshots(
     output_path: Path,
     *,
     dataset_source_archive: Path,
-) -> tuple[dict[str, Any], dict[str, ArtifactSnapshot]]:
-    """Publish preflight and retain the exact artifact snapshots it verified."""
+) -> tuple[
+    dict[str, Any], dict[str, ArtifactSnapshot], RegularFileSnapshot
+]:
+    """Publish preflight and retain every exact artifact snapshot it verified."""
 
-    config_sha256, artifacts, snapshots, dataset_source = _inspect_artifacts(
+    (
+        config_sha256,
+        artifacts,
+        snapshots,
+        dataset_source,
+        dataset_source_snapshot,
+    ) = _inspect_artifacts(
         config_path,
         artifact_paths,
         dataset_source_archive=dataset_source_archive,
@@ -433,7 +457,10 @@ def preflight_artifacts_with_snapshots(
     }
     write_private_json_exclusive(output_path, record)
     revalidate_artifact_snapshots(snapshots)
-    return record, snapshots
+    revalidate_regular_file(
+        dataset_source_snapshot, label="dataset source archive"
+    )
+    return record, snapshots, dataset_source_snapshot
 
 
 def _parser() -> argparse.ArgumentParser:

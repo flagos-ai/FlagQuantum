@@ -320,6 +320,47 @@ def test_preflight_returns_the_exact_snapshots_used_for_published_record(
         )
 
 
+def test_preflight_retains_the_exact_source_archive_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    source_path = _dataset_source_archive(paths)
+    source_bytes = source_path.read_bytes()
+    real_write = preflight_module.write_private_json_exclusive
+
+    def write_then_replace(path: Path, value: object) -> None:
+        real_write(path, value)
+        source_path.write_bytes(source_bytes)
+
+    monkeypatch.setattr(
+        preflight_module, "write_private_json_exclusive", write_then_replace
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        preflight_artifacts_with_snapshots(
+            config_path, paths, tmp_path / "preflight.json"
+        )
+
+
+def test_preflight_stops_when_archive_expands_past_frozen_fasta(
+    tmp_path: Path,
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    source_path = _dataset_source_archive(paths)
+    dataset_bytes = paths["dataset"].read_bytes()
+    replacement = gzip.compress(dataset_bytes + b"unexpected", mtime=0)
+    source_path.write_bytes(replacement)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["dataset"]["source_archive_sha256"] = hashlib.sha256(
+        replacement
+    ).hexdigest()
+    config["dataset"]["source_archive_bytes"] = len(replacement)
+    config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="exceeds the frozen FASTA size"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
 def test_postflight_rejects_artifact_drift(tmp_path: Path) -> None:
     config_path, paths = _fixture(tmp_path)
     preflight = preflight_artifacts(config_path, paths, tmp_path / "preflight.json")

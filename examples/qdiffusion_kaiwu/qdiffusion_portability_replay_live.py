@@ -221,8 +221,13 @@ def run_portability_replay(
     real_provider_transport: bool,
     trained_checkpoint_snapshot: RegularFileSnapshot | None = None,
     artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
+    dataset_source_snapshot: RegularFileSnapshot | None = None,
 ) -> dict[str, Any]:
     provider_resource_gate = validate_provider_resource_gate(provider_resource_gate)
+    if (artifact_snapshots is None) != (dataset_source_snapshot is None):
+        raise ValueError(
+            "artifact and dataset source snapshots must be supplied together"
+        )
     if requested_samples != config.get("requested_samples"):
         raise ValueError("requested_samples differs from the frozen configuration")
     generation = config["generation"]
@@ -258,6 +263,10 @@ def run_portability_replay(
     try:
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
+        if dataset_source_snapshot is not None:
+            revalidate_regular_file(
+                dataset_source_snapshot, label="dataset source archive"
+            )
         generator = (
             builder.build_qdiffusion(
                 proposal_ckpt=str(base_checkpoint),
@@ -279,6 +288,10 @@ def run_portability_replay(
         )
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
+        if dataset_source_snapshot is not None:
+            revalidate_regular_file(
+                dataset_source_snapshot, label="dataset source archive"
+            )
         if id(getattr(generator.energy_model, "sampler", None)) != id(sampler):
             raise RuntimeError("DPLM builder did not retain the FlagQuantum sampler")
         revalidate_regular_file(
@@ -319,6 +332,10 @@ def run_portability_replay(
         )
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
+        if dataset_source_snapshot is not None:
+            revalidate_regular_file(
+                dataset_source_snapshot, label="dataset source archive"
+            )
         last_job = sampler.last_job
         if last_job is None:
             raise RuntimeError("portability replay completed without a recoverable job")
@@ -608,7 +625,11 @@ def main() -> None:
         "tokenizer": args.tokenizer,
         "evaluation_model": args.evaluation_model,
     }
-    artifact_preflight, artifact_snapshots = preflight_artifacts_with_snapshots(
+    (
+        artifact_preflight,
+        artifact_snapshots,
+        dataset_source_snapshot,
+    ) = preflight_artifacts_with_snapshots(
         args.config,
         artifact_paths,
         args.artifact_preflight_output,
@@ -693,10 +714,14 @@ def main() -> None:
         real_provider_transport=True,
         trained_checkpoint_snapshot=checkpoint_snapshot,
         artifact_snapshots=artifact_snapshots,
+        dataset_source_snapshot=dataset_source_snapshot,
     )
     artifact_postflight_error: BaseException | None = None
     try:
         revalidate_artifact_snapshots(artifact_snapshots)
+        revalidate_regular_file(
+            dataset_source_snapshot, label="dataset source archive"
+        )
         assert_artifacts_unchanged(
             args.config,
             artifact_paths,
@@ -708,6 +733,9 @@ def main() -> None:
             checkpoint_snapshot, label="trained energy checkpoint"
         )
         revalidate_artifact_snapshots(artifact_snapshots)
+        revalidate_regular_file(
+            dataset_source_snapshot, label="dataset source archive"
+        )
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
         payload["acceptance"]["portability"] = "fail"

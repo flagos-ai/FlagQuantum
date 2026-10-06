@@ -435,9 +435,14 @@ def run_training_seed(
     sdk_version: str,
     preflight_sha256: str,
     artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
+    dataset_source_snapshot: RegularFileSnapshot | None = None,
     retained_output_snapshots: dict[str, RegularFileSnapshot] | None = None,
 ) -> dict[str, Any]:
     provider_resource_gate = validate_provider_resource_gate(provider_resource_gate)
+    if (artifact_snapshots is None) != (dataset_source_snapshot is None):
+        raise ValueError(
+            "artifact and dataset source snapshots must be supplied together"
+        )
     failure: dict[str, str] | None = None
     run_directory: Path | None = None
     checkpoint_name: str | None = None
@@ -446,6 +451,10 @@ def run_training_seed(
     try:
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
+        if dataset_source_snapshot is not None:
+            revalidate_regular_file(
+                dataset_source_snapshot, label="dataset source archive"
+            )
         workflow_config = _build_workflow_config(
             workflow,
             config,
@@ -458,6 +467,10 @@ def run_training_seed(
         )
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
+        if dataset_source_snapshot is not None:
+            revalidate_regular_file(
+                dataset_source_snapshot, label="dataset source archive"
+            )
         (
             checkpoint_name,
             checkpoint_sha256,
@@ -723,7 +736,11 @@ def main() -> None:
         "tokenizer": args.tokenizer,
         "evaluation_model": args.evaluation_model,
     }
-    artifact_preflight, artifact_snapshots = preflight_artifacts_with_snapshots(
+    (
+        artifact_preflight,
+        artifact_snapshots,
+        dataset_source_snapshot,
+    ) = preflight_artifacts_with_snapshots(
         args.config,
         artifact_paths,
         args.artifact_preflight_output,
@@ -801,16 +818,23 @@ def main() -> None:
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
         artifact_snapshots=artifact_snapshots,
+        dataset_source_snapshot=dataset_source_snapshot,
         retained_output_snapshots=output_snapshots,
     )
     artifact_postflight_error: BaseException | None = None
     try:
         revalidate_artifact_snapshots(artifact_snapshots)
+        revalidate_regular_file(
+            dataset_source_snapshot, label="dataset source archive"
+        )
         assert_artifacts_unchanged(
             args.config,
             artifact_paths,
             artifact_preflight,
             dataset_source_archive=args.dataset_source_archive,
+        )
+        revalidate_regular_file(
+            dataset_source_snapshot, label="dataset source archive"
         )
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc

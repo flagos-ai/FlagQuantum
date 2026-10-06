@@ -1280,7 +1280,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   decompression under a 4 GiB bound and requires the resulting byte count and
   digest to equal the captured FASTA exactly. The source-archive lineage is
   retained in the preflight component and independently checked by final
-  acceptance validation.
+  acceptance validation. The exact archive file snapshot now remains anchored
+  through primary training and portability replay, with checks around plugin
+  work and at postflight; decompression also fails as soon as it exceeds the
+  captured FASTA length rather than continuing through oversized output.
 - Protein preflight now returns the exact stable snapshots from the pass that
   produced its record instead of reopening the paths to establish a second
   identity. Primary training and portability replay retain those snapshots and

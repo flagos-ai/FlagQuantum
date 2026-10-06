@@ -30,6 +30,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _precision_evidence_complete,
 )
+from examples.qdiffusion_kaiwu.stable_source_tree import capture_regular_file
 from flagquantum.ecosystem.kaiwu import (
     KaiwuPrecisionEvidence,
     KaiwuSampler,
@@ -321,8 +322,9 @@ def test_training_output_rejects_foreign_owned_artifact(
         )
 
 
+@pytest.mark.parametrize("mutated_input", ("dataset", "source_archive"))
 def test_training_seed_rejects_frozen_asset_change_during_workflow(
-    tmp_path: Path,
+    tmp_path: Path, mutated_input: str
 ) -> None:
     dataset = tmp_path / "dataset.fasta"
     dataset.write_text(">p1\nACDE\n", encoding="utf-8")
@@ -331,6 +333,8 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
     (checkpoint / "weights.bin").write_bytes(b"weights")
     evaluation_model = tmp_path / "esm2.pt"
     evaluation_model.write_bytes(b"esm2")
+    source_archive = tmp_path / "dataset.fasta.gz"
+    source_archive.write_bytes(b"reviewed archive")
     artifact_paths = {
         "dataset": dataset,
         "base_checkpoint": checkpoint,
@@ -346,6 +350,9 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
             "file_count": file_count,
         }
     snapshots = capture_artifact_snapshots(artifact_paths, artifact_record)
+    source_snapshot = capture_regular_file(
+        source_archive, label="dataset source archive"
+    )
     workflow = _workflow_types()
     workflow.build_qdiffusion = lambda **kwargs: SimpleNamespace(
         energy_model=SimpleNamespace(sampler=kwargs["bm_sampler"])
@@ -354,7 +361,10 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
     workflow.default_outputs_root = lambda: tmp_path
 
     def mutate_asset() -> None:
-        dataset.write_text(">p1\nXXXX\n", encoding="utf-8")
+        if mutated_input == "dataset":
+            dataset.write_text(">p1\nXXXX\n", encoding="utf-8")
+        else:
+            source_archive.write_bytes(b"changed archive")
         (workflow.default_outputs_root() / "run").mkdir()
 
     workflow.main = mutate_asset
@@ -392,6 +402,7 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
         sdk_version="1.3.1",
         preflight_sha256="d" * 64,
         artifact_snapshots=snapshots,
+        dataset_source_snapshot=source_snapshot,
     )
 
     assert record["run_completed"] is False

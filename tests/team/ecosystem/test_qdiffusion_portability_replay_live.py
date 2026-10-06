@@ -387,8 +387,9 @@ def test_portability_replay_rejects_checkpoint_change_during_weight_load(
     assert record["acceptance"]["portability"] == "fail"
 
 
+@pytest.mark.parametrize("mutated_input", ("base_checkpoint", "source_archive"))
 def test_portability_replay_rejects_frozen_input_change_during_build(
-    tmp_path: Path,
+    tmp_path: Path, mutated_input: str
 ) -> None:
     checkpoint = tmp_path / "trained.pt"
     checkpoint.write_bytes(b"trained")
@@ -404,9 +405,17 @@ def test_portability_replay_rejects_frozen_input_change_during_build(
         name: capture_regular_file(path, label=name)
         for name, path in frozen_paths.items()
     }
+    source_archive = tmp_path / "dataset.fasta.gz"
+    source_archive.write_bytes(b"reviewed archive")
+    source_snapshot = capture_regular_file(
+        source_archive, label="dataset source archive"
+    )
 
     def build_and_mutate(**kwargs: object) -> _Generator:
-        frozen_paths["base_checkpoint"].write_bytes(b"changed")
+        if mutated_input == "base_checkpoint":
+            frozen_paths["base_checkpoint"].write_bytes(b"changed")
+        else:
+            source_archive.write_bytes(b"changed archive")
         return _Generator(kwargs["bm_sampler"])
 
     builder = SimpleNamespace(build_qdiffusion=build_and_mutate)
@@ -450,6 +459,7 @@ def test_portability_replay_rejects_frozen_input_change_during_build(
         device=torch.device("cpu"),
         real_provider_transport=False,
         artifact_snapshots=artifact_snapshots,
+        dataset_source_snapshot=source_snapshot,
     )
 
     assert record["run_completed"] is False

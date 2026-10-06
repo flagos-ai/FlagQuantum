@@ -715,7 +715,11 @@ path contents. The preflight also verifies the frozen SHA-256 and byte length
 of the retained gzip archive, streams its decompression under a 4 GiB bound,
 and proves that the resulting bytes are exactly the staged FASTA. This binds
 the training corpus to the reviewed source artifact rather than only to a
-post-decompression file.
+post-decompression file. The exact source-archive file snapshot remains pinned
+through primary training and portability replay and is checked before and after
+plugin work and again during postflight. Decompression stops immediately if it
+would exceed the captured FASTA size; the 4 GiB dataset ceiling also applies
+before FASTA parsing.
 
 The frozen configuration includes every plugin knob that changes the selected
 corpus or generated sequences: record-length bounds, record cap, validation and
