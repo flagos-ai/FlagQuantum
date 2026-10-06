@@ -40,6 +40,7 @@ is a level rather than a flag.
 
 from __future__ import annotations
 
+import inspect
 import random
 from typing import cast
 
@@ -488,6 +489,42 @@ def test_a_level_outside_the_declared_domain_is_refused(level: int) -> None:
     else:
         assert "unknown optimization level" in message
     assert str(level) in message
+
+
+def test_the_reserved_level_blames_the_contract_and_not_a_missing_pass() -> None:
+    """The refusal must name the blocker that is real, and the artifact that is not.
+
+    The reason level 3 is out of reach is that `UnitarySynthesis` needs a target
+    basis and `optimize` is handed none, so the level is unreachable by contract
+    rather than pending. That is a different claim from "the pass does not exist",
+    and the difference is load-bearing: a reader who is told the pass is missing
+    will set out to write it, and no new pass would unblock this level. So the
+    message is read here for both halves -- the contract that blocks, and the entry
+    point at which the same rewrite is available -- and the entry point it names is
+    then resolved and inspected, because a refusal that points at a renamed or
+    removed artifact is a claim about this package that has stopped being true.
+    """
+
+    with pytest.raises(CompilationError) as error:
+        optimize(fq.Circuit(1).h(0), optimization_level=3)
+    message = str(error.value)
+
+    assert "target-independent by contract" in message
+    assert (
+        "has no unitary-synthesis pass" not in message
+    ), "the package does ship unitary synthesis; what level 3 lacks is a target"
+
+    # The message names `legalize_native_gates(program, snapshot=...)`. Resolve that
+    # name and read its signature, so the sentence in the error text cannot outlive
+    # the artifact it points at.
+    assert "legalize_native_gates" in message
+    assert "snapshot=" in message
+    from flagquantum.compiler.native_gate_legalization import legalize_native_gates
+
+    parameters = inspect.signature(legalize_native_gates).parameters
+    assert (
+        parameters["snapshot"].kind is inspect.Parameter.KEYWORD_ONLY
+    ), "the refusal names a keyword argument; the entry point must accept it as one"
 
 
 @pytest.mark.parametrize("level", [True, False, 2.0, "2", None, (2,)])
