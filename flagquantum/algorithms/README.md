@@ -29,11 +29,38 @@ executed by `tests/test_algorithm_examples.py`.
   realizes its exponential, and `uccsd_ansatz` composes them into the complete
   UCCSD circuit. `coupler_hardware_efficient_ansatz` and its parameter count cover
   the coupler variant. The gate sequences are the ones CUDA-Q's `singleExcitation`,
-  `doubleExcitation`, `uccsd`, and `hwe` kernels apply. No integrals are read, no
-  chemistry package is driven, and no Hartree-Fock problem is solved: a caller
-  supplies the Hamiltonian and this unit supplies the state preparation. Every
+  `doubleExcitation`, `uccsd`, and `hwe` kernels apply. This unit reads no
+  integrals, drives no chemistry package, and solves no Hartree-Fock problem: it
+  is the state-preparation half, and a caller either supplies the Hamiltonian or
+  builds it with the two units below. Every
   excitation requires its occupied indices below its virtual ones rather than
   emitting the empty ladders the opposite order would produce.
+- `chemistry_integrals.py`: the integral engine under a chemistry workload, with no
+  external chemistry package behind it. `molecular_integrals` evaluates the
+  one-electron overlap, kinetic, and nuclear-attraction matrices and the dense
+  two-electron tensor of a `MolecularGeometry` by McMurchie-Davidson recursion
+  over contracted Cartesian Gaussians, so the numbers a chemistry workload is built
+  from are produced in this repository rather than imported. The basis table is
+  STO-3G for H through Ne, and a heavier element is refused rather than given a
+  contraction that does not exist. The Boys function and its recursion are the
+  numerically delicate part of that work; the rest is the Hermite expansion and the
+  eight-fold symmetry of the electron-repulsion tensor. Needing a numerical kernel
+  of that size to be exactly right is why this unit carries its own focused test
+  file built on closed-form references, which is not the pattern the rest of this
+  package follows.
+- `molecular.py`: the driver half, and the entry point a user actually calls.
+  `create_molecular_hamiltonian` turns a geometry into the second-quantized
+  Hamiltonian a variational chemistry workload consumes: it builds the integrals,
+  runs a restricted closed-shell Hartree-Fock solve from the bare core Hamiltonian,
+  transforms the integrals into the molecular-orbital basis, folds a frozen core
+  where one is asked for, restricts to an active space, and returns the
+  Jordan-Wigner `Observable` beside the Hartree-Fock energy and, where the
+  determinant space allows it, the exact `S_z = 0` ground-state energy.
+  `restricted_hartree_fock` and `exact_ground_state_energy` are the two halves of
+  that, callable on their own. What it refuses it refuses rather than approximating:
+  a multiplicity other than one, an odd electron count, a charge that leaves no
+  electrons, and an active space whose electron count does not have the parity of
+  the total.
 - `cdr.py`: Clifford data regression — the affine relation between what a
   program should give and what the noise makes it give, fitted on Clifford
   training circuits built by snapping each `rx`/`ry`/`rz`/`phase`/`u1` rotation

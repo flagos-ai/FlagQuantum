@@ -20,6 +20,11 @@ from flagquantum.algorithms.chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
+from flagquantum.algorithms.chemistry_integrals import (
+    MolecularGeometry,
+    MolecularIntegrals,
+    molecular_integrals,
+)
 from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
@@ -28,6 +33,11 @@ from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
+)
+from flagquantum.algorithms.molecular import (
+    HartreeFockSolution,
+    MolecularHamiltonian,
+    create_molecular_hamiltonian,
 )
 from flagquantum.algorithms.nelder_mead import NelderMeadOptimizer
 from flagquantum.algorithms.spsa import SPSAOptimizer
@@ -105,7 +115,12 @@ pytestmark = pytest.mark.unit
 # listed beside the forward integrator because its example is the same kind of
 # statement about a different capability: the cotangent's shape is the shape of
 # the state the trajectory started from, which is what distinguishes a reverse
-# pass over the trajectory from a derivative of a returned trajectory.
+# pass over the trajectory from a derivative of a returned trajectory. The
+# integral module contributes three: the geometry, whose example is the basis it
+# expands into, the integral set, whose example is the one- and two-electron
+# values a Hartree-Fock solve consumes, and the entry point that builds one. The
+# driver module contributes three more: the Hartree-Fock solution, the returned
+# Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point.
 ENTRIES = (
     adder_circuit,
     adder_wires,
@@ -116,12 +131,17 @@ ENTRIES = (
     CssCode,
     CssCodeMatrices,
     FermionOperator,
+    HartreeFockSolution,
     Layout,
+    MolecularGeometry,
+    MolecularHamiltonian,
+    MolecularIntegrals,
     NelderMeadOptimizer,
     SuperOperator,
     SPSAOptimizer,
     boson_position,
     coupler_hardware_efficient_ansatz,
+    create_molecular_hamiltonian,
     exponential_pauli_operator,
     double_excitation,
     estimate_logical_resources,
@@ -145,6 +165,7 @@ ENTRIES = (
     import_openqasm_to_ir,
     jordan_wigner,
     maxcut_hamiltonian,
+    molecular_integrals,
     pauli_exponential_circuit,
     parity_encoding,
     plan_lindblad_evolution,
