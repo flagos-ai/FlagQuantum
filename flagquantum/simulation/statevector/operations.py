@@ -692,6 +692,20 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
+    if len(wires) == 2:
+        from .two_qubit_matrix_dispatch import (
+            _try_apply_cataloged_two_qubit_matrix,
+        )
+
+        if (
+            dispatched := _try_apply_cataloged_two_qubit_matrix(
+                state,
+                matrix,
+                wires=wires,
+                n_wires=n_wires,
+            )
+        ) is not None:
+            return dispatched
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
