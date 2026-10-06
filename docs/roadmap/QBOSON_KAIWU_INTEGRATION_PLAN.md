@@ -140,6 +140,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   to the current effective UID as well as having owner-only mode bits; a
   privileged process cannot trust another user's recovery state merely because
   it is mode `0700` or `0600`.
+- The shared QDiffusion private-evidence boundary applies the same effective-UID
+  ownership requirement to configuration, approval, source-preflight, resource,
+  training, evaluation, and acceptance component records, including directory
+  and leaf rechecks after descriptor-relative reads and during exclusive
+  publication.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

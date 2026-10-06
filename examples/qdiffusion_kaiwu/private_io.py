@@ -12,6 +12,13 @@ from pathlib import Path
 from typing import Any, BinaryIO
 
 
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate private evidence ownership")
+    return int(getter())
+
+
 def validate_private_directory(path: Path, *, label: str) -> None:
     """Validate an existing absolute private directory without following its leaf."""
 
@@ -27,6 +34,7 @@ def validate_private_directory(path: Path, *, label: str) -> None:
         path.is_symlink()
         or not stat.S_ISDIR(metadata.st_mode)
         or metadata.st_mode & 0o077
+        or metadata.st_uid != _effective_uid()
     ):
         raise ValueError(f"{label} must be an existing private, non-symlink directory")
 
@@ -60,6 +68,8 @@ def _verify_open_directory_binding(
         parent.is_symlink()
         or not stat.S_ISDIR(visible.st_mode)
         or visible.st_mode & 0o077
+        or visible.st_uid != _effective_uid()
+        or descriptor_metadata.st_uid != _effective_uid()
         or (visible.st_dev, visible.st_ino)
         != (descriptor_metadata.st_dev, descriptor_metadata.st_ino)
     ):
@@ -97,6 +107,7 @@ def open_private_binary(
         if (
             not stat.S_ISDIR(directory_metadata.st_mode)
             or directory_metadata.st_mode & 0o077
+            or directory_metadata.st_uid != _effective_uid()
         ):
             raise ValueError(f"{label} parent changed during validation")
         _verify_open_directory_binding(parent, directory_metadata)
@@ -115,6 +126,8 @@ def open_private_binary(
             raise ValueError(f"{label} must be a regular, non-symlink file")
         if opened.st_mode & 0o077:
             raise ValueError(f"{label} must not be accessible by group or others")
+        if opened.st_uid != _effective_uid():
+            raise ValueError(f"{label} must be owned by the current effective user")
         if opened.st_size > max_bytes:
             raise ValueError(f"{label} exceeds the bounded size")
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
@@ -134,6 +147,7 @@ def open_private_binary(
                         "st_dev",
                         "st_ino",
                         "st_mode",
+                        "st_uid",
                         "st_size",
                         "st_mtime_ns",
                         "st_ctime_ns",
@@ -147,6 +161,8 @@ def open_private_binary(
                     if (
                         not stat.S_ISREG(visible.st_mode)
                         or visible.st_mode & 0o077
+                        or visible.st_uid != _effective_uid()
+                        or after.st_uid != _effective_uid()
                         or (visible.st_dev, visible.st_ino)
                         != (opened.st_dev, opened.st_ino)
                     ):
@@ -196,6 +212,7 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         if (
             not stat.S_ISDIR(directory_metadata.st_mode)
             or directory_metadata.st_mode & 0o077
+            or directory_metadata.st_uid != _effective_uid()
         ):
             raise ValueError("evidence parent changed during publication")
         _verify_open_directory_binding(parent, directory_metadata)
@@ -220,7 +237,11 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         )
         published = True
         _verify_open_directory_binding(parent, directory_metadata)
-        if os.fstat(directory_descriptor).st_mode & 0o077:
+        final_directory_metadata = os.fstat(directory_descriptor)
+        if (
+            final_directory_metadata.st_mode & 0o077
+            or final_directory_metadata.st_uid != _effective_uid()
+        ):
             raise ValueError("evidence parent changed during publication")
         os.fsync(directory_descriptor)
         published = False
