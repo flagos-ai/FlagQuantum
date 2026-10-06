@@ -102,7 +102,11 @@ def _provider_smoke(
         "hardware_acceptance": True,
         "fallback_occurred": False,
         "secrets_redacted": True,
-        "limitations": [],
+        "limitations": [
+            "This smoke test does not execute QDiffusion or A800 tensor work.",
+            "Hardware acceptance remains false without provider-reported task and target identities.",
+            "This record does not establish performance, quantum advantage, or production maturity.",
+        ],
     }
 
 
@@ -1112,6 +1116,16 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "provider smoke: task 0 sample 0 energy differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["unexpected_secret_field"] = "not-accepted"
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider smoke: field set is incomplete or contains extensions" in error
         for error in validate_acceptance(manifest_path)
     )
 

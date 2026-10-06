@@ -41,6 +41,57 @@ SCHEMA = "flagquantum.qboson_kaiwu_live_smoke"
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
 SMOKE_MATRIX = ((0.0, 1.0), (1.0, 0.0))
 SMOKE_MATRIX_SHA256 = _matrix_sha256(_freeze_matrix(SMOKE_MATRIX))
+SMOKE_TASK_FIELDS = frozenset(
+    {
+        "receipt_schema",
+        "task_name",
+        "task_mode",
+        "matrix_sha256",
+        "matrix_size",
+        "requested_samples",
+        "project_no",
+        "submitted_at",
+        "returned_samples",
+        "samples",
+        "energies",
+        "provider_task_id",
+        "provider_target",
+        "raw_status",
+        "fallback_occurred",
+        "minimum_energy",
+        "maximum_energy",
+        "provider_task_id_available",
+        "provider_target_available",
+        "provider_result_schema",
+    }
+)
+SMOKE_RECORD_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "recorded_at",
+        "transport",
+        "real_provider_evidence",
+        "qboson_hardware_used",
+        "project_no",
+        "environment_lock_sha256",
+        "sdk_approval_sha256",
+        "tasks",
+        "run_completed",
+        "failure",
+        "live_provider_smoke_passed",
+        "provider_identity_complete",
+        "hardware_acceptance",
+        "fallback_occurred",
+        "secrets_redacted",
+        "limitations",
+    }
+)
+SMOKE_LIMITATIONS = (
+    "This smoke test does not execute QDiffusion or A800 tensor work.",
+    "Hardware acceptance remains false without provider-reported task and target identities.",
+    "This record does not establish performance, quantum advantage, or production maturity.",
+)
 
 
 def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
@@ -186,11 +237,7 @@ def run_live_smoke(
         "hardware_acceptance": hardware_acceptance,
         "fallback_occurred": False,
         "secrets_redacted": True,
-        "limitations": [
-            "This smoke test does not execute QDiffusion or A800 tensor work.",
-            "Hardware acceptance remains false without provider-reported task and target identities.",
-            "This record does not establish performance, quantum advantage, or production maturity.",
-        ],
+        "limitations": list(SMOKE_LIMITATIONS),
     }
 
 

@@ -730,6 +730,11 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
             "hardware_acceptance": True,
             "fallback_occurred": False,
             "secrets_redacted": True,
+            "limitations": [
+                "This smoke test does not execute QDiffusion or A800 tensor work.",
+                "Hardware acceptance remains false without provider-reported task and target identities.",
+                "This record does not establish performance, quantum advantage, or production maturity.",
+            ],
         },
     }
     schemas = (

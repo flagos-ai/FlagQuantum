@@ -612,6 +612,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   enclosing smoke record. The bounded smoke also retains its complete spin and
   energy vectors; final validation checks sample count, width, spin domain, and
   independently recomputes every energy under the FlagQuantum Ising convention.
+  The smoke and per-task objects use closed field sets and fixed claim
+  limitations, so an unvalidated extension cannot carry hidden evidence or
+  sensitive values while still passing.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

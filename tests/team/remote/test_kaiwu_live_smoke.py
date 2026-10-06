@@ -9,6 +9,8 @@ import pytest
 
 from examples.qdiffusion_kaiwu import qboson_live_smoke as smoke_module
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
+    SMOKE_RECORD_FIELDS,
+    SMOKE_TASK_FIELDS,
     _write_private_json,
     run_live_smoke,
 )
@@ -92,6 +94,8 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     )
 
     assert client.submissions == 2
+    assert set(record) == SMOKE_RECORD_FIELDS
+    assert all(set(task) == SMOKE_TASK_FIELDS for task in record["tasks"])
     assert [task["task_mode"] for task in record["tasks"]] == [
         "optimization",
         "sampling",

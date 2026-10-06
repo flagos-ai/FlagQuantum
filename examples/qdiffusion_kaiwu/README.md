@@ -363,7 +363,8 @@ checks that the smoke retained one successful optimization task and one
 successful sampling task over the independently recomputed exact smoke-matrix
 identity, with recoverable receipt schema/project/submission-time fields, real
 provider identities, complete bounded spin/energy vectors, independent energy
-recomputation, and no fallback. The
+recomputation, closed record/task field sets, fixed claim limitations, and no
+fallback. The
 inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed

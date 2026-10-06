@@ -28,8 +28,11 @@ from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     SCHEMA as PROVIDER_SMOKE_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
+    SMOKE_LIMITATIONS,
     SMOKE_MATRIX,
     SMOKE_MATRIX_SHA256,
+    SMOKE_RECORD_FIELDS,
+    SMOKE_TASK_FIELDS,
 )
 from examples.qdiffusion_kaiwu.sdk_approval import (
     SCHEMA as SDK_APPROVAL_COMPONENT_SCHEMA,
@@ -1534,6 +1537,10 @@ def _validate_provider_smoke_component(
     """Prove the retained Phase 2 optimization and sampling smoke passed."""
 
     label = "provider smoke"
+    if set(record) != SMOKE_RECORD_FIELDS:
+        errors.append(f"{label}: field set is incomplete or contains extensions")
+    if record.get("limitations") != list(SMOKE_LIMITATIONS):
+        errors.append(f"{label}: claim limitations differ from the fixed boundary")
     software = _mapping(config.get("software"), "config.software", errors)
     if record.get("environment_lock_sha256") != software.get(
         "environment_lock_sha256"
@@ -1601,6 +1608,10 @@ def _validate_provider_smoke_component(
         zip(tasks, expected_modes, strict=True)
     ):
         task_record = _mapping(task, f"{label}.tasks[{index}]", errors)
+        if set(task_record) != SMOKE_TASK_FIELDS:
+            errors.append(
+                f"{label}: task {index} field set is incomplete or contains extensions"
+            )
         if task_record.get("receipt_schema") != TASK_RECEIPT_SCHEMA:
             errors.append(f"{label}: task {index} receipt schema is unsupported")
         if task_record.get("task_mode") != expected_mode:
