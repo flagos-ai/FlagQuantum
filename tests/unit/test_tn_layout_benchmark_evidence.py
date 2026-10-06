@@ -315,12 +315,12 @@ def test_evidence_validator_rejects_noncanonical_summary() -> None:
         validate_evidence(changed)
 
 
-def test_checked_in_a800_evidence_is_canonical_and_retains_narrow_policy() -> None:
+def test_checked_in_a800_evidence_is_canonical_and_revisits_policy() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
     assert not payload["direct_forward_win_on_all_cases"]
     assert not payload["direct_training_win_on_all_cases"]
-    assert payload["selected_kernel_win_on_all_cases"]
-    assert payload["fallback_within_overhead_budget_on_all_cases"]
-    assert payload["dispatch_evidence_decision"] == "retain_current_policy"
+    assert not payload["selected_kernel_win_on_all_cases"]
+    assert not payload["fallback_within_overhead_budget_on_all_cases"]
+    assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
