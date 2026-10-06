@@ -267,7 +267,7 @@
         "update_route": "owner_step_then_bounded_dtype_all_gather"
       }
     },
-    "capacity_baseline_artifact": "/nfs/fq-scratch/fqcamp/benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_complete_20261009.json",
+    "capacity_baseline_artifact": "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_complete_20261009.json",
     "capacity_baseline_device": "cuda device rank 0, device_total_memory_bytes=85093777408 (device name not recorded by the measured run)",
     "capacity_baseline_device_source": "the single-device failure record named by the premise",
     "capacity_baseline_device_total_memory_bytes": 85093777408,
@@ -284,81 +284,81 @@
     "communication_fraction_definition": "measured boundary transport bytes over the sum of measured boundary, gradient collective, optimizer collective and halo bytes",
     "configurations": [
       {
-        "baseline_median_seconds": 0.460784,
-        "linear_scaling_efficiency": 0.055384769236538685,
+        "baseline_median_seconds": 0.453572,
+        "linear_scaling_efficiency": 0.054411176188890416,
         "n_sites": 512,
         "name": "matched_speed_512sites_chi64",
         "parameter_count": 31,
-        "scaling_efficiency": 0.7321747946506921,
-        "sharded_median_seconds": 0.5199805,
-        "speedup": 0.886156307784619,
+        "scaling_efficiency": 0.7193041029504018,
+        "sharded_median_seconds": 0.5210005,
+        "speedup": 0.8705788190222467,
         "speedup_confidence_interval": [
-          0.8371922730544981,
-          0.9016760473833456
+          0.8365617961470035,
+          0.8973569980718841
         ],
         "steps": 1,
         "trained_max_bond": 64
       },
       {
-        "baseline_median_seconds": 0.6293815,
-        "linear_scaling_efficiency": 0.05588572870597027,
+        "baseline_median_seconds": 0.6485289999999999,
+        "linear_scaling_efficiency": 0.05687210565935017,
         "n_sites": 1024,
         "name": "matched_speed_1024sites_chi64",
         "parameter_count": 31,
-        "scaling_efficiency": 0.7387973716103052,
-        "sharded_median_seconds": 0.703871,
-        "speedup": 0.8941716592955243,
+        "scaling_efficiency": 0.7518370638080774,
+        "sharded_median_seconds": 0.7127055,
+        "speedup": 0.9099536905496027,
         "speedup_confidence_interval": [
-          0.8757758391844613,
-          0.9241038813113737
+          0.8894810902502025,
+          0.9295058185977849
         ],
         "steps": 1,
         "trained_max_bond": 64
       },
       {
-        "baseline_median_seconds": 1.0248970000000002,
-        "linear_scaling_efficiency": 0.06353475979587488,
+        "baseline_median_seconds": 1.0258505,
+        "linear_scaling_efficiency": 0.06332476163950342,
         "n_sites": 2048,
         "name": "matched_speed_2048sites_chi64",
         "parameter_count": 31,
-        "scaling_efficiency": 0.8399159254063717,
-        "sharded_median_seconds": 1.0082049999999998,
-        "speedup": 1.016556156733998,
+        "scaling_efficiency": 0.8371397947275269,
+        "sharded_median_seconds": 1.0124895,
+        "speedup": 1.0131961862320547,
         "speedup_confidence_interval": [
-          0.9990280009739468,
-          1.0327998260127107
+          0.9979731100568076,
+          1.0260167956528898
         ],
         "steps": 1,
         "trained_max_bond": 64
       },
       {
-        "baseline_median_seconds": 1.7551005000000002,
-        "linear_scaling_efficiency": 0.06738810299107718,
+        "baseline_median_seconds": 1.7568890000000001,
+        "linear_scaling_efficiency": 0.06635771553682969,
         "n_sites": 4096,
         "name": "matched_speed_4096sites_chi64",
         "parameter_count": 31,
-        "scaling_efficiency": 0.8908562976703875,
-        "sharded_median_seconds": 1.6277914999999998,
-        "speedup": 1.078209647857235,
+        "scaling_efficiency": 0.8772347960712331,
+        "sharded_median_seconds": 1.654752,
+        "speedup": 1.061723448589275,
         "speedup_confidence_interval": [
-          1.0650196444798647,
-          1.0840822739802103
+          1.0457780050102374,
+          1.0739279415623646
         ],
         "steps": 1,
         "trained_max_bond": 64
       },
       {
-        "baseline_median_seconds": 3.2462955,
-        "linear_scaling_efficiency": 0.07103350734593784,
+        "baseline_median_seconds": 3.2445655,
+        "linear_scaling_efficiency": 0.07019587162711807,
         "n_sites": 8192,
         "name": "matched_speed_8192sites_chi64",
         "parameter_count": 31,
-        "scaling_efficiency": 0.9390477629726929,
-        "sharded_median_seconds": 2.8563065,
-        "speedup": 1.1365361175350055,
+        "scaling_efficiency": 0.9279743980589623,
+        "sharded_median_seconds": 2.8888499999999997,
+        "speedup": 1.1231339460338892,
         "speedup_confidence_interval": [
-          1.1073167027857516,
-          1.1750511906050392
+          1.099641001349927,
+          1.15942039054475
         ],
         "steps": 1,
         "trained_max_bond": 64
@@ -468,7 +468,7 @@
     "intra_node_communication_bytes": 7602176,
     "ladder_definition_path": "benchmarks/internal/evidence/general_mps_speed_ladder_v1.py",
     "ladder_fingerprint": "58f88d24d1c08846a2e3ecc7c7989570dc2a3ae06372b21d21b689ff3c855b47",
-    "linear_scaling_efficiency": 0.07103350734593784,
+    "linear_scaling_efficiency": 0.07019587162711807,
     "local_world_size": 8,
     "logical_mps_bytes": 536171840,
     "max_bond_dimension": 64,
@@ -9931,27 +9931,27 @@
     ],
     "rank_placement": "rank // local_world_size",
     "rank_timings": [
-      2.875615594908595,
-      2.8750958163291216,
-      2.8756414484232664,
-      2.8755355663597584,
-      2.875311702489853,
-      2.874676814302802,
-      2.875574143603444,
-      2.875473452731967,
-      2.8755502235144377,
-      2.8756619058549404,
-      2.8755369037389755,
-      2.8750503975898027,
-      2.875049924477935,
-      2.8736805599182844,
-      2.8745183888822794,
-      2.875093400478363
+      2.911984819918871,
+      2.9118711557239294,
+      2.9116549752652645,
+      2.9118178077042103,
+      2.9118876475840807,
+      2.9117873031646013,
+      2.9107449371367693,
+      2.9105787090957165,
+      2.911910681053996,
+      2.9117333628237247,
+      2.9107994604855776,
+      2.9108434468507767,
+      2.9117218125611544,
+      2.9116478729993105,
+      2.911457747220993,
+      2.9118979554623365
     ],
     "release_gate_allowed": true,
     "release_payload": true,
     "scalability_claim_allowed": true,
-    "scaling_efficiency": 0.9390477629726929,
+    "scaling_efficiency": 0.9279743980589623,
     "scaling_efficiency_definition": "measured_speedup_over_shardable_ceiling_speedup",
     "shardable_ceiling_speedup": 1.2103070390553239,
     "single_gpu_expected_oom": true,
@@ -18182,10 +18182,10 @@
         5119
       ]
     },
-    "speedup": 1.1365361175350055,
+    "speedup": 1.1231339460338892,
     "speedup_confidence_interval": [
-      1.1073167027857516,
-      1.1750511906050392
+      1.099641001349927,
+      1.15942039054475
     ],
     "state_mode": "mps",
     "state_mode_evidence": {
@@ -18207,15 +18207,15 @@
   "evidence_scope": "multi_node_16_gpu_scale",
   "integrity": {
     "algorithm": "hmac-sha256",
-    "content_sha256": "7cf06095c96ccb36353b1625a63c6a4bd3f5b4611b8811e3d72050d65651d41e",
-    "signature": "ba07f7fe22c33d0934564a351b673360fdf6aa740869779ff7178bed3630619a"
+    "content_sha256": "c331ae38801b1a0abff62e0ff98e4b4d5c0dab407ae371c1720a0a08dccfdef7",
+    "signature": "ca6be4dbb7116ab85d51127974085d23ecaf53dedc2d6da23bb7ee289727073e"
   },
   "provenance": {
     "collective_backend": "nccl",
     "command": [
-      "/nfs/wlx/envs/vllm-028-pr3-clean/bin/python -m benchmarks.mps_release_evidence --role matched-speed --measurements /nfs/fq-scratch/mpsspeed16b/matched_speed_w16.json --warmup 2 --iterations 10 --local-world-size 8 --node-count 2"
+      "/nfs/wlx/envs/vllm-028-pr3-clean/bin/python -m benchmarks.mps_release_evidence --role matched-speed --measurements /nfs/fq-scratch/mpsspeed16c/matched_speed_w16.json --warmup 2 --iterations 10 --local-world-size 8 --node-count 2"
     ],
-    "commit": "bcb120581a303c20499640b7ee1e6583c579df85",
+    "commit": "761f87ea527402c114306ccb20eb8177dbc1724b",
     "devices": [
       "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
       "GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
@@ -18254,7 +18254,7 @@
       "rank=14:node=1:device_uuid=GPU-bc6dff03-0a8c-8d5f-4d96-73749d06c6e0",
       "rank=15:node=1:device_uuid=GPU-8d4625ed-afbf-f128-b129-41d820bbaa03"
     ],
-    "raw_log_sha256": "4696c616c30fcb313e6ddbcc2ee5f4850406291875efbf270b3b1602fdf6bc78",
+    "raw_log_sha256": "90adc93f6a8b9c1d13a4e3f9a2bafe018582600ea6a0d45630e8b5ddb1974516",
     "seeds": [
       0
     ],

@@ -132705,22 +132705,22 @@
     ],
     "rank_placement": "rank // local_world_size",
     "rank_timings": [
-      278.26776204258204,
-      278.26742664910853,
-      278.25981611199677,
-      278.26038994826376,
-      278.25966121442616,
-      278.26009776443243,
-      278.26025925017893,
-      278.2608447484672,
-      278.2611208856106,
-      278.2628373596817,
-      278.2616637647152,
-      278.27232356369495,
-      278.28061606921256,
-      278.280466388911,
-      278.28091155923903,
-      278.2811639495194
+      277.5074881631881,
+      277.5068755224347,
+      277.50707200728357,
+      277.50285578891635,
+      277.5027468651533,
+      277.50356496311724,
+      277.5034568980336,
+      277.50405586510897,
+      277.5030815768987,
+      277.50327218323946,
+      277.517905049026,
+      277.52183180861175,
+      277.5226257890463,
+      277.52594855614007,
+      277.5314179006964,
+      277.5312473978847
     ],
     "release_gate_allowed": true,
     "release_payload": true,
@@ -263851,15 +263851,15 @@
   "evidence_scope": "multi_node_16_gpu_scale",
   "integrity": {
     "algorithm": "hmac-sha256",
-    "content_sha256": "18779902a5503e58d0e8299bd0b100735f86953cde17460cc9d2c92e96aa361a",
-    "signature": "7ff2f0579717af1a96d2a84173c5af5003347f82c830add418dd8c1ca1c530d0"
+    "content_sha256": "53ed3e7cf50455f89974f9ff48983c2bfb1701a61ca0404dde24523cb8a96fe7",
+    "signature": "a92e11cc16f340405aa4be706120516db7e331e5af4981aec60c397e4be3ee6d"
   },
   "provenance": {
     "collective_backend": "nccl",
     "command": [
-      "/nfs/wlx/envs/vllm-028-pr3-clean/bin/python -m benchmarks.mps_release_evidence --role capacity-completion --measurements /nfs/fq-scratch/mpscap16n2/capacity_completion_role.json --premise /nfs/fq-scratch/fqcamp/benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_complete_20261009.json --local-world-size 8 --node-count 2 --bond-dimension 768 --steps 1"
+      "/nfs/wlx/envs/vllm-028-pr3-clean/bin/python -m benchmarks.mps_release_evidence --role capacity-completion --measurements /nfs/fq-scratch/mpscap16n3/capacity_completion_role.json --premise /nfs/fq-scratch/fqcamp/benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_complete_20261009.json --local-world-size 8 --node-count 2 --bond-dimension 768 --steps 1"
     ],
-    "commit": "bcb120581a303c20499640b7ee1e6583c579df85",
+    "commit": "761f87ea527402c114306ccb20eb8177dbc1724b",
     "devices": [
       "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
       "GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
@@ -263898,7 +263898,7 @@
       "rank=14:node=1:device_uuid=GPU-bc6dff03-0a8c-8d5f-4d96-73749d06c6e0",
       "rank=15:node=1:device_uuid=GPU-8d4625ed-afbf-f128-b129-41d820bbaa03"
     ],
-    "raw_log_sha256": "963bafc2d707ca258f2a06421f71c9bdf648a7eed476367b7d4ad01360f0a764",
+    "raw_log_sha256": "2ef6c24ff598517e37036ff39b787355d69f421108582ac6d67053b82a7ddc15",
     "seeds": [
       0
     ],
