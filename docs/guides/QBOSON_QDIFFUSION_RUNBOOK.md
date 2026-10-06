@@ -185,7 +185,13 @@ that exact use has been approved. The fixed `no-sdk-redistribution` policy
 allows distribution of the FlagQuantum adapter, not the Kaiwu wheel. The
 validator binds the frozen Kaiwu version and artifact SHA-256 to the exact
 Kaiwu distribution in the environment lock; changing either requires a new
-reviewed configuration.
+reviewed configuration. Version 1.1 of this private record also binds the exact
+SDK-capable `project_no`, the time its account-bound assignment was reviewed,
+and the retained assignment reference. These fields must come from the QBoson
+response rather than from an invented placeholder. Every quota-consuming entry
+point requires its `--project-no` to equal that reviewed assignment before
+credential discovery, and final validation repeats the comparison for every
+remote receipt.
 
 Use mode `0700` for evidence and checkpoint directories:
 
@@ -474,7 +480,8 @@ placeholder, mismatched, or unapproved input fails without initializing the SDK
 license or consuming quota.
 
 `QBOSON_PROJECT_NO` is not a credential, but it should still be managed in the
-private run environment. The command has no simulator fallback. It writes the
+private run environment and must exactly match `sdk-approval.json.project_no`.
+The command has no simulator fallback. It writes the
 diagnostic record and exits nonzero with hardware acceptance closed if the
 pinned SDK mapping cannot supply stable provider task and target identities.
 Only the command's real SDK path records `transport=kaiwu_cim`,

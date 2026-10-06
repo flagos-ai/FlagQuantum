@@ -198,6 +198,17 @@ def audit_readiness(
         else:
             checks["sdk_approval"] = _check("pass", "sdk_approval_valid")
 
+    if sdk_approval is not None and checks["project"]["status"] == "pass":
+        assert project_no is not None
+        if project_no.strip() != sdk_approval.get("project_no"):
+            checks["project"] = _check(
+                "fail", "project_differs_from_reviewed_assignment"
+            )
+        else:
+            checks["project"] = _check(
+                "pass", "project_matches_reviewed_assignment"
+            )
+
     if config is None:
         checks["frozen_environment"] = _check("blocked", "config_not_validated")
     elif environment_record is None or environment_sha256 is None:

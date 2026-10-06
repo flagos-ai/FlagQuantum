@@ -9,6 +9,7 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
     validate_sdk_approval_record,
     verify_approved_kaiwu_distribution,
+    verify_approved_project_assignment,
 )
 
 pytestmark = pytest.mark.unit
@@ -17,7 +18,7 @@ pytestmark = pytest.mark.unit
 def _approval() -> dict[str, object]:
     return {
         "schema": "flagquantum.qboson_kaiwu_sdk_approval",
-        "version": "1.0",
+        "version": "1.1",
         "distribution": "kaiwu",
         "sdk_version": "1.3.1",
         "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
@@ -30,6 +31,9 @@ def _approval() -> dict[str, object]:
         "service_terms_effective_date": "2026-07-09",
         "rights_reviewed_at": "2026-10-06T00:00:00Z",
         "approval_reference": "LEGAL-APPROVAL-1",
+        "project_no": "CPQC-approved",
+        "project_assignment_reviewed_at": "2026-10-06T00:00:00Z",
+        "project_assignment_reference": "QBOSON-ASSIGNMENT-1",
         "organizational_use_approved": True,
         "isolated_container_use_approved": True,
         "host_staging_approved": True,
@@ -73,6 +77,17 @@ def test_private_sdk_approval_loads_with_stable_identity(tmp_path: Path) -> None
         ("sha256", "invalid", "SHA-256 digest"),
         ("rights_reviewed_at", "2026-10-06", "timezone-aware timestamp"),
         ("approval_reference", "<required>", "frozen value is required"),
+        ("project_no", "<required>", "assigned project is required"),
+        (
+            "project_assignment_reviewed_at",
+            "2026-10-06",
+            "timezone-aware timestamp",
+        ),
+        (
+            "project_assignment_reference",
+            "<required>",
+            "frozen value is required",
+        ),
         ("organizational_use_approved", False, "explicit approval is required"),
         ("isolated_container_use_approved", False, "explicit approval is required"),
         ("host_staging_approved", False, "explicit approval is required"),
@@ -95,6 +110,13 @@ def test_sdk_approval_rejects_schema_extension() -> None:
     assert any(
         "field set differs" in error for error in validate_sdk_approval_record(record)
     )
+
+
+def test_runtime_project_must_match_reviewed_assignment() -> None:
+    verify_approved_project_assignment("CPQC-approved", _approval())
+
+    with pytest.raises(ValueError, match="differs from the reviewed"):
+        verify_approved_project_assignment("CPQC-other", _approval())
 
 
 @pytest.mark.parametrize(

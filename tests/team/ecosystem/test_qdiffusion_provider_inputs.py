@@ -110,3 +110,25 @@ def test_live_cli_enforces_snapshot_expiry_at_the_sdk_submission_boundary(
         "submission_deadline=provider_resource_valid_until(provider_resources)"
         in source
     )
+
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    (
+        "qboson_live_smoke",
+        "qdiffusion_system_live",
+        "qdiffusion_protein_training_live",
+        "qdiffusion_portability_replay_live",
+    ),
+)
+def test_live_cli_binds_project_to_reviewed_assignment_before_credentials(
+    entrypoint: str,
+) -> None:
+    source = (
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / f"{entrypoint}.py"
+    ).read_text(encoding="utf-8")
+    main_source = source[source.index("def main() -> None:") :]
+
+    assert main_source.index(
+        "verify_approved_project_assignment("
+    ) < main_source.index("resolve_kaiwu_credentials()")

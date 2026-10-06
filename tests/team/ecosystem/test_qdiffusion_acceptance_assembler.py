@@ -1440,6 +1440,38 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     assert validate_acceptance(manifest_path) == []
 
+    tampered_smoke_project = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke_project["project_no"] = "CPQC-other"
+    tampered_smoke_project_sha = _write_json(
+        component_paths[14], tampered_smoke_project
+    )
+    manifest["component_records"][14]["sha256"] = tampered_smoke_project_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider smoke: project number differs from reviewed assignment" in error
+        for error in validate_acceptance(manifest_path)
+    )
+    restored_smoke_sha = _write_json(component_paths[14], provider_smoke_record)
+    manifest["component_records"][14]["sha256"] = restored_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert validate_acceptance(manifest_path) == []
+
+    tampered_system_project = json.loads(json.dumps(primary_system_record))
+    tampered_system_project["task_receipts"][0]["project_no"] = "CPQC-other"
+    tampered_system_project_sha = _write_json(
+        component_paths[0], tampered_system_project
+    )
+    manifest["component_records"][0]["sha256"] = tampered_system_project_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "project number differs from reviewed assignment" in error
+        for error in validate_acceptance(manifest_path)
+    )
+    restored_system_sha = _write_json(component_paths[0], primary_system_record)
+    manifest["component_records"][0]["sha256"] = restored_system_sha
+    _write_json(manifest_path, manifest)
+    assert validate_acceptance(manifest_path) == []
+
     tampered_artifact_preflight = json.loads(
         component_paths[12].read_text(encoding="utf-8")
     )

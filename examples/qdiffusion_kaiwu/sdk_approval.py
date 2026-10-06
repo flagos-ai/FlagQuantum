@@ -13,7 +13,7 @@ from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_kaiwu_sdk_approval"
-VERSION = "1.0"
+VERSION = "1.1"
 SDK_APPROVAL_FIELDS = frozenset(
     {
         "schema",
@@ -27,6 +27,9 @@ SDK_APPROVAL_FIELDS = frozenset(
         "service_terms_effective_date",
         "rights_reviewed_at",
         "approval_reference",
+        "project_no",
+        "project_assignment_reviewed_at",
+        "project_assignment_reference",
         "organizational_use_approved",
         "isolated_container_use_approved",
         "host_staging_approved",
@@ -92,6 +95,29 @@ def validate_sdk_approval_record(
         or approval_reference == "<required>"
     ):
         errors.append(f"{label}.approval_reference: frozen value is required")
+    project_no = record.get("project_no")
+    if not _canonical_printable_identifier(project_no) or project_no == "<required>":
+        errors.append(f"{label}.project_no: assigned project is required")
+    project_reviewed_at = record.get("project_assignment_reviewed_at")
+    try:
+        project_reviewed_timestamp = datetime.fromisoformat(
+            str(project_reviewed_at).replace("Z", "+00:00")
+        )
+        if project_reviewed_timestamp.tzinfo is None:
+            raise ValueError
+    except ValueError:
+        errors.append(
+            f"{label}.project_assignment_reviewed_at: expected a timezone-aware "
+            "timestamp"
+        )
+    project_reference = record.get("project_assignment_reference")
+    if (
+        not _canonical_printable_identifier(project_reference)
+        or project_reference == "<required>"
+    ):
+        errors.append(
+            f"{label}.project_assignment_reference: frozen value is required"
+        )
     for field in (
         "organizational_use_approved",
         "isolated_container_use_approved",
@@ -101,6 +127,20 @@ def validate_sdk_approval_record(
         if record.get(field) is not True:
             errors.append(f"{label}.{field}: explicit approval is required")
     return errors
+
+
+def verify_approved_project_assignment(
+    project_no: str, approval: dict[str, Any]
+) -> None:
+    """Require a runtime project to match the reviewed account assignment."""
+
+    errors = validate_sdk_approval_record(approval)
+    if errors:
+        raise ValueError("; ".join(errors))
+    if not _canonical_printable_identifier(project_no):
+        raise ValueError("project_no must be a canonical printable identifier")
+    if project_no != approval["project_no"]:
+        raise ValueError("project_no differs from the reviewed project assignment")
 
 
 def load_sdk_approval(path: Path) -> tuple[dict[str, Any], str]:

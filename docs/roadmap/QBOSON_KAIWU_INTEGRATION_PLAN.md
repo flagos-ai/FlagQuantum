@@ -209,6 +209,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   initialization, or quota submission; training, evaluation, and replay also
   do so before loading their executable plugin workflows. Final validation
   independently repeats the binding.
+- The private SDK/use approval contract is now version 1.1 and also binds the
+  exact SDK-capable project number, its account-bound assignment-review time,
+  and a retained assignment reference. The live smoke and all three larger
+  quota-consuming launchers require their normalized project argument to match
+  that reviewed value before credential discovery. Readiness reports a stable
+  mismatch reason, and final validation independently rejects either a smoke
+  project or any executable-component receipt from another project. A merely
+  printable project string can therefore no longer open the provider gate.
 - The SDK approval, environment lock, and live frozen-config readers now share
   a bounded descriptor-relative private-input path. They require an owner-only
   non-symlink parent and owner-only regular leaf, open the leaf with

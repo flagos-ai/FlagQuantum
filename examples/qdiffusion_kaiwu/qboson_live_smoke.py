@@ -29,6 +29,7 @@ from examples.qdiffusion_kaiwu.provider_resources import (
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
     verify_approved_kaiwu_distribution,
+    verify_approved_project_assignment,
 )
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
@@ -355,6 +356,7 @@ def main() -> None:
         parser.error(f"provider resource gate failed: {resource_reason}")
 
     sdk_approval, sdk_approval_sha256 = load_sdk_approval(arguments.sdk_approval)
+    verify_approved_project_assignment(arguments.project_no, sdk_approval)
     environment_record, environment_lock_sha256 = verify_environment_lock(
         arguments.environment_lock
     )

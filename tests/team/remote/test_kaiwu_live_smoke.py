@@ -648,7 +648,7 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
     )
     approval = {
         "schema": "flagquantum.qboson_kaiwu_sdk_approval",
-        "version": "1.0",
+        "version": "1.1",
         "distribution": "kaiwu",
         "sdk_version": "1.3.1",
         "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
@@ -661,6 +661,9 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
         "service_terms_effective_date": "2026-07-09",
         "rights_reviewed_at": "2026-10-06T00:00:00Z",
         "approval_reference": "LEGAL-APPROVAL-1",
+        "project_no": "CPQC-test",
+        "project_assignment_reviewed_at": "2026-10-06T00:00:00Z",
+        "project_assignment_reference": "QBOSON-ASSIGNMENT-1",
         "organizational_use_approved": True,
         "isolated_container_use_approved": True,
         "host_staging_approved": True,

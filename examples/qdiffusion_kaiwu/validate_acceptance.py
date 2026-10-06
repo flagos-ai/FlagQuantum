@@ -47,6 +47,9 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     SCHEMA as SDK_APPROVAL_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.sdk_approval import (
+    VERSION as SDK_APPROVAL_COMPONENT_VERSION,
+)
+from examples.qdiffusion_kaiwu.sdk_approval import (
     validate_sdk_approval_record,
     verify_approved_kaiwu_distribution,
 )
@@ -701,6 +704,14 @@ def _validate_execution_component_time(
             _parse_timestamp(
                 _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
                     "rights_reviewed_at"
+                )
+            ),
+        ),
+        (
+            "project assignment review",
+            _parse_timestamp(
+                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                    "project_assignment_reviewed_at"
                 )
             ),
         ),
@@ -2690,6 +2701,11 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: retained failure is not empty")
     if not _canonical_printable_identifier(record.get("project_no")):
         errors.append(f"{label}: project number is invalid")
+    approved_project = _mapping(
+        config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors
+    ).get("project_no")
+    if record.get("project_no") != approved_project:
+        errors.append(f"{label}: project number differs from reviewed assignment")
     if not _canonical_printable_identifier(record.get("qboson_target")):
         errors.append(f"{label}: top-level provider target is invalid")
     smoke_time: datetime | None = None
@@ -2722,6 +2738,12 @@ def _validate_provider_smoke_component(
                 ),
                 "SDK rights review",
             ),
+            (
+                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                    "project_assignment_reviewed_at"
+                ),
+                "project assignment review",
+            ),
         ):
             try:
                 prerequisite = datetime.fromisoformat(
@@ -2729,7 +2751,7 @@ def _validate_provider_smoke_component(
                 )
             except (TypeError, ValueError):
                 continue
-            if prerequisite.utcoffset() == timedelta(0) and smoke_time < prerequisite:
+            if prerequisite.utcoffset() is not None and smoke_time < prerequisite:
                 errors.append(f"{label}: predates the {timestamp_label}")
 
     tasks = record.get("tasks")
@@ -2942,7 +2964,12 @@ def _validate_component_bundle(
         return
 
     for digest, payload in component_payloads.items():
-        if payload.get("version") != "1.0":
+        expected_version = (
+            SDK_APPROVAL_COMPONENT_VERSION
+            if payload.get("schema") == SDK_APPROVAL_COMPONENT_SCHEMA
+            else "1.0"
+        )
+        if payload.get("version") != expected_version:
             errors.append(f"component {digest}: unsupported version")
         _validate_component_field_set(
             payload, label=f"component {digest}", errors=errors
@@ -2990,6 +3017,19 @@ def _validate_component_bundle(
     errors.extend(approval_errors)
     if sdk_approval != config.get("kaiwu_sdk"):
         errors.append("retained sdk approval differs from frozen configuration")
+    approved_project = sdk_approval.get("project_no")
+    for digest, payload in component_payloads.items():
+        if payload.get("schema") not in remote_component_schemas:
+            continue
+        receipts = payload.get("task_receipts")
+        if not isinstance(receipts, list):
+            continue
+        for index, receipt in enumerate(receipts):
+            if isinstance(receipt, dict) and receipt.get("project_no") != approved_project:
+                errors.append(
+                    f"component {digest}: remote receipt {index} project number "
+                    "differs from reviewed assignment"
+                )
 
     provider_smokes = [
         payload

@@ -63,6 +63,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
 )
 from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
+    verify_approved_project_assignment,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.stable_source_tree import (
@@ -640,6 +641,7 @@ def main() -> None:
     )
 
     config, config_sha256 = _load_frozen_config(args.config)
+    verify_approved_project_assignment(args.project_no, config["kaiwu_sdk"])
     if args.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
     if args.seed not in config["seeds"]:

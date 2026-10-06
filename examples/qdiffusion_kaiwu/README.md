@@ -198,6 +198,9 @@ the SDK rights gate before the later protein configuration is complete. Its
 path must be absolute; the file must be regular, non-symlinked, and mode `0600`.
 The smoke records its SHA-256 and cross-checks the approved Kaiwu version and
 wheel digest against the verified environment lock before credential discovery.
+Version 1.1 also retains the reviewed SDK-capable project number, assignment
+review time, and assignment reference. Every quota-consuming CLI requires its
+project argument to match that private record before credentials are resolved.
 Later QDiffusion entrypoints repeat the cross-check using the identical object
 embedded under `acceptance_config.json.kaiwu_sdk`.
 
@@ -266,7 +269,8 @@ The live smoke, system, training, and replay producers require the exact pinned
 caller sets a real-transport flag.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
-private checkpoint directory, an explicitly selected project, and a current
+private checkpoint directory, the project assigned in the reviewed SDK approval,
+and a current
 private provider-resource snapshot that passes the optimization-plus-sampling
 gate. The snapshot is loaded before SDK approval, credentials, or license
 initialization, and its exact digest is retained in the smoke record. All

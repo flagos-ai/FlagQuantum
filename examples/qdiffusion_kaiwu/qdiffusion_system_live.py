@@ -44,6 +44,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 )
 from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
+    verify_approved_project_assignment,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
@@ -546,6 +547,7 @@ def main() -> None:
         arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
     )
     config, config_sha256 = _load_frozen_config(arguments.config)
+    verify_approved_project_assignment(arguments.project_no, config["kaiwu_sdk"])
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
     provider_resources, provider_resources_sha256 = load_provider_resources(

@@ -70,7 +70,7 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
 def test_readiness_never_serializes_credential_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sdk_approval = {"approved": True}
+    sdk_approval = {"approved": True, "project_no": "sensitive-project"}
     config = {
         "software": {
             "source_revision": "a" * 40,
@@ -260,7 +260,7 @@ def test_a800_cuda_zero_inspection(
 def test_readiness_rejects_preflights_from_different_transfer_manifests(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sdk_approval = {"approved": True}
+    sdk_approval = {"approved": True, "project_no": "present"}
     config = {
         "software": {
             "source_revision": "a" * 40,
@@ -338,7 +338,7 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
 def test_provider_smoke_readiness_does_not_require_protein_config(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sdk_approval = {"approved": True}
+    sdk_approval = {"approved": True, "project_no": "present"}
     monkeypatch.setattr(
         readiness_module,
         "verify_environment_lock",
@@ -383,11 +383,34 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
     assert report["required_stage_ready"] is True
     assert report["checks"]["config"]["status"] == "missing"
 
+    mismatched = audit_readiness(
+        config_path=None,
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        provider_resources_path=Path("/private/provider-resources.json"),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "different-project",
+        },
+        required_stage="provider-smoke",
+    )
+    assert mismatched["checks"]["project"] == {
+        "status": "fail",
+        "reason": "project_differs_from_reviewed_assignment",
+    }
+    assert mismatched["ready_to_start_provider_smoke"] is False
+
 
 def test_provider_smoke_readiness_rejects_zero_sampling_resources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sdk_approval = {"approved": True}
+    sdk_approval = {"approved": True, "project_no": "present"}
     monkeypatch.setattr(
         readiness_module,
         "verify_environment_lock",
@@ -496,14 +519,17 @@ def test_readiness_cli_exit_tracks_selected_stage(
 def test_system_readiness_rejects_different_sdk_approval_records(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    standalone_approval = {"approval_reference": "standalone"}
+    standalone_approval = {
+        "approval_reference": "standalone",
+        "project_no": "present",
+    }
     config = {
         "software": {
             "source_revision": "a" * 40,
             "kaiwu_pytorch_plugin_revision": "b" * 40,
             "environment_lock_sha256": "c" * 64,
         },
-        "kaiwu_sdk": {"approval_reference": "config"},
+        "kaiwu_sdk": {"approval_reference": "config", "project_no": "present"},
     }
     monkeypatch.setattr(
         readiness_module,
@@ -575,7 +601,7 @@ def test_system_readiness_rejects_different_sdk_approval_records(
 def test_system_readiness_requires_a800_cuda_zero(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sdk_approval = {"approved": True}
+    sdk_approval = {"approved": True, "project_no": "present"}
     config = {
         "software": {
             "source_revision": "a" * 40,
