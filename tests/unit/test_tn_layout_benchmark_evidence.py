@@ -15,12 +15,14 @@ from benchmarks.tn_layout_contraction import (
     FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
     FALLBACK_MINIMUM_SPEEDUP,
     IMPLEMENTATION_ID,
+    MEASUREMENT_ORDERING,
     RESULT_NAMES,
     RUN_SCHEMA,
     RUNNER,
     SELECTED_LOGICAL_BMM_SHAPES,
     SEMANTIC_ID,
     SHAPE_MATRIX,
+    _counterbalanced_orders,
     _fallback_within_overhead_budget,
     merge_runs,
     validate_evidence,
@@ -40,7 +42,7 @@ _ARTIFACT = (
 
 
 def _measurement(scale: float = 1.0) -> dict[str, object]:
-    samples = [value * scale for value in (1e-4, 2e-4, 3e-4)]
+    samples = [value * scale for value in (1e-4, 2e-4, 3e-4, 4e-4, 5e-4, 6e-4)]
     return {
         "samples_seconds_per_invocation": samples,
         "median_seconds_per_invocation": statistics.median(samples),
@@ -150,8 +152,10 @@ def _run(
         "measurement": {
             "clock": "time.perf_counter",
             "synchronization": "torch.cuda.synchronize after each invocation group",
+            "ordering": MEASUREMENT_ORDERING,
+            "order_cycle_length": len(RESULT_NAMES),
             "warmup": 2,
-            "repeats": 3,
+            "repeats": 6,
             "group_size": 4,
             "seed": 261003,
         },
@@ -180,6 +184,36 @@ def _matrix(
 
 def test_run_validator_accepts_complete_raw_measurements() -> None:
     validate_run(_run("jp-a800-171", "stock_triton"))
+
+
+def test_counterbalanced_orders_fill_every_position_once_per_cycle() -> None:
+    orders = _counterbalanced_orders(RESULT_NAMES, len(RESULT_NAMES))
+
+    assert len(set(orders)) == len(RESULT_NAMES)
+    for position in range(len(RESULT_NAMES)):
+        assert {order[position] for order in orders} == set(RESULT_NAMES)
+    adjacent_pairs = {
+        pair for order in orders for pair in zip(order, order[1:], strict=False)
+    }
+    assert adjacent_pairs == {
+        (left, right)
+        for left in RESULT_NAMES
+        for right in RESULT_NAMES
+        if left != right
+    }
+
+
+def test_counterbalanced_orders_require_complete_cycles() -> None:
+    with pytest.raises(ValueError, match="multiple of operation count"):
+        _counterbalanced_orders(RESULT_NAMES, len(RESULT_NAMES) + 1)
+
+
+def test_run_validator_requires_counterbalanced_ordering() -> None:
+    payload = _run("jp-a800-171", "stock_triton")
+    payload["measurement"]["ordering"] = "fixed order"
+
+    with pytest.raises(ValueError, match="balanced Latin square"):
+        validate_run(payload)
 
 
 @pytest.mark.parametrize("result_name", RESULT_NAMES)
