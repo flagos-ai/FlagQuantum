@@ -51,17 +51,18 @@ acceptance.
 The development probe records both the stable validation-host alias and the
 machine-reported hostname because they are different on the current systems.
 The container hostname is explicitly set to the observed host identity because
-Docker otherwise assigns an unrelated container ID. After extracting the
-reviewed source and plugin archives, invoke the bounded runner on the first host
-as follows:
+Docker otherwise assigns an unrelated container ID. Run the bounded streaming
+runner from the reviewed local checkout. It revalidates the local bundle and
+post-extraction preflight before opening SSH, streams the archives into the
+container over standard input, and captures the returned JSON in a new private
+local file:
 
 ```bash
 mkdir -m 700 private-evidence
 bash examples/qdiffusion_kaiwu/run_a800_development_probe.sh \
   jp-a800-171 \
   bm-baai-dx-zone1-lc-a800-80g-15-171 \
-  "$PWD" \
-  /absolute/path/to/kaiwu-pytorch-plugin \
+  /absolute/private-transfer-bundle \
   "$PWD/private-evidence/jp-a800-171-extraction-preflight.json" \
   "$PWD/private-evidence/jp-a800-171-development.json" \
   FULL_FLAGQUANTUM_REVISION \
@@ -72,14 +73,18 @@ bash examples/qdiffusion_kaiwu/run_a800_development_probe.sh \
 The runner executes `qdiffusion_system_development_probe.py`, covering proposal
 forward, conditioned Boltzmann sampling through `KaiwuSampler`, energy
 objective, backward, optimizer update, and one guided generation step. The
-output is a new mode-0600 file and is never an acceptance record because the
-transport is explicitly the in-memory development fake. The runner exposes
-only GPU 0, disables networking, mounts both code trees read-only, uses a
-read-only container filesystem, mounts the post-extraction preflight separately
-read-only, recomputes both mounted trees against that preflight before plugin
-import, and persists only the requested evidence file. The record retains
-the preflight and common transfer-manifest digests. The final argument is the
-full local Docker image ID, not a mutable tag. Resolve and review it
+output is a new local mode-0600 file and is never an acceptance record because
+the transport is explicitly the in-memory development fake. The remote runner
+exposes only GPU 0, disables networking and container logging, uses a read-only
+container filesystem, and places the transferred archives, extracted trees,
+and remote evidence only in tmpfs. It uses no bind mount and the auto-removed
+container leaves no source or evidence file on the validation host. Before
+plugin import, the probe recomputes both extracted trees against the streamed
+post-extraction preflight. The local capture gate independently requires the
+fake-transport classification, closed acceptance fields, exact source,
+preflight, manifest, host and image identities, A800 `cuda:0` placement, and
+bounded call accounting before publishing the record. The final argument is
+the full remote Docker image ID, not a mutable tag. Resolve and review it
 independently on each host with `docker image inspect`; the same tag currently
 maps to different image IDs on the two validation hosts.
 

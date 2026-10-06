@@ -87,6 +87,18 @@ def test_transfer_bundle_rejects_digest_mismatch(tmp_path: Path) -> None:
         verify_transfer_bundle(manifest, target_host="jp-a800-172")
 
 
+def test_transfer_bundle_rejects_symlinked_archive(tmp_path: Path) -> None:
+    manifest = _bundle(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    archive = tmp_path / payload["artifacts"][0]["filename"]
+    moved = tmp_path / "reviewed-real.payload"
+    archive.rename(moved)
+    archive.symlink_to(moved.name)
+
+    with pytest.raises(ValueError, match="regular, colocated file"):
+        verify_transfer_bundle(manifest, target_host="jp-a800-171")
+
+
 def test_transfer_bundle_rejects_unlisted_archive(tmp_path: Path) -> None:
     manifest = _bundle(tmp_path)
     _archive(tmp_path / "unexpected.tar.gz", root="unexpected")

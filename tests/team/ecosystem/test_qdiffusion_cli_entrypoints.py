@@ -21,6 +21,7 @@ ENTRYPOINTS = (
     "qdiffusion_protein_training_live",
     "qdiffusion_system_development_probe",
     "qdiffusion_system_live",
+    "stream_development_evidence",
     "validate_acceptance",
     "verify_extracted_bundle",
     "verify_environment_lock",

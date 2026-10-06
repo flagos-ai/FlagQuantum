@@ -224,6 +224,22 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `real_provider_evidence=false`, and `system_acceptance=false`. They therefore
   establish only the two-host A800 development path, not the pinned-runtime,
   real-provider, system, portability, or protein acceptance gates.
+- The development runner now implements the approved no-remote-persistence
+  path directly: it validates a private reviewed bundle and post-extraction
+  preflight locally, streams all inputs over SSH into a network-disabled,
+  read-only, auto-removed container, uses tmpfs for both the extracted workspace
+  and remote record, and streams JSON back to an exclusive local mode-0600
+  file. It uses no host bind mount and disables container logging. A separate
+  local capture gate rejects identity drift, non-A800 or non-`cuda:0` execution,
+  unbounded call accounting, or any record that claims real provider use or
+  acceptance. The complete path passed again on both hosts at revision
+  `178bb9e589e600411dc3c5c1e46f765e6e81465a`; the two private development
+  records have SHA-256 digests
+  `5f6d576ffbdf9bd8b96bb18472c0958ed5c6dbd42ed5df2fa311926ecaf7c3cc`
+  and
+  `6752739ae2b53eb02b5d1eab4ccca0378d0011c87beda8ab6b8e4ae8e6215bc`.
+  These remain development-only records and are not inputs to the live
+  acceptance manifest.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat

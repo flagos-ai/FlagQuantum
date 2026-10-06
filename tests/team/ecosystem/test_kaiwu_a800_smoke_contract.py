@@ -8,6 +8,9 @@ from examples.qdiffusion_kaiwu.a800_sampler_smoke import _write_private_json
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _write_private_json as _write_development_json,
 )
+from examples.qdiffusion_kaiwu.stream_development_evidence import (
+    validate_development_record,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -69,17 +72,88 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert "--gpus device=0" in source
     assert "--network none" in source
     assert "--read-only" in source
-    assert '--hostname "$expected_hostname"' in source
-    assert ":/workspace/flagquantum:ro" in source
-    assert ":/workspace/kaiwu-plugin:ro" in source
-    assert ':/source-preflight.json:ro"' in source
-    assert "--source-preflight /source-preflight.json" in source
-    assert "--plugin-root /workspace/kaiwu-plugin" in source
+    assert "--log-driver none" in source
+    assert "--hostname $expected_hostname" in source
+    assert "--tmpfs /workspace:" in source
+    assert "--volume" not in source
+    assert '| ssh "$execution_host"' in source
+    assert "stream_development_evidence capture" in source
+    assert "--source-preflight /workspace/input/" in source
+    assert "--plugin-root /workspace/kaiwu-pytorch-plugin-" in source
     assert "VALIDATION_IMAGE_ID" in source
-    assert "docker image inspect" in source
     assert '"$validation_image_id"' in source
     assert "PYTHONNOUSERSITE=1" in source
     assert "-m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe" in source
+
+
+def _streamed_record() -> dict[str, object]:
+    return {
+        "schema": "flagquantum.qboson_qdiffusion_system_development",
+        "version": "1.0",
+        "evidence_class": "development_fake_transport",
+        "system_acceptance": False,
+        "source_revision": "a" * 40,
+        "kaiwu_pytorch_plugin_revision": "b" * 40,
+        "source_preflight_sha256": "c" * 64,
+        "transfer_manifest_sha256": "d" * 64,
+        "validation_image_id": f"sha256:{'e' * 64}",
+        "execution_host": "jp-a800-171",
+        "observed_hostname": "bm-baai-dx-zone1-lc-a800-80g-15-171",
+        "requested_cuda_device": "cuda:0",
+        "observed_tensor_device": "cuda:0",
+        "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+        "proposal_device": "cuda:0",
+        "energy_device": "cuda:0",
+        "generated_device": "cuda:0",
+        "transport": "in_memory_fake",
+        "qboson_hardware_used": False,
+        "real_provider_evidence": False,
+        "fallback_occurred": False,
+        "token_constraints_passed": True,
+        "remote_call_count": 10,
+        "remote_call_budget": 64,
+        "task_count": 10,
+    }
+
+
+def _validate_streamed(record: dict[str, object]) -> dict[str, object]:
+    return validate_development_record(
+        record,
+        execution_host="jp-a800-171",
+        expected_hostname="bm-baai-dx-zone1-lc-a800-80g-15-171",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        validation_image_id=f"sha256:{'e' * 64}",
+        source_preflight_sha256="c" * 64,
+        transfer_manifest_sha256="d" * 64,
+    )
+
+
+def test_streamed_development_record_preserves_non_acceptance_identity() -> None:
+    record = _streamed_record()
+
+    assert _validate_streamed(record) is record
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("system_acceptance", True),
+        ("qboson_hardware_used", True),
+        ("transport", "kaiwu_cim"),
+        ("observed_tensor_device", "cpu"),
+        ("source_preflight_sha256", "f" * 64),
+        ("remote_call_count", 65),
+    ),
+)
+def test_streamed_development_record_rejects_overclaim_or_identity_drift(
+    field: str, value: object
+) -> None:
+    record = _streamed_record()
+    record[field] = value
+
+    with pytest.raises(ValueError):
+        _validate_streamed(record)
 
 
 def test_qdiffusion_development_source_cannot_claim_acceptance() -> None:

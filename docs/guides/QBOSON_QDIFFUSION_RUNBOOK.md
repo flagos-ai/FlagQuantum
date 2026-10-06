@@ -172,15 +172,19 @@ It checks proposal forward, conditioned Boltzmann sampling through
 `KaiwuSampler`, the energy objective, backward, an optimizer update, and one
 guided generation step on the observed A800.
 
-Run `examples/qdiffusion_kaiwu/run_a800_development_probe.sh` with absolute
-source, plugin, extraction-preflight, and output paths. The extraction-preflight
-record is mounted separately read-only and must bind the supplied source and
-plugin revisions to the target alias. The probe recomputes both mounted source
-trees against that record before importing the plugin. Supply the stable SSH
-alias as
+Run `examples/qdiffusion_kaiwu/run_a800_development_probe.sh` from the reviewed
+local checkout with absolute transfer-directory, extraction-preflight, and
+local output paths. The local gate revalidates the bundle and requires the
+extraction-preflight record to bind the supplied source and plugin revisions to
+the target alias before opening SSH. Supply the stable SSH alias as
 `EXECUTION_HOST` and the separately observed machine hostname as
-`EXPECTED_HOSTNAME`. The runner disables networking, exposes only GPU 0, mounts
-both code trees read-only, and writes one exclusive mode-0600 record.
+`EXPECTED_HOSTNAME`. The runner streams all reviewed inputs to standard input of
+an auto-removed container. It disables networking and container logging,
+exposes only GPU 0, uses a read-only root filesystem, places its input,
+extracted workspace, and remote evidence only in tmpfs, and uses no host bind
+mount. The remote JSON is streamed back through standard output and is written
+only to one exclusive local mode-0600 record after a second fail-closed
+validation. No source or evidence file is written to the validation host.
 Pass the host's full reviewed `sha256:...` image ID as the final argument. Do
 not use the mutable `flagquantum/flagtree:0.7.0-validation` tag directly: the
 tag currently resolves to different image IDs on `jp-a800-171` and

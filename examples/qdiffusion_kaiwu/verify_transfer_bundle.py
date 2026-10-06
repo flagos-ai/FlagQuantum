@@ -179,10 +179,11 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
         ):
             raise ValueError(f"artifact filename does not match revision: {filename}")
 
-        artifact_path = (root / filename).resolve()
+        artifact_candidate = root / filename
+        artifact_path = artifact_candidate.resolve()
         if (
             not artifact_path.is_relative_to(root)
-            or artifact_path.is_symlink()
+            or artifact_candidate.is_symlink()
             or not artifact_path.is_file()
         ):
             raise ValueError(f"artifact must be a regular, colocated file: {filename}")
