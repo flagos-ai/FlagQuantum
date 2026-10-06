@@ -818,8 +818,6 @@ def _apply_diagonal_matrix(
     """Apply a known diagonal gate without launching a dense batched matmul."""
 
     wires = tuple(wires)
-    bsz = state.shape[0]
-    dim = 2 ** len(wires)
     if (
         dispatched := _try_apply_cataloged_diagonal_matrix(
             state,
@@ -829,6 +827,27 @@ def _apply_diagonal_matrix(
         )
     ) is not None:
         return dispatched
+    return _apply_diagonal_matrix_reference(
+        state,
+        matrix,
+        wires,
+        n_wires,
+        layout=layout,
+    )
+
+
+def _apply_diagonal_matrix_reference(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply a diagonal matrix through the established PyTorch reference path."""
+
+    wires = tuple(wires)
+    bsz = state.shape[0]
+    dim = 2 ** len(wires)
     if state.device.type == "cpu" and state.is_contiguous():
         matrix = matrix.to(device=state.device, dtype=state.dtype)
         diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
