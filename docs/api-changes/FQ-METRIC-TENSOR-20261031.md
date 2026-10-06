@@ -88,11 +88,14 @@ factor is a claim the user can check, not a footnote.
 
 ### The matrix is indexed by parameter, not by gate occurrence
 
-For a program where one parameter drives two gates, PennyLane reports a
-coordinate per gate occurrence -- three coordinates for a two-parameter program.
-Folding those occurrences into the parameter coordinate is what makes the two
-conventions comparable, and it is the only difference between them: measured
-against PennyLane 0.45.1 on that program, the folded matrix agrees to `8.638e-12`.
+For a program where one parameter drives two gates, the two occurrences add into
+one coordinate instead of appearing as two. This was written up as a difference
+from PennyLane and **the measurement says it is not one**: `qml.metric_tensor`
+0.45.1 returns a two-by-two matrix for the same program and agrees to
+`8.638e-12`. Declaring three parameters on that side gives the three-coordinate
+form instead, and that agrees to `5.853e-12`. Both frameworks index the matrix by
+the parameter vector the caller declares, which is why the shared-parameter
+witness is a measurement of the route rather than of a convention difference.
 
 ### A mixed state is refused rather than reinterpreted
 

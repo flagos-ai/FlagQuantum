@@ -160,12 +160,16 @@ def test_the_recorded_metric_is_the_value_the_program_has(name: str) -> None:
 
 
 def test_the_repeated_witness_folds_two_occurrences_into_one_coordinate() -> None:
-    """The matrix is indexed by parameter, not by gate occurrence.
+    """The matrix is indexed by the parameter, not by the gate occurrence.
 
-    PennyLane's ``qml.metric_tensor`` reports a coordinate per gate occurrence
-    for this program; folding the two occurrences of the shared parameter into
-    one coordinate is what makes the two conventions comparable, and the
-    off-diagonal cell is the part of the value that only exists after folding.
+    A parameter that drives two gates has one coordinate and not two, so the
+    second occurrence adds into the first instead of appearing beside it, and the
+    off-diagonal cell is the part of the value that exists only after that
+    addition. PennyLane indexes the same way: measured against
+    ``qml.metric_tensor`` 0.45.1, this program returns a two-by-two matrix there
+    and agrees to ``8.64e-12``. The three-coordinate form appears on that side
+    only when the caller declares three parameters, and that form agrees to
+    ``5.85e-12``.
     """
 
     recorded = _GATE._recorded_metric(_witness("repeated"))
