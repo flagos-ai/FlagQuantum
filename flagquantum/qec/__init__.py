@@ -80,6 +80,13 @@ from .sampling import (
     sample_memory_circuit,
     sample_memory_measurements,
 )
+from .sliding_window import (
+    SlidingWindowDecoder,
+    SlidingWindowDecodeResult,
+    dem_chunks_to_d_sparse,
+    dem_chunks_to_o_sparse,
+    dem_chunks_to_pcm,
+)
 from .types import (
     Correction,
     DecodeResult,
@@ -148,6 +155,8 @@ __all__ = (
     "RepetitionMemoryShot",
     "RotatedSurfaceCode",
     "SeamId",
+    "SlidingWindowDecodeResult",
+    "SlidingWindowDecoder",
     "StabilizerCode",
     "SteaneCode",
     "SyndromeRound",
@@ -160,6 +169,9 @@ __all__ = (
     "decoder_names",
     "dem_chunk_from_spec",
     "dem_chunks_from_spec",
+    "dem_chunks_to_d_sparse",
+    "dem_chunks_to_o_sparse",
+    "dem_chunks_to_pcm",
     "dem_close",
     "dem_close_all",
     "dem_stitch",
