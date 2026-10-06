@@ -902,6 +902,26 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   boundary refuses a new submit after that UTC instant before it creates a
   recovery bundle or invokes the SDK, while explicit restore, status, and
   result retrieval for an existing identity remain available.
+- The isolated development rehearsal was refreshed on both validation hosts at
+  source revision `a56422663039b18dfb9578667a16183d92ff970c`, after the
+  provider-resource budget and submission-deadline gates were committed. Both
+  retained mode-0600 records passed the offline manifest, extraction-preflight,
+  host, image, and revision hash-chain validator. Their SHA-256 digests are
+  `b8b1a5502de2f93a7d3057796fef507ac4c5f07ff89d3c407a0488745353a476`
+  (`jp-a800-171`) and
+  `048e27548890f62732f7559145fb3fbc1f3abc3686da4f5c8420c5cb10363190`
+  (`jp-a800-172`). Each independent run observed
+  `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten calls within the
+  64-call development budget, produced a finite objective plus nonzero gradient
+  and parameter update, passed token constraints, and reported no fallback.
+  Reviewed source and evidence existed on each host only inside a
+  network-disabled, read-only, auto-removed container whose input, workspace,
+  and output were tmpfs-backed and whose logging was disabled. No QBoson
+  credential, service, or quota was used. The records remain
+  `development_fake_transport` with `qboson_hardware_used=false`,
+  `real_provider_evidence=false`, and `system_acceptance=false`; they establish
+  neither live-provider or protein acceptance nor distributed, multi-node, or
+  domestic-accelerator support.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor
