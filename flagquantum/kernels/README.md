@@ -456,7 +456,7 @@ artifact records the public catalog dispatch against the product path starting
 from the same angle inputs. It contains 30 counterbalanced, synchronized groups
 of 10 invocations for four fixed cases on both A800 hosts under stock Triton
 3.7.1 and FlagTree 0.7.0. All 16 host/compiler/shape cases meet the `1.0x`
-performance floor: observed speedups range from `1.433x` through `7.334x`,
+performance floor: observed speedups range from `1.450x` through `6.636x`,
 maximum absolute error is below `3.4e-7`, and maximum relative L2 error is below
 `4.1e-8`. The aggregate decision is `default_dispatch_enabled`. This remains
 bounded single-device development evidence, not a release or distributed

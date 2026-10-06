@@ -35,7 +35,7 @@ _ARTIFACT = (
     / "local"
     / "statevector_pauli_rotation_2q_dispatch_a800.json"
 )
-_EVIDENCE_REVISION = "d1a537d59ff60829d4837c600a52842dd7c9b492"
+_EVIDENCE_REVISION = "6bd51596dbad18e8e69773974acf10e40bb9826e"
 
 
 def _timing(seconds: float) -> dict[str, Any]:
@@ -142,8 +142,8 @@ def test_checked_in_sv011_dispatch_evidence_is_profitable() -> None:
     }
     aggregate = payload["aggregate"]
     assert aggregate["case_count"] == 16
-    assert aggregate["minimum_public_speedup_over_pytorch"] > 1.43
-    assert aggregate["maximum_public_speedup_over_pytorch"] > 7.33
+    assert aggregate["minimum_public_speedup_over_pytorch"] > 1.45
+    assert aggregate["maximum_public_speedup_over_pytorch"] > 6.63
     assert aggregate["maximum_absolute_error"] <= 3.4e-7
     assert aggregate["maximum_relative_l2_error"] <= 4.1e-8
     assert aggregate["all_cases_meet_performance_floor"] is True
