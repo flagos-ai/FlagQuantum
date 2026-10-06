@@ -225,6 +225,16 @@ canonical rewrites to a fixed point. Use `compiler.compile` when a concrete
 target topology or target-aware lowering is required. The complete executable
 example is `python -m examples.compiler_optimize`.
 
+`optimize(program, optimization_level=...)` and `compile(program,
+optimization_level=...)` select how much of the pass library runs: `0` returns
+the program unchanged, `1` cancels and merges without commuting across a gate, and
+`2` -- the default, and the behaviour of every release before the parameter
+existed -- additionally removes diagonal gates before a measurement and merges
+rotations across a proven commuting gap. Level `3` is declared and reserved and
+raises `CompilationError`, because the unitary-synthesis stage it would add has no
+pass-over-IR counterpart in this package yet. Any other value is refused the same
+way. The level that ran is recorded in `optimized_ir.metadata["optimization"]`.
+
 For target-aware compilation, provide an explicit coupling map:
 
 ```python

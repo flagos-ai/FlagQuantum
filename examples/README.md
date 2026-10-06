@@ -77,6 +77,15 @@ fixed point, and compares the optimized program with the original numerical
 result. It uses `compiler.optimize`; target-aware lowering and routing belong to
 `compiler.compile`.
 
+It is also the compiler's optimization-level path. It prints the gate count at
+every implemented level, proves each level preserves the source state, shows a
+circuit where level `2` reaches two gates where level `1` stops at three and
+where level `0` returns the program as submitted, forwards the same level through
+`compiler.compile`, and prints the reserved level failing closed with its reason.
+The level vocabulary is read from
+`flagquantum.compiler.optimization_levels`, so adding a level changes one module
+and this path reports it.
+
 To rewrite gates a target cannot run into the gates that target publishes:
 
 ```bash

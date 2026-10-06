@@ -31,6 +31,10 @@ from flagquantum.compiler.inverse_cancellation import (
     inverse_pairs,
     merge_inverse_pairs,
 )
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.compiler.pipeline import _SELF_INVERSE
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, inverse_operator
@@ -545,24 +549,29 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """One call site, inside the loop, so the loop can use what it frees."""
+    """One composition, inside the loop, so the loop can use what it frees.
+
+    The loop runs the sequence `optimization_levels` declares rather than a copy of
+    it, so the composition this test pins is the declaration, and the check that the
+    loop reaches it is that the driver names no pass directly.
+    """
+
+    composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
+    assert composition.count("merge_inverse_pairs") == 1
 
     tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
-    calls = [
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "merge_inverse_pairs"
-    ]
-    assert len(calls) == 1
-
     loop = next(
         node
         for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
     )
-    assert any(call in ast.walk(loop) for call in calls)
+    called = {
+        node.func.id
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    assert "optimization_level_stages" in called
+    assert "merge_inverse_pairs" not in called
 
 
 def test_random_runs_of_the_declared_pairs_preserve_the_state() -> None:
