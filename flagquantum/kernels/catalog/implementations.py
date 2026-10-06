@@ -220,6 +220,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_two_site",
         "fused_mps_range_projection",
         layouts=("mps_two_site", "projected_range"),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
