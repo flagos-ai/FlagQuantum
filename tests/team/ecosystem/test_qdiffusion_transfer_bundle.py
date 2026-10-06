@@ -10,6 +10,7 @@ import pytest
 
 from examples.qdiffusion_kaiwu.verify_extracted_bundle import verify_extracted_bundle
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
+    MAX_TRANSFER_MANIFEST_BYTES,
     _write_private_json,
     verify_transfer_bundle,
 )
@@ -62,6 +63,7 @@ def _bundle(
     }
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
+    path.chmod(0o600)
     return path
 
 
@@ -85,6 +87,37 @@ def test_transfer_bundle_rejects_digest_mismatch(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="SHA-256 mismatch"):
         verify_transfer_bundle(manifest, target_host="jp-a800-172")
+
+
+def test_transfer_bundle_requires_private_bounded_manifest(tmp_path: Path) -> None:
+    public_parent = tmp_path / "public"
+    public_parent.mkdir(mode=0o755)
+    public_parent.chmod(0o755)
+    public_manifest = _bundle(public_parent)
+    with pytest.raises(ValueError, match="parent must be an existing private"):
+        verify_transfer_bundle(public_manifest, target_host="jp-a800-171")
+
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    private_manifest = _bundle(private_parent)
+    private_manifest.chmod(0o644)
+    with pytest.raises(ValueError, match="group or others"):
+        verify_transfer_bundle(private_manifest, target_host="jp-a800-171")
+
+    private_manifest.write_bytes(b" " * (MAX_TRANSFER_MANIFEST_BYTES + 1))
+    private_manifest.chmod(0o600)
+    with pytest.raises(ValueError, match="exceeds the bounded size"):
+        verify_transfer_bundle(private_manifest, target_host="jp-a800-171")
+
+
+def test_transfer_bundle_rejects_symlinked_manifest(tmp_path: Path) -> None:
+    manifest = _bundle(tmp_path)
+    target = tmp_path / "manifest-target.json"
+    manifest.rename(target)
+    manifest.symlink_to(target.name)
+
+    with pytest.raises(ValueError, match="regular, non-symlink"):
+        verify_transfer_bundle(manifest, target_host="jp-a800-171")
 
 
 def test_transfer_bundle_rejects_symlinked_archive(tmp_path: Path) -> None:
@@ -172,7 +205,7 @@ def test_transfer_verification_requires_private_real_parent(
 
 def test_extracted_bundle_is_bound_to_archive_content(tmp_path: Path) -> None:
     transfer = tmp_path / "transfer"
-    transfer.mkdir()
+    transfer.mkdir(mode=0o700)
     manifest = _bundle(transfer)
     extracted = tmp_path / "extracted"
     extracted.mkdir()
@@ -193,7 +226,7 @@ def test_extracted_bundle_is_bound_to_archive_content(tmp_path: Path) -> None:
 
 def test_extracted_bundle_rejects_changed_or_extra_content(tmp_path: Path) -> None:
     transfer = tmp_path / "transfer"
-    transfer.mkdir()
+    transfer.mkdir(mode=0o700)
     manifest = _bundle(transfer)
     extracted = tmp_path / "extracted"
     extracted.mkdir()
@@ -222,7 +255,7 @@ def test_extracted_bundle_rejects_changed_or_extra_content(tmp_path: Path) -> No
 
 def test_extracted_bundle_rejects_symlink(tmp_path: Path) -> None:
     transfer = tmp_path / "transfer"
-    transfer.mkdir()
+    transfer.mkdir(mode=0o700)
     manifest = _bundle(transfer)
     extracted = tmp_path / "extracted"
     extracted.mkdir()
@@ -234,6 +267,30 @@ def test_extracted_bundle_rejects_symlink(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="contains a symlink"):
+        verify_extracted_bundle(
+            manifest,
+            extraction_root=extracted,
+            target_host="jp-a800-171",
+        )
+
+
+def test_extracted_bundle_rejects_manifest_drift_between_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transfer = tmp_path / "transfer"
+    transfer.mkdir(mode=0o700)
+    manifest = _bundle(transfer)
+    extracted = tmp_path / "extracted"
+    extracted.mkdir()
+    for archive_path in transfer.glob("*.tar.gz"):
+        with tarfile.open(archive_path, mode="r:gz") as archive:
+            archive.extractall(extracted, filter="data")
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.verify_extracted_bundle.read_private_bytes",
+        lambda *args, **kwargs: b"{}",
+    )
+    with pytest.raises(ValueError, match="changed after bundle verification"):
         verify_extracted_bundle(
             manifest,
             extraction_root=extracted,

@@ -203,6 +203,10 @@ three reviewed artifact roles, checks each revision-derived filename and
 SHA-256 digest, binds each archive's internal root to its declared revision, and
 scans gzip-tar members without extraction. Absolute or parent-traversing names,
 duplicate names, links, devices, FIFOs, and other special members fail closed.
+The manifest must be a mode-0600 regular file in an owner-only real directory
+and is read through that directory descriptor with a 4 MiB bound. Extracted-tree
+verification captures it again through the same gate and requires the digest to
+remain identical to the bundle-verification pass before parsing it.
 Its mode-0600 output records the machine hostname and target alias but is only
 transfer-preflight evidence; it proves neither A800 execution nor QBoson use.
 

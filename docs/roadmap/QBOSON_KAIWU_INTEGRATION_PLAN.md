@@ -361,6 +361,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   preflight loading also uses the bounded descriptor-relative private reader,
   rejecting public or replaced parents and oversized inputs rather than relying
   on an ordinary path read.
+- Transfer and post-extraction verification now load the reviewed manifest
+  through the same bounded descriptor-relative private reader. The extraction
+  verifier rejects a manifest whose captured digest changes after the bundle
+  pass, and streamed development-record capture obtains its source-preflight
+  digest from the full private semantic validator rather than an ordinary path
+  hash.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat

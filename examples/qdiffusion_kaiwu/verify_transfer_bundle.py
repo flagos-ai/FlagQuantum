@@ -13,10 +13,13 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 if __package__:
-    from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+    from examples.qdiffusion_kaiwu.private_io import (
+        read_private_bytes,
+        write_private_json_exclusive,
+    )
     from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 else:  # Direct execution through a sibling file entry point.
-    from private_io import write_private_json_exclusive
+    from private_io import read_private_bytes, write_private_json_exclusive
     from strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
@@ -36,6 +39,7 @@ ARCHIVE_ROOT_PREFIXES = {
 MAX_COMPRESSED_BYTES = 1024 * 1024 * 1024
 MAX_UNPACKED_BYTES = 5 * 1024 * 1024 * 1024
 MAX_MEMBERS = 250_000
+MAX_TRANSFER_MANIFEST_BYTES = 4 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -113,13 +117,13 @@ def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
 def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str, Any]:
     """Verify identities and archive safety without extracting any content."""
 
-    if not manifest_path.is_absolute():
-        raise ValueError("manifest path must be absolute")
-    if manifest_path.is_symlink() or not manifest_path.is_file():
-        raise ValueError("manifest must be a regular, non-symlink file")
     if target_host not in HOSTS:
         raise ValueError("target host is outside the reviewed A800 pair")
-    encoded_manifest = manifest_path.read_bytes()
+    encoded_manifest = read_private_bytes(
+        manifest_path,
+        label="transfer manifest",
+        max_bytes=MAX_TRANSFER_MANIFEST_BYTES,
+    )
     try:
         manifest = loads_json_strict(encoded_manifest)
     except json.JSONDecodeError as exc:

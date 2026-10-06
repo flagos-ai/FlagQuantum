@@ -30,10 +30,6 @@ IMAGE_ID = re.compile(r"sha256:[0-9a-f]{64}")
 MAX_RECORD_BYTES = 4 * 1024 * 1024
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def validate_stream_inputs(
     *,
     execution_host: str,
@@ -228,6 +224,12 @@ def _capture(arguments: argparse.Namespace) -> None:
     encoded = sys.stdin.buffer.read(MAX_RECORD_BYTES + 1)
     if len(encoded) > MAX_RECORD_BYTES:
         raise ValueError("streamed development evidence exceeds the size limit")
+    _, source_preflight_sha256 = load_source_preflight(
+        arguments.source_preflight,
+        execution_host=arguments.execution_host,
+        source_revision=arguments.source_revision,
+        plugin_revision=arguments.plugin_revision,
+    )
     record = validate_development_record(
         loads_json_strict(encoded),
         execution_host=arguments.execution_host,
@@ -235,7 +237,7 @@ def _capture(arguments: argparse.Namespace) -> None:
         source_revision=arguments.source_revision,
         plugin_revision=arguments.plugin_revision,
         validation_image_id=arguments.validation_image_id,
-        source_preflight_sha256=_sha256(arguments.source_preflight),
+        source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=arguments.transfer_manifest_sha256,
     )
     write_private_json_exclusive(arguments.output, record)

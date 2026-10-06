@@ -12,10 +12,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
     ARCHIVE_ROOT_PREFIXES,
     ARTIFACT_PREFIXES,
+    MAX_TRANSFER_MANIFEST_BYTES,
     _write_private_json,
     verify_transfer_bundle,
 )
@@ -107,7 +109,14 @@ def verify_extracted_bundle(
     expected_files: set[str] = set()
     expected_directories: set[str] = set()
     artifacts: list[dict[str, Any]] = []
-    manifest = loads_json_strict(manifest_path.read_text(encoding="utf-8"))
+    encoded_manifest = read_private_bytes(
+        manifest_path,
+        label="transfer manifest",
+        max_bytes=MAX_TRANSFER_MANIFEST_BYTES,
+    )
+    if hashlib.sha256(encoded_manifest).hexdigest() != preflight["manifest_sha256"]:
+        raise ValueError("transfer manifest changed after bundle verification")
+    manifest = loads_json_strict(encoded_manifest)
     manifest_root = manifest_path.resolve().parent
     for entry in manifest["artifacts"]:
         filename = entry["filename"]
