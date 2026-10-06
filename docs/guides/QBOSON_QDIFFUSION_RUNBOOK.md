@@ -26,6 +26,13 @@ Do not begin a live run until all entries are available and reviewed:
 - the approved Kaiwu 1.3.1 wheel, its SHA-256 digest, source, license or package
   terms, cloud-service terms, and approved redistribution boundary; public
   availability on PyPI is source evidence, not approval by itself;
+- an organizational review decision for the public
+  [QBoson Quantum Cloud Platform User Service Agreement](https://platform.qboson.com/agreement?type=QBoson-SPQC-Platform-Users-Agreement),
+  effective 2026-07-09. It expressly covers Kaiwu SDK, KPP, remote APIs, and
+  SPQC services, restricts SDK/API sale, transfer, and sublicensing, and states
+  an own-use restriction. Record whether the intended development, container,
+  and adapter-distribution model is permitted or needs separate written
+  authorization; do not infer approval from public access to the agreement;
 - an assigned QBoson project number and sufficient optimization and sampling
   quota;
 - `QBOSON_USER_ID` and `QBOSON_SDK_CODE`, supplied through a private process

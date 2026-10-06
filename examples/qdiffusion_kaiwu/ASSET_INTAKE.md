@@ -13,7 +13,7 @@ checkpoint bytes stay outside Git and inside the private evidence boundary.
 | DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate upstream commit `7362881bcf802245a1a074e2d24137575f30d79f` | The model card reports missing YAML metadata and exposes no license declaration. The Apache-2.0 official `bytedance/dplm` repository says it contains the pretrained weights and its generation command names the `airkingbd/dplm_150m` family. This is strong candidate linkage evidence, but the separately hosted bytes still require an explicit license review and approval. | Not downloaded; linkage evidence identified, still blocked on explicit approval |
 | DPLM tokenizer | Same frozen DPLM repository and revision as the checkpoint | Must equal the checkpoint revision | The pinned Hugging Face commit adds the checkpoint and tokenizer files together, and the official repository names the same model family; applicability of Apache-2.0 to those separately hosted bytes still requires explicit review | Not downloaded; linkage evidence identified, still blocked on explicit approval |
 | ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | Exact downloaded `.pt` bytes and upstream identity still to freeze | Candidate model distribution is identified as MIT by the official model repository; applicability to the selected `.pt` bytes must be recorded during review | Not downloaded; blocked on review and exact digest |
-| Kaiwu SDK wheel | Qboson-owned PyPI release metadata at `https://pypi.org/pypi/kaiwu/1.3.1/json`, or the QBoson platform | Linux candidate `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`; published SHA-256 `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455` | PyPI identifies owner `nixd` and author `Qboson Inc` but exposes neither a license expression nor license files; cloud-service terms remain separately required | Metadata reviewed; not downloaded or installed, blocked on explicit package and service-terms approval |
+| Kaiwu SDK wheel | Qboson-owned PyPI release metadata at `https://pypi.org/pypi/kaiwu/1.3.1/json`, or the QBoson platform | Linux candidate `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`; published SHA-256 `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455` | PyPI identifies owner `nixd` and author `Qboson Inc` but exposes neither a license expression nor license files. The public QBoson platform agreement effective 2026-07-09 covers Kaiwu SDK, KPP, and remote APIs, but its use, transfer, data, and risk clauses require organizational review | Metadata and public service terms identified; not downloaded or installed, blocked on explicit package and service-terms approval |
 
 The candidate DPLM commit above is discovery metadata, not an approved frozen
 revision. Public availability alone is insufficient for acceptance.
@@ -26,6 +26,19 @@ the pinned
 The Hugging Face commit records the checkpoint and tokenizer files together,
 but contains no license file or model-card license metadata. These facts narrow
 the review question; they do not authorize download or use.
+
+The Kaiwu 1.3.1 documentation points to a QBoson user agreement. The public
+[QBoson Quantum Cloud Platform User Service Agreement](https://platform.qboson.com/agreement?type=QBoson-SPQC-Platform-Users-Agreement),
+effective 2026-07-09, expressly includes Kaiwu SDK, Kaiwu-PyTorch-Plugin, remote
+computing APIs, and SPQC-1000/SPQC-550/SPQC-X services. Its clauses state that
+SDK/API use is limited to lawful use under the agreement, prohibit sale,
+transfer, or sublicensing without written permission, assign installation and
+use risk to the user, and describe the service as for the user's own use rather
+than provision to a third party. The agreement also contains platform-data and
+confidentiality provisions. This inventory records the terms as review input;
+it is not legal interpretation, acceptance, or approval, and it does not prove
+that the agreement alone grants the package, redistribution, organizational,
+or CI/container usage rights required by this integration.
 
 ## Freeze procedure
 
@@ -61,6 +74,10 @@ the review question; they do not authorize download or use.
 - Confirm that the official ESM2 model license applies to the selected `.pt`
   checkpoint and retain the evidence URL used for that decision.
 - Approve or reject the identified PyPI Kaiwu 1.3.1 Linux wheel and retain the
-  applicable package and cloud-service terms. Only after approval, acquire it
-  by its exact filename and published SHA-256; do not substitute the public
-  Kaiwu Community source repository for the proprietary provider wheel.
+  applicable package and cloud-service terms. Resolve whether the public user
+  agreement permits the intended organizational development, isolated
+  container execution, and FlagQuantum adapter distribution, and whether a
+  separate package license or written QBoson permission is required. Only
+  after approval, acquire it by its exact filename and published SHA-256; do
+  not substitute the public Kaiwu Community source repository for the
+  proprietary provider wheel.

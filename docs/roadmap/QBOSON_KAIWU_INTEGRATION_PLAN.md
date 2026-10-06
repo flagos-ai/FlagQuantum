@@ -117,6 +117,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   Its PyPI metadata has no license identifier or license files. The wheel has
   therefore been identified but not downloaded, installed, or approved; an
   explicit package and service-terms review still precedes the pinned SDK lane.
+- The service-terms source is no longer unknown. The Kaiwu 1.3.1 license page
+  links to the public QBoson Quantum Cloud Platform User Service Agreement;
+  the currently rendered agreement is effective 2026-07-09 and expressly
+  covers Kaiwu SDK, Kaiwu-PyTorch-Plugin, remote APIs, and
+  SPQC-1000/SPQC-550/SPQC-X computing services. It limits SDK/API use to the
+  agreement, prohibits sale, transfer, or sublicensing without written
+  permission, allocates installation/use risk to the user, and includes an
+  own-use restriction plus platform-data and confidentiality provisions. This
+  is contract-source evidence, not legal approval. Organizational development,
+  isolated-container execution, adapter distribution, and any separate wheel
+  license still require an explicit review decision before acquisition.
 - The QDiffusion acceptance decision is now executable rather than narrative:
   a frozen experiment-config template, two-host manifest template, and
   fail-closed validator recompute system and application gates. Fake transport,
@@ -854,6 +865,11 @@ for users who do not install the integration.
 Before production support, record the Kaiwu package source, hashes or lockfile,
 license, cloud-service terms, credential requirements, and an exit path that
 allows the provider client to be replaced without modifying problem consumers.
+The identified service-terms source is the public
+[QBoson Quantum Cloud Platform User Service Agreement](https://platform.qboson.com/agreement?type=QBoson-SPQC-Platform-Users-Agreement),
+effective 2026-07-09. Recording that source does not approve it or establish a
+wheel license; retain the organizational review decision and any separately
+required written permission as evidence.
 
 ## Delivery phases and gates
 
