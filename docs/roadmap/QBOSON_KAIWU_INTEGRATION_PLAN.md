@@ -132,7 +132,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   unbounded same-user file from exhausting memory at the recovery boundary
   while retaining capacity for a dense 1,000-spin matrix. Publication enforces
   the same serialized-size bound before temporary-file creation, so a successful
-  save cannot create a receipt that the restore path is required to reject.
+  save cannot create a receipt that the restore path is required to reject. The
+  descriptor reader itself consumes at most one byte beyond that bound before
+  refusing input, so concurrent file growth cannot cause an unbounded parse
+  between the initial metadata check and the stable-file postflight.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

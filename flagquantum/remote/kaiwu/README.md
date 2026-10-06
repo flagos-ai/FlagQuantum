@@ -100,7 +100,9 @@ JSON object keys instead of accepting an ambiguous last value. Generic receipt
 and authoritative SDK recovery JSON is capped at 64 MiB before parsing,
 bounding memory use while retaining room for a dense 1,000-spin matrix. The
 writer applies the same limit before creating a temporary file, so it cannot
-publish a receipt that the recovery boundary must later reject.
+publish a receipt that the recovery boundary must later reject. Reads consume
+at most one byte beyond the limit from the already-open descriptor, so growth
+after the initial metadata check cannot turn the cap into an unbounded parse.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

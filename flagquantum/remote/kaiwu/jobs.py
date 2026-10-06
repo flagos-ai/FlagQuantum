@@ -28,6 +28,7 @@ from .contracts import (
 )
 
 _MAX_PRIVATE_JSON_BYTES = 64 * 1024 * 1024
+_PRIVATE_JSON_READ_CHUNK_BYTES = 1024 * 1024
 
 
 def _validate_private_directory(path: Path, *, description: str) -> None:
@@ -100,6 +101,22 @@ def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def _reject_nonfinite_json_constant(_: str) -> None:
     raise ValueError("Kaiwu receipt JSON contains a non-finite numeric constant")
+
+
+def _read_bounded_bytes(descriptor: int, *, limit: int) -> bytearray:
+    """Read at most ``limit + 1`` bytes from one already-open descriptor."""
+
+    encoded = bytearray()
+    while len(encoded) <= limit:
+        remaining = limit + 1 - len(encoded)
+        chunk = os.read(
+            descriptor,
+            min(_PRIVATE_JSON_READ_CHUNK_BYTES, remaining),
+        )
+        if not chunk:
+            break
+        encoded.extend(chunk)
+    return encoded
 
 
 def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
@@ -188,14 +205,16 @@ def _read_private_json(path: str | Path) -> Any:
                 )
             if metadata.st_size > _MAX_PRIVATE_JSON_BYTES:
                 raise ValueError("Kaiwu receipt exceeds the bounded size limit")
-            with os.fdopen(
-                descriptor, "r", encoding="utf-8", closefd=False
-            ) as stream:
-                result = json.load(
-                    stream,
-                    object_pairs_hook=_reject_duplicate_json_keys,
-                    parse_constant=_reject_nonfinite_json_constant,
-                )
+            encoded = _read_bounded_bytes(
+                descriptor, limit=_MAX_PRIVATE_JSON_BYTES
+            )
+            if len(encoded) > _MAX_PRIVATE_JSON_BYTES:
+                raise ValueError("Kaiwu receipt exceeds the bounded size limit")
+            result = json.loads(
+                encoded,
+                object_pairs_hook=_reject_duplicate_json_keys,
+                parse_constant=_reject_nonfinite_json_constant,
+            )
             after = os.fstat(descriptor)
             stable_fields = (
                 "st_dev",

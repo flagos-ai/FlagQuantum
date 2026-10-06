@@ -376,18 +376,36 @@ def test_restore_rejects_receipt_replacement_during_read(
     receipt_path = tmp_path / "receipt.json"
     job.save(receipt_path)
     moved = tmp_path / "opened-receipt.json"
-    real_load = jobs_module.json.load
+    real_read = jobs_module._read_bounded_bytes
 
-    def load_then_replace(*args: object, **kwargs: object) -> object:
-        result = real_load(*args, **kwargs)
+    def read_then_replace(descriptor: int, *, limit: int) -> bytearray:
+        result = real_read(descriptor, limit=limit)
         receipt_path.rename(moved)
         receipt_path.write_bytes(moved.read_bytes())
         receipt_path.chmod(0o600)
         return result
 
-    monkeypatch.setattr(jobs_module.json, "load", load_then_replace)
+    monkeypatch.setattr(jobs_module, "_read_bounded_bytes", read_then_replace)
 
     with pytest.raises(ValueError, match="changed during receipt access"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
+def test_restore_rechecks_actual_bounded_read_length(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="growth-race")
+    receipt_path = tmp_path / "receipt.json"
+    job.save(receipt_path)
+    read_limit = receipt_path.stat().st_size + 1
+    monkeypatch.setattr(jobs_module, "_MAX_PRIVATE_JSON_BYTES", read_limit)
+    monkeypatch.setattr(
+        jobs_module,
+        "_read_bounded_bytes",
+        lambda descriptor, *, limit: bytearray(b" " * (limit + 1)),
+    )
+
+    with pytest.raises(ValueError, match="bounded size"):
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 
