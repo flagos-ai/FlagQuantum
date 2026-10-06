@@ -561,6 +561,11 @@ parses the frozen FASTA, rejects empty or duplicate records and unsupported
 residue symbols, applies the declared length filter and record cap, and proves
 that the deterministic validation/test split produces exactly the configured
 generation sequence count.
+File identities and directory-tree identities use the same stable no-follow
+snapshot layer as reviewed source verification. FASTA profiling reopens the
+captured dataset inode and rechecks both the leaf and parent identity after
+parsing, so the dataset digest and corpus profile cannot come from different
+path contents.
 
 The frozen configuration includes every plugin knob that changes the selected
 corpus or generated sequences: record-length bounds, record cap, validation and

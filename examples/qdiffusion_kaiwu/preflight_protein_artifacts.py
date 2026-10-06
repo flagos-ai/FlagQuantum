@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import stat
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,13 @@ from typing import Any
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
     write_private_json_exclusive,
+)
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    RegularTreeSnapshot,
+    capture_regular_file,
+    capture_regular_tree,
+    open_captured_regular_file,
 )
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
@@ -26,46 +34,47 @@ ARTIFACT_FIELDS = {
 AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWYBXZJUO")
 
 
-def _file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+def _artifact_identity_snapshot(
+    path: Path,
+) -> tuple[str, str, int, RegularFileSnapshot | RegularTreeSnapshot]:
+    """Return one stable artifact identity and its re-openable snapshot."""
+
+    if not path.is_absolute():
+        raise ValueError(f"artifact path must be absolute: {path}")
+    try:
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(f"artifact does not exist: {path}") from None
+    if path.is_symlink():
+        raise ValueError(f"artifact root must not be a symlink: {path}")
+    if stat.S_ISREG(metadata.st_mode):
+        snapshot = capture_regular_file(path, label="artifact")
+        return snapshot.sha256, "file-sha256-v1", 1, snapshot
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise ValueError(f"artifact must be a regular file or directory: {path}")
+    snapshot = capture_regular_tree(path, label="artifact tree")
+    if not snapshot.verified_files:
+        raise ValueError(f"artifact directory contains no regular files: {path}")
+
+    digest = hashlib.sha256(b"flagquantum-tree-sha256-v1\0")
+    for entry in snapshot.verified_files:
+        relative = entry["path"].encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        digest.update(bytes.fromhex(entry["sha256"]))
+    return (
+        digest.hexdigest(),
+        "tree-sha256-v1",
+        len(snapshot.verified_files),
+        snapshot,
+    )
 
 
 def _artifact_identity(path: Path) -> tuple[str, str, int]:
     """Return digest, algorithm, and regular-file count for one local artifact."""
-    if not path.is_absolute():
-        raise ValueError(f"artifact path must be absolute: {path}")
-    if path.is_symlink():
-        raise ValueError(f"artifact root must not be a symlink: {path}")
-    if not path.exists():
-        raise ValueError(f"artifact does not exist: {path}")
-    if path.is_file():
-        return _file_sha256(path), "file-sha256-v1", 1
-    if not path.is_dir():
-        raise ValueError(f"artifact must be a regular file or directory: {path}")
 
-    files: list[Path] = []
-    for child in path.rglob("*"):
-        if child.is_symlink():
-            raise ValueError(f"artifact tree contains a symlink: {child}")
-        mode = child.stat().st_mode
-        if stat.S_ISREG(mode):
-            files.append(child)
-        elif not stat.S_ISDIR(mode):
-            raise ValueError(f"artifact tree contains a special file: {child}")
-    if not files:
-        raise ValueError(f"artifact directory contains no regular files: {path}")
-
-    digest = hashlib.sha256(b"flagquantum-tree-sha256-v1\0")
-    for child in sorted(files, key=lambda item: item.relative_to(path).as_posix()):
-        relative = child.relative_to(path).as_posix().encode("utf-8")
-        digest.update(len(relative).to_bytes(8, "big"))
-        digest.update(relative)
-        digest.update(bytes.fromhex(_file_sha256(child)))
-    return digest.hexdigest(), "tree-sha256-v1", len(files)
+    digest, algorithm, file_count, _ = _artifact_identity_snapshot(path)
+    return digest, algorithm, file_count
 
 
 def _read_config(path: Path) -> tuple[dict[str, Any], str]:
@@ -80,8 +89,11 @@ def _read_config(path: Path) -> tuple[dict[str, Any], str]:
     return value, hashlib.sha256(raw).hexdigest()
 
 
-def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
-    if not path.is_file():
+def _dataset_profile(
+    snapshot: RegularFileSnapshot | RegularTreeSnapshot,
+    config: dict[str, Any],
+) -> dict[str, int]:
+    if not isinstance(snapshot, RegularFileSnapshot):
         raise ValueError("dataset artifact must be one FASTA file")
     section = config.get("dataset")
     generation = config.get("generation")
@@ -122,7 +134,10 @@ def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
             )
         records.append((header, joined))
 
-    with path.open("r", encoding="utf-8") as stream:
+    with (
+        open_captured_regular_file(snapshot, label="dataset artifact") as binary,
+        io.TextIOWrapper(binary, encoding="utf-8") as stream,
+    ):
         for line_number, raw_line in enumerate(stream, start=1):
             line = raw_line.strip()
             if not line:
@@ -132,11 +147,14 @@ def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
                 header = line[1:].strip()
                 sequence = []
                 if not header:
-                    raise ValueError(f"FASTA header is empty at line {line_number}")
+                    raise ValueError(
+                        f"FASTA header is empty at line {line_number}"
+                    )
             else:
                 if header is None:
                     raise ValueError(
-                        f"FASTA sequence appears before a header at line {line_number}"
+                        "FASTA sequence appears before a header at line "
+                        f"{line_number}"
                     )
                 sequence.append(line)
     finish_record()
@@ -194,7 +212,7 @@ def _inspect_artifacts(
         if not isinstance(expected, str):
             errors.append(f"config.{config_name}.sha256: expected a digest")
             continue
-        digest, algorithm, file_count = _artifact_identity(
+        digest, algorithm, file_count, snapshot = _artifact_identity_snapshot(
             artifact_paths[artifact_name]
         )
         if digest != expected:
@@ -208,7 +226,7 @@ def _inspect_artifacts(
         }
         if artifact_name == "dataset" and digest == expected:
             artifacts[artifact_name]["profile"] = _dataset_profile(
-                artifact_paths[artifact_name], config
+                snapshot, config
             )
     if errors:
         raise ValueError("artifact preflight failed:\n- " + "\n- ".join(errors))

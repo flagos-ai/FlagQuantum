@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import preflight_protein_artifacts as preflight_module
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     _artifact_identity,
     assert_artifacts_unchanged,
@@ -180,6 +181,26 @@ def test_preflight_rejects_test_split_count_drift(tmp_path: Path) -> None:
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="differs from computed test split"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_preflight_binds_dataset_profile_to_hashed_file_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    real_capture = preflight_module._artifact_identity_snapshot
+
+    def capture_then_mutate(path: Path):
+        identity = real_capture(path)
+        if path == paths["dataset"]:
+            path.write_bytes(b">changed\nAAAA\n")
+        return identity
+
+    monkeypatch.setattr(
+        preflight_module, "_artifact_identity_snapshot", capture_then_mutate
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
         preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
 
 

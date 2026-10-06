@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -26,6 +28,16 @@ class RegularTreeSnapshot:
     directories: frozenset[str]
     verified_files: tuple[dict[str, Any], ...]
     identities: dict[str, tuple[int, ...]]
+
+
+@dataclass(frozen=True)
+class RegularFileSnapshot:
+    path: Path
+    sha256: str
+    size: int
+    identity: tuple[int, ...]
+    parent: Path
+    parent_identity: tuple[int, ...]
 
 
 def _stream_sha256(stream: BinaryIO) -> str:
@@ -70,6 +82,88 @@ def _hash_stable_file(target: Path, metadata: os.stat_result, *, label: str) -> 
     finally:
         if descriptor is not None:
             os.close(descriptor)
+
+
+def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> None:
+    """Require one visible file and its parent to retain captured identities."""
+
+    try:
+        parent = snapshot.parent.lstat()
+        visible = snapshot.path.lstat()
+    except OSError:
+        raise ValueError(f"{label} changed after identity capture") from None
+    if (
+        snapshot.parent.is_symlink()
+        or not stat.S_ISDIR(parent.st_mode)
+        or _metadata_identity(parent) != snapshot.parent_identity
+        or snapshot.path.is_symlink()
+        or not stat.S_ISREG(visible.st_mode)
+        or _metadata_identity(visible) != snapshot.identity
+    ):
+        raise ValueError(f"{label} changed after identity capture")
+
+
+def capture_regular_file(path: Path, *, label: str) -> RegularFileSnapshot:
+    """Hash one regular file and retain its leaf and parent identities."""
+
+    if not path.is_absolute():
+        raise ValueError(f"{label} path must be absolute")
+    parent_path = path.parent
+    try:
+        parent = parent_path.lstat()
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(f"{label} must be a regular, non-symlink file") from None
+    if parent_path.is_symlink() or not stat.S_ISDIR(parent.st_mode):
+        raise ValueError(f"{label} parent must be a regular, non-symlink directory")
+    if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"{label} must be a regular, non-symlink file")
+    snapshot = RegularFileSnapshot(
+        path=path,
+        sha256=_hash_stable_file(path, metadata, label=label),
+        size=metadata.st_size,
+        identity=_metadata_identity(metadata),
+        parent=parent_path,
+        parent_identity=_metadata_identity(parent),
+    )
+    revalidate_regular_file(snapshot, label=label)
+    return snapshot
+
+
+@contextmanager
+def open_captured_regular_file(
+    snapshot: RegularFileSnapshot, *, label: str
+) -> Iterator[BinaryIO]:
+    """Consume a captured file description and recheck its identity afterwards."""
+
+    revalidate_regular_file(snapshot, label=label)
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    if no_follow is None:
+        raise ValueError(f"platform cannot safely open {label}")
+    descriptor: int | None = None
+    body_completed = False
+    try:
+        descriptor = os.open(
+            snapshot.path,
+            os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
+        )
+        opened = os.fstat(descriptor)
+        if _metadata_identity(opened) != snapshot.identity:
+            raise ValueError(f"{label} changed before consumption")
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            yield stream
+        body_completed = True
+    except OSError:
+        raise ValueError(f"{label} changed during consumption") from None
+    finally:
+        try:
+            if body_completed and descriptor is not None:
+                if _metadata_identity(os.fstat(descriptor)) != snapshot.identity:
+                    raise ValueError(f"{label} changed during consumption")
+                revalidate_regular_file(snapshot, label=label)
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
 
 
 def revalidate_regular_tree(snapshot: RegularTreeSnapshot, *, label: str) -> None:
@@ -151,7 +245,11 @@ def capture_regular_tree(
 
 
 __all__ = (
+    "RegularFileSnapshot",
     "RegularTreeSnapshot",
+    "capture_regular_file",
     "capture_regular_tree",
+    "open_captured_regular_file",
+    "revalidate_regular_file",
     "revalidate_regular_tree",
 )

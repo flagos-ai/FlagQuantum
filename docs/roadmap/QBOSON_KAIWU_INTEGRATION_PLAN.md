@@ -774,6 +774,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   configuration and provider-linked training record through the same bounded,
   descriptor-anchored private-input gate. Public files or parents and symbolic
   links fail before planning or GPU work.
+- Frozen protein file and model-directory identities now use the shared stable
+  no-follow snapshot layer. The dataset profile consumes the captured FASTA
+  inode and rechecks its leaf and parent identity after parsing, while model
+  trees retain the unchanged `tree-sha256-v1` path-aware digest format. A
+  dataset swap between hashing and split validation therefore fails preflight.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
