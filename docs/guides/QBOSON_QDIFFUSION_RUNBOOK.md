@@ -413,6 +413,14 @@ Create an isolated Python 3.10 environment from the approved wheel set. Verify
 package files and versions before setting credentials. Do not install an
 unreviewed package merely because it shares the name `kaiwu`.
 
+The authenticated platform download page observed on 2026-10-06 advertises
+Linux `v1.4.1` as the default but still lists Python 3.10 `v1.3.1`. Keep this
+runbook pinned to `1.3.1` until its exact distribution, terms, and hashes are
+reviewed: the platform changelog says `1.3.1` added sampling submission, while
+`1.4.0` introduced namespace-package, base-class, task-mode, and QUBO-solver
+interface changes. A move to `1.4.x` is a separate contract migration and must
+not occur through installer default selection.
+
 After separately reviewing every installation artifact's source, license, and
 terms, place exactly one wheel for every installed distribution in a private
 wheelhouse. Build the mode-0600 lock from that complete set while the isolated

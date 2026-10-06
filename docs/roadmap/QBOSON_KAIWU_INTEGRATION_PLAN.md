@@ -47,6 +47,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   but that code was kept masked and was not copied, revealed, or imported into
   the development environment. These observations do not substitute for the
   pinned 1.3.1 package, project assignment, credentials, or use approval.
+  The Linux selector still exposes Python 3.10 `v1.3.1`; the `1.4.0` changelog
+  records namespace-package, solver-base, task-mode, sampling/cache/upload, and
+  `solve_qubo` interface changes. The acceptance contract therefore remains
+  explicitly pinned to `1.3.1`. Reviewing or adopting `1.4.x` is a separate
+  migration and must not happen through the download page's default selection.
 - The Phase 1 pure-data boundary is implemented under
   `flagquantum/ecosystem/kaiwu`. Ising validation, independent
   Kaiwu-convention energy evaluation, symmetric QUBO-to-Ising encoding with
