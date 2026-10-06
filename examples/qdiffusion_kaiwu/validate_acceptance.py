@@ -438,6 +438,61 @@ def _canonical_printable_identifier(value: Any) -> bool:
     )
 
 
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return timestamp if timestamp.tzinfo is not None else None
+
+
+def _validate_execution_component_time(
+    record: dict[str, Any],
+    *,
+    label: str,
+    config: dict[str, Any],
+    provider_smoke_time: datetime | None,
+    errors: list[str],
+) -> datetime | None:
+    """Bind one executable component to its prerequisites and receipts."""
+
+    recorded_at = _parse_timestamp(record.get("recorded_at"))
+    if recorded_at is None or recorded_at.utcoffset() != timedelta(0):
+        errors.append(f"{label}: recorded_at must be an aware UTC timestamp")
+        return None
+    prerequisites = (
+        ("frozen config", _parse_timestamp(config.get("preregistered_at"))),
+        (
+            "SDK rights review",
+            _parse_timestamp(
+                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                    "rights_reviewed_at"
+                )
+            ),
+        ),
+        ("provider smoke", provider_smoke_time),
+    )
+    for prerequisite_label, prerequisite_time in prerequisites:
+        if prerequisite_time is not None and recorded_at < prerequisite_time:
+            errors.append(f"{label}: predates the {prerequisite_label}")
+
+    receipts = record.get("task_receipts")
+    if isinstance(receipts, list):
+        for index, receipt in enumerate(receipts):
+            if not isinstance(receipt, dict):
+                continue
+            submitted_at = _parse_timestamp(receipt.get("submitted_at"))
+            if submitted_at is None or submitted_at.utcoffset() != timedelta(0):
+                continue
+            if submitted_at > recorded_at:
+                errors.append(
+                    f"{label}: remote receipt {index} submission follows its record"
+                )
+    return recorded_at
+
+
 def _validate_component_field_set(
     record: dict[str, Any], *, label: str, errors: list[str]
 ) -> None:
@@ -2447,6 +2502,26 @@ def _validate_component_bundle(
         sdk_approval_sha256=sdk_approval_digest,
         errors=errors,
     )
+    provider_smoke_time = _parse_timestamp(provider_smokes[0].get("recorded_at"))
+    component_times: dict[str, datetime] = {}
+    executable_schemas = {
+        SYSTEM_COMPONENT_SCHEMA,
+        PORTABILITY_COMPONENT_SCHEMA,
+        TRAINING_COMPONENT_SCHEMA,
+        EVALUATION_COMPONENT_SCHEMA,
+    }
+    for digest, payload in component_payloads.items():
+        if payload.get("schema") not in executable_schemas:
+            continue
+        recorded_at = _validate_execution_component_time(
+            payload,
+            label=f"component {digest}",
+            config=config,
+            provider_smoke_time=provider_smoke_time,
+            errors=errors,
+        )
+        if recorded_at is not None:
+            component_times[digest] = recorded_at
 
     provider_task_owners: dict[str, list[str]] = {}
     smoke_tasks = provider_smokes[0].get("tasks")
@@ -2716,7 +2791,13 @@ def _validate_component_bundle(
     if list(training_by_seed) != seeds or list(evaluation_by_seed) != seeds:
         errors.append("manifest: component seed order differs from the frozen seed set")
 
-    for seed, (_, training) in training_by_seed.items():
+    primary_system_digest = primary.get("system_evidence_sha256")
+    primary_system_time = (
+        component_times.get(primary_system_digest)
+        if isinstance(primary_system_digest, str)
+        else None
+    )
+    for seed, (training_digest, training) in training_by_seed.items():
         _validate_training_component(
             training,
             config=config,
@@ -2728,6 +2809,13 @@ def _validate_component_bundle(
             errors.append(
                 f"seed {seed}: training references another artifact preflight"
             )
+        training_time = component_times.get(training_digest)
+        if (
+            primary_system_time is not None
+            and training_time is not None
+            and training_time < primary_system_time
+        ):
+            errors.append(f"seed {seed}: training predates primary system evidence")
     for seed, (_, evaluation) in evaluation_by_seed.items():
         _validate_evaluation_component(
             evaluation,
@@ -2770,6 +2858,14 @@ def _validate_component_bundle(
             )
         if evaluation.get("execution_host") != config.get("primary_host"):
             errors.append(f"seed {seed}: evaluation component is from the wrong host")
+        training_time = component_times.get(training_digest)
+        evaluation_time = component_times.get(evaluation_digest)
+        if (
+            training_time is not None
+            and evaluation_time is not None
+            and evaluation_time < training_time
+        ):
+            errors.append(f"seed {seed}: evaluation predates its training component")
 
     for field in ("baseline_metrics", "guided_metrics"):
         final_metrics = _mapping(primary.get(field), f"primary.{field}", errors)
@@ -2827,6 +2923,31 @@ def _validate_component_bundle(
             errors.append(
                 f"replay: portability component {field} differs from final record"
             )
+    portability_time = component_times.get(portability_digest)
+    replay_system_digest = replay.get("system_evidence_sha256")
+    replay_system_time = (
+        component_times.get(replay_system_digest)
+        if isinstance(replay_system_digest, str)
+        else None
+    )
+    portability_training_digest = portability.get("training_record_sha256")
+    training_time = (
+        component_times.get(portability_training_digest)
+        if isinstance(portability_training_digest, str)
+        else None
+    )
+    if (
+        replay_system_time is not None
+        and portability_time is not None
+        and portability_time < replay_system_time
+    ):
+        errors.append("replay: portability predates replay system evidence")
+    if (
+        training_time is not None
+        and portability_time is not None
+        and portability_time < training_time
+    ):
+        errors.append("replay: portability predates its selected training component")
 
 
 def validate_acceptance(manifest_path: Path) -> list[str]:

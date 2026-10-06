@@ -642,6 +642,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   retained objective, generated length, and generated-sequence digest must be
   well formed. A structurally complete but cherry-picked replay can no longer
   satisfy final acceptance.
+- Executable component timestamps are now evidence rather than unchecked
+  strings. System, training, evaluation, and portability records require an
+  aware UTC `recorded_at` at or after preregistration, the SDK rights review,
+  and the retained Phase 2 smoke; every remote receipt must be submitted no
+  later than its enclosing record. Training cannot predate the primary system
+  probe, evaluation cannot predate its linked training record, and portability
+  cannot predate either the replay-host system probe or its selected training
+  record.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

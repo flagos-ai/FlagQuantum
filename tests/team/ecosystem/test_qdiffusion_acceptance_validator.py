@@ -4,6 +4,7 @@ import ast
 import copy
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_component_field_set,
     _validate_config,
     _validate_executable_component_nested_fields,
+    _validate_execution_component_time,
     _validate_precision_evidence,
     _validate_provider_result_schema,
     _validate_sampling_receipt,
@@ -306,6 +308,53 @@ def test_other_component_nested_fields_reject_extensions() -> None:
             changed, label="component", errors=errors
         )
         assert errors
+
+
+def test_execution_component_time_is_bound_to_prerequisites_and_receipts() -> None:
+    config = _config()
+    valid = {
+        "recorded_at": "2026-10-06T00:00:00+00:00",
+        "task_receipts": [
+            {"submitted_at": "2026-10-05T00:00:00+00:00"},
+        ],
+    }
+    smoke_time = datetime.fromisoformat("2026-10-06T00:00:00+00:00")
+    errors: list[str] = []
+
+    observed = _validate_execution_component_time(
+        valid,
+        label="component",
+        config=config,
+        provider_smoke_time=smoke_time,
+        errors=errors,
+    )
+
+    assert observed == smoke_time
+    assert errors == []
+
+    mutations = (
+        ({**valid, "recorded_at": "2026-10-06T08:00:00+08:00"}, "aware UTC"),
+        ({**valid, "recorded_at": "2026-10-05T23:59:59+00:00"}, "predates"),
+        (
+            {
+                **valid,
+                "task_receipts": [
+                    {"submitted_at": "2026-10-07T00:00:00+00:00"}
+                ],
+            },
+            "submission follows its record",
+        ),
+    )
+    for record, message in mutations:
+        errors = []
+        _validate_execution_component_time(
+            record,
+            label="component",
+            config=config,
+            provider_smoke_time=smoke_time,
+            errors=errors,
+        )
+        assert any(message in error for error in errors)
 
 
 def _complete_task_receipt() -> dict[str, Any]:
