@@ -244,6 +244,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   coercing JSON values with `float(...)`. Boolean and numeric-string elements
   that compare equal to original coefficients are rejected before SDK access,
   so type-forged checkpoint content cannot preserve a false matrix identity.
+- The SDK loader also applies the complete receipt validator before comparing a
+  stored request with the in-memory request. Floating-point `matrix_size` and
+  `requested_samples` values can no longer exploit Python's numeric equality
+  with integers and reach the optimizer before the outer job is constructed.
 - Every SDK solve, poll, and result operation reopens the deterministic
   recovery bundle and requires the in-memory receipt to match it exactly. The
   generic job-restore API cannot bypass checkpoint validation, and a separately

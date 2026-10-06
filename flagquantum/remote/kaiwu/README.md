@@ -62,6 +62,9 @@ directory and cannot override its identity.
 Recovery matrices pass through the same strict Remote scalar boundary as new
 submissions; JSON booleans and numeric strings are rejected rather than being
 coerced into apparently matching floating-point coefficients.
+The stored receipt itself is also revalidated through the complete Remote
+contract before an SDK operation. JSON floating-point values that compare equal
+to integer matrix-size or sample-count fields cannot bypass runtime type checks.
 If the first vendor operation fails after the bundle is published, rebuilding
 the client with the same task name, matrix, mode, sample count, and project
 reuses the original receipt timestamp and recovery path; it must not create a
