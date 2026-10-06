@@ -32,13 +32,21 @@ recorded as exactly that, the way the comparator's is — so a `—` never means
 "sought and not yet found".
 
 The primitive rows are listed separately because the package admits a primitive
-on one of two grounds: when more than one algorithm module needs it, or is
-expected to need it and the expectation is later confirmed — the Fourier
-transform shipped with one consumer, phase estimation, and was admitted on the
-expectation of a second, which amplitude estimation's arrival confirmed — or
-when it is a public unit callers use directly, which is how state preparation
-was admitted, with no consumer inside `flagquantum/` at all. A primitive does
-not by itself change what a caller can run.
+on three dimensions rather than by an API decision of its own, and
+`contracts/primitives-admission-contract.toml` is the measured record of all
+three for every export. The **consumer** fixes the ground: more than one
+algorithm module needs it, or is expected to need it and the expectation is
+later confirmed — the Fourier transform shipped with one consumer, phase
+estimation, and was admitted on the expectation of a second, which amplitude
+estimation's arrival confirmed — or it is a public unit callers use directly,
+which is how state preparation was admitted, with no consumer inside
+`flagquantum/` at all. An export with no consumer anywhere is none of those: it
+is removed, and the contract records what it was. The same table records the
+**distribution semantics** each export runs under, all of them the default
+single-device fast path, so that no subroutine here can be read as a
+scalability claim, and the **differentiability** of each one — state preparation
+takes a tensor and reads it as classical data, which its docstring and the
+table both say. A primitive does not by itself change what a caller can run.
 
 The Phase 2 quantum machine learning units are indexed in the table under
 [Quantum machine learning units (Phase 2)](#quantum-machine-learning-units-phase-2)

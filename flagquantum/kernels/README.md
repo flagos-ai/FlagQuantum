@@ -514,6 +514,29 @@ a repeatable forward and backward win over this baseline before MPS dispatch
 selects it. This keeps the mathematical lowering stable while allowing a later
 Triton or FlagTree provider change without altering the MPS API.
 
+[`benchmarks/complex_bmm_dispatch.py`](../../benchmarks/complex_bmm_dispatch.py)
+defines that promotion gate directly against `torch.bmm`, rather than against
+the older `torch.einsum` development comparison. It records a fixed matrix of
+canonical-transfer shapes, counterbalances baseline and candidate order, and
+measures forward and forward-plus-backward paths independently. The canonical
+aggregate authorizes runtime dispatch only when every shape wins on both
+`jp-a800-171` and `jp-a800-172` under both stock Triton and FlagTree compiler
+lanes. A partial forward win is diagnostic evidence, not dispatch authority.
+
+The checked-in
+[`complex_bmm_dispatch_a800.json`](../../benchmarks/results/local/complex_bmm_dispatch_a800.json)
+artifact records 30 synchronized groups of 10 invocations after 20 warmups for
+ten fixed right- and left-going canonical-transfer shapes. It covers both A800
+hosts under stock Triton 3.7.1 and FlagTree 0.7.0. Maximum forward and gradient
+absolute errors are `3.06e-5` and `6.11e-5`. Across the complete matrix, the
+experimental Triton implementation reaches `0.186x` to `0.903x` the
+`torch.bmm` forward speed and `0.278x` to `0.546x` its forward-plus-backward
+speed. The canonical aggregate therefore records
+`runtime_dispatch_authorized=false`: NUM-001 remains experimental and MPS
+continues to use `torch.bmm`. This is bounded single-device development
+evidence, not a release gate or scalability claim. Reproduce or validate it
+with the runner above.
+
 `FQKI-TRITON-MEAS-001-A` computes the full flat-statevector probability tensor
 and its first-order complex gradient. Runtime dispatch is enabled by default
 only for contiguous CUDA `complex64` statevectors with shape `(1, 2**24)`, no
@@ -674,38 +697,42 @@ release gate or scalability claim. Reproduce or validate it with
 MPS-002 projects a gated two-site update into the deterministic fixed-rank QR
 range without first materializing the complete two-site matrix. The higher
 fixed-rank algorithm remains opt-in through `FQ_MPS_FIXED_RANK_QR=1`, and its
-Triton projection is independently opt-in through
-`FQ_TRITON_MPS_PROJECTED_TWO_SITE=1`. Eligible calls are contiguous CUDA
-`complex64` inference inputs; training retains the differentiable eager
-projection because MPS-002 is forward-only. The public fixed-rank path performs
-the same QR and reduced contraction after either projection implementation.
+Triton projection is enabled by default once that algorithm is selected. Set
+`FQ_TRITON_MPS_PROJECTED_TWO_SITE=0` to disable only the projected kernel.
+Eligible calls are contiguous CUDA `complex64` inference inputs; training
+retains the differentiable eager projection because MPS-002 is forward-only.
+The public fixed-rank path performs the same QR and reduced contraction after
+either projection implementation.
 
 The checked-in
 [`mps_projected_two_site_dispatch_a800.json`](../../benchmarks/results/local/mps_projected_two_site_dispatch_a800.json)
 artifact preserves 30 synchronized groups of 10 invocations for each of four
 fixed shapes and ranks on `jp-a800-171` and `jp-a800-172`, under stock Triton
-3.7.1 and FlagTree 0.7.0. Across all 16 host, compiler, and shape combinations,
-the direct projected kernel ranges from `0.046x` to `1.019x` versus the eager
-non-materializing projection and from `0.034x` to `0.459x` versus materialized
-PyTorch. The catalog path ranges from `0.046x` to `1.244x` versus eager and
-from `0.159x` to `1.885x` versus the warm compiled projection. The complete
-opt-in fixed-rank factorization ranges from `0.180x` to `1.288x` versus the
-eager factorization, so neither the kernel nor the end-to-end path establishes
-an all-shape speed win.
+3.7.1 and FlagTree 0.7.0. Version 2 times all seven paths in alternating forward
+and reverse order for every repeat, with peak-memory collection isolated from
+timing, so launch order and allocator probes cannot systematically favor one
+implementation. Across all 16 host, compiler, and shape combinations, the
+direct projected kernel ranges from `1.63x` to `5.49x` versus the eager
+non-materializing projection and from `1.21x` to `2.38x` versus materialized
+PyTorch. The catalog path ranges from `1.61x` to `5.02x` versus eager and from
+`5.81x` to `8.42x` versus the warm compiled projection. The complete opt-in
+fixed-rank factorization ranges from `1.0009x` to `1.29x` versus eager.
 
-The tradeoff is memory: the kernel's incremental peak allocation is lower in
-every measured case, by `5x` to `41x` versus the eager non-materializing
-projection and by `12x` versus the materialized baseline. Maximum sample
-absolute and relative L2 error are `3.31e-8` and `1.66e-6`; maximum factorized
-reconstruction absolute and relative L2 error are `8.77e-8` and `5.15e-6`, and
-maximum subspace-projector absolute and relative L2 error are `3.96e-6` and
-`9.23e-6`. The canonical aggregate therefore records `retain_opt_in`: this is
-a memory-oriented route for constrained workloads, not a default speed path.
-Fixed-rank QR itself also remains opt-in because it is approximate and does not
-measure discarded weight. The warm compiled complex baseline carries PyTorch
-Inductor's warning that complex code generation may be worse than eager. This
-is bounded development hardware evidence, not a release gate or scalability
-claim. Reproduce or validate it with
+The kernel's incremental peak allocation is lower in every measured case, by
+`5x` to `41x` versus the eager non-materializing projection and by `12x` versus
+the materialized baseline. Maximum sample absolute and relative L2 error are
+`1.04e-8` and `5.08e-7`; maximum factorized reconstruction absolute and
+relative L2 error are `2.11e-8` and `1.20e-6`, and maximum
+subspace-projector absolute and relative L2 error are `9.59e-7` and `1.98e-6`.
+The canonical aggregate records `eligible_for_default` for the projected
+kernel inside the fixed-rank path, with no dispatch blockers, so MPS-002 is
+`provisional`. Fixed-rank QR itself remains `retain_opt_in` because it is
+approximate and does not measure discarded weight. The weakest complete-path
+margin is only `1.0009x`, so future environment changes must revalidate the
+all-case gate before broadening the fixed-rank rollout. The warm compiled
+complex baseline carries PyTorch Inductor's warning that complex code
+generation may be worse than eager. This is bounded development hardware
+evidence, not a release gate or scalability claim. Reproduce or validate it with
 [`benchmarks/mps_projected_two_site_dispatch.py`](../../benchmarks/mps_projected_two_site_dispatch.py).
 
 The MPS-003 one-site gate route is enabled by default inside its measured
@@ -984,12 +1011,14 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. SV-001-A
-through SV-008-A, GR-001-A through GR-002-A, MPS-001, MPS-003 through MPS-007,
-and MEAS-001 through MEAS-003 are provisional after evidenced support-window
-validation; MPS-001 remains opt-in for the end-to-end reason above, while the
-other listed routes have evidenced default-dispatch promotions;
-the other 14 implementations remain experimental.
+The current 26 semantics and 33 implementations are implemented. The 24 direct
+Triton `-A` implementations from SV-001 through SV-008, GR-001 through GR-006,
+MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
+evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
+reason above, while the other listed routes have evidenced default-dispatch
+promotions. The two generic-autograd Triton `-B` implementations, the two NUM
+implementations, and the five explicit FlagTree implementations remain
+experimental, for nine experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

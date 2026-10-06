@@ -32,6 +32,8 @@ Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
 public usage, boundaries, stop conditions, and reproduction commands.
 
 [`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](LINUX_X86_CPU_REGRESSION_GATE_20261004.md)
+
+[`LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md`](LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md)
 establishes the fixed-host 22-qubit Random Clifford regression gate. It records
 the CPU model and affinity, absolute FlagQuantum/Aer/Lightning times, internal
 slowdown and external-framework floors, workflow behavior, public usage,

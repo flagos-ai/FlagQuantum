@@ -18,8 +18,8 @@ import torch
 
 from flagquantum.kernels.provenance import triton_compiler_provenance
 
-RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v1"
-EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_projected_two_site_dispatch.v1"
+RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_projected_two_site_dispatch.v2"
+EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_projected_two_site_dispatch.v2"
 SEMANTIC_ID = "mps.contract.two_site_gate_projected"
 IMPLEMENTATION_ID = "FQKI-TRITON-MPS-002-A"
 RUNNER = "benchmarks/mps_projected_two_site_dispatch.py"
@@ -206,32 +206,44 @@ def _inputs(
     )
 
 
-def _measure(
-    function: Callable[[], object],
+def _measure_counterbalanced(
+    functions: Mapping[str, Callable[[], object]],
     *,
     warmup: int,
     repeats: int,
     group_size: int,
-) -> dict[str, object]:
+) -> dict[str, dict[str, object]]:
+    names = tuple(functions)
+    if not names:
+        raise ValueError("at least one benchmark function is required")
     for _ in range(warmup):
-        function()
-    torch.cuda.synchronize()
-    allocated_before = torch.cuda.memory_allocated()
-    torch.cuda.reset_peak_memory_stats()
-    samples: list[float] = []
-    for _ in range(repeats):
-        started = time.perf_counter()
-        for _ in range(group_size):
+        for function in functions.values():
             function()
+    torch.cuda.synchronize()
+    samples: dict[str, list[float]] = {name: [] for name in names}
+    for repeat in range(repeats):
+        order = names if repeat % 2 == 0 else tuple(reversed(names))
+        for name in order:
+            started = time.perf_counter()
+            for _ in range(group_size):
+                functions[name]()
+            torch.cuda.synchronize()
+            samples[name].append((time.perf_counter() - started) / group_size)
+
+    results: dict[str, dict[str, object]] = {}
+    for name, function in functions.items():
+        allocated_before = torch.cuda.memory_allocated()
+        torch.cuda.reset_peak_memory_stats()
+        function()
         torch.cuda.synchronize()
-        samples.append((time.perf_counter() - started) / group_size)
-    peak = torch.cuda.max_memory_allocated()
-    return {
-        "samples_seconds_per_invocation": samples,
-        "median_seconds_per_invocation": statistics.median(samples),
-        "peak_memory_bytes": peak,
-        "peak_memory_delta_bytes": max(0, peak - allocated_before),
-    }
+        peak = torch.cuda.max_memory_allocated()
+        results[name] = {
+            "samples_seconds_per_invocation": samples[name],
+            "median_seconds_per_invocation": statistics.median(samples[name]),
+            "peak_memory_bytes": peak,
+            "peak_memory_delta_bytes": max(0, peak - allocated_before),
+        }
+    return results
 
 
 def _error(actual: torch.Tensor, expected: torch.Tensor) -> tuple[float, float]:
@@ -323,52 +335,34 @@ def _case(
     if max(*reconstruction_error, *subspace_error) > 2e-3:
         raise AssertionError("public and eager fixed-rank factorizations diverged")
 
-    results = {
-        "direct_kernel_forward": _measure(
-            lambda: fused_mps_range_projection(left, gate, right, projection),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "projected_eager_forward": _measure(
-            lambda: _projected_reference(left, gate, right, projection),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "materialized_pytorch_forward": _measure(
-            lambda: _materialized_reference(left, gate, right, projection),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "compiled_projected_reference_forward": _measure(
-            lambda: compiled_reference(left, gate, right, projection),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "catalog_dispatch_forward": _measure(
-            lambda: _apply_cataloged_mps_projected_two_site(
+    results = _measure_counterbalanced(
+        {
+            "direct_kernel_forward": lambda: fused_mps_range_projection(
                 left, gate, right, projection
             ),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "public_factorization_forward": _measure(
-            lambda: fixed_rank_two_site_range_qr(left, gate, right, rank),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "eager_factorization_forward": _measure(
-            lambda: _eager_factorization(left, gate, right, rank),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-    }
+            "projected_eager_forward": lambda: _projected_reference(
+                left, gate, right, projection
+            ),
+            "materialized_pytorch_forward": lambda: _materialized_reference(
+                left, gate, right, projection
+            ),
+            "compiled_projected_reference_forward": lambda: compiled_reference(
+                left, gate, right, projection
+            ),
+            "catalog_dispatch_forward": lambda: _apply_cataloged_mps_projected_two_site(
+                left, gate, right, projection
+            ),
+            "public_factorization_forward": lambda: fixed_rank_two_site_range_qr(
+                left, gate, right, rank
+            ),
+            "eager_factorization_forward": lambda: _eager_factorization(
+                left, gate, right, rank
+            ),
+        },
+        warmup=warmup,
+        repeats=repeats,
+        group_size=group_size,
+    )
     ratios = {
         field: (
             float(results[baseline]["median_seconds_per_invocation"])
@@ -486,6 +480,8 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         "measurement": {
             "clock": "time.perf_counter",
             "synchronization": "torch.cuda.synchronize after each invocation group",
+            "timing_order": "counterbalanced_forward_reverse_per_repeat",
+            "memory_collection": "separate_single_invocation_after_timing",
             "warmup": args.warmup,
             "repeats": args.repeats,
             "group_size": args.group_size,
@@ -553,6 +549,13 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         raise ValueError("measurement group_size must be a positive integer")
     if measurement.get("directions") != ["forward"]:
         raise ValueError("measurement directions must cover forward only")
+    if measurement.get("timing_order") != "counterbalanced_forward_reverse_per_repeat":
+        raise ValueError("measurement timing_order must be counterbalanced")
+    if (
+        measurement.get("memory_collection")
+        != "separate_single_invocation_after_timing"
+    ):
+        raise ValueError("measurement memory_collection must be separate from timing")
 
     cases = _sequence(payload.get("cases"), "cases")
     observed_shapes: list[tuple[int, int, int, int, int, bool]] = []

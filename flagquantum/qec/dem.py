@@ -56,6 +56,7 @@ from numbers import Integral, Real
 
 import torch
 
+from ..noise import NoiseModel
 from .circuit import MemoryCircuit
 from .codes import StabilizerCode
 from .dem_alternatives import (
@@ -1056,52 +1057,56 @@ class DetectorErrorModel:
         cls,
         circuit: MemoryCircuit,
         *,
-        noise: PhenomenologicalNoise,
+        noise: PhenomenologicalNoise | NoiseModel,
         decompose_composite_faults: bool = False,
     ) -> DetectorErrorModel:
         """Build the exact model of every noise location a memory circuit has.
 
-        Each location the circuit's round structure and ``noise`` imply is forced
-        through the circuit on its own and its signature is read off the layouts,
-        so the model is derived from the program rather than asserted about it.
-        The three Pauli data families are locations here as they are on the matrix
-        route: an X fault is the forced ``X``, and the Z and Y faults are that
-        Pauli conjugated by the ``h`` and ``sdg`` the source language carries, so
-        each is forced as one fault at one rate rather than as two independent
-        draws. A Z fault on the Z-memory layout this route requires reaches no
-        detector in round zero and never flips the logical observable, so it is
-        enumerated only where it is a mechanism -- and where that is nowhere, it
-        is no mechanism rather than a mechanism at a rate the model would have to
-        invent. The refusals of the injection engine reach the caller unchanged: a
-        hand-built circuit whose source does not match its layouts fails closed
-        with a stated reason instead of building a model that misdescribes it.
+        Each location the stated record configures is forced through the circuit
+        on its own and its signature is read off the layouts, so the model is
+        derived from the program rather than asserted about it. The record is
+        what selects the placement grammar: a
+        `~flagquantum.qec.PhenomenologicalNoise` names round boundaries and check
+        readouts, and a `~flagquantum.noise.NoiseModel` names gates, whose faults
+        then sit after the gate each rule matched and are enumerated once per
+        round rather than once at a boundary. The three Pauli data families are
+        locations here as they are on the matrix route: the record's own fields
+        name them, an X fault is the forced ``X``, and the Z and Y faults are that
+        Pauli conjugated by the ``h`` and ``sdg`` the circuit's source language
+        carries, so they are forced as one fault at one rate rather than as two
+        independent draws. A gate-bound record states its families through the
+        channel a rule carries instead: the two channels this route places are
+        the bit flip and the phase flip, each forced as the Pauli it is by the
+        same identity. A Z fault on the Z-memory layout this route requires
+        reaches no detector in round zero and never flips the logical observable,
+        so it is enumerated only where it is a mechanism -- and where that is
+        nowhere, it is no mechanism rather than a mechanism at a rate the model
+        would have to invent. The refusals of the injection engine reach the
+        caller unchanged: a hand-built circuit whose source does not match its
+        layouts fails closed with a stated reason instead of building a model that
+        misdescribes it, and a record naming a fault this route cannot place --
+        a depolarizing or damping channel, a two-qubit channel, a readout or a
+        preparation -- is refused rather than placed as a nearby fault.
 
-        ``decompose_composite_faults`` decides whether the Y family is enumerated
-        as one fault or as the X and Z faults it is the XOR of. Upstream states the
+        ``decompose_composite_faults`` decides whether the Y family is read as
+        one fault or as the X and Z faults it is the XOR of. Upstream states the
         same choice as ``dem_from_memory_circuit(..., decompose_errors=False)`` and
         documents it as handing the model to Stim, which is why no pairing rule
-        exists in its sources to read; this route decomposes the only composite
-        thing the program itself states, forcing each part at the parent's round
-        and qubit through the same injector the single-Pauli families use, so a part
-        is graphlike exactly where the single-Pauli fault at that location is.
-
-        The reading is not an equivalent statement of the model and is not offered
-        as one: read together the parts always fire together, read apart they fire
-        independently, so every detector's and observable's marginal rate is
-        unchanged to floating-point rounding while the joint law is not. It is
-        offered as the shape a minimum-weight matcher weights -- on a
-        distance-three rotated surface code at two rounds the composite model
-        states four mechanisms of three detectors and one of four and the authority
-        matcher refuses it, while the decomposed model states none above two and
-        that matcher builds on it. Where the program already states the parts
-        separately -- any repetition code, and a one-round surface experiment --
-        the two readings agree mechanism for mechanism. The matrix route has no
-        such keyword deliberately: a part there spans two detector bands and still
-        reaches four detectors at two rounds, so a name promising a graphlike model
-        would state what that route cannot deliver.
+        exists in its sources to read. The rule here is read off the program
+        instead; see :func:`~flagquantum.qec.dem_construction._memory_circuit_entries`
+        for how a part is forced and why it is graphlike exactly where the
+        single-Pauli fault at that location is. The two readings are not two
+        encodings of one distribution, and the second is not offered as an
+        equivalent statement: every detector's and observable's marginal rate is
+        the same under both to floating-point rounding while the joint law is not.
+        The matrix route has no such keyword deliberately: a part there spans two
+        detector bands and still reaches four detectors at two rounds, so a name
+        promising a graphlike model would state what that route cannot deliver.
 
         Raises:
             TypeError: If ``decompose_composite_faults`` is not a ``bool``.
+            CapabilityError: If the record is gate-bound, since the option names
+                the Y family of a round-boundary record.
         """
 
         num_detectors, num_observables, entries = _memory_circuit_entries(
