@@ -180,6 +180,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   parent-directory metadata. Invalid local destinations therefore fail before
   provider initialization, and a raced file is never overwritten after quota
   has been consumed.
+- Evidence publication now anchors temporary creation, exclusive linking,
+  rollback, and synchronization to one `O_NOFOLLOW` directory descriptor. It
+  verifies the visible parent inode before and after linking and removes the
+  candidate record if that binding changes, preventing a parent-path swap from
+  redirecting a live record into another directory.
 - All four quota-consuming CLIs now also validate the Kaiwu checkpoint root as
   an existing absolute, private, non-symlink directory before credential
   resolution. `KaiwuSDKClient` independently repeats its private-directory

@@ -283,7 +283,9 @@ The project and task prefix must be nonempty. The output path must be absolute,
 its parent must already be a private real directory, and the output itself must
 not exist. These conditions are checked before credential resolution and again
 at exclusive publication; a raced or accidentally reused filename is never
-overwritten after quota has been consumed.
+overwritten after quota has been consumed. Publication remains anchored to one
+non-symlink directory descriptor and rolls back the candidate record if the
+visible parent directory is replaced during the write.
 
 The smoke record includes a redacted `provider_result_schema` from the SDK's
 documented `get_task_result` dictionary. It contains field names and structural

@@ -157,8 +157,11 @@ has no simulator fallback. Its output parent must already be a private,
 non-symlink directory, and the final path must not exist. Every quota-consuming
 entrypoint validates its final evidence destinations before credential
 resolution; the exclusive writer repeats that validation at publication time.
-Live evidence is published without replacement only after both file contents
-and parent-directory metadata are synchronized. A
+The writer anchors temporary creation, exclusive linking, cleanup, and
+directory synchronization to one `O_NOFOLLOW` directory descriptor, and
+refuses publication if the visible parent binding changes. Live evidence is
+published without replacement only after both file contents and
+parent-directory metadata are synchronized. A
 timeout, provider failure, malformed result, or keyboard interruption after a
 task receipt exists is converted into a failed attempted record; the smoke
 sequence stops without submitting its next task, and hardware acceptance stays

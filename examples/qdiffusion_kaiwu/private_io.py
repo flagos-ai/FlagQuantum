@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import stat
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +45,25 @@ def validate_private_json_output_path(path: Path) -> None:
     raise FileExistsError(f"evidence output path already exists: {path}")
 
 
+def _verify_open_directory_binding(
+    parent: Path, descriptor_metadata: os.stat_result
+) -> None:
+    """Require the visible parent path to retain the opened private directory."""
+
+    try:
+        visible = parent.lstat()
+    except OSError:
+        raise ValueError("evidence parent changed during publication") from None
+    if (
+        parent.is_symlink()
+        or not stat.S_ISDIR(visible.st_mode)
+        or visible.st_mode & 0o077
+        or (visible.st_dev, visible.st_ino)
+        != (descriptor_metadata.st_dev, descriptor_metadata.st_ino)
+    ):
+        raise ValueError("evidence parent changed during publication")
+
+
 def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
     """Publish one JSON record without following or replacing unsafe paths."""
 
@@ -54,26 +73,64 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode()
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=parent
+    directory_flags = (
+        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
     )
-    temporary = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "wb") as stream:
+        directory_descriptor = os.open(parent, directory_flags)
+    except OSError:
+        raise ValueError("evidence parent changed during publication") from None
+    temporary_name = f".{path.name}.{secrets.token_hex(16)}.tmp"
+    temporary_descriptor: int | None = None
+    published = False
+    try:
+        directory_metadata = os.fstat(directory_descriptor)
+        if (
+            not stat.S_ISDIR(directory_metadata.st_mode)
+            or directory_metadata.st_mode & 0o077
+        ):
+            raise ValueError("evidence parent changed during publication")
+        _verify_open_directory_binding(parent, directory_metadata)
+        temporary_descriptor = os.open(
+            temporary_name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        with os.fdopen(temporary_descriptor, "wb") as stream:
+            temporary_descriptor = None
             stream.write(encoded)
             stream.flush()
             os.fsync(stream.fileno())
-        os.link(temporary, path, follow_symlinks=False)
-        directory_descriptor = os.open(
-            parent,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+        _verify_open_directory_binding(parent, directory_metadata)
+        os.link(
+            temporary_name,
+            path.name,
+            src_dir_fd=directory_descriptor,
+            dst_dir_fd=directory_descriptor,
+            follow_symlinks=False,
         )
+        published = True
+        _verify_open_directory_binding(parent, directory_metadata)
+        if os.fstat(directory_descriptor).st_mode & 0o077:
+            raise ValueError("evidence parent changed during publication")
+        os.fsync(directory_descriptor)
+        published = False
+    finally:
+        if temporary_descriptor is not None:
+            os.close(temporary_descriptor)
+        if published:
+            try:
+                os.unlink(path.name, dir_fd=directory_descriptor)
+                os.fsync(directory_descriptor)
+            except OSError:
+                pass
         try:
-            os.fsync(directory_descriptor)
+            os.unlink(temporary_name, dir_fd=directory_descriptor)
+        except FileNotFoundError:
+            pass
         finally:
             os.close(directory_descriptor)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 __all__ = (

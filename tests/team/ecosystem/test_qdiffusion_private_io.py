@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import private_io as private_io_module
 from examples.qdiffusion_kaiwu.private_io import (
     validate_private_directory,
     validate_private_json_output_path,
@@ -111,3 +113,37 @@ def test_writer_publishes_valid_json_exclusively(tmp_path: Path) -> None:
     assert json.loads(output.read_text(encoding="utf-8")) == {"accepted": False}
     with pytest.raises(FileExistsError):
         write_private_json_exclusive(output, {"accepted": True})
+
+
+@pytest.mark.parametrize("replacement_check", (2, 3))
+def test_writer_rejects_parent_replacement_without_leaving_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    replacement_check: int,
+) -> None:
+    parent = tmp_path / "private"
+    parent.mkdir(mode=0o700)
+    moved = tmp_path / "moved-private"
+    replacement = tmp_path / "replacement"
+    replacement.mkdir(mode=0o700)
+    output = parent / "record.json"
+    real_verify = private_io_module._verify_open_directory_binding
+    checks = 0
+
+    def replace_then_verify(path: Path, metadata: os.stat_result) -> None:
+        nonlocal checks
+        checks += 1
+        if checks == replacement_check:
+            parent.rename(moved)
+            parent.symlink_to(replacement, target_is_directory=True)
+        real_verify(path, metadata)
+
+    monkeypatch.setattr(
+        private_io_module, "_verify_open_directory_binding", replace_then_verify
+    )
+
+    with pytest.raises(ValueError, match="parent changed"):
+        write_private_json_exclusive(output, {"accepted": False})
+
+    assert not any(moved.iterdir())
+    assert not any(replacement.iterdir())
