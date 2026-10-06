@@ -78,6 +78,13 @@ _MAX_ENVIRONMENT_LOCK_BYTES = 4 * 1024 * 1024
 _MAX_COMPONENT_BYTES = 64 * 1024 * 1024
 
 
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate acceptance bundle ownership")
+    return int(getter())
+
+
 def _require_private_directory(path: Path, *, description: str) -> None:
     try:
         metadata = path.lstat()
@@ -89,6 +96,7 @@ def _require_private_directory(path: Path, *, description: str) -> None:
         path.is_symlink()
         or not stat.S_ISDIR(metadata.st_mode)
         or metadata.st_mode & 0o077
+        or metadata.st_uid != _effective_uid()
     ):
         raise ValueError(
             f"{description} must be an existing private, non-symlink directory: {path}"
@@ -112,7 +120,11 @@ def _open_output_parent(path: Path) -> tuple[int, os.stat_result]:
         ) from None
     try:
         metadata = os.fstat(descriptor)
-        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o077:
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_mode & 0o077
+            or metadata.st_uid != _effective_uid()
+        ):
             raise ValueError(
                 "acceptance output parent must be an existing private, "
                 f"non-symlink directory: {path}"
@@ -137,6 +149,8 @@ def _verify_output_parent(path: Path, expected: os.stat_result) -> None:
         path.is_symlink()
         or not stat.S_ISDIR(visible.st_mode)
         or visible.st_mode & 0o077
+        or visible.st_uid != _effective_uid()
+        or expected.st_uid != _effective_uid()
         or (visible.st_dev, visible.st_ino) != (expected.st_dev, expected.st_ino)
     ):
         raise ValueError("acceptance output parent changed during publication")
@@ -148,9 +162,14 @@ def _require_private_input(path: Path) -> None:
     _require_private_directory(path.parent, description="evidence input parent")
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"evidence input must be a regular, non-symlink file: {path}")
-    if path.stat().st_mode & 0o077:
+    metadata = path.stat()
+    if metadata.st_mode & 0o077:
         raise ValueError(
             f"evidence input must not be accessible by group or others: {path}"
+        )
+    if metadata.st_uid != _effective_uid():
+        raise ValueError(
+            f"evidence input must be owned by the current effective user: {path}"
         )
 
 

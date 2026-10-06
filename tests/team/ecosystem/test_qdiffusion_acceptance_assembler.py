@@ -9,8 +9,10 @@ from typing import Any
 
 import pytest
 
+from examples.qdiffusion_kaiwu import assemble_acceptance as assembler_module
 from examples.qdiffusion_kaiwu.assemble_acceptance import (
     _load_component,
+    _open_output_parent,
     _publish_acceptance_bundle,
     assemble_records,
 )
@@ -775,6 +777,19 @@ def test_bundle_is_published_only_after_final_validation(
 
     assert (destination / "manifest.json").is_file()
     assert destination.stat().st_mode & 0o077 == 0
+
+
+def test_bundle_publisher_rejects_foreign_owned_output_parent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    effective_uid = os.geteuid()
+    monkeypatch.setattr(
+        assembler_module.os, "geteuid", lambda: effective_uid + 1
+    )
+
+    with pytest.raises(ValueError, match="output parent must be an existing private"):
+        _open_output_parent(tmp_path)
 
 
 def test_bundle_publisher_does_not_replace_dangling_destination_symlink(

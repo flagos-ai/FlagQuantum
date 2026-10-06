@@ -144,7 +144,8 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   ownership requirement to configuration, approval, source-preflight, resource,
   training, evaluation, and acceptance component records, including directory
   and leaf rechecks after descriptor-relative reads and during exclusive
-  publication.
+  publication. Final acceptance assembly also freezes an output parent owned by
+  that UID and rechecks ownership through validation and atomic publication.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

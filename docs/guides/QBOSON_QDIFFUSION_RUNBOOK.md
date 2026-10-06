@@ -210,6 +210,8 @@ Every quota-consuming CLI rejects a relative, missing, symlinked, or
 group/other-accessible checkpoint directory before it resolves credentials.
 Shared private-evidence readers and writers additionally require parent
 directories and leaf files to belong to the current effective UID.
+Final-bundle publication applies the same ownership rule to its opened output
+parent throughout validation and the atomic directory rename.
 The SDK client repeats that private-directory check before it initializes the
 license. Recovery receipts are synced to a private temporary file and atomically
 published without replacement; resume rejects public, non-regular, or symlinked
