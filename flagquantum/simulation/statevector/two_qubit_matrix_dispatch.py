@@ -15,6 +15,7 @@ from ...kernels.catalog import (
     match_kernel_implementations,
 )
 from ..kernel_dispatch import _require_cataloged_kernel
+from . import two_qubit_cpu
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-009-A"
 _MIN_AMPLITUDES_PER_STATE = 1 << 16
@@ -180,10 +181,37 @@ def _try_apply_cataloged_two_qubit_matrix(
     )
 
 
+def _try_apply_preferred_two_qubit_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    qubits: Sequence[int],
+    n_qubits: int,
+) -> torch.Tensor | None:
+    """Try the cataloged GPU route, then the established CPU fast path."""
+
+    dispatched = _try_apply_cataloged_two_qubit_matrix(
+        state,
+        matrix,
+        qubits=qubits,
+        n_qubits=n_qubits,
+    )
+    if dispatched is not None:
+        return dispatched
+    if state.device.type == "cpu" and state.is_contiguous():
+        return two_qubit_cpu._apply_preferred_two_qubit_matrix_cpu(
+            state,
+            matrix,
+            qubits,
+            n_qubits,
+        )
+    return None
+
+
 __all__ = (
     "_apply_cataloged_two_qubit_matrix",
     "_require_two_qubit_matrix_kernel",
     "_try_apply_cataloged_two_qubit_matrix",
+    "_try_apply_preferred_two_qubit_matrix",
     "_two_qubit_matrix_dispatch_enabled",
     "_two_qubit_matrix_kernel_enabled",
     "_two_qubit_matrix_kernel_match",
