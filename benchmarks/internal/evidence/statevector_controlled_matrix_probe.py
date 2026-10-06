@@ -25,6 +25,7 @@ IMPLEMENTATION_ID = "FQKI-TRITON-SV-012-A"
 RUNNER = "benchmarks/internal/evidence/statevector_controlled_matrix_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
+DEFAULT_MIN_QUBITS = 20
 SHAPE_MATRIX = (
     (1, 1 << 16, 0, 1, False),
     (1, 1 << 20, 0, 19, False),
@@ -41,6 +42,25 @@ _MAXIMUM_RELATIVE_L2_ERROR = 1.0e-6
 class TimingResult(TypedDict):
     samples_seconds_per_invocation: list[float]
     median_seconds_per_invocation: float
+
+
+def _shape_record(
+    batch: int,
+    amplitudes: int,
+    control_qubit: int,
+    target_qubit: int,
+    batched_matrix: bool,
+) -> dict[str, object]:
+    return {
+        "batch": batch,
+        "amplitudes_per_batch": amplitudes,
+        "control_qubit": control_qubit,
+        "target_qubit": target_qubit,
+        "batched_matrix": batched_matrix,
+        "default_dispatch_eligible": (
+            amplitudes.bit_length() - 1 >= DEFAULT_MIN_QUBITS
+        ),
+    }
 
 
 def _reference(
@@ -196,13 +216,13 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         difference = actual - expected
         cases.append(
             {
-                "shape": {
-                    "batch": batch,
-                    "amplitudes_per_batch": amplitudes,
-                    "control_qubit": control_qubit,
-                    "target_qubit": target_qubit,
-                    "batched_matrix": batched_matrix,
-                },
+                "shape": _shape_record(
+                    batch,
+                    amplitudes,
+                    control_qubit,
+                    target_qubit,
+                    batched_matrix,
+                ),
                 "direct_kernel_wrapper": direct,
                 "pytorch_layout_bmm_reference": reference,
                 "speedup_over_pytorch": reference["median_seconds_per_invocation"]
@@ -294,16 +314,7 @@ def _validate_run(run: dict[str, Any]) -> None:
     repeats = measurement.get("repeats")
     if not isinstance(repeats, int) or repeats <= 0:
         raise ValueError("SV-012 repeats must be positive")
-    expected_shapes = [
-        {
-            "batch": batch,
-            "amplitudes_per_batch": amplitudes,
-            "control_qubit": control_qubit,
-            "target_qubit": target_qubit,
-            "batched_matrix": batched_matrix,
-        }
-        for batch, amplitudes, control_qubit, target_qubit, batched_matrix in SHAPE_MATRIX
-    ]
+    expected_shapes = [_shape_record(*shape) for shape in SHAPE_MATRIX]
     cases = run.get("cases")
     if (
         not isinstance(cases, list)
@@ -366,26 +377,25 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
     measurements = {json.dumps(run["measurement"], sort_keys=True) for run in runs}
     if len(revisions) != 1 or len(measurements) != 1:
         raise ValueError("SV-012 evidence must use one source and measurement policy")
-    expected_shapes = [
-        {
-            "batch": batch,
-            "amplitudes_per_batch": amplitudes,
-            "control_qubit": control_qubit,
-            "target_qubit": target_qubit,
-            "batched_matrix": batched_matrix,
-        }
-        for batch, amplitudes, control_qubit, target_qubit, batched_matrix in SHAPE_MATRIX
-    ]
+    expected_shapes = [_shape_record(*shape) for shape in SHAPE_MATRIX]
     if any([case["shape"] for case in run["cases"]] != expected_shapes for run in runs):
         raise ValueError("SV-012 evidence shape matrix mismatch")
 
     cases = [case for run in runs for case in run["cases"]]
     speedups = [float(case["speedup_over_pytorch"]) for case in cases]
+    default_cases = [
+        case for case in cases if bool(case["shape"]["default_dispatch_eligible"])
+    ]
+    excluded_cases = [
+        case for case in cases if not bool(case["shape"]["default_dispatch_eligible"])
+    ]
+    default_speedups = [float(case["speedup_over_pytorch"]) for case in default_cases]
     maximum_absolute_error = max(
         float(case["maximum_absolute_error"]) for case in cases
     )
     maximum_relative_l2_error = max(float(case["relative_l2_error"]) for case in cases)
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
+    all_default_cases_win = all(speedup > 1.0 for speedup in default_speedups)
     return {
         "benchmark": "statevector_controlled_matrix",
         "schema": EVIDENCE_SCHEMA,
@@ -410,13 +420,17 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
             "case_count": len(cases),
             "minimum_speedup_over_pytorch": min(speedups),
             "maximum_speedup_over_pytorch": max(speedups),
+            "default_dispatch_case_count": len(default_cases),
+            "excluded_small_state_case_count": len(excluded_cases),
+            "minimum_default_dispatch_speedup_over_pytorch": min(default_speedups),
             "maximum_absolute_error": maximum_absolute_error,
             "maximum_relative_l2_error": maximum_relative_l2_error,
             "all_cases_win": all_cases_win,
+            "all_default_cases_win": all_default_cases_win,
             "decision": (
-                "eligible_for_dispatch_evaluation"
-                if all_cases_win
-                else "retain_experimental"
+                "eligible_for_bounded_dispatch_evaluation"
+                if all_default_cases_win
+                else "optimize_before_promotion"
             ),
         },
     }
