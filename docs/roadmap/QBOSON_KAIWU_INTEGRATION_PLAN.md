@@ -14,10 +14,24 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   A800-SXM4-80GB devices, driver 580.126.20, and system Python 3.10.12. Neither
   system Python environment currently contains Torch, Kaiwu, or the Kaiwu
   PyTorch plugin. Docker is available on both hosts.
-- No QBoson credentials or quota have been provided. The authenticated
-  capability probe and all live submissions therefore remain blocked by that
-  explicit prerequisite. Kaiwu authentication uses `user_id` and `sdk_code` to
+- No QBoson credentials have been supplied to the integration environment, and
+  no provider quota has been approved for a FlagQuantum run. The authenticated
+  capability probe and all live submissions therefore remain blocked by those
+  explicit prerequisites. Kaiwu authentication uses `user_id` and `sdk_code` to
   initialize a local license; `sdk_code` must be handled as a secret.
+- On 2026-10-06 the authenticated platform beginner tutorial accepted the
+  independently computed Max Cut result, marked the tutorial mastered, and
+  displayed a notification that free real-machine credits had been issued. The
+  dashboard subsequently returned inconsistent balances while SPQC-1000 was
+  reported out of service, so that notification is not treated as verified or
+  spendable quota evidence. No provider task was submitted.
+- On 2026-10-06 a credential-free support request was submitted through the
+  authenticated platform. It asks QBoson for the Kaiwu 1.3.1 CPython 3.10 Linux
+  distribution and its digest and terms, an SDK-capable project number,
+  sampling quota, and written decisions covering isolated-container use and
+  open-source adapter publication without SDK-wheel redistribution. Until the
+  account-bound response is retained and reviewed, the SDK approval, project,
+  sampling-quota, and live-provider gates remain closed.
 - The Phase 1 pure-data boundary is implemented under
   `flagquantum/ecosystem/kaiwu`. Ising validation, independent
   Kaiwu-convention energy evaluation, symmetric QUBO-to-Ising encoding with

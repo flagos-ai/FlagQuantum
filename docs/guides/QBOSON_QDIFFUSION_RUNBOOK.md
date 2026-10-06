@@ -16,6 +16,26 @@ Run every Python command below from the root of the reviewed extracted
 FlagQuantum checkout. Commands use `python -s -m ...` so the current checkout
 is imported as a module and user-site packages cannot silently replace it.
 
+## External coordination status
+
+On 2026-10-06 the authenticated QBoson beginner tutorial accepted the Max Cut
+answer, marked the tutorial mastered, and displayed a notification that free
+real-machine credits had been issued. A later dashboard refresh reported
+SPQC-1000 out of service and returned balances inconsistent with the earlier
+view. Treat the tutorial notification as completion evidence only, not as
+proof that either quota class is currently available. Do not submit a provider
+task until the required quota is shown consistently and separately approved
+for this validation.
+
+On the same date, a credential-free platform support request asked for the
+Kaiwu 1.3.1 CPython 3.10 Linux package and its digest and terms, an SDK-capable
+project number, sampling quota, and written confirmation for isolated-container
+use and open-source adapter publication without redistributing the SDK wheel.
+The platform displayed `Submitted successfully`; no ticket identifier was
+provided. Retain the response received through the account-bound channel as a
+private review input. Do not copy account identifiers or SDK authorization
+codes into the repository while recording that response.
+
 ## Required inputs
 
 Do not begin a live run until all entries are available and reviewed:
