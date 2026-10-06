@@ -100,6 +100,10 @@ records:
    `host_identities`; the two values must be distinct. Every live command's
    `--expected-hostname` must match this mapping, while `--execution-host`
    remains the stable `jp-a800-171` or `jp-a800-172` alias.
+   The config schema is closed: do not add ad hoc metadata or credentials to
+   the top level or any nested section. Undeclared keys are rejected before a
+   live entrypoint resolves credentials, and the final validator repeats that
+   check before retaining the config.
 2. Record the file's SHA-256 digest in each host record and in a manifest based
    on `acceptance_manifest.example.json`.
 3. Run the bounded system path independently on `jp-a800-171` and

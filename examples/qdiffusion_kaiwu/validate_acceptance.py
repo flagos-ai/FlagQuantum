@@ -395,6 +395,116 @@ METRIC_NAMES = (
     "length_match_ratio",
     "invalid_sequence_count",
 )
+CONFIG_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "preregistered_at",
+        "primary_host",
+        "replay_host",
+        "host_identities",
+        "software",
+        "kaiwu_sdk",
+        "dataset",
+        "checkpoint",
+        "tokenizer",
+        "evaluation_model",
+        "training",
+        "generation",
+        "evaluation",
+        "seeds",
+        "requested_samples",
+        "remote_call_budget",
+        "precision_policy",
+        "primary_metric",
+        "thresholds",
+    }
+)
+CONFIG_SOFTWARE_FIELDS = frozenset(
+    {
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "environment_lock_sha256",
+    }
+)
+CONFIG_ARTIFACT_FIELDS = frozenset(
+    {
+        "name",
+        "revision",
+        "source_url",
+        "license_id",
+        "license_evidence_url",
+        "license_reviewed_at",
+        "sha256",
+    }
+)
+CONFIG_DATASET_FIELDS = CONFIG_ARTIFACT_FIELDS | {
+    "split",
+    "min_length",
+    "max_length",
+    "max_records",
+    "validation_ratio",
+    "test_ratio",
+}
+CONFIG_TRAINING_FIELDS = frozenset(
+    {
+        "freeze_proposal",
+        "epochs",
+        "min_epochs",
+        "batch_size",
+        "num_candidates",
+        "learning_rate",
+        "weight_decay",
+        "grad_clip_norm",
+        "validation_steps",
+        "scheduler_factor",
+        "scheduler_patience",
+        "early_stop_patience",
+        "remote_call_budget_per_seed",
+    }
+)
+CONFIG_GENERATION_FIELDS = frozenset(
+    {
+        "sequence_count",
+        "max_steps",
+        "num_candidates",
+        "proposal_temperature",
+        "proposal_noise_scale",
+        "energy_temperature",
+        "disable_resample",
+        "resample_ratio",
+        "resample_top_p",
+        "portability_training_seed",
+        "portability_fixture_index",
+        "portability_steps",
+    }
+)
+CONFIG_EVALUATION_FIELDS = frozenset({"pair_mode", "pooling", "batch_size"})
+CONFIG_PRECISION_FIELDS = frozenset({"name", "target_min", "target_max"})
+CONFIG_PRIMARY_METRIC_FIELDS = frozenset({"name", "direction"})
+CONFIG_THRESHOLD_FIELDS = frozenset(
+    {
+        "uniqueness_baseline_fraction_min",
+        "repeat_ratio_absolute_increase_max",
+        "invalid_sequence_count_max",
+    }
+)
+CONFIG_SECTION_FIELDS = {
+    "software": CONFIG_SOFTWARE_FIELDS,
+    "dataset": CONFIG_DATASET_FIELDS,
+    "checkpoint": CONFIG_ARTIFACT_FIELDS,
+    "tokenizer": CONFIG_ARTIFACT_FIELDS,
+    "evaluation_model": CONFIG_ARTIFACT_FIELDS,
+    "training": CONFIG_TRAINING_FIELDS,
+    "generation": CONFIG_GENERATION_FIELDS,
+    "evaluation": CONFIG_EVALUATION_FIELDS,
+    "precision_policy": CONFIG_PRECISION_FIELDS,
+    "primary_metric": CONFIG_PRIMARY_METRIC_FIELDS,
+    "thresholds": CONFIG_THRESHOLD_FIELDS,
+}
 
 _MAX_MANIFEST_BYTES = 4 * 1024 * 1024
 _MAX_CONFIG_BYTES = 1024 * 1024
@@ -1028,6 +1138,16 @@ def _validate_precision_transfer_origins(
 
 
 def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
+    _has_exact_fields(
+        config, expected=CONFIG_FIELDS, label="config", errors=errors
+    )
+    for section, expected_fields in CONFIG_SECTION_FIELDS.items():
+        _has_exact_fields(
+            config.get(section),
+            expected=expected_fields,
+            label=f"config.{section}",
+            errors=errors,
+        )
     if config.get("schema") != CONFIG_SCHEMA or config.get("version") != "1.0":
         errors.append("config: unsupported schema or version")
     primary_host = config.get("primary_host")

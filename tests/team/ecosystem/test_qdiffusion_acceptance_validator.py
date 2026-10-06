@@ -12,6 +12,8 @@ import pytest
 
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     COMPONENT_FIELDS_BY_SCHEMA,
+    CONFIG_FIELDS,
+    CONFIG_SECTION_FIELDS,
     METRIC_NAMES,
     _validate_component_bundle,
     _validate_component_field_set,
@@ -1273,6 +1275,52 @@ def test_config_requires_two_distinct_frozen_host_identities(
     _validate_config(config, errors)
 
     assert any("config.host_identities" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "section",
+    (
+        None,
+        "host_identities",
+        "software",
+        "kaiwu_sdk",
+        "dataset",
+        "checkpoint",
+        "tokenizer",
+        "evaluation_model",
+        "training",
+        "generation",
+        "evaluation",
+        "precision_policy",
+        "primary_metric",
+        "thresholds",
+    ),
+)
+def test_config_rejects_undeclared_fields_that_could_hide_secrets(
+    section: str | None,
+) -> None:
+    config = _config()
+    target = config if section is None else config[section]
+    target["sdk_code"] = "must-not-be-retained"
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("field set" in error or "host_identities" in error for error in errors)
+
+
+def test_closed_config_fields_match_documented_template() -> None:
+    template_path = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "acceptance_config.example.json"
+    )
+    template = json.loads(template_path.read_text(encoding="utf-8"))
+
+    assert set(template) == CONFIG_FIELDS
+    for section, expected_fields in CONFIG_SECTION_FIELDS.items():
+        assert set(template[section]) == expected_fields
 
 
 @pytest.mark.parametrize(
