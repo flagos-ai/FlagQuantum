@@ -126,6 +126,10 @@ provider values or infer a mapping from field names alone.
   temporary creation, exclusive publication, rollback, and directory sync are
   anchored to an opened non-symlink parent descriptor and reject a changed
   visible parent binding.
+- The client freezes the checkpoint directory device/inode before license
+  initialization and rechecks it before recovery access and around every vendor
+  checkpoint context. A replacement detected after a vendor call is an
+  indeterminate failed attempt, not permission to resubmit the task.
 - Existing recovery content is immutable and opened without following
   symlinks. Its schema and UTC timestamp are validated, provider task/target
   identities must remain absent until an approved mapping exists, and every SDK

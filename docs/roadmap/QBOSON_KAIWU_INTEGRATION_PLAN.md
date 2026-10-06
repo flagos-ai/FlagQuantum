@@ -147,6 +147,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   symlinks. Parent-directory access is descriptor-relative and binding-checked,
   so public, non-regular, partial, replaced, or redirected files fail before an
   SDK task operation.
+- The pinned client now freezes the checkpoint directory device/inode before
+  license initialization and rechecks that identity before recovery access and
+  on entry to and exit from every vendor checkpoint context. Replacement before
+  an operation prevents SDK access; replacement during an operation is detected
+  as a failed attempt and must never trigger an automatic retry because the
+  provider may already have observed the original task identity.
 - Pinned 1.3.1 recovery also enforces an exact top-level schema, an aware UTC
   submission timestamp, and absent provider task/target identities. Local
   receipt editing therefore cannot fabricate the provider evidence that the

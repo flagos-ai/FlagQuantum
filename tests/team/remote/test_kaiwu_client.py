@@ -109,6 +109,65 @@ def test_client_rejects_an_unpinned_sdk_lane_before_license(
     initializer.assert_not_called()
 
 
+def test_checkpoint_replacement_before_submit_fails_without_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir(mode=0o700)
+    client, _ = _client(monkeypatch, checkpoint)
+    moved = tmp_path / "moved-checkpoint"
+    checkpoint.rename(moved)
+    checkpoint.mkdir(mode=0o700)
+
+    with pytest.raises(KaiwuSDKError, match="binding changed"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="replaced-before-submit",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == 0
+    assert not any(checkpoint.iterdir())
+    assert not any(moved.iterdir())
+
+
+def test_checkpoint_replacement_during_sdk_operation_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir(mode=0o700)
+    client, manager = _client(monkeypatch, checkpoint)
+    moved = tmp_path / "moved-checkpoint"
+
+    def replace_checkpoint(optimizer: _FakeOptimizer, matrix: np.ndarray) -> np.ndarray:
+        del optimizer
+        assert matrix.tolist() == [[0.0, 1.0], [1.0, 0.0]]
+        _FakeOptimizer.solve_calls += 1
+        checkpoint.rename(moved)
+        checkpoint.mkdir(mode=0o700)
+        return np.array([[1, -1]] * 10, dtype=np.int8)
+
+    monkeypatch.setattr(_FakeOptimizer, "solve", replace_checkpoint)
+
+    with pytest.raises(KaiwuSDKError, match="task operation failed"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="replaced-during-submit",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == 1
+    assert manager.save_dir == "original"
+    assert not any(checkpoint.iterdir())
+    assert len(tuple(moved.glob("flagquantum-kaiwu-*.json"))) == 1
+
+
 def test_submit_and_poll_reuse_documented_task_identity(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

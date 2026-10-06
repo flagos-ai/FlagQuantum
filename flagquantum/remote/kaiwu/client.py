@@ -6,7 +6,9 @@ import hashlib
 import itertools
 import json
 import math
+import os
 import re
+import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
@@ -22,7 +24,13 @@ from .contracts import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
 )
-from .jobs import _read_private_json, _write_private_json_exclusive, new_receipt
+from .jobs import (
+    _open_private_directory,
+    _read_private_json,
+    _verify_open_directory_binding,
+    _write_private_json_exclusive,
+    new_receipt,
+)
 from .sdk import (
     KaiwuSDKEnvironment,
     KaiwuSDKError,
@@ -73,19 +81,55 @@ class KaiwuSDKClient:
             )
         if candidate.stat().st_mode & 0o077:
             raise ValueError("checkpoint_dir must not be accessible by group or others")
-        path = candidate.resolve()
+        descriptor, checkpoint_metadata = _open_private_directory(
+            candidate, description="checkpoint_dir"
+        )
+        try:
+            path = candidate.resolve(strict=True)
+            _verify_open_directory_binding(
+                candidate,
+                checkpoint_metadata,
+                description="checkpoint_dir",
+            )
+            resolved_metadata = path.lstat()
+            if (
+                path.is_symlink()
+                or not stat.S_ISDIR(resolved_metadata.st_mode)
+                or resolved_metadata.st_mode & 0o077
+                or (resolved_metadata.st_dev, resolved_metadata.st_ino)
+                != (checkpoint_metadata.st_dev, checkpoint_metadata.st_ino)
+            ):
+                raise ValueError("checkpoint_dir changed during initialization")
+        finally:
+            os.close(descriptor)
         if type(interval_minutes) is not int or interval_minutes < 1:
             raise ValueError("interval_minutes must be an integer of at least one")
         if expected_version != _PINNED_SDK_VERSION:
             raise ValueError(
                 "KaiwuSDKClient supports only the pinned Kaiwu 1.3.1 contract"
             )
+        try:
+            current_checkpoint = path.lstat()
+        except OSError:
+            raise ValueError("checkpoint_dir changed during initialization") from None
+        if (
+            path.is_symlink()
+            or not stat.S_ISDIR(current_checkpoint.st_mode)
+            or current_checkpoint.st_mode & 0o077
+            or (current_checkpoint.st_dev, current_checkpoint.st_ino)
+            != (checkpoint_metadata.st_dev, checkpoint_metadata.st_ino)
+        ):
+            raise ValueError("checkpoint_dir changed during initialization")
         environment = initialize_kaiwu_license(
             credentials,
             expected_version=expected_version,
         )
         self._module = _load_kaiwu_module()
         self._checkpoint_dir = path
+        self._checkpoint_identity = (
+            checkpoint_metadata.st_dev,
+            checkpoint_metadata.st_ino,
+        )
         self._interval_minutes = interval_minutes
         self._environment = environment
         self._optimizers: dict[str, Any] = {}
@@ -111,15 +155,34 @@ class KaiwuSDKClient:
     ) -> KaiwuTaskReceipt:
         path = self.recovery_receipt_path(receipt)
         with self._checkpoint_lock:
+            self._validate_checkpoint_binding()
             if path.exists() or path.is_symlink():
-                return self._load_recovery_receipt(path, receipt, matrix)
+                stored = self._load_recovery_receipt(path, receipt, matrix)
+                self._validate_checkpoint_binding()
+                return stored
             try:
                 _write_private_json_exclusive(
                     path, {"receipt": asdict(receipt), "matrix": matrix}
                 )
+                self._validate_checkpoint_binding()
                 return receipt
             except FileExistsError:
-                return self._load_recovery_receipt(path, receipt, matrix)
+                stored = self._load_recovery_receipt(path, receipt, matrix)
+                self._validate_checkpoint_binding()
+                return stored
+
+    def _validate_checkpoint_binding(self) -> None:
+        try:
+            metadata = self._checkpoint_dir.lstat()
+        except OSError:
+            raise KaiwuSDKError("Kaiwu checkpoint directory binding changed") from None
+        if (
+            self._checkpoint_dir.is_symlink()
+            or not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_mode & 0o077
+            or (metadata.st_dev, metadata.st_ino) != self._checkpoint_identity
+        ):
+            raise KaiwuSDKError("Kaiwu checkpoint directory binding changed")
 
     @staticmethod
     def _load_recovery_receipt(
@@ -166,12 +229,14 @@ class KaiwuSDKClient:
         if manager is None or not hasattr(manager, "save_dir"):
             raise KaiwuSDKError("Kaiwu SDK does not expose CheckpointManager.save_dir")
         with self._checkpoint_lock:
+            self._validate_checkpoint_binding()
             previous = manager.save_dir
             manager.save_dir = str(self._checkpoint_dir)
             try:
                 yield
             finally:
                 manager.save_dir = previous
+                self._validate_checkpoint_binding()
 
     def _optimizer(self, receipt: KaiwuTaskReceipt) -> Any:
         key = self._identity_key(receipt)
