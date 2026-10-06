@@ -33,7 +33,7 @@ def test_mps_sampling_collapse_dispatch_binds_exact_catalog_implementation() -> 
     assert implementation.implementation_id == "FQKI-TRITON-MPS-008-A"
     assert implementation.symbol == "fused_mps_sampling_collapse"
     assert implementation.directions == ("forward",)
-    assert implementation.maturity == "experimental"
+    assert implementation.maturity == "provisional"
 
 
 @pytest.mark.parametrize(

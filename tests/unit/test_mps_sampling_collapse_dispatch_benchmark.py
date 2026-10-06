@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import statistics
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -26,6 +28,15 @@ from benchmarks.mps_sampling_collapse_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "mps_sampling_collapse_dispatch_a800.json"
+)
 
 
 def _timing(scale: float = 1.0) -> dict[str, object]:
@@ -182,3 +193,12 @@ def test_evidence_validator_rejects_noncanonical_summary() -> None:
 
     with pytest.raises(ValueError, match="canonical merge"):
         validate_evidence(changed)
+
+
+def test_checked_in_a800_evidence_is_canonical_and_promotes_dispatch() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    validate_evidence(payload)
+    assert payload["source_revision"] == ("c7b30f379ef57576474ab55ead39b96abadce62b")
+    assert payload["public_dispatch_win_on_all_cases"]
+    assert payload["dispatch_selection_decision"] == "eligible_for_default"
