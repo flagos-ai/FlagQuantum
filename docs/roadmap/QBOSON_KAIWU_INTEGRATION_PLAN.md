@@ -64,6 +64,19 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   counts and timestamps; it contains no account identifier, transaction ID,
   SDK code, or other credential, expires after 24 hours, and is resource-state
   evidence rather than spend approval or provider execution evidence.
+- On 2026-10-07 an authenticated follow-up feedback request was submitted after
+  explicit user confirmation, and the platform displayed `Submitted
+  successfully`. The request contains no account identifier or credential. It
+  asks for a minimal SPQC sampling allocation and project number; written
+  permission to run the digest-pinned Kaiwu 1.3.1 CPython 3.10 Linux wheel in
+  an isolated container for FlagQuantum open-source integration tests; a
+  decision on caching that wheel in a private validation image; the wheel
+  license and applicable service terms; provider task-ID, target, status, and
+  result-field mappings; and a technical contact. It states that no production
+  task is planned. The platform still exposed no durable ticket ID or readable
+  message history, so the success notification proves form acceptance only;
+  every requested approval, assignment, mapping, and sampling resource remains
+  unresolved until a response is retained and reviewed.
 - The authenticated SDK page currently offers platform downloads for Kaiwu
   1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
   submission. It also shows that an account-bound SDK authorization code exists,
