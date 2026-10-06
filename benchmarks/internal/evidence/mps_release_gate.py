@@ -135,14 +135,13 @@ def premise_evidence_errors(
     """Return the frozen premise files that are missing or have drifted.
 
     ``capacity_workload`` names every file the premise rests on and digests it, so
-    a premise can be re-read rather than believed. Two of the entries are known to
-    be unresolvable -- ``premise_provenance`` records an absent raw log and an
-    absent telemetry file, and a completion artifact whose workload body digest
-    differs from the body on disk -- and those are returned as their own names
-    rather than raised, because a manifest that disclosed them must not be able to
-    hide behind a passing gate. The caller turns a non-empty result into a blocker,
-    so the disclosure is reported and the premise stays unestablished until the
-    files agree.
+    a premise can be re-read rather than believed. An entry this manifest already
+    knows to be unresolvable is returned as its own name rather than raised,
+    because a manifest that disclosed it must not be able to hide behind a passing
+    gate. This contract currently discloses none: the raw log and the telemetry it
+    once recorded as absent are on disk at the digests it recorded for them. The
+    caller turns a non-empty result into a blocker, so any future drift is reported
+    and the premise stays unestablished until the files agree.
     """
 
     errors: list[str] = []
@@ -1000,9 +999,12 @@ def evaluate_mps_release(
         blockers.append("single_gpu_baseline_missing_required_fields")
 
     # The premise is a claim about files, so it is re-read rather than believed.
-    # ``premise_provenance`` already discloses that two sources are absent and
-    # that the completion artifact's body digest has drifted; reporting that here
-    # is what keeps the disclosure from being decorative.
+    # ``premise_provenance`` discloses which of the sources it cites resolve and
+    # which have drifted; reporting that here is what keeps the disclosure from
+    # being decorative. This contract's raw log and device telemetry now resolve
+    # at the digests the premise recorded, so the only source left unverifiable is
+    # the workload body the premise was assembled from, which was redesigned after
+    # that run and cannot resolve against a digest recorded before the redesign.
     if premise_evidence_errors(capacity):
         blockers.append("capacity_premise_evidence_not_verifiable")
 

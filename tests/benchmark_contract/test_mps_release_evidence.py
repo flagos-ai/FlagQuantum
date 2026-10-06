@@ -658,18 +658,18 @@ def test_the_checked_in_completion_artifact_resolves_as_the_capacity_premise() -
     # The checked-in run recorded no device name, so the premise states the
     # measured total memory instead of inventing a model for the hardware.
     assert "not recorded" in baseline["capacity_baseline_device"]
-    # The raw log and the device telemetry are gone and the workload body on disk
-    # has drifted from the digest the premise recorded, so three of the five
-    # sources cannot be checked here and the premise says so rather than implying
-    # that it re-verified them.
+    # The raw log and the device telemetry were recovered from the recording
+    # host's /tmp, where the run's own recorded command line had written them,
+    # and they hash to the digests the premise recorded while they were missing.
+    # The workload body on disk has drifted from the digest the premise recorded,
+    # so that one source cannot be checked here and the premise says so rather
+    # than implying that it re-verified it.
     integrity = premise["source_integrity"]
     assert integrity["finalized"] is True
-    assert sorted(integrity["unverifiable_paths"]) == sorted(
-        [
-            *CAPACITY["premise_provenance"]["absent_sources"],
-            CAPACITY["workload_definition_sources"][1]["path"],
-        ]
-    )
+    assert CAPACITY["premise_provenance"]["absent_sources"] == []
+    assert integrity["unverifiable_paths"] == [
+        CAPACITY["workload_definition_sources"][1]["path"]
+    ]
 
 
 def test_the_completion_role_needs_the_measured_premise() -> None:

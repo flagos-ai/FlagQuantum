@@ -739,29 +739,29 @@ ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
 
 
 def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly two named reasons.
+    """The checked-in state fails the gate for exactly one named reason.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains are the two things the frozen document itself
-    discloses about its premise: it is not established, and the provenance it
-    cites for it is not re-verifiable. The sixteen-rank release world used to
-    appear here as well, because no evidence scope could carry it; API change
+    satisfied. What remains is the one thing the frozen document itself discloses
+    about its premise: it is not established. The sixteen-rank release world used
+    to appear here as well, because no evidence scope could carry it; API change
     proposal 065 added ``MULTI_NODE_SCALE`` and this contract was re-frozen
     against it, so the world is now sealable. The matched-speed ladder used to
     appear here too, while the manifest froze no rungs; it now freezes a ladder
     whose shapes were measured, so a speed payload is a payload this contract can
-    accept. Asserting the exact tuple means a third blocker appearing here would
-    have to be explained rather than absorbed.
+    accept. Unverifiable premise provenance used to appear here as well, while the
+    raw log and the device telemetry the premise cites were absent from this
+    repository; both are now recovered at the digests the premise recorded, so the
+    provenance re-resolves and the premise's remaining half is its own measurement.
+    Asserting the exact tuple means a second blocker appearing here would have to
+    be explained rather than absorbed.
     """
 
     manifest = load_manifest()
     passed, blockers = _read(manifest)
 
     assert passed is False
-    assert blockers == (
-        "capacity_premise_not_established",
-        "capacity_premise_evidence_not_verifiable",
-    )
+    assert blockers == ("capacity_premise_not_established",)
     assert manifest["capacity_workload"]["premise_established"] is False
     assert manifest["speed_workload"]["configuration_ladder"]
 
