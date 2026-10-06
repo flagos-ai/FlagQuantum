@@ -1,4 +1,4 @@
-"""Catalog authorization for fused sampled-wire MPS collapse updates."""
+"""Catalog authorization for fused sampled-site MPS collapse updates."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ def _mps_sampling_collapse_kernel_enabled(
 def _mps_sampling_collapse_kernel_match(
     *, device_type: str, dtype: str
 ) -> KernelMatchResult:
-    """Match a sampled-wire collapse against its catalog contract."""
+    """Match a sampled-site collapse against its catalog contract."""
 
     return match_kernel_implementations(
         KernelRequest(
