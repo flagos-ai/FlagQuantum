@@ -11,7 +11,6 @@ third group covers the refusals, including the one that only a negative exponent
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 import torch
 
@@ -156,12 +155,12 @@ def test_a_power_equals_the_matrix_power_of_the_program(exponent: int) -> None:
     """
 
     block = fq.Circuit(2, dtype=torch.complex128).h(0).rz(1, 0.7).cnot(0, 1)
-    reference = dense_operator(block).numpy()
-    step = reference if exponent >= 0 else np.linalg.inv(reference)
-    expected = np.linalg.matrix_power(step, abs(exponent))
+    reference = dense_operator(block)
+    step = reference if exponent >= 0 else torch.linalg.inv(reference)
+    expected = torch.linalg.matrix_power(step, abs(exponent))
 
-    got = dense_operator(block.power(exponent)).numpy()
-    assert abs(got - expected).max() < 1e-12
+    got = dense_operator(block.power(exponent))
+    assert (got - expected).abs().max().item() < 1e-12
 
 
 def test_a_power_is_the_program_repeated_in_order() -> None:
@@ -489,13 +488,25 @@ def test_a_non_integer_exponent_is_refused(exponent: object) -> None:
 
 
 def test_integer_like_types_are_accepted() -> None:
-    """A count that is an integer is accepted, without a lossy conversion."""
+    """A count that is an integer is accepted, without a lossy conversion.
 
-    import numpy as np
+    ``numpy`` is not a declared dependency of this repository and no lane installs it,
+    so the integer that is not an ``int`` is a local ``__index__`` carrier here. A
+    numpy integer takes the same path, but importing numpy to say so would fail
+    collection in every lane instead of testing anything. The rule being measured is
+    the interpreter's ``__index__`` protocol, not ``isinstance(value, int)`` -- an
+    ``int`` subclass would pass that and prove nothing.
+    """
+
+    class IntegerLike:
+        """An integer that is not an ``int``, which is the shape numpy supplies."""
+
+        def __index__(self) -> int:
+            return 3
 
     block = fq.Circuit(1).h(0)
     assert len(block.power(2).to_ir().instructions) == 2
-    assert len(block.power(np.int64(3)).to_ir().instructions) == 3
+    assert len(block.power(IntegerLike()).to_ir().instructions) == 3
     assert len(block.power(torch.tensor(2)).to_ir().instructions) == 2
     # A float that is exactly integral is still refused rather than truncated: the
     # argument is a count, and `2.0` in a variable usually came from arithmetic.
