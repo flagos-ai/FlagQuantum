@@ -122,6 +122,15 @@ def _finite_number(value: Any, label: str, errors: list[str]) -> float | None:
     return number
 
 
+def _canonical_printable_identifier(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and value == value.strip()
+        and value.isprintable()
+    )
+
+
 def _validate_sampling_receipt(
     receipt: dict[str, Any],
     *,
@@ -136,7 +145,7 @@ def _validate_sampling_receipt(
     if receipt.get("schema") != TASK_RECEIPT_SCHEMA:
         errors.append(f"{label}: receipt schema is unsupported")
     task_name = receipt.get("task_name")
-    if not isinstance(task_name, str) or not task_name.strip():
+    if not _canonical_printable_identifier(task_name):
         errors.append(f"{label}: receipt has no task name")
     matrix_digest = receipt.get("matrix_sha256")
     if (
@@ -153,7 +162,7 @@ def _validate_sampling_receipt(
     if receipt.get("requested_samples") != expected_requested_samples:
         errors.append(f"{label}: receipt sample count differs")
     project_no = receipt.get("project_no")
-    if not isinstance(project_no, str) or not project_no.strip():
+    if not _canonical_printable_identifier(project_no):
         errors.append(f"{label}: receipt has no project number")
     submitted_at = receipt.get("submitted_at")
     try:
@@ -163,11 +172,11 @@ def _validate_sampling_receipt(
     if submitted is None or submitted.utcoffset() != timedelta(0):
         errors.append(f"{label}: receipt has no aware UTC submission time")
     task_id = receipt.get("provider_task_id")
-    if not isinstance(task_id, str) or not task_id.strip():
+    if not _canonical_printable_identifier(task_id):
         errors.append(f"{label}: receipt has no provider_task_id")
         task_id = None
     target = receipt.get("provider_target")
-    if not isinstance(target, str) or not target.strip():
+    if not _canonical_printable_identifier(target):
         errors.append(f"{label}: receipt has no provider_target")
         target = None
     return task_id, target, matrix_digest

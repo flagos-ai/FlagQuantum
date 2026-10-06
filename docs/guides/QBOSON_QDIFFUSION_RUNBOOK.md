@@ -273,6 +273,10 @@ installed must continue to work in the normal environment.
 Use a fresh task prefix and the assigned project. The following command submits
 one optimization task and one sampling task and may consume quota:
 
+Both identifiers must be nonempty printable text without control or format
+characters. Receipt restoration and final validation also reject surrounding
+whitespace in task, project, provider-task, and provider-target identities.
+
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \

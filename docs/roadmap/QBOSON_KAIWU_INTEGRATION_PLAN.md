@@ -60,6 +60,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   implements only documented SDK behavior; real provider task-ID, target, and
   raw-state mappings remain unavailable until an approved SDK response can be
   inspected.
+- Task names and optional project numbers must be nonempty printable text before
+  sampler construction or Remote submission. Restored receipt task/project and
+  provider task/target identities additionally require canonical surrounding
+  whitespace, and provider status text rejects control characters. The final
+  acceptance validator independently enforces the same receipt identity rule,
+  preventing log or JSON injection without inventing an undocumented vendor
+  character alphabet or length limit.
 - Generic receipt restoration now validates runtime types, exact matrix size
   and identity, mode-specific sample limits, nonempty project and provider
   identities, and an aware UTC submission timestamp before a client operation.

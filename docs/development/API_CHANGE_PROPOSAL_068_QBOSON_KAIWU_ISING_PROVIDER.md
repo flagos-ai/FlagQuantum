@@ -119,6 +119,10 @@ provider values or infer a mapping from field names alone.
 - `submit_kaiwu_task` performs one initial submission and returns a detached
   Kaiwu-specific job. `status`, `result`, `wait`, and restore never choose a new
   task identity.
+- Task and project names must be nonempty printable strings before submission.
+  Restored provider task/target identities and task/project fields must also be
+  canonical without surrounding whitespace; provider status rejects control
+  characters. No narrower undocumented vendor alphabet is assumed.
 - A timeout neither cancels nor resubmits the provider task.
 - Before the first SDK operation, a mode-0600 recovery bundle records the
   credential-free task name, exact matrix, matrix digest, mode, sample count,

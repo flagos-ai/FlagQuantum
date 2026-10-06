@@ -160,6 +160,19 @@ def test_status_rejects_non_string_provider_state() -> None:
         job.status()
 
 
+def test_status_rejects_control_characters() -> None:
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=_FakeClient(["Completed\ncredential-secret"]),
+        task_name="unsafe-status",
+    )
+
+    with pytest.raises(RuntimeError, match="invalid provider status") as caught:
+        job.status()
+
+    assert "credential-secret" not in str(caught.value)
+
+
 def test_save_and_restore_are_credential_free_and_do_not_submit(tmp_path: Path) -> None:
     source = _FakeClient()
     job = submit_kaiwu_task(_MATRIX, client=source, task_name="restore-test")
@@ -389,19 +402,24 @@ def test_restore_rejects_duplicate_json_keys(tmp_path: Path, encoded: str) -> No
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     (
-        ("task_name", None, "empty task name"),
+        ("task_name", None, "invalid task name"),
+        ("task_name", " task", "invalid task name"),
+        ("task_name", "task\nname", "invalid task name"),
         ("matrix_size", True, "matrix size"),
         ("mode", ["sampling"], "unsupported task mode"),
         ("requested_samples", True, "must be positive"),
         ("requested_samples", 9, "between 10 and 2000"),
         ("project_no", 7, "invalid project number"),
         ("project_no", "   ", "invalid project number"),
+        ("project_no", "project\tname", "invalid project number"),
         ("submitted_at", "2026-10-05T00:00:00", "aware UTC"),
         ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
         ("provider_task_id", 7, "invalid provider_task_id"),
         ("provider_task_id", "   ", "invalid provider_task_id"),
+        ("provider_task_id", "task\nid", "invalid provider_task_id"),
         ("provider_target", 7, "invalid provider_target"),
         ("provider_target", "   ", "invalid provider_target"),
+        ("provider_target", "target\nname", "invalid provider_target"),
     ),
 )
 def test_restore_rejects_malformed_receipt_fields(
@@ -510,6 +528,11 @@ def test_result_rejects_receipt_identity_mismatch() -> None:
     (
         ("Failed", {"fallback_occurred": False}, "non-success"),
         (7, {"fallback_occurred": False}, "invalid provider status"),
+        (
+            "Completed\ncredential-secret",
+            {"fallback_occurred": False},
+            "invalid provider status",
+        ),
         ("Completed", None, "metadata must be a mapping"),
         ("Completed", {}, "fallback_occurred=false"),
         ("Completed", {"fallback_occurred": True}, "fallback_occurred=false"),
@@ -554,6 +577,32 @@ def test_sampling_limits_fail_before_submission(requested_samples: int) -> None:
             task_name="invalid-sample-count",
             mode="sampling",
             requested_samples=requested_samples,
+        )
+
+    assert client.submit_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("task_name", "project_no"),
+    (
+        ("task\nname", None),
+        ("task\tname", None),
+        ("task", "project\nname"),
+        ("task", "project\u200bname"),
+    ),
+)
+def test_submission_identifiers_reject_unsafe_characters_before_client(
+    task_name: str,
+    project_no: str | None,
+) -> None:
+    client = _FakeClient()
+
+    with pytest.raises(ValueError):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name=task_name,
+            project_no=project_no,
         )
 
     assert client.submit_calls == 0

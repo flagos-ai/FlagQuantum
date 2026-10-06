@@ -42,14 +42,19 @@ def _complete_task_receipt() -> dict[str, Any]:
     (
         ("schema", "wrong", "schema is unsupported"),
         ("task_name", "", "no task name"),
+        ("task_name", "system\ntask", "no task name"),
+        ("task_name", " system-task", "no task name"),
         ("matrix_sha256", "bad", "no matrix digest"),
         ("matrix_size", True, "invalid matrix size"),
         ("mode", "optimization", "not sampling"),
         ("requested_samples", 11, "sample count differs"),
         ("project_no", " ", "no project number"),
+        ("project_no", "CPQC\ttest", "no project number"),
         ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
         ("provider_task_id", "", "no provider_task_id"),
+        ("provider_task_id", "provider\ntask", "no provider_task_id"),
         ("provider_target", "", "no provider_target"),
+        ("provider_target", "SPQC\u200bprovider", "no provider_target"),
     ),
 )
 def test_complete_sampling_receipt_rejects_tampered_identity_fields(

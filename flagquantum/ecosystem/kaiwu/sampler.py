@@ -90,8 +90,12 @@ class KaiwuSampler:
         max_remote_calls: int = 1,
         integer_target_range: tuple[int, int] | None = None,
     ) -> None:
-        if not isinstance(task_name, str) or not task_name.strip():
-            raise ValueError("task_name must be a non-empty string")
+        if (
+            not isinstance(task_name, str)
+            or not task_name.strip()
+            or not task_name.strip().isprintable()
+        ):
+            raise ValueError("task_name must be a non-empty printable string")
         if type(max_remote_calls) is not int or max_remote_calls <= 0:
             raise ValueError("max_remote_calls must be a positive integer")
         if (
@@ -125,9 +129,11 @@ class KaiwuSampler:
             if target_min >= 0 or target_max <= 0:
                 raise ValueError("integer_target_range must straddle zero")
         if project_no is not None and (
-            not isinstance(project_no, str) or not project_no.strip()
+            not isinstance(project_no, str)
+            or not project_no.strip()
+            or not project_no.strip().isprintable()
         ):
-            raise ValueError("project_no must be a non-empty string or None")
+            raise ValueError("project_no must be a non-empty printable string or None")
 
         self._client = client
         self._task_name = task_name.strip()

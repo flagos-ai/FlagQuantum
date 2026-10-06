@@ -250,8 +250,13 @@ def _validate_receipt(
 ) -> KaiwuTaskReceipt:
     if receipt.schema != KAIWU_TASK_RECEIPT_SCHEMA:
         raise ValueError("Unsupported Kaiwu task receipt schema")
-    if not isinstance(receipt.task_name, str) or not receipt.task_name.strip():
-        raise ValueError("Kaiwu task receipt has an empty task name")
+    if (
+        not isinstance(receipt.task_name, str)
+        or not receipt.task_name.strip()
+        or receipt.task_name != receipt.task_name.strip()
+        or not receipt.task_name.isprintable()
+    ):
+        raise ValueError("Kaiwu task receipt has an invalid task name")
     if type(receipt.matrix_size) is not int or receipt.matrix_size != len(matrix):
         raise ValueError("Kaiwu task receipt matrix size does not match its input")
     if receipt.matrix_sha256 != _matrix_sha256(matrix):
@@ -268,7 +273,10 @@ def _validate_receipt(
             "Kaiwu sampling receipt requested_samples must be between 10 and 2000"
         )
     if receipt.project_no is not None and (
-        not isinstance(receipt.project_no, str) or not receipt.project_no.strip()
+        not isinstance(receipt.project_no, str)
+        or not receipt.project_no.strip()
+        or receipt.project_no != receipt.project_no.strip()
+        or not receipt.project_no.isprintable()
     ):
         raise ValueError("Kaiwu task receipt has an invalid project number")
     try:
@@ -279,7 +287,12 @@ def _validate_receipt(
         raise ValueError("Kaiwu task receipt must have an aware UTC submission time")
     for field_name in ("provider_task_id", "provider_target"):
         value = getattr(receipt, field_name)
-        if value is not None and (not isinstance(value, str) or not value.strip()):
+        if value is not None and (
+            not isinstance(value, str)
+            or not value.strip()
+            or value != value.strip()
+            or not value.isprintable()
+        ):
             raise ValueError(f"Kaiwu task receipt has an invalid {field_name}")
     return receipt
 
@@ -301,7 +314,11 @@ def _validate_result(
         raise RuntimeError("Kaiwu client returned an invalid result object")
     if result.receipt != receipt:
         raise RuntimeError("Kaiwu result does not match the submitted task receipt")
-    if not isinstance(result.raw_status, str) or not result.raw_status.strip():
+    if (
+        not isinstance(result.raw_status, str)
+        or not result.raw_status.strip()
+        or not result.raw_status.isprintable()
+    ):
         raise RuntimeError("Kaiwu result carries an invalid provider status")
     if _normalize_status(result.raw_status) != "succeeded":
         raise RuntimeError("Kaiwu result carries a non-success provider status")
@@ -364,7 +381,11 @@ class KaiwuRemoteJob:
 
     def status(self) -> KaiwuJobStatus:
         raw_status = self._client.query_status(self._receipt, self._matrix)
-        if not isinstance(raw_status, str) or not raw_status.strip():
+        if (
+            not isinstance(raw_status, str)
+            or not raw_status.strip()
+            or not raw_status.isprintable()
+        ):
             raise RuntimeError("Kaiwu client returned an invalid provider status")
         self._raw_status = raw_status
         return _normalize_status(self._raw_status)
@@ -445,8 +466,12 @@ def submit_kaiwu_task(
 ) -> KaiwuRemoteJob:
     """Submit exactly once and return a detached Kaiwu job."""
 
-    if not isinstance(task_name, str) or not task_name.strip():
-        raise ValueError("task_name must be a non-empty string")
+    if (
+        not isinstance(task_name, str)
+        or not task_name.strip()
+        or not task_name.strip().isprintable()
+    ):
+        raise ValueError("task_name must be a non-empty printable string")
     if not isinstance(mode, str) or mode not in {"optimization", "sampling"}:
         raise ValueError("mode must be 'optimization' or 'sampling'")
     if type(requested_samples) is not int or requested_samples <= 0:
@@ -454,9 +479,11 @@ def submit_kaiwu_task(
     if mode == "sampling" and not 10 <= requested_samples <= 2000:
         raise ValueError("Kaiwu sampling requested_samples must be between 10 and 2000")
     if project_no is not None and (
-        not isinstance(project_no, str) or not project_no.strip()
+        not isinstance(project_no, str)
+        or not project_no.strip()
+        or not project_no.strip().isprintable()
     ):
-        raise ValueError("project_no must be a non-empty string or None")
+        raise ValueError("project_no must be a non-empty printable string or None")
     frozen = _freeze_matrix(matrix)
     receipt = client.submit(
         frozen,

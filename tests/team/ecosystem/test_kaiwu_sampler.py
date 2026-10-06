@@ -87,6 +87,8 @@ class _RecoveringClient(_CompletedClient):
         ({"poll_interval": "1"}, "poll_interval must be finite"),
         ({"project_no": 7}, "project_no must"),
         ({"project_no": "   "}, "project_no must"),
+        ({"project_no": "project\nname"}, "project_no must"),
+        ({"task_name": "task\tname"}, "task_name must"),
         ({"integer_target_range": (-1, True)}, "values must be integers"),
         ({"integer_target_range": (0, 1)}, "must straddle zero"),
     ),
@@ -95,13 +97,14 @@ def test_sampler_rejects_invalid_configuration_before_solve(
     options: dict[str, object], message: str
 ) -> None:
     client = _CompletedClient()
+    arguments: dict[str, object] = {
+        "client": client,
+        "task_name": "invalid-config",
+        **options,
+    }
 
     with pytest.raises(ValueError, match=message):
-        KaiwuSampler(  # type: ignore[arg-type]
-            client=client,
-            task_name="invalid-config",
-            **options,
-        )
+        KaiwuSampler(**arguments)  # type: ignore[arg-type]
 
     assert client.submitted == []
 

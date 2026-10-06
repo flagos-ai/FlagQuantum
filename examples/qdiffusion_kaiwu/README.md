@@ -178,6 +178,11 @@ variables from the process environment before SDK client construction, so
 later plugin code or child processes cannot inherit them. The acknowledgement
 must be typed exactly so an ordinary test run cannot spend provider quota:
 
+Task prefixes and project numbers must be nonempty printable text. Control or
+format characters fail before SDK submission; restored provider task/target
+identities and final evidence must also be canonical without surrounding
+whitespace.
+
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \
