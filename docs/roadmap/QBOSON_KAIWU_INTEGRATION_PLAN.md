@@ -269,11 +269,16 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `system_acceptance=false`; this is a rehearsal for, not evidence of, Phase 4.
 - That development rehearsal has now passed independently on `jp-a800-171` and
   `jp-a800-172` at source revision
-  `8514722643cbf8aef9eb1f0334674ec239a608a1` and plugin revision
+  `f122e6cf38f7dd09f26615bd6a5f7a0c3bad01fb` and plugin revision
   `f047bce7b1077449967bbe9e9fab5741542b48d4`. Each run observed
   `NVIDIA A800-SXM4-80GB` on `cuda:0`, completed ten bounded fake-transport
   sampler calls, produced a finite objective and nonzero gradient and parameter
-  update, passed token constraints, and declared no fallback. The reviewed
+  update, passed token constraints, and declared no fallback. The private
+  streamed development-record SHA-256 digests are
+  `90138c081453a1bd7f7c442c634590dd98a79d79d4d73ef305bd2e915af57a10`
+  for `jp-a800-171` and
+  `ad0a1f227ef4fcb6df045f19d68d119d958a06324abeca5c17c79f8137265c74`
+  for `jp-a800-172`. The reviewed
   archives were streamed into an auto-removed, network-disabled, read-only
   container whose input, workspace, and evidence existed only in tmpfs; no
   source or evidence was written to either host filesystem. The runs used the
