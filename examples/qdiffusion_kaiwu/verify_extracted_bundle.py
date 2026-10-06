@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import socket
 import stat
 import tarfile
@@ -34,10 +35,27 @@ def _stream_sha256(stream: BinaryIO) -> str:
     return digest.hexdigest()
 
 
-def _regular_tree(root: Path) -> tuple[set[str], set[str]]:
+_STABLE_METADATA_FIELDS = (
+    "st_dev",
+    "st_ino",
+    "st_mode",
+    "st_size",
+    "st_mtime_ns",
+    "st_ctime_ns",
+)
+
+
+def _metadata_identity(metadata: os.stat_result) -> tuple[int, ...]:
+    return tuple(getattr(metadata, field) for field in _STABLE_METADATA_FIELDS)
+
+
+def _regular_tree(
+    root: Path,
+) -> tuple[set[str], set[str], dict[str, tuple[int, ...]]]:
     files: set[str] = set()
     directories: set[str] = set()
-    for path in root.rglob("*"):
+    identities = {".": _metadata_identity(root.lstat())}
+    for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
         relative = path.relative_to(root).as_posix()
         metadata = path.lstat()
         if stat.S_ISLNK(metadata.st_mode):
@@ -50,7 +68,59 @@ def _regular_tree(root: Path) -> tuple[set[str], set[str]]:
             raise ValueError(
                 f"extracted tree contains a special filesystem entry: {relative}"
             )
-    return files, directories
+        identities[relative] = _metadata_identity(metadata)
+    return files, directories, identities
+
+
+def _revalidate_regular_tree(
+    root: Path, identities: dict[str, tuple[int, ...]]
+) -> None:
+    try:
+        paths = {".": root, **{path: root / path for path in identities if path != "."}}
+        current_names = {
+            ".",
+            *(path.relative_to(root).as_posix() for path in root.rglob("*")),
+        }
+        if current_names != set(identities):
+            raise ValueError("extracted tree changed during verification")
+        for relative, path in paths.items():
+            if _metadata_identity(path.lstat()) != identities[relative]:
+                raise ValueError("extracted tree changed during verification")
+    except OSError:
+        raise ValueError("extracted tree changed during verification") from None
+
+
+def _hash_stable_extracted_file(target: Path, metadata: os.stat_result) -> str:
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    if no_follow is None:
+        raise ValueError("platform cannot safely hash the extracted source tree")
+    descriptor: int | None = None
+    try:
+        descriptor = os.open(
+            target,
+            os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
+        )
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (opened.st_dev, opened.st_ino) != (metadata.st_dev, metadata.st_ino)
+        ):
+            raise ValueError(f"extracted file changed before hashing: {target.name}")
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            digest = _stream_sha256(stream)
+        after = os.fstat(descriptor)
+        visible = target.lstat()
+        if (
+            _metadata_identity(after) != _metadata_identity(opened)
+            or _metadata_identity(visible) != _metadata_identity(opened)
+        ):
+            raise ValueError(f"extracted file changed during hashing: {target.name}")
+        return digest
+    except OSError:
+        raise ValueError(f"extracted file changed during hashing: {target.name}") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def _expected_tree(
@@ -77,16 +147,21 @@ def _expected_tree(
             if not member.isfile():
                 raise ValueError(f"archive member is not a regular file: {relative}")
             files.add(str(relative))
-            if target.is_symlink() or not target.is_file():
+            try:
+                target_metadata = target.lstat()
+            except OSError:
+                raise ValueError(
+                    f"extracted file is missing or unsafe: {relative}"
+                ) from None
+            if target.is_symlink() or not stat.S_ISREG(target_metadata.st_mode):
                 raise ValueError(f"extracted file is missing or unsafe: {relative}")
-            if target.stat().st_size != member.size:
+            if target_metadata.st_size != member.size:
                 raise ValueError(f"extracted file size mismatch: {relative}")
             archived = archive.extractfile(member)
             if archived is None:
                 raise ValueError(f"archive file cannot be read: {relative}")
             archive_digest = _stream_sha256(archived)
-            with target.open("rb") as stream:
-                extracted_digest = _stream_sha256(stream)
+            extracted_digest = _hash_stable_extracted_file(target, target_metadata)
             if extracted_digest != archive_digest:
                 raise ValueError(f"extracted file digest mismatch: {relative}")
             verified_files.append(
@@ -109,7 +184,9 @@ def verify_extracted_bundle(
         raise ValueError("extraction root must be absolute")
     if extraction_root.is_symlink() or not extraction_root.is_dir():
         raise ValueError("extraction root must be a regular directory")
-    observed_files, observed_directories = _regular_tree(extraction_root)
+    observed_files, observed_directories, tree_identities = _regular_tree(
+        extraction_root
+    )
     expected_files: set[str] = set()
     expected_directories: set[str] = set()
     artifacts: list[dict[str, Any]] = []
@@ -171,6 +248,7 @@ def verify_extracted_bundle(
         raise ValueError("extracted file set differs from the reviewed archives")
     if observed_directories != expected_directories:
         raise ValueError("extracted directory set differs from the reviewed archives")
+    _revalidate_regular_tree(extraction_root, tree_identities)
     if {path.name for path in manifest_root.glob("*.tar.gz")} != listed_filenames:
         raise ValueError(
             "transfer directory archives changed during extraction verification"

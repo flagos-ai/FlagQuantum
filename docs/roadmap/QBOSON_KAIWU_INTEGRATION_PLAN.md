@@ -377,6 +377,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and compares extracted content using that identical open description. An
   archive replaced after the initial bundle pass cannot become the authority
   for a source-preflight record.
+- Extracted regular files are now hashed through no-follow descriptors bound to
+  their observed inode. The verifier retains and finally rechecks the complete
+  path set and stable file/directory metadata, so a source mutation after its
+  content comparison cannot survive into an `extracted_content_verified=true`
+  record.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat

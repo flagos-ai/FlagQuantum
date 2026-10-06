@@ -356,3 +356,53 @@ def test_extracted_bundle_rejects_archive_drift_after_bundle_verification(
             extraction_root=extracted,
             target_host="jp-a800-171",
         )
+
+
+def test_extracted_bundle_rejects_source_change_after_content_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transfer = tmp_path / "transfer"
+    transfer.mkdir(mode=0o700)
+    manifest = _bundle(transfer)
+    extracted = tmp_path / "extracted"
+    extracted.mkdir()
+    for archive_path in transfer.glob("*.tar.gz"):
+        with tarfile.open(archive_path, mode="r:gz") as archive:
+            archive.extractall(extracted, filter="data")
+    target = extracted / f"FlagQuantum-{'a' * 10}" / "src" / "package.py"
+    real_hash = extracted_module._stream_sha256
+    calls = 0
+
+    def mutate_after_first_extracted_hash(stream):
+        nonlocal calls
+        calls += 1
+        digest = real_hash(stream)
+        if calls == 3:
+            target.write_text("changed after hashing", encoding="utf-8")
+        return digest
+
+    monkeypatch.setattr(
+        extracted_module, "_stream_sha256", mutate_after_first_extracted_hash
+    )
+
+    with pytest.raises(
+        ValueError, match="changed during hashing|extracted tree changed"
+    ):
+        verify_extracted_bundle(
+            manifest,
+            extraction_root=extracted,
+            target_host="jp-a800-171",
+        )
+
+
+def test_extracted_bundle_has_no_unsafe_no_follow_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "source.py"
+    target.write_text("reviewed", encoding="utf-8")
+    metadata = target.lstat()
+
+    monkeypatch.delattr(extracted_module.os, "O_NOFOLLOW")
+
+    with pytest.raises(ValueError, match="cannot safely hash"):
+        extracted_module._hash_stable_extracted_file(target, metadata)

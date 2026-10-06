@@ -232,8 +232,11 @@ missing, extra, linked, or special filesystem entries, and records the exact
 manifest and source revisions. It reopens every archive through the private
 directory descriptor, rechecks its manifest SHA-256, and uses that same file
 description for extracted-content comparison; changing an archive after the
-initial bundle pass therefore fails closed. Preserve both preflight records and the bundle
-manifest with the run evidence. These records remain preflight-only evidence.
+initial bundle pass therefore fails closed. Each extracted regular file is
+hashed from a no-follow descriptor, and the complete file/directory set plus
+inode and content-relevant metadata are rechecked before the record is emitted.
+Preserve both preflight records and the bundle manifest with the run evidence.
+These records remain preflight-only evidence.
 Public Kaiwu Community source is conformance input, not a substitute for the
 proprietary SDK.
 
