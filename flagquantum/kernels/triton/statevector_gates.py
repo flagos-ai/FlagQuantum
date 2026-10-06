@@ -10,10 +10,22 @@ import torch
 import triton
 import triton.language as tl
 
+from flagquantum.kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
+
 if TYPE_CHECKING:
     from ._jit import jit
 else:
     from triton import jit
+
+
+def _require_flat_local_address(state: torch.Tensor) -> None:
+    """Reject a state too large for the kernels' linear addressing contract."""
+
+    if state.numel() > FLAT_LOCAL_MAX_AMPLITUDES:
+        raise ValueError(
+            "flat local statevector kernels address at most "
+            f"{FLAT_LOCAL_MAX_AMPLITUDES} amplitudes, got {state.numel()}"
+        )
 
 
 class _GateContext(Protocol):
@@ -90,6 +102,8 @@ def apply_complex64_local_1q(
     output: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply an arbitrary 2x2 matrix without materializing basis indices."""
+
+    _require_flat_local_address(state)
 
     if (
         state.device.type != "cuda"
@@ -326,6 +340,8 @@ def apply_complex64_transpose_1q_inplace(
 ) -> torch.Tensor:
     """Fuse a received half-shard transpose with its immediately following 1q gate."""
 
+    _require_flat_local_address(state)
+
     if (
         state.device.type != "cuda"
         or state.dtype != torch.complex64
@@ -431,6 +447,8 @@ def pack_complex64_control_one(
 ) -> torch.Tensor:
     """Pack the control-one subspace without materializing address indices."""
 
+    _require_flat_local_address(state)
+
     if (
         state.device.type != "cuda"
         or state.dtype != torch.complex64
@@ -470,6 +488,8 @@ def unpack_complex64_control_one(
     compressed_start: int,
 ) -> None:
     """Scatter a packed control-one subspace without address-index tensors."""
+
+    _require_flat_local_address(output)
 
     if (
         packed.device.type != "cuda"
@@ -539,6 +559,8 @@ def apply_complex64_local_cx_inplace(
     target_bit_position: int,
 ) -> torch.Tensor:
     """Apply a local CNOT as an in-place conditional amplitude permutation."""
+
+    _require_flat_local_address(state)
 
     if (
         state.device.type != "cuda"
@@ -622,6 +644,8 @@ def apply_complex64_local_cx_segment(
     output: torch.Tensor,
 ) -> torch.Tensor:
     """Apply a compiled sequence of local CNOTs in one out-of-place pass."""
+
+    _require_flat_local_address(state)
 
     if (
         state.device.type != "cuda"
@@ -858,6 +882,8 @@ def ry_rz_pair(
 ) -> torch.Tensor:
     """Apply one RY then RZ pair with a single flat-state CUDA kernel."""
 
+    _require_flat_local_address(state)
+
     if not state.is_cuda or state.dtype != torch.complex64:
         raise ValueError("ry_rz_pair requires a CUDA complex64 state")
     if ry_angles.shape != rz_angles.shape or ry_angles.shape != (state.shape[0], 1):
@@ -895,6 +921,7 @@ def _launch_cx_sequence(
     target_masks: torch.Tensor,
     n_qubits: int,
 ) -> torch.Tensor:
+    _require_flat_local_address(state)
     if not state.is_contiguous():
         state = state.contiguous()
     output_parts = torch.empty(
@@ -920,6 +947,7 @@ def _launch_cx_sequence(
 def _launch_single_qubit_matrix(
     state: torch.Tensor, matrix: torch.Tensor, qubit: int, n_qubits: int
 ) -> torch.Tensor:
+    _require_flat_local_address(state)
     if not state.is_contiguous():
         state = state.contiguous()
     matrix = matrix.contiguous()
@@ -953,6 +981,7 @@ def _launch_single_qubit_matrix_backward(
     n_qubits: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     gradient = gradient.contiguous()
+    _require_flat_local_address(gradient)
     adjoint = matrix.conj().transpose(-2, -1).contiguous()
     state_gradient_parts = torch.empty(
         *state.shape, 2, dtype=torch.float32, device=state.device

@@ -14,6 +14,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from flagquantum.runtime.observability.evidence import EvidenceScope
+
 
 def _output(command: Sequence[str]) -> str:
     try:
@@ -32,7 +34,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-# Three files carry a copy of this literal because every tool in this repository
+# Four files carry a copy of this literal because every tool in this repository
 # is a self-contained script, and a script under `tools/` cannot name a sibling
 # module. `tests/unit/test_hardware_lane_policy.py` holds the copies to each
 # other, because a query and its parser that drift apart answer with nothing
@@ -76,11 +78,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--world-size", type=int)
     parser.add_argument(
         "--evidence-scope",
-        choices=(
-            "one_gpu_local",
-            "two_gpu_semantic_regression",
-            "scheduled_4_8_gpu_scale",
-        ),
+        choices=tuple(scope.value for scope in EvidenceScope),
         required=True,
     )
     args = parser.parse_args(argv)

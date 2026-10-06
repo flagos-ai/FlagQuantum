@@ -138,6 +138,37 @@ def _normalize_bitstring(
     return bits
 
 
+def _basis_projectors(
+    bits: Sequence[Sequence[int]],
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """One-hot projectors for a batch of basis states, built on the device.
+
+    Each projector is a row of a device-resident identity selected by index, so
+    building the batch moves no value across the host boundary. Lifting the
+    target table instead -- ``torch.as_tensor(bits, device=device)`` -- issues
+    one host-to-device copy, and that copy sits inside whatever region the caller
+    is timing even though it is plan construction rather than contraction.
+    Writing each selected element from a host scalar, which is what this
+    replaced, is worse still: one lift per target per projected qubit.
+
+    The identity is two elements wide, so every selection is a view and no
+    movement is needed to read it. ``stack`` gives the rows independent storage
+    -- a projector that aliased another target's row would be a silent
+    correctness bug -- and the cast is the only device-to-device work. The
+    returned tensor is indexed ``[target, qubit]``.
+    """
+
+    width = len(bits[0]) if bits else 0
+    if width == 0:
+        return torch.zeros((len(bits), 0, 2), dtype=dtype, device=device)
+    identity = torch.eye(2, dtype=torch.int64, device=device)
+    rows = [identity[int(bit)] for target in bits for bit in target]
+    return torch.stack(rows).reshape(len(bits), width, 2).to(dtype)
+
+
 def _amplitude_projection(
     plan: TensorNetworkContractionPlan,
     bitstring: int | str | Sequence[int],
@@ -147,14 +178,15 @@ def _amplitude_projection(
     bits = _normalize_bitstring(bitstring, plan.n_qubits)
     reference = plan.nodes[0].tensor
     nodes = list(plan.nodes)
+    projectors = _basis_projectors(
+        [bits], device=reference.device, dtype=reference.dtype
+    )
     for qubit, (label, bit) in enumerate(
         zip(plan.output_labels[1:], bits, strict=False)
     ):
-        projector = torch.zeros(2, dtype=reference.dtype, device=reference.device)
-        projector[bit] = 1
         nodes.append(
             TensorNetworkNode(
-                tensor=projector,
+                tensor=projectors[0, qubit].contiguous(),
                 labels=(label,),
                 name=f"amplitude_projector_{qubit}_{bit}",
                 metadata={"qubit": qubit, "bit": bit},
@@ -179,17 +211,11 @@ def _amplitude_batch_projection(
         max((label for node in plan.nodes for label in node.labels), default=0) + 1
     )
     nodes = list(plan.nodes)
+    projectors = _basis_projectors(bits, device=reference.device, dtype=reference.dtype)
     for qubit, label in enumerate(plan.output_labels[1:]):
-        projector = torch.zeros(
-            (len(bits), 2),
-            dtype=reference.dtype,
-            device=reference.device,
-        )
-        for target, target_bits in enumerate(bits):
-            projector[target, target_bits[qubit]] = 1
         nodes.append(
             TensorNetworkNode(
-                tensor=projector,
+                tensor=projectors[:, qubit].contiguous(),
                 labels=(target_label, label),
                 name=f"amplitude_batch_projector_{qubit}",
                 metadata={"qubit": qubit, "targets": len(bits)},

@@ -10,7 +10,9 @@ measurement or a sweep is read more generously than the evidence allows.
 
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import pytest
 
@@ -21,7 +23,9 @@ from flagquantum.runtime.audit.claim_boundary import (
     BLOCKER_PRODUCTION_PERFORMANCE_NOT_MEASURED,
     BLOCKER_RDMA_NOT_TESTED,
     BLOCKER_SLICE_COUNT_FIXED_AT_WORLD_SIZE,
+    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
+    MINIMUM_RELEASE_CIRCUIT_PARAMETERS,
     ClaimBoundaryError,
     claim_blockers,
     configured_infiniband_state,
@@ -32,10 +36,13 @@ from flagquantum.runtime.audit.claim_boundary import (
     observed_network_route,
     slice_count_claim_blockers,
     staging_claim_blockers,
+    toy_circuit_claim_blockers,
     transport_claim_blockers,
 )
 
 pytestmark = pytest.mark.unit
+
+_ROOT = Path(__file__).resolve().parents[2]
 
 _SOCKET_LOG = """\
 host: rank 0
@@ -296,3 +303,104 @@ def test_the_union_is_sorted_and_free_of_duplicates() -> None:
         BLOCKER_RDMA_NOT_TESTED,
         "two_node_pair_only_no_wider_topology",
     ]
+
+
+def _sv_frozen_parameter_counts() -> list[int]:
+    """Every leaf count the statevector release contract accepts as its workload.
+
+    The release manifest names the workload manifest rather than repeating it,
+    so the counts are read from the file it points at; a copy in a second place
+    is what a drift test exists to avoid.
+    """
+
+    release = json.loads(
+        (_ROOT / "benchmarks/manifests/statevector_release_v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    workload = json.loads(
+        (_ROOT / release["speed_workload"]["manifest_path"]).read_text(encoding="utf-8")
+    )
+    return [
+        int(configuration["n_wires"]) * int(configuration["depth"])
+        for configuration in workload["configurations"]
+    ]
+
+
+def test_the_parameterization_floor_is_the_contracts_own_minimum() -> None:
+    """The floor is derived from the frozen contracts, not chosen in the module.
+
+    A floor taken from one lane's contract would make another lane's own frozen
+    workload unable to retire `toy_circuit_parameters_only`, and a floor left to
+    rot would silently stop guarding anything once a contract is refrozen. So
+    the number in the module is recomputed here from the committed manifests and
+    compared, and any of the three that moves fails this test.
+    """
+
+    statevector = _sv_frozen_parameter_counts()
+    mps = json.loads(
+        (_ROOT / "benchmarks/manifests/mps_release_v1.json").read_text(encoding="utf-8")
+    )
+    tensor_network = json.loads(
+        (_ROOT / "benchmarks/manifests/tensor_network_release_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    counts = (
+        statevector
+        + [
+            int(rung["parameter_count"])
+            for rung in mps["speed_workload"]["configuration_ladder"]
+        ]
+        + [
+            int(rung["parameter_count"])
+            for rung in tensor_network["speed_workload"]["measured_single_device_floor"]
+        ]
+    )
+    assert counts, "at least one release contract must declare a workload"
+    assert min(counts) == MINIMUM_RELEASE_CIRCUIT_PARAMETERS
+
+
+def test_the_toy_parameterization_blocker_turns_on_the_bound_circuit() -> None:
+    """A recorded configuration retires it only with a matching leaf count."""
+
+    released = {
+        "configuration": "matched_speed_22q_d8_x0.10",
+        "manifest_sha256": "a" * 64,
+        "declared_parameter_count": MINIMUM_RELEASE_CIRCUIT_PARAMETERS,
+        "bound_parameter_count": MINIMUM_RELEASE_CIRCUIT_PARAMETERS,
+    }
+    assert toy_circuit_claim_blockers({"frozen_circuit": released}) == ()
+
+    for incomplete in (
+        # Nothing recorded is not a large circuit.
+        {},
+        {"frozen_circuit": None},
+        # A configuration with no digest cannot be traced to a frozen contract,
+        # so there is no declaration to check the bound count against.
+        {"frozen_circuit": {**released, "manifest_sha256": None}},
+        {"frozen_circuit": {**released, "manifest_sha256": "eb1693d3"}},
+        {"frozen_circuit": {**released, "configuration": ""}},
+        # A circuit below the loosest frozen workload is a toy whatever it
+        # declares, and so is one that declares more than it bound.
+        {
+            "frozen_circuit": {
+                **released,
+                "declared_parameter_count": MINIMUM_RELEASE_CIRCUIT_PARAMETERS - 1,
+                "bound_parameter_count": MINIMUM_RELEASE_CIRCUIT_PARAMETERS - 1,
+            }
+        },
+        {
+            "frozen_circuit": {
+                **released,
+                "declared_parameter_count": MINIMUM_RELEASE_CIRCUIT_PARAMETERS + 1,
+            }
+        },
+        # A boolean is a flag about a count, not the count.
+        {"frozen_circuit": {**released, "bound_parameter_count": True}},
+        {"frozen_circuit": {**released, "declared_parameter_count": 176.0}},
+    ):
+        assert toy_circuit_claim_blockers(incomplete) == (
+            BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
+        )

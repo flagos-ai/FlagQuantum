@@ -33,7 +33,6 @@ import torch.distributed as dist
 
 import flagquantum as fq
 from flagquantum.runtime.audit.claim_boundary import (
-    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_TWO_NODE_PAIR_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_STATE_GATHER,
     ClaimBoundaryError,
@@ -44,6 +43,7 @@ from flagquantum.runtime.audit.claim_boundary import (
     measurement_claim_blockers,
     observed_network_route,
     staging_claim_blockers,
+    toy_circuit_claim_blockers,
     transport_claim_blockers,
 )
 from flagquantum.runtime.distributed.transport_observability import (
@@ -68,10 +68,25 @@ from flagquantum.runtime.executors.statevector.training import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
-#: The forward scope. Five wires leaves `5 - log2(world_size)` wires per shard,
-#: so the circuit crosses the shard boundary at every shape this probe accepts
-#: and the exchange is exercised.
-N_WIRES = 5
+#: The forward scope. It is the release path's own smallest matched-speed
+#: configuration rather than a shape chosen here: 22 wires at depth 8, with a
+#: tenth of the wires paired across the shard boundary, which binds 22 * 8 = 176
+#: independent trainable leaves. The contract that freezes those numbers is
+#: `benchmarks/manifests/statevector_speed_workload_v2.json`, and the artifact
+#: records both its digest and the leaf count the built circuit reported, so the
+#: parameterization this probe ran is checkable against the file it names.
+#:
+#: Twenty-two wires also leaves `22 - log2(world_size)` wires per shard at every
+#: world size this probe accepts, so the circuit crosses the shard boundary at
+#: every shape and the exchange is exercised exactly as it was at five wires.
+SPEED_WORKLOAD_MANIFEST = (
+    ROOT / "benchmarks" / "manifests" / "statevector_speed_workload_v2.json"
+)
+RELEASE_CONFIGURATION = "matched_speed_22q_d8_x0.10"
+N_WIRES = 22
+DEPTH = 8
+CROSS_SHARD_GATE_FRACTION = 0.10
+PARAMETER_COUNT = N_WIRES * DEPTH
 REAL_DTYPE = torch.float64
 COMPLEX_DTYPE = torch.complex128
 
@@ -156,36 +171,138 @@ def _git_revision() -> str:
         return "unavailable"
 
 
-def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
-    """The forward scope, with its angles bound where the workload holds them.
+def _forward_angles(
+    *, device: torch.device | None, layers: int = DEPTH
+) -> tuple[torch.Tensor, ...]:
+    """One independent leaf per wire per layer, in the released workload's order.
 
-    Without a device the angles are Python floats, which is the form the
+    The angle is a deterministic function of the layer and the wire, so the
+    reference and the distributed run bind the same numbers without either of
+    them carrying a table. A device-bound leaf is a detached tensor rather than
+    an `nn.Parameter`: the forward scope holds its parameters the way a training
+    loop does, and a parameter's gradient metadata is state the measured region
+    would have to move without the workload differentiating it.
+    """
+
+    values: list[torch.Tensor] = []
+    for layer in range(layers):
+        for wire in range(N_WIRES):
+            value = 0.17 * (1 + layer) * (1 + wire) / N_WIRES
+            if device is None:
+                values.append(torch.tensor(value, dtype=REAL_DTYPE))
+            else:
+                values.append(torch.tensor(value, dtype=REAL_DTYPE, device=device))
+    return tuple(values)
+
+
+def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
+    """The forward scope, built from the frozen configuration's own numbers.
+
+    The layer is the release workload's: one rotation of its own on every wire,
+    a brickwork layer of adjacent couplings, and a fixed fraction of long-range
+    couplings that reach across the shard boundary. Every rotation binds a
+    distinct leaf, which is what makes the parameter count of this circuit the
+    parameter count the release contract declares for it.
+
+    Without a device the leaves are host tensors, which is the form the
     single-device reference uses. With one they are device tensors, which is the
     form a training loop holds its parameters in: an accelerator workload handed
     a host scalar has to copy that scalar across, so a host-scalar circuit would
     make the measured region carry one parameter upload per rotation that the
     production shape does not have.
-
-    The tensors are detached leaves rather than `nn.Parameter`s. A parameter's
-    gradient metadata is additional state to move, and this workload's
-    parameters are not differentiated, so carrying it would measure something
-    the workload does not do.
     """
 
-    def angle(value: float) -> Any:
-        if device is None:
-            return value
-        return torch.tensor(value, dtype=REAL_DTYPE, device=device)
+    angles = _forward_angles(device=device)
+    circuit = fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE, device=device)
+    for layer in range(DEPTH):
+        offset = layer * N_WIRES
+        for wire in range(N_WIRES):
+            circuit.ry(wire, angles[offset + wire])
+        for wire in range(layer % 2, N_WIRES - 1, 2):
+            circuit.cx(wire, wire + 1)
+        crossings = max(1, round(CROSS_SHARD_GATE_FRACTION * N_WIRES))
+        for index in range(crossings):
+            left = index % max(1, N_WIRES // 2)
+            right = N_WIRES - 1 - left
+            if right > left:
+                circuit.cx(left, right)
+    return circuit
+
+
+def _frozen_circuit_observation() -> dict[str, Any]:
+    """What the forward scope bound, and the frozen file it was read from.
+
+    Read at run time from the contract rather than restated here, because a copy
+    of the numbers is a second source of truth: the artifact records the digest
+    of the file it read, so a reader can compare the declaration against the
+    committed manifest and against the leaf count the built circuit reported.
+    """
+
+    manifest = json.loads(SPEED_WORKLOAD_MANIFEST.read_text(encoding="utf-8"))
+    configuration = next(
+        (
+            item
+            for item in manifest["configurations"]
+            if item["name"] == RELEASE_CONFIGURATION
+        ),
+        None,
+    )
+    if configuration is None:
+        raise RuntimeError(
+            f"{SPEED_WORKLOAD_MANIFEST} has no configuration {RELEASE_CONFIGURATION!r}"
+        )
+    for field, expected in (
+        ("n_wires", N_WIRES),
+        ("depth", DEPTH),
+        ("cross_shard_gate_fraction", CROSS_SHARD_GATE_FRACTION),
+    ):
+        if configuration[field] != expected:
+            raise RuntimeError(
+                f"frozen configuration {RELEASE_CONFIGURATION!r} declares "
+                f"{field}={configuration[field]!r}, but this probe binds {expected!r}"
+            )
+    declared = int(configuration["n_wires"]) * int(configuration["depth"])
+    circuit = _forward_circuit()
+    bound = len(
+        {
+            id(value)
+            for instruction in circuit.to_ir().instructions
+            for value in instruction.params.values()
+            if isinstance(value, torch.Tensor)
+        }
+    )
+    return {
+        "manifest": str(SPEED_WORKLOAD_MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": hashlib.sha256(
+            SPEED_WORKLOAD_MANIFEST.read_bytes()
+        ).hexdigest(),
+        "configuration": RELEASE_CONFIGURATION,
+        "n_wires": N_WIRES,
+        "depth": DEPTH,
+        "cross_shard_gate_fraction": CROSS_SHARD_GATE_FRACTION,
+        "declared_parameter_count": declared,
+        "bound_parameter_count": bound,
+    }
+
+
+def _trainable_ir(
+    theta: Any, phi: Any, *, dtype: torch.dtype, device: torch.device | None
+) -> fq.Circuit:
+    """The circuit the training legs differentiate, at the released width.
+
+    One parameter is bound twice and one gate spans the shard boundary, so a
+    gradient that is wrong in its reduction or in its shard ownership cannot
+    agree with the reference by accident. Both callers below build it through
+    this one definition, so the device-bound run and the single-device reference
+    cannot drift into two different circuits.
+    """
 
     return (
-        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
+        fq.Circuit(N_WIRES, dtype=dtype, device=device)
         .h(0)
-        .ry(4, angle(0.31))
-        .cx(4, 1)
-        .rx(3, angle(-0.27))
-        .cx(0, 4)
-        .rz(4, angle(0.19))
-        .cx(3, 2)
+        .ry(N_WIRES - 1, theta)
+        .rxx(0, N_WIRES - 1, phi)
+        .rz(1, theta)
     )
 
 
@@ -195,12 +312,7 @@ def _trainable_circuit(
     dtype: torch.dtype = COMPLEX_DTYPE,
     real_dtype: torch.dtype = REAL_DTYPE,
 ) -> tuple[fq.Circuit, tuple[torch.Tensor, ...]]:
-    """The circuit the training legs differentiate.
-
-    One parameter is bound twice and one gate spans the shard boundary, so a
-    gradient that is wrong in its reduction or in its shard ownership cannot
-    agree with the reference by accident.
-    """
+    """The circuit the training legs differentiate, with its leaves on `device`."""
 
     parameters: list[torch.Tensor] = []
     for value in TRAINABLE_VALUES:
@@ -210,9 +322,7 @@ def _trainable_circuit(
         tensor.copy_(torch.tensor(value, dtype=real_dtype))
         parameters.append(tensor.requires_grad_())
     theta, phi = parameters
-    circuit = fq.Circuit(N_WIRES, dtype=dtype, device=device)
-    circuit.h(0).ry(N_WIRES - 1, theta).rxx(0, N_WIRES - 1, phi).rz(1, theta)
-    return circuit, tuple(parameters)
+    return _trainable_ir(theta, phi, dtype=dtype, device=device), tuple(parameters)
 
 
 def _observable_wire() -> int:
@@ -230,13 +340,7 @@ def _reference_expectation() -> tuple[float, tuple[float, ...]]:
         tensor.copy_(torch.tensor(value, dtype=REAL_DTYPE))
         parameters.append(tensor.requires_grad_())
     theta, phi = parameters
-    circuit = (
-        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
-        .h(0)
-        .ry(N_WIRES - 1, theta)
-        .rxx(0, N_WIRES - 1, phi)
-        .rz(1, theta)
-    )
+    circuit = _trainable_ir(theta, phi, dtype=COMPLEX_DTYPE, device=None)
     state = circuit.state(refresh=True)
     probabilities = state.abs().square().reshape(-1)
     expectation = probabilities[::2].sum() - probabilities[1::2].sum()
@@ -248,7 +352,18 @@ def _reference_expectation() -> tuple[float, tuple[float, ...]]:
 
 
 def _validation_state(result: Any) -> torch.Tensor:
-    """Materialize a tiny state solely to compare with the CPU reference."""
+    """Materialize the state the workload indexed, to compare with the reference.
+
+    The comparison is element-wise, so the reconstruction has to be exact rather
+    than up to a global phase: the shards are reassembled in rank order and the
+    logical-to-physical wire permutation is undone. At the released width the
+    vector has millions of entries, so the permutation is one `permute` over a
+    reshaped view rather than a per-basis-bit loop; the two are the same index
+    map, and the probe's tests pin that by running both on the same input.
+
+    The gathered tensor is what the comparison needs and not a product this
+    workload has; the export leg is where the amplitude vector is the output.
+    """
 
     local = result.shard_state.amplitudes[0]
     gathered = [torch.empty_like(local) for _ in range(result.plan.world_size)]
@@ -260,15 +375,8 @@ def _validation_state(result: Any) -> torch.Tensor:
     )
     for rank, shard in enumerate(gathered):
         internal[rank :: result.plan.world_size] = shard
-    mapping = result.logical_to_physical_qubits
-    canonical = torch.empty_like(internal)
-    for logical_basis in range(internal.numel()):
-        physical_basis = 0
-        for logical_wire, physical_wire in enumerate(mapping):
-            bit = (logical_basis >> (len(mapping) - logical_wire - 1)) & 1
-            physical_basis |= bit << (len(mapping) - physical_wire - 1)
-        canonical[logical_basis] = internal[physical_basis]
-    return canonical
+    mapping = tuple(int(qubit) for qubit in result.logical_to_physical_qubits)
+    return internal.reshape([2] * len(mapping)).permute(mapping).reshape(-1)
 
 
 def _export_observation(
@@ -660,9 +768,11 @@ def _training_observations(
 def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """Every blocker this run's own observations can retract.
 
-    The declared part of the boundary -- the pair of hosts and the fixed circuit
-    -- is not decided here, because nothing inside the run can retract it. What
-    is decided here is only what the run observed.
+    The pair of hosts is declared rather than observed, because nothing inside
+    the run can retract it. Everything else is decided here from what the run
+    recorded: the parameterization it bound, whether the materialization it
+    produced is one the workload needs, the route it took, whether it measured
+    anything, and whether its staging audit ran.
 
     Called once while the artifact is assembled and again after the route has
     been read, because that observation arrives after the process group is gone
@@ -671,7 +781,8 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """
 
     return claim_blockers(
-        [BLOCKER_TWO_NODE_PAIR_ONLY, BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY],
+        [BLOCKER_TWO_NODE_PAIR_ONLY],
+        toy_circuit_claim_blockers(observations),
         gather_claim_blockers(
             production_materialization=bool(
                 observations["production_full_state_materialization"]
@@ -714,6 +825,7 @@ def _artifact(
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
     export: dict[str, Any] | None,
+    frozen_circuit: dict[str, Any] | None,
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
@@ -736,6 +848,7 @@ def _artifact(
         "performance": performance,
         "host_staging": host_staging,
         "export": export,
+        "frozen_circuit": frozen_circuit,
         "validation_full_state_materialization": True,
         "production_full_state_materialization": _exports_the_full_state(export),
     }
@@ -752,6 +865,10 @@ def _artifact(
         "scope": {
             "dtype": "complex128",
             "n_wires": N_WIRES,
+            "depth": DEPTH,
+            "cross_shard_gate_fraction": CROSS_SHARD_GATE_FRACTION,
+            "parameter_count": PARAMETER_COUNT,
+            "release_configuration": RELEASE_CONFIGURATION,
             "world_size": world_size,
             "local_world_size": local_world_size,
             "node_count": world_size // local_world_size,
@@ -1067,6 +1184,7 @@ def probe(
                 performance=performance,
                 host_staging=host_staging,
                 export=export,
+                frozen_circuit=_frozen_circuit_observation(),
                 world_size=world_size,
                 local_world_size=local_world_size,
             )

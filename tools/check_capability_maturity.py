@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +88,26 @@ CLAIM_AGGREGATES = ("single", "max", "min", "count", "unique")
 #: and their meaning come from ``tools/evidence_provenance.py``, which records
 #: the same disclosure for the checked-in evidence artifacts under ``artifacts/``.
 CODE_VERSION_ORIGIN_FIELD = "code_version_origin"
+
+
+def _artifact_revision(payload: Any) -> Any:
+    """Return the revision a claim artifact records itself as produced from.
+
+    A claim artifact is either a plain benchmark document, which states its
+    revision at the top level, or a sealed runtime evidence artifact, which
+    states it in ``provenance`` because that is where ``RuntimeProvenance``
+    keeps it. Reading only the first shape would force a certified capability to
+    make its claim from a hand-written summary instead of from the signed
+    payload the release gate accepts, which is a second source of truth for one
+    run's identity.
+    """
+
+    if not isinstance(payload, Mapping):
+        return None
+    provenance = payload.get("provenance")
+    if isinstance(provenance, Mapping) and "commit" in provenance:
+        return provenance.get("commit")
+    return payload.get("commit")
 
 
 def claim_values(payload: Any, selector: str) -> list[Any]:
@@ -355,7 +376,7 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
             except (UnicodeDecodeError, json.JSONDecodeError) as error:
                 errors.append(f"{name}/{claim_id}: artifact is not valid JSON: {error}")
                 continue
-            if payload.get("commit") != claim.get("code_version"):
+            if _artifact_revision(payload) != claim.get("code_version"):
                 errors.append(
                     f"{name}/{claim_id}: code_version does not match artifact commit"
                 )
