@@ -615,6 +615,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   The smoke and per-task objects use closed field sets and fixed claim
   limitations, so an unvalidated extension cannot carry hidden evidence or
   sensitive values while still passing.
+- Provider identity completeness is now computed rather than self-asserted: the
+  two smoke tasks must have distinct provider task IDs and one common printable
+  provider target. That target is retained at smoke-record level and is checked
+  against both task results before hardware acceptance can be true.
+- Final validation now builds one global provider-task identity set across the
+  Phase 2 smoke, both system probes, every protein-training seed, and the
+  portability replay. Reusing one provider task ID across nominally distinct
+  remote components fails acceptance instead of overstating independent quota
+  submissions.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

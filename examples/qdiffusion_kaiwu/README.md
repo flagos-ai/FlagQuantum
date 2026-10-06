@@ -364,7 +364,11 @@ successful sampling task over the independently recomputed exact smoke-matrix
 identity, with recoverable receipt schema/project/submission-time fields, real
 provider identities, complete bounded spin/energy vectors, independent energy
 recomputation, closed record/task field sets, fixed claim limitations, and no
-fallback. The
+fallback. Hardware acceptance additionally requires two distinct provider task
+IDs and one common provider target, which is retained at record level and
+cross-checked against both tasks. Provider task IDs must also be globally unique
+across the smoke, both system probes, all training seeds, and portability
+replay. The
 inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed

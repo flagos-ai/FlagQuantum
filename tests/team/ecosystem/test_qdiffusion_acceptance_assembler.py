@@ -65,6 +65,7 @@ def _provider_smoke(
         "transport": "kaiwu_cim",
         "real_provider_evidence": True,
         "qboson_hardware_used": True,
+        "qboson_target": "SPQC-provider",
         "project_no": "CPQC-test",
         "environment_lock_sha256": environment_lock_sha256,
         "sdk_approval_sha256": sdk_approval_sha256,
@@ -1126,6 +1127,26 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "provider smoke: field set is incomplete or contains extensions" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["qboson_target"] = "SPQC-other"
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider smoke: top-level provider target differs from tasks" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["tasks"][0]["provider_task_id"] = "primary-task"
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider task identities are reused across remote components" in error
         for error in validate_acceptance(manifest_path)
     )
 

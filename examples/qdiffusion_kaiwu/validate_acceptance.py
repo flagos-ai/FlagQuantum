@@ -1568,6 +1568,8 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: retained failure is not empty")
     if not _canonical_printable_identifier(record.get("project_no")):
         errors.append(f"{label}: project number is invalid")
+    if not _canonical_printable_identifier(record.get("qboson_target")):
+        errors.append(f"{label}: top-level provider target is invalid")
     smoke_time: datetime | None = None
     try:
         smoke_time = datetime.fromisoformat(
@@ -1733,6 +1735,8 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: provider task IDs are not unique")
     if len(targets) != 1:
         errors.append(f"{label}: provider targets are inconsistent")
+    elif record.get("qboson_target") != next(iter(targets)):
+        errors.append(f"{label}: top-level provider target differs from tasks")
     if len(matrix_digests) != 1:
         errors.append(f"{label}: task matrix identities are inconsistent")
 
@@ -1812,6 +1816,42 @@ def _validate_component_bundle(
         sdk_approval_sha256=sdk_approval_digest,
         errors=errors,
     )
+
+    provider_task_owners: dict[str, list[str]] = {}
+    smoke_tasks = provider_smokes[0].get("tasks")
+    if isinstance(smoke_tasks, list):
+        for index, task in enumerate(smoke_tasks):
+            if isinstance(task, dict) and isinstance(
+                task.get("provider_task_id"), str
+            ):
+                provider_task_owners.setdefault(task["provider_task_id"], []).append(
+                    f"provider smoke task {index}"
+                )
+    remote_component_schemas = {
+        SYSTEM_COMPONENT_SCHEMA,
+        PORTABILITY_COMPONENT_SCHEMA,
+        TRAINING_COMPONENT_SCHEMA,
+    }
+    for digest, payload in component_payloads.items():
+        if payload.get("schema") not in remote_component_schemas:
+            continue
+        task_ids = payload.get("qboson_task_ids")
+        if not isinstance(task_ids, list):
+            continue
+        for task_id in task_ids:
+            if isinstance(task_id, str):
+                provider_task_owners.setdefault(task_id, []).append(
+                    f"component {digest}"
+                )
+    duplicate_provider_tasks = {
+        task_id: owners
+        for task_id, owners in provider_task_owners.items()
+        if len(owners) > 1
+    }
+    if duplicate_provider_tasks:
+        errors.append(
+            "manifest: provider task identities are reused across remote components"
+        )
 
     artifact_preflights = [
         (digest, payload)

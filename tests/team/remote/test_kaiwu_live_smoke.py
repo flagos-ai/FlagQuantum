@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -109,6 +110,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["fallback_occurred"] is False
     assert record["environment_lock_sha256"] == "a" * 64
     assert record["sdk_approval_sha256"] == "f" * 64
+    assert record["qboson_target"] is None
     assert all(
         task["receipt_schema"] == "flagquantum.kaiwu-task.v1"
         and task["project_no"] == "CPQC-test"
@@ -141,6 +143,45 @@ def test_injected_live_smoke_cannot_claim_hardware_with_complete_identity() -> N
     assert record["hardware_acceptance"] is False
 
 
+def test_live_smoke_rejects_inconsistent_provider_targets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _InconsistentTargetClient(_CompletedClient):
+        def submit(
+            self,
+            matrix: FrozenIsingMatrix,
+            *,
+            task_name: str,
+            mode: KaiwuTaskMode,
+            requested_samples: int,
+            project_no: str | None,
+        ) -> KaiwuTaskReceipt:
+            receipt = super().submit(
+                matrix,
+                task_name=task_name,
+                mode=mode,
+                requested_samples=requested_samples,
+                project_no=project_no,
+            )
+            return replace(receipt, provider_target=f"SPQC-test-{self.submissions}")
+
+    monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _InconsistentTargetClient)
+    record = run_live_smoke(
+        client=_InconsistentTargetClient(expose_provider_identity=True),
+        task_prefix="smoke",
+        project_no="CPQC-test",
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="b" * 64,
+        sdk_approval_sha256="f" * 64,
+    )
+
+    assert record["live_provider_smoke_passed"] is True
+    assert record["provider_identity_complete"] is False
+    assert record["hardware_acceptance"] is False
+    assert record["qboson_target"] is None
+
+
 def test_live_smoke_requires_exact_sdk_client_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -159,6 +200,7 @@ def test_live_smoke_requires_exact_sdk_client_type(
     assert record["real_provider_evidence"] is True
     assert record["qboson_hardware_used"] is True
     assert record["hardware_acceptance"] is True
+    assert record["qboson_target"] == "SPQC-test"
 
 
 def test_live_smoke_rejects_invalid_environment_lock_digest() -> None:

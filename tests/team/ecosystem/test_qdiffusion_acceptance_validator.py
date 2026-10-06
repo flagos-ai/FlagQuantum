@@ -688,6 +688,7 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
             "transport": "kaiwu_cim",
             "real_provider_evidence": True,
             "qboson_hardware_used": True,
+            "qboson_target": "SPQC-provider",
             "project_no": "CPQC-test",
             "environment_lock_sha256": config["software"][
                 "environment_lock_sha256"

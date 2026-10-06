@@ -73,6 +73,7 @@ SMOKE_RECORD_FIELDS = frozenset(
         "transport",
         "real_provider_evidence",
         "qboson_hardware_used",
+        "qboson_target",
         "project_no",
         "environment_lock_sha256",
         "sdk_approval_sha256",
@@ -195,7 +196,22 @@ def run_live_smoke(
             failure = redacted_failure_record(exc)
             break
 
-    provider_identity_complete = len(records) == 2 and all(
+    provider_task_ids = [
+        record.get("provider_task_id")
+        for record in records
+        if isinstance(record.get("provider_task_id"), str)
+    ]
+    provider_targets = {
+        record.get("provider_target")
+        for record in records
+        if isinstance(record.get("provider_target"), str)
+    }
+    provider_identity_complete = (
+        len(records) == 2
+        and len(provider_task_ids) == 2
+        and len(set(provider_task_ids)) == 2
+        and len(provider_targets) == 1
+        and all(
         record["provider_task_id_available"] is True
         and record["provider_target_available"] is True
         and isinstance(record["provider_task_id"], str)
@@ -203,6 +219,7 @@ def run_live_smoke(
         and isinstance(record["provider_target"], str)
         and bool(record["provider_target"].strip())
         for record in records
+        )
     )
     smoke_passed = (
         failure is None
@@ -226,6 +243,9 @@ def run_live_smoke(
         "transport": "kaiwu_cim" if real_provider_transport else "injected_test",
         "real_provider_evidence": real_provider_transport and smoke_passed,
         "qboson_hardware_used": real_provider_transport and smoke_passed,
+        "qboson_target": (
+            next(iter(provider_targets)) if provider_identity_complete else None
+        ),
         "project_no": project_no.strip(),
         "environment_lock_sha256": environment_lock_sha256,
         "sdk_approval_sha256": sdk_approval_sha256,
