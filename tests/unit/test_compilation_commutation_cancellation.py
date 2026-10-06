@@ -33,6 +33,10 @@ from flagquantum.compiler.commutation_cancellation import (
     merge_commuting_rotations,
     rotation_groups,
 )
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.compiler.pipeline import _SELF_INVERSE, _optimize_to_fixed_point
 from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 
@@ -385,10 +389,21 @@ def test_a_removal_that_another_removal_depends_on_is_still_sound() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """The pipeline has one place that composes optimization, and it uses it."""
+    """The pipeline has one place that composes optimization, and it uses it.
+
+    That place is the declared sequence `optimization_levels` owns, which the loop
+    reads rather than restates, so the order this test pins is the declared one and
+    the loop's own body names no pass directly.
+    """
 
     import ast
     import importlib
+
+    composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
+    assert composition.count("cancel_commuting_self_inverse") == 1
+    assert composition.index("cancel_commuting_self_inverse") > composition.index(
+        "merge_adjacent_rotations"
+    )
 
     module = importlib.import_module("flagquantum.compiler.pipeline")
     assert module.__file__ is not None
@@ -399,15 +414,13 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
     )
-    calls = [
+    called = {
         node.func.id
         for node in ast.walk(loop)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-    ]
-    assert calls.count("cancel_commuting_self_inverse") == 1
-    assert calls.index("cancel_commuting_self_inverse") > calls.index(
-        "merge_adjacent_rotations"
-    )
+    }
+    assert "optimization_level_stages" in called
+    assert "cancel_commuting_self_inverse" not in called
     # And nothing else in the pipeline reaches for the analysis directly.
     assert "analyze_commutation" not in ast.dump(tree)
 

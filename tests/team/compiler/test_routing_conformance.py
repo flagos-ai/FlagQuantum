@@ -15,7 +15,7 @@ The contract has five parts:
   source program's state;
 * the routing metadata restores the logical output layout;
 * every source instruction survives exactly once and keeps its source order
-  against every instruction it shares a wire with;
+  against every instruction it conflicts with, on a wire or on a classical bit;
 * the routing metadata carries the routing plan schema and counts what it emits;
 * routing is deterministic, a qubit pair resolves to one route in either
   direction, and reusing a device changes only its cache telemetry.
@@ -24,6 +24,13 @@ The order and determinism parts are what make a routed program usable by a
 consumer that is not a statevector simulation: a mid-circuit operation only
 observes the same classical history when the wire order is preserved, and a
 cached plan is only reusable when the same input gives the same program.
+
+A wire is not the only channel through which order is observable. A measurement
+writes a classical bit that no wire records, and a conditional reads that bit, so
+a conditional and the measurement it depends on are ordered even when they touch
+disjoint wires. Those cases are stated separately from the seeded wire-only grid,
+because they need a program whose outcome depends on the classical channel rather
+than a device on which an operation is nonlocal.
 
 The checks take the router as an argument so the last two tests can run an
 independent router, and the compiler in front of it, through the identical
@@ -49,6 +56,7 @@ import flagquantum.runtime.dynamic.routing as dynamic_routing
 from flagquantum.compiler import CouplingMap, compile, route_to_topology
 from flagquantum.compiler.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.layout import Layout
+from flagquantum.compiler.sabre import plan_sabre_swaps
 from flagquantum.compiler.topology_legalization import legalize_circuit_topology
 from flagquantum.core.ir import (
     CircuitIR,
@@ -62,6 +70,7 @@ from flagquantum.core.target_capabilities import (
     TargetIdentity,
 )
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import run_dynamic
 
 pytestmark = pytest.mark.unit
 
@@ -291,12 +300,51 @@ def _layout_restoration_failures(router: _Router) -> list[str]:
     return failures
 
 
-def _source_order_failures(router: _Router) -> list[str]:
-    """Report missing, duplicated, or wire-crossing source operations.
+def _classical_accesses(instruction: Instruction) -> tuple[int | None, frozenset[int]]:
+    """Return the classical bit an instruction writes and the bits it reads.
 
-    Operations on disjoint wires may be reordered, because they commute and the
-    SABRE strategies do reorder them. Operations that share a wire may not, which
-    is what a consumer reading a mid-circuit result depends on.
+    This is the test's own reading of the metadata spellings the cases build. It
+    is deliberately not the planner's reader: a contract checked with the
+    implementation's own helper only proves that the helper is self-consistent.
+    """
+
+    written = instruction.metadata.get("classical_bit")
+    raw_clauses: Any = instruction.metadata.get("condition_clauses")
+    if raw_clauses is None:
+        raw_clauses = (instruction.metadata.get("conditions") or (),)
+    read = {int(bit) for clause in raw_clauses or () for bit, _value in clause}
+    return (None if written is None else int(written)), frozenset(read)
+
+
+def _conflicts(left: Instruction, right: Instruction) -> str | None:
+    """Return how two source instructions are ordered, or ``None`` if free.
+
+    Two operations conflict when they touch a shared wire, or when they touch a
+    shared classical bit and at least one of them writes it. Two readers of one
+    bit conflict with nothing: neither can observe the other.
+    """
+
+    shared_wires = set(left.wires) & set(right.wires)
+    if shared_wires:
+        return f"share wire(s) {sorted(shared_wires)}"
+    left_write, left_read = _classical_accesses(left)
+    right_write, right_read = _classical_accesses(right)
+    left_bits = set(left_read) | ({left_write} if left_write is not None else set())
+    right_bits = set(right_read) | ({right_write} if right_write is not None else set())
+    writers = {bit for bit in (left_write, right_write) if bit is not None}
+    shared_bits = writers & left_bits & right_bits
+    if shared_bits:
+        return f"share classical bit(s) {sorted(shared_bits)}"
+    return None
+
+
+def _source_order_failures(router: _Router) -> list[str]:
+    """Report missing, duplicated, or reordered conflicting source operations.
+
+    Operations that conflict on nothing may be reordered, because they commute and
+    the SABRE strategies do reorder them. Operations that share a wire, or that
+    share a classical bit one of them writes, may not: that order is what a
+    consumer reading a mid-circuit result depends on.
     """
 
     failures: list[str] = []
@@ -322,12 +370,13 @@ def _source_order_failures(router: _Router) -> list[str]:
             for right_index in range(left_index + 1, len(expected)):
                 left = case.program.instructions[left_index]
                 right = case.program.instructions[right_index]
-                if not set(left.wires) & set(right.wires):
+                conflict = _conflicts(left, right)
+                if conflict is None:
                     continue
                 if positions[left_index] > positions[right_index]:
                     failures.append(
                         f"{case.label}: {left.name}{left.wires} and "
-                        f"{right.name}{right.wires} share a wire but were emitted "
+                        f"{right.name}{right.wires} {conflict} but were emitted "
                         "in the opposite order"
                     )
     return failures
@@ -555,6 +604,270 @@ def test_a_device_that_answered_other_queries_routes_the_same_plan() -> None:
     assert not _device_history_failures(_shipped_router), "\n".join(
         _device_history_failures(_shipped_router)
     )
+
+
+# The seeded grid above contains no classical state: its programs carry gates and
+# final measurements, so every ordering it exercises is a wire ordering. The cases
+# below are hand-written instead, because the property they state is about the
+# classical channel rather than about a device. Each one is a program whose
+# observable outcome changes when a conditional crosses the measurement that sets
+# its condition bit, so routing it in the wrong order produces either a different
+# result or a program the runtime refuses to execute at all.
+
+
+def _measurement(qubit: int, bit: int) -> Instruction:
+    return Instruction(
+        "measure",
+        (qubit,),
+        metadata={"is_dynamic": True, "classical_bit": bit},
+    )
+
+
+def _conditional(
+    name: str, wires: tuple[int, ...], conditions: tuple[tuple[int, int], ...]
+) -> Instruction:
+    return Instruction(
+        name, wires, metadata={"is_dynamic": True, "conditions": conditions}
+    )
+
+
+def _classical_programs() -> dict[str, CircuitIR]:
+    """Return the classical-order cases, keyed by what makes each one distinct."""
+
+    return {
+        # The conditional is two wires away from the qubit it is conditioned on, so
+        # no wire orders it against its measurement on any strategy.
+        "conditional_two_wires_from_its_measurement": CircuitIR(
+            3,
+            (
+                Instruction("x", (0,)),
+                Instruction("x", (1,)),
+                _measurement(1, 0),
+                _conditional("cx", (0, 2), ((0, 1),)),
+            ),
+            dtype="complex128",
+        ),
+        # The same shape on one wire, where the strategies disagree about the plan.
+        "conditional_one_wire_from_its_measurement": CircuitIR(
+            3,
+            (
+                Instruction("x", (0,)),
+                Instruction("x", (1,)),
+                _measurement(1, 0),
+                _conditional("x", (2,), ((0, 1),)),
+            ),
+            dtype="complex128",
+        ),
+        # The conditional sits between two writes of the bit it reads, so it owes
+        # order to the write it observes and to the write that replaces the value.
+        "conditional_between_two_writes_of_its_bit": CircuitIR(
+            3,
+            (
+                Instruction("x", (0,)),
+                _measurement(0, 0),
+                _conditional("x", (1,), ((0, 1),)),
+                _measurement(1, 0),
+            ),
+            dtype="complex128",
+        ),
+        # Two writes of one bit with no read between them, so the second must keep
+        # its source place even though nothing observes the value it replaces.
+        "two_writes_of_one_bit": CircuitIR(
+            3,
+            (
+                Instruction("x", (0,)),
+                _measurement(0, 0),
+                _measurement(1, 0),
+                _conditional("x", (2,), ((0, 1),)),
+            ),
+            dtype="complex128",
+        ),
+        # One conditional reading two bits, each written by a different measurement.
+        "conditional_reads_two_bits": CircuitIR(
+            3,
+            (
+                Instruction("x", (0,)),
+                Instruction("x", (1,)),
+                _measurement(0, 0),
+                _measurement(1, 1),
+                _conditional("x", (2,), ((0, 1), (1, 1))),
+            ),
+            dtype="complex128",
+        ),
+        # Nothing reads these bits, so no classical order constrains this program
+        # and a router that added one anyway would pay for swaps it does not owe.
+        "measurements_nothing_reads": CircuitIR(
+            3,
+            (
+                Instruction("cx", (0, 2)),
+                _measurement(0, 0),
+                _measurement(1, 1),
+                _measurement(2, 2),
+            ),
+            dtype="complex128",
+        ),
+    }
+
+
+def _classical_order_failures(router: _Router) -> list[str]:
+    """Report conditional/measurement pairs a router emitted out of source order."""
+
+    failures: list[str] = []
+    for label, program in _classical_programs().items():
+        for strategy in ROUTING_STRATEGIES:
+            routed = router(program, CouplingMap(3, ((0, 1), (1, 2))), strategy)
+            positions = _source_positions(routed)
+            for left_index in range(len(program.instructions)):
+                for right_index in range(left_index + 1, len(program.instructions)):
+                    left = program.instructions[left_index]
+                    right = program.instructions[right_index]
+                    conflict = _conflicts(left, right)
+                    if conflict is None:
+                        continue
+                    if left_index not in positions or right_index not in positions:
+                        failures.append(
+                            f"{label}/{strategy}: {left.name}{left.wires} or "
+                            f"{right.name}{right.wires} is missing from the output"
+                        )
+                    elif positions[left_index] > positions[right_index]:
+                        failures.append(
+                            f"{label}/{strategy}: {left.name}{left.wires} and "
+                            f"{right.name}{right.wires} {conflict} but were emitted "
+                            "in the opposite order"
+                        )
+    return failures
+
+
+def _executed_bits(program: CircuitIR, shots: int = 64, seed: int = 11):
+    """Return the shot-by-bit result the dynamic runtime produces for a program."""
+
+    result = run_dynamic(DynamicCircuit.from_ir(program), shots=shots, seed=seed)
+    samples = result.final_samples
+    if not isinstance(samples, torch.Tensor):
+        samples = torch.as_tensor(samples)
+    return samples.reshape(shots, -1)
+
+
+def _classical_execution_failures(router: _Router) -> list[str]:
+    """Report routed programs the runtime refuses, or that read out differently.
+
+    Execution is the oracle the order contract is a proxy for: a router that
+    preserves every conflicting pair in source order cannot produce a program the
+    runtime rejects, and one that does not is caught here rather than by a user.
+    """
+
+    failures: list[str] = []
+    for label, program in _classical_programs().items():
+        try:
+            baseline = _executed_bits(program)
+        except Exception as error:
+            failures.append(f"{label}: the source program itself failed: {error!r}")
+            continue
+        for strategy in ROUTING_STRATEGIES:
+            routed = router(program, CouplingMap(3, ((0, 1), (1, 2))), strategy)
+            try:
+                observed = _executed_bits(routed)
+            except Exception as error:
+                failures.append(
+                    f"{label}/{strategy}: the routed program failed: {error}"
+                )
+                continue
+            if not torch.equal(observed, baseline):
+                failures.append(
+                    f"{label}/{strategy}: the routed program reads out "
+                    f"{observed.tolist()[0]} where the source reads out "
+                    f"{baseline.tolist()[0]}"
+                )
+    return failures
+
+
+def test_routing_keeps_a_conditional_behind_the_measurement_it_reads() -> None:
+    failures = _classical_order_failures(_shipped_router)
+    assert not failures, "\n".join(failures)
+
+
+def test_a_routed_conditional_program_runs_and_reads_out_like_its_source() -> None:
+    failures = _classical_execution_failures(_shipped_router)
+    assert not failures, "\n".join(failures)
+
+
+def test_the_sabre_planner_refuses_conditions_it_cannot_order_on() -> None:
+    """A condition stated both ways is not a condition any layer can read.
+
+    The planner reads the condition metadata itself rather than through the
+    runtime's condition vocabulary, so it has to refuse the same malformed shapes
+    that vocabulary refuses rather than plan against an ambiguous read set.
+    """
+
+    program = CircuitIR(
+        2,
+        (
+            _measurement(0, 0),
+            Instruction(
+                "x",
+                (1,),
+                metadata={
+                    "is_dynamic": True,
+                    "conditions": ((0, 1),),
+                    "condition_clauses": (((0, 1),),),
+                },
+            ),
+        ),
+        dtype="complex128",
+    )
+    with pytest.raises(ValueError, match="cannot define both"):
+        plan_sabre_swaps(program, CouplingMap.line(2))
+
+
+def test_the_sabre_planner_leaves_a_read_of_an_unwritten_bit_alone() -> None:
+    """A conditional on a bit nothing writes keeps the order the source gave it.
+
+    This is not a licence to accept the program: reading a bit no measurement
+    writes is a caller error and the runtime refuses it. The planner must not
+    refuse it here, because the layout search plans the *reversed* program, where
+    the writes necessarily follow the reads. Refusing would turn the layout search
+    into a failure on every program that carries a conditional.
+    """
+
+    program = CircuitIR(
+        2,
+        (
+            Instruction("x", (0,)),
+            _conditional("x", (1,), ((0, 1),)),
+        ),
+        dtype="complex128",
+    )
+    plan = plan_sabre_swaps(program, CouplingMap.line(2))
+    assert plan.sequence == (0, 1)
+
+
+def test_the_classical_matrix_covers_every_strategy() -> None:
+    """Guard the coverage the two checks above depend on.
+
+    Five of the six programs read a classical bit, and every one of those must
+    state at least one conflicting pair, or the checks above pass without ever
+    having an order to preserve.
+    """
+
+    programs = _classical_programs()
+    assert len(programs) == 6
+    reading = {
+        label: program
+        for label, program in programs.items()
+        if any(_classical_accesses(item)[1] for item in program.instructions)
+    }
+    assert len(reading) == 5
+    for label, program in reading.items():
+        conflicts = [
+            (left_index, right_index)
+            for left_index in range(len(program.instructions))
+            for right_index in range(left_index + 1, len(program.instructions))
+            if _conflicts(
+                program.instructions[left_index], program.instructions[right_index]
+            )
+        ]
+        assert conflicts, f"{label} declares a read but no conflicting pair"
+    assert not _classical_order_failures(_replacement_router)
 
 
 # ``compile`` optimizes the routed program a second time, and those passes are

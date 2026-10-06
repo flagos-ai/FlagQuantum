@@ -8,12 +8,14 @@ the method is a rewrite of qubit labels rather than a second program description
 the compatibility analysis that follows from that.
 
 It is written under non-negotiable rule 8 of `AGENTS.md` ("Treat the Stable Core
-public API as protected"), and it is the narrative half of the API change that
-`API_CHANGE_PROPOSAL_065_CIRCUIT_COMPOSITION.md` will carry in
-`docs/development/` when the composition wave lands `adjoint`, `control`, and
-`power` alongside it. That document is not written yet, so it is named here
-rather than linked. This proposal covers `compose` only; nothing here approves
-the other three.
+public API as protected"), and it is the narrative half of the API change whose
+numbered half is
+[`API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md`](../development/API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md).
+This document was drafted while that proposal was still unwritten and named it as
+`065`; `065` was subsequently issued to the `wire` → `qubit` vocabulary program and
+`067` to the attribute half of that same program, so the composition proposal took
+the free number `066`. This proposal covers `compose` only; `066` records the
+family the other three belong to, and approves neither `control` nor `power`.
 
 Scope of the affected surface: `flagquantum/circuit.py` (the Stable Core type),
 `flagquantum/core/qubit_mapping.py` (new), `docs/reference/API.md`, and
@@ -236,7 +238,7 @@ of the versioned IR against the hand-built circuit:
 - Implemented by: `core` (`flagquantum/circuit.py`, `flagquantum/core/**`).
 - Proposal document by: `integration` (`docs/**` is a shared path).
 - Requires: review approval of this document and of
-  `API_CHANGE_PROPOSAL_065_CIRCUIT_COMPOSITION.md` before `compose` is treated as a
-  stable surface. The change is additive, so the branch may proceed to review without
-  waiting for the numbered proposal; that document must land before the composition
-  wave closes.
+  [`API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md`](../development/API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md)
+  before `compose` is treated as a stable surface. The change is additive, so the
+  branch could proceed to review without waiting for the numbered proposal; that
+  document has now landed as `066`, which closes the condition this line recorded.

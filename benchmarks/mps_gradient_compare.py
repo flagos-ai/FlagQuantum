@@ -141,7 +141,7 @@ def _flagquantum_local_mps_value_and_grad(
         circuit,
         max_bond=max_bond,
         fuse_single_qubit=fuse_single_qubit,
-        dense_observable_wires=dense_observable_wires,
+        dense_observable_qubits=dense_observable_wires,
     )
     loss = _z_training_loss(result, int(params.shape[1]))
     loss.backward()
@@ -175,7 +175,7 @@ def _time_flagquantum(
             fallback=True,
             max_bond=max_bond,
             fuse_single_qubit=fuse_single_qubit,
-            dense_observable_wires=dense_observable_wires,
+            dense_observable_qubits=dense_observable_wires,
         )
     for _ in range(int(warmup)):
         if training_step is None:

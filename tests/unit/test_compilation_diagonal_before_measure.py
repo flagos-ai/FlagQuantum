@@ -32,6 +32,7 @@ moves none.
 
 from __future__ import annotations
 
+import ast
 import random
 from pathlib import Path
 
@@ -45,6 +46,10 @@ from flagquantum.compiler.diagonal_before_measure import (
     remove_diagonal_gates_before_measure,
 )
 from flagquantum.compiler.one_qubit_synthesis import is_diagonal_one_qubit
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 from flagquantum.core.operator_schema import (
     OPERATOR_SCHEMAS,
@@ -423,9 +428,30 @@ def test_a_removal_a_pass_above_exposes_needs_the_fixed_point() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    source = Path(pipeline_module.__file__).read_text(encoding="utf-8")
+    """The loop reads the declared sequence, and names no pass itself.
 
-    assert source.count("remove_diagonal_gates_before_measure(ir)") == 1
+    The order this pass runs in is declared in `optimization_levels`, so the check
+    below pins the declaration and then confirms the loop body neither restates it
+    nor skips it.
+    """
+
+    composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
+    assert composition.count("remove_diagonal_gates_before_measure") == 1
+
+    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
+    loop = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
+    )
+    called = {
+        node.func.id
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "optimization_level_stages" in called
+    assert "remove_diagonal_gates_before_measure" not in called
 
 
 def test_a_removed_diagonal_gate_leaves_the_outcome_bits_identical() -> None:

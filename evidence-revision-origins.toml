@@ -738,10 +738,6 @@ value = "c0243cfdb7d8e1409a2fb655acada5528d2bb5a0"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
-value = "c997a21955972f1255aa58ee26ba756aac7d3f7e"
-origin = "unreferenced_object"
-
-[[artifact.revision]]
 value = "f8e4df19a474b370d5825fbc49442e2a29d150a6"
 origin = "unreferenced_object"
 
