@@ -50,12 +50,6 @@ MATCHED_SPEED_PAIR = (
     / "tensor_network_matched_speed_pair"
     / "tensor_network_matched_speed_pair.json"
 )
-MATCHED_SPEED_RELEASE_PAIR = (
-    ROOT
-    / "benchmarks/results/smoke/release_candidates"
-    / "tensor_network_matched_speed_release_pair"
-    / "tensor_network_matched_speed_release_pair.json"
-)
 CLAIM_KEYS = (
     "claim_evidence_type",
     "release_gate_allowed",
@@ -739,53 +733,58 @@ def test_the_committed_matched_speed_pair_answers_every_blocker_but_the_premise(
     assert audit["release_gate_allowed"] is True
 
 
-def test_the_committed_release_pair_is_the_claim_free_measurement_plus_its_claim():
-    """The promoted candidate must be the measured run with the claim attached.
+def test_the_claim_the_pair_needs_is_exactly_the_four_keys_the_sealer_adds():
+    """A claim is the measurement plus the four keys, and nothing else.
 
-    The test above asserts the collapse on a claim it adds in memory. This one
-    asserts it on the payload the campaign actually committed, because a claim
-    added in a test proves what the gate would do and not what the repository
-    holds. Three things have to hold for the committed release payload to be that
-    measurement rather than a second run: it must be unedited since it was
-    signed, it must carry the claim-free candidate's whole provenance record, and
-    its evidence must differ from the claim-free candidate's evidence in the four
-    claim keys and nothing else. Only then is the collapsed blocker set a
-    statement about the measured pair.
+    The pair measurement is committed without a claim, because the capacity
+    premise is unestablished and the promotion tool refuses a blocker-carrying
+    candidate. What the campaign needs from that measurement is that the claim
+    alone is what stands between it and a one-blocker verdict, so the sealer's
+    four keys are applied here and the collapse is asserted over the re-sealed
+    payload. Applying them by hand rather than committing the result keeps one
+    property that a committed claim could not: the release lane holds no claim
+    the gate did not accept.
     """
 
-    claiming = json.loads(MATCHED_SPEED_RELEASE_PAIR.read_text(encoding="utf-8"))
     measured = _committed_matched_speed_pair()
-    assert claiming["artifact_class"] == "measured_production_run"
-    assert claiming["evidence_scope"] == measured["evidence_scope"]
-    rebuilt = _reseal(claiming["evidence"], claiming["provenance"], claiming)
-    assert rebuilt["integrity"]["content_sha256"] == (
-        claiming["integrity"]["content_sha256"]
-    ), "the committed release payload was edited after it was signed"
-    assert claiming["provenance"] == measured["provenance"], (
+    assert measured["artifact_class"] == "measured_production_run"
+    for key in CLAIM_KEYS:
+        assert (
+            key not in measured["evidence"]
+        ), "the committed pair is a measurement and must stay claim-free"
+
+    claiming = dict(measured["evidence"])
+    claiming.update(
+        {
+            "claim_evidence_type": "production_training_benchmark",
+            "release_gate_allowed": True,
+            "release_payload": True,
+            "scalability_claim_allowed": True,
+        }
+    )
+    assert sorted(set(claiming) - set(measured["evidence"])) == sorted(CLAIM_KEYS)
+    for key in set(claiming) & set(measured["evidence"]):
+        assert (
+            claiming[key] == measured["evidence"][key]
+        ), "a claim must not rewrite a measured value"
+
+    sealed = _reseal(claiming, measured["provenance"], measured)
+    assert sealed["provenance"] == measured["provenance"], (
         "a re-seal must reuse the measured run's provenance; a payload whose "
         "provenance differs describes a different run"
     )
-
-    added = sorted(set(claiming["evidence"]) - set(measured["evidence"]))
-    assert added == sorted(CLAIM_KEYS), (
-        "the release payload must add the claim to the measured evidence rather "
-        "than restate it"
-    )
-    for key in CLAIM_KEYS:
-        assert key not in measured["evidence"]
-    shared = set(claiming["evidence"]) & set(measured["evidence"])
-    assert all(
-        claiming["evidence"][key] == measured["evidence"][key] for key in shared
-    ), "the claim must not rewrite a measured value"
+    assert sealed["evidence_scope"] == measured["evidence_scope"]
+    assert sealed["artifact_class"] == "measured_production_run"
 
     passed, blockers = evaluate_tensor_network_release(
-        [rebuilt], load_manifest(), signing_key=KEY
+        [sealed], load_manifest(), signing_key=KEY
     )
     assert not passed
-    assert blockers == (
-        "capacity_premise_not_established",
-    ), "the committed release payload must answer every blocker but the premise"
-    audit = validate_distributed_claim_evidence(claiming["evidence"]).summary()
+    assert blockers == ("capacity_premise_not_established",), (
+        "the four claim keys are the only thing between the committed "
+        "measurement and a single remaining blocker"
+    )
+    audit = validate_distributed_claim_evidence(claiming).summary()
     assert audit["valid"] is True, audit["errors"]
 
 
