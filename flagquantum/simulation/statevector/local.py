@@ -1016,6 +1016,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             and output.dtype == torch.complex64
             and _swap_sequence_dispatch_enabled()
         )
+        swap_sequence_fusion_bounds = (
+            (2, None)
+            if enable_cpu_swap_sequence
+            else (4, 8) if enable_triton_swap_sequence else None
+        )
         enable_cpu_cz_graph = (
             output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
         )
@@ -1127,8 +1132,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_native_clifford_matching
                 ),
                 enable_cpu_native_rotation_clifford_fusion=native_rotation_clifford_fusion_enabled(),
-                enable_cpu_swap_sequence=enable_cpu_swap_sequence,
-                enable_triton_swap_sequence=enable_triton_swap_sequence,
+                swap_fusion_bounds=swap_sequence_fusion_bounds,
                 enable_cpu_hadamard_controlled_phase=(
                     enable_cpu_hadamard_controlled_phase
                 ),

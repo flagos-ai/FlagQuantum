@@ -44,11 +44,11 @@ def _cpu_cx_rzz_swap_fusion_enabled() -> bool:
 def _fuse_swap_sequences(
     program: Sequence[_StatevectorProgramStep],
     *,
-    minimum_length: int = 2,
-    maximum_length: int | None = None,
+    bounds: tuple[int, int | None] = (2, None),
 ) -> list[_StatevectorProgramStep]:
     """Combine adjacent SWAPs so their axis permutation is materialized once."""
 
+    minimum_length, maximum_length = bounds
     if minimum_length < 2:
         raise ValueError("SWAP fusion requires a minimum length of at least two")
     if maximum_length is not None and maximum_length < minimum_length:

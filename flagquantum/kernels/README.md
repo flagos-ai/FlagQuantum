@@ -425,11 +425,25 @@ and FlagTree 0.7.0. It covers four, five, six, and eight ordered SWAPs,
 state sizes from `2**16` through `2**24`, and batches one and four. All 20
 host/compiler/shape cases are bitwise identical to repeated PyTorch SWAP
 materialization and reach `1.293x` to `2.514x` its speed. The aggregate
-decision is `eligible_for_dispatch_evaluation`; runtime fusion and dispatch
-remain a separate review step. This is bounded single-device development
-evidence, not a release or distributed scalability claim. Reproduce or
-validate it with
+decision is `eligible_for_dispatch_evaluation`.
+
+The public statevector compiler now forms a fused step only for four through
+eight adjacent SWAPs. Default dispatch additionally requires an evidenced
+`[1, 2**16]`, `[1, 2**20]`, `[1, 2**24]`, or `[4, 2**20]` contiguous CUDA
+`complex64` state with no gradient-bearing input. Shorter and longer sequences
+retain the existing gate-by-gate route, and `FQ_TRITON_SWAP_SEQUENCE=0`
+disables both the compiler fusion and kernel selection. The checked-in
+[`statevector_swap_sequence_dispatch_a800.json`](../../benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json)
+artifact applies the same 30-by-10 counterbalanced protocol to the five public
+dispatch cases on both hosts and compiler lanes. All 20 comparisons are
+bitwise exact and win by `1.234x` through `2.438x`; its aggregate decision is
+`default_dispatch_enabled`.
+
+This is bounded single-device development evidence, not a release or
+distributed scalability claim. Reproduce or validate the direct wrapper with
 [`benchmarks/internal/evidence/statevector_swap_probe.py`](../../benchmarks/internal/evidence/statevector_swap_probe.py).
+Reproduce the public route with
+[`benchmarks/statevector_swap_sequence_dispatch.py`](../../benchmarks/statevector_swap_sequence_dispatch.py).
 
 This semantic serves QFT bit reversal, routing and layout permutations,
 compiled-circuit canonicalization, and repeated SWAP networks emitted by
@@ -1132,8 +1146,8 @@ Triton `-A` implementations from SV-001 through SV-009, SV-013 through SV-014,
 GR-001 through GR-006, MPS-001 through MPS-007, and MEAS-001 through MEAS-003
 are provisional after evidenced support-window validation. Provisional
 maturity does not itself imply public default dispatch: MPS-001 remains opt-in,
-and SV-009, SV-013, and SV-014 remain direct-only pending separate runtime
-changes. MPS-008, the two generic-autograd Triton `-B` implementations, the
+and SV-009 and SV-013 remain direct-only pending separate runtime changes.
+MPS-008, the two generic-autograd Triton `-B` implementations, the
 two NUM implementations, and the five explicit FlagTree implementations remain
 experimental, for ten experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped

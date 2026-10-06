@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import math
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,16 @@ from benchmarks.statevector_swap_sequence_dispatch import (
 )
 
 pytestmark = pytest.mark.unit
+
+_ROOT = Path(__file__).resolve().parents[2]
+_ARTIFACT = (
+    _ROOT
+    / "benchmarks"
+    / "results"
+    / "local"
+    / "statevector_swap_sequence_dispatch_a800.json"
+)
+_EVIDENCE_REVISION = "3e12064eac39f7c1ac1cc066a2069e45dc1c6084"
 
 
 def _timing(seconds: float) -> dict[str, Any]:
@@ -156,3 +168,55 @@ def test_sv014_dispatch_aggregate_requires_exact_output(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="bitwise exact"):
         aggregate_runs(paths)
+
+
+def test_checked_in_sv014_dispatch_evidence_is_exact_and_profitable() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    assert payload["benchmark"] == BENCHMARK
+    assert payload["schema"] == EVIDENCE_SCHEMA
+    assert payload["semantic_id"] == SEMANTIC_ID
+    assert payload["implementation_id"] == IMPLEMENTATION_ID
+    assert payload["runner"] == RUNNER
+    assert payload["source_revision"] == _EVIDENCE_REVISION
+    assert payload["shape_matrix"] == [_shape_record(*shape) for shape in SHAPE_MATRIX]
+    assert {(run["host_label"], run["compiler_lane"]) for run in payload["runs"]} == {
+        (host, compiler_lane) for host in HOSTS for compiler_lane in COMPILER_LANES
+    }
+    aggregate = payload["aggregate"]
+    assert aggregate["case_count"] == 20
+    assert aggregate["minimum_public_speedup_over_pytorch"] > 1.23
+    assert aggregate["maximum_public_speedup_over_pytorch"] > 2.43
+    assert aggregate["maximum_absolute_error"] == 0.0
+    assert aggregate["maximum_relative_l2_error"] == 0.0
+    assert aggregate["all_cases_meet_performance_floor"] is True
+    assert aggregate["decision"] == "default_dispatch_enabled"
+
+
+def test_checked_in_sv014_dispatch_samples_reproduce_claims() -> None:
+    payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+
+    for run in payload["runs"]:
+        assert run["source_revision"] == payload["source_revision"]
+        assert run["compiler"]["identity_status"] == "resolved"
+        assert run["environment"]["gpu"] == "NVIDIA A800-SXM4-80GB"
+        assert run["measurement"] == payload["measurement"]
+        repeats = int(run["measurement"]["repeats"])
+        for case in run["cases"]:
+            dispatch = case["public_catalog_dispatch"]
+            reference = case["public_pytorch_reference"]
+            assert len(dispatch["samples_seconds_per_invocation"]) == repeats
+            assert len(reference["samples_seconds_per_invocation"]) == repeats
+            assert math.isclose(
+                dispatch["median_seconds_per_invocation"],
+                statistics.median(dispatch["samples_seconds_per_invocation"]),
+            )
+            assert math.isclose(
+                reference["median_seconds_per_invocation"],
+                statistics.median(reference["samples_seconds_per_invocation"]),
+            )
+            assert math.isclose(
+                case["public_speedup_over_pytorch"],
+                reference["median_seconds_per_invocation"]
+                / dispatch["median_seconds_per_invocation"],
+            )

@@ -138,7 +138,7 @@ def test_compiler_forms_only_kernel_supported_swap_sequences(length: int) -> Non
         instructions,
         8,
         enable_triton_loop=False,
-        enable_triton_swap_sequence=True,
+        swap_fusion_bounds=(4, 8),
     )
 
     assert program == (_StatevectorSwapSequenceStep(swaps),)
@@ -154,7 +154,7 @@ def test_compiler_preserves_out_of_window_swap_sequences(length: int) -> None:
         instructions,
         8,
         enable_triton_loop=False,
-        enable_triton_swap_sequence=True,
+        swap_fusion_bounds=(4, 8),
     )
 
     assert len(program) == length

@@ -146,9 +146,11 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_matches_layout_reference",
         capability_tests=(
             "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_swap_sequence_catalog_dispatch.py::test_swap_sequence_public_path_uses_catalog",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_swap_sequence_a800.json",
+            "benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json",
         ),
     ),
     _evidence(
