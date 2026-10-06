@@ -52,6 +52,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ..core.ir import CircuitIR, Instruction
+from .ordering_barrier import is_ordering_barrier
 
 if TYPE_CHECKING:
     from .routing import CouplingMap
@@ -273,9 +274,13 @@ def plan_sabre_swaps(
     neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))
     wires = tuple(instruction.wires for instruction in instructions)
     # A channel occupies its qubits but must not be pulled onto a coupling edge,
-    # so it never blocks the front layer.
+    # so it never blocks the front layer. A barrier is in the same position for
+    # the same reason: neither one is a unitary the device has to host, so making
+    # either adjacent would buy nothing.
     blocks = tuple(
-        len(wire_pair) == 2 and not instruction.metadata.get("is_channel")
+        len(wire_pair) == 2
+        and not instruction.metadata.get("is_channel")
+        and not is_ordering_barrier(instruction)
         for instruction, wire_pair in zip(instructions, wires, strict=True)
     )
     # A SWAP along one coupling edge keeps each logical qubit inside its own

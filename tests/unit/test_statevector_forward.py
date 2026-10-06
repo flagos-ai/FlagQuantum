@@ -20,8 +20,6 @@ from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
-    _triton_local_1q_requested,
-    _triton_local_cx_requested,
     _vectorized_cross_shard_cx,
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
@@ -36,6 +34,10 @@ from flagquantum.runtime.executors.statevector.forward_sweep import (
 )
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
+)
+from flagquantum.runtime.executors.statevector.local_gate_dispatch import (
+    _triton_local_1q_requested,
+    _triton_local_cx_requested,
 )
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,

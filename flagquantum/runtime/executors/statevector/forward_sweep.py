@@ -43,7 +43,6 @@ from .forward import (
     _local_block_fusion_enabled,
     _local_block_fusion_width,
     _single_process_cpu_direct_enabled,
-    _triton_local_cx_decision,
     _vectorized_cross_shard_cx,
     _vectorized_local_cx_gate,
     _vectorized_local_diagonal_gate,
@@ -60,6 +59,10 @@ from .layout import (
     schedule_statevector_dependency_dag,
 )
 from .local_execution import initialize_statevector_shard, use_compact_global_indices
+from .local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_cx_decision,
+)
 from .planning import plan_distributed_statevector
 from .program_cache import remap_instruction_qubits
 from .transpose_dispatch import _triton_transpose_1q_tensor_decision
@@ -811,6 +814,7 @@ class _ShardedForwardSweep:
                 runtime_supported=instruction.name == "cx",
                 device_type=self.shard_state.amplitudes.device.type,
                 dtype=str(self.shard_state.amplitudes.dtype).removeprefix("torch."),
+                addressable=_flat_local_address_supported(self.shard_state.amplitudes),
                 shape=(
                     int(self.shard_state.amplitudes.shape[0]),
                     int(self.shard_state.amplitudes.shape[1]),

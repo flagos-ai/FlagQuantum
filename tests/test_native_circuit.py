@@ -840,8 +840,22 @@ def test_batched_parameter_shift_uses_one_evaluation_and_matches_autograd():
             "enter its gate angle directly",
         ),
         (
-            lambda values: fq.Circuit(2).rzz(0, 1, theta=values[0]),
-            "supports only H, X, RX, RY, RZ, and CX",
+            lambda values: fq.Circuit(2).crz(0, 1, theta=values[0]),
+            r"crz declares frequencies \(0\.5, 1\.0\) and needs 2 evaluation pairs",
+        ),
+        (
+            lambda values: fq.Circuit(1, dtype=torch.complex128).u3(
+                0, theta=values[0], phi=values[0], lbd=0.3
+            ),
+            "must control exactly one gate occurrence; found 2",
+        ),
+        (
+            lambda values: fq.Circuit(1).bit_flip(0, probability=values[0]),
+            "bit_flip is a channel",
+        ),
+        (
+            lambda values: fq.Circuit(1).sdg(0).rx(0, theta=values[0]),
+            "sdg carries no declared parameter",
         ),
     ],
 )
@@ -855,6 +869,57 @@ def test_batched_parameter_shift_rejects_unsupported_parameter_use(build, messag
             torch.tensor([0.2]),
             unexpected_batch,
         )
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda values: fq.Circuit(2, dtype=torch.complex128).rzz(0, 1, theta=values[0]),
+        lambda values: fq.Circuit(2, dtype=torch.complex128)
+        .rzz(0, 1, theta=values[0])
+        .cx(0, 1),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u2(
+            0, phi=values[0], lbd=0.3
+        ),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u3(
+            0, theta=values[0], phi=0.2, lbd=0.3
+        ),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).phase(0, theta=values[0]),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u1(0, theta=values[0]),
+        lambda values: fq.Circuit(2, dtype=torch.complex128).cphase(
+            0, 1, theta=values[0]
+        ),
+        lambda values: fq.Circuit(2, dtype=torch.complex128)
+        .h(0)
+        .rxx(0, 1, theta=values[0])
+        .x(1),
+    ],
+)
+def test_batched_parameter_shift_admits_every_one_frequency_gate(build):
+    """A one-frequency gate needs one evaluation pair, whatever its opcode.
+
+    The circuit is complex128 so that the agreement asserted here is the rule's
+    arithmetic and not the storage precision of the simulator.
+    """
+
+    params = torch.tensor([0.23], dtype=torch.float64)
+    autograd_params = params.detach().clone().requires_grad_(True)
+
+    def loss(circuit):
+        return circuit.expectation_z(tuple(range(circuit.n_qubits))).sum()
+
+    reference = loss(build(autograd_params))
+    reference.backward()
+    gradient = batched_parameter_shift_gradient(
+        build,
+        params,
+        lambda circuits: torch.tensor(
+            [float(loss(circuit)) for circuit in circuits], dtype=torch.float64
+        ),
+    )
+
+    assert autograd_params.grad is not None
+    torch.testing.assert_close(gradient, autograd_params.grad, rtol=0, atol=1e-12)
 
 
 def test_native_named_parameters_bind_before_execution_and_export():

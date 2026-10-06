@@ -22,6 +22,19 @@ from .clifford_matching import (
     _reorder_disjoint_clifford_matchings,
     fuse_native_disjoint_clifford_matchings,
 )
+from .dense_fusion_cpu import (
+    _apply_swap_sequence as _apply_swap_sequence,
+)
+from .dense_fusion_cpu import (
+    _cpu_cx_rzz_swap_fusion_enabled as _cpu_cx_rzz_swap_fusion_enabled,
+)
+from .dense_fusion_cpu import (
+    _cpu_swap_sequence_fusion_enabled as _cpu_swap_sequence_fusion_enabled,
+)
+from .dense_fusion_cpu import (
+    _fuse_cx_rzz_swap_sequences,
+    _fuse_swap_sequences,
+)
 from .diagonal_cpu import (
     _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
 )
@@ -42,6 +55,9 @@ from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
 )
+from .program import (
+    _StatevectorCXSequenceRZZSwapStep as _StatevectorCXSequenceRZZSwapStep,
+)
 from .program import _StatevectorCXSequenceStep as _StatevectorCXSequenceStep
 from .program import _StatevectorDenseRegion as _StatevectorDenseRegion
 from .program import (
@@ -52,6 +68,7 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
+from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
 from .wire_permutation import _clear_wire_permutation_cache
 
@@ -203,13 +220,7 @@ _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS = 1
 
 
 def _cpu_cx_sequence_gather_enabled() -> bool:
-    """Whether a CPU CX sequence may be applied as one gather.
-
-    On by default, like the other statevector fast-path switches. A gather is an
-    exact permutation of amplitudes, so it cannot move a result even in the last
-    bit; the switch exists to restore the per-gate loop if the table's memory or
-    its build time is unwanted.
-    """
+    """Whether an exact CPU CX permutation may be applied as one gather."""
 
     return _environment_flag("FQ_CPU_CX_SEQUENCE_GATHER", default=True)
 
@@ -273,6 +284,9 @@ def _compile_statevector_program(
     enable_cpu_native_fused_rotation_layer: bool = False,
     enable_cpu_native_scalar_fused_rotation_layer: bool = False,
     enable_cpu_native_rotation_clifford_fusion: bool = False,
+    enable_cpu_swap_sequence: bool = False,
+    enable_cpu_hadamard_controlled_phase: bool = False,
+    enable_cpu_cx_rzz_swap: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -299,6 +313,8 @@ def _compile_statevector_program(
         optimized = fuse_native_disjoint_clifford_matchings(optimized)
     if enable_cpu_controlled_phase_graph:
         optimized = controlled_phase._fuse_controlled_phase_graphs(optimized)
+    if enable_cpu_hadamard_controlled_phase:
+        optimized = controlled_phase._fuse_hadamard_controlled_phase_graphs(optimized)
     if enable_cpu_cz_graph:
         optimized = cz_graph._fuse_cz_graphs(optimized)
     if enable_cpu_cross_wire_diagonal:
@@ -313,7 +329,12 @@ def _compile_statevector_program(
         optimized = fuse_native_rotation_clifford_layers(optimized)
     if enable_cpu_disjoint_clifford_matching:
         optimized = _reorder_disjoint_clifford_matchings(optimized)
-    return tuple(_fuse_cx_sequences(optimized))
+    program_with_cx = _fuse_cx_sequences(optimized)
+    if enable_cpu_cx_rzz_swap:
+        program_with_cx = _fuse_cx_rzz_swap_sequences(program_with_cx)
+    if enable_cpu_swap_sequence:
+        return tuple(_fuse_swap_sequences(program_with_cx))
+    return tuple(program_with_cx)
 
 
 def _fuse_rx_rz_loops(

@@ -197,6 +197,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     refused = _refusal_errors(contract)
     errors.extend(refused)
     errors.extend(_vocabulary_errors(contract))
+    errors.extend(_relabelling_errors(contract))
     errors.extend(_census_errors(contract))
     errors.extend(_verification_errors(contract))
     return tuple(errors)
@@ -391,6 +392,110 @@ def _refusal_errors(contract: dict[str, Any]) -> list[str]:
             errors.append(
                 f"circuit composition refusal {code!r} is unreachable with no reachability note"
             )
+    return errors
+
+
+def _module_of(path: Path, node: ast.ImportFrom, *, root: Path) -> str:
+    """Resolve one `from ... import ...` to the dotted module it names.
+
+    A relative import is resolved against the importing file's own package, so
+    `from ..core.qubit_mapping import remap_qubits` in `flagquantum/twin/region_model.py`
+    and `from flagquantum.core.qubit_mapping import remap_qubits` elsewhere both name the
+    same module. Comparing resolved names is what makes the reader set a measurement
+    instead of a spelling contest.
+    """
+
+    if not node.level:
+        return node.module or ""
+    # For a module the containing directory is its package; for a package's own
+    # `__init__.py` the containing directory is that package too. One dot is the package
+    # itself, so each further dot steps one directory up.
+    package = path.relative_to(root).parts[:-1]
+    base = package[: len(package) - (node.level - 1)]
+    return ".".join((*base, node.module or ""))
+
+
+def _package_readers(module: str, owner: str, *, root: Path) -> list[str]:
+    """Every module under `flagquantum/` that imports `owner` from `module`."""
+
+    readers: list[str] = []
+    for path in sorted((root / "flagquantum").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if _module_of(path, node, root=root) != module:
+                continue
+            if any(alias.name == owner for alias in node.names):
+                readers.append(str(path.relative_to(root).as_posix()))
+                break
+    return readers
+
+
+def _relabelling_errors(contract: dict[str, Any], *, root: Path = ROOT) -> list[str]:
+    """The internal-only row records who reads the relabelling rule it names.
+
+    Two implementations of one relabelling rule are more dangerous than two different
+    rules, because the copies drift apart silently. The row already names the rule's
+    module and owner, so its readers are read back off the import graph: a package
+    module that reads the rule without being recorded, a recorded reader that stopped
+    reading it, and the retired private wording reappearing anywhere in the package all
+    fail here. The scan is the shipped package -- a test may call the rule directly
+    without becoming an implementation of it. `root` is the tree to measure, which is
+    what lets the conformance test measure the rule against a tree it built.
+    """
+
+    errors: list[str] = []
+    rows = contract.get("issue_codes", {}).get("internal_only", ())
+    if len(rows) != 1:
+        return errors
+    row = rows[0]
+    source = row.get("source")
+    owner = row.get("owner")
+    declared = row.get("consumers")
+    if (
+        not isinstance(source, str)
+        or not isinstance(owner, str)
+        or not isinstance(declared, list)
+        or not declared
+        or any(not isinstance(name, str) or not name for name in declared)
+    ):
+        errors.append("circuit composition relabelling readers are not recorded")
+        return errors
+
+    recorded = sorted(dict.fromkeys(declared))
+    for name in recorded:
+        path = root / name
+        if not path.is_file():
+            errors.append(f"circuit composition relabelling reader {name!r} is missing")
+            continue
+        if owner not in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"circuit composition relabelling reader {name!r} never calls {owner}"
+            )
+
+    module = source[: -len(".py")].replace("/", ".") if source.endswith(".py") else ""
+    if not module:
+        errors.append(
+            f"circuit composition relabelling rule source {source!r} is not a module"
+        )
+        return errors
+    measured = _package_readers(module, owner, root=root)
+    if recorded != measured:
+        errors.append(
+            "circuit composition relabelling readers drifted from the import graph: "
+            f"contract={recorded}, implementation={measured}"
+        )
+
+    retired = row.get("retired_wording")
+    if isinstance(retired, str) and retired:
+        for path in sorted((root / "flagquantum").rglob("*.py")):
+            if retired in path.read_text(encoding="utf-8"):
+                errors.append(
+                    "circuit composition relabelling reader "
+                    f"{path.relative_to(root).as_posix()!r} kept the retired private "
+                    f"wording {retired!r}"
+                )
     return errors
 
 

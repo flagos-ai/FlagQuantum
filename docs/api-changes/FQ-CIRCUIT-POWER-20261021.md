@@ -21,8 +21,12 @@ rule 8 protects *stable exports, signatures, defaults, result fields, enum/Liter
 values, documented exception behavior, and serialized public schemas*. Measured against
 this checkout:
 
-- `docs/public_api_v1.json` freezes **36 root exports** and does not enumerate methods, so
-  `Circuit.power` adds no frozen name. `fq.__all__` stays at **36**.
+- `docs/public_api_v1.json` freezes **37 root exports** in the merged tree (`36` on this
+  branch alone, which is what the measurements below were taken on: `main` added
+  `fq.density_matrix` in `FQ-DENSITY-MATRIX-OUTPUT-20261006.md` while this slice was in
+  review) and does not enumerate methods, so `Circuit.power` adds no frozen name.
+  `fq.__all__` reads **37**, one more than the **36** this slice started from, and
+  `power` contributes none of the difference.
 - `Circuit` itself is already a stable export, and `docs/generated/STABLE_API.md` is
   generated from that same root list.
 - `OperatorSchema` already exists and is already serialized into
@@ -278,9 +282,11 @@ that delegates to `power` is a candidate for a later slice if user evidence asks
 
 - `IR_VERSION` stays `1.0`. `power` rewrites the instruction sequence; it does not add an
   instruction kind.
-- No root export is added, removed, or renamed. `fq.__all__` stays at **36**,
-  `docs/public_api_v1.json` and `docs/generated/STABLE_API.md` are unchanged, and
-  `tools/public_api_snapshot.py` passes.
+- No root export is added, removed, or renamed. `fq.__all__` reads **37** in the merged
+  tree, unchanged by this slice: the one name between the **36** this branch measured
+  alone and the **37** of the merged base is `fq.density_matrix`, which `main` added
+  independently. `docs/public_api_v1.json` and `docs/generated/STABLE_API.md` are
+  unchanged by this slice, and `tools/public_api_snapshot.py` passes.
 - `Circuit.power` is a new method on an existing stable class. It does not change any
   existing signature, default, or documented exception.
 - `OperatorSchema` gains one property and no constructor argument, so every existing

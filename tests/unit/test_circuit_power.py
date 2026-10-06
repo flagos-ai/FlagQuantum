@@ -569,4 +569,7 @@ def test_power_is_a_method_and_not_a_root_export() -> None:
 
     assert callable(fq.Circuit.power)
     assert "power" not in fq.__all__
-    assert len(fq.__all__) == 36
+    # 37, not the 36 this slice measured alone: `main` added `fq.density_matrix` to
+    # the frozen stable exports while this branch was in review, so the merged base
+    # holds 37 names. `power` still moves the count nowhere.
+    assert len(fq.__all__) == 37

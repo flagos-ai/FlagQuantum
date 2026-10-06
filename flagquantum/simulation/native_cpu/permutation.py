@@ -33,6 +33,34 @@ def compact_cx_permutation_images(
     return torch.tensor(images, dtype=torch.int64)
 
 
+def compact_cx_rzz_swap_images(
+    controls: Sequence[int],
+    targets: Sequence[int],
+    swap_qubits: tuple[int, int],
+    n_qubits: int,
+) -> torch.Tensor:
+    """Build compact inverse images for a CX sequence followed by one SWAP."""
+
+    if len(controls) != len(targets):
+        raise ValueError("a CX sequence needs one target per control")
+    left, right = (int(qubit) for qubit in swap_qubits)
+    left_mask = 1 << (n_qubits - left - 1)
+    right_mask = 1 << (n_qubits - right - 1)
+    images = [1 << (n_qubits - qubit - 1) for qubit in range(n_qubits)]
+    for index, image in enumerate(images):
+        left_set = bool(image & left_mask)
+        right_set = bool(image & right_mask)
+        if left_set != right_set:
+            images[index] = image ^ left_mask ^ right_mask
+    for control, target in zip(reversed(controls), reversed(targets), strict=True):
+        control_mask = 1 << (n_qubits - int(control) - 1)
+        target_mask = 1 << (n_qubits - int(target) - 1)
+        images = [
+            image ^ target_mask if image & control_mask else image for image in images
+        ]
+    return torch.tensor(images, dtype=torch.int64)
+
+
 def use_compact_cpu_cx_mapping(n_qubits: int) -> bool:
     """Use compact metadata once a full int32 CX table reaches 16 MiB."""
 
@@ -54,6 +82,16 @@ def native_cpu_cx_gather_available() -> bool:
 
     return (
         os.getenv("FQ_NATIVE_CPU_CX_GATHER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and _load_extension()
+    )
+
+
+def native_cpu_cx_rzz_swap_available() -> bool:
+    """Return whether fused static CX/RZZ/SWAP execution is available."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_CX_RZZ_SWAP", "1").strip().lower()
         not in {"0", "false", "off", "no"}
         and _load_extension()
     )
@@ -211,6 +249,46 @@ def fused_compact_cx_gather_out(
         return False
     with torch.no_grad():
         torch.ops.flagquantum_native.fused_compact_cx_gather_out(state, images, output)
+    return True
+
+
+def fused_compact_cx_rzz_swap_out(
+    state: torch.Tensor,
+    images: torch.Tensor,
+    output: torch.Tensor,
+    *,
+    rzz_qubits: tuple[int, int],
+    rzz_angle: float,
+) -> bool:
+    """Apply one static CX/RZZ/SWAP segment into a reusable output."""
+
+    if (
+        not native_cpu_cx_rzz_swap_available()
+        or state.requires_grad
+        or state.device.type != "cpu"
+        or images.device.type != "cpu"
+        or output.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or output.dtype != state.dtype
+        or images.dtype != torch.int64
+        or state.ndim != 2
+        or output.shape != state.shape
+        or images.ndim != 1
+        or state.shape[1] != 1 << images.numel()
+        or not all(item.is_contiguous() for item in (state, images, output))
+        or state.data_ptr() == output.data_ptr()
+    ):
+        return False
+    first, second = (int(qubit) for qubit in rzz_qubits)
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_compact_cx_rzz_swap_out(
+            state,
+            images,
+            output,
+            first,
+            second,
+            float(rzz_angle),
+        )
     return True
 
 

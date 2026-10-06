@@ -20,6 +20,7 @@ from flagquantum.qec.codes import (
     CodeCheck,
     RepetitionCode,
     RotatedSurfaceCode,
+    SteaneCode,
     ancilla_bands,
 )
 from flagquantum.qec.dem import DetectorErrorModel
@@ -436,6 +437,71 @@ def test_measurement_flips_never_move_a_declared_observable() -> None:
     )
     assert model.num_observables == 2
     assert all(error.observables == () for error in model.errors)
+
+
+@pytest.mark.parametrize(
+    ("basis", "read_family", "invisible_family"),
+    (("z", "data_flip", "phase_flip"), ("x", "phase_flip", "data_flip")),
+)
+def test_the_readout_basis_decides_which_data_fault_moves_the_observable(
+    basis: str, read_family: str, invisible_family: str
+) -> None:
+    """A fault is logical when it anticommutes with the observable that is read.
+
+    The Steane code declares a logical observable in each basis, so the same
+    record describes two experiments and the readout basis is the whole
+    difference between them. The Z-basis experiment reads the Z-type operator, so
+    an X fault on its support moves the observable and a Z fault cannot; the
+    X-basis experiment reads the X-type operator and the two families swap roles.
+    Both halves are asserted, because either one alone is also what a model that
+    ignored the basis would produce whenever it happened to read the right
+    operator.
+    """
+
+    code = SteaneCode()
+    read = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=2, readout_basis=basis),
+        noise=PhenomenologicalNoise(**{read_family: 0.01}),
+    )
+    invisible = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=2, readout_basis=basis),
+        noise=PhenomenologicalNoise(**{invisible_family: 0.01}),
+    )
+
+    assert read.num_errors > 0
+    assert invisible.num_errors > 0
+    assert any(error.observables == (0,) for error in read.errors)
+    assert all(error.observables == () for error in invisible.errors)
+
+
+def test_two_readout_bases_of_one_code_are_two_models() -> None:
+    """The basis is not a relabelling: it changes which mechanisms the model has.
+
+    The two experiments have the same shape, because the Steane code has the same
+    number of checks of each type, so the counts cannot tell them apart. The
+    observable rate can: each basis' terminal detectors read the checks in which
+    that basis' invisible faults are the ones that moved the logical operator,
+    and the two rates therefore differ.
+    """
+
+    code = SteaneCode()
+    noise = PhenomenologicalNoise(
+        data_flip=0.01, phase_flip=0.02, both_flip=0.005, measurement_flip=0.03
+    )
+    z_model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=3, readout_basis="z"), noise=noise
+    )
+    x_model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=3, readout_basis="x"), noise=noise
+    )
+
+    assert z_model.num_detectors == x_model.num_detectors
+    assert z_model.num_observables == x_model.num_observables == 1
+    assert z_model.num_errors == x_model.num_errors
+    assert z_model.observable_rates()[0] != x_model.observable_rates()[0], (
+        "the two bases produced the same observable rate, so the basis never "
+        "reached the model"
+    )
 
 
 @dataclass(frozen=True)

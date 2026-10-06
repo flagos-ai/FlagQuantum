@@ -9,6 +9,7 @@ from threading import Lock
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .ordering_barrier import is_ordering_barrier
 from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
 # Dense distance-matrix entry for a physical qubit pair with no coupling path.
@@ -261,6 +262,20 @@ class CouplingMap:
         return right in self._adjacency[left]
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
+        """Return the canonical shortest path between two physical qubits.
+
+        The path is a function of the pair, not of how the pair was asked for.
+        :meth:`distance` reports a hop count, which is unique, but a pair can have
+        two shortest routes of equal length: on a ring the two arcs around it have
+        the same hop count, and a path graph resolves a pair through the only route
+        it has. Breadth-first search returns whichever route its adjacency order
+        reaches first, so expanding from the endpoint that was asked would choose
+        between equal routes by direction, and the mirrored entry cached below
+        would then hand the next caller a route that caller's own search would not
+        have produced. Expanding from the lower-indexed endpoint keeps the two
+        directions exact reverses of each other and makes a reused device inert.
+        """
+
         start = self._validate_qubit(start)
         goal = self._validate_qubit(goal)
         cache_key = (start, goal)
@@ -279,24 +294,27 @@ class CouplingMap:
             identity_path = (start,)
             self._cache_paths((cache_key, identity_path))
             return identity_path
-        parents = {start: -1}
-        queue: deque[int] = deque([start])
+        first, second = (start, goal) if start < goal else (goal, start)
+        parents = {first: -1}
+        queue: deque[int] = deque([first])
         while queue:
             qubit = queue.popleft()
             for neighbor in self.neighbors(qubit):
                 if neighbor in parents:
                     continue
                 parents[neighbor] = qubit
-                if neighbor == goal:
-                    path_nodes = [goal]
-                    while path_nodes[-1] != start:
+                if neighbor == second:
+                    path_nodes = [second]
+                    while path_nodes[-1] != first:
                         path_nodes.append(parents[path_nodes[-1]])
                     resolved = tuple(reversed(path_nodes))
-                    self._cache_paths(
-                        (cache_key, resolved),
-                        ((goal, start), tuple(reversed(resolved))),
+                    forward, backward = (
+                        (resolved, tuple(reversed(resolved)))
+                        if start < goal
+                        else (tuple(reversed(resolved)), resolved)
                     )
-                    return resolved
+                    self._cache_paths((cache_key, forward), ((goal, start), backward))
+                    return forward
                 queue.append(neighbor)
         raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 
@@ -474,7 +492,7 @@ def estimate_routing_cost(
     forward_swap_count = 0
     skipped_channel_count = 0
     for instruction in ir:
-        if len(instruction.wires) != 2:
+        if len(instruction.wires) != 2 or is_ordering_barrier(instruction):
             continue
         if instruction.metadata.get("is_channel"):
             skipped_channel_count += 1
@@ -652,9 +670,20 @@ def _require_multi_qubit_device_local(
     interact on consecutive operands; an instruction with no entry is refused
     instead of assumed local. Two-qubit instructions keep their existing
     SWAP-based handling.
+
+    A barrier is the one multi-qubit instruction this rule does not apply to: it
+    carries no unitary and constrains only the order of the operations around it,
+    so it needs no coupling and cannot be decomposed onto one. The optimizer, the
+    commutation rules, and the schedule legalizer already read it that way, and
+    the router is where a directive was being turned into a device operation.
+    :func:`~flagquantum.compiler.ordering_barrier.is_ordering_barrier` tells the
+    two apart, so an instruction that names the barrier while carrying a matrix
+    is a gate wearing the name and keeps the connectivity requirement below.
     """
 
     if len(qubits) < 3:
+        return
+    if is_ordering_barrier(instruction):
         return
     required = _MULTI_QUBIT_OPERAND_PAIRS.get(instruction.name)
     if required is None:
@@ -743,6 +772,16 @@ def _route_persistent_layout(
 
     for source_index, instruction in enumerate(ir):
         mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
+        if is_ordering_barrier(instruction):
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    mapped_qubits,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2:
             _require_multi_qubit_device_local(
                 instruction, mapped_qubits, coupling.has_edge
@@ -892,6 +931,18 @@ def _route_sabre(
         placed_so_far += 1
         instruction = ir.instructions[source_index]
         placed_qubits = plan.placements[source_index]
+        if is_ordering_barrier(instruction):
+            # The planner never blocks the front layer on the directive, so no
+            # planned SWAP exists to place it and none was inserted for it.
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    placed_qubits,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
             _require_multi_qubit_device_local(
                 instruction, placed_qubits, coupling.has_edge
@@ -991,6 +1042,19 @@ def route_to_topology(
     topology_gate_count = 0
     skipped_channel_count = 0
     for source_index, instruction in enumerate(ir):
+        if is_ordering_barrier(instruction):
+            # Nothing executes the directive, so no coupling has to carry it and
+            # no SWAP can make it more executable. It still has to come out the
+            # other side, on the physical qubits this strategy leaves it on.
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    instruction.wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2:
             _require_multi_qubit_device_local(
                 instruction, instruction.wires, coupling.has_edge
