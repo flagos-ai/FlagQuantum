@@ -5,6 +5,10 @@
     "path": "acceptance_config.json",
     "sha256": "<required>"
   },
+  "environment_lock": {
+    "path": "environment_lock.json",
+    "sha256": "<required>"
+  },
   "records": [
     {
       "path": "jp-a800-171.json",
@@ -12,6 +16,12 @@
     },
     {
       "path": "jp-a800-172.json",
+      "sha256": "<required>"
+    }
+  ],
+  "component_records": [
+    {
+      "path": "components/<required-component-record>.json",
       "sha256": "<required>"
     }
   ]

@@ -388,8 +388,13 @@ top-level field sets to the actual payload constructors. Portability validation
 also rechecks all frozen artifact identities plus its preregistered training
 seed, fixture index, and replay step count; a different fixture cannot pass by
 retaining the same outer record shape. The inputs must be absolute, private
-regular files rather than symlinks. Final validation also reconstructs the
-execution timeline: component timestamps must be UTC and follow
+regular files rather than symlinks. The final manifest, every member reference,
+both aggregated host records, and their artifact, precision, training,
+generation, transfer, metric, application, and portability objects use closed
+field sets as well. Both host records must explicitly require the complete
+component bundle; omitting or disabling that flag cannot bypass source-record
+validation. Final validation also reconstructs the execution timeline:
+component timestamps must be UTC and follow
 preregistration, SDK review, Phase 2 smoke, their remote submissions, and the
 appropriate system/training prerequisites. Assembly
 uses a private sibling staging directory and publishes the requested output

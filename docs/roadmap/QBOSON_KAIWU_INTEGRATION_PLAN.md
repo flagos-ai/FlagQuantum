@@ -690,6 +690,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   paths must be unique normalized relative POSIX paths; unlisted files, extra
   empty directories, and group- or other-accessible directories are rejected
   instead of being silently ignored beside declared evidence.
+- The final manifest, all member references, both aggregated host records, and
+  their nested artifact, precision, training, generation, transfer, metric,
+  application, and portability objects now have closed field sets. Both host
+  records must explicitly require the complete component bundle, so a
+  hand-authored manifest cannot omit or disable that flag to bypass validation
+  of the source components.
 - Every QDiffusion configuration and evidence reader now uses one strict JSON
   parser that rejects duplicate object keys at every nesting level. A source
   scan in the credential-free golden path prevents frozen config, environment

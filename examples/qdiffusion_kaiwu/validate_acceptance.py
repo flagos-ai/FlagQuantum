@@ -395,6 +395,100 @@ METRIC_NAMES = (
     "length_match_ratio",
     "invalid_sequence_count",
 )
+MANIFEST_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "config",
+        "environment_lock",
+        "records",
+        "component_records",
+    }
+)
+MANIFEST_MEMBER_FIELDS = frozenset({"path", "sha256"})
+FINAL_RECORD_COMMON_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "experiment_config_sha256",
+        "execution_host",
+        "run_role",
+        "requested_cuda_device",
+        "observed_tensor_device",
+        "observed_gpu_model",
+        "transport",
+        "qboson_hardware_used",
+        "real_provider_evidence",
+        "provider_reported_target",
+        "qboson_target",
+        "qboson_task_ids",
+        "sampling_mode",
+        "requested_samples",
+        "returned_samples",
+        "remote_call_budget",
+        "remote_call_count",
+        "fallback_occurred",
+        "retrieval_resubmitted",
+        "secrets_redacted",
+        "artifacts",
+        "precision_policy",
+        "training",
+        "generation",
+        "transfer_accounting",
+        "acceptance",
+        "component_bundle_required",
+        "system_evidence_sha256",
+    }
+)
+FINAL_PRIMARY_RECORD_FIELDS = FINAL_RECORD_COMMON_FIELDS | {
+    "attempted_seeds",
+    "baseline_metrics",
+    "guided_metrics",
+    "application_evidence",
+}
+FINAL_REPLAY_RECORD_FIELDS = FINAL_RECORD_COMMON_FIELDS | {"portability_evidence"}
+FINAL_ARTIFACT_FIELDS = frozenset(
+    {
+        "dataset_sha256",
+        "base_checkpoint_sha256",
+        "tokenizer_sha256",
+        "evaluation_model_sha256",
+        "trained_energy_checkpoint_sha256",
+    }
+)
+FINAL_TRAINING_FIELDS = frozenset(
+    {"energy_objective", "gradient_norm", "parameter_delta_max"}
+)
+FINAL_GENERATION_FIELDS = frozenset(
+    {"token_constraints_passed", "invalid_sequence_count"}
+)
+FINAL_ACCEPTANCE_FIELDS = frozenset({"system", "application"})
+APPLICATION_EVIDENCE_FIELDS = frozenset({"aggregation", "records"})
+APPLICATION_EVIDENCE_RECORD_FIELDS = frozenset(
+    {
+        "seed",
+        "training_record_sha256",
+        "evaluation_record_sha256",
+        "trained_energy_checkpoint_sha256",
+    }
+)
+PORTABILITY_EVIDENCE_FIELDS = frozenset(
+    {
+        "record_sha256",
+        "training_seed",
+        "training_record_sha256",
+        "trained_energy_checkpoint_sha256",
+        "acceptance",
+    }
+)
 CONFIG_FIELDS = frozenset(
     {
         "schema",
@@ -620,6 +714,88 @@ def _has_exact_fields(
         errors.append(f"{label}: field set differs from its closed schema")
         return False
     return True
+
+
+def _validate_final_record_field_sets(
+    record: dict[str, Any], *, label: str, errors: list[str]
+) -> None:
+    """Reject extensions at every object boundary in a final host record."""
+
+    role = record.get("run_role")
+    expected = (
+        FINAL_PRIMARY_RECORD_FIELDS
+        if role == "primary"
+        else FINAL_REPLAY_RECORD_FIELDS
+        if role == "portability_replay"
+        else None
+    )
+    if expected is not None:
+        _has_exact_fields(record, expected=expected, label=label, errors=errors)
+    for field, fields in (
+        ("artifacts", FINAL_ARTIFACT_FIELDS),
+        ("precision_policy", PRECISION_POLICY_FIELDS),
+        ("training", FINAL_TRAINING_FIELDS),
+        ("generation", FINAL_GENERATION_FIELDS),
+        ("transfer_accounting", TRANSFER_ACCOUNTING_FIELDS),
+        ("acceptance", FINAL_ACCEPTANCE_FIELDS),
+    ):
+        value = record.get(field)
+        if isinstance(value, dict):
+            _has_exact_fields(
+                value,
+                expected=fields,
+                label=f"{label}.{field}",
+                errors=errors,
+            )
+    transfers = record.get("transfer_accounting")
+    if isinstance(transfers, dict):
+        boundaries = transfers.get("sampler_boundaries")
+        if isinstance(boundaries, list):
+            for index, boundary in enumerate(boundaries):
+                if isinstance(boundary, dict):
+                    _has_exact_fields(
+                        boundary,
+                        expected=SAMPLER_BOUNDARY_FIELDS,
+                        label=(
+                            f"{label}.transfer_accounting.sampler_boundaries[{index}]"
+                        ),
+                        errors=errors,
+                    )
+    for field in ("baseline_metrics", "guided_metrics"):
+        metrics = record.get(field)
+        if isinstance(metrics, dict):
+            _has_exact_fields(
+                metrics,
+                expected=frozenset(METRIC_NAMES),
+                label=f"{label}.{field}",
+                errors=errors,
+            )
+    application = record.get("application_evidence")
+    if isinstance(application, dict):
+        _has_exact_fields(
+            application,
+            expected=APPLICATION_EVIDENCE_FIELDS,
+            label=f"{label}.application_evidence",
+            errors=errors,
+        )
+        evidence_records = application.get("records")
+        if isinstance(evidence_records, list):
+            for index, evidence_record in enumerate(evidence_records):
+                if isinstance(evidence_record, dict):
+                    _has_exact_fields(
+                        evidence_record,
+                        expected=APPLICATION_EVIDENCE_RECORD_FIELDS,
+                        label=f"{label}.application_evidence.records[{index}]",
+                        errors=errors,
+                    )
+    portability = record.get("portability_evidence")
+    if isinstance(portability, dict):
+        _has_exact_fields(
+            portability,
+            expected=PORTABILITY_EVIDENCE_FIELDS,
+            label=f"{label}.portability_evidence",
+            errors=errors,
+        )
 
 
 def _validate_provider_value_description(
@@ -1457,6 +1633,7 @@ def _validate_system_record(
     label: str,
     errors: list[str],
 ) -> None:
+    _validate_final_record_field_sets(record, label=label, errors=errors)
     if record.get("schema") != RECORD_SCHEMA or record.get("version") != "1.0":
         errors.append(f"{label}: unsupported schema or version")
     for field in ("source_revision", "kaiwu_pytorch_plugin_revision"):
@@ -1467,6 +1644,7 @@ def _validate_system_record(
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
+        "system_evidence_sha256",
     ):
         value = record.get(field)
         if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
@@ -1543,6 +1721,8 @@ def _validate_system_record(
         errors.append(f"{label}: retrieval must not resubmit")
     if record.get("secrets_redacted") is not True:
         errors.append(f"{label}: secret redaction is not proven")
+    if record.get("component_bundle_required") is not True:
+        errors.append(f"{label}: component bundle must be explicitly required")
     artifacts = _mapping(record.get("artifacts"), f"{label}.artifacts", errors)
     artifact_config_fields = {
         "dataset_sha256": "dataset",
@@ -1782,7 +1962,10 @@ def _validate_application(
     ):
         errors.append("primary: application evidence does not cover every seed")
     else:
-        evidence_seeds = [record.get("seed") for record in evidence_records]
+        evidence_seeds = [
+            record.get("seed") if isinstance(record, dict) else None
+            for record in evidence_records
+        ]
         if evidence_seeds != config.get("seeds"):
             errors.append(
                 "primary: application evidence seed order differs from config"
@@ -3114,6 +3297,9 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     except (OSError, ValueError) as exc:
         return [f"manifest: cannot be read safely: {exc}"]
     manifest = _mapping(manifest_value, "manifest", errors)
+    _has_exact_fields(
+        manifest, expected=MANIFEST_FIELDS, label="manifest", errors=errors
+    )
     if manifest.get("schema") != MANIFEST_SCHEMA or manifest.get("version") != "1.0":
         errors.append("manifest: unsupported schema or version")
 
@@ -3211,6 +3397,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             )
 
     config_entry = _mapping(manifest.get("config"), "manifest.config", errors)
+    _has_exact_fields(
+        config_entry,
+        expected=MANIFEST_MEMBER_FIELDS,
+        label="manifest.config",
+        errors=errors,
+    )
     config_path = resolve_member(config_entry.get("path"), "manifest.config.path")
     if config_path is None:
         return errors
@@ -3230,6 +3422,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
 
     environment_entry = _mapping(
         manifest.get("environment_lock"), "manifest.environment_lock", errors
+    )
+    _has_exact_fields(
+        environment_entry,
+        expected=MANIFEST_MEMBER_FIELDS,
+        label="manifest.environment_lock",
+        errors=errors,
     )
     environment_path = resolve_member(
         environment_entry.get("path"), "manifest.environment_lock.path"
@@ -3272,42 +3470,47 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
 
     component_payloads: dict[str, dict[str, Any]] = {}
     raw_components = manifest.get("component_records")
-    if raw_components is not None:
-        if not isinstance(raw_components, list):
-            errors.append("manifest.component_records: expected a list")
-        else:
-            for index, raw_entry in enumerate(raw_components):
-                entry = _mapping(
-                    raw_entry, f"manifest.component_records[{index}]", errors
+    if not isinstance(raw_components, list):
+        errors.append("manifest.component_records: expected a list")
+    else:
+        for index, raw_entry in enumerate(raw_components):
+            entry = _mapping(
+                raw_entry, f"manifest.component_records[{index}]", errors
+            )
+            _has_exact_fields(
+                entry,
+                expected=MANIFEST_MEMBER_FIELDS,
+                label=f"manifest.component_records[{index}]",
+                errors=errors,
+            )
+            component_path = resolve_member(
+                entry.get("path"),
+                f"manifest.component_records[{index}].path",
+            )
+            if component_path is None:
+                continue
+            try:
+                component_value, _, digest = _read_private_json(
+                    component_path,
+                    label=f"acceptance component record {index}",
+                    max_bytes=_MAX_EVIDENCE_MEMBER_BYTES,
                 )
-                component_path = resolve_member(
-                    entry.get("path"),
-                    f"manifest.component_records[{index}].path",
+            except (OSError, ValueError) as exc:
+                errors.append(
+                    f"manifest.component_records[{index}]: "
+                    f"cannot be read safely: {exc}"
                 )
-                if component_path is None:
-                    continue
-                try:
-                    component_value, _, digest = _read_private_json(
-                        component_path,
-                        label=f"acceptance component record {index}",
-                        max_bytes=_MAX_EVIDENCE_MEMBER_BYTES,
-                    )
-                except (OSError, ValueError) as exc:
-                    errors.append(
-                        f"manifest.component_records[{index}]: "
-                        f"cannot be read safely: {exc}"
-                    )
-                    continue
-                if entry.get("sha256") != digest:
-                    errors.append(
-                        f"manifest.component_records[{index}]: SHA-256 mismatch"
-                    )
-                    continue
-                component_payloads[digest] = _mapping(
-                    component_value,
-                    f"component_record[{index}]",
-                    errors,
+                continue
+            if entry.get("sha256") != digest:
+                errors.append(
+                    f"manifest.component_records[{index}]: SHA-256 mismatch"
                 )
+                continue
+            component_payloads[digest] = _mapping(
+                component_value,
+                f"component_record[{index}]",
+                errors,
+            )
 
     entries = manifest.get("records")
     if not isinstance(entries, list) or len(entries) != 2:
@@ -3316,6 +3519,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     records: list[dict[str, Any]] = []
     for index, raw_entry in enumerate(entries):
         entry = _mapping(raw_entry, f"manifest.records[{index}]", errors)
+        _has_exact_fields(
+            entry,
+            expected=MANIFEST_MEMBER_FIELDS,
+            label=f"manifest.records[{index}]",
+            errors=errors,
+        )
         record_path = resolve_member(
             entry.get("path"), f"manifest.records[{index}].path"
         )
@@ -3358,12 +3567,14 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         return errors
     primary = by_host[primary_host]
     replay = by_host[replay_host]
-    if primary.get("component_bundle_required") is True:
-        expected_component_count = 9 + 2 * len(config.get("seeds", []))
-        if len(component_payloads) != expected_component_count:
-            errors.append(
-                "manifest: component bundle does not contain every source record"
-            )
+    for label, record in (("primary", primary), ("replay", replay)):
+        if record.get("component_bundle_required") is not True:
+            errors.append(f"{label}: component bundle must be explicitly required")
+    expected_component_count = 9 + 2 * len(config.get("seeds", []))
+    if len(component_payloads) != expected_component_count:
+        errors.append(
+            "manifest: component bundle does not contain every source record"
+        )
     if primary.get("run_role") != "primary":
         errors.append("manifest: configured primary host lacks the primary role")
     if replay.get("run_role") != "portability_replay":
@@ -3435,53 +3646,50 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             errors.append(
                 "manifest: portability evidence is not linked to the selected seed checkpoint"
             )
-    if primary.get("component_bundle_required") is True:
-        referenced_component_hashes = {
+    referenced_component_hashes = {
             primary.get("source_preflight_sha256"),
             replay.get("source_preflight_sha256"),
             primary.get("transfer_manifest_sha256"),
             primary.get("system_evidence_sha256"),
             replay.get("system_evidence_sha256"),
             portability_evidence.get("record_sha256"),
-        }
-        if isinstance(evidence_records, list):
-            for record in evidence_records:
-                if isinstance(record, dict):
-                    training_digest = record.get("training_record_sha256")
-                    referenced_component_hashes.add(training_digest)
+    }
+    if isinstance(evidence_records, list):
+        for record in evidence_records:
+            if isinstance(record, dict):
+                training_digest = record.get("training_record_sha256")
+                referenced_component_hashes.add(training_digest)
+                referenced_component_hashes.add(record.get("evaluation_record_sha256"))
+                training_component = component_payloads.get(training_digest)
+                if isinstance(training_component, dict):
                     referenced_component_hashes.add(
-                        record.get("evaluation_record_sha256")
+                        training_component.get("artifact_preflight_sha256")
                     )
-                    training_component = component_payloads.get(training_digest)
-                    if isinstance(training_component, dict):
-                        referenced_component_hashes.add(
-                            training_component.get("artifact_preflight_sha256")
-                        )
-        portability_component = component_payloads.get(
-            portability_evidence.get("record_sha256")
+    portability_component = component_payloads.get(
+        portability_evidence.get("record_sha256")
+    )
+    if isinstance(portability_component, dict):
+        referenced_component_hashes.add(
+            portability_component.get("artifact_preflight_sha256")
         )
-        if isinstance(portability_component, dict):
-            referenced_component_hashes.add(
-                portability_component.get("artifact_preflight_sha256")
-            )
-        referenced_component_hashes.update(
-            digest
-            for digest, component in component_payloads.items()
-            if component.get("schema")
-            in (SDK_APPROVAL_COMPONENT_SCHEMA, PROVIDER_SMOKE_COMPONENT_SCHEMA)
+    referenced_component_hashes.update(
+        digest
+        for digest, component in component_payloads.items()
+        if component.get("schema")
+        in (SDK_APPROVAL_COMPONENT_SCHEMA, PROVIDER_SMOKE_COMPONENT_SCHEMA)
+    )
+    if referenced_component_hashes != set(component_payloads):
+        errors.append(
+            "manifest: final records do not reference the exact component bundle"
         )
-        if referenced_component_hashes != set(component_payloads):
-            errors.append(
-                "manifest: final records do not reference the exact component bundle"
-            )
-        _validate_component_bundle(
-            component_payloads,
-            config=config,
-            config_sha256=config_hash,
-            primary=primary,
-            replay=replay,
-            errors=errors,
-        )
+    _validate_component_bundle(
+        component_payloads,
+        config=config,
+        config_sha256=config_hash,
+        primary=primary,
+        replay=replay,
+        errors=errors,
+    )
     task_sets = []
     for record in records:
         raw_task_ids = record.get("qboson_task_ids")

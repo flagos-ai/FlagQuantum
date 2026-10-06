@@ -20,6 +20,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_config,
     _validate_executable_component_nested_fields,
     _validate_execution_component_time,
+    _validate_final_record_field_sets,
     _validate_precision_evidence,
     _validate_provider_result_schema,
     _validate_sampling_receipt,
@@ -138,6 +139,49 @@ def test_provider_result_schema_rejects_values_and_inconsistent_descriptions() -
         errors = []
         _validate_provider_result_schema(mutation, label="schema", errors=errors)
         assert errors
+
+
+def test_final_host_record_and_nested_field_sets_are_closed() -> None:
+    config_hash = "c" * 64
+    environment_hash = "d" * 64
+    records = (
+        _record("jp-a800-171", "primary", config_hash, environment_hash),
+        _record(
+            "jp-a800-172", "portability_replay", config_hash, environment_hash
+        ),
+    )
+    for record in records:
+        errors: list[str] = []
+        _validate_final_record_field_sets(record, label="record", errors=errors)
+        assert errors == []
+
+        for path in (
+            (),
+            ("artifacts",),
+            ("precision_policy",),
+            ("training",),
+            ("generation",),
+            ("transfer_accounting",),
+            ("transfer_accounting", "sampler_boundaries", 0),
+            ("acceptance",),
+            (
+                "application_evidence",
+                "records",
+                0,
+            )
+            if record["run_role"] == "primary"
+            else ("portability_evidence",),
+        ):
+            changed = copy.deepcopy(record)
+            target: Any = changed
+            for part in path:
+                target = target[part]
+            target["unexpected_secret_field"] = "must-not-pass"
+            errors = []
+            _validate_final_record_field_sets(
+                changed, label="record", errors=errors
+            )
+            assert any("closed schema" in error for error in errors)
 
 
 def test_system_component_nested_fields_reject_extensions_and_false_failures() -> None:
@@ -746,15 +790,21 @@ def _record(
             "sampler_boundaries": [transfer_boundary, dict(transfer_boundary)],
             "returned_sample_target_device": "cuda:0",
         },
-        "attempted_seeds": [1701, 1702, 1703],
-        "baseline_metrics": _metrics(cosine=0.5, uniqueness=1.0, repeat=0.0),
-        "guided_metrics": _metrics(cosine=0.4, uniqueness=0.96, repeat=0.04),
         "acceptance": {
             "system": "pass",
             "application": "pass" if role == "primary" else "not_run",
         },
+        "component_bundle_required": True,
+        "system_evidence_sha256": ("a" * 64 if role == "primary" else "b" * 64),
     }
     if role == "primary":
+        record["attempted_seeds"] = [1701, 1702, 1703]
+        record["baseline_metrics"] = _metrics(
+            cosine=0.5, uniqueness=1.0, repeat=0.0
+        )
+        record["guided_metrics"] = _metrics(
+            cosine=0.4, uniqueness=0.96, repeat=0.04
+        )
         record["application_evidence"] = {
             "aggregation": "arithmetic_mean_across_frozen_seeds",
             "records": [
@@ -822,6 +872,7 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
             "sha256": environment_hash,
         },
         "records": entries,
+        "component_records": [],
     }
     manifest_path = tmp_path / "manifest.json"
     _write_json(manifest_path, manifest)
@@ -891,10 +942,57 @@ def _transfer_manifest() -> dict[str, Any]:
     }
 
 
-def test_complete_two_host_real_provider_bundle_passes(tmp_path: Path) -> None:
+def test_host_only_manifest_cannot_bypass_required_component_bundle(
+    tmp_path: Path,
+) -> None:
     manifest_path, _ = _bundle(tmp_path)
 
-    assert validate_acceptance(manifest_path) == []
+    errors = validate_acceptance(manifest_path)
+
+    assert any("does not contain every source record" in error for error in errors)
+    assert any("do not reference the exact component bundle" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "location",
+    ("manifest", "config", "environment_lock", "record", "component_record"),
+)
+def test_manifest_and_member_reference_field_sets_are_closed(
+    tmp_path: Path, location: str
+) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if location == "manifest":
+        manifest["unexpected_secret_field"] = "must-not-pass"
+    elif location in {"config", "environment_lock"}:
+        manifest[location]["unexpected_secret_field"] = "must-not-pass"
+    elif location == "record":
+        manifest["records"][0]["unexpected_secret_field"] = "must-not-pass"
+    else:
+        component_path = tmp_path / "component.json"
+        component_sha = _write_json(component_path, {"schema": "test.component"})
+        manifest["component_records"] = [
+            {
+                "path": component_path.name,
+                "sha256": component_sha,
+                "unexpected_secret_field": "must-not-pass",
+            }
+        ]
+    _write_json(manifest_path, manifest)
+
+    errors = validate_acceptance(manifest_path)
+
+    expected_label = {
+        "manifest": "manifest:",
+        "config": "manifest.config:",
+        "environment_lock": "manifest.environment_lock:",
+        "record": "manifest.records[0]:",
+        "component_record": "manifest.component_records[0]:",
+    }[location]
+    assert any(
+        error.startswith(expected_label) and "closed schema" in error
+        for error in errors
+    )
 
 
 def test_validator_reads_each_evidence_member_once(
@@ -912,7 +1010,7 @@ def test_validator_reads_each_evidence_member_once(
 
     monkeypatch.setattr(validator, "read_private_bytes", counted_read)
 
-    assert validator.validate_acceptance(manifest_path) == []
+    assert validator.validate_acceptance(manifest_path)
     assert len(reads) == len(set(reads)) == 5
 
 
@@ -1476,14 +1574,15 @@ def test_config_rejects_unfrozen_provider_sample_count(value: object) -> None:
     assert any("config.requested_samples" in error for error in errors)
 
 
-def test_component_bundle_is_required_for_assembled_records(tmp_path: Path) -> None:
+def test_component_bundle_requirement_cannot_be_disabled(tmp_path: Path) -> None:
     manifest_path, records = _bundle(tmp_path)
     changed = copy.deepcopy(records[0])
-    changed["component_bundle_required"] = True
+    changed["component_bundle_required"] = False
     _replace_record(manifest_path, 0, changed)
 
     errors = validate_acceptance(manifest_path)
 
+    assert any("component bundle must be explicitly required" in error for error in errors)
     assert any("does not contain every source record" in error for error in errors)
     assert any(
         "do not reference the exact component bundle" in error for error in errors
