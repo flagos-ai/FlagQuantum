@@ -48,7 +48,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   explicit isolated-container/SDK-redistribution decision; those remain
   separate review inputs. Until all required decisions are retained and
   reviewed, the SDK approval, project, sampling-quota, and live-provider gates
-  remain closed.
+  remain closed. A read-only recheck on 2026-10-07 showed the same SPQC-1000
+  balance (zero sampling credits and one optimization credit), an empty task
+  table with zero submitted tasks, and only a blank new-feedback form. No
+  response, ticket history, or durable submission identifier was exposed, so
+  the request and every external gate remain unresolved.
 - The authenticated SDK page currently offers platform downloads for Kaiwu
   1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
   submission. It also shows that an account-bound SDK authorization code exists,

@@ -47,7 +47,11 @@ input. The request did not cover the CPython 3.10 Linux distribution digest or
 an explicit isolated-container/SDK-redistribution decision; obtain those
 separately before approving the frozen environment. Do not copy account
 identifiers or SDK authorization codes into the repository while recording a
-response.
+response. A read-only recheck on 2026-10-07 still showed zero SPQC-1000
+sampling credits, one unused optimization credit, zero submitted tasks, and an
+empty new-feedback form rather than a reply or ticket history. This unchanged
+dashboard state is not proof that the request was delivered or reviewed and
+does not open any live gate.
 
 The authenticated SDK page currently offers Kaiwu 1.4.1 downloads and retains
 a 1.3.1 release-note entry stating that sample-mode task submission was added.
