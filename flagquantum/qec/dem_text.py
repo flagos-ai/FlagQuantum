@@ -47,6 +47,7 @@ than a construct it cannot reach.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TypeAlias
 
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
@@ -60,6 +61,15 @@ _REPEAT = "repeat"
 # and observables a shot of it flips, each sorted, deduplicated and relative to
 # the shifts in force at that line.
 _Entry = tuple[float, tuple[int, ...], tuple[int, ...]]
+
+# A text's instructions with its repeat blocks nested: a block is a
+# ``(count, body)`` pair whose body holds the same kind of list, so the nesting
+# a text states is the nesting this type states.
+_NestedInstructions: TypeAlias = "list[str | tuple[int, _NestedInstructions]]"
+
+# One frame of the unrolling walk: the instructions in hand, the index of the
+# next one to read, and how many iterations are left to run them.
+_UnrollFrame: TypeAlias = tuple[_NestedInstructions, int, int]
 
 
 def _target_index(token: str, prefix: str) -> int | None:
@@ -332,18 +342,18 @@ def _repeat_count(instruction: str) -> int:
     return int(count)
 
 
-def _structure(text: str) -> list[str | list]:
+def _structure(text: str) -> _NestedInstructions:
     """Return the text's instructions with its repeat blocks nested.
 
-    A block is a ``[count, instructions]`` pair in its parent's list, so the
+    A block is a ``(count, instructions)`` pair in its parent's list, so the
     nesting a text states is the nesting this returns. The parse is the whole of
     the format's structure: everything else is an instruction line, and a brace
     that does not open or close a block is refused here rather than reaching the
     instruction reader as a malformed target.
     """
 
-    root: list[str | list] = []
-    open_blocks: list[list[str | list]] = [root]
+    root: _NestedInstructions = []
+    open_blocks: list[_NestedInstructions] = [root]
     for instruction in _instructions(text):
         if instruction == _BLOCK_CLOSE:
             if len(open_blocks) == 1:
@@ -353,8 +363,8 @@ def _structure(text: str) -> list[str | list]:
                 )
             open_blocks.pop()
         elif instruction.endswith(_BLOCK_OPEN):
-            body: list[str | list] = []
-            open_blocks[-1].append([_repeat_count(instruction), body])
+            body: _NestedInstructions = []
+            open_blocks[-1].append((_repeat_count(instruction), body))
             open_blocks.append(body)
         elif _BLOCK_OPEN in instruction or _BLOCK_CLOSE in instruction:
             raise ValueError(
@@ -383,25 +393,24 @@ def _unroll_stim_text(text: str) -> Iterator[str]:
     difference between the two readers; the model either produces is the same.
     """
 
-    # ``[instructions, index, iterations left]``. The root frame runs once, so
-    # the same walk states a text with no block and one nested several deep.
-    stack: list[list] = [[_structure(text), 0, 1]]
+    # A frame is the instructions to read, the index of the next one and the
+    # iterations left, so the root frame runs once and the same walk states a
+    # text with no block and one nested several deep.
+    stack: list[_UnrollFrame] = [(_structure(text), 0, 1)]
     while stack:
-        frame = stack[-1]
-        body: list[str | list] = frame[0]
-        if frame[1] >= len(body):
-            if frame[2] > 1:
-                frame[2] -= 1
-                frame[1] = 0
+        body, index, iterations = stack[-1]
+        if index >= len(body):
+            if iterations > 1:
+                stack[-1] = (body, 0, iterations - 1)
                 continue
             stack.pop()
             continue
-        instruction = body[frame[1]]
-        frame[1] += 1
-        if isinstance(instruction, list):
+        instruction = body[index]
+        stack[-1] = (body, index + 1, iterations)
+        if isinstance(instruction, tuple):
             count, block = instruction
             if count:
-                stack.append([block, 0, count])
+                stack.append((block, 0, count))
         else:
             yield instruction
 
