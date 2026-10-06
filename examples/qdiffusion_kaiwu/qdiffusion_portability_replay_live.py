@@ -268,6 +268,11 @@ def run_portability_replay(
     precision_evidence = sampler.precision_evidence
     precision_complete = _precision_evidence_complete(sampler, receipts)
     verified_transport = real_provider_transport and isinstance(client, KaiwuSDKClient)
+    provider_use_proven = bool(
+        verified_transport
+        and provider_identity_complete
+        and sampler.remote_call_count > 0
+    )
     run_completed = failure is None
     portability_pass = bool(
         run_completed
@@ -301,8 +306,8 @@ def run_portability_replay(
         "observed_tensor_device": generated_device,
         "transport": "kaiwu_cim" if verified_transport else "injected_test",
         "pinned_sdk_client": verified_transport,
-        "qboson_hardware_used": verified_transport and run_completed,
-        "real_provider_evidence": verified_transport and run_completed,
+        "qboson_hardware_used": provider_use_proven,
+        "real_provider_evidence": provider_use_proven,
         "provider_identity_complete": provider_identity_complete,
         "provider_reported_target": provider_identity_complete,
         "qboson_target": next(iter(targets)) if len(targets) == 1 else None,

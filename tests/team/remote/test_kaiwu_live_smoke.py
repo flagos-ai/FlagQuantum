@@ -262,6 +262,44 @@ def test_live_smoke_retains_failed_task_and_stops_before_another_submission() ->
     assert record["hardware_acceptance"] is False
 
 
+def test_live_smoke_preserves_proven_provider_use_when_later_task_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _SecondTaskFailsClient(_CompletedClient):
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            if self.submissions == 2:
+                raise RuntimeError("second provider task failed")
+            return "Completed"
+
+    monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _SecondTaskFailsClient)
+    client = _SecondTaskFailsClient(expose_provider_identity=True)
+
+    record = run_live_smoke(
+        client=client,
+        task_prefix="partially-completed-smoke",
+        project_no="CPQC-test",
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="d" * 64,
+        sdk_approval_sha256="f" * 64,
+    )
+
+    assert client.submissions == 2
+    assert len(record["tasks"]) == 2
+    assert record["tasks"][0]["returned_samples"] == 10
+    assert record["tasks"][1]["returned_samples"] is None
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "RuntimeError"
+    assert record["live_provider_smoke_passed"] is False
+    assert record["provider_identity_complete"] is True
+    assert record["qboson_hardware_used"] is True
+    assert record["real_provider_evidence"] is True
+    assert record["hardware_acceptance"] is False
+
+
 def test_live_smoke_converts_keyboard_interrupt_to_failed_attempt_record() -> None:
     class _InterruptedClient(_CompletedClient):
         def query_status(

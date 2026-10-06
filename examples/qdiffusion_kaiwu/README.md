@@ -208,6 +208,14 @@ sequence stops without submitting its next task, and hardware acceptance stays
 closed. Failure records retain only a stable category and an empty message;
 arbitrary vendor or plugin exception text is never persisted.
 
+Provider-use facts are independent of whole-command acceptance. If a validated
+real-SDK result with provider task and target identity is returned before a
+later task or local step fails, `qboson_hardware_used` and
+`real_provider_evidence` remain true: the already-consumed provider work is not
+erased. `run_completed`, the relevant acceptance gate, and hardware acceptance
+remain false. A receipt-only timeout or failed attempt is retained for recovery
+but is not by itself sufficient to prove hardware use.
+
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
 private checkpoint directory, and an explicitly selected project. All
 quota-consuming entrypoints reject a missing, public, relative, or symlinked

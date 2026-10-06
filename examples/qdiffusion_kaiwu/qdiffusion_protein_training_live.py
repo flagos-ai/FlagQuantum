@@ -293,8 +293,7 @@ def run_training_seed(
     precision_evidence_complete = _precision_evidence_complete(sampler, receipts)
     verified_provider_transport = type(sampler.client) is KaiwuSDKClient
     qboson_hardware_used = bool(
-        failure is None
-        and verified_provider_transport
+        verified_provider_transport
         and provider_identity_complete
         and sampler.remote_call_count > 0
     )

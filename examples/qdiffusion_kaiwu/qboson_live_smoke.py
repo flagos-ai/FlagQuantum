@@ -233,6 +233,24 @@ def run_live_smoke(
             for record in records
         )
     )
+    provider_use_proven = bool(
+        real_provider_transport
+        and any(
+            isinstance(record["provider_task_id"], str)
+            and bool(record["provider_task_id"].strip())
+            and isinstance(record["provider_target"], str)
+            and bool(record["provider_target"].strip())
+            and type(record["returned_samples"]) is int
+            and record["returned_samples"] > 0
+            and isinstance(record["raw_status"], str)
+            and record["raw_status"].strip().lower()
+            in {"finished", "completed", "done", "success", "succeed", "succeeded"}
+            and record["fallback_occurred"] is False
+            and math.isfinite(record["minimum_energy"])
+            and math.isfinite(record["maximum_energy"])
+            for record in records
+        )
+    )
     hardware_acceptance = (
         real_provider_transport and smoke_passed and provider_identity_complete
     )
@@ -241,8 +259,8 @@ def run_live_smoke(
         "version": "1.0",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "transport": "kaiwu_cim" if real_provider_transport else "injected_test",
-        "real_provider_evidence": real_provider_transport and smoke_passed,
-        "qboson_hardware_used": real_provider_transport and smoke_passed,
+        "real_provider_evidence": provider_use_proven,
+        "qboson_hardware_used": provider_use_proven,
         "qboson_target": (
             next(iter(provider_targets)) if provider_identity_complete else None
         ),

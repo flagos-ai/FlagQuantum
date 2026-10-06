@@ -8,6 +8,7 @@ import stat
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 
@@ -250,6 +251,55 @@ def test_live_system_converts_keyboard_interrupt_to_failed_record(
     assert record["failure"] == {"type": "KeyboardInterrupt", "message": ""}
     assert record["remote_call_count"] == 0
     assert record["qboson_hardware_used"] is False
+    assert record["acceptance"] == {"system": "fail", "application": "not_run"}
+
+
+def test_live_system_preserves_proven_provider_use_after_local_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def fail_after_provider_use(
+        device: torch.device, *, sampler: object, **kwargs: object
+    ) -> dict[str, object]:
+        del device, kwargs
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        raise RuntimeError("local failure after provider use")
+
+    monkeypatch.setattr(system_module, "KaiwuSDKClient", _IdentityClient)
+    monkeypatch.setattr(
+        system_module, "_execute_qdiffusion_slice", fail_after_provider_use
+    )
+
+    record = run_live_system_probe(
+        client=_IdentityClient(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="test CPU",
+        project_no="CPQC-test",
+        task_prefix="failed-after-provider-use",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        real_provider_transport=True,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "RuntimeError"
+    assert record["remote_call_count"] == 1
+    assert record["pinned_sdk_client"] is True
+    assert record["qboson_hardware_used"] is True
+    assert record["real_provider_evidence"] is True
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
 
 

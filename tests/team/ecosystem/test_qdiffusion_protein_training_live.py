@@ -7,6 +7,9 @@ from typing import Any, cast
 
 import pytest
 
+from examples.qdiffusion_kaiwu import (
+    qdiffusion_protein_training_live as training_module,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
     _checkpoint_identity,
@@ -248,7 +251,7 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
 
 
 def test_training_seed_records_interruption_without_claiming_acceptance(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     workflow = _workflow_types()
     workflow.build_qdiffusion = lambda **kwargs: SimpleNamespace(
@@ -327,6 +330,7 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
             transfer_records=(transfer_record,),
         ),
     )
+    monkeypatch.setattr(training_module, "KaiwuSDKClient", object)
     receipt_records = [{"matrix_sha256": "1" * 64}]
     assert _precision_evidence_complete(sampler, receipt_records) is True
     sampler.precision_evidence = (
@@ -363,10 +367,10 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["transfer_manifest_sha256"] == "f" * 64
     assert record["environment_lock_sha256"] == "0" * 64
     assert record["failure"]["type"] == "KeyboardInterrupt"
-    assert record["transport"] == "injected_test"
-    assert record["pinned_sdk_client"] is False
-    assert record["real_provider_evidence"] is False
-    assert record["qboson_hardware_used"] is False
+    assert record["transport"] == "kaiwu_cim"
+    assert record["pinned_sdk_client"] is True
+    assert record["real_provider_evidence"] is True
+    assert record["qboson_hardware_used"] is True
     assert record["qboson_target"] == "SPQC-provider"
     assert record["qboson_task_ids"] == ["provider-task"]
     assert record["requested_samples"] == 10

@@ -623,6 +623,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   two smoke tasks must have distinct provider task IDs and one common printable
   provider target. That target is retained at smoke-record level and is checked
   against both task results before hardware acceptance can be true.
+- Provider use is now recorded independently from whole-workflow acceptance.
+  A completed, identity-bearing result through the exact SDK transport remains
+  `qboson_hardware_used=true` when a later smoke task, local QDiffusion step, or
+  artifact postflight fails, so consumed quota is not erased from evidence.
+  The run and acceptance gates still fail; a submitted receipt without a
+  validated result does not by itself claim hardware use.
 - Final validation now builds one global provider-task identity set across the
   Phase 2 smoke, both system probes, every protein-training seed, and the
   portability replay. Reusing one provider task ID across nominally distinct

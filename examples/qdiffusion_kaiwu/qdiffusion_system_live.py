@@ -305,6 +305,11 @@ def run_live_system_probe(
     verified_provider_transport = real_provider_transport and isinstance(
         client, KaiwuSDKClient
     )
+    provider_use_proven = bool(
+        verified_provider_transport
+        and provider_identity_complete
+        and sampler.remote_call_count > 0
+    )
     system_acceptance = bool(
         run_completed
         and verified_provider_transport
@@ -336,8 +341,8 @@ def run_live_system_probe(
         "observed_tensor_device": slice_record.get("generated_device"),
         "observed_gpu_model": observed_gpu,
         "transport": "kaiwu_cim" if verified_provider_transport else "injected_test",
-        "qboson_hardware_used": verified_provider_transport and run_completed,
-        "real_provider_evidence": verified_provider_transport and run_completed,
+        "qboson_hardware_used": provider_use_proven,
+        "real_provider_evidence": provider_use_proven,
         "pinned_sdk_client": verified_provider_transport,
         "provider_identity_complete": provider_identity_complete,
         "provider_reported_target": provider_identity_complete,
