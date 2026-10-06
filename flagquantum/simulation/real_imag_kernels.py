@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from itertools import product
 from math import prod
 from typing import Any, TypeAlias
 
@@ -114,6 +115,37 @@ def _canonical_bmm_layout(
     return layout
 
 
+def _group_axes(
+    tensor: torch.Tensor, permutation: tuple[int, ...], shape: tuple[int, ...]
+) -> torch.Tensor:
+    """Reorder ``tensor``'s axes and group them, whatever rank it carries.
+
+    Grouping an operand that is already in the target order is a view. Grouping
+    one that must first be transposed materializes a copy, and PyTorch performs
+    that copy through ``TensorIterator``, which refuses more than twenty-five
+    dimensions. A sliced wide network reaches that rank in both operands: an
+    unsliced twenty-four-qubit grid contracts a twenty-nine dimensional tensor
+    against a thirty dimensional one, and the second of the two is not in the
+    canonical order.
+
+    Above the ceiling the same copy is taken one slab at a time, with the
+    leading target axes fixed, which keeps every individual copy inside the
+    bound. The slabs are concatenated in row-major order over those axes, so the
+    result is the flat order the single copy would have produced.
+    """
+
+    reordered = tensor.permute(permutation)
+    if reordered.is_contiguous():
+        return reordered.reshape(shape)
+    head = reordered.ndim - _NATIVE_EINSUM_RANK_CEILING
+    if head <= 0:
+        return reordered.reshape(shape)
+    leading = [range(extent) for extent in reordered.shape[:head]]
+    return torch.cat(
+        [reordered[index].reshape(-1) for index in product(*leading)]
+    ).reshape(shape)
+
+
 def _canonical_bmm_inputs(
     equation: str, left: torch.Tensor, right: torch.Tensor
 ) -> tuple[tuple[torch.Tensor, ...], tuple[int, ...], tuple[int, ...]] | None:
@@ -129,8 +161,8 @@ def _canonical_bmm_inputs(
         _,
     ) = layout
     k = left.numel() // (b * m)
-    left_matrix = left.permute(left_permutation).reshape(b, m, k)
-    right_matrix = right.permute(right_permutation).reshape(b, k, n)
+    left_matrix = _group_axes(left, left_permutation, (b, m, k))
+    right_matrix = _group_axes(right, right_permutation, (b, k, n))
     return (left_matrix, right_matrix), canonical_shape, output_permutation
 
 
@@ -162,11 +194,9 @@ def _canonical_layout_pair(
     arithmetic is available as a batched matmul on rank-three operands without
     ever writing an equation over the network's full rank.
 
-    Grouping an operand that is contiguous in the source order is a view, so this
-    reaches every rank. Grouping one that must first be transposed materializes a
-    copy, which PyTorch performs through ``TensorIterator`` and bounds at
-    twenty-five dimensions; a pair that needs both a transposed grouped operand
-    and an operand above that bound stays out of reach of this helper.
+    Grouping is a view when an operand is already in the canonical order and a
+    transposed copy otherwise; ``_group_axes`` reaches past the copy's own rank
+    bound, so both operands are grouped at any rank.
     """
 
     (
@@ -178,8 +208,8 @@ def _canonical_layout_pair(
         _,
     ) = layout
     k = left.numel() // (b * m)
-    left_matrix = left.permute(left_permutation).reshape(b, m, k)
-    right_matrix = right.permute(right_permutation).reshape(b, k, n)
+    left_matrix = _group_axes(left, left_permutation, (b, m, k))
+    right_matrix = _group_axes(right, right_permutation, (b, k, n))
     left_parts = torch.view_as_real(left_matrix.resolve_conj().resolve_neg())
     right_parts = torch.view_as_real(right_matrix.resolve_conj().resolve_neg())
     pair = _bmm_real_imag_eager(
