@@ -152,7 +152,7 @@ def _apply_cataloged_controlled_rotation(
         apply_complex64_local_controlled_1q,
     )
 
-    matrix = _TARGET_MATRIX_BY_OPCODE[opcode](angles).contiguous()
+    matrix = _TARGET_MATRIX_BY_OPCODE[opcode](angles[:, None]).contiguous()
     if angles.shape == (1,):
         matrix = matrix[0]
     return apply_complex64_local_controlled_1q(
