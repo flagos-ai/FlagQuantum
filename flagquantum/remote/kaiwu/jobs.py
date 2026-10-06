@@ -27,6 +27,8 @@ from .contracts import (
     MatrixInput,
 )
 
+_MAX_PRIVATE_JSON_BYTES = 64 * 1024 * 1024
+
 
 def _validate_private_directory(path: Path, *, description: str) -> None:
     try:
@@ -182,6 +184,8 @@ def _read_private_json(path: str | Path) -> Any:
                 raise ValueError(
                     "Kaiwu receipt must be a private, regular, non-symlink file"
                 )
+            if metadata.st_size > _MAX_PRIVATE_JSON_BYTES:
+                raise ValueError("Kaiwu receipt exceeds the bounded size limit")
             with os.fdopen(
                 descriptor, "r", encoding="utf-8", closefd=False
             ) as stream:

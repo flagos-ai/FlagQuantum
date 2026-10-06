@@ -96,7 +96,9 @@ Both save and restore require the receipt's immediate parent to be an existing
 private, non-symlink directory; private file bits alone are insufficient when
 another user could replace the directory entry. Publication synchronizes both
 file contents and parent-directory metadata, and recovery rejects duplicate
-JSON object keys instead of accepting an ambiguous last value.
+JSON object keys instead of accepting an ambiguous last value. Generic receipt
+and authoritative SDK recovery JSON is capped at 64 MiB before parsing,
+bounding memory use while retaining room for a dense 1,000-spin matrix.
 
 The package is not re-exported from `flagquantum.remote` while the Ising task
 and result contracts remain under architecture review. In addition to the

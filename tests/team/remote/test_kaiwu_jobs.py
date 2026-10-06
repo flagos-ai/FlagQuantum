@@ -305,6 +305,18 @@ def test_restore_rejects_public_parent_directory(tmp_path: Path) -> None:
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 
+def test_restore_rejects_unbounded_receipt_before_parsing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    receipt_path = tmp_path / "oversized.json"
+    receipt_path.write_bytes(b" " * 33)
+    receipt_path.chmod(0o600)
+    monkeypatch.setattr(jobs_module, "_MAX_PRIVATE_JSON_BYTES", 32)
+
+    with pytest.raises(ValueError, match="bounded size"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
 def test_restore_rejects_parent_replacement_during_read(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

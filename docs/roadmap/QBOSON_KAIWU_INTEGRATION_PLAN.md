@@ -127,7 +127,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   Receipt reads now keep the no-follow file descriptor open through parsing and
   recheck its complete stable metadata plus visible leaf binding afterwards;
   leaf replacement and non-standard `NaN`/`Infinity` constants fail before a
-  recoverable job is constructed.
+  recoverable job is constructed. Generic receipts and authoritative SDK
+  recovery bundles are also capped at 64 MiB before JSON parsing, preventing an
+  unbounded same-user file from exhausting memory at the recovery boundary
+  while retaining capacity for a dense 1,000-spin matrix.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
