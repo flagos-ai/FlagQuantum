@@ -50,6 +50,12 @@ MATCHED_SPEED_PAIR = (
     / "tensor_network_matched_speed_pair"
     / "tensor_network_matched_speed_pair.json"
 )
+MATCHED_SPEED_RELEASE_PAIR = (
+    ROOT
+    / "benchmarks/results/smoke/release_candidates"
+    / "tensor_network_matched_speed_release_pair"
+    / "tensor_network_matched_speed_release_pair.json"
+)
 CLAIM_KEYS = (
     "claim_evidence_type",
     "release_gate_allowed",
@@ -731,6 +737,56 @@ def test_the_committed_matched_speed_pair_answers_every_blocker_but_the_premise(
     assert audit["distribution_semantics"] == "sharded_across_ranks"
     assert audit["scalability_claim_allowed"] is True
     assert audit["release_gate_allowed"] is True
+
+
+def test_the_committed_release_pair_is_the_claim_free_measurement_plus_its_claim():
+    """The promoted candidate must be the measured run with the claim attached.
+
+    The test above asserts the collapse on a claim it adds in memory. This one
+    asserts it on the payload the campaign actually committed, because a claim
+    added in a test proves what the gate would do and not what the repository
+    holds. Three things have to hold for the committed release payload to be that
+    measurement rather than a second run: it must be unedited since it was
+    signed, it must carry the claim-free candidate's whole provenance record, and
+    its evidence must differ from the claim-free candidate's evidence in the four
+    claim keys and nothing else. Only then is the collapsed blocker set a
+    statement about the measured pair.
+    """
+
+    claiming = json.loads(MATCHED_SPEED_RELEASE_PAIR.read_text(encoding="utf-8"))
+    measured = _committed_matched_speed_pair()
+    assert claiming["artifact_class"] == "measured_production_run"
+    assert claiming["evidence_scope"] == measured["evidence_scope"]
+    rebuilt = _reseal(claiming["evidence"], claiming["provenance"], claiming)
+    assert rebuilt["integrity"]["content_sha256"] == (
+        claiming["integrity"]["content_sha256"]
+    ), "the committed release payload was edited after it was signed"
+    assert claiming["provenance"] == measured["provenance"], (
+        "a re-seal must reuse the measured run's provenance; a payload whose "
+        "provenance differs describes a different run"
+    )
+
+    added = sorted(set(claiming["evidence"]) - set(measured["evidence"]))
+    assert added == sorted(CLAIM_KEYS), (
+        "the release payload must add the claim to the measured evidence rather "
+        "than restate it"
+    )
+    for key in CLAIM_KEYS:
+        assert key not in measured["evidence"]
+    shared = set(claiming["evidence"]) & set(measured["evidence"])
+    assert all(
+        claiming["evidence"][key] == measured["evidence"][key] for key in shared
+    ), "the claim must not rewrite a measured value"
+
+    passed, blockers = evaluate_tensor_network_release(
+        [rebuilt], load_manifest(), signing_key=KEY
+    )
+    assert not passed
+    assert blockers == (
+        "capacity_premise_not_established",
+    ), "the committed release payload must answer every blocker but the premise"
+    audit = validate_distributed_claim_evidence(claiming["evidence"]).summary()
+    assert audit["valid"] is True, audit["errors"]
 
 
 def test_the_candidate_reports_the_speedup_the_gate_requires():
