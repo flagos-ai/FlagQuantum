@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import platform
+import shlex
+import socket
 import statistics
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -17,6 +21,13 @@ from flagquantum.kernels.triton.mps_sampling_collapse import (
     fused_mps_sampling_collapse,
 )
 
+RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_sampling_collapse.v1"
+EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_sampling_collapse.v1"
+SEMANTIC_ID = "mps.sampling.collapse_wire.local"
+IMPLEMENTATION_ID = "FQKI-TRITON-MPS-008-A"
+RUNNER = "benchmarks/internal/evidence/mps_sampling_collapse_probe.py"
+HOSTS = ("jp-a800-171", "jp-a800-172")
+COMPILER_LANES = ("stock_triton", "flagtree")
 SHAPE_MATRIX = (
     (32, 1, 1),
     (128, 8, 16),
@@ -67,21 +78,11 @@ def _measure(
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--host-label", required=True)
-    parser.add_argument(
-        "--compiler-lane", choices=("stock_triton", "flagtree"), required=True
-    )
-    parser.add_argument("--source-revision", required=True)
-    parser.add_argument("--warmup", type=int, default=10)
-    parser.add_argument("--repeats", type=int, default=30)
-    parser.add_argument("--group-size", type=int, default=10)
-    parser.add_argument("--seed", type=int, default=261_006)
-    args = parser.parse_args()
+def collect_run(args: argparse.Namespace) -> dict[str, object]:
+    """Execute one host/compiler lane of the fixed MPS-008 matrix."""
+
     if not torch.cuda.is_available():
-        raise SystemExit("CUDA is required")
+        raise RuntimeError("CUDA is required for MPS-008 benchmark evidence")
 
     distribution, version, integration_path, identity_status = (
         triton_compiler_provenance()
@@ -162,10 +163,18 @@ def main() -> None:
         )
 
     properties = torch.cuda.get_device_properties(0)
-    payload = {
-        "schema": "flagquantum.kernel_probe.mps_sampling_collapse.v1",
+    return {
+        "schema": RUN_SCHEMA,
+        "semantic_id": SEMANTIC_ID,
+        "implementation_id": IMPLEMENTATION_ID,
+        "runner": RUNNER,
         "source_revision": args.source_revision,
+        "command": shlex.join(sys.argv),
         "host_label": args.host_label,
+        "reported_hostname": socket.gethostname(),
+        "execution_semantics": "single_device_fast_path",
+        "release_gate_allowed": False,
+        "scalability_claim_allowed": False,
         "compiler_lane": args.compiler_lane,
         "compiler": {
             "distribution": distribution,
@@ -173,12 +182,108 @@ def main() -> None:
             "integration_path": integration_path,
             "identity_status": identity_status,
         },
-        "device": {"name": properties.name, "total_memory": properties.total_memory},
-        "warmup": args.warmup,
-        "repeats": args.repeats,
-        "group_size": args.group_size,
+        "environment": {
+            "python": platform.python_version(),
+            "pytorch": torch.__version__,
+            "cuda_runtime": torch.version.cuda,
+            "gpu": properties.name,
+            "gpu_total_memory_bytes": properties.total_memory,
+        },
+        "measurement": {
+            "warmup": args.warmup,
+            "repeats": args.repeats,
+            "group_size": args.group_size,
+            "synchronization": "once after warmup and once per timed group",
+            "statistic": "median synchronized wall seconds per invocation",
+        },
+        "seed": args.seed,
         "cases": cases,
     }
+
+
+def aggregate_runs(paths: list[Path]) -> dict[str, object]:
+    """Validate and combine the canonical dual-host/compiler evidence matrix."""
+
+    runs = [json.loads(path.read_text()) for path in paths]
+    if len(runs) != len(HOSTS) * len(COMPILER_LANES):
+        raise ValueError("MPS-008 evidence requires exactly four raw runs")
+    if any(run.get("schema") != RUN_SCHEMA for run in runs):
+        raise ValueError("MPS-008 raw-run schema mismatch")
+    identities = {(run["host_label"], run["compiler_lane"]) for run in runs}
+    expected_identities = {
+        (host, compiler_lane) for host in HOSTS for compiler_lane in COMPILER_LANES
+    }
+    if identities != expected_identities:
+        raise ValueError("MPS-008 evidence host/compiler matrix is incomplete")
+    revisions = {run["source_revision"] for run in runs}
+    measurements = {json.dumps(run["measurement"], sort_keys=True) for run in runs}
+    if len(revisions) != 1 or len(measurements) != 1:
+        raise ValueError("MPS-008 evidence must use one source and measurement policy")
+    expected_shapes = [
+        {
+            "batch": batch,
+            "right_bond": right_dim,
+            "next_right_bond": next_right_dim,
+        }
+        for batch, right_dim, next_right_dim in SHAPE_MATRIX
+    ]
+    if any([case["shape"] for case in run["cases"]] != expected_shapes for run in runs):
+        raise ValueError("MPS-008 evidence shape matrix mismatch")
+
+    cases = [case for run in runs for case in run["cases"]]
+    speedups = [float(case["speedup_over_pytorch"]) for case in cases]
+    maximum_absolute_error = max(
+        float(case["maximum_absolute_error"]) for case in cases
+    )
+    maximum_relative_l2_error = max(float(case["relative_l2_error"]) for case in cases)
+    all_cases_win = all(speedup > 1.0 for speedup in speedups)
+    return {
+        "schema": EVIDENCE_SCHEMA,
+        "semantic_id": SEMANTIC_ID,
+        "implementation_id": IMPLEMENTATION_ID,
+        "source_revision": revisions.pop(),
+        "runner": RUNNER,
+        "execution_semantics": "single_device_fast_path",
+        "release_gate_allowed": False,
+        "scalability_claim_allowed": False,
+        "measurement": runs[0]["measurement"],
+        "shape_matrix": expected_shapes,
+        "runs": sorted(runs, key=lambda run: (run["host_label"], run["compiler_lane"])),
+        "aggregate": {
+            "case_count": len(cases),
+            "minimum_speedup_over_pytorch": min(speedups),
+            "maximum_speedup_over_pytorch": max(speedups),
+            "maximum_absolute_error": maximum_absolute_error,
+            "maximum_relative_l2_error": maximum_relative_l2_error,
+            "all_cases_win": all_cases_win,
+            "decision": (
+                "eligible_for_dispatch_evaluation"
+                if all_cases_win
+                else "retain_experimental"
+            ),
+        },
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command_name", required=True)
+    run = subparsers.add_parser("run")
+    run.add_argument("--output", type=Path, required=True)
+    run.add_argument("--host-label", choices=HOSTS, required=True)
+    run.add_argument("--compiler-lane", choices=COMPILER_LANES, required=True)
+    run.add_argument("--source-revision", required=True)
+    run.add_argument("--warmup", type=int, default=10)
+    run.add_argument("--repeats", type=int, default=30)
+    run.add_argument("--group-size", type=int, default=10)
+    run.add_argument("--seed", type=int, default=261_006)
+    aggregate = subparsers.add_parser("aggregate")
+    aggregate.add_argument("--input", type=Path, nargs="+", required=True)
+    aggregate.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    payload = (
+        collect_run(args) if args.command_name == "run" else aggregate_runs(args.input)
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps(payload, indent=2))
