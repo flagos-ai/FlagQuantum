@@ -701,7 +701,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   application, and portability objects now have closed field sets. Both host
   records must explicitly require the complete component bundle, so a
   hand-authored manifest cannot omit or disable that flag to bypass validation
-  of the source components.
+  of the source components. Their fixed limitations also classify the outcome
+  as development evidence, distinguish independent single-device A800 runs
+  from distributed or domestic-accelerator support, and reject performance,
+  production, quantum-advantage, or scalability claims.
 - Every QDiffusion configuration and evidence reader now uses one strict JSON
   parser that rejects duplicate object keys at every nesting level. A source
   scan in the credential-free golden path prevents frozen config, environment

@@ -43,6 +43,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
 )
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
+    FINAL_ACCEPTANCE_LIMITATIONS,
     MANIFEST_SCHEMA,
     RECORD_SCHEMA,
     _validate_application,
@@ -222,6 +223,7 @@ def _final_host_record(
         },
         "transfer_accounting": system.get("transfer_accounting"),
         "acceptance": {"system": "pass", "application": application},
+        "limitations": list(FINAL_ACCEPTANCE_LIMITATIONS),
         "component_bundle_required": True,
     }
 

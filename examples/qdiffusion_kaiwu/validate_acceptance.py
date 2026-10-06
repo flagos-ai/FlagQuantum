@@ -354,6 +354,13 @@ PORTABILITY_LIMITATIONS = (
     "Final acceptance also requires both system gates and all primary-host seeds.",
     "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
 )
+FINAL_ACCEPTANCE_LIMITATIONS = (
+    "This record establishes development acceptance only.",
+    "The two host records are independent single-device runs and do not establish distributed execution.",
+    "These runs use NVIDIA A800 devices and do not establish domestic-accelerator support.",
+    "Application evidence is limited to the frozen seeds, sample size, artifacts, and recorded environment.",
+    "No performance superiority, production support, quantum advantage, or scalability claim is made.",
+)
 TASK_RECEIPT_FIELDS = frozenset(
     {
         "schema",
@@ -450,6 +457,7 @@ FINAL_RECORD_COMMON_FIELDS = frozenset(
         "generation",
         "transfer_accounting",
         "acceptance",
+        "limitations",
         "component_bundle_required",
         "system_evidence_sha256",
     }
@@ -1733,6 +1741,8 @@ def _validate_system_record(
         errors.append(f"{label}: secret redaction is not proven")
     if record.get("component_bundle_required") is not True:
         errors.append(f"{label}: component bundle must be explicitly required")
+    if record.get("limitations") != list(FINAL_ACCEPTANCE_LIMITATIONS):
+        errors.append(f"{label}: final claim limitations differ")
     artifacts = _mapping(record.get("artifacts"), f"{label}.artifacts", errors)
     artifact_config_fields = {
         "dataset_sha256": "dataset",

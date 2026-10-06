@@ -393,9 +393,13 @@ retaining the same outer record shape. The inputs must be absolute, private
 regular files rather than symlinks. The final manifest, every member reference,
 both aggregated host records, and their artifact, precision, training,
 generation, transfer, metric, application, and portability objects use closed
-field sets as well. Both host records must explicitly require the complete
-component bundle; omitting or disabling that flag cannot bypass source-record
-validation. Final validation also reconstructs the execution timeline:
+field sets as well. Both host records retain an exact fixed limitations list
+that classifies the result as development evidence, distinguishes the two
+single-device A800 runs from distributed or domestic-accelerator support, and
+rejects performance, production, quantum-advantage, or scalability claims.
+Both host records must explicitly require the complete component bundle;
+omitting or disabling that flag cannot bypass source-record validation. Final
+validation also reconstructs the execution timeline:
 component timestamps must be UTC and follow
 preregistration, SDK review, Phase 2 smoke, their remote submissions, and the
 appropriate system/training prerequisites. Assembly

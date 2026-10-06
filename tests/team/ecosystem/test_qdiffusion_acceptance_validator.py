@@ -14,6 +14,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     COMPONENT_FIELDS_BY_SCHEMA,
     CONFIG_FIELDS,
     CONFIG_SECTION_FIELDS,
+    FINAL_ACCEPTANCE_LIMITATIONS,
     METRIC_NAMES,
     _validate_component_bundle,
     _validate_component_field_set,
@@ -24,6 +25,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_precision_evidence,
     _validate_provider_result_schema,
     _validate_sampling_receipt,
+    _validate_system_record,
     validate_acceptance,
 )
 
@@ -182,6 +184,24 @@ def test_final_host_record_and_nested_field_sets_are_closed() -> None:
                 changed, label="record", errors=errors
             )
             assert any("closed schema" in error for error in errors)
+
+
+def test_final_host_record_rejects_changed_claim_limitations() -> None:
+    record = _record("jp-a800-171", "primary", "c" * 64, "d" * 64)
+    record["limitations"].append("production-ready")
+    config = _config()
+    config["software"]["environment_lock_sha256"] = "d" * 64
+    errors: list[str] = []
+
+    _validate_system_record(
+        record,
+        config=config,
+        config_sha256="c" * 64,
+        label="record",
+        errors=errors,
+    )
+
+    assert "record: final claim limitations differ" in errors
 
 
 def test_system_component_nested_fields_reject_extensions_and_false_failures() -> None:
@@ -796,6 +816,7 @@ def _record(
             "system": "pass",
             "application": "pass" if role == "primary" else "not_run",
         },
+        "limitations": list(FINAL_ACCEPTANCE_LIMITATIONS),
         "component_bundle_required": True,
         "system_evidence_sha256": ("a" * 64 if role == "primary" else "b" * 64),
     }
