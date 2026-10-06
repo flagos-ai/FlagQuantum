@@ -35,7 +35,7 @@ _ARTIFACT = (
     / "local"
     / "statevector_reversible_3q_dispatch_a800.json"
 )
-_EVIDENCE_REVISION = "623732265bc9c2f361ee310b99f1ff02644a3de6"
+_EVIDENCE_REVISION = "cfd617a611474fadc8956c76a4ec18ee589b42e3"
 
 
 def _timing(seconds: float) -> dict[str, Any]:
@@ -152,8 +152,8 @@ def test_checked_in_sv013_dispatch_evidence_is_exact_and_profitable() -> None:
     }
     aggregate = payload["aggregate"]
     assert aggregate["case_count"] == 16
-    assert aggregate["minimum_public_speedup_over_pytorch"] > 1.53
-    assert aggregate["maximum_public_speedup_over_pytorch"] > 10.82
+    assert aggregate["minimum_public_speedup_over_pytorch"] > 1.57
+    assert aggregate["maximum_public_speedup_over_pytorch"] > 5.12
     assert aggregate["maximum_absolute_error"] == 0.0
     assert aggregate["maximum_relative_l2_error"] == 0.0
     assert aggregate["all_cases_meet_performance_floor"] is True

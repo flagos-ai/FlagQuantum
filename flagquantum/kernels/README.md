@@ -408,7 +408,7 @@ checked-in
 [`statevector_reversible_3q_dispatch_a800.json`](../../benchmarks/results/local/statevector_reversible_3q_dispatch_a800.json)
 artifact applies the same 30-by-10 counterbalanced protocol to four public
 dispatch cases on both hosts and compiler lanes. All 16 comparisons are
-bitwise exact and win by `1.539x` through `10.825x`; its aggregate decision is
+bitwise exact and win by `1.571x` through `5.125x`; its aggregate decision is
 `default_dispatch_enabled`. This is bounded single-device development
 evidence, not a release or distributed scalability claim. Reproduce or
 validate the direct wrapper with
