@@ -5,6 +5,13 @@
   "source_revision": "5aef53e40f73924a718dcf866be30ecb5399037c",
   "runner": "benchmarks/internal/evidence/statevector_local_2q_probe.py",
   "execution_semantics": "single_device_fast_path",
+  "distribution_semantics": "single_device_fast_path",
+  "claim_evidence_type": "development_smoke",
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-device kernel benchmark is not distributed scalability evidence"
+  ],
   "release_gate_allowed": false,
   "scalability_claim_allowed": false,
   "measurement": {

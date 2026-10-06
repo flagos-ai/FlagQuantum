@@ -126,6 +126,11 @@ def test_checked_in_a800_evidence_is_canonical_and_profitable() -> None:
     assert payload["source_revision"] == _EVIDENCE_REVISION
     assert payload["semantic_id"] == SEMANTIC_ID
     assert payload["implementation_id"] == IMPLEMENTATION_ID
+    assert payload["distribution_semantics"] == "single_device_fast_path"
+    assert payload["claim_evidence_type"] == "development_smoke"
+    assert payload["non_release_evidence"] is True
+    assert payload["benchmark_evidence_class"] == "local_non_release"
+    assert payload["scalability_blockers"]
     assert payload["aggregate"]["case_count"] == 20
     assert payload["aggregate"]["minimum_speedup_over_pytorch"] > 1.0
     assert payload["aggregate"]["maximum_absolute_error"] < 2.0e-5
