@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+from torch import Tensor
+
 if TYPE_CHECKING:
+    from torch import Generator
+
     from .circuit import Circuit
     from .core.ir import CircuitIR
+    from .gradients import GradientResult
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
@@ -120,13 +125,15 @@ def run(
             )
             measurements = import_module(".observables", __package__).lower_outputs(
                 outputs,
-                n_wires=ir.n_wires,
+                # ``lower_outputs`` took the qubit spelling; ``CircuitIR.n_wires``
+                # keeps the old one because it is a frozen payload key.
+                n_qubits=ir.n_wires,
                 shots=selected_shots,
                 seed=selected_seed,
             )
             import_module(".runtime.measurements", __package__).validate_measurements(
                 measurements,
-                n_wires=ir.n_wires,
+                n_qubits=ir.n_wires,
             )
         elif shots is not None:
             raise TypeError(
@@ -242,6 +249,49 @@ def run(
     )
 
 
+def gradient(
+    program: Callable[[Tensor], Any],
+    parameters: Tensor,
+    loss: Callable[[Any], Tensor] | None = None,
+    *,
+    method: str = "auto",
+    step: float | None = None,
+    directions: int = 1,
+    generator: Generator | None = None,
+) -> GradientResult:
+    """Differentiate one scalar loss with respect to circuit parameters.
+
+    ``method="auto"`` measures the program rather than trusting a declaration: it
+    uses reverse-mode PyTorch autograd when the loss at ``parameters`` carries a
+    graph, the exact per-opcode parameter-shift rule when a circuit is available,
+    and central finite differences otherwise. The resolved method is reported on
+    the result, so a fallback is never silent. ``method="adjoint"`` is refused,
+    because FlagQuantum has no standalone adjoint entry point.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> theta = torch.tensor([0.3], dtype=torch.float64)
+        >>> result = fq.gradient(
+        ...     lambda p: fq.Circuit(1).rx(0, theta=p[0]).expectation_z(0), theta
+        ... )
+        >>> result.method
+        'autograd'
+    """
+
+    from .gradients import gradient as differentiate
+
+    return differentiate(
+        program,
+        parameters,
+        loss,
+        method=method,
+        step=step,
+        directions=directions,
+        generator=generator,
+    )
+
+
 def plan(
     program: Circuit | CircuitIR,
     *,
@@ -260,14 +310,14 @@ def plan(
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     measurements = import_module(".observables", __package__).lower_outputs(
         outputs,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         shots=getattr(options, "shots", None),
         seed=getattr(options, "seed", None),
     )
     if measurements is not None:
         import_module(".runtime.measurements", __package__).validate_measurements(
             measurements,
-            n_wires=ir.n_wires,
+            n_qubits=ir.n_wires,
         )
     from .runtime.planner import plan as plan_execution
 
@@ -276,6 +326,35 @@ def plan(
         options=options,
         measurements=measurements,
         noise_model=noise_model,
+    )
+
+
+def from_openqasm(source: str) -> Any:
+    """Import OpenQASM 2 or OpenQASM 3 text as a FlagQuantum program.
+
+    This is the inverse of ``emit_openqasm``: it reads the canonical subset
+    FlagQuantum writes and refuses everything else with an issue code, so an
+    imported program is never an approximation of the text.
+
+    Args:
+        source: The complete text of one OpenQASM program.
+
+    Returns:
+        An :class:`~flagquantum.compiler.openqasm_import.OpenQASMImport`, which
+        exposes the imported instructions, the declared register width, the
+        qubit behind each classical bit, and ``to_circuit``.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> program = fq.from_openqasm("OPENQASM 2.0;\\ninclude \\"qelib1.inc\\";\\n"
+        ...     "qreg q[2];\\ncreg c[2];\\nh q[0];\\ncx q[0], q[1];\\n"
+        ...     "measure q[0] -> c[0];\\nmeasure q[1] -> c[1];")
+        >>> [instruction.name for instruction in program.instructions]
+        ['h', 'cx']
+    """
+
+    return import_module(".compiler.openqasm_import", __package__).import_openqasm(
+        source
     )
 
 

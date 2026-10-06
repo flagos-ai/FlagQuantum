@@ -50,12 +50,17 @@ reader does not duplicate. ``flatten_loops=True`` is not enough on its own:
 Stim still emits ``repeat`` for a long enough circuit, which the test below
 measures.
 
-The probability digits are lossy on the way out. ``str(model)`` prints 17
-significant digits, so the in-memory probability and the one this reader returns
-differ by at most one unit in the last place; across the 240-model developer-time
-sweep described in ``flagquantum/qec/IMPLEMENTATION.md`` the largest relative
-difference is 4.9e-16. The text is the interchange format, so the text's value is
-the one that survives, and the two readers agree exactly on it.
+The probability digits are stim's printer to choose. ``str(model)`` writes at
+``std::setprecision(std::numeric_limits<long double>::digits10 + 1)``, so
+nineteen significant digits on the x86-64 Linux runners, where ``long double``
+is the 80-bit extended type, and sixteen on arm64 macOS, where it is a double.
+Seventeen digits name a double uniquely, so the former returns the identical
+double for every mechanism while the latter can differ from the in-memory
+probability in the last place; across the 240-model developer-time sweep
+described in ``flagquantum/qec/IMPLEMENTATION.md`` the largest relative
+difference measured on the sixteen-digit platform was 4.9e-16. The text is the
+interchange format, so the text's value is the one that survives, and the two
+readers agree exactly on it.
 
 Stim is an optional dependency, so this file skips when it is absent.
 """
@@ -424,7 +429,7 @@ def test_the_surface_code_declares_the_detector_shape_stim_declares(
     """
 
     code = RotatedSurfaceCode(distance=distance)
-    x_checks = sum(1 for check in code.checks if check.stabilizer.x_wires)
+    x_checks = sum(1 for check in code.checks if check.stabilizer.x_qubits)
     z_checks = len(code.checks) - x_checks
     memory = build_memory_circuit(code, rounds=rounds)
 
@@ -439,3 +444,78 @@ def test_the_surface_code_declares_the_detector_shape_stim_declares(
         z_checks * (rounds + 1) + x_checks * (rounds - 1)
     )
     assert len(memory.detectors.detectors) < (x_checks + z_checks) * (rounds + 1)
+
+
+def _sampled_rates(text: str, shots: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """Stim's own marginals for a detector error model text.
+
+    The sampler is the ground truth for what the text means, because the text is
+    a statement about the distribution and not about a parse tree.
+    """
+
+    det, obs = (
+        torch.as_tensor(part)
+        for part in stim.DetectorErrorModel(text)
+        .compile_sampler()
+        .sample(shots=shots)[:2]
+    )
+    return det.to(torch.float64).mean(dim=0), obs.to(torch.float64).mean(dim=0)
+
+
+def test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not() -> (
+    None
+):
+    """The cost of the decomposition suggestion, measured rather than asserted.
+
+    Upstream offers the same flag, so the alignment is that this reader offers
+    the same two readings and that the default one is stim's. Which reading stim
+    itself means is not a matter of taste: stim's sampler on the same text is the
+    reference, and at 200000 shots a rate near 0.15 carries a standard error of
+    about 0.0008, so the 0.004 tolerance sits at five standard errors.
+
+    The default reading is inside it -- worst measured deviation 0.0022 on the
+    detectors and 0.0016 on the observables. Expanding the components at the
+    parent probability is not: it holds the detector marginals (0.0022) but
+    misses the observable ones by 0.048, twelve times the tolerance and sixty
+    times the standard error. That separation is the point of the test. A
+    tolerance that both readings pass would not be evidence about either.
+    """
+
+    text = str(_decomposing_circuit().detector_error_model(decompose_errors=True))
+    assert "^" in text
+    det, obs = _sampled_rates(text, shots=200000)
+
+    stated = DetectorErrorModel.from_stim_text(text)
+    expanded = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+    # The two readings really are different models of the same text.
+    assert expanded.num_errors > stated.num_errors
+
+    stated_observable = float((stated.observable_rates() - obs).abs().max())
+    expanded_observable = float((expanded.observable_rates() - obs).abs().max())
+
+    assert float((stated.detector_rates() - det).abs().max()) < 0.004
+    assert stated_observable < 0.004
+    assert expanded_observable > 0.01
+    assert expanded_observable > stated_observable
+
+
+def test_stim_reads_a_detector_named_twice_as_a_symmetric_difference() -> None:
+    """The rule both the default reading and stim use, on the text that shows it.
+
+    ``D0`` is named in both groups, so the line's signature is ``D1`` alone and
+    ``D0`` never flips. The suggestion reading instead returns one mechanism per
+    group, which puts ``D0`` at probability 0.18 -- far above the 0.002 a
+    standard error at this shot count would allow -- so the assertion tells the
+    two readings apart instead of rounding them together.
+    """
+
+    text = "error(0.1) D0 D1 ^ D0\ndetector D0\ndetector D1\n"
+    det, _ = _sampled_rates(text, shots=200000)
+
+    stated = DetectorErrorModel.from_stim_text(text)
+    expanded = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+    assert float(det[0]) < 0.004
+    assert float((stated.detector_rates() - det).abs().max()) < 0.008
+    assert float(expanded.detector_rates()[0]) == pytest.approx(0.18)

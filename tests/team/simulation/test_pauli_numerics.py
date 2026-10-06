@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from flagquantum.simulation.pauli import (
-    infer_n_wires_from_dense_state,
+    infer_n_qubits_from_dense_state,
     pauli_product_density_expectation,
     pauli_product_operator,
     pauli_product_statevector_expectation,
@@ -39,9 +39,9 @@ def test_pauli_product_matches_for_statevector_density_and_dense_operator() -> N
 
 
 def test_dense_state_dimension_must_be_a_power_of_two() -> None:
-    assert infer_n_wires_from_dense_state(torch.zeros(2, 8)) == 3
+    assert infer_n_qubits_from_dense_state(torch.zeros(2, 8)) == 3
     with pytest.raises(ValueError, match="power of two"):
-        infer_n_wires_from_dense_state(torch.zeros(2, 6))
+        infer_n_qubits_from_dense_state(torch.zeros(2, 6))
 
 
 @pytest.mark.parametrize("name", ("rx", "ry", "rz"))

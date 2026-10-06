@@ -95,7 +95,7 @@ class _DensityMatrixTarget:
                 torch.Tensor,
                 self.noise_model.apply_readout_probabilities(
                     probabilities,
-                    n_wires=self.n_wires,
+                    n_qubits=self.n_wires,
                 ),
             )
             indices = torch.arange(
@@ -135,10 +135,10 @@ def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if any(wire < 0 or wire >= n_wires for wire in normalized):
         raise ValueError(
-            f"measurement wires {normalized!r} are outside a {n_wires}-qubit circuit"
+            f"measurement qubits {normalized!r} are outside a {n_wires}-qubit circuit"
         )
     if len(set(normalized)) != len(normalized):
-        raise ValueError("measurement wires must be unique")
+        raise ValueError("measurement qubits must be unique")
     return normalized
 
 
@@ -177,16 +177,16 @@ def _reduced_joint_marginal(
     *,
     n_wires: int,
 ) -> torch.Tensor:
-    """Sum a full probability distribution down to the requested wires.
+    """Sum a full probability distribution down to the requested qubits.
 
     ``probabilities`` is one value per basis state, ``(batch, 2 ** n_wires)`` and
-    big-endian per wire, which is the convention a density matrix's diagonal and
+    big-endian per qubit, which is the convention a density matrix's diagonal and
     a statevector's squared amplitudes already share. Reducing that tensor is a
     reshape and a sum, so the cost is one pass over a distribution that is
     already in memory rather than one full-state contraction per parity term.
 
-    The axes that survive come out in wire order, so a request that named its
-    wires out of order is permuted back before the reshape. Getting that wrong
+    The axes that survive come out in qubit order, so a request that named its
+    qubits out of order is permuted back before the reshape. Getting that wrong
     would silently transpose the marginal rather than fail, which is why the
     order is restored here, in the one place every caller goes through.
 
@@ -211,7 +211,17 @@ def _reduced_joint_marginal(
         marginal = marginal.permute(permutation)
     marginal = marginal.reshape(probabilities.shape[0], 2 ** len(wires))
 
+    return _normalize_joint_marginal(marginal)
+
+
+def _normalize_joint_marginal(marginal: torch.Tensor) -> torch.Tensor:
+    """Preserve the dense-result normalization contract for either route."""
+
     total = marginal.sum(dim=-1, keepdim=True)
+    if marginal.is_cuda:
+        normalize = ((total - 1).abs() > _TRACE_TOLERANCE).any() & (total > 0).all()
+        denominator = torch.where(normalize, total, torch.ones_like(total))
+        return marginal / denominator
     if bool(((total - 1).abs() > _TRACE_TOLERANCE).any()) and bool((total > 0).all()):
         marginal = marginal / total
     return marginal
@@ -229,7 +239,7 @@ def _ideal_probabilities(output: Any, n_wires: int) -> torch.Tensor | None:
     returns ``None`` and keeps the parity path. That is not a preference but a
     boundary: those targets can answer ``probabilities()`` by materialising a
     dense state of ``2 ** n_wires`` amplitudes, which is the cost they exist to
-    avoid, and at 24 wires that made a 0.5 ms marginal take 330 ms.
+    avoid, and at 24 qubits that made a 0.5 ms marginal take 330 ms.
     """
 
     if not isinstance(output, torch.Tensor) or not output.is_complex():
@@ -251,13 +261,37 @@ def _joint_marginal_probabilities(
 ) -> torch.Tensor | None:
     """Reduce a dense result to one joint marginal, or ``None`` if it is not one."""
 
+    if (
+        noise_model is None
+        and isinstance(output, torch.Tensor)
+        and output.is_complex()
+        and output.ndim == 2
+        and output.shape[-1] == 2**n_wires
+    ):
+        if wires == tuple(range(n_wires)):
+            from .statevector_probability_dispatch import (
+                _try_apply_cataloged_statevector_probabilities,
+            )
+
+            full = _try_apply_cataloged_statevector_probabilities(output)
+            if full is not None:
+                return _normalize_joint_marginal(full)
+
+        from .statevector_measurement_dispatch import (
+            _try_apply_cataloged_statevector_marginal,
+        )
+
+        direct = _try_apply_cataloged_statevector_marginal(output, wires)
+        if direct is not None:
+            return _normalize_joint_marginal(direct)
+
     probabilities = _ideal_probabilities(output, n_wires)
     if probabilities is None:
         return None
     if noise_model is not None:
         probabilities = noise_model.apply_readout_probabilities(
             probabilities,
-            n_wires=n_wires,
+            n_qubits=n_wires,
         )
     return _reduced_joint_marginal(probabilities, wires, n_wires=n_wires)
 
@@ -276,7 +310,9 @@ def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
 def _postselection(metadata: dict[str, Any], n_wires: int) -> dict[int, int]:
     raw = metadata.get("postselect", {})
     if not isinstance(raw, dict):
-        raise TypeError("measurement postselect metadata must be a wire-to-bit mapping")
+        raise TypeError(
+            "measurement postselect metadata must be a qubit-to-bit mapping"
+        )
     conditions = {int(wire): int(bit) for wire, bit in raw.items()}
     _validate_wires(tuple(conditions), n_wires)
     if any(bit not in {0, 1} for bit in conditions.values()):
@@ -312,14 +348,14 @@ def _validate_sampling_request(
         return
     if kind == "probabilities":
         raise ValueError(
-            f"marginal probabilities over {len(wires)} wires exceed the "
+            f"marginal probabilities over {len(wires)} qubits exceed the "
             f"supported limit of {limit}; increase max_marginal_wires "
             "explicitly to raise it"
         )
     raise ValueError(
-        f"Pauli-basis sampling over {len(wires)} wires exceeds the supported "
-        f"limit of {limit}; a request that reads any wire in X or Y needs one "
-        "contraction per subset of those wires, so increase max_marginal_wires "
+        f"Pauli-basis sampling over {len(wires)} qubits exceeds the supported "
+        f"limit of {limit}; a request that reads any qubit in X or Y needs one "
+        "contraction per subset of those qubits, so increase max_marginal_wires "
         "explicitly to accept that cost"
     )
 
@@ -338,13 +374,13 @@ def _validate_pauli_request(
     axis_wires = axes["x"] + axes["y"] + axes["z"]
     _validate_wires(axis_wires, n_wires)
     if set(axis_wires) != set(wires):
-        raise ValueError(f"{kind} request wires must match metadata x/y/z wires")
+        raise ValueError(f"{kind} request qubits must match metadata x/y/z qubits")
 
 
 def validate_measurements(
     requests: Sequence[MeasurementNode],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> None:
     """Validate all requests before a backend performs any execution."""
 
@@ -356,12 +392,12 @@ def validate_measurements(
                 f"unsupported measurement kind {kind!r}; expected {choices}"
             )
         wires = _validate_wires(
-            request.wires or tuple(range(n_wires)),
-            n_wires,
+            request.wires or tuple(range(n_qubits)),
+            n_qubits,
         )
         metadata = dict(request.metadata)
-        _validate_sampling_request(kind, wires, request.shots, metadata, n_wires)
-        _validate_pauli_request(kind, wires, metadata, n_wires)
+        _validate_sampling_request(kind, wires, request.shots, metadata, n_qubits)
+        _validate_pauli_request(kind, wires, metadata, n_qubits)
 
 
 def _collect_postselected_samples(
@@ -546,13 +582,13 @@ def _pauli_basis_distribution(
 ) -> torch.Tensor:
     """The joint distribution of a Pauli-basis readout over ``wires``.
 
-    When every requested wire is read in the Z basis the distribution *is* the
+    When every requested qubit is read in the Z basis the distribution *is* the
     computational-basis marginal, so a dense result gives it by reduction. Each
     bit then carries the same meaning on both sides: ``+1`` is an even number of
     set bits, which is a Z eigenvalue of ``+1`` and therefore the computational
     bit ``0``.
 
-    A request that reads any wire in X or Y is a genuinely different measurement
+    A request that reads any qubit in X or Y is a genuinely different measurement
     and keeps the parity reconstruction, which needs one full-state contraction
     per non-empty subset of ``wires``.
     """
@@ -630,7 +666,7 @@ def _marginal_probabilities(
     the dense-result surface, so deleting it would withdraw a capability instead
     of replacing an implementation.
 
-    The cost is exponential in the number of wires because each of those
+    The cost is exponential in the number of qubits because each of those
     expectations is a separate contraction over the whole state, and the
     arithmetic is reconstructed rather than read: one term per non-empty subset,
     summed with alternating signs and divided by ``2 ** len(wires)``. Because
@@ -758,20 +794,20 @@ def execute_measurements(
     output: Any,
     requests: Sequence[MeasurementNode],
     *,
-    n_wires: int,
+    n_qubits: int,
     noise_model: Any | None = None,
 ) -> tuple[MeasurementResult, ...]:
     """Execute ordered measurement requests against one native backend result."""
 
     if not requests:
         return ()
-    validate_measurements(requests, n_wires=n_wires)
+    validate_measurements(requests, n_qubits=n_qubits)
     target: Any | None = None
 
     def measurement_target() -> Any:
         nonlocal target
         if target is None:
-            target = _statevector_target(output, n_wires, noise_model)
+            target = _statevector_target(output, n_qubits, noise_model)
         return target
 
     results: list[MeasurementResult] = []
@@ -779,8 +815,8 @@ def execute_measurements(
         kind = request.kind.strip().lower()
         metadata = dict(request.metadata)
         wires = _validate_wires(
-            request.wires or tuple(range(n_wires)),
-            n_wires,
+            request.wires or tuple(range(n_qubits)),
+            n_qubits,
         )
 
         value: torch.Tensor | list[dict[str | int, int]]
@@ -797,7 +833,7 @@ def execute_measurements(
                 kind,
                 wires,
                 metadata,
-                n_wires,
+                n_qubits,
                 noise_model,
             )
         else:
@@ -809,14 +845,14 @@ def execute_measurements(
                 kind,
                 wires,
                 metadata,
-                n_wires,
+                n_qubits,
                 noise_model,
             )
 
         results.append(
             MeasurementResult(
                 kind=kind,
-                wires=wires,
+                qubits=wires,
                 value=value,
                 shots=request.shots,
                 metadata=metadata,

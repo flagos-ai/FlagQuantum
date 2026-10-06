@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
   "base_commit": "9cd38efc",
+  "base_commit_full": "9cd38efcd136abc9a705151be3378f9487d1064e",
   "scope": "CPU forward Bell-state example; experimental adapter",
   "experimentId": "2ce1d352-56e8-4de9-ab87-50140d3839ce",
   "jobId": "33295f22-cce9-4c66-8782-c5fd23cea908",

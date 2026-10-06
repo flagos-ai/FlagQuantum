@@ -92,10 +92,10 @@ def _transcribe(memory: MemoryCircuit, *, probability: float) -> stim.Circuit:
     """
 
     code = memory.code
-    data = list(code.data_wires)
+    data = list(code.data_qubits)
     checks = list(code.checks)
-    ancillas = [check.ancilla_wire for check in checks]
-    z_checks = [check for check in checks if not check.stabilizer.x_wires]
+    ancillas = [check.ancilla_qubit for check in checks]
+    z_checks = [check for check in checks if not check.stabilizer.x_qubits]
 
     def rec(circuit: stim.Circuit, absolute: int) -> stim.GateTarget:
         """Return the record target of one absolute measurement index."""
@@ -109,9 +109,9 @@ def _transcribe(memory: MemoryCircuit, *, probability: float) -> stim.Circuit:
         circuit.append("X_ERROR", data, probability)
         this_round: dict[int, int] = {}
         for check in checks:
-            ancilla = check.ancilla_wire
+            ancilla = check.ancilla_qubit
             circuit.append("X_ERROR", [ancilla], probability)
-            if check.stabilizer.x_wires:
+            if check.stabilizer.x_qubits:
                 circuit.append("H", [ancilla])
                 for wire in check.stabilizer.support:
                     circuit.append("CX", [ancilla, wire])
@@ -129,10 +129,10 @@ def _transcribe(memory: MemoryCircuit, *, probability: float) -> stim.Circuit:
     # before it, and the terminal boundary compares the last syndrome of each
     # Z-type check with the data readout it protects.
     for check in z_checks:
-        circuit.append("DETECTOR", [rec(circuit, syndrome[0][check.ancilla_wire])])
+        circuit.append("DETECTOR", [rec(circuit, syndrome[0][check.ancilla_qubit])])
     for round_index in range(1, memory.rounds):
         for check in checks:
-            ancilla = check.ancilla_wire
+            ancilla = check.ancilla_qubit
             circuit.append(
                 "DETECTOR",
                 [
@@ -147,7 +147,7 @@ def _transcribe(memory: MemoryCircuit, *, probability: float) -> stim.Circuit:
         for position, wire in enumerate(data)
     }
     for check in z_checks:
-        targets = [rec(circuit, syndrome[memory.rounds - 1][check.ancilla_wire])]
+        targets = [rec(circuit, syndrome[memory.rounds - 1][check.ancilla_qubit])]
         targets.extend(
             rec(circuit, data_rec[wire]) for wire in check.stabilizer.support
         )

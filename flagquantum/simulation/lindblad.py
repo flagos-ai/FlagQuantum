@@ -31,23 +31,23 @@ class CollapseOperator:
 
     operator: object
     rate: float
-    wires: tuple[int, ...] = ()
+    qubits: tuple[int, ...] = ()
 
 
-def amplitude_damping(rate: float, wire: int) -> CollapseOperator:
-    """Return ``sqrt(rate) * |0><1|`` on one wire.
+def amplitude_damping(rate: float, qubit: int) -> CollapseOperator:
+    """Return ``sqrt(rate) * |0><1|`` on one qubit.
 
     ``rate`` is a physical inverse-time rate, never a channel probability.
     """
 
-    return CollapseOperator("amplitude_damping", rate, (wire,))
+    return CollapseOperator("amplitude_damping", rate, (qubit,))
 
 
 @dataclass(frozen=True)
 class EvolutionResult:
     """A time-resolved density-matrix evolution result.
 
-    ``populations`` has shape ``(len(times), 2**n_wires)``.  Observable values
+    ``populations`` has shape ``(len(times), 2**n_qubits)``.  Observable values
     have one row per requested time.  Density matrices are retained only when
     ``return_density_matrices=True`` was requested.
     """
@@ -247,7 +247,7 @@ def _normalize_initial_state(
         }:
             raise _error(
                 "invalid_initial_state",
-                "initial_state bitstring must contain exactly n_wires binary digits",
+                "initial_state bitstring must contain exactly n_qubits binary digits",
                 "initial_state",
             )
         state = torch.zeros(dim, dtype=dtype, device=device)
@@ -305,9 +305,9 @@ def _normalize_initial_state(
 
 def _pauli_operator(
     pauli: str,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
-    n_wires: int,
+    n_qubits: int,
     dtype: torch.dtype,
     device: torch.device,
     field: str,
@@ -315,10 +315,10 @@ def _pauli_operator(
     symbols = pauli.strip().upper()
     if not symbols or set(symbols) - {"I", "X", "Y", "Z"}:
         raise _error("unknown_operator", f"unknown Pauli operator {pauli!r}", field)
-    if len(symbols) != len(wires):
+    if len(symbols) != len(qubits):
         raise _error(
             "invalid_operator",
-            "the Pauli string length must match the number of wires",
+            "the Pauli string length must match the number of qubits",
             field,
         )
     matrices = {
@@ -331,7 +331,7 @@ def _pauli_operator(
     for symbol in symbols[1:]:
         local = torch.kron(local, matrices[symbol])
     try:
-        return expand_operator(local, wires, n_wires, dtype=dtype, device=device)
+        return expand_operator(local, qubits, n_qubits, dtype=dtype, device=device)
     except (TypeError, ValueError) as exc:
         raise _error("invalid_operator", str(exc), field) from exc
 
@@ -339,7 +339,7 @@ def _pauli_operator(
 def _descriptor_matrix(
     descriptor: Mapping[str, Any],
     *,
-    n_wires: int,
+    n_qubits: int,
     dtype: torch.dtype,
     device: torch.device,
     field: str,
@@ -349,18 +349,18 @@ def _descriptor_matrix(
         raise _error(
             "invalid_operator", "operator descriptors require a Pauli string", field
         )
-    raw_wires = descriptor.get("wires")
-    wires = tuple(range(len(pauli))) if raw_wires is None else tuple(raw_wires)
+    raw_qubits = descriptor.get("qubits")
+    qubits = tuple(range(len(pauli))) if raw_qubits is None else tuple(raw_qubits)
     try:
-        normalized_wires = tuple(int(wire) for wire in wires)
+        normalized_qubits = tuple(int(qubit) for qubit in qubits)
     except (TypeError, ValueError) as exc:
         raise _error(
-            "invalid_operator", "operator wires must be integers", field
+            "invalid_operator", "operator qubits must be integers", field
         ) from exc
     return _pauli_operator(
         pauli,
-        normalized_wires,
-        n_wires=n_wires,
+        normalized_qubits,
+        n_qubits=n_qubits,
         dtype=dtype,
         device=device,
         field=field,
@@ -370,7 +370,7 @@ def _descriptor_matrix(
 def _normalize_hamiltonian(
     hamiltonian: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -378,7 +378,7 @@ def _normalize_hamiltonian(
     if isinstance(hamiltonian, Observable):
         return _observable_matrix(
             hamiltonian,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             dtype=dtype,
             device=device,
             field="hamiltonian",
@@ -413,7 +413,7 @@ def _normalize_hamiltonian(
                 )
             matrix = matrix + coefficient * _descriptor_matrix(
                 term,
-                n_wires=n_wires,
+                n_qubits=n_qubits,
                 dtype=dtype,
                 device=device,
                 field="hamiltonian",
@@ -431,24 +431,24 @@ def _normalize_hamiltonian(
 def _observable_matrix(
     observable: Observable,
     *,
-    n_wires: int,
+    n_qubits: int,
     dtype: torch.dtype,
     device: torch.device,
     field: str,
 ) -> torch.Tensor:
-    dim = 2**n_wires
+    dim = 2**n_qubits
     matrix = torch.zeros((dim, dim), dtype=dtype, device=device)
     identity = torch.eye(dim, dtype=dtype, device=device)
     for term in observable.terms:
         if not term.factors:
             matrix = matrix + term.coefficient * identity
             continue
-        wires = tuple(wire for wire, _ in term.factors)
+        qubits = tuple(qubit for qubit, _ in term.factors)
         pauli = "".join(axis for _, axis in term.factors)
         matrix = matrix + term.coefficient * _pauli_operator(
             pauli,
-            wires,
-            n_wires=n_wires,
+            qubits,
+            n_qubits=n_qubits,
             dtype=dtype,
             device=device,
             field=field,
@@ -458,9 +458,9 @@ def _observable_matrix(
 
 def _named_operator(
     name: str,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
-    n_wires: int,
+    n_qubits: int,
     dtype: torch.dtype,
     device: torch.device,
 ) -> torch.Tensor:
@@ -471,15 +471,17 @@ def _named_operator(
             f"unknown collapse operator {name!r}",
             "collapse_operators",
         )
-    if len(wires) != 1:
+    if len(qubits) != 1:
         raise _error(
             "invalid_collapse_operator",
-            f"{normalized} requires exactly one wire",
+            f"{normalized} requires exactly one qubit",
             "collapse_operators",
         )
     sigma_minus = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=dtype, device=device)
     try:
-        return expand_operator(sigma_minus, wires, n_wires, dtype=dtype, device=device)
+        return expand_operator(
+            sigma_minus, qubits, n_qubits, dtype=dtype, device=device
+        )
     except (TypeError, ValueError) as exc:
         raise _error(
             "invalid_collapse_operator", str(exc), "collapse_operators"
@@ -489,7 +491,7 @@ def _named_operator(
 def _normalize_collapse_terms(
     collapse_operators: Sequence[Any] | None,
     *,
-    n_wires: int,
+    n_qubits: int,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -498,15 +500,15 @@ def _normalize_collapse_terms(
     for index, item in enumerate(collapse_operators or ()):
         operator: Any
         rate: Any
-        raw_wires: Any
+        raw_qubits: Any
         if isinstance(item, CollapseOperator):
             operator = item.operator
             rate = item.rate
-            raw_wires = item.wires
+            raw_qubits = item.qubits
         elif isinstance(item, Mapping):
             operator = item.get("operator", item.get("kind"))
             rate = item.get("rate")
-            raw_wires = item.get("wires", item.get("wire", (0,)))
+            raw_qubits = item.get("qubits", item.get("qubit", (0,)))
         elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
             if len(item) != 2:
                 raise _error(
@@ -515,7 +517,7 @@ def _normalize_collapse_terms(
                     "collapse_operators",
                 )
             operator, rate = item
-            raw_wires = (0,)
+            raw_qubits = (0,)
         else:
             raise _error(
                 "invalid_collapse_operator",
@@ -542,22 +544,22 @@ def _normalize_collapse_terms(
                 "collapse rates must be non-negative",
                 "collapse_operators",
             )
-        if isinstance(raw_wires, int):
-            wires: tuple[int, ...] = (raw_wires,)
+        if isinstance(raw_qubits, int):
+            qubits: tuple[int, ...] = (raw_qubits,)
         else:
             try:
-                wires = tuple(int(wire) for wire in raw_wires)
+                qubits = tuple(int(qubit) for qubit in raw_qubits)
             except (TypeError, ValueError) as exc:
                 raise _error(
                     "invalid_collapse_operator",
-                    "collapse operator wires must be integer indices",
+                    "collapse operator qubits must be integer indices",
                     "collapse_operators",
                 ) from exc
         if isinstance(operator, str):
             full = _named_operator(
                 operator,
-                wires,
-                n_wires=n_wires,
+                qubits,
+                n_qubits=n_qubits,
                 dtype=dtype,
                 device=device,
             )
@@ -576,7 +578,7 @@ def _normalize_collapse_terms(
 def _normalize_collapse_operators(
     collapse_operators: Sequence[Any] | None,
     *,
-    n_wires: int,
+    n_qubits: int,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -585,7 +587,7 @@ def _normalize_collapse_operators(
         (rate**0.5) * operator
         for operator, rate in _normalize_collapse_terms(
             collapse_operators,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             dim=dim,
             dtype=dtype,
             device=device,
@@ -615,7 +617,7 @@ def _normalize_observables(
             label = str(name) if named_mapping else f"observable_{name}"
             matrix = _observable_matrix(
                 value,
-                n_wires=dim.bit_length() - 1,
+                n_qubits=dim.bit_length() - 1,
                 dtype=dtype,
                 device=device,
                 field="observables",
@@ -625,7 +627,7 @@ def _normalize_observables(
             label = str(value.get("name", default_label))
             matrix = _descriptor_matrix(
                 value,
-                n_wires=dim.bit_length() - 1,
+                n_qubits=dim.bit_length() - 1,
                 dtype=dtype,
                 device=device,
                 field="observables",
@@ -656,7 +658,7 @@ def _normalize_observables(
 def plan_density_matrix_evolution(
     hamiltonian: Any,
     initial_state: Any,
-    n_wires: int,
+    n_qubits: int,
     times: Any,
     collapse_operators: Sequence[Any] | None = None,
     observables: Mapping[str, Any] | Sequence[Any] | None = None,
@@ -667,8 +669,10 @@ def plan_density_matrix_evolution(
 ) -> EvolutionPlan:
     """Validate an evolution request and report its deterministic local plan."""
 
-    if isinstance(n_wires, bool) or not isinstance(n_wires, int) or n_wires < 1:
-        raise _error("invalid_n_wires", "n_wires must be a positive integer", "n_wires")
+    if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
+        raise _error(
+            "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
+        )
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -684,11 +688,11 @@ def plan_density_matrix_evolution(
         )
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
-    dim = 2**n_wires
+    dim = 2**n_qubits
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
     h_matrix = _normalize_hamiltonian(
         hamiltonian,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -708,7 +712,7 @@ def plan_density_matrix_evolution(
     )
     _normalize_collapse_operators(
         collapse_operators,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -721,7 +725,7 @@ def plan_density_matrix_evolution(
     )
     element_bytes = 8 if dtype == torch.complex64 else 16
     return EvolutionPlan(
-        n_wires=n_wires,
+        n_wires=n_qubits,
         n_times=int(time_grid.numel()),
         dimension=dim,
         trajectory_bytes=int(time_grid.numel()) * dim * dim * element_bytes,
@@ -736,7 +740,7 @@ def plan_density_matrix_evolution(
 def evolve_density_matrix(
     hamiltonian: Any,
     initial_state: Any,
-    n_wires: int,
+    n_qubits: int,
     times: Any,
     collapse_operators: Sequence[Any] | None = None,
     observables: Mapping[str, Any] | Sequence[Any] | None = None,
@@ -749,7 +753,7 @@ def evolve_density_matrix(
 
     Collapse entries are either ``(operator, rate)`` pairs or mappings with
     ``operator`` (a dense matrix, ``"amplitude_damping"``, or
-    ``"sigma_minus"``), ``rate``, and optional ``wire``/``wires``.  Rates,
+    ``"sigma_minus"``), ``rate``, and optional ``qubit``/``qubits``.  Rates,
     Hamiltonian coefficients, and time values must use the same inverse-time
     unit.  The named amplitude-damping operator is ``sqrt(rate) * |0><1|``;
     rates are never interpreted as channel probabilities.
@@ -759,8 +763,10 @@ def evolve_density_matrix(
     integration step size and scales with the physical problem.
     """
 
-    if isinstance(n_wires, bool) or not isinstance(n_wires, int) or n_wires < 1:
-        raise _error("invalid_n_wires", "n_wires must be a positive integer", "n_wires")
+    if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
+        raise _error(
+            "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
+        )
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -778,12 +784,12 @@ def evolve_density_matrix(
     validation_tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     population_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9
     trace_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9
-    dim = 2**n_wires
+    dim = 2**n_qubits
 
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
     h_matrix = _normalize_hamiltonian(
         hamiltonian,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -805,7 +811,7 @@ def evolve_density_matrix(
     )
     collapse = _normalize_collapse_operators(
         collapse_operators,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,

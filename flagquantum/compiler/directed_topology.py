@@ -10,22 +10,22 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from .routing import _require_multi_wire_device_local
+from .routing import _require_multi_qubit_device_local
 
 
 @dataclass(frozen=True)
 class DirectedCouplingMap:
     """Canonical directed physical connectivity for CX instructions."""
 
-    n_wires: int
+    n_qubits: int
     edges: tuple[tuple[int, int], ...]
 
-    def __init__(self, n_wires: int, edges: Iterable[tuple[int, int]]) -> None:
-        if type(n_wires) is not int:
-            raise ValueError("Directed coupling wire count must be an integer.")
-        normalized_count = n_wires
+    def __init__(self, n_qubits: int, edges: Iterable[tuple[int, int]]) -> None:
+        if type(n_qubits) is not int:
+            raise ValueError("Directed coupling qubit count must be an integer.")
+        normalized_count = n_qubits
         if normalized_count <= 0:
-            raise ValueError("Directed coupling map requires a positive wire count.")
+            raise ValueError("Directed coupling map requires a positive qubit count.")
         edge_tuple = tuple(edges)
         if any(
             type(left) is not int or type(right) is not int
@@ -40,13 +40,13 @@ class DirectedCouplingMap:
                 raise ValueError("Directed coupling map cannot contain self edges.")
             if min(left, right) < 0 or max(left, right) >= normalized_count:
                 raise ValueError("Directed coupling edge is outside the device.")
-        object.__setattr__(self, "n_wires", normalized_count)
+        object.__setattr__(self, "n_qubits", normalized_count)
         object.__setattr__(self, "edges", normalized)
 
     @property
     def topology_identity(self) -> str:
         payload = {
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "directed_edges": self.edges,
             "direction_semantics": "directed_cx",
         }
@@ -54,87 +54,87 @@ class DirectedCouplingMap:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
     def has_edge(self, control: int, target: int) -> bool:
-        self._validate_wire(control)
-        self._validate_wire(target)
+        self._validate_qubit(control)
+        self._validate_qubit(target)
         return (control, target) in self.edges
 
     def has_weak_edge(self, left: int, right: int) -> bool:
         return self.has_edge(left, right) or self.has_edge(right, left)
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
-        self._validate_wire(start)
-        self._validate_wire(goal)
+        self._validate_qubit(start)
+        self._validate_qubit(goal)
         if start == goal:
             return (start,)
-        adjacency: list[set[int]] = [set() for _ in range(self.n_wires)]
+        adjacency: list[set[int]] = [set() for _ in range(self.n_qubits)]
         for left, right in self.edges:
             adjacency[left].add(right)
             adjacency[right].add(left)
         parents = {start: -1}
         queue: deque[int] = deque((start,))
         while queue:
-            wire = queue.popleft()
-            for neighbor in sorted(adjacency[wire]):
+            qubit = queue.popleft()
+            for neighbor in sorted(adjacency[qubit]):
                 if neighbor in parents:
                     continue
-                parents[neighbor] = wire
+                parents[neighbor] = qubit
                 if neighbor == goal:
                     path = [goal]
                     while path[-1] != start:
                         path.append(parents[path[-1]])
                     return tuple(reversed(path))
                 queue.append(neighbor)
-        raise ValueError(f"No coupling path between wires {start} and {goal}.")
+        raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 
-    def _validate_wire(self, wire: int) -> None:
-        if type(wire) is not int or not 0 <= wire < self.n_wires:
+    def _validate_qubit(self, qubit: int) -> None:
+        if type(qubit) is not int or not 0 <= qubit < self.n_qubits:
             raise ValueError(
-                f"Directed coupling wire {wire!r} is outside "
-                f"[0, {self.n_wires - 1}]."
+                f"Directed coupling qubit {qubit!r} is outside "
+                f"[0, {self.n_qubits - 1}]."
             )
 
 
 def _validate_layout(
     ir: CircuitIR, coupling: DirectedCouplingMap, layout: object
 ) -> tuple[int, ...]:
-    if coupling.n_wires < ir.n_wires:
+    if coupling.n_qubits < ir.n_wires:
         raise ValueError(
             "Directed topology requires at least as many physical slots as "
-            "CircuitIR logical wires."
+            "CircuitIR logical qubits."
         )
     if layout is None:
         return tuple(range(ir.n_wires))
     if not isinstance(layout, tuple) or any(type(item) is not int for item in layout):
-        raise TypeError("initial_layout must be a tuple of integer physical wires")
-    if coupling.n_wires == ir.n_wires and (
+        raise TypeError("initial_layout must be a tuple of integer physical qubits")
+    if coupling.n_qubits == ir.n_wires and (
         len(layout) != ir.n_wires or set(layout) != set(range(ir.n_wires))
     ):
-        raise ValueError("initial_layout must be a complete physical-wire permutation")
-    if coupling.n_wires > ir.n_wires and (
+        raise ValueError("initial_layout must be a complete physical-qubit permutation")
+    if coupling.n_qubits > ir.n_wires and (
         len(layout) != ir.n_wires
         or len(set(layout)) != ir.n_wires
-        or any(item < 0 or item >= coupling.n_wires for item in layout)
+        or any(item < 0 or item >= coupling.n_qubits for item in layout)
     ):
         raise ValueError(
-            "initial_layout must inject every logical wire into a unique physical slot"
+            "initial_layout must inject every logical qubit into a unique physical slot"
         )
     return layout
 
 
 def _mapped_instruction(
     instruction: Instruction,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     *,
     source_index: int,
 ) -> Instruction:
     return Instruction(
         instruction.name,
-        wires,
+        qubits,
         params=instruction.params,
         matrix=instruction.matrix,
         metadata=dict(instruction.metadata)
         | {
-            "layout_mapped": wires != instruction.wires,
+            "layout_mapped": qubits != instruction.wires,
             "logical_wires": instruction.wires,
             "routing_strategy": "persistent_layout",
             "source_instruction_index": source_index,
@@ -154,7 +154,7 @@ def route_to_directed_topology(
     if not isinstance(coupling_map, DirectedCouplingMap):
         raise TypeError("coupling_map must be a DirectedCouplingMap")
     layout = _validate_layout(ir, coupling_map, initial_layout)
-    if coupling_map.n_wires > ir.n_wires:
+    if coupling_map.n_qubits > ir.n_wires:
         return _route_with_physical_workspace(ir, coupling_map, layout)
     logical_to_physical = list(layout)
     physical_to_logical = [0] * ir.n_wires
@@ -198,10 +198,10 @@ def route_to_directed_topology(
     last_source: tuple[Instruction, int] | None = None
     for source_index, instruction in enumerate(ir.instructions):
         last_source = (instruction, source_index)
-        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
+        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
         if len(instruction.wires) == 2 and not instruction.metadata.get("is_channel"):
-            if not coupling_map.has_weak_edge(*mapped_wires):
-                path = coupling_map.shortest_path(*mapped_wires)
+            if not coupling_map.has_weak_edge(*mapped_qubits):
+                path = coupling_map.shortest_path(*mapped_qubits)
                 routed_gate_count += 1
                 for path_index in range(len(path) - 2):
                     swap(
@@ -211,17 +211,17 @@ def route_to_directed_topology(
                         source_index,
                         "forward",
                     )
-                mapped_wires = tuple(
-                    logical_to_physical[wire] for wire in instruction.wires
+                mapped_qubits = tuple(
+                    logical_to_physical[qubit] for qubit in instruction.wires
                 )
         else:
-            _require_multi_wire_device_local(
-                instruction, mapped_wires, coupling_map.has_weak_edge
+            _require_multi_qubit_device_local(
+                instruction, mapped_qubits, coupling_map.has_weak_edge
             )
         routed.append(
             _mapped_instruction(
                 instruction,
-                mapped_wires,
+                mapped_qubits,
                 source_index=source_index,
             )
         )
@@ -256,7 +256,7 @@ def route_to_directed_topology(
     metadata["routing"] = {
         "schema": "flagquantum_directed_routing_plan_v1",
         "strategy": "persistent_layout",
-        "coupling_n_wires": coupling_map.n_wires,
+        "coupling_n_wires": coupling_map.n_qubits,
         "coupling_edges": coupling_map.edges,
         "initial_logical_to_physical": layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
@@ -308,7 +308,7 @@ def _route_with_physical_workspace(
             )
 
     logical_to_physical = list(layout)
-    physical_to_logical: list[int | None] = [None] * coupling_map.n_wires
+    physical_to_logical: list[int | None] = [None] * coupling_map.n_qubits
     for logical, physical in enumerate(layout):
         physical_to_logical[physical] = logical
     initial_occupancy = tuple(physical_to_logical)
@@ -361,10 +361,10 @@ def _route_with_physical_workspace(
         swap_count += 1
 
     for source_index, instruction in enumerate(ir.instructions):
-        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
+        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
         if len(instruction.wires) == 2 and not instruction.metadata.get("is_channel"):
-            if not coupling_map.has_weak_edge(*mapped_wires):
-                path = coupling_map.shortest_path(*mapped_wires)
+            if not coupling_map.has_weak_edge(*mapped_qubits):
+                path = coupling_map.shortest_path(*mapped_qubits)
                 routed_gate_count += 1
                 for path_index in range(len(path) - 2):
                     swap(
@@ -375,17 +375,17 @@ def _route_with_physical_workspace(
                         "forward",
                         remember=True,
                     )
-                mapped_wires = tuple(
-                    logical_to_physical[wire] for wire in instruction.wires
+                mapped_qubits = tuple(
+                    logical_to_physical[qubit] for qubit in instruction.wires
                 )
         else:
-            _require_multi_wire_device_local(
-                instruction, mapped_wires, coupling_map.has_weak_edge
+            _require_multi_qubit_device_local(
+                instruction, mapped_qubits, coupling_map.has_weak_edge
             )
         routed.append(
             _mapped_instruction(
                 instruction,
-                mapped_wires,
+                mapped_qubits,
                 source_index=source_index,
             )
         )
@@ -420,7 +420,7 @@ def _route_with_physical_workspace(
     )
     allocation_payload = {
         "logical_wire_count": ir.n_wires,
-        "physical_slot_count": coupling_map.n_wires,
+        "physical_slot_count": coupling_map.n_qubits,
         "initial_logical_to_physical": layout,
         "initial_physical_to_logical": initial_occupancy,
         "logical_result_physical_slots": layout,
@@ -436,10 +436,10 @@ def _route_with_physical_workspace(
     metadata["routing"] = {
         "schema": "flagquantum_directed_routing_plan_v2",
         "strategy": "persistent_layout",
-        "coupling_n_wires": coupling_map.n_wires,
+        "coupling_n_wires": coupling_map.n_qubits,
         "coupling_edges": coupling_map.edges,
         "logical_wire_count": ir.n_wires,
-        "physical_slot_count": coupling_map.n_wires,
+        "physical_slot_count": coupling_map.n_qubits,
         "initial_logical_to_physical": layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
         "final_logical_to_physical": layout,
@@ -464,8 +464,8 @@ def _route_with_physical_workspace(
     }
     return replace(
         ir,
-        n_wires=coupling_map.n_wires,
-        shape=(2**coupling_map.n_wires,),
+        n_wires=coupling_map.n_qubits,
+        shape=(2**coupling_map.n_qubits,),
         instructions=tuple(routed),
         measurements=measurements,
         metadata=metadata,

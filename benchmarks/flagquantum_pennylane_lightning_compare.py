@@ -78,7 +78,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             parameter.grad = None
         result = execute_torch_distributed_statevector_reverse(
             fq_circuit,
-            observable_wire=args.n_wires // 2,
+            observable_qubit=args.n_wires // 2,
             checkpoint_policy=StatevectorCheckpointPolicy(
                 strategy="reversible_adjoint"
             ),

@@ -19,7 +19,7 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 The list above is the policy core. Most files in this directory are recorded
 delivery artifacts rather than current policy, and they are grouped by family:
 
-- `API_CHANGE_PROPOSAL_0*.md` (64 files, including the 001 listed above) — one
+- `API_CHANGE_PROPOSAL_0*.md` (70 files, including the 001 listed above) — one
   proposal per API decision, in numeric order. Start from
   `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` and follow
   the [public API protection](PUBLIC_API_PROTECTION.md) process before reusing a

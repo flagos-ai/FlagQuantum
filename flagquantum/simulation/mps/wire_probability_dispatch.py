@@ -1,4 +1,4 @@
-"""Catalog authorization for fused MPS wire-probability reductions."""
+"""Catalog authorization for fused MPS qubit-probability reductions."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from ...kernels.catalog import (
 )
 from ..kernel_dispatch import _require_cataloged_kernel
 from .site_kernels import (
-    _record_mps_wire_probability_fallback,
-    _record_mps_wire_probability_route,
+    _record_mps_qubit_probability_fallback,
+    _record_mps_qubit_probability_route,
 )
 
 if TYPE_CHECKING:
@@ -28,7 +28,9 @@ _MAX_SITE_ELEMENTS = 1 << 12
 
 
 def _mps_wire_probability_dispatch_enabled() -> bool:
-    return os.getenv("FQ_TRITON_MPS_WIRE_PROBABILITIES", "0").strip().lower() not in {
+    """Return whether the evidenced MPS-007 rollout is enabled."""
+
+    return os.getenv("FQ_TRITON_MPS_WIRE_PROBABILITIES", "1").strip().lower() not in {
         "0",
         "false",
         "off",
@@ -82,7 +84,7 @@ def _mps_wire_probability_kernel_match(
 def _require_mps_wire_probability_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired MPS-007 implementation or fail closed."""
+    """Return the connected MPS-007 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _mps_wire_probability_kernel_match(
@@ -90,7 +92,7 @@ def _require_mps_wire_probability_kernel(
             dtype=dtype,
         ),
         implementation_id=_IMPLEMENTATION_ID,
-        description="fused MPS wire-probability kernel",
+        description="fused MPS qubit-probability kernel",
     )
 
 
@@ -102,10 +104,10 @@ def _apply_cataloged_mps_wire_probabilities(tensor: torch.Tensor) -> torch.Tenso
         dtype=str(tensor.dtype).removeprefix("torch."),
     )
     from ...kernels.triton.mps_wire_probabilities import (
-        fused_mps_wire_probabilities,
+        fused_mps_qubit_probabilities,
     )
 
-    return fused_mps_wire_probabilities(tensor)
+    return fused_mps_qubit_probabilities(tensor)
 
 
 def _try_apply_cataloged_mps_wire_probabilities(
@@ -118,24 +120,36 @@ def _try_apply_cataloged_mps_wire_probabilities(
     return _apply_cataloged_mps_wire_probabilities(tensor)
 
 
-def _mps_wire_probabilities(state: MPSState, wire: int) -> torch.Tensor:
+def _require_valid_accelerator_probabilities(
+    probabilities: torch.Tensor,
+) -> None:
+    """Fail closed without synchronizing the accelerator hot path."""
+
+    normalizer = probabilities.sum(dim=-1)
+    condition = torch.isfinite(probabilities).all() & (normalizer > 1e-12).all()
+    torch._assert_async(condition, "MPS measurement probabilities are not finite")
+
+
+def _mps_wire_probabilities(state: MPSState, qubit: int) -> torch.Tensor:
     """Evaluate one sampling probability pair through MPS-007 or PyTorch."""
 
-    state.move_orthogonality_center(wire)
-    tensor = state.tensors[wire]
+    state.move_orthogonality_center(qubit)
+    tensor = state.tensors[qubit]
     probabilities = _try_apply_cataloged_mps_wire_probabilities(tensor)
     if probabilities is None:
-        _record_mps_wire_probability_fallback()
+        _record_mps_qubit_probability_fallback()
         probabilities = torch.sum(torch.abs(tensor) ** 2, dim=(1, 3))
         probabilities = torch.clamp(probabilities, min=0)
-    else:
-        _record_mps_wire_probability_route()
-    normalizer = probabilities.sum(dim=-1, keepdim=True)
-    if bool(torch.any(~torch.isfinite(probabilities))) or bool(
-        torch.any(normalizer <= 1e-12)
-    ):
-        raise RuntimeError("MPS measurement probabilities are not finite")
-    return probabilities / torch.clamp(normalizer, min=1e-12)
+        normalizer = probabilities.sum(dim=-1, keepdim=True)
+        if bool(torch.any(~torch.isfinite(probabilities))) or bool(
+            torch.any(normalizer <= 1e-12)
+        ):
+            raise RuntimeError("MPS measurement probabilities are not finite")
+        return probabilities / torch.clamp(normalizer, min=1e-12)
+
+    _record_mps_qubit_probability_route()
+    _require_valid_accelerator_probabilities(probabilities)
+    return probabilities
 
 
 __all__ = (
@@ -144,6 +158,7 @@ __all__ = (
     "_mps_wire_probability_kernel_enabled",
     "_mps_wire_probability_kernel_match",
     "_mps_wire_probabilities",
+    "_require_valid_accelerator_probabilities",
     "_require_mps_wire_probability_kernel",
     "_try_apply_cataloged_mps_wire_probabilities",
 )

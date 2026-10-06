@@ -232,14 +232,14 @@ def test_the_requested_wire_order_is_the_output_column_order() -> None:
     circuit = fq.Circuit(3).x(1)
 
     assert (
-        sample_stabilizer(circuit, shots=2, wires=[2, 1, 0], seed=1).tolist()
+        sample_stabilizer(circuit, shots=2, qubits=[2, 1, 0], seed=1).tolist()
         == [[0, 1, 0]] * 2
     )
     assert (
-        sample_stabilizer(circuit, shots=2, wires=[1, 0], seed=1).tolist()
+        sample_stabilizer(circuit, shots=2, qubits=[1, 0], seed=1).tolist()
         == [[1, 0]] * 2
     )
-    assert sample_stabilizer(circuit, shots=2, wires=[1], seed=1).tolist() == [[1]] * 2
+    assert sample_stabilizer(circuit, shots=2, qubits=[1], seed=1).tolist() == [[1]] * 2
 
 
 def test_a_measured_wire_subset_leaves_the_other_wires_unmeasured() -> None:
@@ -248,7 +248,7 @@ def test_a_measured_wire_subset_leaves_the_other_wires_unmeasured() -> None:
     circuit = fq.Circuit(4).x(0).x(3)
 
     assert (
-        sample_stabilizer(circuit, shots=3, wires=[0, 3], seed=2).tolist()
+        sample_stabilizer(circuit, shots=3, qubits=[0, 3], seed=2).tolist()
         == [[1, 1]] * 3
     )
 
@@ -330,7 +330,7 @@ def test_a_noise_channel_is_refused_rather_than_sampled_as_a_unitary() -> None:
     """A channel would return shots from a different circuit, so it fails closed."""
 
     with pytest.raises(CapabilityError, match="noise channel"):
-        sample_stabilizer(fq.Circuit(2).h(0).depolarizing(1), shots=2, seed=1)
+        sample_stabilizer(fq.Circuit(2).h(0).depolarizing(1, 0.1), shots=2, seed=1)
 
 
 def test_a_program_carrying_lowered_measurement_nodes_is_refused() -> None:
@@ -342,7 +342,7 @@ def test_a_program_carrying_lowered_measurement_nodes_is_refused() -> None:
     """
 
     base = fq.Circuit(2).h(0).cx(0, 1).to_ir()
-    nodes = observables.lower_outputs(fq.samples(), n_wires=2, shots=10)
+    nodes = observables.lower_outputs(fq.samples(), n_qubits=2, shots=10)
     assert nodes
     lowered = dataclasses.replace(base, measurements=nodes)
     lowered.validate()
@@ -431,14 +431,14 @@ def test_a_wire_outside_the_circuit_is_refused(wires: list[int]) -> None:
     """A wire the circuit does not have is not measurable, not silently ignored."""
 
     with pytest.raises(ValidationError, match="outside circuit range"):
-        sample_stabilizer(fq.Circuit(2).h(0), shots=2, wires=wires, seed=1)
+        sample_stabilizer(fq.Circuit(2).h(0), shots=2, qubits=wires, seed=1)
 
 
 def test_an_empty_wire_list_is_refused() -> None:
     """Zero measured wires is not a sampling request."""
 
     with pytest.raises(ValidationError):
-        sample_stabilizer(fq.Circuit(2).h(0), shots=2, wires=[], seed=1)
+        sample_stabilizer(fq.Circuit(2).h(0), shots=2, qubits=[], seed=1)
 
 
 @pytest.mark.parametrize("seed", [1.5, True, "7", -1, 2**64, 2**64 + 1])

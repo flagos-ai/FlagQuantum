@@ -20,7 +20,9 @@ _MAX_CONTRACTION_WORK = 1 << 25
 
 
 def _mps_observable_adjoint_dispatch_enabled() -> bool:
-    return os.getenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "0").strip().lower() not in {
+    """Return whether the evidenced MPS-006 rollout is enabled."""
+
+    return os.getenv("FQ_TRITON_MPS_OBSERVABLE_ADJOINT", "1").strip().lower() not in {
         "0",
         "false",
         "off",
@@ -98,7 +100,7 @@ def _mps_observable_adjoint_kernel_match(
 def _require_mps_observable_adjoint_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired MPS-006 implementation or fail closed."""
+    """Return the connected MPS-006 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _mps_observable_adjoint_kernel_match(

@@ -108,16 +108,16 @@ def canonicalize_rank_owned_mps(
 ) -> MPSCanonicalizationMetrics:
     """Move a sharded MPS center using local QR and boundary transfer matrices."""
 
-    target = state.n_wires - 1 if center is None else int(center)
-    if not 0 <= target < state.n_wires:
-        raise ValueError(f"canonical center must be in [0, {state.n_wires - 1}]")
+    target = state.n_qubits - 1 if center is None else int(center)
+    if not 0 <= target < state.n_qubits:
+        raise ValueError(f"canonical center must be in [0, {state.n_qubits - 1}]")
     local_messages = local_bytes = local_temporary = 0
-    for wire in range(state.n_wires - 1):
+    for wire in range(state.n_qubits - 1):
         messages, byte_count, temporary = _left_step(state, wire)
         local_messages += messages
         local_bytes += byte_count
         local_temporary = max(local_temporary, temporary)
-    for wire in range(state.n_wires - 1, target, -1):
+    for wire in range(state.n_qubits - 1, target, -1):
         messages, byte_count, temporary = _right_step(state, wire)
         local_messages += messages
         local_bytes += byte_count

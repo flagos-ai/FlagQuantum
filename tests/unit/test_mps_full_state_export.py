@@ -39,18 +39,18 @@ from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit
 
-N_WIRES = 6
+N_QUBITS = 6
 
 
-def _reference_state(n_wires: int = N_WIRES) -> MPSState:
+def _reference_state(n_qubits: int = N_QUBITS) -> MPSState:
     """A reference MPS with distinct, non-trivial site tensors."""
 
     generator = torch.Generator().manual_seed(20261003)
     state = torch.randn(
-        2**n_wires, dtype=torch.complex128, generator=generator
+        2**n_qubits, dtype=torch.complex128, generator=generator
     ).reshape(1, -1)
     state = state / torch.linalg.vector_norm(state)
-    return MPSState.from_statevector(state, n_wires, config=MPSConfig(max_bond=8))
+    return MPSState.from_statevector(state, n_qubits, config=MPSConfig(max_bond=8))
 
 
 @dataclass
@@ -96,10 +96,10 @@ def _placed(world_size: int, *, reference: MPSState | None = None) -> _Placed:
     """Slice one reference state into `world_size` contiguous site blocks."""
 
     reference = reference or _reference_state()
-    ownership = initial_mps_ownership(reference.n_wires, world_size)
+    ownership = initial_mps_ownership(reference.n_qubits, world_size)
     return _Placed(
         state=RankOwnedMPSState(
-            n_wires=reference.n_wires,
+            n_qubits=reference.n_qubits,
             bsz=reference.bsz,
             rank=0,
             world_size=world_size,
@@ -161,10 +161,10 @@ class TestWorldSizeOne:
     def test_the_exported_state_carries_the_reference_site_tensors(self) -> None:
         placed = _placed(1)
         exported = export_distributed_mps(placed.result())
-        assert exported.state.n_wires == placed.reference.n_wires
-        for wire in range(placed.reference.n_wires):
+        assert exported.state.n_qubits == placed.reference.n_qubits
+        for qubit in range(placed.reference.n_qubits):
             torch.testing.assert_close(
-                exported.state.tensors[wire], placed.reference.tensors[wire]
+                exported.state.tensors[qubit], placed.reference.tensors[qubit]
             )
 
     def test_the_rank_owned_result_still_refuses_full_state_materialization(
@@ -191,7 +191,7 @@ class TestWorldSizeOne:
         summary = export_distributed_mps(placed.result()).summary()
         assert summary["world_size"] == 1
         assert summary["node_count"] == 1
-        assert summary["local_site_count"] == N_WIRES
+        assert summary["local_site_count"] == N_QUBITS
         assert summary["site_ownership"] == placed.ownership
         # One rank moves nothing: the gather is over other ranks' blocks.
         assert summary["gather_bytes_per_rank"] == 0
@@ -241,7 +241,7 @@ class TestMultiRankPlacement:
         placed_state = _place_gathered_sites(
             tables, buffers, ownership=placed.ownership
         )
-        assert len(placed_state) == N_WIRES
+        assert len(placed_state) == N_QUBITS
         for wire in placed.ownership[0]:
             torch.testing.assert_close(placed_state[wire], narrower[wire])
 
@@ -313,7 +313,7 @@ def _with_ownership(
     """A copy of `state` under a different ownership map, for refusal tests."""
 
     return RankOwnedMPSState(
-        n_wires=state.n_wires,
+        n_qubits=state.n_qubits,
         bsz=state.bsz,
         rank=state.rank,
         world_size=len(ownership),

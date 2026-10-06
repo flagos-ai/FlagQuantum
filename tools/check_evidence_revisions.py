@@ -81,6 +81,44 @@ gate finds the shortened runs that name exactly one revision this repository giv
 full, because that is what distinguishes a citation from the other
 hexadecimal-looking text a file can carry, and it skips the null-commit placeholder,
 which names no commit by construction.
+
+That question has a second form, and an artifact can carry it. The citation check can
+expand a shortened run because another record gives that revision in full, which is
+not true of a revision-named field that abbreviates the value the run was produced
+with: when nothing else states the revision, a reader is handed eight hexadecimal
+characters that name no commit, and the walk does not see them either, because the
+walk reads full-length revisions. So a shortened value in a field named for a
+revision -- ``source_revision``, ``base_commit``, ``implementation_commit``,
+``validation_driver_commit`` -- must either be accompanied by that revision in
+full somewhere in the same artifact, which is the ``source_revision_full`` convention
+the two CUDA-Q comparison records use, or state the origin that accounts for it. The
+field name is what keeps this from reading a task or run identifier as a revision,
+and the check deliberately does not expand the abbreviation from the object database:
+an unreferenced object is retained in the checkout that produced it and absent from
+another, and a verdict must not depend on which clone ran the gate.
+
+The names that count as a revision field are declared in
+:data:`REVISION_FIELD_NAMES` and recognised by the
+:data:`REVISION_FIELD_SUFFIXES` ending, so an artifact that introduces a name this
+repository has not reviewed is still read and still has to account for its value. The
+two answer each other: the endings keep the question from being skipped, and the
+declared tuple is asserted against the walked artifacts so that widening the surface
+is a reviewed change rather than an unremarked one. An origin stated beside one field
+accounts for every field holding the same value, because the origin belongs to the
+revision and not to a repetition of it.
+
+A revision is also read where a file writes one in prose. The walk opened ``*.json``
+and nothing else, so a comparison record that named the revision its runner ran at in
+a sentence was read by no check at all, even under a root the walk already covered:
+``benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md``
+recorded such a revision and the gate never asked about it, which is the same defect
+as an artifact no validator named, one file type over. So the walk now reads every
+file type that can carry a citation under :data:`EVIDENCE_ROOTS`, and a full-length
+revision in one of them counts exactly as a full-length revision in a JSON field does.
+A file that is not JSON records no fields and states no ``<field>_origin``, so the
+table is the only place it can account for a revision; the roots are unchanged, which
+keeps this a widening of what is read rather than a widening of where, and a revision
+written in prose outside :data:`EVIDENCE_ROOTS` is still read by no check.
 """
 
 from __future__ import annotations
@@ -121,8 +159,8 @@ except ModuleNotFoundError:  # direct script execution
 DECLARATIONS = ROOT / "evidence-revision-origins.toml"
 SCHEMA = "flagquantum.evidence_revision_origins.v1"
 
-#: Directories whose JSON artifacts are walked. A directory is listed when its
-#: JSON files are evidence for a checked-in claim rather than a tool's output or a
+#: Directories whose artifacts are walked. A directory is listed when its
+#: files are evidence for a checked-in claim rather than a tool's output or a
 #: tool's input. ``docs/development/evidence/`` is listed because the Jiuding
 #: hardware records there are what ``docs/guides/JIUDING.md``,
 #: ``docs/reference/KNOWN_LIMITATIONS.md`` and the release notes cite as their
@@ -150,10 +188,18 @@ CITATION_ROOTS = (
     ROOT / "docs" / "roadmap",
 )
 
-#: File types that can carry a citation of a revision.
+#: File types that can carry a citation of a revision. The same types are what the
+#: walk reads a recorded revision out of, because a file that can cite a revision is
+#: a file that can record one: ``.json`` is decoded as a document, and every other
+#: type is read as text and searched for a full-length revision.
 CITATION_SUFFIXES = frozenset(
     {".json", ".md", ".markdown", ".rst", ".toml", ".txt", ".yaml", ".yml"}
 )
+
+#: The walked file type decoded as a document rather than read as text. A document
+#: records its revisions in named fields, so it can state ``<field>_origin`` beside
+#: one; a file of any other walked type writes a revision in prose and holds no field.
+DOCUMENT_SUFFIX = ".json"
 
 #: Directories never descended into while looking for the revisions a repository
 #: cites. A full-length revision under one of these is not a citation a reader
@@ -180,13 +226,60 @@ _SHORT_REVISION_PATTERN = re.compile(
     r"(?<![0-9a-fA-F])([0-9a-fA-F]{7,39})(?![0-9a-fA-F])"
 )
 
+#: The field names the walk reads as carrying a revision, in the artifacts it walks
+#: today. A field named for a revision declares one, so a shortened value in it names
+#: a commit exactly as a shortened citation does. The name is what separates a
+#: revision from the other hexadecimal text an artifact holds -- a task identifier, a
+#: run identifier, a digest -- which no such field carries, so the check is scoped by
+#: the name rather than by the value.
+#:
+#: This tuple is the reviewed vocabulary, not the rule: the rule is the
+#: :data:`REVISION_FIELD_SUFFIXES` ending below, so a new name is still read and still
+#: has to account for its value. ``tests/unit/test_evidence_revisions.py`` asserts that
+#: the tuple stays equal to the names the walked artifacts use, which is what makes
+#: adding one a deliberate change to this list rather than an unremarked addition to
+#: an artifact.
+REVISION_FIELD_NAMES = (
+    "base_commit",
+    "benchmark_driver_commit",
+    "commit",
+    "flagquantum_large_state_source_revision",
+    "golden_path_merge_revision",
+    "host_commit",
+    "implementation_commit",
+    "implementation_revision",
+    "qsteed_revision",
+    "revision",
+    "runtime_source_commit",
+    "source_commit",
+    "source_revision",
+    "target_revision",
+    "torch_fl_commit",
+    "torch_fl_revision",
+    "torch_fl_source_revision",
+    "validation_driver_commit",
+)
+
+#: The endings that make a field name read as one carrying a revision.
+REVISION_FIELD_SUFFIXES = ("revision", "commit")
+
+_REVISION_NAMED_FIELD = re.compile(
+    r"(?:\A|_)(?:%s)\Z" % "|".join(REVISION_FIELD_SUFFIXES), re.IGNORECASE
+)
+
+#: The suffix that states a revision in full beside an abbreviated one, as
+#: ``source_revision_full`` does beside ``source_revision``.
+FULL_REVISION_SUFFIX = "_full"
+
 #: The revision names a commit that no ref of this repository reaches, so neither a
 #: clone nor a plain fetch obtains it. The remote does serve the object to
 #: ``git fetch origin <revision>``, which is the only route to it and one that lasts
 #: only while the remote retains unreferenced objects. Whether the checkout running
 #: this gate also holds the object depends on that checkout and not on the remote, so
 #: the gate cannot tell this origin from a commit no repository serves; the
-#: declaration is verified by fetching the revision from the remote by name.
+#: declaration is established by counted fetches of the revision from the remote by
+#: name, whose method ``evidence-revision-origins.toml`` states, because a failed
+#: fetch is a dropped connection or a transient error as readily as a refusal.
 ORIGIN_UNREFERENCED_OBJECT = "unreferenced_object"
 
 #: The revision names a commit of an external dependency recorded beside it.
@@ -549,10 +642,25 @@ def _artifact_errors(
             f"the object by name, {ORIGIN_PRODUCING_HOST_HISTORY!r} when the run "
             f"happened in a history this repository does not contain, or "
             f"{ORIGIN_EXTERNAL_DEPENDENCY!r} when the revision is a commit of a "
-            f"dependency -- or state {paths[0]}_origin beside the field that records "
-            "it"
+            f"dependency{_disclosure_clause(artifact, paths[0])}"
         )
     return tuple(errors)
+
+
+def _disclosure_clause(artifact: str, path: str) -> str:
+    """Return how an artifact can account for a revision without the table.
+
+    A document can state an origin in a field beside the value, and a file that is
+    not a document cannot: it writes the revision in prose, so the table is the only
+    place the origin can be recorded.
+    """
+
+    if artifact.endswith(DOCUMENT_SUFFIX):
+        return f" -- or state {path}_origin beside the field that records it"
+    return (
+        ", and state it there rather than beside the value: this file writes the "
+        "revision in prose and holds no field an origin can be stated in"
+    )
 
 
 def _accounted_at(
@@ -573,33 +681,233 @@ def _accounted_at(
     return " and ".join(places) if places else None
 
 
+def is_revision_named_field(field: str) -> bool:
+    """Return whether a JSON field name reads as carrying a revision.
+
+    The name is the only thing that separates a revision from the other
+    hexadecimal text an artifact holds -- a task identifier, a run identifier, a
+    digest -- which no such field carries.
+
+    Args:
+        field: Last component of a dotted JSON path, without its index.
+
+    Returns:
+        True when ``field`` ends in one of :data:`REVISION_FIELD_SUFFIXES` at a
+        word boundary, or is one of them outright.
+    """
+
+    return _REVISION_NAMED_FIELD.search(field) is not None
+
+
+def abbreviated_revisions(payload: Any) -> tuple[tuple[str, str], ...]:
+    """Return the revision-named fields of ``payload`` that hold a shortened run.
+
+    A field named for a revision declares one, so a value too short to be a commit
+    hash is a declaration a reader cannot act on: it names a commit only if the
+    artifact states the revision in full somewhere, or says where the value came from.
+    The null-commit placeholder is skipped, because it names no commit by
+    construction and is not an abbreviation of one.
+
+    Args:
+        payload: Decoded JSON value of an evidence artifact.
+
+    Returns:
+        One entry per shortened value, holding the dotted-and-indexed JSON path of the
+        field and the value it holds, in document order.
+    """
+
+    _, strings = _recorded(payload)
+    return _abbreviated_fields(strings)
+
+
+def revision_field_names(payload: Any) -> tuple[str, ...]:
+    """Return the field names of ``payload`` that read as carrying a revision.
+
+    Every name the walked artifacts use is declared in
+    :data:`REVISION_FIELD_NAMES`, so this reports the names a repository has not
+    reviewed as well as the ones it has.
+
+    Args:
+        payload: Decoded JSON value of an evidence artifact.
+
+    Returns:
+        One entry per distinct revision-named field, in document order.
+    """
+
+    _, strings = _recorded(payload)
+    names: list[str] = []
+    for path in strings:
+        field = _leaf_field(path)
+        if is_revision_named_field(field) and field not in names:
+            names.append(field)
+    return tuple(names)
+
+
+def _leaf_field(path: str) -> str:
+    """Return the field name a dotted-and-indexed JSON path addresses."""
+
+    return path.rsplit(".", 1)[-1].split("[", 1)[0]
+
+
+def _abbreviated_fields(strings: Mapping[str, str]) -> tuple[tuple[str, str], ...]:
+    """Return the revision-named fields in ``strings`` that hold a shortened run."""
+
+    abbreviated: list[tuple[str, str]] = []
+    for path, value in strings.items():
+        if not is_revision_named_field(_leaf_field(path)):
+            continue
+        if _SHORT_REVISION_PATTERN.fullmatch(value) is None:
+            continue
+        if not value.strip("0"):
+            continue
+        abbreviated.append((path, value))
+    return tuple(abbreviated)
+
+
+def _abbreviated_at(paths: Sequence[str]) -> str:
+    """Return a phrase naming the fields that hold one abbreviated value."""
+
+    if len(paths) == 1:
+        return f"in {paths[0]}"
+    return f"in {paths[0]} and {len(paths) - 1} other fields"
+
+
+def _abbreviation_errors(artifact: str, strings: Mapping[str, str]) -> tuple[str, ...]:
+    """Return why a shortened revision-named field names no commit a reader can act on.
+
+    The full revision counts when the same artifact states it anywhere, so a record
+    may keep the value the run wrote and add the revision beside it, which is what the
+    two CUDA-Q comparison records do. An origin counts when the artifact states one
+    beside any field holding that value, because the origin belongs to the revision
+    rather than to the field that repeats it: an aggregate whose ``source_revision``
+    is the merge of its runs' values holds a value the runs have already accounted
+    for, and a reader who follows the aggregate's copy reaches the same revision. An
+    abbreviation that names more than one revision the artifact states is reported
+    rather than resolved, because a prefix that names two commits names neither.
+    """
+
+    full = {value for value in strings.values() if is_full_revision(value)}
+    supported = ", ".join(repr(value) for value in SUPPORTED_ORIGINS)
+    places: dict[str, list[str]] = {}
+    for path, value in _abbreviated_fields(strings):
+        places.setdefault(value, []).append(path)
+    errors: list[str] = []
+    for value, paths in places.items():
+        where = _abbreviated_at(paths)
+        targets = sorted(revision for revision in full if revision.startswith(value))
+        if len(targets) == 1:
+            continue
+        if len(targets) > 1:
+            errors.append(
+                f"{artifact} records {value!r} {where}, which is the start of "
+                f"{len(targets)} revisions this artifact states; give the one the run "
+                "used in full beside it"
+            )
+            continue
+        declared = [
+            (path, strings[f"{path}_origin"])
+            for path in paths
+            if f"{path}_origin" in strings
+        ]
+        unusable = [
+            (path, origin)
+            for path, origin in declared
+            if origin not in SUPPORTED_ORIGINS
+        ]
+        if unusable:
+            path, origin = unusable[0]
+            errors.append(
+                f"{artifact} states {origin!r} in {path}_origin for "
+                f"{value!r}, which is not a supported origin; use one of {supported}"
+            )
+            continue
+        if declared:
+            continue
+        errors.append(
+            f"{artifact} records {value!r} {where}, which is too short to name a "
+            "commit, so a reader who follows it cannot obtain the revision; state the "
+            f"revision in full beside one of them, as "
+            f"{paths[0]}{FULL_REVISION_SUFFIX}, or state {paths[0]}_origin when the "
+            "full value is not available to this repository"
+        )
+    return tuple(errors)
+
+
+def _recorded_in_prose(text: str) -> dict[str, tuple[str, ...]]:
+    """Return the revisions ``text`` records, mapped to the lines that record them.
+
+    A file that is not JSON holds no fields, so the value stands on its own and the
+    length is the whole of what separates a revision from the other hexadecimal text
+    such a file carries -- a digest, a task identifier, a date. Only a full-length run
+    is read, and it is read through the same test :func:`_recorded` applies to a JSON
+    leaf, so one string is a revision in prose exactly when it is one in a field and
+    the two readers cannot disagree about a value they both hold.
+
+    Args:
+        text: Decoded contents of a walked file that is not JSON.
+
+    Returns:
+        One entry per distinct revision, holding the one-based lines that record it in
+        document order, so an error can name every place a revision appears.
+    """
+
+    recorded: dict[str, list[str]] = {}
+    for number, line in enumerate(text.splitlines(), start=1):
+        for match in _FULL_REVISION_PATTERN.finditer(line):
+            value = match.group(1)
+            if is_full_revision(value):
+                recorded.setdefault(value, []).append(f"line {number}")
+    return {revision: tuple(lines) for revision, lines in recorded.items()}
+
+
 def _read_artifacts(evidence_roots: Sequence[Path], root: Path) -> tuple[
     dict[str, dict[str, tuple[str, ...]]],
-    dict[str, tuple[RecordedOrigin, ...]],
+    dict[str, dict[str, str]],
     list[str],
 ]:
     """Decode every walked artifact once, keyed by repository-relative path.
 
+    A file is read as JSON when it is JSON and searched as text otherwise, and both
+    readers answer the same question, so the walk's verdict does not depend on which
+    of the two file types a revision happens to be written in.
+
     Returns:
-        The revisions each artifact records, the origins each states inside itself,
-        and the artifacts that could not be decoded.
+        The revisions each artifact records, every string the artifact holds keyed by
+        the JSON path that carries it, and the artifacts that could not be decoded.
+        The strings are returned rather than the origins derived from them, because
+        two readers need them: the origin stated beside a full-length revision, and
+        the abbreviated value of a revision-named field. A text file states no field,
+        so it contributes no strings.
     """
 
     records: dict[str, dict[str, tuple[str, ...]]] = {}
-    disclosures: dict[str, tuple[RecordedOrigin, ...]] = {}
+    stated: dict[str, dict[str, str]] = {}
     errors: list[str] = []
     for evidence_root in evidence_roots:
-        for path in sorted(evidence_root.rglob("*.json")):
+        for path in sorted(evidence_root.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in CITATION_SUFFIXES:
+                continue
+            if any(part in CITATION_SKIP_DIRECTORIES for part in path.parts):
+                continue
             artifact = _relative(path, root)
+            if path.suffix.lower() != DOCUMENT_SUFFIX:
+                try:
+                    prose = path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as error:
+                    errors.append(f"{artifact} could not be read as text: {error}")
+                    continue
+                revisions = _recorded_in_prose(prose)
+                if revisions:
+                    records[artifact] = revisions
+                    stated[artifact] = {}
+                continue
             try:
                 payload = _load_json(path)
             except (OSError, json.JSONDecodeError) as error:
                 errors.append(f"{artifact} could not be read as JSON: {error}")
                 continue
-            revisions, strings = _recorded(payload)
-            records[artifact] = revisions
-            disclosures[artifact] = _stated_origins(revisions, strings)
-    return records, disclosures, errors
+            records[artifact], stated[artifact] = _recorded(payload)
+    return records, stated, errors
 
 
 def evidence_errors(
@@ -619,7 +927,7 @@ def evidence_errors(
     errors = list(_declaration_errors(document))
     if errors:
         return tuple(errors)
-    records, disclosures, read_errors = _read_artifacts(evidence_roots, root)
+    records, strings, read_errors = _read_artifacts(evidence_roots, root)
     errors.extend(read_errors)
     errors.extend(
         _declaration_consistency_errors(
@@ -630,12 +938,14 @@ def evidence_errors(
     resolutions: dict[str, bool] = {}
     publications: dict[str, bool] = {}
     for artifact, revisions in records.items():
+        stated = strings[artifact]
+        errors.extend(_abbreviation_errors(artifact, stated))
         errors.extend(
             _artifact_errors(
                 artifact,
                 revisions,
                 origins,
-                stated=disclosures.get(artifact, ()),
+                stated=_stated_origins(revisions, stated),
                 root=root,
                 resolutions=resolutions,
                 publications=publications,

@@ -16,13 +16,13 @@ class DirectionLegalizationError(CompilationError):
     """A native circuit cannot satisfy an ordered coupling graph."""
 
 
-# Operand semantics of native two-wire instructions on an ordered physical
+# Operand semantics of native two-qubit instructions on an ordered physical
 # graph. ``False`` marks a control/target opcode whose physical direction must
 # match the declared edge; ``True`` marks an opcode whose unitary is invariant
 # under exchanging its two operands, so either direction of a physical link
-# satisfies it. The table is total over the two-wire opcodes of
+# satisfies it. The table is total over the two-qubit opcodes of
 # ``flagquantum.core.operator_schema.OPERATOR_SCHEMAS``; an unlisted opcode is
-# refused instead of being guessed, and a test fails when a new two-wire opcode
+# refused instead of being guessed, and a test fails when a new two-qubit opcode
 # is added to Core without an entry here.
 _TWO_WIRE_OPERAND_SYMMETRY: dict[str, bool] = {
     "cx": False,
@@ -43,7 +43,7 @@ def _operand_symmetric(instruction: Instruction) -> bool:
     """Report whether an instruction's two operands may be exchanged.
 
     Raises:
-        DirectionLegalizationError: The instruction is a native two-wire
+        DirectionLegalizationError: The instruction is a native two-qubit
             opcode with no recorded operand semantics, so no direction rule
             can be applied to it.
     """

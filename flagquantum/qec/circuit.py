@@ -2,7 +2,10 @@
 
 The source is a bounded hybrid-compiler program that runs the configured number
 of syndrome-extraction rounds and returns the final check measurement. Detector
-and observable identity is derived from the code, so a caller never asserts it.
+and observable identity is derived from the code, so a caller never asserts it,
+and the measurement handles the experiment records are derived from the code the
+same way, so a recorded bit is named by a handle rather than by a column index a
+caller has to know.
 """
 
 from __future__ import annotations
@@ -10,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Integral
 
-from .codes import StabilizerCode
+from .codes import StabilizerCode, ancilla_bands
 from .pauli import Pauli
 
 _FUNCTION_NAME = "memory_experiment"
@@ -18,17 +21,17 @@ _FUNCTION_NAME = "memory_experiment"
 
 @dataclass(frozen=True)
 class MeasurementRef:
-    """One measurement location, by round and wire.
+    """One measurement location, by round and qubit.
 
     ``round_index`` is ``None`` for the terminal data readout that follows the
     final syndrome round. That readout is not an explicit measurement in the
-    emitted program: it is the runtime's final sample of the wire, the same
+    emitted program: it is the runtime's final sample of that qubit, the same
     convention the frozen repetition profile uses. The record is not ordered,
     because an optional round index has no total order.
     """
 
     round_index: int | None
-    wire: int
+    qubit: int
 
     def __post_init__(self) -> None:
         if self.round_index is not None:
@@ -38,10 +41,10 @@ class MeasurementRef:
                 raise TypeError("measurement round index must be an integer or None")
             if self.round_index < 0:
                 raise ValueError("measurement round index must be non-negative")
-        if isinstance(self.wire, bool) or not isinstance(self.wire, Integral):
-            raise TypeError("measurement wire must be an integer")
-        if self.wire < 0:
-            raise ValueError("measurement wire must be non-negative")
+        if isinstance(self.qubit, bool) or not isinstance(self.qubit, Integral):
+            raise TypeError("measurement qubit must be an integer")
+        if self.qubit < 0:
+            raise ValueError("measurement qubit must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -97,7 +100,7 @@ class LogicalObservable:
             raise TypeError("observable operator must be a Pauli operator")
         if self.pauli.is_identity:
             raise ValueError("observable operator must not be the identity")
-        if self.pauli.x_wires:
+        if self.pauli.x_qubits:
             raise ValueError("observable readout supports Z-type operators only")
         if not self.measurement_parity:
             raise ValueError("observable must reference at least one measurement")
@@ -112,8 +115,8 @@ class LogicalObservable:
             raise ValueError(
                 "observable readout must reference terminal data readouts only"
             )
-        wires = tuple(sorted(reference.wire for reference in self.measurement_parity))
-        if wires != self.pauli.support:
+        qubits = tuple(sorted(reference.qubit for reference in self.measurement_parity))
+        if qubits != self.pauli.support:
             raise ValueError(
                 "observable readout must measure exactly the observable's support"
             )
@@ -163,27 +166,56 @@ class MemoryCircuit:
             )
         self._validate_layout()
 
+    @property
+    def measurement_refs(self) -> tuple[MeasurementRef, ...]:
+        """Every measurement location this configured experiment records.
+
+        The vector is the handles the circuit itself declares rather than the
+        subset its layouts happen to reference, and it is read off the code and
+        the round count, so it needs no lowering: one handle per check per
+        syndrome round -- the source measures every check once every round -- in
+        round-major order, then one handle per data qubit for the terminal
+        readout. A position in this vector is what names a recorded bit.
+
+        The two sets need not coincide in either direction, which is why the
+        vector is stated here rather than collected from the layouts. A one-round
+        surface patch measures its X-type checks once and no detector names them,
+        because an X-type check is deterministic neither in round zero nor at the
+        terminal readout, so those bits are recorded and referenced by nothing; a
+        longer experiment does name every handle, because each round after the
+        first compares against the round before it. Reading a handle by name does
+        not depend on which of the two holds.
+        """
+
+        refs = [
+            MeasurementRef(round_index, check.ancilla_qubit)
+            for round_index in range(self.rounds)
+            for check in self.code.checks
+        ]
+        refs.extend(MeasurementRef(None, wire) for wire in self.code.data_qubits)
+        return tuple(refs)
+
     def _validate_layout(self) -> None:
         """Tie every detector and observable reference to what this code declares."""
 
-        ancilla_wires = set(self.code.ancilla_wires)
-        data_wires = set(self.code.data_wires)
+        ancilla_qubits = set(self.code.ancilla_qubits)
+        data_qubits = set(self.code.data_qubits)
         for detector in self.detectors.detectors:
             for reference in detector.parity:
                 if reference.round_index is None:
-                    if reference.wire not in data_wires:
+                    if reference.qubit not in data_qubits:
                         raise ValueError(
                             "detector terminal readout must reference a declared "
-                            "data wire"
+                            "data qubit"
                         )
                 elif reference.round_index >= self.rounds:
                     raise ValueError(
                         "detector syndrome round must be inside the configured rounds"
                     )
-                elif reference.wire not in ancilla_wires:
+                elif reference.qubit not in ancilla_qubits:
                     raise ValueError(
                         "detector syndrome measurement must reference a declared "
-                        "ancilla wire"
+                        "ancilla qubit"
                     )
         logical_observables = self.code.logical_observables
         if len(self.observables) != len(logical_observables):
@@ -197,9 +229,9 @@ class MemoryCircuit:
                     "observable"
                 )
             for reference in observable.measurement_parity:
-                if reference.wire not in data_wires:
+                if reference.qubit not in data_qubits:
                     raise ValueError(
-                        "observable readout must reference a declared data wire"
+                        "observable readout must reference a declared data qubit"
                     )
 
 
@@ -208,12 +240,12 @@ def _require_z_type_readout(code: StabilizerCode) -> None:
 
     Both the initial data state and the terminal data readout are in the Z basis,
     because the initial state is all-zero and this module reads out through the
-    runtime's final sample of each data wire, so a logical observable that is not
+    runtime's final sample of each data qubit, so a logical observable that is not
     Z-type would be measured under premises that do not hold for it.
     """
 
     observables = code.logical_observables
-    if not observables or any(observable.x_wires for observable in observables):
+    if not observables or any(observable.x_qubits for observable in observables):
         raise ValueError(
             "memory-circuit source requires a Z-type logical observable, because "
             "both the initial state and the terminal data readout are in the Z "
@@ -221,11 +253,38 @@ def _require_z_type_readout(code: StabilizerCode) -> None:
         )
 
 
+def _require_ancilla_bands(code: StabilizerCode) -> None:
+    """Refuse a record whose per-basis ancilla counts contradict its checks.
+
+    The two bands are a function of the checks, and
+    :func:`~flagquantum.qec.codes.ancilla_bands` derives them everywhere they are
+    read. A record that also reports the two counts is stating them a second
+    time, so this is where the two statements are compared: a count that does not
+    match the band its own checks define would otherwise be read by whoever asks
+    the record and ignored by whoever reads the checks, and the two readers would
+    disagree silently. A record that declares ancillas measuring neither basis --
+    a flag or an idle ancilla -- keeps them out of both bands and is unaffected,
+    because this compares the counts against the bands and not against the total.
+    """
+
+    x_qubits, z_qubits = ancilla_bands(code.checks)
+    stated = (code.num_ancilla_x_qubits, code.num_ancilla_z_qubits)
+    derived = (len(x_qubits), len(z_qubits))
+    if stated != derived:
+        raise ValueError(
+            "code reports "
+            f"{stated[0]} X-type and {stated[1]} Z-type ancilla qubits, but its "
+            f"checks measure {derived[0]} X-type and {derived[1]} Z-type "
+            "stabilizers, so the two bands it states and the two bands its checks "
+            "define disagree"
+        )
+
+
 def _detector_count(code: StabilizerCode, *, rounds: int) -> int:
     """Return how many detectors one configured memory experiment must declare."""
 
     _require_z_type_readout(code)
-    protected = sum(1 for check in code.checks if not check.stabilizer.x_wires)
+    protected = sum(1 for check in code.checks if not check.stabilizer.x_qubits)
     total = len(code.checks)
     return protected * (rounds + 1) + (total - protected) * (rounds - 1)
 
@@ -237,12 +296,12 @@ def _check_source(code: StabilizerCode) -> str:
         "    for round_index in range(rounds):",
     ]
     for check in code.checks:
-        ancilla = check.ancilla_wire
-        if check.stabilizer.x_wires:
+        ancilla = check.ancilla_qubit
+        if check.stabilizer.x_qubits:
             lines.append(f"        qp.H(wires={ancilla})")
-        for control, target in check.cnot_wires:
+        for control, target in check.cnot_qubits:
             lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
-        if check.stabilizer.x_wires:
+        if check.stabilizer.x_qubits:
             lines.append(f"        qp.H(wires={ancilla})")
         lines.append(f"        last = qp.measure(wires={ancilla})")
         lines.append(f"        qp.reset(wires={ancilla})")
@@ -255,17 +314,17 @@ def _detector_layout(code: StabilizerCode, *, rounds: int) -> DetectorLayout:
     detectors: list[Detector] = []
     for round_index in range(rounds):
         for check in code.checks:
-            if round_index == 0 and check.stabilizer.x_wires:
+            if round_index == 0 and check.stabilizer.x_qubits:
                 continue
-            parity = [MeasurementRef(round_index, check.ancilla_wire)]
+            parity = [MeasurementRef(round_index, check.ancilla_qubit)]
             if round_index > 0:
-                parity.append(MeasurementRef(round_index - 1, check.ancilla_wire))
+                parity.append(MeasurementRef(round_index - 1, check.ancilla_qubit))
             detectors.append(Detector(index=len(detectors), parity=tuple(parity)))
     for check in code.checks:
-        if check.stabilizer.x_wires:
+        if check.stabilizer.x_qubits:
             continue
-        parity = [MeasurementRef(rounds - 1, check.ancilla_wire)]
-        parity.extend(MeasurementRef(None, wire) for wire in check.stabilizer.support)
+        parity = [MeasurementRef(rounds - 1, check.ancilla_qubit)]
+        parity.extend(MeasurementRef(None, qubit) for qubit in check.stabilizer.support)
         detectors.append(Detector(index=len(detectors), parity=tuple(parity)))
     return DetectorLayout(tuple(detectors))
 
@@ -277,7 +336,7 @@ def _observable_layout(code: StabilizerCode) -> ObservableLayout:
                 index=index,
                 pauli=pauli,
                 measurement_parity=tuple(
-                    MeasurementRef(None, wire) for wire in pauli.support
+                    MeasurementRef(None, qubit) for qubit in pauli.support
                 ),
             )
             for index, pauli in enumerate(code.logical_observables)
@@ -308,6 +367,7 @@ def build_memory_circuit(code: StabilizerCode, *, rounds: int) -> MemoryCircuit:
         raise TypeError("code must implement the StabilizerCode protocol")
     if not code.checks:
         raise ValueError("memory experiment requires a code with at least one check")
+    _require_ancilla_bands(code)
     if isinstance(rounds, bool) or not isinstance(rounds, Integral):
         raise TypeError("rounds must be an integer")
     if rounds <= 0:

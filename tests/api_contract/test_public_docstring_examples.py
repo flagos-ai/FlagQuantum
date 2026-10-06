@@ -7,11 +7,17 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.compiler import Layout
+from flagquantum.compiler.openqasm_import import (
+    import_openqasm,
+    import_openqasm_to_ir,
+)
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
+from flagquantum.qec import CssCodeMatrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 
@@ -20,21 +26,27 @@ pytestmark = pytest.mark.unit
 # Every entry whose docstrings carry examples. `fq.plan` and `planner.plan` are
 # different functions that document different things, so both are listed.
 ENTRIES = (
+    CssCodeMatrices,
     Layout,
     fq.Circuit,
     fq.Module,
     fq.Observable,
     fq.compile,
     fq.expectation,
+    fq.from_openqasm,
+    fq.gradient,
     fq.plan,
     fq.run,
     fq.train,
     gather_distributed_statevector,
+    import_openqasm,
+    import_openqasm_to_ir,
     planner.plan,
     recommend_simulator,
     run_cirq,
     run_pennylane,
     run_qiskit,
+    SPSAOptimizer,
 )
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

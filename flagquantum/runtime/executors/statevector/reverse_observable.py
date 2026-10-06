@@ -59,7 +59,7 @@ def hamiltonian_adjoint_seed(
     shard_state: Any,
     *,
     plan: Any,
-    n_wires: int,
+    n_qubits: int,
     terms: tuple[tuple[float, tuple[int, ...]], ...],
 ) -> torch.Tensor:
     """Construct one adjoint seed for a weighted Z/ZZ Hamiltonian."""
@@ -73,7 +73,7 @@ def hamiltonian_adjoint_seed(
             _, chunk = z_hamiltonian_chunk(
                 shard_state.amplitudes[:, start:end],
                 indices,
-                n_wires=n_wires,
+                n_qubits=n_qubits,
                 terms=terms,
             )
             adjoint[:, start:end].copy_(chunk)

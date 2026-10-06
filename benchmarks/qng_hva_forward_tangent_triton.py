@@ -54,12 +54,12 @@ def main():
     count=fqa.heisenberg_hva_parameter_count(args.n_wires,args.depth); block=count//args.depth
     parameters=0.02*torch.randn(count,device="cuda")
     initial=fqa.heisenberg_hva(args.n_wires,args.depth,torch.zeros_like(parameters)).state().detach().reshape(-1)
-    triton_state,triton_tangents=heisenberg_hva_forward_tangents(initial,parameters,n_wires=args.n_wires,depth=args.depth)
+    triton_state,triton_tangents=heisenberg_hva_forward_tangents(initial,parameters,n_qubits=args.n_wires,depth=args.depth)
     reference_state,reference_tangents=reference(args.n_wires,args.depth,parameters)
     triton_metric=metric(triton_state,triton_tangents,block); reference_metric=metric(reference_state,reference_tangents,block)
     gradient=torch.randn(count,device="cuda",generator=torch.Generator(device="cuda").manual_seed(args.seed+1)); eye=torch.eye(count,device="cuda")
     td=torch.linalg.solve(triton_metric+1e-3*eye,gradient); rd=torch.linalg.solve(reference_metric+1e-3*eye,gradient)
-    triton_result=measure(lambda:heisenberg_hva_forward_tangents(initial,parameters,n_wires=args.n_wires,depth=args.depth),args.warmup,args.repeats)
+    triton_result=measure(lambda:heisenberg_hva_forward_tangents(initial,parameters,n_qubits=args.n_wires,depth=args.depth),args.warmup,args.repeats)
     reference_result=measure(lambda:reference(args.n_wires,args.depth,parameters),args.warmup,args.repeats)
     payload={
       "schema":"flagquantum.qng_hva_forward_tangent_triton.v1","execution_semantics":"single_device_fast_path","scalability_claim_allowed":False,

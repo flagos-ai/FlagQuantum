@@ -21,6 +21,16 @@ executed by `tests/test_algorithm_examples.py`.
 
 - `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
   workflows.
+- `error_mitigation.py`: zero-noise extrapolation — one observable measured at
+  several error strengths by scaling the single error-probability parameter each
+  noise channel declares, then continued to zero by polynomial least squares or
+  Richardson extrapolation, with the residual it left and the variance
+  amplification of its weights reported beside the estimate. A channel whose
+  parameters are not error probabilities is refused by name, and a model that
+  declares a readout rule is refused rather than measured without it, because the
+  estimate is `Tr(O rho)` and classical readout confusion is applied after
+  measurement. Probabilistic error cancellation, Clifford data regression and
+  readout-error mitigation are absent.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has
@@ -29,8 +39,10 @@ executed by `tests/test_algorithm_examples.py`.
   found by a Grover-style minimum search over a centroid index register, and the
   centroid positions are then moved to classical coordinate-wise medians.
   Demonstration scale: the distance table is classical and the search is bound
-  at three register wires.
+  at three register qubits.
 - `optimization.py`: reusable classical and quantum-aware optimization stages.
+  These take a PyTorch optimizer or one of the staged methods below; `spsa.py` is
+  the gradient-free member of the same surface and takes a plain callable instead.
 - `pca.py`: quantum PCA — the eigenvalue readout of a data matrix's density
   matrix, by phase estimation over its exponential. Demonstration scale: the
   density matrix and its exponential are formed classically.
@@ -48,6 +60,13 @@ executed by `tests/test_algorithm_examples.py`.
   Demonstration scale: the matrix, its embedding, the embedding's exponential and
   the input state are all formed classically, the input state from the matrix's
   own singular vectors.
+- `spsa.py`: simultaneous perturbation stochastic approximation — a gradient-free
+  optimizer for objectives whose only accessible value is a sample, at two
+  evaluations per step whatever the parameter count. **The estimate is biased for
+  every finite perturbation and is not a gradient**: an objective with an exact
+  gradient is served more cheaply and exactly by autograd or parameter shift, and
+  the reason to use this unit is its evaluation cost. Demonstration scale: the
+  perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

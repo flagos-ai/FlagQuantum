@@ -181,7 +181,7 @@ Responsibilities:
 
 - `channels.py`: immutable, serializable channel specifications.
 - `model.py`: `NoiseModel`, rules, and placement.
-- `rules.py`: gate, wire, idle, and readout matching.
+- `rules.py`: gate, qubit, idle, and readout matching.
 - `device_profile.py`: hardware calibration and provenance.
 - `validation.py`: probabilities, dimensions, CPTP, and composition rules.
 - `serialization.py`: schemas, digests, identities, and round trips.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import lru_cache
 from typing import TYPE_CHECKING, Protocol
 
 import torch
@@ -28,7 +29,7 @@ def _require_flat_local_address(state: torch.Tensor) -> None:
 
 
 class _GateContext(Protocol):
-    n_wires: int
+    n_qubits: int
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -37,7 +38,7 @@ class _GateContext(Protocol):
 
 
 class _MatrixGateContext(_GateContext, Protocol):
-    wire: int
+    qubit: int
 
 
 @jit(do_not_specialize=["bit_position"])
@@ -491,6 +492,21 @@ def _complex64_local_cx_segment_kernel(
     tl.store(output_parts + 2 * linear + 1, value_imag, mask=valid)
 
 
+@lru_cache(maxsize=256)
+def _local_cx_segment_positions(
+    device_index: int,
+    control_bit_positions: tuple[int, ...],
+    target_bit_positions: tuple[int, ...],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Cache immutable device metadata for a compiled CNOT sequence."""
+
+    device = torch.device("cuda", device_index)
+    return (
+        torch.tensor(control_bit_positions, dtype=torch.int32, device=device),
+        torch.tensor(target_bit_positions, dtype=torch.int32, device=device),
+    )
+
+
 def apply_complex64_local_cx_segment(
     state: torch.Tensor,
     *,
@@ -518,10 +534,24 @@ def apply_complex64_local_cx_segment(
         target_bit_positions
     ):
         raise ValueError("compiled CX segment requires paired control/target bits")
-    controls = torch.tensor(
-        control_bit_positions, dtype=torch.int32, device=state.device
+    local_bits = state.shape[1].bit_length() - 1
+    if any(
+        control == target
+        or not 0 <= control < local_bits
+        or not 0 <= target < local_bits
+        for control, target in zip(
+            control_bit_positions, target_bit_positions, strict=True
+        )
+    ):
+        raise ValueError("compiled CX segment requires distinct local address bits")
+    device_index = state.device.index
+    if device_index is None:
+        raise ValueError("compiled CX segment requires an indexed CUDA device")
+    controls, targets = _local_cx_segment_positions(
+        device_index,
+        control_bit_positions,
+        target_bit_positions,
     )
-    targets = torch.tensor(target_bit_positions, dtype=torch.int32, device=state.device)
     total_count = state.numel()
     block = 256
     _complex64_local_cx_segment_kernel[(triton.cdiv(total_count, block),)](
@@ -718,8 +748,8 @@ def ry_rz_pair(
     ry_angles: torch.Tensor,
     rz_angles: torch.Tensor,
     *,
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Apply one RY then RZ pair with a single flat-state CUDA kernel."""
 
@@ -736,7 +766,7 @@ def ry_rz_pair(
     output_parts = torch.empty(
         *state.shape, 2, dtype=torch.float32, device=state.device
     )
-    pairs_per_batch = 2 ** (n_wires - 1)
+    pairs_per_batch = 2 ** (n_qubits - 1)
     pair_count = state.shape[0] * pairs_per_batch
     block_size = 256
     _ry_rz_pair_kernel[(triton.cdiv(pair_count, block_size),)](
@@ -746,8 +776,8 @@ def ry_rz_pair(
         output_parts,
         pair_count,
         pairs_per_batch=pairs_per_batch,
-        amplitudes_per_batch=2**n_wires,
-        target_mask=1 << (n_wires - 1 - wire),
+        amplitudes_per_batch=2**n_qubits,
+        target_mask=1 << (n_qubits - 1 - qubit),
         angle_batch_stride=ry_angles.stride(0),
         block_size=block_size,
         num_warps=8,
@@ -760,7 +790,7 @@ def _launch_cx_sequence(
     state: torch.Tensor,
     control_masks: torch.Tensor,
     target_masks: torch.Tensor,
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     _require_flat_local_address(state)
     if not state.is_contiguous():
@@ -776,7 +806,7 @@ def _launch_cx_sequence(
         control_masks,
         target_masks,
         element_count,
-        amplitudes_per_batch=2**n_wires,
+        amplitudes_per_batch=2**n_qubits,
         sequence_length=control_masks.numel(),
         block_size=block_size,
         num_warps=8,
@@ -786,7 +816,7 @@ def _launch_cx_sequence(
 
 
 def _launch_single_qubit_matrix(
-    state: torch.Tensor, matrix: torch.Tensor, wire: int, n_wires: int
+    state: torch.Tensor, matrix: torch.Tensor, qubit: int, n_qubits: int
 ) -> torch.Tensor:
     _require_flat_local_address(state)
     if not state.is_contiguous():
@@ -795,7 +825,7 @@ def _launch_single_qubit_matrix(
     output_parts = torch.empty(
         *state.shape, 2, dtype=torch.float32, device=state.device
     )
-    pairs_per_batch = 2 ** (n_wires - 1)
+    pairs_per_batch = 2 ** (n_qubits - 1)
     pair_count = state.shape[0] * pairs_per_batch
     block_size = 256
     _single_qubit_matrix_kernel[(triton.cdiv(pair_count, block_size),)](
@@ -804,8 +834,8 @@ def _launch_single_qubit_matrix(
         output_parts,
         pair_count,
         pairs_per_batch=pairs_per_batch,
-        amplitudes_per_batch=2**n_wires,
-        target_mask=1 << (n_wires - 1 - wire),
+        amplitudes_per_batch=2**n_qubits,
+        target_mask=1 << (n_qubits - 1 - qubit),
         matrix_batch_stride=0 if matrix.ndim == 2 else matrix.stride(0),
         block_size=block_size,
         num_warps=8,
@@ -818,8 +848,8 @@ def _launch_single_qubit_matrix_backward(
     state: torch.Tensor,
     gradient: torch.Tensor,
     matrix: torch.Tensor,
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     gradient = gradient.contiguous()
     _require_flat_local_address(gradient)
@@ -827,7 +857,7 @@ def _launch_single_qubit_matrix_backward(
     state_gradient_parts = torch.empty(
         *state.shape, 2, dtype=torch.float32, device=state.device
     )
-    pairs_per_batch = 2 ** (n_wires - 1)
+    pairs_per_batch = 2 ** (n_qubits - 1)
     block_size = 1024
     blocks_per_batch = triton.cdiv(pairs_per_batch, block_size)
     partial_parts = torch.zeros(
@@ -845,8 +875,8 @@ def _launch_single_qubit_matrix_backward(
         state_gradient_parts,
         partial_parts,
         pairs_per_batch=pairs_per_batch,
-        amplitudes_per_batch=2**n_wires,
-        target_mask=1 << (n_wires - 1 - wire),
+        amplitudes_per_batch=2**n_qubits,
+        target_mask=1 << (n_qubits - 1 - qubit),
         matrix_batch_stride=0 if matrix.ndim == 2 else matrix.stride(0),
         block_size=block_size,
         num_warps=8,
@@ -864,13 +894,13 @@ class _SingleQubitMatrix(torch.autograd.Function):
         ctx: _MatrixGateContext,
         state: torch.Tensor,
         matrix: torch.Tensor,
-        wire: int,
-        n_wires: int,
+        qubit: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         ctx.save_for_backward(state, matrix)
-        ctx.wire = int(wire)
-        ctx.n_wires = int(n_wires)
-        return _launch_single_qubit_matrix(state, matrix, ctx.wire, ctx.n_wires)
+        ctx.qubit = int(qubit)
+        ctx.n_qubits = int(n_qubits)
+        return _launch_single_qubit_matrix(state, matrix, ctx.qubit, ctx.n_qubits)
 
     @staticmethod
     def backward(
@@ -882,14 +912,14 @@ class _SingleQubitMatrix(torch.autograd.Function):
             state,
             gradient,
             matrix,
-            ctx.wire,
-            ctx.n_wires,
+            ctx.qubit,
+            ctx.n_qubits,
         )
         return state_gradient, matrix_gradient, None, None
 
 
 def single_qubit_matrix(
-    state: torch.Tensor, matrix: torch.Tensor, *, wire: int, n_wires: int
+    state: torch.Tensor, matrix: torch.Tensor, *, qubit: int, n_qubits: int
 ) -> torch.Tensor:
     """Apply a 2x2 matrix with a differentiable flat-state CUDA kernel."""
 
@@ -900,7 +930,7 @@ def single_qubit_matrix(
     apply: Callable[[torch.Tensor, torch.Tensor, int, int], object] = (
         _SingleQubitMatrix.apply
     )
-    result = apply(state, matrix, wire, n_wires)
+    result = apply(state, matrix, qubit, n_qubits)
     if not isinstance(result, torch.Tensor):
         raise TypeError("Single-qubit matrix autograd must return a tensor")
     return result
@@ -915,11 +945,11 @@ class _CXSequence(torch.autograd.Function):
         target_masks: torch.Tensor,
         reverse_control_masks: torch.Tensor,
         reverse_target_masks: torch.Tensor,
-        n_wires: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         ctx.save_for_backward(reverse_control_masks, reverse_target_masks)
-        ctx.n_wires = int(n_wires)
-        return _launch_cx_sequence(state, control_masks, target_masks, ctx.n_wires)
+        ctx.n_qubits = int(n_qubits)
+        return _launch_cx_sequence(state, control_masks, target_masks, ctx.n_qubits)
 
     @staticmethod
     def backward(
@@ -932,7 +962,7 @@ class _CXSequence(torch.autograd.Function):
                 gradient,
                 reverse_control_masks,
                 reverse_target_masks,
-                ctx.n_wires,
+                ctx.n_qubits,
             ),
             None,
             None,
@@ -949,7 +979,7 @@ def cx_sequence(
     target_masks: torch.Tensor,
     reverse_control_masks: torch.Tensor,
     reverse_target_masks: torch.Tensor,
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Apply a sequence of CNOT gates with one flat-state CUDA kernel."""
 
@@ -964,7 +994,7 @@ def cx_sequence(
         target_masks,
         reverse_control_masks,
         reverse_target_masks,
-        n_wires,
+        n_qubits,
     )
     if not isinstance(result, torch.Tensor):
         raise TypeError("CX sequence autograd must return a tensor")

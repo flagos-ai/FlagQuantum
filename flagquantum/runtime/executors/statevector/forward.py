@@ -13,8 +13,6 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
-from ....kernels.catalog import KernelRequest
-from ....kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -32,17 +30,14 @@ from ....simulation.statevector.operations import (
 )
 from ...distributed.identity import DistributedIdentity
 from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
-from .environment import get_bool, mode
+from .environment import mode
 from .errors import FullStateMaterializationError
-from .kernel_dispatch import (
-    KernelDecision,
-    KernelDispatchEvidence,
-    select_cataloged_triton_kernel,
+from .kernel_dispatch import KernelDispatchEvidence
+from .local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_1q_decision,
 )
-from .models import (
-    DistributedStatevectorPlan,
-    StatevectorShardState,
-)
+from .models import DistributedStatevectorPlan, StatevectorShardState
 from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
@@ -70,89 +65,6 @@ def _single_process_cpu_direct_enabled() -> bool:
         os.getenv("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", "1"),
     )
     return raw.strip().lower() not in {"0", "false", "off", "no"}
-
-
-def _flat_local_address_supported(amplitudes: torch.Tensor) -> bool:
-    """Whether a Triton flat local-gate kernel may address this shard.
-
-    The local kernels derive one linear element offset per amplitude pair, so a
-    state past their address contract stays on the index-based eager path
-    instead of faulting the CUDA context.
-    """
-
-    return amplitudes.numel() <= FLAT_LOCAL_MAX_AMPLITUDES
-
-
-def _triton_local_1q_decision(
-    *,
-    runtime_supported: bool = True,
-    device_type: str,
-    dtype: str,
-    addressable: bool = True,
-) -> KernelDecision:
-    requested = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0").strip().lower() in {
-        "1",
-        "true",
-        "on",
-        "yes",
-    }
-    return select_cataloged_triton_kernel(
-        "local_1q",
-        request=KernelRequest(
-            semantic_id="statevector.apply.matrix_1q.local",
-            device=device_type,
-            dtype=dtype,
-            layout="flat_statevector",
-            direction="forward",
-            addressing=("local",),
-            providers=("triton",),
-        ),
-        implementation_id="FQKI-TRITON-SV-001-A",
-        requested=requested,
-        runtime_supported=runtime_supported and addressable,
-        device_runtime_provider="pytorch",
-        compiler_backend="cuda",
-        capture_compiler_identity=True,
-    )
-
-
-def _triton_local_cx_decision(
-    *,
-    runtime_supported: bool = True,
-    device_type: str,
-    dtype: str,
-    addressable: bool = True,
-) -> KernelDecision:
-    return select_cataloged_triton_kernel(
-        "local_cx",
-        request=KernelRequest(
-            semantic_id="statevector.apply.cnot.local",
-            device=device_type,
-            dtype=dtype,
-            layout="flat_statevector",
-            direction="forward",
-            addressing=("local",),
-            providers=("triton",),
-        ),
-        implementation_id="FQKI-TRITON-SV-002-A",
-        requested=get_bool("FQ_STATEVECTOR_TRITON_LOCAL_CX", True),
-        runtime_supported=runtime_supported and addressable,
-        device_runtime_provider="pytorch",
-        compiler_backend="cuda",
-        capture_compiler_identity=True,
-    )
-
-
-def _triton_local_cx_enabled(
-    *, device_type: str, dtype: str, addressable: bool = True
-) -> bool:
-    return bool(
-        _triton_local_cx_decision(
-            device_type=device_type,
-            dtype=dtype,
-            addressable=addressable,
-        ).accelerated
-    )
 
 
 def _local_block_fusion_enabled() -> bool:
@@ -206,22 +118,21 @@ def _ket_checkpoint_mode() -> str:
     return "inter_node"
 
 
-def communication_aware_wire_layout(
+def communication_aware_qubit_layout(
     ir: CircuitIR,
     *,
     world_size: int,
     local_world_size: int | None = None,
-    preferred_local_wires: Sequence[int] = (),
+    preferred_local_qubits: Sequence[int] = (),
     optimization_target: str = "forward",
 ) -> tuple[CircuitIR, tuple[int, ...]]:
-    """Relabel wires to minimize forward or full-training-step communication.
+    """Relabel qubits to minimize forward or full-training-step communication.
 
-    ``local_world_size`` is the placement the plan resolved. It is passed rather
-    than read from ``LOCAL_WORLD_SIZE``: that variable describes the world
-    torchrun was handed, so a subgroup run reports a two-node world as
-    single-node, and an unlaunched process would let ambient environment decide
-    which wire carries the rank bit. When it is omitted the world is assumed to
-    be one node, which is the placement-free choice.
+    ``local_world_size`` is the placement the plan resolved, passed rather than
+    read from ``LOCAL_WORLD_SIZE``: that variable describes the world torchrun
+    was handed, so a subgroup run reports a two-node world as single-node, and an
+    unlaunched process would let ambient environment decide which qubit carries
+    the rank bit. Omitting it assumes one node, the placement-free choice.
     """
 
     rank_bits = int(world_size).bit_length() - 1
@@ -230,7 +141,7 @@ def communication_aware_wire_layout(
         raise ValueError("optimization_target must be forward or training_step")
     if world_size <= 1 or world_size & (world_size - 1) or rank_bits >= ir.n_wires:
         return ir, identity
-    preferred = {int(wire) for wire in preferred_local_wires}
+    preferred = {int(qubit) for qubit in preferred_local_qubits}
     if local_world_size is None:
         local_world_size = int(world_size)
     else:
@@ -265,11 +176,11 @@ def communication_aware_wire_layout(
 
         def candidate_cost(candidate: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
             sharded = set(candidate)
-            local = [wire for wire in range(ir.n_wires) if wire not in sharded]
+            local = [qubit for qubit in range(ir.n_wires) if qubit not in sharded]
             physical = {logical: index for index, logical in enumerate(local)}
             cost = 0
             for instruction in ir.instructions:
-                if not any(int(wire) in sharded for wire in instruction.wires):
+                if not any(int(qubit) in sharded for qubit in instruction.wires):
                     continue
                 width_weight = 2 ** max(0, len(instruction.wires) - 1)
                 trainable = any(
@@ -281,17 +192,19 @@ def communication_aware_wire_layout(
                     if optimization_target == "training_step"
                     else 1
                 )
-                local_wires = [
-                    int(wire) for wire in instruction.wires if int(wire) not in sharded
+                local_qubits = [
+                    int(qubit)
+                    for qubit in instruction.wires
+                    if int(qubit) not in sharded
                 ]
                 # Subgroup exchange chunks must align to twice the largest local
-                # wire mask.  Account for that directly: moving a sharded endpoint
+                # qubit mask.  Account for that directly: moving a sharded endpoint
                 # can otherwise turn a bounded chunk into a complete local shard.
                 alignment = 1
-                if local_wires:
+                if local_qubits:
                     highest_position = max(
-                        ir.n_wires - physical[wire] - 1 - rank_bits
-                        for wire in local_wires
+                        ir.n_wires - physical[qubit] - 1 - rank_bits
+                        for qubit in local_qubits
                     )
                     alignment = 1 << (highest_position + 1)
                 cost += width_weight * execution_weight * alignment
@@ -299,11 +212,11 @@ def communication_aware_wire_layout(
                 cost += 1 << (ir.n_wires + rank_bits + 4)
             return cost, candidate
 
-        selected_sharded_wires = min(
+        selected_sharded_qubits = min(
             combinations(range(ir.n_wires), rank_bits), key=candidate_cost
         )
-        sharded_logical = set(selected_sharded_wires)
-        wire_activity = [0] * ir.n_wires
+        sharded_logical = set(selected_sharded_qubits)
+        qubit_activity = [0] * ir.n_wires
         for instruction in ir.instructions:
             width_weight = 2 ** max(0, len(instruction.wires) - 1)
             trainable = any(
@@ -313,20 +226,20 @@ def communication_aware_wire_layout(
             execution_weight = (
                 (4 if trainable else 3) if optimization_target == "training_step" else 1
             )
-            for wire in instruction.wires:
-                wire_activity[int(wire)] += width_weight * execution_weight
+            for qubit in instruction.wires:
+                qubit_activity[int(qubit)] += width_weight * execution_weight
         local_logical = [
-            wire for wire in range(ir.n_wires) if wire not in sharded_logical
+            qubit for qubit in range(ir.n_wires) if qubit not in sharded_logical
         ]
         mapping = [0] * ir.n_wires
         for physical, logical in enumerate(local_logical):
             mapping[logical] = physical
-        ordered_sharded = sorted(
-            sharded_logical,
-            key=(
-                lambda wire: (wire_activity[wire], wire) if topology_aware else (wire,)
-            ),
-        )
+        if topology_aware:
+            ordered_sharded = sorted(
+                sharded_logical, key=lambda qubit: (qubit_activity[qubit], qubit)
+            )
+        else:
+            ordered_sharded = sorted(sharded_logical)
         for offset, logical in enumerate(ordered_sharded):
             mapping[logical] = ir.n_wires - rank_bits + offset
         permutation = tuple(mapping)
@@ -361,19 +274,19 @@ def communication_aware_wire_layout(
 def _basis_owner_rank(
     plan: DistributedStatevectorPlan,
     rank: int,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     basis: int,
 ) -> int:
     """Resolve a gate-basis owner from static rank-address bits."""
 
-    wires = tuple(wires)
+    qubits = tuple(qubits)
     owner = int(rank)
-    width = len(wires)
-    for position, wire in enumerate(wires):
-        if wire not in plan.sharded_wires:
+    width = len(qubits)
+    for position, qubit in enumerate(qubits):
+        if qubit not in plan.sharded_qubits:
             continue
         rank_mask = 1 << (
-            len(plan.sharded_wires) - plan.sharded_wires.index(int(wire)) - 1
+            len(plan.sharded_qubits) - plan.sharded_qubits.index(int(qubit)) - 1
         )
         bit = (int(basis) >> (width - position - 1)) & 1
         owner = (owner & ~rank_mask) | (bit * rank_mask)
@@ -472,8 +385,8 @@ class TorchDistributedStatevectorResult:
     intra_node_communication_bytes: int
     inter_node_communication_count: int
     inter_node_communication_bytes: int
-    wire_layout: str
-    logical_to_physical_wires: tuple[int, ...]
+    qubit_layout: str
+    logical_to_physical_qubits: tuple[int, ...]
     distributed_identity: DistributedIdentity
     kernel_dispatch_evidence: KernelDispatchEvidence = field(
         default_factory=KernelDispatchEvidence
@@ -505,12 +418,12 @@ class TorchDistributedStatevectorResult:
             "local_world_size": self.plan.local_world_size,
             "node_count": self.plan.node_count,
             "rank": self.shard_state.rank,
-            "wire_layout": self.wire_layout,
-            "logical_to_physical_wires": self.logical_to_physical_wires,
+            "wire_layout": self.qubit_layout,
+            "logical_to_physical_wires": self.logical_to_physical_qubits,
             "amplitude_basis_order": (
                 "canonical_logical"
-                if self.logical_to_physical_wires
-                == tuple(range(len(self.logical_to_physical_wires)))
+                if self.logical_to_physical_qubits
+                == tuple(range(len(self.logical_to_physical_qubits)))
                 else "internal_physical_requires_mapping"
             ),
             "rank_ownership": self.shard_state.summary(),
@@ -569,7 +482,7 @@ def _storage_global_indices(
         start, end, dtype=torch.long, device=shard_state.amplitudes.device
     )
     if plan.distribution == "qubit_address_sharded":
-        return (local << len(plan.sharded_wires)) | shard_state.rank
+        return (local << len(plan.sharded_qubits)) | shard_state.rank
     return local + shard_state.shard.amplitude_start
 
 
@@ -578,7 +491,7 @@ def _owner_and_local(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     if plan.distribution == "qubit_address_sharded":
         rank_mask = plan.world_size - 1
-        return global_indices & rank_mask, global_indices >> len(plan.sharded_wires)
+        return global_indices & rank_mask, global_indices >> len(plan.sharded_qubits)
     local_count = plan.shards[0].local_amplitudes
     return global_indices // local_count, global_indices.remainder(local_count)
 
@@ -621,7 +534,7 @@ def _seeded_output(
 def _vectorized_local_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
@@ -630,10 +543,10 @@ def _vectorized_local_gate(
 ) -> tuple[StatevectorShardState, int]:
     """Apply owned outputs in tensor chunks without amplitude Python loops."""
 
-    wires = tuple(int(wire) for wire in wires)
-    gate_dim = 2 ** len(wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    gate_dim = 2 ** len(qubits)
     matrix = matrix.to(shard_state.amplitudes)
-    rank_bits = len(plan.sharded_wires)
+    rank_bits = len(plan.sharded_qubits)
     triton_runtime_supported = bool(
         gate_dim == 2 and shard_state.amplitudes.is_contiguous()
     )
@@ -642,6 +555,10 @@ def _vectorized_local_gate(
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
         addressable=_flat_local_address_supported(shard_state.amplitudes),
+        shape=(
+            int(shard_state.amplitudes.shape[0]),
+            int(shard_state.amplitudes.shape[1]),
+        ),
     )
     if gate_dim == 2 and kernel_dispatch_evidence is not None:
         kernel_dispatch_evidence.record(triton_decision)
@@ -650,7 +567,9 @@ def _vectorized_local_gate(
         and shard_state.amplitudes.device.type == "cpu"
         and _single_process_cpu_direct_enabled()
     ):
-        amplitudes = _apply_matrix(shard_state.amplitudes, matrix, wires, plan.n_wires)
+        amplitudes = _apply_matrix(
+            shard_state.amplitudes, matrix, qubits, plan.n_qubits
+        )
         if output is not None:
             output.copy_(amplitudes)
             amplitudes = output
@@ -659,11 +578,9 @@ def _vectorized_local_gate(
             amplitudes.numel() * amplitudes.element_size(),
         )
     if triton_decision.accelerated:
-        from ....kernels.triton.statevector_gates import (
-            apply_complex64_local_1q,
-        )
+        from ....kernels.triton.statevector_gates import apply_complex64_local_1q
 
-        bit_position = plan.n_wires - wires[0] - 1 - rank_bits
+        bit_position = plan.n_qubits - qubits[0] - 1 - rank_bits
         amplitudes = apply_complex64_local_1q(
             shard_state.amplitudes,
             matrix,
@@ -683,8 +600,8 @@ def _vectorized_local_gate(
     amplitudes, peak = _apply_local_gate_eager(
         shard_state.amplitudes,
         matrix,
-        wires,
-        n_wires=plan.n_wires,
+        qubits,
+        n_wires=plan.n_qubits,
         rank_bits=rank_bits,
         chunk_amplitudes=chunk_amplitudes,
         output=output,
@@ -703,7 +620,7 @@ def _vectorized_local_gate(
 
 def _vectorized_local_cx_gate(
     shard_state: StatevectorShardState,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
     output: torch.Tensor | None = None,
@@ -714,15 +631,15 @@ def _vectorized_local_cx_gate(
         apply_complex64_local_cx_inplace,
     )
 
-    control, target = (int(wire) for wire in wires)
-    rank_bits = len(plan.sharded_wires)
+    control, target = (int(qubit) for qubit in qubits)
+    rank_bits = len(plan.sharded_qubits)
     result = torch.empty_like(shard_state.amplitudes) if output is None else output
     if result.data_ptr() != shard_state.amplitudes.data_ptr():
         result.copy_(shard_state.amplitudes)
     apply_complex64_local_cx_inplace(
         result,
-        control_bit_position=plan.n_wires - control - 1 - rank_bits,
-        target_bit_position=plan.n_wires - target - 1 - rank_bits,
+        control_bit_position=plan.n_qubits - control - 1 - rank_bits,
+        target_bit_position=plan.n_qubits - target - 1 - rank_bits,
     )
     return (
         StatevectorShardState(
@@ -738,7 +655,7 @@ def _vectorized_local_cx_gate(
 def _vectorized_local_diagonal_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
@@ -752,7 +669,7 @@ def _vectorized_local_diagonal_gate(
         and _single_process_cpu_direct_enabled()
     ):
         amplitudes = _apply_diagonal_matrix(
-            shard_state.amplitudes, matrix, wires, plan.n_wires
+            shard_state.amplitudes, matrix, qubits, plan.n_qubits
         )
         if output is not None:
             output.copy_(amplitudes)
@@ -774,8 +691,8 @@ def _vectorized_local_diagonal_gate(
             shard_state.amplitudes[:, start:end],
             diagonal,
             global_indices,
-            wires,
-            n_wires=plan.n_wires,
+            qubits,
+            n_wires=plan.n_qubits,
             output=out[:, start:end],
         )
         peak = max(peak, output_bytes + factor_bytes)
@@ -793,7 +710,7 @@ def _vectorized_local_diagonal_gate(
 def _vectorized_pair_exchange_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
-    wire: int,
+    qubit: int,
     *,
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
@@ -802,15 +719,15 @@ def _vectorized_pair_exchange_gate(
     pipeline: bool = True,
     output: torch.Tensor | None = None,
 ) -> tuple[StatevectorShardState, int, int, int]:
-    """Apply a one-sharded-wire gate through chunked rank-pair exchange."""
+    """Apply a one-sharded-qubit gate through chunked rank-pair exchange."""
 
-    position = plan.sharded_wires.index(int(wire))
-    rank_mask = 1 << (len(plan.sharded_wires) - position - 1)
+    position = plan.sharded_qubits.index(int(qubit))
+    rank_mask = 1 << (len(plan.sharded_qubits) - position - 1)
     peer = shard_state.rank ^ rank_mask
     global_peer = (
         dist.get_global_rank(process_group, peer) if process_group is not None else peer
     )
-    rank_basis = (shard_state.rank >> (len(plan.sharded_wires) - position - 1)) & 1
+    rank_basis = (shard_state.rank >> (len(plan.sharded_qubits) - position - 1)) & 1
     matrix = matrix.to(shard_state.amplitudes)
     out = torch.empty_like(shard_state.amplitudes) if output is None else output
     output_bytes = out.numel() * out.element_size()
@@ -916,7 +833,7 @@ def _vectorized_pair_exchange_gate(
 
 def _vectorized_cross_shard_cx(
     shard_state: StatevectorShardState,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
@@ -927,15 +844,15 @@ def _vectorized_cross_shard_cx(
 ) -> tuple[StatevectorShardState, int, int, int]:
     """Apply a CX touching exactly one rank bit with minimal communication."""
 
-    control, target = (int(wire) for wire in wires)
-    control_sharded = control in plan.sharded_wires
-    target_sharded = target in plan.sharded_wires
+    control, target = (int(qubit) for qubit in qubits)
+    control_sharded = control in plan.sharded_qubits
+    target_sharded = target in plan.sharded_qubits
     if control_sharded == target_sharded:
-        raise ValueError("specialized cross-shard CX requires exactly one sharded wire")
+        raise ValueError("cross-shard CX requires exactly one sharded qubit")
 
     if control_sharded:
-        position = plan.sharded_wires.index(control)
-        rank_shift = len(plan.sharded_wires) - position - 1
+        position = plan.sharded_qubits.index(control)
+        rank_shift = len(plan.sharded_qubits) - position - 1
         rank_control = (shard_state.rank >> rank_shift) & 1
         if rank_control == 0:
             amplitudes = _seeded_output(shard_state.amplitudes, output)
@@ -960,16 +877,16 @@ def _vectorized_cross_shard_cx(
         )
         return return_state, 0, 0, scratch
 
-    position = plan.sharded_wires.index(target)
-    rank_shift = len(plan.sharded_wires) - position - 1
+    position = plan.sharded_qubits.index(target)
+    rank_shift = len(plan.sharded_qubits) - position - 1
     peer = shard_state.rank ^ (1 << rank_shift)
     global_peer = (
         dist.get_global_rank(process_group, peer) if process_group is not None else peer
     )
     out = _seeded_output(shard_state.amplitudes, output)
     output_bytes = out.numel() * out.element_size()
-    rank_bits = len(plan.sharded_wires)
-    control_position = plan.n_wires - control - 1 - rank_bits
+    rank_bits = len(plan.sharded_qubits)
+    control_position = plan.n_qubits - control - 1 - rank_bits
     control_mask = 1 << control_position
     active_count = shard_state.shard.local_amplitudes // 2
     active_chunk = max(1, chunk_amplitudes)
@@ -1001,7 +918,7 @@ def _vectorized_cross_shard_cx(
                 start,
                 end,
                 (control,),
-                n_wires=plan.n_wires,
+                n_wires=plan.n_qubits,
                 rank_bits=rank_bits,
                 device=out.device,
             )
@@ -1037,7 +954,7 @@ def _vectorized_cross_shard_cx(
                     start,
                     end,
                     (control,),
-                    n_wires=plan.n_wires,
+                    n_wires=plan.n_qubits,
                     rank_bits=rank_bits,
                     device=out.device,
                 )
@@ -1068,7 +985,7 @@ def _vectorized_cross_shard_cx(
 def _vectorized_subgroup_exchange_gate(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
     chunk_amplitudes: int,
@@ -1079,12 +996,12 @@ def _vectorized_subgroup_exchange_gate(
 ) -> tuple[StatevectorShardState, int, int, int]:
     """Apply a cross-shard gate using chunked subgroup all-to-all exchange."""
 
-    wires = tuple(int(wire) for wire in wires)
-    sharded = tuple(wire for wire in wires if wire in plan.sharded_wires)
-    local_wires = tuple(wire for wire in wires if wire not in plan.sharded_wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    sharded = tuple(qubit for qubit in qubits if qubit in plan.sharded_qubits)
+    local_qubits = tuple(qubit for qubit in qubits if qubit not in plan.sharded_qubits)
     rank_masks = tuple(
-        1 << (len(plan.sharded_wires) - plan.sharded_wires.index(wire) - 1)
-        for wire in sharded
+        1 << (len(plan.sharded_qubits) - plan.sharded_qubits.index(qubit) - 1)
+        for qubit in sharded
     )
     peers = tuple(
         shard_state.rank
@@ -1092,10 +1009,10 @@ def _vectorized_subgroup_exchange_gate(
         for code in range(1, 2 ** len(rank_masks))
     )
     local_count = shard_state.shard.local_amplitudes
-    gate_dim = 2 ** len(wires)
+    gate_dim = 2 ** len(qubits)
     local_masks = tuple(
-        _wire_mask(plan.n_wires, wire) >> len(plan.sharded_wires)
-        for wire in local_wires
+        _wire_mask(plan.n_qubits, qubit) >> len(plan.sharded_qubits)
+        for qubit in local_qubits
     )
     alignment = 2 * max(local_masks) if local_masks else 1
     scratch_terms = len(peers) + gate_dim
@@ -1103,16 +1020,16 @@ def _vectorized_subgroup_exchange_gate(
     requested = min(chunk_amplitudes, max_substate_chunk)
     chunk_amplitudes = max(alignment, (requested // alignment) * alignment)
     offsets = torch.tensor(
-        [_basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)],
+        [_basis_offset(plan.n_qubits, qubits, basis) for basis in range(gate_dim)],
         dtype=torch.long,
         device=shard_state.amplitudes.device,
     )
-    rank_bits = len(plan.sharded_wires)
+    rank_bits = len(plan.sharded_qubits)
     local_offsets = offsets >> rank_bits
     local_clear_mask = ~sum(
-        _wire_mask(plan.n_wires, wire) >> rank_bits for wire in local_wires
+        _wire_mask(plan.n_qubits, qubit) >> rank_bits for qubit in local_qubits
     )
-    clear_mask = ~sum(_wire_mask(plan.n_wires, wire) for wire in wires)
+    clear_mask = ~sum(_wire_mask(plan.n_qubits, qubit) for qubit in qubits)
     matrix = matrix.to(shard_state.amplitudes)
     out = torch.empty_like(shard_state.amplitudes) if output is None else output
     output_bytes = out.numel() * out.element_size()
@@ -1192,7 +1109,7 @@ def _vectorized_subgroup_exchange_gate(
             local_bases = None
             required = (global_out & clear_mask)[:, None] | offsets[None, :]
         output_basis = _basis_indices_for_wires(
-            global_out, n_wires=plan.n_wires, wires=wires
+            global_out, n_wires=plan.n_qubits, wires=qubits
         )
         basis_inputs = []
         for basis in range(gate_dim):
@@ -1201,14 +1118,14 @@ def _vectorized_subgroup_exchange_gate(
             else:
                 assert required is not None
                 _, local_required = _owner_and_local(required[:, basis], plan=plan)
-            owner = _basis_owner_rank(plan, shard_state.rank, wires, basis)
+            owner = _basis_owner_rank(plan, shard_state.rank, qubits, basis)
             local_required = local_required - start
             if _runtime_index_validation_enabled() and (
                 int(local_required.min()) < 0
                 or int(local_required.max()) >= end - start
             ):
                 raise ValueError(
-                    "exchange chunk is not aligned to the gate's local wires"
+                    "exchange chunk is not aligned to the gate's local qubits"
                 )
             basis_inputs.append(sources[owner][:, local_required])
         updated_output, numeric_scratch_bytes = _combine_gate_basis_blocks_eager(

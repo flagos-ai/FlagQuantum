@@ -127,7 +127,7 @@ def execute_torch_distributed_mps_forward(
         tensor[:, :, 0, :] = zero_state[0]
         local_tensors[wire] = tensor
     state = RankOwnedMPSState(
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         rank=rank,
         world_size=world_size,
@@ -426,13 +426,13 @@ def gather_mps_for_validation(
             count = int(math.prod(shape))
             tensors[wire] = buffer[offset : offset + count].reshape(shape)
             offset += count
-    if sorted(tensors) != list(range(state.n_wires)):
+    if sorted(tensors) != list(range(state.n_qubits)):
         raise RuntimeError(
             "the gathered MPS is missing sites: "
-            f"present={sorted(tensors)} expected={list(range(state.n_wires))}"
+            f"present={sorted(tensors)} expected={list(range(state.n_qubits))}"
         )
     return MPSState(
-        [tensors[wire] for wire in range(state.n_wires)],
+        [tensors[wire] for wire in range(state.n_qubits)],
         config=state.config,
     )
 

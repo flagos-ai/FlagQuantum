@@ -16,7 +16,7 @@ from flagquantum.circuit import Circuit
 pytestmark = pytest.mark.unit
 
 
-def _basis_index(circuit: Circuit, n_wires: int) -> int:
+def _basis_index(circuit: Circuit, n_qubits: int) -> int:
     """Return the computational basis state a classical circuit lands on.
 
     The purity guard matters: reading ``argmax`` of a state that is *not* a basis state would
@@ -28,22 +28,22 @@ def _basis_index(circuit: Circuit, n_wires: int) -> int:
     return int(probabilities.argmax().item())
 
 
-def _wire(circuit: Circuit, n_wires: int, wire: int) -> int:
-    """Return one wire's value, read by its bit position. Wire 0 is the most significant bit."""
-    return (_basis_index(circuit, n_wires) >> (n_wires - 1 - wire)) & 1
+def _wire(circuit: Circuit, n_qubits: int, qubit: int) -> int:
+    """Return one qubit's value, read by its bit position. Qubit 0 is the most significant bit."""
+    return (_basis_index(circuit, n_qubits) >> (n_qubits - 1 - qubit)) & 1
 
 
-def _prepared(oracle: Circuit, n_wires: int, value: int) -> Circuit:
+def _prepared(oracle: Circuit, n_qubits: int, value: int) -> Circuit:
     """Return the standalone ``oracle`` preceded by the X gates that load ``value``.
 
-    A standalone builder allocates and wires its own circuit, so the only way to feed it
+    A standalone builder allocates and qubits its own circuit, so the only way to feed it
     a register value is to put the preparation in front of it. The two gate lists are
     joined through the public QIR form rather than by reaching into either circuit, which
     keeps the builder's own wiring the thing under test.
     """
     prep = Circuit(oracle.n_qubits)
-    for position in range(n_wires):
-        if (value >> (n_wires - 1 - position)) & 1:
+    for position in range(n_qubits):
+        if (value >> (n_qubits - 1 - position)) & 1:
             prep.gate("x", position)
     return Circuit.from_qir(prep.to_qir() + oracle.to_qir(), n_qubits=oracle.n_qubits)
 
@@ -52,9 +52,9 @@ def test_multi_controlled_x_flips_only_the_saturated_pattern() -> None:
     """With two controls the target flips exactly when both are set, and nothing else moves."""
     for pattern in range(8):
         circuit = Circuit(3)
-        for position, wire in enumerate((0, 1, 2)):
+        for position, qubit in enumerate((0, 1, 2)):
             if (pattern >> (2 - position)) & 1:
-                circuit.gate("x", wire)
+                circuit.gate("x", qubit)
         append_multi_controlled_x(circuit, [0, 1], 2)
         # The gate XORs its target, so a target that enters as |1> leaves as |0> on the
         # saturated pattern. Asserting the XOR rather than a constant is what makes this
@@ -69,14 +69,14 @@ def test_three_control_multi_controlled_x_is_exact_and_restores_its_ancilla() ->
     """Three controls need one ancilla; the target flips on saturation and the ancilla returns."""
     for pattern in range(8):
         circuit = Circuit(5)
-        for position, wire in enumerate((0, 1, 2)):
+        for position, qubit in enumerate((0, 1, 2)):
             if (pattern >> (2 - position)) & 1:
-                circuit.gate("x", wire)
+                circuit.gate("x", qubit)
         append_multi_controlled_x(circuit, [0, 1, 2], 3, ancillas=[4])
         assert _wire(circuit, 5, 3) == int(pattern == 0b111), pattern
         assert _wire(circuit, 5, 4) == 0, pattern
-        for position, wire in enumerate((0, 1, 2)):
-            assert _wire(circuit, 5, wire) == (pattern >> (2 - position)) & 1, pattern
+        for position, qubit in enumerate((0, 1, 2)):
+            assert _wire(circuit, 5, qubit) == (pattern >> (2 - position)) & 1, pattern
 
 
 def test_multi_controlled_x_scales_to_four_controls() -> None:
@@ -87,9 +87,9 @@ def test_multi_controlled_x_scales_to_four_controls() -> None:
     """
     for pattern in range(16):
         circuit = Circuit(7)
-        for position, wire in enumerate((0, 1, 2, 3)):
+        for position, qubit in enumerate((0, 1, 2, 3)):
             if (pattern >> (3 - position)) & 1:
-                circuit.gate("x", wire)
+                circuit.gate("x", qubit)
         append_multi_controlled_x(circuit, [0, 1, 2, 3], 4, ancillas=[5, 6])
         assert _wire(circuit, 7, 4) == int(pattern == 0b1111), pattern
         assert _wire(circuit, 7, 5) == 0, pattern
@@ -125,12 +125,12 @@ def test_comparator_marks_lhs_greater_than_rhs() -> None:
     for left in range(4):
         for right in range(4):
             circuit = Circuit(9)
-            for position, wire in enumerate((0, 1)):
+            for position, qubit in enumerate((0, 1)):
                 if (left >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
-            for position, wire in enumerate((2, 3)):
+                    circuit.gate("x", qubit)
+            for position, qubit in enumerate((2, 3)):
                 if (right >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
+                    circuit.gate("x", qubit)
             append_comparator(
                 circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
             )
@@ -141,17 +141,17 @@ def test_comparator_leaves_every_other_wire_alone() -> None:
     """The clean-exit contract: only the target moves.
 
     One equality compares the whole resulting index, so this single assertion covers the
-    operands, the target, all ``n + 1`` equality flags and the scratch wire at once.
+    operands, the target, all ``n + 1`` equality flags and the scratch qubit at once.
     """
     for left in range(4):
         for right in range(4):
             circuit = Circuit(9)
-            for position, wire in enumerate((0, 1)):
+            for position, qubit in enumerate((0, 1)):
                 if (left >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
-            for position, wire in enumerate((2, 3)):
+                    circuit.gate("x", qubit)
+            for position, qubit in enumerate((2, 3)):
                 if (right >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
+                    circuit.gate("x", qubit)
             append_comparator(
                 circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
             )
@@ -169,12 +169,12 @@ def test_comparator_xors_a_target_that_enters_set() -> None:
     for left in range(4):
         for right in range(4):
             circuit = Circuit(9)
-            for position, wire in enumerate((0, 1)):
+            for position, qubit in enumerate((0, 1)):
                 if (left >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
-            for position, wire in enumerate((2, 3)):
+                    circuit.gate("x", qubit)
+            for position, qubit in enumerate((2, 3)):
                 if (right >> (1 - position)) & 1:
-                    circuit.gate("x", wire)
+                    circuit.gate("x", qubit)
             circuit.gate("x", 4)
             append_comparator(
                 circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
@@ -187,12 +187,12 @@ def test_comparator_is_exact_and_clean_at_three_bits() -> None:
     for left in range(8):
         for right in range(8):
             circuit = Circuit(12)
-            for position, wire in enumerate((0, 1, 2)):
+            for position, qubit in enumerate((0, 1, 2)):
                 if (left >> (2 - position)) & 1:
-                    circuit.gate("x", wire)
-            for position, wire in enumerate((3, 4, 5)):
+                    circuit.gate("x", qubit)
+            for position, qubit in enumerate((3, 4, 5)):
                 if (right >> (2 - position)) & 1:
-                    circuit.gate("x", wire)
+                    circuit.gate("x", qubit)
             append_comparator(
                 circuit,
                 lhs=[0, 1, 2],
@@ -214,7 +214,7 @@ def test_comparator_refuses_mismatched_operand_lengths() -> None:
 
 
 def test_comparator_refuses_a_wrong_equality_width() -> None:
-    """The equality register is n + 1 wires: one flag per bit, plus the constant input."""
+    """The equality register is n + 1 qubits: one flag per bit, plus the constant input."""
     with pytest.raises(ValueError):
         append_comparator(
             Circuit(8), lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6], scratch=7
@@ -222,7 +222,7 @@ def test_comparator_refuses_a_wrong_equality_width() -> None:
 
 
 def test_comparator_refuses_overlapping_wires() -> None:
-    """A scratch wire that is also an operand would corrupt the comparison."""
+    """A scratch qubit that is also an operand would corrupt the comparison."""
     with pytest.raises(ValueError):
         append_comparator(
             Circuit(8), lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=3
@@ -248,33 +248,33 @@ def test_phase_oracle_flips_the_sign_of_marked_states_only() -> None:
     Reading the amplitude at the prepared index is the decisive check here: a phase oracle
     that does nothing, or that flips every state, both fail it.
     """
-    for n_wires in (1, 2, 3):
+    for n_qubits in (1, 2, 3):
 
-        def predicate(value: int, n: int = n_wires) -> bool:
+        def predicate(value: int, n: int = n_qubits) -> bool:
             return value in (1, 2**n - 1)
 
-        marked = set(marked_states(predicate, n_wires))
-        for basis in range(2**n_wires):
-            circuit = Circuit(n_wires)
-            for position in range(n_wires):
-                if (basis >> (n_wires - 1 - position)) & 1:
+        marked = set(marked_states(predicate, n_qubits))
+        for basis in range(2**n_qubits):
+            circuit = Circuit(n_qubits)
+            for position in range(n_qubits):
+                if (basis >> (n_qubits - 1 - position)) & 1:
                     circuit.gate("x", position)
-            append_phase_oracle(circuit, predicate, list(range(n_wires)))
+            append_phase_oracle(circuit, predicate, list(range(n_qubits)))
             amplitude = complex(circuit.state().reshape(-1)[basis])
             expected = -1.0 if basis in marked else 1.0
-            assert amplitude == pytest.approx(expected, abs=1e-5), (n_wires, basis)
+            assert amplitude == pytest.approx(expected, abs=1e-5), (n_qubits, basis)
 
 
 def test_phase_oracle_on_a_superposition() -> None:
     """In a uniform superposition only the marked amplitude is negated."""
-    n_wires = 2
-    circuit = Circuit(n_wires)
-    for wire in range(n_wires):
-        circuit.gate("h", wire)
+    n_qubits = 2
+    circuit = Circuit(n_qubits)
+    for qubit in range(n_qubits):
+        circuit.gate("h", qubit)
     before = circuit.state().reshape(-1).clone()
-    append_phase_oracle(circuit, lambda value: value == 2, list(range(n_wires)))
+    append_phase_oracle(circuit, lambda value: value == 2, list(range(n_qubits)))
     after = circuit.state().reshape(-1)
-    for index in range(2**n_wires):
+    for index in range(2**n_qubits):
         expected = -before[index] if index == 2 else before[index]
         # ``complex(...)`` on both sides: ``pytest.approx`` only understands a tensor
         # when numpy is importable, and this repository does not declare numpy, so a
@@ -285,7 +285,7 @@ def test_phase_oracle_on_a_superposition() -> None:
 
 
 def test_phase_oracle_refuses_more_than_three_wires() -> None:
-    """A four-wire phase oracle has no wire to spare for the multi-controlled X's ancilla."""
+    """A four-qubit phase oracle has no qubit to spare for the multi-controlled X's ancilla."""
     with pytest.raises(ValueError):
         phase_oracle(lambda value: value == 1, 4)
 
@@ -294,63 +294,63 @@ def test_standalone_phase_oracle_marks_exactly_its_predicate() -> None:
     """The builder's own circuit, read on every basis state, negates exactly the marked set.
 
     The append form is covered above; this reads the circuit ``phase_oracle`` allocates
-    itself, over all ``2**n`` inputs, so a builder that wires the wrong register or marks
+    itself, over all ``2**n`` inputs, so a builder that qubits the wrong register or marks
     nothing fails here while the append tests stay green.
     """
-    for n_wires in (1, 2, 3):
+    for n_qubits in (1, 2, 3):
 
-        def predicate(value: int, n: int = n_wires) -> bool:
+        def predicate(value: int, n: int = n_qubits) -> bool:
             return value in (1, 2**n - 1)
 
-        oracle = phase_oracle(predicate, n_wires)
-        assert oracle.n_qubits == n_wires
-        marked = set(marked_states(predicate, n_wires))
-        for basis in range(2**n_wires):
+        oracle = phase_oracle(predicate, n_qubits)
+        assert oracle.n_qubits == n_qubits
+        marked = set(marked_states(predicate, n_qubits))
+        for basis in range(2**n_qubits):
             amplitude = complex(
-                _prepared(oracle, n_wires, basis).state().reshape(-1)[basis]
+                _prepared(oracle, n_qubits, basis).state().reshape(-1)[basis]
             )
             expected = -1.0 if basis in marked else 1.0
-            assert amplitude == pytest.approx(expected, abs=1e-5), (n_wires, basis)
+            assert amplitude == pytest.approx(expected, abs=1e-5), (n_qubits, basis)
 
 
 def test_bit_oracle_wire_budget() -> None:
-    """The output wire plus one ladder ancilla per control above two."""
-    for n_wires, expected in ((1, 2), (2, 3), (3, 5), (4, 7)):
+    """The output qubit plus one ladder ancilla per control above two."""
+    for n_qubits, expected in ((1, 2), (2, 3), (3, 5), (4, 7)):
         assert (
-            bit_oracle(lambda value: value == 0, n_wires).n_qubits == expected
-        ), n_wires
+            bit_oracle(lambda value: value == 0, n_qubits).n_qubits == expected
+        ), n_qubits
 
 
 def test_standalone_bit_oracle_writes_its_own_output_wire() -> None:
-    """The builder's own circuit carries the predicate value and clears the wires it allocates.
+    """The builder's own circuit carries the predicate value and clears the qubits it allocates.
 
     The append form is covered above; this reads the circuit ``bit_oracle`` allocates
-    itself, over every register value, so a builder that writes the wrong wire or leaves a
+    itself, over every register value, so a builder that writes the wrong qubit or leaves a
     ladder ancilla dirty fails here while the append tests stay green.
     """
-    for n_wires in (1, 2, 3):
-        n_ancillas = max(0, n_wires - 2)
+    for n_qubits in (1, 2, 3):
+        n_ancillas = max(0, n_qubits - 2)
 
-        def predicate(value: int, n: int = n_wires) -> bool:
+        def predicate(value: int, n: int = n_qubits) -> bool:
             return value == 2**n - 1
 
-        oracle = bit_oracle(predicate, n_wires)
-        assert oracle.n_qubits == n_wires + 1 + n_ancillas
-        for value in range(2**n_wires):
-            circuit = _prepared(oracle, n_wires, value)
-            assert _wire(circuit, oracle.n_qubits, n_wires) == int(predicate(value)), (
-                n_wires,
+        oracle = bit_oracle(predicate, n_qubits)
+        assert oracle.n_qubits == n_qubits + 1 + n_ancillas
+        for value in range(2**n_qubits):
+            circuit = _prepared(oracle, n_qubits, value)
+            assert _wire(circuit, oracle.n_qubits, n_qubits) == int(predicate(value)), (
+                n_qubits,
                 value,
                 "output",
             )
-            for position in range(n_wires):
+            for position in range(n_qubits):
                 assert (
                     _wire(circuit, oracle.n_qubits, position)
-                    == (value >> (n_wires - 1 - position)) & 1
-                ), (n_wires, value, "register")
-            for ancilla in range(n_wires + 1, oracle.n_qubits):
+                    == (value >> (n_qubits - 1 - position)) & 1
+                ), (n_qubits, value, "register")
+            for ancilla in range(n_qubits + 1, oracle.n_qubits):
                 assert _wire(circuit, oracle.n_qubits, ancilla) == 0, (
-                    n_wires,
+                    n_qubits,
                     value,
                     "ancilla",
                 )
@@ -358,23 +358,23 @@ def test_standalone_bit_oracle_writes_its_own_output_wire() -> None:
 
 def test_bit_oracle_xors_the_predicate_onto_the_output() -> None:
     """The output carries the predicate value, and every ladder ancilla returns to zero."""
-    for n_wires in (1, 2, 3):
-        n_ancillas = max(0, n_wires - 2)
+    for n_qubits in (1, 2, 3):
+        n_ancillas = max(0, n_qubits - 2)
 
-        def predicate(value: int, n: int = n_wires) -> bool:
+        def predicate(value: int, n: int = n_qubits) -> bool:
             return value == 2**n - 1
 
-        for value in range(2**n_wires):
-            circuit = Circuit(n_wires + 1 + n_ancillas)
-            for position in range(n_wires):
-                if (value >> (n_wires - 1 - position)) & 1:
+        for value in range(2**n_qubits):
+            circuit = Circuit(n_qubits + 1 + n_ancillas)
+            for position in range(n_qubits):
+                if (value >> (n_qubits - 1 - position)) & 1:
                     circuit.gate("x", position)
             append_bit_oracle(
                 circuit,
                 predicate,
-                list(range(n_wires)),
-                target=n_wires,
-                ancillas=list(range(n_wires + 1, n_wires + 1 + n_ancillas)),
+                list(range(n_qubits)),
+                target=n_qubits,
+                ancillas=list(range(n_qubits + 1, n_qubits + 1 + n_ancillas)),
             )
             probabilities = circuit.state().reshape(-1).abs() ** 2
             assert float(probabilities.max().item()) == pytest.approx(
@@ -384,21 +384,21 @@ def test_bit_oracle_xors_the_predicate_onto_the_output() -> None:
             expected = (value << (n_ancillas + 1)) | (
                 int(predicate(value)) << n_ancillas
             )
-            assert index == expected, (n_wires, value)
+            assert index == expected, (n_qubits, value)
 
 
 def test_bit_oracle_is_its_own_inverse() -> None:
     """Applying the oracle twice leaves the output where it started."""
-    n_wires = 2
-    circuit = Circuit(n_wires + 1)
+    n_qubits = 2
+    circuit = Circuit(n_qubits + 1)
     circuit.gate("x", 0)
     append_bit_oracle(
-        circuit, lambda value: value == 2, list(range(n_wires)), target=n_wires
+        circuit, lambda value: value == 2, list(range(n_qubits)), target=n_qubits
     )
     once = int((circuit.state().reshape(-1).abs() ** 2).argmax().item())
     append_bit_oracle(
-        circuit, lambda value: value == 2, list(range(n_wires)), target=n_wires
+        circuit, lambda value: value == 2, list(range(n_qubits)), target=n_qubits
     )
     twice = int((circuit.state().reshape(-1).abs() ** 2).argmax().item())
     assert once != twice
-    assert twice == (1 << (n_wires + 1 - 1 - 0))
+    assert twice == (1 << (n_qubits + 1 - 1 - 0))

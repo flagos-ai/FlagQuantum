@@ -26,6 +26,10 @@ def _encode_channel_instruction(
     return Instruction(
         name=channel.name,
         wires=tuple(int(wire) for wire in wires),
+        # A channel opcode declares its parameters, so the lowered instruction
+        # states the probability it was built with instead of leaving a reader to
+        # invert it out of the Kraus operators.
+        params=dict(channel.parameters),
         matrix=channel.kraus,
         metadata={"is_channel": True, **dict(metadata or {})},
     )
@@ -64,9 +68,9 @@ def _profile_channel(
 
 
 def _validate_rule_wires(noise_model: NoiseModel, *, n_wires: int) -> None:
-    """Refuse gate-noise rules addressing a wire the program does not have.
+    """Refuse gate-noise rules addressing a qubit the program does not have.
 
-    A rule held to a wire outside the program width can never match any
+    A rule held to a qubit outside the program width can never match any
     instruction, so it would be accepted and then contribute nothing. This
     mirrors the check ``NoiseModel.add_readout`` already applies to readout
     rules.

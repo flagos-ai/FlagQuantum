@@ -35,13 +35,20 @@ STABILITY_THRESHOLD = 0.20
 
 EngineName = Literal[
     "flagquantum_native_batch",
+    "flagquantum_native_adaptive_budget_rollback",
     "flagquantum_native_fixed_layer_rollback",
     "flagquantum_native_static_clifford_layer_rollback",
     "flagquantum_native_parameterized_layer_rollback",
+    "flagquantum_native_fused_rotation_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
+    "flagquantum_native_rotation_clifford_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_diagonal_graph_rollback",
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
+    "flagquantum_native_assembly_rollback",
+    "flagquantum_native_direct_assembly_rollback",
+    "flagquantum_native_static_product_initialization_rollback",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -53,13 +60,20 @@ EngineName = Literal[
 
 ENGINE_NAMES: tuple[EngineName, ...] = (
     "flagquantum_native_batch",
+    "flagquantum_native_adaptive_budget_rollback",
     "flagquantum_native_fixed_layer_rollback",
     "flagquantum_native_static_clifford_layer_rollback",
     "flagquantum_native_parameterized_layer_rollback",
+    "flagquantum_native_fused_rotation_layer_rollback",
     "flagquantum_native_clifford_matching_rollback",
+    "flagquantum_native_rotation_clifford_rollback",
     "flagquantum_native_clifford_phase_map_rollback",
+    "flagquantum_native_diagonal_graph_rollback",
     "flagquantum_native_dense_width_rollback",
     "flagquantum_native_layout_retention",
+    "flagquantum_native_assembly_rollback",
+    "flagquantum_native_direct_assembly_rollback",
+    "flagquantum_native_static_product_initialization_rollback",
     "flagquantum_native_functional_windows",
     "flagquantum_native_monolithic_batch",
     "flagquantum_native_serial",
@@ -71,6 +85,9 @@ ENGINE_NAMES: tuple[EngineName, ...] = (
 
 _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native_batch": "FlagQuantum native batch (budgeted)",
+    "flagquantum_native_adaptive_budget_rollback": (
+        "FlagQuantum native batch (fixed 64 MiB budget rollback)"
+    ),
     "flagquantum_native_fixed_layer_rollback": (
         "FlagQuantum native batch (fixed-layer rollback)"
     ),
@@ -80,17 +97,35 @@ _ENGINE_LABELS: dict[EngineName, str] = {
     "flagquantum_native_parameterized_layer_rollback": (
         "FlagQuantum native batch (parameterized-layer rollback)"
     ),
+    "flagquantum_native_fused_rotation_layer_rollback": (
+        "FlagQuantum native batch (fused-rotation-layer rollback)"
+    ),
     "flagquantum_native_clifford_matching_rollback": (
         "FlagQuantum native batch (Clifford-matching rollback)"
+    ),
+    "flagquantum_native_rotation_clifford_rollback": (
+        "FlagQuantum native batch (separate rotation/Clifford rollback)"
     ),
     "flagquantum_native_clifford_phase_map_rollback": (
         "FlagQuantum native batch (Clifford phase-map rollback)"
     ),
+    "flagquantum_native_diagonal_graph_rollback": (
+        "FlagQuantum native batch (functional diagonal-graph rollback)"
+    ),
     "flagquantum_native_dense_width_rollback": (
-        "FlagQuantum native batch (4-wire dense rollback)"
+        "FlagQuantum native batch (4-qubit dense rollback)"
     ),
     "flagquantum_native_layout_retention": (
         "FlagQuantum native batch (legacy layout retention)"
+    ),
+    "flagquantum_native_assembly_rollback": (
+        "FlagQuantum native batch (functional assembly rollback)"
+    ),
+    "flagquantum_native_direct_assembly_rollback": (
+        "FlagQuantum native batch (copy-based assembly rollback)"
+    ),
+    "flagquantum_native_static_product_initialization_rollback": (
+        "FlagQuantum native batch (static-product initialization rollback)"
     ),
     "flagquantum_native_functional_windows": (
         "FlagQuantum native batch (legacy functional windows)"
@@ -133,10 +168,10 @@ def _timing(samples: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def _parameter_matrix(batch_size: int, n_wires: int, seed: int) -> torch.Tensor:
-    generator = torch.Generator(device="cpu").manual_seed(seed + 97 * n_wires)
+def _parameter_matrix(batch_size: int, n_qubits: int, seed: int) -> torch.Tensor:
+    generator = torch.Generator(device="cpu").manual_seed(seed + 97 * n_qubits)
     return (
-        torch.rand((batch_size, n_wires), generator=generator, dtype=torch.float64)
+        torch.rand((batch_size, n_qubits), generator=generator, dtype=torch.float64)
         * 0.8
         - 0.4
     )
@@ -145,23 +180,23 @@ def _parameter_matrix(batch_size: int, n_wires: int, seed: int) -> torch.Tensor:
 def build_parameter_batch(
     workload: WorkloadName,
     *,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     seed: int = SEED,
 ) -> tuple[fq.Circuit, tuple[fq.Circuit, ...]]:
     """Build one native batch and its independently parameterized scalar rows."""
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
-    base = build_workload(workload, n_wires=n_wires, seed=seed)
-    parameters = _parameter_matrix(batch_size, n_wires, seed)
+    base = build_workload(workload, n_qubits=n_qubits, seed=seed)
+    parameters = _parameter_matrix(batch_size, n_qubits, seed)
     batched = fq.Circuit.from_ir(base.to_ir(), bsz=batch_size)
-    for wire in range(n_wires):
-        batched.ry(wire, parameters[:, wire])
+    for qubit in range(n_qubits):
+        batched.ry(qubit, parameters[:, qubit])
     scalar: list[fq.Circuit] = []
     for row in range(batch_size):
         circuit = fq.Circuit.from_ir(base.to_ir(), bsz=1)
-        for wire in range(n_wires):
-            circuit.ry(wire, parameters[row, wire])
+        for qubit in range(n_qubits):
+            circuit.ry(qubit, parameters[row, qubit])
         scalar.append(circuit)
     return batched, tuple(scalar)
 
@@ -185,19 +220,19 @@ def _pennylane_native_batch_callable(
     qml = import_module("pennylane")
     numpy = import_module("numpy")
     conversion = import_module("flagquantum.ecosystem.pennylane.conversion")
-    n_wires = batched.n_wires
+    n_qubits = batched.n_qubits
     scalar_operations = tuple(
         conversion.export_pennylane(scalar[0].to_ir()).quantum_script.operations
     )
-    if len(scalar_operations) < n_wires:
+    if len(scalar_operations) < n_qubits:
         raise RuntimeError("batched corpus lacks the parameterized terminal layer")
-    operations = list(scalar_operations[:-n_wires])
-    terminal = batched.to_ir().instructions[-n_wires:]
-    for wire, instruction in enumerate(terminal):
-        if instruction.name != "ry" or instruction.wires != (wire,):
+    operations = list(scalar_operations[:-n_qubits])
+    terminal = batched.to_ir().instructions[-n_qubits:]
+    for qubit, instruction in enumerate(terminal):
+        if instruction.name != "ry" or instruction.wires != (qubit,):
             raise RuntimeError("batched corpus terminal layer is not canonical RY")
         angle = torch.as_tensor(instruction.params["theta"]).detach().cpu().numpy()
-        operations.append(qml.RY(angle, wires=wire))
+        operations.append(qml.RY(angle, wires=qubit))
     script = qml.tape.QuantumScript(
         operations,
         measurements=(qml.state(),),
@@ -205,7 +240,7 @@ def _pennylane_native_batch_callable(
     )
     device = qml.device(
         "lightning.qubit",
-        wires=range(n_wires),
+        wires=range(n_qubits),
         shots=None,
         c_dtype=numpy.complex128,
     )
@@ -233,12 +268,31 @@ def _engine_callable(
             with _temporary_environment(
                 FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
                 FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="1",
                 FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
                 FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_INPLACE_DIAGONAL_GRAPHS="1",
+                FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION="1",
             ):
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_batch
+    if engine == "flagquantum_native_adaptive_budget_rollback":
+
+        def native_adaptive_budget_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_ADAPTIVE_BUDGET="0",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_INPLACE_DIAGONAL_GRAPHS="1",
+                FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION="1",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_adaptive_budget_rollback
     if engine == "flagquantum_native_fixed_layer_rollback":
 
         def native_fixed_layer_rollback() -> torch.Tensor:
@@ -278,6 +332,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_parameterized_layer_rollback
+    if engine == "flagquantum_native_fused_rotation_layer_rollback":
+
+        def native_fused_rotation_layer_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_NATIVE_FUSED_ROTATION_LAYER="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_fused_rotation_layer_rollback
     if engine == "flagquantum_native_clifford_matching_rollback":
 
         def native_clifford_matching_rollback() -> torch.Tensor:
@@ -291,6 +358,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_clifford_matching_rollback
+    if engine == "flagquantum_native_rotation_clifford_rollback":
+
+        def native_rotation_clifford_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_rotation_clifford_rollback
     if engine == "flagquantum_native_clifford_phase_map_rollback":
 
         def native_clifford_phase_map_rollback() -> torch.Tensor:
@@ -304,6 +384,19 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_clifford_phase_map_rollback
+    if engine == "flagquantum_native_diagonal_graph_rollback":
+
+        def native_diagonal_graph_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+                FQ_CPU_INPLACE_DIAGONAL_GRAPHS="0",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_diagonal_graph_rollback
     if engine == "flagquantum_native_dense_width_rollback":
 
         def native_dense_width_rollback() -> torch.Tensor:
@@ -329,6 +422,48 @@ def _engine_callable(
                 return cast(torch.Tensor, batched.state(refresh=True))
 
         return native_layout_retention
+    if engine == "flagquantum_native_assembly_rollback":
+
+        def native_assembly_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY="0",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_assembly_rollback
+    if engine == "flagquantum_native_direct_assembly_rollback":
+
+        def native_direct_assembly_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY="1",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="0",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_direct_assembly_rollback
+    if engine == "flagquantum_native_static_product_initialization_rollback":
+
+        def native_static_product_initialization_rollback() -> torch.Tensor:
+            with _temporary_environment(
+                FQ_CPU_STATEVECTOR_BATCH_CHUNKING="1",
+                FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE="1",
+                FQ_CPU_STATEVECTOR_BATCH_PREALLOCATED_ASSEMBLY="1",
+                FQ_CPU_STATEVECTOR_BATCH_DIRECT_ASSEMBLY="1",
+                FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION="0",
+                FQ_CPU_SINGLE_QUBIT_PREALLOCATE_OUTPUT="1",
+                FQ_CPU_RELEASE_MATRIX_LAYOUT_INPUT="1",
+            ):
+                return cast(torch.Tensor, batched.state(refresh=True))
+
+        return native_static_product_initialization_rollback
     if engine == "flagquantum_native_functional_windows":
 
         def native_functional_windows() -> torch.Tensor:
@@ -388,13 +523,20 @@ def _engine_callable(
 def _engine_versions(engine: EngineName) -> dict[str, str]:
     packages = {
         "flagquantum_native_batch": ("flagquantum",),
+        "flagquantum_native_adaptive_budget_rollback": ("flagquantum",),
         "flagquantum_native_fixed_layer_rollback": ("flagquantum",),
         "flagquantum_native_static_clifford_layer_rollback": ("flagquantum",),
         "flagquantum_native_parameterized_layer_rollback": ("flagquantum",),
+        "flagquantum_native_fused_rotation_layer_rollback": ("flagquantum",),
         "flagquantum_native_clifford_matching_rollback": ("flagquantum",),
+        "flagquantum_native_rotation_clifford_rollback": ("flagquantum",),
         "flagquantum_native_clifford_phase_map_rollback": ("flagquantum",),
+        "flagquantum_native_diagonal_graph_rollback": ("flagquantum",),
         "flagquantum_native_dense_width_rollback": ("flagquantum",),
         "flagquantum_native_layout_retention": ("flagquantum",),
+        "flagquantum_native_assembly_rollback": ("flagquantum",),
+        "flagquantum_native_direct_assembly_rollback": ("flagquantum",),
+        "flagquantum_native_static_product_initialization_rollback": ("flagquantum",),
         "flagquantum_native_functional_windows": ("flagquantum",),
         "flagquantum_native_monolithic_batch": ("flagquantum",),
         "flagquantum_native_serial": ("flagquantum",),
@@ -410,20 +552,32 @@ def _engine_versions(engine: EngineName) -> dict[str, str]:
 
 
 def _execution_strategy(engine: EngineName) -> str:
+    if engine == "flagquantum_native_adaptive_budget_rollback":
+        return "native_parameter_batch_fixed_budget_rollback"
     if engine == "flagquantum_native_fixed_layer_rollback":
         return "native_parameter_batch_fixed_layer_rollback"
     if engine == "flagquantum_native_static_clifford_layer_rollback":
         return "native_parameter_batch_static_clifford_layer_rollback"
     if engine == "flagquantum_native_parameterized_layer_rollback":
         return "native_parameter_batch_parameterized_layer_rollback"
+    if engine == "flagquantum_native_fused_rotation_layer_rollback":
+        return "native_parameter_batch_fused_rotation_layer_rollback"
     if engine == "flagquantum_native_clifford_matching_rollback":
         return "native_parameter_batch_clifford_matching_rollback"
+    if engine == "flagquantum_native_rotation_clifford_rollback":
+        return "native_parameter_batch_separate_rotation_clifford_rollback"
     if engine == "flagquantum_native_clifford_phase_map_rollback":
         return "native_parameter_batch_clifford_phase_map_rollback"
+    if engine == "flagquantum_native_diagonal_graph_rollback":
+        return "native_parameter_batch_functional_diagonal_graph_rollback"
     if engine == "flagquantum_native_dense_width_rollback":
         return "native_parameter_batch_four_wire_dense_rollback"
     if engine == "pennylane_lightning_native_batch":
         return "framework_native_broadcast_batch"
+    if engine == "flagquantum_native_direct_assembly_rollback":
+        return "native_parameter_batch_copy_assembly_rollback"
+    if engine == "flagquantum_native_static_product_initialization_rollback":
+        return "native_parameter_batch_static_product_initialization_rollback"
     return (
         "native_parameter_batch"
         if engine == "flagquantum_native_batch"
@@ -431,15 +585,19 @@ def _execution_strategy(engine: EngineName) -> str:
             "native_parameter_batch_legacy_layout_retention"
             if engine == "flagquantum_native_layout_retention"
             else (
-                "native_parameter_batch_functional_windows"
-                if engine == "flagquantum_native_functional_windows"
+                "native_parameter_batch_functional_assembly_rollback"
+                if engine == "flagquantum_native_assembly_rollback"
                 else (
-                    "native_monolithic_parameter_batch"
-                    if engine == "flagquantum_native_monolithic_batch"
+                    "native_parameter_batch_functional_windows"
+                    if engine == "flagquantum_native_functional_windows"
                     else (
-                        "repeated_single_item_native"
-                        if engine == "flagquantum_native_serial"
-                        else "repeated_single_item_bridge"
+                        "native_monolithic_parameter_batch"
+                        if engine == "flagquantum_native_monolithic_batch"
+                        else (
+                            "repeated_single_item_native"
+                            if engine == "flagquantum_native_serial"
+                            else "repeated_single_item_bridge"
+                        )
                     )
                 )
             )
@@ -450,7 +608,7 @@ def _execution_strategy(engine: EngineName) -> str:
 def run_case(
     *,
     workload: WorkloadName,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     engines: Sequence[EngineName],
     threads: int,
@@ -467,7 +625,7 @@ def run_case(
     if unknown:
         raise ValueError("unsupported engine(s): " + ", ".join(unknown))
     batched, scalar = build_parameter_batch(
-        workload, n_wires=n_wires, batch_size=batch_size, seed=seed
+        workload, n_qubits=n_qubits, batch_size=batch_size, seed=seed
     )
     functions = {
         engine: _engine_callable(engine, batched, scalar, seed=seed, threads=threads)
@@ -533,16 +691,16 @@ def run_case(
     template_ir = scalar[0].to_ir()
     logical_bytes = (
         batch_size
-        * (2**n_wires)
+        * (2**n_qubits)
         * torch.empty((), dtype=torch.complex128).element_size()
     )
     return {
         "workload": {
             "name": workload,
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "batch_size": batch_size,
             "dtype": "complex128",
-            "independent_parameter_count": batch_size * n_wires,
+            "independent_parameter_count": batch_size * n_qubits,
             "gate_count_per_item": len(template_ir.instructions),
             "scalar_ir_content_hash": template_ir.content_hash,
             "logical_statevector_bytes": logical_bytes,
@@ -569,7 +727,7 @@ def run_case(
 def run_benchmark(
     *,
     workloads: Sequence[WorkloadName],
-    n_wires: Sequence[int],
+    n_qubits: Sequence[int],
     batch_sizes: Sequence[int],
     engines: Sequence[EngineName],
     threads: int,
@@ -580,8 +738,8 @@ def run_benchmark(
     """Measure the requested workload, width, and batch-size cross-product."""
     if threads < 1:
         raise ValueError("threads must be positive")
-    if not workloads or not n_wires or not batch_sizes:
-        raise ValueError("workloads, n_wires, and batch_sizes must not be empty")
+    if not workloads or not n_qubits or not batch_sizes:
+        raise ValueError("workloads, n_qubits, and batch_sizes must not be empty")
     if any(batch_size < 1 for batch_size in batch_sizes):
         raise ValueError("batch_sizes must be positive")
     if len(set(workloads)) != len(workloads):
@@ -590,7 +748,7 @@ def run_benchmark(
     cases = tuple(
         run_case(
             workload=workload,
-            n_wires=width,
+            n_qubits=width,
             batch_size=batch_size,
             engines=engines,
             threads=threads,
@@ -599,7 +757,7 @@ def run_benchmark(
             seed=seed,
         )
         for workload in workloads
-        for width in n_wires
+        for width in n_qubits
         for batch_size in batch_sizes
     )
     passed = all(case["correctness"]["passed"] for case in cases)
@@ -642,7 +800,7 @@ def run_benchmark(
             "engine_order": "rotated_per_iteration_within_one_process",
         },
         workloads=tuple(workloads),
-        n_wires=tuple(n_wires),
+        n_wires=tuple(n_qubits),
         batch_sizes=tuple(batch_sizes),
         engines=tuple(engines),
         cases=cases,
@@ -686,10 +844,10 @@ def render_markdown(payload: dict[str, Any], *, artifact_name: str) -> str:
             total = result["batch_total"]["median_seconds"]
             ratio = 1.0 if engine == "flagquantum_native_batch" else ratios[engine]
             lines.append(
-                "| {workload} | {n_wires} | {batch_size} | {engine} | "
+                "| {workload} | {n_qubits} | {batch_size} | {engine} | "
                 "{total:.3f} | {per_state:.3f} | {throughput:.2f} | {ratio:.2f}x |".format(
                     workload=case["workload"]["name"],
-                    n_wires=case["workload"]["n_wires"],
+                    n_qubits=case["workload"]["n_wires"],
                     batch_size=case["workload"]["batch_size"],
                     engine=_ENGINE_LABELS[cast(EngineName, engine)],
                     total=total * 1000,
@@ -729,7 +887,7 @@ def main() -> int:
     args = parser.parse_args()
     payload = run_benchmark(
         workloads=tuple(args.workloads),
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         batch_sizes=tuple(args.batch_sizes),
         engines=tuple(args.engines),
         threads=args.threads,

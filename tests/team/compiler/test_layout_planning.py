@@ -105,7 +105,7 @@ def _weakly_directed(coupling_map: CouplingMap) -> DirectedCouplingMap:
     """
 
     return DirectedCouplingMap(
-        coupling_map.n_wires,
+        coupling_map.n_qubits,
         [
             *coupling_map.edges,
             *((right, left) for left, right in coupling_map.edges),
@@ -273,7 +273,7 @@ def test_a_placement_injects_every_logical_wire_into_the_device(
         assert len(layout) == n_wires
         assert len(set(layout)) == n_wires
         assert all(
-            isinstance(slot, int) and 0 <= slot < coupling_map.n_wires
+            isinstance(slot, int) and 0 <= slot < coupling_map.n_qubits
             for slot in layout
         )
 
@@ -387,7 +387,7 @@ def test_a_placement_preserves_the_program_state_on_the_placed_wires() -> None:
             initial_layout=layout,
         )
         branch = _placed_branch(
-            fq.Circuit.from_ir(routed).state(), layout, device.n_wires
+            fq.Circuit.from_ir(routed).state(), layout, device.n_qubits
         )
 
         # The idle wires must be in |0> for the projection to mean anything, so

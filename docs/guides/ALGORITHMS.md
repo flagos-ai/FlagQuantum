@@ -21,6 +21,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `primitives/oracle.py` — oracle synthesis | Available. Synthesizes a phase or bit oracle from a classical predicate's truth table, on top of the multi-controlled X and comparator building blocks. | — | **None, and the cost is exponential.** Synthesis enumerates all `2**n` inputs classically. |
 | `grover.py` — Grover search | Available. Amplifies the amplitude of the states a predicate marks, so a marked state is recovered from far fewer samples than uniform sampling needs. | Grover 1996 | **Query model.** The oracle's own cost is not counted; here it is a truth table, so no end-to-end advantage at demonstration scale. |
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
+| `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
 
 Two rows carry `—` in the Citation column rather than a source, and that is a
 statement rather than a placeholder: the Fourier transform and oracle synthesis
@@ -103,7 +104,7 @@ units carries a root-level `fq.` name.
   distance in one step. This unit synthesizes its oracle from the predicate's
   truth table at `O(2**n)` cost, and it computes the whole distance table
   classically, one point at a time, before the circuit exists — the register is
-  capped at three wires, which is also what keeps the distances out of it. No
+  capped at three qubits, which is also what keeps the distances out of it. No
   end-to-end advantage follows. See the section below.
 - **Quantum kernel estimation rests on a data-access model it does not meet.**
   The kernel-matrix circuit's cost counts the swap tests: `O(eps**-2)` of them per
@@ -156,6 +157,14 @@ units carries a root-level `fq.` name.
   are approximation heuristics. Their evidence and their boundary are the ones
   already recorded for local statevector execution; this guide adds no
   asymptotic advantage conclusion for them.
+- **SPSA carries no advantage premise either, and what it offers is a cost.**
+  `spsa.py` is not an algorithm with a speedup to state: it is an optimizer, and
+  the quantity it improves is the number of objective evaluations per step, which
+  is two regardless of the parameter count. **Its estimate is biased for every
+  finite perturbation** and is not a gradient, so a caller with an exact gradient
+  available should use autograd or parameter shift instead. The claim this unit
+  supports is a cost claim on a stochastic objective, not an accuracy claim and
+  not an end-to-end advantage. See the section below.
 
 ## A runnable example
 
@@ -200,7 +209,7 @@ print(best)
 
 The converted Hamiltonian is an ordinary `Hamiltonian`, so `vqe_loss`, `run_vqe`,
 and `qaoa_loss` accept it without a new execution path. `qaoa_circuit` does not:
-it takes a wire count and the cost edges as a list of ZZ pairs, with the QAOA
+it takes a qubit count and the cost edges as a list of ZZ pairs, with the QAOA
 angles, and it is `qaoa_loss` that pairs such a circuit with a Hamiltonian. The
 constant is carried as one identity term and recovered as `QuboProblem.offset`,
 so the two forms of the same problem agree on every assignment.
@@ -232,7 +241,7 @@ print([round(abs(complex(a)), 6) for a in uniform])
 
 amplitudes = torch.tensor([0.5, 0.5j, -0.5, 0.5], dtype=torch.complex64)
 target = amplitudes / amplitudes.norm()
-state = arbitrary_state(amplitudes, wires=[0, 1]).state().reshape(-1)
+state = arbitrary_state(amplitudes, qubits=[0, 1]).state().reshape(-1)
 print(round(float(torch.abs(torch.vdot(target, state)) ** 2), 6))
 # 1.0  -- fidelity with the target, to float32 precision
 
@@ -244,21 +253,21 @@ print([round(complex(a).imag, 6) for a in state])
 # [-0.46194, 0.191342, 0.46194, -0.46194]
 ```
 
-Wires are ordered most significant first, so `state[k]` is the amplitude of the
-basis state whose bits read wire `0` to wire `n-1` from left to right.
+Qubits are ordered most significant first, so `state[k]` is the amplitude of the
+basis state whose bits read qubit `0` to qubit `n-1` from left to right.
 
 ## Oracle building blocks and synthesis
 
 `primitives/oracle.py` holds the two pieces of reversible classical logic the
 oracle units are composed from, and the truth-table synthesis that sits on top
-of them. `append_multi_controlled_x` flips one target wire exactly on the operand
+of them. `append_multi_controlled_x` flips one target qubit exactly on the operand
 pattern that sets every control; one control is a `cx` and two are a `ccx`, and
 three or more are built as an ancilla ladder, because the circuit layer has no
 native gate above two controls.
-`append_comparator` XORs one target wire with the truth value of `lhs > rhs`
+`append_comparator` XORs one target qubit with the truth value of `lhs > rhs`
 for two equally wide bit strings read most significant first. On `n` bits the
-comparator occupies `2n` operand wires, one target, `n + 1` prefix-equality
-flags, and one scratch wire, so `3n + 3` in all. Neither unit makes an
+comparator occupies `2n` operand qubits, one target, `n + 1` prefix-equality
+flags, and one scratch qubit, so `3n + 3` in all. Neither unit makes an
 advantage claim: both are reversible classical logic of `O(n)` Toffoli-style
 cost, and the classical predicate they compute is the cost they pay.
 
@@ -268,18 +277,18 @@ entry. Measured with a dirty ancilla, the target comes out wrong on a large
 fraction of the operand patterns — 8 of 16 at three controls, 32 of 96 at four
 — and nothing is raised. The ancilla's own value is left unchanged by the
 ladder, so the fault cannot be seen from the ancilla either. A circuit builder
-cannot read a wire's starting value, so meeting the precondition is the
+cannot read a qubit's starting value, so meeting the precondition is the
 caller's to do.
 
-**The comparator exits clean.** Every wire it is given comes back to the value
+**The comparator exits clean.** Every qubit it is given comes back to the value
 it entered with, except the target, which is XORed with `[lhs > rhs]`. The
-prefix-equality ladder and the scratch wire are uncomputed, so the comparator
-composes into a larger circuit instead of leaving `n` wires holding
+prefix-equality ladder and the scratch qubit are uncomputed, so the comparator
+composes into a larger circuit instead of leaving `n` qubits holding
 intermediate flags. Its internal three-control X is
-`append_multi_controlled_x` with the scratch wire as the ladder's ancilla,
+`append_multi_controlled_x` with the scratch qubit as the ladder's ancilla,
 which is the same `|0>`-on-entry requirement one level down. **The comparator's
-own flags and scratch wire carry that requirement too**: all `len(lhs) + 1`
-equality wires and the scratch wire must enter in `|0>`, since a dirty
+own flags and scratch qubit carry that requirement too**: all `len(lhs) + 1`
+equality qubits and the scratch qubit must enter in `|0>`, since a dirty
 `equality[0]` makes the target come out wrong on a large fraction of the operand
 patterns — 6 of 16 at two bits — and the ladder then restores the flag, so
 nothing is raised.
@@ -290,16 +299,16 @@ from flagquantum.circuit import Circuit
 
 # Three controls need an ancilla, and it must enter in |0>:
 circuit = Circuit(5)
-for wire in (0, 1, 2):
-    circuit.gate("x", wire)
+for qubit in (0, 1, 2):
+    circuit.gate("x", qubit)
 append_multi_controlled_x(circuit, [0, 1, 2], 3, ancillas=[4])
 print(format(circuit.state().reshape(-1).abs().pow(2).argmax().item(), "05b"))
-# 11110  -- the target (wire 3) flipped and the ancilla (wire 4) came back to |0>
+# 11110  -- the target (qubit 3) flipped and the ancilla (qubit 4) came back to |0>
 
-# The comparator XORs its target with [lhs > rhs] and restores every other wire:
+# The comparator XORs its target with [lhs > rhs] and restores every other qubit:
 circuit = Circuit(9)
-for wire in (0, 3):  # lhs = 10, rhs = 01
-    circuit.gate("x", wire)
+for qubit in (0, 3):  # lhs = 10, rhs = 01
+    circuit.gate("x", qubit)
 append_comparator(
     circuit, lhs=[0, 1], rhs=[2, 3], target=4, equality=[5, 6, 7], scratch=8
 )
@@ -314,16 +323,16 @@ construction to a circuit the caller already has. Each marked input is mapped
 onto the all-ones pattern with `x` gates, acted on by the multi-controlled X
 above, and mapped back, so the phase oracle multiplies exactly the marked
 amplitudes by `-1`, and the bit oracle carries the predicate's value onto an
-output wire by XOR and restores every wire it allocated.
+output qubit by XOR and restores every qubit it allocated.
 
 **The cost is exponential and no advantage follows.** Synthesis enumerates all
 `2**n` inputs of the predicate classically, so a gate-level oracle written this
 way is as expensive as the classical search it is meant to replace; whatever a
 query-model algorithm saves on queries, it pays again here, which is why the
-index row claims nothing. `phase_oracle` is also capped at three wires: its
+index row claims nothing. `phase_oracle` is also capped at three qubits: its
 multi-controlled Z is a multi-controlled X with `n - 1` controls, and a
-standalone circuit of exactly `n` wires has no wire to spare for the `n - 3`
-ladder ancillas a wider one needs, so above three wires the caller supplies the
+standalone circuit of exactly `n` qubits has no qubit to spare for the `n - 3`
+ladder ancillas a wider one needs, so above three qubits the caller supplies the
 register and the ancillas through the append form. `bit_oracle` has no such cap,
 because it allocates its own ladder ancillas and restores them.
 
@@ -331,7 +340,7 @@ because it allocates its own ladder ancillas and restores them.
 
 `grover.py` is the first algorithm unit in this index: it consumes the oracle
 primitives rather than extending them. `grover_circuit` puts the evaluation
-register into the uniform superposition with one Hadamard per wire, then applies
+register into the uniform superposition with one Hadamard per qubit, then applies
 `optimal_iterations` rounds of the phase oracle followed by the diffusion
 operator, the reflection about the uniform superposition. `run_grover` samples
 that circuit and ranks the states it marks by how often the sample landed on
@@ -345,12 +354,12 @@ enumerates all `2**n` inputs classically. The query count improves; the oracle's
 own construction does not, so the index row claims no end-to-end advantage, and
 nothing here should be read as one.
 
-**The register is the whole circuit, and that bounds it at three wires.** The
+**The register is the whole circuit, and that bounds it at three qubits.** The
 diffusion operator's multi-controlled Z is a multi-controlled X with `n - 1`
 controls, and above two controls that is an ancilla ladder needing `n - 3`
-ancillas in `|0>`. A circuit that *is* the evaluation register has no free wire
-for one, so `grover_circuit` refuses `n_wires > 3` rather than allocating it: a
-wire added to this circuit is part of the register the samples are read over, so
+ancillas in `|0>`. A circuit that *is* the evaluation register has no free qubit
+for one, so `grover_circuit` refuses `n_qubits > 3` rather than allocating it: a
+qubit added to this circuit is part of the register the samples are read over, so
 the "ancilla" would be sampled along with the answer. A wider search is built
 from `append_phase_oracle` on a register and ancillas the caller lays out.
 
@@ -361,7 +370,7 @@ result = run_grover(lambda value: value == 5, 3, shots=1024, seed=0)
 print(result.candidates, result.iterations, round(result.success_probability, 4))
 # (5,) 2 0.9395
 
-# Counts are keyed by the big-endian bit string, one character per wire:
+# Counts are keyed by the big-endian bit string, one character per qubit:
 print(result.counts[format(5, "03b")])
 # 962
 ```
@@ -374,7 +383,7 @@ iteration rather than extending either: `amplitude_estimation_circuit` prepares 
 operator's own register and hands the controlled Grover operator
 `Q = -A (I - 2|0><0|) A† S_chi` to `append_phase_estimation`, which emits the
 counting register's Hadamards, the controlled powers and the inverse Fourier
-transform itself. `run_amplitude_estimation(operator, n_counting_wires=...,
+transform itself. `run_amplitude_estimation(operator, n_counting_qubits=...,
 shots=..., seed=...)` samples that circuit and returns the maximum likelihood grid
 point, and `amplitude_resolution` reports the widest step of the grid
 `sin²(pi j / 2**(m+1))`.
@@ -383,7 +392,7 @@ point, and `amplitude_resolution` reports the widest step of the grid
 conjugate, so a counting outcome is a phase and the amplitude behind it is
 `sin²(theta)`: reading the register's value as an amplitude is a wrong answer
 rather than an error. `maximum_likelihood_estimate` inverts the two-term model
-both eigenphases produce, and because sample keys carry every wire it marginalises
+both eigenphases produce, and because sample keys carry every qubit it marginalises
 the evaluation register's bits away first; skipping that step loses their whole
 share of the probability mass and returns a wrong estimate without raising.
 
@@ -404,7 +413,7 @@ capability entry repeats the boundary.
 
 `pca.py` is the first unit of Phase 2 and the third algorithm unit in this
 guide's programme. `principal_components` takes the data matrix `A`, the keyword
-`n_counting_wires`, and the sampler's `shots` and `seed`: it forms the density
+`n_counting_qubits`, and the sampler's `shots` and `seed`: it forms the density
 matrix `rho = A A^T / tr(A A^T)` of a real `A` with at least two rows and two
 columns, each a power of two, prepares the purification `vec(A) / ||A||_F` on the
 data and purification registers with `append_arbitrary_state`, and hands
@@ -417,7 +426,7 @@ eigenvalue the mode reports* below.
 
 **The phase is not the eigenvalue.** At `t = 2*pi` the exponential's eigenphase on
 an eigenvector of `rho` with eigenvalue `lambda` is `exp(-2 pi i lambda)`, which is
-the phase `phi = (-lambda) mod 1`, so a counter value `k` of `m` counting wires
+the phase `phi = (-lambda) mod 1`, so a counter value `k` of `m` counting qubits
 reads `lambda = 1 - k / 2**m`. Reading `k / 2**m` is a wrong eigenvalue rather than
 an error, which is why the inversion is part of the readout and has a test of its
 own: with it removed, the two tests that compare the readout against
@@ -425,7 +434,7 @@ own: with it removed, the two tests that compare the readout against
 
 **A share is not an eigenvalue.** The counter value nearest a small eigenvalue
 carries the dominant peak's phase-estimation tail rather than that eigenvalue's
-weight. Measured at six counting wires: the eigenvalue `0.0038` comes back on its
+weight. Measured at six counting qubits: the eigenvalue `0.0038` comes back on its
 own counter value with `0.0331` of the sample, about nine times its weight.
 `PcaResult.within` states the resolution contract as half a counter step, and no
 confidence interval is computed or reported.
@@ -442,7 +451,7 @@ to check the readout, and cannot infer it from the counter width or the shape of
 peak.
 
 Two runs illustrate two outcomes. They are examples, not a criterion. Both use
-`rho = diag(spectrum)`, six counting wires, `shots=8000` and sampling `seed=1`, and
+`rho = diag(spectrum)`, six counting qubits, `shots=8000` and sampling `seed=1`, and
 both have the same largest eigenvalue, `0.51015625`, at phase `31.35/64`, so the
 largest eigenvalue and the trace are not what differs between them. In each, the
 second largest eigenvalue also sits exactly on a counter value — a different one,
@@ -480,7 +489,7 @@ rho = (data @ data.T) / torch.trace(data @ data.T)
 print([round(float(value), 4) for value in torch.linalg.eigvalsh(rho)])
 # [0.0038, 0.9962]
 
-result = principal_components(data, n_counting_wires=6, shots=20000, seed=11)
+result = principal_components(data, n_counting_qubits=6, shots=20000, seed=11)
 print(round(result.dominant_eigenvalue, 4), round(result.dominant_probability, 4))
 # 1.0 0.8196  -- the mode's readout; here it is the dominant eigenvalue, read off counter 0
 print(round(result.distribution["111111"], 4))
@@ -559,7 +568,7 @@ marks nothing.
 
 **The distance table is classical, and that is the whole of what the unit gives
 up.** `grover_circuit` builds its own register and refuses more than three
-evaluation wires, so the search runs over the centroid index alone and the
+evaluation qubits, so the search runs over the centroid index alone and the
 distance from the point being assigned to each centroid is computed in double
 precision outside the circuit — the predicate closes over that table, and every
 round builds its register afresh. The circuit holds no state about the
@@ -612,11 +621,11 @@ print(result.searches)
 counts oracle calls, and in that model the distance function has to be computed
 into a register — a cost the count does not include. Here the oracle is
 synthesized from the predicate's truth table, so it costs `O(2**n)` — over the
-at most eight register values the three-wire search can carry — and the distance
+at most eight register values the three-qubit search can carry — and the distance
 table the predicate compares is computed classically, one point at a time,
 before any circuit is built. Neither cost is in the query count, and nothing
 here reads a qRAM or runs an adiabatic evolution, so no conclusion that rests on
-either applies. The unit is bounded at eight centroids by the three-wire
+either applies. The unit is bounded at eight centroids by the three-qubit
 register, and the search is sampled rather than read out, so a small sample can
 stop a point's search short. The capability entry repeats the boundary.
 
@@ -636,7 +645,7 @@ feature states, estimated with the swap test — the kernel-matrix circuit of
 Havlíček, Córcoles, Temme, Harrow, Kandala, Chow and Gambetta, "Supervised
 learning with quantum-enhanced feature spaces", *Nature* **567**, 209–212
 (2019), DOI 10.1038/s41586-019-0980-2. A Hadamard on the ancilla, a native
-controlled swap per wire pair, and a Hadamard again leave the ancilla found set
+controlled swap per qubit pair, and a Hadamard again leave the ancilla found set
 with probability `1/2 - 1/2 |<a|b>|^2`, so the module estimates the **squared**
 overlap and reads `|<a|b>|^2 = 1 - 2 * share` back out of the sample.
 
@@ -655,8 +664,8 @@ from a correct one — both paths read `1` there — which is why the triple is 
 check the unit carries.
 
 **The feature map is this package's own angle encoding, and not the cited
-paper's.** A Hadamard on every wire, a phase rotation carrying each feature on
-its own wire, and an entangling phase rotation on every pair whose angle is the
+paper's.** A Hadamard on every qubit, a phase rotation carrying each feature on
+its own qubit, and an entangling phase rotation on every pair whose angle is the
 product of the two features' complements to `pi`, with features in `[0, 2*pi]`:
 
     |Phi(x)> = prod_{j<k} exp(i (pi - x_j) (pi - x_k) Z_j Z_k)
@@ -689,8 +698,8 @@ should follow the training targets is the caller's choice rather than the
 module's. A point whose decision value is small can be decided differently by a
 different sample, and no margin, bound or accuracy estimate is computed.
 
-**Wire layout and scale.** One kernel entry is one circuit: the ancilla on wire
-0, the left feature state on the next `n` wires and the right one on the last
+**Qubit layout and scale.** One kernel entry is one circuit: the ancilla on qubit
+0, the left feature state on the next `n` qubits and the right one on the last
 `n`. The unit is bounded at three features, and the matrix is symmetric by
 construction — the swap test of `(i, j)` and of `(j, i)` is the same experiment,
 so the entry is sampled once and mirrored rather than sampled twice. The
@@ -833,17 +842,17 @@ programme. Association rule mining asks which itemsets recur across a database's
 transactions, and the amplitude-estimation route to it is the one of Yu, Gao, Wang and
 Wen, *Physical Review A* **94**(4), 042311 (2016), DOI 10.1103/PhysRevA.94.042311,
 arXiv:1605.07444v3. `frequent_itemset_operator(database, threshold=...,
-n_support_wires=...)` builds the amplitude operator of one database and threshold, and
-`run_frequent_itemset(database, threshold=..., n_counting_wires=..., shots=...,
+n_support_qubits=...)` builds the amplitude operator of one database and threshold, and
+`run_frequent_itemset(database, threshold=..., n_counting_qubits=..., shots=...,
 seed=...)` hands it to `amplitude_estimation.run_amplitude_estimation` and returns that
 function's result unchanged: the estimate it carries is the fraction of the items whose
 support meets the threshold. **This unit asks a smaller question than the paper's.** The
 paper mines the frequent itemsets; what is read out here is one number, the fraction of
 the items that are frequent, and no rule-mining stage is part of the module.
 
-**The circuit, register by register.** The item register carries one wire per item-index
+**The circuit, register by register.** The item register carries one qubit per item-index
 bit and is put into a uniform superposition by a half-turn `ry` on each of them — the
-state a Hadamard on every item wire prepares, chosen because `ry` has a native controlled
+state a Hadamard on every item qubit prepares, chosen because `ry` has a native controlled
 form and the Grover operator has to control the preparation. The support register is then
 filled by the transaction loop: one controlled increment per transaction whose itemset
 holds the item in superposition, so the register ends holding that item's own support.
@@ -874,14 +883,14 @@ item meets it, or none does, and neither needs a circuit.
 increment is a permutation of the register's own values, so a support the register
 cannot hold comes back as another value, the mark then sees a support that can be on the
 wrong side of the threshold, and the readout can come back wrong with nothing raised.
-Measured on the database below with the support register narrowed to a single wire, a
+Measured on the database below with the support register narrowed to a single qubit, a
 width the builder refuses, and with that refusal lifted for the measurement: the first
 item's support is 2 and comes back as 0, the estimate reads 0.0 against an exact fraction
 of 0.5, and nothing is raised. `frequent_itemset_operator` therefore refuses a register
 that cannot hold the largest support any database of that transaction count could
-produce, and the default is the fewest wires that can hold it.
+produce, and the default is the fewest qubits that can hold it.
 
-**The item count is a power of two.** The item register is addressed by one wire per
+**The item count is a power of two.** The item register is addressed by one qubit per
 item-index bit, and a uniform state over another count has no controlled preparation in
 this package, which is what the Grover operator needs. The unit is bounded at eight items
 and seven transactions.
@@ -897,11 +906,11 @@ from flagquantum.algorithms.qarm import frequent_itemset_operator, run_frequent_
 database = torch.tensor([[1, 0], [1, 1]])
 
 operator = frequent_itemset_operator(database, threshold=2)
-print(operator.support, operator.n_support_wires, operator.n_wires)
+print(operator.support, operator.n_support_qubits, operator.n_qubits)
 # (2, 1) 2 5
 #   -- the column sums, the register's width, and the evaluation register's
 
-result = run_frequent_itemset(database, threshold=2, n_counting_wires=4, shots=8000, seed=17)
+result = run_frequent_itemset(database, threshold=2, n_counting_qubits=4, shots=8000, seed=17)
 print(round(result.estimate, 6), round(result.resolution, 6))
 # 0.5 0.097545  -- the readout, against an exact fraction of 0.5
 
@@ -909,10 +918,10 @@ print(round(result.estimate, 6), round(result.resolution, 6))
 # count could produce, so a narrower one is refused rather than left to wrap into a
 # readout that can come back wrong.
 try:
-    frequent_itemset_operator(database, threshold=2, n_support_wires=1)
+    frequent_itemset_operator(database, threshold=2, n_support_qubits=1)
 except ValueError as error:
     print(error)
-# the support register needs at least 2 wires to hold the largest support 2 that 2
+# the support register needs at least 2 qubits to hold the largest support 2 that 2
 # transactions can produce, got 1; the increment is a permutation of the register's
 # values, so a narrower register wraps a support into another value and the readout can
 # come back wrong with nothing raised
@@ -921,7 +930,7 @@ except ValueError as error:
 A second database reaches fractions the two-transaction one cannot. Four transactions over
 four items, `[[1, 1, 0, 0], [1, 1, 0, 0], [1, 0, 1, 0], [0, 0, 1, 1]]`, has supports 3,
 2, 2 and 1, so its frequent fraction is `3/4` at a threshold of 2 and `1/4` at a threshold
-of 3. Measured at four counting wires, 8000 shots and seed 17, the readouts are `0.777785`
+of 3. Measured at four counting qubits, 8000 shots and seed 17, the readouts are `0.777785`
 and `0.222215` — the grid values `sin²(11 pi / 32)` and `sin²(5 pi / 32)`, each within the
 register's resolution `0.097545` of the exact fraction. Both are what a sampled grid
 estimate gives, not a claim that the estimate is exact.
@@ -936,13 +945,13 @@ survives into this unit.
 ## Singular values by phase estimation
 
 `svd.py` is the sixth unit of Phase 2, and the eighth algorithm unit in this guide's
-programme. `estimate_singular_values(A, n_counting_wires=..., shots=..., seed=...)` forms
+programme. `estimate_singular_values(A, n_counting_qubits=..., shots=..., seed=...)` forms
 the Hermitian embedding `[[0, A], [A^T, 0]]` of a real square matrix, exponentiates it,
 phase-estimates a counting register against that exponential, and returns a
 `SingularValueResult`: the singular value read out at the register's mode, that value's
 share of the sample, the register's marginal distribution, the step the register resolves,
 and the subnormalisation the readout is scaled by. The counting width is the caller's and is
-at least one, and one wire is degenerate rather than a second contract: the register then
+at least one, and one qubit is degenerate rather than a second contract: the register then
 holds two counter values, of which one is refused, so the only value it can return is
 `alpha` itself. `A`'s singular values are the magnitudes
 of the embedding's eigenvalues — the embedding carries `A` and `A^T` as its two
@@ -951,20 +960,20 @@ magnitude of one of the embedding's eigenvalues, which is one of `A`'s singular 
 
 **The phase is not the singular value.** The exponential's eigenphase on an eigenvector of
 eigenvalue `mu` is `exp(-i pi mu / alpha)`, which is the phase `phi = (-mu / (2 alpha)) mod
-1`, so a counter value `k` of `m` counting wires reads the singular value
+1`, so a counter value `k` of `m` counting qubits reads the singular value
 `2 * alpha * (1 - k / 2**m)`. The inversion is part of the readout and not a cosmetic
 detail: dropping the `2 * alpha` factor reports a phase, which is a wrong singular value
 rather than an error, and the tests that compare the readout against `torch.linalg.svdvals`
 fail with it removed. **The readout's range is `(0, alpha]` because a readout the register's
 lower half produces is refused**, not because of the resolution: a lower-half counter value
 reads a value above `alpha`, and such a value is refused rather than returned. At one counting
-wire the register holds two counter values and one of them is the refused half, so the only
-value a one-wire run can return is `alpha` itself, and a one-wire run whose mode falls in the
+qubit the register holds two counter values and one of them is the refused half, so the only
+value a one-qubit run can return is `alpha` itself, and a one-qubit run whose mode falls in the
 refused half raises. **Separately, the input state carries no weight on the embedding's
 negative eigenvectors**, whose phases lie in the lower half, so nothing peaks at their counter
-values. What the lower half carries at the example's six counting wires — the dominant
+values. What the lower half carries at the example's six counting qubits — the dominant
 peak's tail, under a fiftieth of the sample against the mode's half — is therefore not a
-peak of its own there. At one wire it need not be a tail at all: with a single upper-half
+peak of its own there. At one qubit it need not be a tail at all: with a single upper-half
 counter value, the dominant peak's own phase wraps into the refused half instead, which is
 the raise above.
 
@@ -1000,7 +1009,7 @@ embedding is twice as wide as the matrix and every form of the phase unitary is 
 gate on it.
 
 **Measured.** The matrix `[[1, 2], [3, 4]]` has singular values `5.4649857...` and
-`0.3659661...`. At six counting wires, 20000 shots and sampling seed 11:
+`0.3659661...`. At six counting qubits, 20000 shots and sampling seed 11:
 
 ```python
 import torch
@@ -1016,7 +1025,7 @@ largest = float(exact[0])
 print([round(value, 6) for value in exact.tolist()])
 # [5.464986, 0.365966]  -- the decomposition the readout is an estimate of
 
-result = estimate_singular_values(matrix, n_counting_wires=6, shots=20000, seed=11)
+result = estimate_singular_values(matrix, n_counting_qubits=6, shots=20000, seed=11)
 print(round(result.dominant_singular_value, 6), round(result.resolution, 6))
 # 5.567414 0.242061  -- the mode's readout, and the step it was resolved at
 print(round(result.alpha, 6), round(result.dominant_share, 4))
@@ -1043,7 +1052,7 @@ neighbouring counter values carry the peak's own spread rather than separate pea
 **That is what this run did and not a criterion:** nothing here says which spectra put the
 mode where, and the unit does not predict which singular value the mode reports.
 
-The same matrix at other widths, to show what the step is: four counting wires reads
+The same matrix at other widths, to show what the step is: four counting qubits reads
 `5.809475` at a resolution of `0.968246`, six reads `5.567414` at `0.242061`, and seven
 reads `5.446383` at `0.121031`. Each of the three is within its own half step of
 `5.4649857`, which is the contract; none of them is an exact reading.
@@ -1064,12 +1073,239 @@ quantum singular value transformation for sparse matrices at constant precision;
 hardness result is for a different task, estimating a local Hamiltonian's ground-state
 energy at inverse-polynomial precision given a state close to the ground state.
 
+## Zero-noise extrapolation
+
+`error_mitigation.py` is the first error-mitigation unit. It measures one observable at
+several error strengths and continues the resulting curve to zero noise. Noise is scaled by
+multiplying the single error-probability parameter a channel declares, so a scaled channel
+is the same family at a different strength. `run_zne(circuit, hamiltonian,
+noise_model=..., scale_factors=..., order=...)` returns a `ZneResult`: the extrapolated
+estimate, the fit that produced it, the unmitigated measurement when the curve includes a
+scale factor of one, the measurements themselves, and the assumptions and limitations the
+estimate rests on. Two fits are offered — `polynomial_least_squares` and `richardson` — and
+each method checks its own point count before anything is simulated.
+
+**The estimate is `Tr(O rho)`, which is before measurement.** The unit extrapolates exact
+state expectations rather than samples: no shot is consumed, the estimate is a point value,
+and no confidence interval is computed or reported. That is why a noise model that declares
+a readout rule is refused rather than measured without it. Classical readout confusion is
+applied after measurement, so it is not in `rho`, and extrapolating a curve that omits it
+would return a state-preparation estimate under the name of a measured one. The refusal is
+by name rather than a silent omission; readout-error mitigation is absent from this unit.
+`variance_amplification` is the factor by which the fitted weights would amplify the
+variance of a shot-based estimate of the same points — it is a property of the scale grid
+and the fitted degree alone, and it is not a measured variance.
+
+**The assumption is the method's, and nothing checks it.** The estimate is unbiased exactly
+when the measured curve is a polynomial of degree at most `order` in the scale factor. The
+ideal signal must therefore not depend on the scale factor, and no other process may depend
+on it either. Neither condition is checkable from the measurements alone, and the unit says
+so where the number is rather than in a footnote. What exposes a violated assumption is the
+largest absolute residual the fit left. **A square fit's residual is zero by construction
+and is therefore not evidence**, so the record reports `max_residual` as absent when no
+degree of freedom is left rather than as an arithmetic zero, and the honest reading order is
+residual first, estimate second.
+
+**Scaling is the caller's claim, and one implementation is offered.** The declared scaling
+multiplies the one error-probability parameter each of `bit_flip`, `phase_flip`,
+`depolarizing`, `two_qubit_depolarizing`, `amplitude_damping` and `phase_damping` declares.
+It refuses `coherent_overrotation`, `reset_error` and `thermal_relaxation` by name:
+multiplying an angle or two independent reset probabilities does not scale the noise, and
+`thermal_relaxation`'s factory does not take its duration as one leading parameter. A
+channel whose product leaves the unit interval is refused too, because the scale factor is
+bounded by the channel it scales. A caller who needs one of the refused families supplies a
+`scaling` callable and owns the claim that the scaled model differs from the original only
+in noise strength; the result records which of the two claims it rests on, and the refusal
+is all-or-nothing over the model rather than leaving it partly scaled.
+
+**Not here:** probabilistic error cancellation, Clifford data regression, circuit folding,
+gate-folding scale factors, shot-based execution, and readout-error mitigation.
+
+**Measured.** On `h(0); cx(0, 1)` with the observable `zz(0, 1)`, whose value is
+analytically `1.0` and whose exactly simulated noiseless read is `0.9999999999999998` in
+`complex128` and `0.9999999403953552` in the runtime's default single precision, and with
+depolarizing noise at `p = 0.05` on the `cx`, the four scale factors `1, 3, 5, 7` give the
+exact curve `0.871111109257`, `0.639999987284`, `0.444444444444`, `0.284444452922`:
+
+```python
+import torch
+
+import flagquantum as fq
+
+from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_zne
+from flagquantum.noise import NoiseModel, depolarizing_channel
+
+circuit = fq.Circuit(2).h(0).cx(0, 1)
+observable = Hamiltonian([HamiltonianTerm(1.0, "zz", (0, 1))])
+model = NoiseModel().add("cx", depolarizing_channel(0.05, dtype=torch.complex128))
+
+underfit = run_zne(
+    circuit, observable, noise_model=model, scale_factors=(1, 3, 5, 7), order=1,
+    dtype=torch.complex128,
+)
+print(f"{underfit.estimate:.12f}", f"{underfit.fit.max_residual:.4e}")
+# 0.951111100846 1.7778e-02
+
+result = run_zne(
+    circuit, observable, noise_model=model, scale_factors=(1, 3, 5, 7), order=2,
+    dtype=torch.complex128,
+)
+print(
+    f"{result.estimate:.12f}",
+    f"{result.fit.max_residual:.4e}",
+    result.fit.degrees_of_freedom,
+)
+# 1.000000003030 4.1723e-09 1
+
+print(f"{result.unmitigated:.12f}", f"{result.variance_amplification:.6f}")
+# 0.871111109257 2.940625
+
+print([f"{weight:.6f}" for weight in result.fit.weights])
+# ['1.537500', '-0.237500', '-0.637500', '0.337500']
+```
+
+The same four points fitted by Richardson at order 3 — its construction needs exactly
+`order + 1` points, so the fourth point buys a square degree-three fit rather than a
+redundant degree-two one — estimate `1.000000021110` at a variance amplification of
+`11.390625`, with `max_residual` absent because the fit interpolates. The degree is chosen
+by residual and not by ambition: degree three is 3.87x more costly here and an order of
+magnitude less accurate, because the exact curve is degree two and the extra freedom
+interpolates rounding rather than signal. Precision moves the floor, not the conclusion. In the
+runtime's default single precision the same degree-two run reaches `1.3e-7` from the analytic
+value `1.0` and `6.8e-8` from the exactly simulated noiseless read `0.9999999403953552`, at a
+residual of `6.3e-8`; its unmitigated measurement `0.871110976` sits `1.288890243e-01` from
+`1.0`, an improvement of `1.01e6`. The double-precision run above reaches `3.0e-9` from the
+same analytic value at a residual of `4.2e-9`, and `3.0e-9` from its own noiseless read
+`0.9999999999999998`; its unmitigated measurement `0.871111109` sits `1.288888907e-01` away,
+an improvement of `4.25e7`.
+
+The reference matters as much as the precision, which is why every distance above names what
+it is measured from. The default-precision noiseless read is itself `6.0e-8` away from the
+analytic `1.0`, so a distance taken against it is dominated by that offset and cannot be read
+as the extrapolation's accuracy; the example takes its reference at the dtype its fits run at
+for this reason.
+
+**A wrong assumption stays visible.** Under a coherent over-rotation of `0.15` on the `cx`,
+the declared scaling refuses the channel by name, and a caller-supplied callable that grows
+the angle with the scale factor gives estimates `1.271993498172` at degree one and
+`1.105716958201` at degree two — `2.7e-1` and then `1.1e-1` away from the noiseless value —
+with residuals of `8.9e-2` and `2.9e-2`. The residual falls but stays three to five orders
+above the `4.2e-9` floor the polynomial family reached at the same scale factors, so a
+higher degree does not converge to the right answer and the residual says so rather than the
+estimate merely looking close. No demonstration here is a performance, scaling, hardware or
+fault-tolerance claim: the whole path is single-process CPU density-matrix work on a
+two-qubit circuit.
+
+## SPSA optimization
+
+`spsa.py` is the first optimizer unit in this guide's programme, and the only unit
+here that is not an algorithm: it decides where to move a parameter vector rather
+than what to compute from one. `SPSAOptimizer(maxiter=..., stability=...,
+parameter_gain=..., perturbation=..., parameter_gain_exponent=...,
+perturbation_exponent=..., generator=...)` takes exactly one of `maxiter` and
+`stability` and drives a scalar objective through `step(objective, parameters)`,
+`step_and_cost(objective, parameters)`, or `estimate_gradient(objective,
+parameters)` alone. `steps` and `evaluations` report what it has spent.
+
+**Naming.** The published recursion is written with single letters — `a`, `c`,
+`A`, `alpha`, `gamma` — and none of those is a name. This unit uses the domain
+name of each quantity and records the correspondence: `parameter_gain` is `a`,
+`perturbation` is `c`, `stability` is `A`, `parameter_gain_exponent` is `alpha`,
+and `perturbation_exponent` is `gamma`. The defaults are Spall's: `0.602` and
+`0.101`. `stability` defaults to a tenth of `maxiter`, and `parameter_gain` is
+then derived so that the first step is `0.05` regardless of the run length —
+measured `0.05` for `maxiter` in 10, 200, and 5000.
+
+**The estimate is an estimate, not a gradient.** The two-point difference quotient
+is centered on a perturbation of size `c_k`, so the estimator is biased for every
+finite `c_k` and its expectation reaches the gradient only in the limit. Measured
+against the analytic gradient `[0.7480963877584119, 0.3586780454497614]` of a
+two-qubit Pauli energy: one draw has relative error `0.9999`, the mean of 64 draws
+`0.1259`, and the mean of 512 draws `0.0284`. The mean converges as `1/sqrt(n)`;
+a single draw does not converge to anything usable. **The reason to use this unit
+is the cost, not the direction:** one `step` spends two objective evaluations
+whether the objective has one parameter or 128, where a parameter-shift gradient
+spends `2 n` and an autograd step spends one forward and one backward pass. A
+caller whose objective has an exact gradient should use one.
+
+**The cost is constant and it is measured.** Ten `step` calls spend twenty
+objective evaluations at parameter counts 1, 2, 8, 32, and 128, and
+`SPSAOptimizer.evaluations` agrees with the counted calls at every size.
+`step_and_cost` spends three: two for the estimate and one for the cost it
+reports, which is read at the pre-update parameters.
+
+**The perturbation comes from a caller-owned `torch.Generator`.** The sign vector
+is drawn with `torch.randint` on a generator the caller passes in, so a run
+replays from the call site and on the parameters' own device. Without a generator
+one is created for the parameter device and the draw is no longer reproducible
+from outside; a generator whose device does not match the parameters is refused
+rather than silently drawing elsewhere. This is the one deliberate departure from
+the reference implementations, several of which draw from process-global `numpy`
+state; the comparison below measures what that costs and what it buys.
+
+**Convergence, and what its last digits are.** On `RY(0) RY(1) CX(0,1)` against
+`-(Z_0 + Z_1)`, 120 steps from `[0.4, 0.4]` with `perturbation=0.25` reach
+`-1.9991819605521022`, `-1.9990938026576754`, and `-1.9996860765168998` for seeds
+5, 11, and 13 at 240 evaluations each. The spread across seeds is the estimator's
+variance and not a solver's tolerance: the last digits belong to the draw. On a
+4096-shot objective of the same energy, 200 steps reach a distance from the exact
+minimum of `1.24e-05` (seed 17) and `1.55e-05` (seed 23).
+
+**Against the reference implementation, the trajectory agrees and the state
+ownership does not.** PennyLane 0.45.1's `qml.SPSAOptimizer(maxiter=120, c=0.25)`
+on the same circuit and the same seeds over the same 120 steps reaches
+`-1.9991819605521028`, `-1.999093802657676`, and `-1.9996860765168996` for seeds
+5, 11, and 13 against this unit's `-1.9991819605521022`,
+`-1.9990938026576754`, and `-1.9996860765168998` — the same trajectories to about
+`1e-15`, at 240 objective evaluations each. The two draws agree because a seeded
+`torch.Generator` and a seeded `numpy` global produce the same sign stream at
+these seeds; that is a measured coincidence of the two libraries' generators and
+nothing here depends on it. **What differs is who owns the state.** PennyLane
+reads and writes process-global `numpy` random state, so two optimizers in one
+process interleave unless the caller re-seeds around every call, while this unit
+owns a generator per instance. One consequence of the difference is a trap worth
+recording: PennyLane's `compute_grad` perturbs only the arguments that carry
+`requires_grad`, so passing a plain `numpy` array as the initial parameters makes
+it evaluate the objective twice per step and update nothing — measured, the
+final energy was exactly the initial `-1.769414348676468` after 120 steps and 240
+calls, with nothing raised. This unit takes a `torch.Tensor` and refuses anything
+else at the first call rather than looping silently.
+
+**What it refuses, and before the objective runs.** A constructor without a gain
+sequence, a non-positive `perturbation` or `parameter_gain`, a non-finite
+exponent, and a generator that cannot draw on the parameter device all raise
+`ValidationError` at construction. A non-callable objective, non-floating or empty
+or non-finite parameters, an objective returning anything other than one finite
+scalar, and **an objective that writes into the tensor it is handed** raise before
+any evaluation is spent. The last one matters because the estimate is a difference
+of two evaluations and the reported cost is a third: an in-place objective makes
+those three describe different parameters, which is a wrong number rather than an
+error, so it is refused instead of silently cloned.
+
+**There is no averaging, no constraint handling, and no checkpoint protocol.**
+The recursion as published updates from one estimate. Variance reduction, a
+per-coordinate perturbation scale, and resuming an optimizer from serialized
+state are all absent, and each is a second algorithm with its own conditions
+rather than a knob on this one.
+
 ## Sources
 
 - Boros & Hammer, "Pseudo-Boolean optimization", *Discrete Applied Mathematics*
   **123**(1-3), 155-225 (2002), DOI 10.1016/S0166-218X(01)00341-9 — the
   substitution `x_i = (1 + s_i) / 2` and the pseudo-Boolean form of the
   objective.
+- SPSA is attributed to J. C. Spall, "Multivariate stochastic approximation using
+  a simultaneous perturbation gradient approximation", *IEEE Transactions on
+  Automatic Control* **37**(3), 332-341 (1992), DOI 10.1109/9.119632 — the
+  simultaneous-perturbation estimate and the two gain sequences this unit names
+  `parameter_gain` and `perturbation`. The practical guidance — the default
+  exponents `alpha = 0.602` and `gamma = 0.101`, the `A` in the step-size
+  denominator, and the advice to choose `A` from the expected number of
+  iterations rather than to tune it — is J. C. Spall, "An overview of the
+  simultaneous perturbation method for efficient optimization", *Johns Hopkins
+  APL Technical Digest* **19**(4), 482-492 (1998). The second is a technical
+  digest rather than a peer-reviewed article and is cited for the practical
+  defaults only, not for the convergence result, which is the 1992 paper's.
 - Barahona, *J. Phys. A* **15**(10), 3241-3253 (1982),
   DOI 10.1088/0305-4470/15/10/028 — the ground state of a spin glass in a field
   is NP-hard, which is why the mapping is interesting to a solver at all.
@@ -1192,7 +1428,14 @@ energy at inverse-polynomial precision given a state close to the ground state.
 Everything here is a demonstration-scale, teaching-oriented construction. No
 unit in this guide makes a performance claim, a capacity claim, or a
 quantum-advantage claim, and none of them certifies solver behavior,
-convergence, or hardware behavior. A unit is admitted to the index with the
+convergence, or hardware behavior. The one exception is a cost claim and it is
+stated as one: `spsa.py` spends a measured two objective evaluations per step at
+every parameter count it was tested at, which is a count of a unit's own calls
+and not a performance result. The trajectories its section reports are runs of one
+two-parameter objective, and they certify nothing about convergence in general —
+the unit's own `capability-maturity.toml` entry states the boundary, and the
+spread across seeds that the section reports is the estimator's variance rather
+than a tolerance. A unit is admitted to the index with the
 tests that exercise it and the boundary that limits it: the units classified in
 `capability-maturity.toml` record both there, and the two rows without an entry
 — the Fourier transform and phase estimation — carry their advantage premise in

@@ -50,7 +50,7 @@ def _peak_rss_bytes() -> int:
 def _worker_payload(
     *,
     workload: WorkloadName,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     engine: EngineName,
     threads: int,
@@ -60,7 +60,7 @@ def _worker_payload(
 
     _configure_threads(threads)
     batched, scalar = build_parameter_batch(
-        workload, n_wires=n_wires, batch_size=batch_size, seed=seed
+        workload, n_qubits=n_qubits, batch_size=batch_size, seed=seed
     )
     function = _engine_callable(engine, batched, scalar, seed=seed, threads=threads)
     gc.collect()
@@ -86,7 +86,7 @@ def _worker_payload(
 def _probe_engine(
     *,
     workload: WorkloadName,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     engine: EngineName,
     threads: int,
@@ -105,7 +105,7 @@ def _probe_engine(
             "--workloads",
             workload,
             "--n-wires",
-            str(n_wires),
+            str(n_qubits),
             "--batch-sizes",
             str(batch_size),
             "--engines",
@@ -180,7 +180,7 @@ def _summarize_memory_probes(
 def run_benchmark(
     *,
     workloads: tuple[WorkloadName, ...],
-    n_wires: tuple[int, ...],
+    n_qubits: tuple[int, ...],
     batch_sizes: tuple[int, ...],
     engines: tuple[EngineName, ...],
     threads: int,
@@ -195,21 +195,21 @@ def run_benchmark(
         raise ValueError("threads must be positive")
     if memory_probes < 1:
         raise ValueError("memory_probes must be positive")
-    if not workloads or not n_wires or not batch_sizes or not engines:
+    if not workloads or not n_qubits or not batch_sizes or not engines:
         raise ValueError(
             "workloads, widths, batch sizes, and engines must not be empty"
         )
-    if any(width < 1 for width in n_wires) or any(size < 1 for size in batch_sizes):
+    if any(width < 1 for width in n_qubits) or any(size < 1 for size in batch_sizes):
         raise ValueError("widths and batch sizes must be positive")
 
     thread_environment = _configure_threads(threads)
     cases: list[dict[str, Any]] = []
     for workload in workloads:
-        for width in n_wires:
+        for width in n_qubits:
             for batch_size in batch_sizes:
                 case = run_case(
                     workload=workload,
-                    n_wires=width,
+                    n_qubits=width,
                     batch_size=batch_size,
                     engines=engines,
                     threads=threads,
@@ -223,7 +223,7 @@ def run_benchmark(
                             tuple(
                                 _probe_engine(
                                     workload=workload,
-                                    n_wires=width,
+                                    n_qubits=width,
                                     batch_size=batch_size,
                                     engine=engine,
                                     threads=threads,
@@ -281,7 +281,7 @@ def run_benchmark(
             "external_bridge_batching": "repeated_single_item_bridge",
         },
         workloads=workloads,
-        n_wires=n_wires,
+        n_wires=n_qubits,
         batch_sizes=batch_sizes,
         engines=engines,
         cases=tuple(cases),
@@ -380,7 +380,7 @@ def main() -> int:
             )
         payload = _worker_payload(
             workload=workloads[0],
-            n_wires=args.n_wires[0],
+            n_qubits=args.n_wires[0],
             batch_size=args.batch_sizes[0],
             engine=engines[0],
             threads=args.threads,
@@ -393,7 +393,7 @@ def main() -> int:
 
     payload = run_benchmark(
         workloads=workloads,
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         batch_sizes=tuple(args.batch_sizes),
         engines=engines,
         threads=args.threads,

@@ -144,7 +144,7 @@ def _fusion_blocks(
             StatevectorFusionBlock(
                 index=len(blocks),
                 gate_indices=tuple(plan.index for plan in pending),
-                wires=tuple(sorted(pending_wires)),
+                qubits=tuple(sorted(pending_wires)),
                 communication_barrier=False,
                 estimated_gate_width=len(pending_wires),
             )
@@ -153,16 +153,16 @@ def _fusion_blocks(
         pending_wires = set()
 
     for plan in gate_plans:
-        gate_wires = set(plan.wires)
+        gate_wires = set(plan.qubits)
         if plan.requires_communication:
             flush()
             blocks.append(
                 StatevectorFusionBlock(
                     index=len(blocks),
                     gate_indices=(plan.index,),
-                    wires=plan.wires,
+                    qubits=plan.qubits,
                     communication_barrier=True,
-                    estimated_gate_width=len(plan.wires),
+                    estimated_gate_width=len(plan.qubits),
                 )
             )
             continue
@@ -187,7 +187,7 @@ def _execution_segments(
         if not pending_comm:
             return
         plans = [gate_by_index[block.gate_indices[0]] for block in pending_comm]
-        wires = sorted({wire for plan in plans for wire in plan.wires})
+        wires = sorted({wire for plan in plans for wire in plan.qubits})
         communication = plans[0].communication
         segments.append(
             StatevectorExecutionSegment(
@@ -195,7 +195,7 @@ def _execution_segments(
                 kind="communication_batch",
                 gate_indices=tuple(plan.index for plan in plans),
                 communication=communication,
-                wires=tuple(wires),
+                qubits=tuple(wires),
                 estimated_transfer_bytes=sum(
                     plan.estimated_transfer_bytes for plan in plans
                 ),
@@ -211,7 +211,7 @@ def _execution_segments(
             batch_key = (
                 plan.communication,
                 (
-                    plan.sharded_wires_touched
+                    plan.sharded_qubits_touched
                     if plan.communication == "pair_exchange"
                     else ()
                 ),
@@ -221,7 +221,7 @@ def _execution_segments(
                 previous_key = (
                     previous.communication,
                     (
-                        previous.sharded_wires_touched
+                        previous.sharded_qubits_touched
                         if previous.communication == "pair_exchange"
                         else ()
                     ),
@@ -243,7 +243,7 @@ def _execution_segments(
                 kind="local_fusion",
                 gate_indices=block.gate_indices,
                 communication="local",
-                wires=block.wires,
+                qubits=block.qubits,
                 estimated_transfer_bytes=0,
             )
         )
@@ -288,7 +288,7 @@ def _segment_edge_pairs(
     if world_size <= 1 or segment.communication == "local":
         return ()
     if segment.communication == "pair_exchange":
-        touched = [wire for wire in segment.wires if wire in set(sharded_wires)]
+        touched = [wire for wire in segment.qubits if wire in set(sharded_wires)]
         if touched and sharded_wires:
             bit_index = tuple(sharded_wires).index(touched[0])
             mask = 1 << (len(tuple(sharded_wires)) - bit_index - 1)
@@ -466,11 +466,11 @@ def plan_distributed_statevector(
             StatevectorGatePlan(
                 index=index,
                 name=instruction.name,
-                wires=tuple(int(wire) for wire in instruction.wires),
+                qubits=tuple(int(wire) for wire in instruction.wires),
                 layer=layer_by_index.get(index, index),
                 execution=execution,
                 communication=communication,
-                sharded_wires_touched=touched,
+                sharded_qubits_touched=touched,
                 estimated_transfer_bytes=transfer_bytes,
             )
         )
@@ -497,7 +497,7 @@ def plan_distributed_statevector(
     )
     buffer_plans = _buffer_plans(execution_segments, world_size=world_size)
     plan = DistributedStatevectorPlan(
-        n_wires=int(ir.n_wires),
+        n_qubits=int(ir.n_wires),
         bsz=bsz,
         world_size=world_size,
         local_world_size=local_world_size,
@@ -507,7 +507,7 @@ def plan_distributed_statevector(
         total_state_bytes=total_state_bytes,
         per_rank_state_bytes=per_rank_state_bytes,
         rank_address_bits=rank_address_bits,
-        sharded_wires=sharded_wires,
+        sharded_qubits=sharded_wires,
         shards=shards,
         gate_plans=tuple(gate_plans),
         fusion_blocks=fusion_blocks,
@@ -633,15 +633,15 @@ def _validate_distributed_statevector_plan(
             f"{empty_shards} would own an empty share of {plan.total_amplitudes}"
         )
     if plan.distribution == "qubit_address_sharded":
-        # The rank address must fit inside the wire budget: the executor splits
+        # The rank address must fit inside the qubit budget: the executor splits
         # each global index into rank bits and a local offset, so a plan whose
         # rank address is wider than `n_wires` names global indices no shard
-        # covers. `sharded_wires` is truncated to the wire count when that
+        # covers. `sharded_wires` is truncated to the qubit count when that
         # happens, which is exactly why the width has to be checked here.
-        if plan.rank_address_bits > plan.n_wires:
+        if plan.rank_address_bits > plan.n_qubits:
             errors.append(
                 "qubit address sharding needs at least "
-                f"{plan.rank_address_bits} wires, plan has {plan.n_wires}"
+                f"{plan.rank_address_bits} wires, plan has {plan.n_qubits}"
             )
     if tuple(segment.index for segment in plan.execution_segments) != tuple(
         range(len(plan.execution_segments))

@@ -1,9 +1,9 @@
 """Clifford stabilizer sampling backed by the optional Stim engine.
 
 A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude
-vector, so its state is a tableau whose size grows quadratically with the wire
+vector, so its state is a tableau whose size grows quadratically with the qubit
 count rather than exponentially. That is the whole reason a stabilizer regime
-exists: circuits made only of Clifford gates reach wire counts no amplitude
+exists: circuits made only of Clifford gates reach qubit counts no amplitude
 store can hold, and they answer exactly the question a fault-tolerance workflow
 asks -- what do the measurements read out.
 
@@ -13,7 +13,7 @@ One conversion and two numeric entry points:
 
 - translating validated FlagQuantum IR into the engine's circuit form, refusing
   every instruction this engine cannot represent,
-- sampling measurement outcomes for a requested wire list, and
+- sampling measurement outcomes for a requested qubit list, and
 - sampling every measurement a Clifford program records when that program
   carries positioned bit-flip channels.
 
@@ -58,10 +58,10 @@ Fail-closed contract
 --------------------
 An instruction outside the Clifford gate set is refused with a named error
 naming the accepted set. The positioned-noise entry accepts one channel and one
-measurement shape: a single-wire `bit_flip` whose Kraus operators are the
-bit-flip pair, and one wire per measurement. Amplitude damping and phase
+measurement shape: a single-qubit `bit_flip` whose Kraus operators are the
+bit-flip pair, and one qubit per measurement. Amplitude damping and phase
 damping are refused because this engine cannot represent them as one Pauli error
-at one position, and a multi-wire measurement is refused because the caller
+at one position, and a multi-qubit measurement is refused because the caller
 reads the record back one recorded bit at a time. Nothing is approximated,
 decomposed, or silently dropped, because a stabilizer result that quietly
 answers a different circuit is worse than a refusal: the caller cannot tell the
@@ -89,7 +89,7 @@ from ...noise import KrausChannel
 #
 # `ccx` and `cswap` are absent deliberately rather than by omission. Both are
 # permutations of the computational basis whose induced map is not GF(2)-linear
-# (for `cswap`, wire b reads b + a(b + c)), so neither normalizes the Pauli
+# (for `cswap`, qubit b reads b + a(b + c)), so neither normalizes the Pauli
 # group and neither is a Clifford gate. They belong to a higher level of the
 # Clifford hierarchy, which is a different simulation regime and a different
 # capacity curve.
@@ -172,15 +172,15 @@ def _validate_seed(seed: Any) -> int | None:
 def _sampling_request(
     program: Any,
     *,
-    wires: Sequence[int] | None,
+    qubits: Sequence[int] | None,
     shots: int | None,
 ) -> tuple[CircuitIR, MeasurementNode]:
     """Return the validated IR and the measurement the caller asked for.
 
-    The wire list and the shot count are normalized by the Core measurement
-    contract, so this module does not restate what a wire or a shot count is.
+    The qubit list and the shot count are normalized by the Core measurement
+    contract, so this module does not restate what a qubit or a shot count is.
     A program that already carries lowered measurement nodes is refused: the
-    caller's requested wires and the nodes' requested wires are two answers to
+    caller's requested qubits and the nodes' requested qubits are two answers to
     the same question, and this entry point is not the one that reconciles them.
     """
 
@@ -189,18 +189,18 @@ def _sampling_request(
         kinds = ", ".join(sorted({node.kind for node in ir.measurements}))
         raise CapabilityError(
             "sample_stabilizer does not read lowered measurement nodes "
-            f"(found kind(s): {kinds}); pass the wires and shots to sample "
+            f"(found kind(s): {kinds}); pass the qubits and shots to sample "
             "directly, and let Runtime lower output requests before an executor "
             "consumes them"
         )
-    selected = tuple(range(ir.n_wires)) if wires is None else tuple(wires)
+    selected = tuple(range(ir.n_wires)) if qubits is None else tuple(qubits)
     request = MeasurementNode("sample", selected, shots=shots)
     if request.shots is None:
         raise ValidationError("stabilizer sampling requires a positive shot count")
-    outside = tuple(wire for wire in request.wires if wire >= ir.n_wires)
+    outside = tuple(qubit for qubit in request.wires if qubit >= ir.n_wires)
     if outside:
         raise ValidationError(
-            f"stabilizer sampling references wire(s) {outside} outside circuit "
+            f"stabilizer sampling references qubit(s) {outside} outside circuit "
             f"range [0, {ir.n_wires - 1}]"
         )
     return ir, request
@@ -227,7 +227,7 @@ def require_clifford_program(program: Any) -> CircuitIR:
 
 
 def _clifford_instructions(ir: CircuitIR) -> tuple[tuple[str, tuple[int, ...]], ...]:
-    """Return engine gate names and wires, or refuse the first gate outside the set."""
+    """Return engine gate names and qubits, or refuse the first gate outside the set."""
 
     translated: list[tuple[str, tuple[int, ...]]] = []
     for index, instruction in enumerate(ir.instructions):
@@ -246,23 +246,23 @@ def _clifford_instructions(ir: CircuitIR) -> tuple[tuple[str, tuple[int, ...]], 
                 f"stabilizer sampling accepts {_CLIFFORD_SET_TEXT} and fails "
                 "closed rather than approximating"
             )
-        translated.append((gate, tuple(int(wire) for wire in instruction.wires)))
+        translated.append((gate, tuple(int(qubit) for qubit in instruction.wires)))
     return tuple(translated)
 
 
 def _engine_circuit(
     instructions: tuple[tuple[str, tuple[int, ...]], ...],
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
 ) -> Any:
-    """Build the engine circuit: the gates, then one measurement per wire."""
+    """Build the engine circuit: the gates, then one measurement per qubit."""
 
     stim = _stim()
     circuit = stim.Circuit()
-    for gate, gate_wires in instructions:
-        circuit.append(gate, list(gate_wires))
-    # One explicit measurement per requested wire fixes the sample bit order to
-    # the requested wire order, which is the order the returned tensor uses.
-    circuit.append("M", list(wires))
+    for gate, gate_qubits in instructions:
+        circuit.append(gate, list(gate_qubits))
+    # One explicit measurement per requested qubit fixes the sample bit order to
+    # the requested qubit order, which is the order the returned tensor uses.
+    circuit.append("M", list(qubits))
     return circuit
 
 
@@ -270,7 +270,7 @@ def sample_stabilizer(
     program: Any,
     *,
     shots: int,
-    wires: Sequence[int] | None = None,
+    qubits: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> torch.Tensor:
     """Sample computational-basis measurement outcomes from a Clifford circuit.
@@ -279,25 +279,25 @@ def sample_stabilizer(
         program: A `~flagquantum.Circuit` or a validated
             `~flagquantum.CircuitIR` whose instructions are all Clifford.
         shots: Positive number of sampling repetitions.
-        wires: Wires to measure, in output order. Defaults to every wire.
+        qubits: Qubits to measure, in output order. Defaults to every qubit.
         seed: Seed for the sampling stream. The engine documents identical
             samples for an identical seed only on one engine version and one
             machine's instruction set, so a seed reproduces a run rather than
             pinning a bit pattern.
 
     Returns:
-        An `int64` tensor of shape `(shots, len(wires))` holding `0`/`1`
-        measurement outcomes. Column `j` is `wires[j]`, so the leftmost column is
-        the first requested wire, matching the dense statevector sampler.
+        An `int64` tensor of shape `(shots, len(qubits))` holding `0`/`1`
+        measurement outcomes. Column `j` is `qubits[j]`, so the leftmost column is
+        the first requested qubit, matching the dense statevector sampler.
 
     Raises:
         StabilizerDependencyError: The optional engine is not installed.
         CapabilityError: The program carries a noiseless non-Clifford gate, a
             noise channel, or lowered measurement nodes.
-        ValidationError: The wire list, shot count, or seed is not a valid one.
+        ValidationError: The qubit list, shot count, or seed is not a valid one.
     """
 
-    ir, request = _sampling_request(program, wires=wires, shots=shots)
+    ir, request = _sampling_request(program, qubits=qubits, shots=shots)
     validated_seed = _validate_seed(seed)
     instructions = _clifford_instructions(ir)
     circuit = _engine_circuit(instructions, request.wires)
@@ -359,7 +359,7 @@ def _noisy_operations(
 ) -> tuple[tuple[str, tuple[int, ...], float | None], ...]:
     """Return engine operations for a Clifford program with positioned noise.
 
-    Gates, resets, measurements, and single-wire bit-flip channels all translate;
+    Gates, resets, measurements, and single-qubit bit-flip channels all translate;
     anything else is refused. A channel stays where the caller put it, which is
     the whole point of this conversion: the position of a bit flip relative to
     the gates around it is what makes it a data error at a round boundary or a
@@ -370,7 +370,7 @@ def _noisy_operations(
     for index, instruction in enumerate(ir.instructions):
         opcode = canonical_opcode(instruction.name)
         schema = get_operator_schema(opcode)
-        wires = tuple(int(wire) for wire in instruction.wires)
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
         if schema is not None and schema.channel:
             if opcode != _NOISE_OPCODE:
                 raise CapabilityError(
@@ -379,19 +379,19 @@ def _noisy_operations(
                     f"it executes exactly is {_NOISE_OPCODE!r}"
                 )
             operations.append(
-                (_NOISE_ENGINE_NAME, wires, _bit_flip_probability(instruction, index))
+                (_NOISE_ENGINE_NAME, qubits, _bit_flip_probability(instruction, index))
             )
             continue
         gate = _GATE_NAMES.get(opcode)
         if gate is not None:
-            operations.append((gate, wires, None))
+            operations.append((gate, qubits, None))
             continue
         if opcode == _MEASURE_OPCODE or opcode == _RESET_OPCODE:
-            if len(wires) != 1:
+            if len(qubits) != 1:
                 raise CapabilityError(
-                    f"instruction {index} {opcode!r} names {len(wires)} wire(s); "
+                    f"instruction {index} {opcode!r} names {len(qubits)} qubit(s); "
                     "stabilizer sampling records one bit per measurement, so a "
-                    "measurement must name one wire"
+                    "measurement must name one qubit"
                 )
             operations.append(
                 (
@@ -400,7 +400,7 @@ def _noisy_operations(
                         if opcode == _MEASURE_OPCODE
                         else _RESET_ENGINE_NAME
                     ),
-                    wires,
+                    qubits,
                     None,
                 )
             )
@@ -417,19 +417,19 @@ def _noisy_operations(
 
 def _noisy_engine_circuit(
     operations: tuple[tuple[str, tuple[int, ...], float | None], ...],
-    terminal_wires: tuple[int, ...],
+    terminal_qubits: tuple[int, ...],
 ) -> Any:
     """Build the engine circuit for positioned noise and interleaved readouts."""
 
     stim = _stim()
     circuit = stim.Circuit()
-    for name, wires, probability in operations:
+    for name, qubits, probability in operations:
         if probability is None:
-            circuit.append(name, list(wires))
+            circuit.append(name, list(qubits))
         else:
-            circuit.append(name, list(wires), probability)
-    if terminal_wires:
-        circuit.append(_MEASURE_ENGINE_NAME, list(terminal_wires))
+            circuit.append(name, list(qubits), probability)
+    if terminal_qubits:
+        circuit.append(_MEASURE_ENGINE_NAME, list(terminal_qubits))
     return circuit
 
 
@@ -437,24 +437,24 @@ def sample_noisy_measurements(
     program: Any,
     *,
     shots: int,
-    terminal_wires: Sequence[int] | None = None,
+    terminal_qubits: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> torch.Tensor:
     """Sample every measurement a Clifford program records.
 
-    Unlike :func:`sample_stabilizer`, which measures a requested wire list once
+    Unlike :func:`sample_stabilizer`, which measures a requested qubit list once
     at the end of a noiseless circuit, this entry point executes the program's
-    own measurements in order and accepts single-wire bit-flip channels placed
+    own measurements in order and accepts single-qubit bit-flip channels placed
     between them. That is the shape a detector error model needs: a syndrome
     round is read where the program reads it, and a bit flip lands exactly where
     the caller put it.
 
     Args:
         program: A `~flagquantum.Circuit` or a validated `~flagquantum.CircuitIR`
-            whose instructions are Clifford gates, single-wire resets,
-            single-wire measurements, and single-wire bit-flip channels.
+            whose instructions are Clifford gates, single-qubit resets,
+            single-qubit measurements, and single-qubit bit-flip channels.
         shots: Positive number of sampling repetitions.
-        terminal_wires: Wires to measure once after the program has run, in
+        terminal_qubits: Qubits to measure once after the program has run, in
             record order. Defaults to no terminal measurement.
         seed: Seed for the sampling stream. The engine documents identical
             samples for an identical seed only on one engine version and one
@@ -464,14 +464,14 @@ def sample_noisy_measurements(
     Returns:
         An `int64` tensor of shape `(shots, num_recorded)`. The first columns are
         the program's own measurements in instruction order, one column per
-        single-wire measurement; the remaining columns are ``terminal_wires`` in
+        single-qubit measurement; the remaining columns are ``terminal_qubits`` in
         the order given.
 
     Raises:
         StabilizerDependencyError: The optional engine is not installed.
         CapabilityError: The program carries a channel other than a bit flip, a
-            non-Clifford gate, or a measurement naming more than one wire.
-        ValidationError: The shot count, seed, terminal wire, or record shape is
+            non-Clifford gate, or a measurement naming more than one qubit.
+        ValidationError: The shot count, seed, terminal qubit, or record shape is
             not a valid one.
     """
 
@@ -485,11 +485,11 @@ def sample_noisy_measurements(
         )
     shots = _validate_shots(shots)
     validated_seed = _validate_seed(seed)
-    selected = () if terminal_wires is None else tuple(terminal_wires)
-    outside = tuple(wire for wire in selected if wire >= ir.n_wires)
+    selected = () if terminal_qubits is None else tuple(terminal_qubits)
+    outside = tuple(qubit for qubit in selected if qubit >= ir.n_wires)
     if outside:
         raise ValidationError(
-            f"terminal wire(s) {outside} outside circuit range "
+            f"terminal qubit(s) {outside} outside circuit range "
             f"[0, {ir.n_wires - 1}]"
         )
     operations = _noisy_operations(ir)
@@ -497,7 +497,7 @@ def sample_noisy_measurements(
     if recorded + len(selected) == 0:
         raise ValidationError(
             "sampling requires at least one recorded measurement; the program "
-            "records none and no terminal wire was requested"
+            "records none and no terminal qubit was requested"
         )
     circuit = _noisy_engine_circuit(operations, selected)
     sampler = circuit.compile_sampler(seed=validated_seed)

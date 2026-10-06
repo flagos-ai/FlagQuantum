@@ -336,7 +336,7 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
             differentiable_forward_started = time.perf_counter()
             reverse = execute_torch_distributed_statevector_reverse(
                 circuit,
-                observable_wire=observable_wire,
+                observable_qubit=observable_wire,
                 checkpoint_policy=checkpoint_policy,
                 device=device,
             )
@@ -498,8 +498,8 @@ def run(args: argparse.Namespace) -> dict[str, Any] | None:
                         if args.dtype == "complex128"
                         else torch.complex64
                     ),
-                    wire_layout=args.wire_layout.replace("-", "_"),
-                    preferred_local_wires=(observable_wire,),
+                    qubit_layout=args.wire_layout.replace("-", "_"),
+                    preferred_local_qubits=(observable_wire,),
                 )
             forward_seconds = _elapsed_seconds(started, device)
             forward_summary = forward.summary()

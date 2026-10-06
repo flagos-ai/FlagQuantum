@@ -10,7 +10,7 @@ from .distributed_state import DistributedBoundarySync, DistributedShardPlan
 
 def _rank_for_wire(wire: int, shards: Sequence[DistributedShardPlan]) -> int:
     for shard in shards:
-        if int(wire) in shard.wires:
+        if int(wire) in shard.qubits:
             return shard.rank
     return 0
 
@@ -58,8 +58,8 @@ def _boundary_sync_record(
     left_rank = _rank_for_wire(left_wire, shards)
     right_rank = _rank_for_wire(right_wire, shards)
     return DistributedBoundarySync(
-        left_wire=left_wire,
-        right_wire=right_wire,
+        left_qubit=left_wire,
+        right_qubit=right_wire,
         left_rank=left_rank,
         right_rank=right_rank,
         owner_rank=left_rank,

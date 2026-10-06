@@ -3,9 +3,9 @@
 import importlib.util
 
 import pytest
+import torch
 
 import flagquantum.kernels.provenance as kernel_provenance
-import flagquantum.runtime.executors.statevector.forward as forward
 import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
 from flagquantum.kernels.catalog import KernelRequest
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
@@ -14,6 +14,12 @@ from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     select_triton_kernel,
     triton_available,
     triton_compiler_provenance,
+)
+from flagquantum.runtime.executors.statevector.local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_1q_decision,
+    _triton_local_cx_decision,
+    _triton_local_cx_requested,
 )
 
 pytestmark = pytest.mark.unit
@@ -193,11 +199,17 @@ def test_dispatch_keeps_an_unaddressable_shard_on_the_index_path(monkeypatch):
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
 
-    cx = forward._triton_local_cx_decision(
-        device_type="cuda", dtype="complex64", addressable=False
+    cx = _triton_local_cx_decision(
+        device_type="cuda",
+        dtype="complex64",
+        addressable=False,
+        shape=(1, 1 << 24),
     )
-    local_1q = forward._triton_local_1q_decision(
-        device_type="cuda", dtype="complex64", addressable=False
+    local_1q = _triton_local_1q_decision(
+        device_type="cuda",
+        dtype="complex64",
+        addressable=False,
+        shape=(1, 1 << 24),
     )
 
     assert not cx.accelerated
@@ -213,8 +225,11 @@ def test_dispatch_accelerates_an_addressable_shard(monkeypatch):
     triton_available.cache_clear()
 
     try:
-        decision = forward._triton_local_cx_decision(
-            device_type="cuda", dtype="complex64", addressable=True
+        decision = _triton_local_cx_decision(
+            device_type="cuda",
+            dtype="complex64",
+            addressable=True,
+            shape=(1, 1 << 24),
         )
     finally:
         triton_available.cache_clear()
@@ -222,10 +237,29 @@ def test_dispatch_accelerates_an_addressable_shard(monkeypatch):
     assert decision.accelerated
 
 
+def test_the_local_kernel_window_applies_only_without_an_override(monkeypatch):
+    """The measured window bounds a shape; the override replaces it outright."""
+
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", raising=False)
+    assert _triton_local_cx_requested((1, 1 << 24))
+    assert not _triton_local_cx_requested((1, 1 << 20))
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    assert _triton_local_cx_requested((1, 1 << 20))
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "0")
+    assert not _triton_local_cx_requested((1, 1 << 24))
+
+
 def test_the_flat_local_address_limit_matches_the_kernel_contract():
     import flagquantum.kernels.triton as triton_kernels
+    import flagquantum.runtime.executors.statevector.local_gate_dispatch as policy
 
-    assert forward.FLAT_LOCAL_MAX_AMPLITUDES == triton_kernels.FLAT_LOCAL_MAX_AMPLITUDES
+    assert policy.FLAT_LOCAL_MAX_AMPLITUDES == triton_kernels.FLAT_LOCAL_MAX_AMPLITUDES
+
+    limit = policy.FLAT_LOCAL_MAX_AMPLITUDES
+    assert _flat_local_address_supported(torch.empty(limit, device="meta"))
+    assert not _flat_local_address_supported(torch.empty(limit + 1, device="meta"))
 
 
 def test_dispatch_evidence_aggregates_actual_decisions(monkeypatch):

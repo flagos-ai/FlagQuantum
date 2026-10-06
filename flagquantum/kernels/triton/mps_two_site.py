@@ -10,9 +10,9 @@ import triton
 import triton.language as tl
 
 if TYPE_CHECKING:
-    from ._jit import jit
+    from ._jit import autotune, jit
 else:
-    from triton import jit
+    from triton import autotune, jit
 
 
 class _TwoSiteContext(Protocol):
@@ -22,6 +22,31 @@ class _TwoSiteContext(Protocol):
     def save_for_backward(self, *tensors: torch.Tensor) -> None: ...
 
 
+@autotune(
+    configs=[
+        triton.Config(
+            {"block_rows": 16, "block_columns": 16},
+            num_warps=4,
+            num_stages=2,
+        ),
+        triton.Config(
+            {"block_rows": 16, "block_columns": 16},
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {"block_rows": 32, "block_columns": 32},
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {"block_rows": 32, "block_columns": 32},
+            num_warps=8,
+            num_stages=2,
+        ),
+    ],
+    key=["left_dim", "bond_dim", "right_dim", "batched_gate"],
+)
 @jit
 def _two_site_forward_kernel(
     left_parts: tl.tensor,
@@ -100,6 +125,51 @@ def _two_site_forward_kernel(
     tl.store(output_parts + 2 * output_offset + 1, imag, mask=mask)
 
 
+@autotune(
+    configs=[
+        triton.Config(
+            {
+                "block_rows": 16,
+                "block_rank": 16,
+                "block_bond": 16,
+                "block_right": 16,
+            },
+            num_warps=4,
+            num_stages=2,
+        ),
+        triton.Config(
+            {
+                "block_rows": 16,
+                "block_rank": 32,
+                "block_bond": 16,
+                "block_right": 32,
+            },
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {
+                "block_rows": 32,
+                "block_rank": 16,
+                "block_bond": 16,
+                "block_right": 32,
+            },
+            num_warps=4,
+            num_stages=3,
+        ),
+        triton.Config(
+            {
+                "block_rows": 32,
+                "block_rank": 32,
+                "block_bond": 16,
+                "block_right": 32,
+            },
+            num_warps=8,
+            num_stages=2,
+        ),
+    ],
+    key=["left_dim", "bond_dim", "right_dim", "rank", "batched_gate"],
+)
 @jit
 def _two_site_range_kernel(
     left_parts: tl.tensor,
@@ -114,6 +184,8 @@ def _two_site_range_kernel(
     batched_gate: tl.constexpr,
     block_rows: tl.constexpr,
     block_rank: tl.constexpr,
+    block_bond: tl.constexpr,
+    block_right: tl.constexpr,
 ) -> None:
     batch = tl.program_id(2)
     rows = tl.program_id(0) * block_rows + tl.arange(0, block_rows)
@@ -124,59 +196,89 @@ def _two_site_range_kernel(
     output_left_physical = rows % 2
     real = tl.zeros((block_rows, block_rank), dtype=tl.float32)
     imag = tl.zeros((block_rows, block_rank), dtype=tl.float32)
-    for middle in range(bond_dim):
-        for left_physical in range(2):
-            left_offset = (
-                (batch * left_dim + left_index) * 2 + left_physical
-            ) * bond_dim + middle
-            lr = tl.load(left_parts + 2 * left_offset, mask=row_mask, other=0.0)[
-                :, None
-            ]
-            li = tl.load(left_parts + 2 * left_offset + 1, mask=row_mask, other=0.0)[
-                :, None
-            ]
-            for right_physical in range(2):
-                for right_index in range(right_dim):
+    bond_offsets = tl.arange(0, block_bond)
+    right_offsets = tl.arange(0, block_right)
+    for bond_block in range(tl.cdiv(bond_dim, block_bond)):
+        middles = bond_block * block_bond + bond_offsets
+        bond_mask = middles < bond_dim
+        for right_physical in range(2):
+            for output_right_physical in range(2):
+                projected_real = tl.zeros((block_bond, block_rank), dtype=tl.float32)
+                projected_imag = tl.zeros((block_bond, block_rank), dtype=tl.float32)
+                for right_block in range(tl.cdiv(right_dim, block_right)):
+                    right_indices = right_block * block_right + right_offsets
+                    right_mask = right_indices < right_dim
                     right_offset = (
-                        (batch * bond_dim + middle) * 2 + right_physical
-                    ) * right_dim + right_index
-                    rr = tl.load(right_parts + 2 * right_offset)
-                    ri = tl.load(right_parts + 2 * right_offset + 1)
-                    for output_right_physical in range(2):
-                        projection_offset = (
-                            output_right_physical * right_dim + right_index
-                        ) * rank + ranks
-                        pr = tl.load(
-                            projection_parts + 2 * projection_offset,
-                            mask=rank_mask,
-                            other=0.0,
-                        )[None, :]
-                        pi = tl.load(
-                            projection_parts + 2 * projection_offset + 1,
-                            mask=rank_mask,
-                            other=0.0,
-                        )[None, :]
-                        gate_row = 2 * output_left_physical + output_right_physical
-                        gate_column = 2 * left_physical + right_physical
-                        gate_offset = gate_row * 4 + gate_column
-                        if batched_gate:
-                            gate_offset += batch * 16
-                        gr = tl.load(
-                            gate_parts + 2 * gate_offset,
-                            mask=row_mask,
-                            other=0.0,
-                        )[:, None]
-                        gi = tl.load(
-                            gate_parts + 2 * gate_offset + 1,
-                            mask=row_mask,
-                            other=0.0,
-                        )[:, None]
-                        pair_r = lr * rr - li * ri
-                        pair_i = lr * ri + li * rr
-                        matrix_r = pair_r * gr - pair_i * gi
-                        matrix_i = pair_r * gi + pair_i * gr
-                        real += matrix_r * pr - matrix_i * pi
-                        imag += matrix_r * pi + matrix_i * pr
+                        (batch * bond_dim + middles[:, None]) * 2 + right_physical
+                    ) * right_dim + right_indices[None, :]
+                    projection_offset = (
+                        output_right_physical * right_dim + right_indices[:, None]
+                    ) * rank + ranks[None, :]
+                    rr = tl.load(
+                        right_parts + 2 * right_offset,
+                        mask=bond_mask[:, None] & right_mask[None, :],
+                        other=0.0,
+                    )
+                    ri = tl.load(
+                        right_parts + 2 * right_offset + 1,
+                        mask=bond_mask[:, None] & right_mask[None, :],
+                        other=0.0,
+                    )
+                    projection_mask = right_mask[:, None] & rank_mask[None, :]
+                    pr = tl.load(
+                        projection_parts + 2 * projection_offset,
+                        mask=projection_mask,
+                        other=0.0,
+                    )
+                    pi = tl.load(
+                        projection_parts + 2 * projection_offset + 1,
+                        mask=projection_mask,
+                        other=0.0,
+                    )
+                    projected_real += tl.dot(rr, pr, allow_tf32=False) - tl.dot(
+                        ri, pi, allow_tf32=False
+                    )
+                    projected_imag += tl.dot(rr, pi, allow_tf32=False) + tl.dot(
+                        ri, pr, allow_tf32=False
+                    )
+                for left_physical in range(2):
+                    left_offset = (
+                        (batch * left_dim + left_index[:, None]) * 2 + left_physical
+                    ) * bond_dim + middles[None, :]
+                    left_mask = row_mask[:, None] & bond_mask[None, :]
+                    lr = tl.load(
+                        left_parts + 2 * left_offset,
+                        mask=left_mask,
+                        other=0.0,
+                    )
+                    li = tl.load(
+                        left_parts + 2 * left_offset + 1,
+                        mask=left_mask,
+                        other=0.0,
+                    )
+                    contracted_real = tl.dot(
+                        lr, projected_real, allow_tf32=False
+                    ) - tl.dot(li, projected_imag, allow_tf32=False)
+                    contracted_imag = tl.dot(
+                        lr, projected_imag, allow_tf32=False
+                    ) + tl.dot(li, projected_real, allow_tf32=False)
+                    gate_row = 2 * output_left_physical + output_right_physical
+                    gate_column = 2 * left_physical + right_physical
+                    gate_offset = gate_row * 4 + gate_column
+                    if batched_gate:
+                        gate_offset += batch * 16
+                    gr = tl.load(
+                        gate_parts + 2 * gate_offset,
+                        mask=row_mask,
+                        other=0.0,
+                    )[:, None]
+                    gi = tl.load(
+                        gate_parts + 2 * gate_offset + 1,
+                        mask=row_mask,
+                        other=0.0,
+                    )[:, None]
+                    real += contracted_real * gr - contracted_imag * gi
+                    imag += contracted_real * gi + contracted_imag * gr
     offset = batch * left_dim * 2 * rank + rows[:, None] * rank + ranks[None, :]
     mask = row_mask[:, None] & rank_mask[None, :]
     tl.store(output_parts + 2 * offset, real, mask=mask)
@@ -199,13 +301,14 @@ def _launch(
     output_parts = torch.empty(
         batch, left_dim * 2, 2 * right_dim, 2, dtype=torch.float32, device=left.device
     )
-    block_rows = 16 if left_dim * 2 <= 16 else 32
-    block_columns = 16 if 2 * right_dim <= 16 else 32
-    grid = (
-        triton.cdiv(left_dim * 2, block_rows),
-        triton.cdiv(2 * right_dim, block_columns),
-        batch,
-    )
+
+    def grid(meta: dict[str, int]) -> tuple[int, int, int]:
+        return (
+            triton.cdiv(left_dim * 2, meta["block_rows"]),
+            triton.cdiv(2 * right_dim, meta["block_columns"]),
+            batch,
+        )
+
     _two_site_forward_kernel[grid](
         torch.view_as_real(left.resolve_conj().resolve_neg()),
         torch.view_as_real(gate.resolve_conj().resolve_neg()),
@@ -215,10 +318,6 @@ def _launch(
         bond_dim=bond_dim,
         right_dim=right_dim,
         batched_gate=batched_gate,
-        block_rows=block_rows,
-        block_columns=block_columns,
-        num_warps=4,
-        num_stages=3,
     )
     return torch.view_as_complex(output_parts)
 
@@ -313,13 +412,14 @@ def fused_mps_range_projection(
     output_parts = torch.empty(
         batch, left_dim * 2, rank, 2, dtype=torch.float32, device=left.device
     )
-    block_rows = 16 if left_dim * 2 <= 16 else 32
-    block_rank = 16 if rank <= 16 else 32
-    grid = (
-        triton.cdiv(left_dim * 2, block_rows),
-        triton.cdiv(rank, block_rank),
-        batch,
-    )
+
+    def grid(meta: dict[str, int]) -> tuple[int, int, int]:
+        return (
+            triton.cdiv(left_dim * 2, meta["block_rows"]),
+            triton.cdiv(rank, meta["block_rank"]),
+            batch,
+        )
+
     _two_site_range_kernel[grid](
         torch.view_as_real(left.contiguous()),
         torch.view_as_real(gate.contiguous()),
@@ -331,10 +431,6 @@ def fused_mps_range_projection(
         right_dim=right_dim,
         rank=rank,
         batched_gate=gate.ndim == 3,
-        block_rows=block_rows,
-        block_rank=block_rank,
-        num_warps=4,
-        num_stages=2,
     )
     return torch.view_as_complex(output_parts)
 

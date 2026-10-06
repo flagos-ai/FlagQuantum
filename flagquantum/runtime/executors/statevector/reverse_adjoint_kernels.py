@@ -21,9 +21,7 @@ from ....simulation.statevector.operations import (
 )
 from .forward import (
     StatevectorExchangeWorkspace,
-    _flat_local_address_supported,
     _is_diagonal_instruction,
-    _triton_local_cx_enabled,
     _vectorized_cross_shard_cx,
     _vectorized_local_cx_gate,
     _vectorized_local_diagonal_gate,
@@ -31,6 +29,10 @@ from .forward import (
     _vectorized_pair_exchange_gate,
     _vectorized_subgroup_exchange_gate,
     _wait_for_exchange,
+)
+from .local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_cx_enabled,
 )
 from .reverse_support import (
     BackwardExecutionEvidence,
@@ -78,14 +80,14 @@ def _apply_single_process_cpu_gate(
     source = shard_state.amplitudes
     if instruction.name in {"cx", "swap", "x"} and instruction.matrix is None:
         updated = _apply_fixed_permutation(
-            source, instruction.name, instruction.wires, plan.n_wires
+            source, instruction.name, instruction.wires, plan.n_qubits
         )
     elif _is_diagonal_instruction(instruction.name):
         updated = _apply_diagonal_matrix(
-            source, matrix, instruction.wires, plan.n_wires
+            source, matrix, instruction.wires, plan.n_qubits
         )
     else:
-        updated = _apply_matrix(source, matrix, instruction.wires, plan.n_wires)
+        updated = _apply_matrix(source, matrix, instruction.wires, plan.n_qubits)
     if output is not None:
         output.copy_(updated)
         updated = output
@@ -98,7 +100,7 @@ def _apply_single_process_cpu_gate(
 def _pair_components(
     state: torch.Tensor, *, wire: int, n_wires: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the zero/one views for one wire of a contiguous state."""
+    """Return the zero/one views for one qubit of a contiguous state."""
 
     stride = 1 << (int(n_wires) - int(wire) - 1)
     paired = state.reshape(state.shape[0], -1, 2, stride)
@@ -181,9 +183,11 @@ def _fused_single_process_cpu_reversible_vjp(
             adjoint,
             matrix,
             name=instruction.name,
-            wire=instruction.wires[0],
-            second_wire=(instruction.wires[1] if len(instruction.wires) == 2 else None),
-            n_wires=n_wires,
+            qubit=instruction.wires[0],
+            second_qubit=(
+                instruction.wires[1] if len(instruction.wires) == 2 else None
+            ),
+            n_qubits=n_wires,
         )
         if native_gradient is not None:
             return native_gradient
@@ -274,12 +278,16 @@ def _apply_matrix_gate(
         if evidence is not None:
             evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
         return state
-    touched = any(wire in plan.sharded_wires for wire in instruction.wires)
+    touched = any(wire in plan.sharded_qubits for wire in instruction.wires)
     if not touched or plan.world_size == 1:
         if instruction.name == "cx" and _triton_local_cx_enabled(
             device_type=shard_state.amplitudes.device.type,
             dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
             addressable=_flat_local_address_supported(shard_state.amplitudes),
+            shape=(
+                int(shard_state.amplitudes.shape[0]),
+                int(shard_state.amplitudes.shape[1]),
+            ),
         ):
             state, scratch = _vectorized_local_cx_gate(
                 shard_state,
@@ -302,7 +310,7 @@ def _apply_matrix_gate(
     if (
         _reverse_cross_shard_cx_packing_enabled()
         and instruction.name == "cx"
-        and sum(wire in plan.sharded_wires for wire in instruction.wires) == 1
+        and sum(wire in plan.sharded_qubits for wire in instruction.wires) == 1
     ):
         state, count, byte_count, scratch = _vectorized_cross_shard_cx(
             shard_state,
@@ -316,7 +324,7 @@ def _apply_matrix_gate(
                 evidence.kernel_dispatch_evidence if evidence is not None else None
             ),
         )
-    elif len(instruction.wires) == 1 and instruction.wires[0] in plan.sharded_wires:
+    elif len(instruction.wires) == 1 and instruction.wires[0] in plan.sharded_qubits:
         state, count, byte_count, scratch = _vectorized_pair_exchange_gate(
             shard_state,
             matrix,
@@ -363,8 +371,8 @@ def _fused_sharded_1q_vjp_adjoint(
         fused_complex64_sharded_1q_vjp_adjoint,
     )
 
-    position = plan.sharded_wires.index(int(wire))
-    rank_shift = len(plan.sharded_wires) - position - 1
+    position = plan.sharded_qubits.index(int(wire))
+    rank_shift = len(plan.sharded_qubits) - position - 1
     peer = before.rank ^ (1 << rank_shift)
     global_peer = (
         dist.get_global_rank(process_group, peer) if process_group is not None else peer

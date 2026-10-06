@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypeAlias
 
@@ -75,6 +77,8 @@ class _StatevectorDisjointDenseStep:
     native_preferred: bool = False
     native_parameterized: bool = False
     native_clifford: bool = False
+    fused_cx_controls: tuple[int, ...] = ()
+    fused_cx_targets: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -95,3 +99,89 @@ _StatevectorPreCXStep: TypeAlias = (
     | _StatevectorDisjointDenseStep
 )
 _StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep
+
+
+def _preallocated_batch_assembly_beneficial(
+    program: Sequence[_StatevectorProgramStep],
+) -> bool:
+    """Avoid overlapping the final output with measured large mixed workspaces."""
+
+    matrix_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
+            )
+            else (step,)
+        )
+    )
+    has_rotation_sequence = any(
+        isinstance(step, _StatevectorFusedGateStep)
+        and len(step.instructions) >= 2
+        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+        for step in matrix_steps
+    )
+    has_clifford_matching = any(
+        isinstance(step, _StatevectorCliffordMatchingStep) for step in program
+    )
+    return not (has_rotation_sequence and has_clifford_matching)
+
+
+def _static_product_state_initialization_enabled() -> bool:
+    """Whether a complete static Clifford layer may initialize ``|0>``."""
+
+    return os.getenv(
+        "FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def _native_zero_state_prefix_length(
+    program: Sequence[_StatevectorProgramStep], width: int
+) -> int:
+    """Return the native prefix that prepares every qubit from ``|0>`` once."""
+
+    occupied: set[int] = set()
+    expected = set(range(width))
+    for index, step in enumerate(program):
+        if not isinstance(step, _StatevectorDisjointDenseStep) or not (
+            step.native_parameterized
+            or (step.native_clifford and _static_product_state_initialization_enabled())
+        ):
+            return 0
+        step_wires = tuple(
+            int(wire)
+            for region in step.regions
+            for wire in (
+                region.instruction.wires
+                if isinstance(region, _StatevectorGateStep)
+                else region.wires
+            )
+        )
+        if (
+            len(step_wires) != len(step.regions)
+            or len(set(step_wires)) != len(step_wires)
+            or occupied.intersection(step_wires)
+        ):
+            return 0
+        occupied.update(step_wires)
+        if occupied == expected:
+            return index + 1
+    return 0
+
+
+def _direct_batch_assembly_beneficial(
+    program: Sequence[_StatevectorProgramStep], width: int
+) -> bool:
+    """Whether every window can begin in its owned final-result slice."""
+
+    return bool(_native_zero_state_prefix_length(program, width)) and all(
+        isinstance(step, _StatevectorCliffordMatchingStep)
+        or (
+            isinstance(step, _StatevectorDisjointDenseStep)
+            and (step.native_parameterized or step.native_clifford)
+        )
+        for step in program
+    )

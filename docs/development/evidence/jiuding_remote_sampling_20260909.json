@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
   "implementation_commit": "59a517cd",
+  "implementation_commit_full": "59a517cdcbdfbf10f4156767ce65dac8bd341164",
   "scope": "Resident computational- and Pauli-basis samples and counts through fq.run",
   "image": {
     "id": "b530c8fe-7c8e-437c-806c-0403efce2f2a",

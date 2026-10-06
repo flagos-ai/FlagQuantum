@@ -4,23 +4,34 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from itertools import product
 from math import exp
+from types import MappingProxyType
 from typing import Any
 
 import torch
 
+from ..core.ir import _normalize_angle
+from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.runtime_config import get_runtime_config
+from ..errors import ValidationError
 
 
 def _as_probability(value: float | torch.Tensor, name: str) -> torch.Tensor:
+    """Read one probability or rate, refusing anything outside ``[0, 1]``.
+
+    ``ValidationError`` is a ``ValueError``, so the class keeps the contract this
+    helper has always had for a caller that catches ``ValueError`` while putting
+    the failure in the category the errors module reserves for a bad user value.
+    """
+
     tensor = torch.as_tensor(value)
     if tensor.numel() != 1:
-        raise ValueError(f"{name} must be a scalar probability.")
+        raise ValidationError(f"{name} must be a scalar probability.")
     if bool(torch.any(tensor < 0)) or bool(torch.any(tensor > 1)):
-        raise ValueError(f"{name} must be between 0 and 1.")
+        raise ValidationError(f"{name} must be between 0 and 1.")
     return tensor
 
 
@@ -87,7 +98,7 @@ class KrausChannel:
             )
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         size = int(self.kraus[0].shape[-1])
         return size.bit_length() - 1
 
@@ -421,10 +432,72 @@ def thermal_relaxation_channel(
     )
 
 
+CHANNEL_FACTORIES: Mapping[str, Callable[..., KrausChannel]] = MappingProxyType(
+    {
+        "bit_flip": bit_flip_channel,
+        "phase_flip": phase_flip_channel,
+        "depolarizing": depolarizing_channel,
+        "amplitude_damping": amplitude_damping_channel,
+    }
+)
+
+
+def channel_from_parameters(name: str, parameters: Mapping[str, Any]) -> KrausChannel:
+    """Build a native channel from the parameter names its opcode declares.
+
+    The declared names are read from the operator registry rather than from this
+    module, so a factory and a schema that disagree are refused here instead of
+    at execution time.  ``KrausChannel.parameters`` already recorded the values,
+    and this is the reader that turns a user's ``probability=0.1`` into the Kraus
+    operators for it.
+
+    Every declared value is checked by the registry's own parameter rule before
+    the factory sees it, so ``depolarizing(0, "0.1")`` and ``depolarizing(0, True)``
+    are refused by the same one owner that refuses ``ry(0, "0.3")`` and ``ry(0,
+    True)``.  Without that, a string reached ``torch.as_tensor`` and surfaced as
+    ``TypeError: new(): invalid data type 'str'``, naming neither the channel nor
+    the parameter, and ``True`` was read as the probability one.
+
+    Raises:
+        ValidationError: The opcode has no native factory here, an undeclared
+            parameter was supplied, or a declared one is missing.  A value of the
+            wrong type or magnitude is a ``TypeError`` or ``IRValidationError``
+            from the registry rule, and a value outside ``[0, 1]`` is a
+            ``ValidationError`` from the factory, which is where the number's
+            physical meaning lives.
+    """
+
+    opcode = canonical_opcode(name)
+    factory = CHANNEL_FACTORIES.get(opcode)
+    if factory is None:
+        known = ", ".join(sorted(CHANNEL_FACTORIES))
+        raise ValidationError(
+            f"unknown channel {name!r}; channels with a native factory: {known}"
+        )
+    schema = get_operator_schema(opcode)
+    declared = schema.parameters if schema is not None else ()
+    unexpected = tuple(sorted(set(parameters) - set(declared)))
+    if unexpected:
+        accepted = ", ".join(declared) if declared else "none"
+        raise ValidationError(
+            f"{opcode} does not accept parameter(s): {', '.join(unexpected)}; "
+            f"accepted: {accepted}"
+        )
+    missing = tuple(key for key in declared if key not in parameters)
+    if missing:
+        raise ValidationError(f"{opcode} requires parameter(s): {', '.join(declared)}")
+    values = {key: parameters[key] for key in declared}
+    for key, value in values.items():
+        _normalize_angle(value, opcode=opcode, parameter=key)
+    return factory(**values)
+
+
 __all__ = (
+    "CHANNEL_FACTORIES",
     "KrausChannel",
     "amplitude_damping_channel",
     "bit_flip_channel",
+    "channel_from_parameters",
     "coherent_overrotation_channel",
     "depolarizing_channel",
     "phase_damping_channel",

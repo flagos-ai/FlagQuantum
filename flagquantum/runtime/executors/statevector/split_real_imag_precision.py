@@ -213,7 +213,7 @@ def _expectation_from_bound_p2_ir(
             state.imag,
             term.ops,
             term.coefficient,
-            n_wires=ir.n_wires,
+            n_qubits=ir.n_wires,
         )
         for term in terms
     )

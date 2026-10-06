@@ -337,7 +337,7 @@ def run(
     if output == "samples":
         measurement = MeasurementResult(
             kind="samples",
-            wires=selected,
+            qubits=selected,
             value=samples,
             shots=shot_count,
             metadata=measurement_metadata,
@@ -354,7 +354,7 @@ def run(
     counts = dict(Counter(encoded))
     measurement = MeasurementResult(
         kind="counts",
-        wires=selected,
+        qubits=selected,
         value=[counts],
         shots=shot_count,
         metadata=measurement_metadata,

@@ -31,6 +31,7 @@ from .diagonal_cpu import (
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
     fuse_native_parameterized_one_qubit_layers,
+    fuse_native_rotation_clifford_layers,
 )
 from .index_basis import (
     _basis_indices_for_wires,
@@ -60,7 +61,7 @@ _STATEVECTOR_LAYOUT_CACHE: dict[
 
 
 def clear_statevector_layout_cache() -> None:
-    """Clear the cached wire-layout computations for statevector gates."""
+    """Clear the cached qubit-layout computations for statevector gates."""
 
     _STATEVECTOR_LAYOUT_CACHE.clear()
     _clear_wire_permutation_cache()
@@ -166,8 +167,19 @@ def _triton_single_qubit_loop_enabled() -> bool:
     return _environment_flag("FQ_TRITON_SINGLE_QUBIT_LOOP", default=True)
 
 
-def _triton_ry_rz_pair_enabled() -> bool:
-    return _environment_flag("FQ_TRITON_RY_RZ_PAIR", default=True)
+_TRITON_RY_RZ_PAIR_DEFAULT_SHAPES = (
+    (1, 1 << 20),
+    (1, 1 << 24),
+)
+
+
+def _triton_ry_rz_pair_enabled(shape: tuple[int, int]) -> bool:
+    """Select the measured default window, with an explicit user override."""
+
+    configured = os.getenv("FQ_TRITON_RY_RZ_PAIR")
+    if configured is None or not configured.strip():
+        return shape in _TRITON_RY_RZ_PAIR_DEFAULT_SHAPES
+    return configured.strip().lower() in {"1", "true", "on", "yes"}
 
 
 def _triton_single_qubit_matrix_enabled() -> bool:
@@ -184,8 +196,8 @@ def _triton_parameterized_single_qubit_matrix_enabled() -> bool:
 # costs about six to eight gates here; repeated regions reuse the cached table.
 _CX_SEQUENCE_GATHER_MINIMUM_LENGTH = 8
 
-# A wider product cuts state passes but grows its matrix 4x per wire. On the
-# reference 20-wire CPU path, four wires took 11.8 ms vs five at 12.0 ms.
+# A wider product cuts state passes but grows its matrix 4x per qubit. On the
+# reference 20-qubit CPU path, four qubits took 11.8 ms vs five at 12.0 ms.
 _CPU_DISJOINT_DENSE_MAX_WIRES = 4
 _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS = 1
 
@@ -203,16 +215,16 @@ def _cpu_cx_sequence_gather_enabled() -> bool:
 
 
 def _cpu_single_wire_elementwise_enabled() -> bool:
-    """Whether a CPU one-wire gate is applied by combining the wire's two halves.
+    """Whether a CPU single-qubit gate is applied by combining the qubit's two halves.
 
     Off by default, unlike the other statevector fast-path switches, because this
     kernel is *not* bitwise equal to the ``bmm`` it replaces. ``bmm`` on a 2x2
     complex matrix accumulates the real and imaginary parts as separate sums over
     the two terms, while this kernel forms each complex product first and then
-    adds, so the last bit can differ. Measured across both dtypes and four wires
-    per width, the difference is zero up to seven wires - below that size ``bmm``
+    adds, so the last bit can differ. Measured across both dtypes and four qubits
+    per width, the difference is zero up to seven qubits - below that size ``bmm``
     takes the same path - and below 0.1 ulp of the real dtype above it: 1.1e-8 on
-    a normalized complex64 state at eight wires, 3.3e-10 at twenty, and 6.9e-18
+    a normalized complex64 state at eight qubits, 3.3e-10 at twenty, and 6.9e-18
     on complex128 at twelve. That is small but it is not nothing, and the tests
     compare states with ``torch.equal``, so the switch stays opt-in rather than
     changing what the default path returns.
@@ -222,16 +234,16 @@ def _cpu_single_wire_elementwise_enabled() -> bool:
 
 
 def _cpu_cross_wire_diagonal_fusion_enabled() -> bool:
-    """Whether CPU wire-disjoint diagonal regions may share a statevector pass."""
+    """Whether CPU qubit-disjoint diagonal regions may share a statevector pass."""
 
     return _environment_flag("FQ_CPU_CROSS_WIRE_DIAGONAL_FUSION", default=True)
 
 
 def _cpu_disjoint_single_wire_fusion_enabled() -> bool:
-    """Whether CPU wire-disjoint dense regions may share a bounded apply.
+    """Whether CPU qubit-disjoint dense regions may share a bounded apply.
 
     The environment variable retains its original name because it shipped with
-    the single-wire path. Mixed-width grouping extends that optimization and
+    the single-qubit path. Mixed-width grouping extends that optimization and
     rollback boundary rather than adding a second configuration surface.
     """
 
@@ -258,6 +270,9 @@ def _compile_statevector_program(
     enable_cpu_native_clifford_matching: bool = False,
     enable_cpu_native_fixed_one_qubit_layer: bool = False,
     enable_cpu_native_parameterized_one_qubit_layer: bool = False,
+    enable_cpu_native_fused_rotation_layer: bool = False,
+    enable_cpu_native_scalar_fused_rotation_layer: bool = False,
+    enable_cpu_native_rotation_clifford_fusion: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
     max_dense_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> tuple[_StatevectorProgramStep, ...]:
@@ -273,7 +288,13 @@ def _compile_statevector_program(
     if enable_cpu_native_fixed_one_qubit_layer:
         optimized = fuse_native_fixed_one_qubit_layers(optimized)
     if enable_cpu_native_parameterized_one_qubit_layer:
-        optimized = fuse_native_parameterized_one_qubit_layers(optimized)
+        optimized = fuse_native_parameterized_one_qubit_layers(
+            optimized,
+            include_terminal_fused_regions=enable_cpu_native_fused_rotation_layer,
+            include_nonterminal_fused_regions=(
+                enable_cpu_native_scalar_fused_rotation_layer
+            ),
+        )
     if enable_cpu_native_clifford_matching:
         optimized = fuse_native_disjoint_clifford_matchings(optimized)
     if enable_cpu_controlled_phase_graph:
@@ -288,6 +309,8 @@ def _compile_statevector_program(
             max_two_wire_regions,
             max_wires=max_dense_wires,
         )
+    if enable_cpu_native_rotation_clifford_fusion:
+        optimized = fuse_native_rotation_clifford_layers(optimized)
     if enable_cpu_disjoint_clifford_matching:
         optimized = _reorder_disjoint_clifford_matchings(optimized)
     return tuple(_fuse_cx_sequences(optimized))
@@ -483,7 +506,7 @@ def _region_wires(
 def _disjoint_diagonal_groups(
     regions: Sequence[_StatevectorGateStep | _StatevectorFusedGateStep],
 ) -> list[list[_StatevectorGateStep | _StatevectorFusedGateStep]]:
-    """Partition commuting diagonal regions into wire-disjoint matchings."""
+    """Partition commuting diagonal regions into qubit-disjoint matchings."""
 
     groups: list[list[_StatevectorGateStep | _StatevectorFusedGateStep]] = []
     used_wires: list[set[int]] = []
@@ -503,7 +526,7 @@ def _disjoint_diagonal_groups(
 def _fuse_cross_wire_diagonal_regions(
     program: Sequence[_StatevectorPreCXStep],
 ) -> list[_StatevectorPreCXStep]:
-    """Combine adjacent small diagonal regions into wire-disjoint matchings."""
+    """Combine adjacent small diagonal regions into qubit-disjoint matchings."""
 
     optimized: list[_StatevectorPreCXStep] = []
     index = 0
@@ -536,7 +559,7 @@ def _fuse_disjoint_dense_regions(
     *,
     max_wires: int = _CPU_DISJOINT_DENSE_MAX_WIRES,
 ) -> list[_StatevectorPreCXStep]:
-    """Pack bounded dense regions with a limit on two-wire regions per group."""
+    """Pack bounded dense regions with a limit on two-qubit regions per group."""
 
     optimized: list[_StatevectorPreCXStep] = []
     group: list[_StatevectorDenseRegion] = []
@@ -583,9 +606,9 @@ def _bounded_dense_region(
     specialized kernels when alone because ``flush`` unwraps a one-item group.
     Standalone ``cx`` and ``swap`` gates remain barriers so their permutation
     kernels and adjacent CX sequence compilation remain available. Other
-    one- and two-wire regions may share a dense Kronecker apply when their total
-    width stays within the measured four-wire bound. A group contains at most
-    the compiled two-wire-region limit because its product regressed batch one.
+    one- and two-qubit regions may share a dense Kronecker apply when their total
+    width stays within the measured four-qubit bound. A group contains at most
+    the compiled two-qubit-region limit because its product regressed batch one.
     """
 
     if isinstance(step, _StatevectorFusedGateStep):
@@ -672,7 +695,7 @@ def _apply_matrix(
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
-                state, matrix, wire=wires[0], n_wires=n_wires
+                state, matrix, qubit=wires[0], n_qubits=n_wires
             )
         if (
             len(wires) == 2
@@ -726,11 +749,11 @@ def _apply_single_wire_matrix(
     wire: int,
     n_wires: int,
 ) -> torch.Tensor:
-    """Apply a one-wire gate by combining the two halves of that wire's axis.
+    """Apply a single-qubit gate by combining the two halves of that qubit's axis.
 
-    ``state`` is contiguous and wire ``w`` carries the bit of weight
+    ``state`` is contiguous and qubit ``w`` carries the bit of weight
     ``2 ** (n_wires - 1 - w)``, so ``reshape(bsz, 2 ** w, 2, 2 ** (n_wires - 1 - w))``
-    is a view whose size-2 axis *is* that wire. The gate is then two scaled sums
+    is a view whose size-2 axis *is* that qubit. The gate is then two scaled sums
     over that axis, which needs neither of the two layout permutations
     ``_apply_matrix`` performs and only one output allocation.
 
@@ -830,7 +853,7 @@ def _cx_sequence_index_dtype(n_wires: int) -> torch.dtype:
     """Index dtype for a permutation table over ``2 ** n_wires`` amplitudes.
 
     ``index_select`` takes int32, and an int32 index addresses every amplitude up
-    to 31 wires, so the wider dtype is only needed past that point - where the
+    to 31 qubits, so the wider dtype is only needed past that point - where the
     state itself would already be 32 GiB per batch row.
     """
 
@@ -855,7 +878,7 @@ def _cx_sequence_permutation_index(
 
     The inverse map is affine over GF(2), so the table is built from the images
     of the ``n_wires`` basis vectors by doubling: entry ``i`` is the XOR of the
-    images of the wires set in ``i``. That is ``n_wires`` vector operations on
+    images of the qubits set in ``i``. That is ``n_wires`` vector operations on
     the whole table rather than one pass per basis index.
     """
 
@@ -883,7 +906,7 @@ def _cx_sequence_permutation_index(
         images = torch.where(hit, images ^ target_mask, images)
     # Doubling appends the new bit at the high end of the offset, so the first
     # step fixes the state index's least significant bit, which belongs to the
-    # last wire. Consuming the wires in reverse is what keeps the bit order.
+    # last qubit. Consuming the qubits in reverse is what keeps the bit order.
     table = torch.zeros(1, dtype=torch.int64, device=device)
     for wire in reversed(range(n_wires)):
         table = torch.cat((table, table ^ images[wire]))
@@ -1073,7 +1096,7 @@ def _combine_rank_pair_gate_eager(
     *,
     rank_basis: int,
 ) -> tuple[torch.Tensor, int]:
-    """Combine one local and remote amplitude block for a sharded one-wire gate."""
+    """Combine one local and remote amplitude block for a sharded single-qubit gate."""
 
     basis_zero, basis_one = (local, remote) if rank_basis == 0 else (remote, local)
     updated = basis_zero * matrix[rank_basis, 0] + basis_one * matrix[rank_basis, 1]

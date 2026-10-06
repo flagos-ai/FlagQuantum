@@ -82,7 +82,7 @@ def _owned_state(*, drop: int | None = None) -> RankOwnedMPSState:
     if drop is not None:
         del sites[drop]
     return RankOwnedMPSState(
-        n_wires=N_WIRES,
+        n_qubits=N_WIRES,
         bsz=1,
         rank=0,
         world_size=1,

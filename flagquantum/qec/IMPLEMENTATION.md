@@ -34,8 +34,8 @@ in the final round remain visible but unconfirmed. The corresponding modes are
 `RepetitionNoiseProfile` maps code-specific circuit locations onto the existing
 backend-neutral `NoiseModel`: a data bit-flip channel is sampled after matching
 parity-check CNOTs, syndrome readout confusion applies to ancilla measurements,
-and optional final readout confusion applies to data wires. Because the middle
-data wire participates in two check CNOTs per round while each edge wire
+and optional final readout confusion applies to data qubits. Because the middle
+data qubit participates in two check CNOTs per round while each edge qubit
 participates in one, its configured channel has two opportunities per round.
 Finite-shot sweeps report observations and event counts; they are not threshold
 or logical-suppression evidence.
@@ -62,8 +62,8 @@ performance claim follows from the workflow.
 ## Code-independent records
 
 `pauli.py`, `codes.py`, and `circuit.py` add a code-independent layer beside the
-frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wire
-indices; a `StabilizerCode` is a value that declares its distance, wire layout,
+frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qubit
+indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
 layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
@@ -87,12 +87,12 @@ a declared logical observable.
 
 The detector count is validated against the code's declared checks and the
 configured round count, and every reference is validated against the code's
-declared wires: a detector's terminal readouts must name declared data wires and
-its syndrome measurements must name declared ancilla wires inside the configured
-rounds, and an observable's readout must name declared data wires and match the
+declared qubits: a detector's terminal readouts must name declared data qubits and
+its syndrome measurements must name declared ancilla qubits inside the configured
+rounds, and an observable's readout must name declared data qubits and match the
 code's declared logical operators. The validation is membership-based. It does not
 check that a detector names the *same* check in each round, that a terminal
-detector's data wires are the support of the check it belongs to, or that the
+detector's data qubits are the support of the check it belongs to, or that the
 `source` text is the program those layouts describe, so a hand-built layout can
 still be semantically wrong while satisfying every check.
 
@@ -120,10 +120,62 @@ physical error mechanism, named by the detectors and the logical observables it
 flips; `DetectorErrorModel` is a set of them over a fixed detector and observable
 count, with its parity matrices, its exact marginal rates, seeded sampling, and
 stim text interchange. `from_memory_circuit` builds the model of a memory circuit
-under a `PhenomenologicalNoise`: one mechanism per data wire per round, and one
+under a `PhenomenologicalNoise`: one mechanism per data qubit per round, and one
 per check measurement per round, minus the locations whose probability is zero,
 with the mechanisms that flip the same detectors and observables merged. The
 model is exact for Pauli noise in the reference gate set.
+
+`dem_construction.py` owns where those mechanisms come from, and it knows two
+descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
+`from_memory_circuit` calls: it enumerates the locations a noise record
+configures, injects one at a time into the source program the circuit carries,
+and reads the flip set off the circuit's own detector and observable layouts. Its
+`decompose_composite_faults` argument is a second *reading* of those locations and
+not a second route: with it on, the one composite fault a memory circuit states —
+the Y family, an X flip and a Z flip at one location — is enumerated as those two
+parts at the parent's rate, each forced through the same injector at the parent's
+own round and wire, instead of as one mechanism whose signature is their XOR. The
+parts fire together in the composite fault and independently when read apart, so
+the two readings share every detector and observable marginal to floating-point
+rounding and share no joint law, and the mechanism sets are asserted to differ.
+The default is the combined reading; the option exists so that the
+minimum-weight matcher, which refuses a mechanism of three detectors, can be
+handed the shape it weights, and a repetition code or a one-round surface
+experiment reaches the same model either way. `_code_matrix_entries` is the
+**read** route: it takes the four CSS blocks
+(`hz[k, q]` is one when a Z-type check `k` sees data qubit `q`, `hx`, and the
+logical-operator matrices `lz` and `lx` in the same convention), and derives every
+signature combinatorially, with nothing lowered or executed.
+`DetectorErrorModel.from_code_matrices` is its public entry point and
+`css_code_matrices` is the bridge that lifts a code record into the
+`CssCodeMatrices` record it consumes, so a code described by its stabilizers
+reaches a model without a circuit being written for it. The bridge reads every
+block the record declares; a logical observable that is neither pure X nor pure Z
+is refused with its index named rather than read as one of the two, so the fault
+family a half-read code would have lost cannot be lost silently.
+
+The two routes describe different experiments and the difference is stated rather
+than glossed. The matrix route is the code-capacity one: a fault in round `r`
+reaches the detector band of round `r` and the band of round `r + 1`, and the
+final round has no band after it, so its detector count is `num_rounds *
+num_checks` with no terminal readout. A memory circuit measures its data qubits,
+so it gains a terminal detector per Z-type check and its count is one band per
+round plus that terminal. Neither geometry stands for the other, and each is
+pinned against stim through a transcription that states its own assumption. A
+fault that is still in the data at the end of the run is still seen by the
+logical readout, so a physical fault spans one band, and the model's second band
+is the one place the two descriptions genuinely diverge; that divergence is
+pinned as the exact relation between the two mechanism sets rather than as a
+tolerance.
+
+Both routes carry the same single fault family: a data qubit's bit flip and a
+check's syndrome bit flipped at readout. The phase-flip family an `hx`/`lx` pair
+describes, and the independent `px`/`py`/`pz`/`pm` rates upstream states, are not
+expressible through one data-flip scalar and one measurement-flip scalar; that
+limit is recorded against the entry point in the alignment contract rather than
+approximated here. On the matrix route an X-type check and an X-type logical
+operator therefore contribute no row at all, rather than an all-zero row that
+would declare an observable no mechanism ever reports.
 
 Merging is also an operation a caller asks for, not only a step construction
 performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every
@@ -137,14 +189,80 @@ combined prior is the single `p` whose factor is that product, so regrouping the
 factors leaves every detector rate and every observable rate unchanged. The sum
 rule does not preserve them, and is offered for the caller who means it.
 
-Construction is exact and does not sample. Each mechanism's signature comes from
-one forced execution: the single error is injected into the circuit source, the
-source is lowered and executed twice, and the two shots must agree before the
-signature is read off the detector and observable layouts. That two-shot
-determinism assertion is both the fail-closed check for a mechanism that is not a
-Pauli mechanism in the reference gate set and the evidence that the signature is
-not sampled. The model is defined for Pauli noise only: a non-Pauli channel is
-refused with a stated reason rather than approximated.
+A model can also state that mechanisms are alternatives rather than independent,
+and `dem_alternatives.py` owns that reading. `DemError.error_id` is an optional
+non-negative label; the mechanisms sharing one are mutually exclusive, so at most
+one of them fires in a shot, which is how a correlated or decomposed fault is
+stated. It is the one statement the parity matrices cannot carry, because two
+columns of a parity matrix are independent by construction, which is why it lives
+on the mechanism's own record and why every entry point either carries it or
+refuses the model: `from_memory_circuit` and `from_code_matrices` produce no ids,
+`from_stim_text` cannot meet one, and `error_ids` projects the vector back out in
+the sense upstream gives that name — one entry per mechanism, mechanisms sharing
+an entry being alternatives, and `None`, upstream's `nullopt`, exactly when no
+mechanism states an id, which is what every construction route here produces and
+what stim's text always describes.
+
+The identifiers are given a distribution rather than left as a bare flag, because
+"these are correlated" is not yet a model. The members of a group are read as
+disjoint pieces of one shot: each keeps the probability it states, the left-over
+mass is the group firing none of them, and a target's marginal rate over the group
+is the sum of the members that touch it rather than their parity. Two independent
+mechanisms of 0.1 and 0.2 give a detector they both flip a rate of 0.26, and the
+same two stated as alternatives give 0.30. Sampling follows the same reading,
+drawing one uniform per group and landing the shot in one member's interval or in
+the left-over mass, so a member fires in exactly the shots the model says it does
+while the shots in which the group fires at all follow the group's mass rather
+than the larger share two independent draws would give. A group that sums to
+exactly one is admitted — the group then fires every shot — and a group of one
+member excludes nothing and behaves as if it were unstated. A group whose
+probabilities sum *above* one is refused rather than renormalized: renormalizing
+would change every member's stated rate and leave nothing to read back, so the
+refusal names the id and the sum. `stated_ids()` and `exclusive_groups()` are the
+model's statement of what it excluded — empty and empty respectively exactly when
+it is independent — and `error_ids` is the label vector, whose values are opaque
+and whose numbering is therefore a normalization: two models that differ only in
+how their ids are numbered are the same model, and what is a fact about a model is
+the partition the vector induces.
+
+An id is a statement about the distribution, so an operation that assumes
+independence refuses an id-carrying model by naming the ids rather than dropping
+the structure, and each refusal is at the call site where that operation's own
+premise is the thing to explain. `to_stim_text()` refuses, because the format
+reads every error instruction as an independent mechanism and printing would
+therefore state a different model at the same probabilities.
+`merge_duplicate_mechanisms()` refuses, because both of its rules combine
+mechanisms by assuming independence and either would invent a shot in which two
+alternatives both fired.
+`MinimumWeightMatchingDecoder.from_detector_error_model` and the decoding graph
+behind it refuse, because one weight per mechanism is the weight of a fault that
+fires alone, while a group of alternatives is one fault whose weight is the
+negative log-likelihood of the group. What no route here does yet is the
+operation that would resolve the refusal rather than avoid it: folding a group
+under its exclusivity into the single mechanism a matcher can weigh. That is the
+gap the alignment contract records against `dem_canonicalize`, upstream's
+`canonicalize_for_rounds` family, and it is more load-bearing now than it was
+before the ids landed, because three call sites refuse a model for want of it.
+
+`tests/qec/test_dem_error_ids.py` pins the statement, its arithmetic and its
+refusals: the exact marginals against the parity formula they replace, a sampled
+rate against the exact one inside a stated standard-error bound, the absence of
+any shot in which two members of one group fire, the three refusal messages, and
+that a model with no ids draws and weighs exactly as it did before the field
+existed.
+
+Construction is exact and does not sample. On the forced route each mechanism's
+signature comes from one forced execution: the single error is injected into the
+circuit source, the source is lowered and executed twice, and the two shots must
+agree before the signature is read off the detector and observable layouts. That
+two-shot determinism assertion is both the fail-closed check for a mechanism that
+is not a Pauli mechanism in the reference gate set and the evidence that the
+signature is not sampled. The model is defined for Pauli noise only: a non-Pauli
+channel is refused with a stated reason rather than approximated. The read route
+asserts determinism differently, by construction: its input is a support, so a
+matrix that is not binary, not two-dimensional, or not indexed by the same data
+qubits as its logical matrix is refused rather than rounded into shape.
+
 
 The model is built on the memory circuit without in-circuit feedback, because it
 describes the noise-to-detection mapping that a decoder inverts. The frozen
@@ -176,6 +294,27 @@ after the round's gates instead of before it deviates by 0.038 and a terminal
 detector that omits the data readout deviates by 0.107. The marginals are also
 compared across four noise strengths and two seeds.
 
+`tests/qec/test_dem_code_matrices_stim.py` is the read route's separate
+independent check, and it is separate on purpose. Its stim circuit states the
+code-capacity assumption and nothing else: the data qubits persist across rounds
+and no terminal data readout exists, so a fault keeps flipping the syndrome of
+every later extraction and the detector count is the matrix route's own. The
+experiment is run once per readout basis, because `lz` and `lx` anti-commute and
+no single state has both as a deterministic value, and the model is restricted to
+the matching basis for each run. An extraction before round zero is noiseless and
+declares no detector: it supplies the prior every round-zero band is compared
+against, which is the only way an X-type check can have one at all, since an
+X-type ancilla on a register never measured in that basis has a coin-toss
+outcome. Handing stim that circuit and requiring its own error analysis to
+reproduce the shape and every full signature and rate is a statement about the
+matrix route rather than about the memory circuit — the memory circuit's
+transcription ends in a terminal data readout and has a different detector
+count. Running the
+matrix route against the memory transcription would conflate the two geometries
+and hide which of them a failure belonged to, so the same suite asserts that they
+differ: at distance three and three rounds the repetition code has six detectors
+through matrices and eight through a memory circuit.
+
 Marginals alone would not separate a model that keeps every marginal and drops
 every correlation, so the same suite compares every detector pair rate. Because
 the mechanisms fire independently, a pair's exact rate follows from the product
@@ -190,17 +329,24 @@ reproduces the marginals by construction — while its pair rates miss by 10.7 t
 23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
 to 0.1794.
 
-Construction is a forced execution, so it is bounded by the statevector amplitude
-ceiling rather than by the detector error model's own cost. A rotated surface
-code is `distance**2` data wires plus one ancilla per check: `distance=2` is 7
-wires and `distance=3` is 17, and both build in seconds, while `distance=4` is 31
-wires (2**31 amplitudes) and did not complete in forty-five minutes, and
-`distance=5` is 49 wires and fails on the allocator. The modelled
+The forced route is a forced execution, so it is bounded by the
+statevector amplitude ceiling rather than by the detector error model's own cost.
+A rotated surface code is `distance**2` data qubits plus one ancilla per check:
+`distance=2` is 7 qubits and `distance=3` is 17, and both build in seconds, while
+`distance=4` is 31 qubits (2**31 amplitudes) and did not complete in forty-five
+minutes, and `distance=5` is 49 qubits and fails on the allocator. The modelled
 rotated-surface distance is therefore three. Reaching five and seven needs a
 signature route that does not materialise the state — either a first-party
 Clifford propagation in this layer, which is a second implementation of an
 algorithm this layer otherwise does not own, or an explicit decision that the
 larger-distance curve is a reference-only comparison.
+
+The matrix route is bounded by none of that. It reads a support rather than
+executing a program, so its cost is the number of nonzero matrix entries times
+the round count and a distance-5 or distance-7 patch reaches a model as easily as
+a distance-2 one. The ceiling above is a property of the circuit route, not of
+the construction contract, and the two are allowed to differ because they answer
+different questions.
 
 The stim interchange is a text format, not a package dependency: nothing in
 `dem.py` imports `stim`, and the reader is exercised against real stim output by
@@ -216,16 +362,37 @@ that follow it, in the declarations and in the error mechanisms alike, and
 successive instructions accumulate. A `^` separator partitions the groups a
 composite mechanism decomposes into; those groups are a decoder's business and
 the signature is the symmetric difference of the line's targets, so a repeated
-target cancels and the groups are not retained. An observable count that only the
-error targets state is inferred from them, because stim declares the observable
-exactly when no mechanism references it; a declared count still governs.
+target cancels and the groups are not retained by default. An observable count
+that only the error targets state is inferred from them, because stim declares the
+observable exactly when no mechanism references it; a declared count still governs.
+
+The separator's groups are also available to a caller that wants them, because a
+matching decoder needs one graphlike component per edge and upstream exposes the
+same choice as `dem_from_stim_text(dem_text, use_decomp_suggestions=True)`.
+`DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)` returns one
+mechanism per group, each at the probability the line states, which is the
+decomposition the separators carry: on a rotated surface code at distance five and
+two rounds it turns 536 mechanisms into 1042. That reading is a different model
+from the line and is not an equivalent statement of it, because two components that
+each fire independently at probability `p` do not reproduce one mechanism at
+probability `p`. Held to stim's own sampler on the same text, the default reading's
+worst marginal misses by 0.0016 on the observables and this one misses by 0.048,
+which is what makes the tolerance in
+`test_the_suggestion_reading_departs_from_stim_where_the_default_reading_does_not`
+evidence rather than decoration. The expanded model is a model in its own right --
+it prints and re-reads unchanged -- and it is the default reading that states the
+line stim wrote.
 
 What remains refused is a `repeat` block, a `#` comment, a declaration that skips
 an index, and a malformed line. The `repeat` refusal is deliberate rather than
 pending: expanding a block means interpreting a nested instruction stream, and
 `str(model.flattened())` already states the same instructions without the block.
 `flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit.
+block for a long enough circuit. One more line is refused by the suggested reading
+alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
+nothing, and a component with no targets has no mechanism to become, so the reader
+refuses it and names the default reading -- which states that line as `D1` -- as
+the route that states it.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
@@ -250,12 +417,40 @@ repetition code cannot supply that discrimination: at distance three, three roun
 and one percent noise the two readings of `^` differ by at most 0.0024, so the
 test uses a circuit whose decompositions actually merge groups.
 
-The text is lossy in the last digit, because stim prints 17 significant digits.
-Over that sweep the largest relative difference between an in-memory probability
-and the printed one was 4.9e-16, so the printed value is the one this reader
-states. A round-trip assertion must compare against a re-read of the printed text
-rather than against the in-memory model, or it reports differences that the
-printing caused.
+The text is exact on this side, and on stim's side the loss depends on the width
+stim's printer was built with rather than on the value. `to_stim_text()` writes a
+probability with `repr`, the shortest decimal that reads back as the identical
+double, so over twenty thousand swept probabilities no written value returned as a
+different one. stim's `str()` writes at
+`std::setprecision(std::numeric_limits<long double>::digits10 + 1)`, so the number
+of digits follows the platform's `long double`: nineteen significant digits where
+that type is the x86 80-bit extended one, which is the Linux CI platform, and
+sixteen where it is a double, which is arm64 macOS. Seventeen significant decimal
+digits name every double uniquely, so at nineteen digits the reprint returned
+every one of the swept probabilities unchanged and at sixteen about a quarter of
+them came back as a different value. That is a measured format rather than an
+estimate. The reader therefore states the printed value, because the printed
+value is what the interchange carried.
+
+Where the width is the narrower one, the drift stim introduces is bounded by one
+part in `10**15`. Sixteen significant decimal digits round to within half a unit
+in the last of them, and reading that decimal back as a double adds at most one
+binary unit in the last place, which is under `2**-51` of the value; the two
+together stay under the bound. The sweeps confirm it rather than assume it: the
+worst relative difference between an in-memory probability and the one stim
+printed was `5.4e-16` over the pinned sweep and `4.9e-16` over the earlier
+developer sweep, both inside the bound. Widths at or above seventeen digits need
+no bound at all, because they round nothing away.
+`tests/qec/test_dem_stim_text_precision.py` reads the width off stim's own output
+and then holds the digit count, the direction of the loss and the bound against
+that width, and it is a separate file because it measures stim's writer rather
+than this package's model.
+
+A round-trip assertion must compare against a re-read of the printed text rather
+than against the in-memory model, or it reports differences that the printing
+caused. That applies to text stim wrote on a platform whose `long double` is a
+double; this package's own writer needs no such allowance on any platform, which
+the same file demonstrates.
 
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
@@ -276,15 +471,15 @@ Stage 5 documentation sweep's.
 
 One representational boundary is explicit and enforced. A `CodeCheck` states one
 ancilla and one CNOT direction, and the direction is fixed by the check's type
-rather than left to the caller: a Z-type check controls from each data wire in
+rather than left to the caller: a Z-type check controls from each data qubit in
 the stabilizer's support into an ancilla prepared in `|0>`, and an X-type check
-controls from an ancilla prepared in `|+>` into each data wire. Both gadgets
+controls from an ancilla prepared in `|+>` into each data qubit. Both gadgets
 leave the ancilla's Z-basis readout equal to the check's eigenvalue, which is
 what makes the two symmetric. A mixed X-and-Z stabilizer is still refused, since
 it needs a second ancilla and a second gadget that this record does not describe.
 
 `RotatedSurfaceCode` is the first code here that needs both check types. Data
-qubits occupy wires `0..distance**2 - 1`, indexed so lattice site `(i, j)` is wire
+qubits occupy qubits `0..distance**2 - 1`, indexed so lattice site `(i, j)` is qubit
 `j * distance + i`, and ancillas follow them in lattice order. An X-type ancilla
 sits on an interior column at odd lattice parity, a Z-type ancilla on an interior
 row at even lattice parity, and each check's support is the up to four data
@@ -317,7 +512,7 @@ shows the complementary syndromes directly -- a Z error fires exactly the X-type
 detectors adjacent to the data qubit and no Z-type detector, and an X error on
 the logical row fires exactly the Z-type round-zero detectors and flips the
 observable. Only the distance-three patch is executed through that simulator: it
-draws each shot from the full output distribution, so a 17-wire patch costs a
+draws each shot from the full output distribution, so a 17-qubit patch costs a
 `2**17`-way draw and a distance-five patch would need `2**49`.
 
 ## A decoder over the detector error model
@@ -376,13 +571,20 @@ same syndrome predictions once that fault is merged back.
 Nothing about a code, a distance, a round count, or a check layout enters the
 graph. Whatever the model states is what the graph holds, so the decoder inherits
 every scope limit of the model it consumes, including the modelled rotated-surface
-distance of three that the statevector amplitude ceiling imposes on construction.
-Measured on the two codes this layer models at three rounds and two percent noise:
+distance of three that the statevector amplitude ceiling imposes on the circuit
+route. It also inherits the fault family: a model read from matrices states only
+the bit-flip family, so the matching decoder is matched to that model and not to
+a channel the matrix route cannot describe. Measured on the two codes this layer
+models at three rounds and two percent noise:
 the repetition code at distance three gives 15 edges of which 6 reach the boundary
 and every weight is 3.8918, and the rotated surface code at distance three gives 45
 edges of which 20 reach the boundary, with six of the weights at 3.1991 and the
 other 39 at 3.8918. Every mechanism in both models flips one detector or two, so
-neither model reaches the hyperedge refusal.
+neither model reaches the hyperedge refusal. A matrix-route model is graphlike
+only while it stays inside one round: at two rounds the middle data qubit of the
+distance-3 repetition code flips the same check in both detector bands, which is
+a four-detector mechanism, and `from_detector_error_model` refuses it as a
+hyperedge rather than projecting it onto a pair.
 
 `MinimumWeightMatchingDecoder` decodes a syndrome exactly in two steps. The first
 searches the graph from each defective detector and yields the cheapest chain of
@@ -456,15 +658,78 @@ Detectors that no chain of mechanisms connects are refused with a `CapabilityErr
 naming them, rather than answered partially.
 
 `MatchingDecodeResult` is deliberately not the repetition-code `DecodeResult`. A
-`Correction` carries a wire in `{0, 1, 2}` and an X basis only, and
+`Correction` carries a qubit in `{0, 1, 2}` and an X basis only, and
 `PauliFrame.from_corrections` is enforced to agree with it, so neither record can
-express a surface-code correction over `distance**2` data wires in the Z basis.
+express a surface-code correction over `distance**2` data qubits in the Z basis.
 The result states the predicted observables, the mechanisms selected in graph
 order, and their total weight, and the decoder therefore does not implement the
 repetition-only `Decoder` protocol either. Nothing is built on top of this result
 yet: there is no logical-error-rate estimator, no threshold scan, and no
 connection to the memory-experiment result records. The implementation imports
 `heapq`, `math`, `dataclasses`, and `numbers` and nothing else, so no new
-dependency is introduced; `stim` and `pymatching` are not imported, and the
-cross-check against `pymatching` as an independent implementation remains future
-work rather than a build dependency.
+dependency is introduced; `stim` and `pymatching` are not imported by it, and the
+cross-check against `pymatching` is a separate module behind the `pymatching`
+extra rather than a build dependency. That cross-check is
+`flagquantum/qec/adapters.py`, and what it established is stated there rather
+than here: the two decoders agree on the cheapest weight of every syndrome and on
+the observables wherever the cheapest explanation is unique, and a tie is
+uncomparable because PyMatching's own arithmetic is narrower than this module's.
+
+## Reaching a decoder by name
+
+`registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
+reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
+**options)` and registers one with a decorator, and this module offers
+`get_decoder(name, source, **options)`, `register_decoder(name, *,
+replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
+those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
+two registrations this package ships.
+
+Three things about it are narrower than upstream on purpose, and each is a
+decision rather than an omission.
+
+The source argument is a *carrier*, not a decoder setting, which is why the three
+accepted forms are the three a caller can hold a model in: the detector error
+model, stim's text for one, and the decoding graph the model defines. A model is
+lifted through the class's own `from_detector_error_model`; a graph is passed to
+the constructor, because the graph is already the thing a matcher searches and
+rebuilding a model from it would lose the observable labels the caller has in
+hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+parity-check matrix is not a carrier, although upstream's
+`H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
+model and a round count rather than defaulting them, so a factory that lifted a
+matrix would also be choosing the noise the caller decodes against. The caller
+who holds the matrix and the noise together does the lifting.
+
+The registry holds the detector-error-model family alone. The repetition-code
+decoders in this layer take an ordered syndrome history rather than detection
+events, and `DetectorErrorModelDecoder` requires
+`from_detector_error_model`, so one name space over two input protocols would
+make a name mean one of two things. They stay directly constructed, which is also
+why the registry is a module of its own rather than methods on `Decoder`.
+
+Registration is checked at registration time, while the registering module is
+being imported. `register_decoder` refuses a name that is not a non-empty string,
+a second registration of a name unless the caller passes `replace=True`, and a
+class missing `decode` or `from_detector_error_model` — the two members every
+decoder in this family shares. A `TypeError` at import time, naming the member
+that is missing, is a better failure than an `AttributeError` at the first call,
+where the name is all the caller has to go on.
+
+`get_decoder` fails closed in two more places. An unregistered name raises
+`ValueError` and lists the names that are registered, rather than reaching any
+implementation, and a source that is not one of the three carriers raises
+`TypeError` naming `DecodingGraph`, since that is the carrier a caller is most
+likely to have held. `**options` goes to whichever route the source selects and
+is not filtered here, so passing the text reader's `use_decomp_suggestions` to
+the graph route raises rather than being dropped.
+
+The optional implementation is registered whether or not it is installed, so
+`pymatching` is part of this package's surface rather than the extra's: asking
+for it without the extra raises the error that names the extra, instead of a name
+that silently is not there. The adapter module is imported, but it reaches
+PyMatching through a function rather than at import time, so `import
+flagquantum.qec` does not import `pymatching` — a test starts a fresh interpreter
+and measures that rather than asserting it. No name is preferred over another, so
+`get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
+happens to be installed; the cross-check is never reached by accident.

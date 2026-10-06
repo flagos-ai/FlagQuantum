@@ -3,20 +3,29 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 import torch
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
-from ..native_cpu.permutation import native_cpu_clifford_matching_available
+from ..native_cpu.permutation import (
+    compact_cx_permutation_images,
+    fused_clifford_matching_out,
+    native_cpu_clifford_matching_available,
+    use_compact_cpu_cx_mapping,
+)
+from .fixed_layer_cpu import _matrix_tensors
 from .program import (
     _StatevectorCliffordMatchingStep,
+    _StatevectorDisjointDenseStep,
     _StatevectorGateStep,
     _StatevectorPreCXStep,
+    _StatevectorProgramStep,
 )
 
 _CLIFFORD_PHASE_MAP_CACHE_BYTES = 128 * 1024 * 1024
+_MIN_NATIVE_SCALAR_MATCHING_AMPLITUDES = 1 << 16
 _CLIFFORD_PHASE_MAP_CACHE: dict[
     tuple[
         int,
@@ -28,6 +37,16 @@ _CLIFFORD_PHASE_MAP_CACHE: dict[
     ],
     torch.Tensor,
 ] = {}
+
+
+def native_clifford_matching_enabled() -> bool:
+    """Return whether the native matching kernel is enabled and loadable."""
+
+    return bool(
+        os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_clifford_matching_available()
+    )
 
 
 def _clifford_phase_map_cache_bytes() -> int:
@@ -61,20 +80,20 @@ def _store_clifford_phase_map(
 def _encode_clifford_phase_mapping(
     cx_mapping: torch.Tensor,
     step: _StatevectorCliffordMatchingStep,
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[torch.Tensor, tuple[tuple[int, int], ...] | None]:
     """Encode each destination's CZ sign into a cached full CX mapping."""
 
     enabled = (
         bool(step.cz_edges)
-        and cx_mapping.numel() == 1 << n_wires
+        and cx_mapping.numel() == 1 << n_qubits
         and os.getenv("FQ_CPU_NATIVE_CLIFFORD_PHASE_MAP", "1").strip().lower()
         not in {"0", "false", "off", "no"}
     )
     if not enabled:
         return cx_mapping, step.cz_edges
     key = (
-        n_wires,
+        n_qubits,
         step.controls,
         step.targets,
         step.cz_edges,
@@ -92,13 +111,74 @@ def _encode_clifford_phase_mapping(
         cx_mapping.numel(), dtype=torch.bool, device=cx_mapping.device
     )
     for left, right in step.cz_edges:
-        left_mask = 1 << (n_wires - left - 1)
-        right_mask = 1 << (n_wires - right - 1)
+        left_mask = 1 << (n_qubits - left - 1)
+        right_mask = 1 << (n_qubits - right - 1)
         negative.logical_xor_(
             ((destinations & left_mask) != 0) & ((destinations & right_mask) != 0)
         )
     signed = torch.where(negative, -cx_mapping - 1, cx_mapping).contiguous()
     return _store_clifford_phase_map(key, signed), None
+
+
+def clifford_matching_output_reuse_enabled(
+    program: Sequence[_StatevectorProgramStep],
+) -> bool:
+    """Return whether every region preserves a reusable two-state lifetime."""
+
+    return bool(
+        os.getenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and all(
+            isinstance(step, _StatevectorCliffordMatchingStep)
+            or (
+                isinstance(step, _StatevectorDisjointDenseStep)
+                and (
+                    step.native_preferred
+                    or step.native_clifford
+                    or step.native_parameterized
+                )
+            )
+            for step in program
+        )
+    )
+
+
+def apply_native_clifford_matching(
+    step: _StatevectorCliffordMatchingStep,
+    state: torch.Tensor,
+    *,
+    n_qubits: int,
+    scratch: torch.Tensor | None,
+    reuse_output: bool,
+    owns_state: bool,
+    mapping_builder: Callable[..., torch.Tensor],
+) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+    """Apply one matching and retain only a safe previous-state scratch."""
+
+    cx_mapping = (
+        compact_cx_permutation_images(step.controls, step.targets, n_qubits)
+        if use_compact_cpu_cx_mapping(n_qubits)
+        else mapping_builder(
+            step.controls,
+            step.targets,
+            n_qubits,
+            device=state.device,
+            dtype=state.dtype,
+        )
+    )
+    cx_mapping, cz_edges = _encode_clifford_phase_mapping(cx_mapping, step, n_qubits)
+    output = fused_clifford_matching_out(
+        state,
+        cx_mapping,
+        cz_edges,
+        n_qubits,
+        output=scratch if reuse_output else None,
+    )
+    if output is None:
+        return None, scratch
+    if reuse_output and owns_state and state.shape == output.shape:
+        return output, state
+    return output, None if scratch is output else scratch
 
 
 def native_clifford_matching_compile_enabled(
@@ -122,17 +202,22 @@ def native_clifford_matching_compile_enabled(
             for value in instruction.params.values()
         )
         or any(
-            instruction.matrix is not None and instruction.matrix.requires_grad
+            isinstance(value, torch.Tensor) and value.requires_grad
             for instruction in instructions
+            for value in _matrix_tensors(instruction.matrix)
         )
+    )
+    scalar_matching = bool(
+        batch_size == 1
+        and state.shape[1] >= _MIN_NATIVE_SCALAR_MATCHING_AMPLITUDES
+        and os.getenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
     )
     return bool(
         state.device.type == "cpu"
-        and batch_size >= 2
+        and (batch_size >= 2 or scalar_matching)
         and not requires_grad
-        and native_cpu_clifford_matching_available()
-        and os.getenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "1").strip().lower()
-        not in {"0", "false", "off", "no"}
+        and native_clifford_matching_enabled()
     )
 
 
@@ -151,18 +236,18 @@ def fuse_native_disjoint_clifford_matchings(
             continue
 
         matching: list[_StatevectorGateStep] = []
-        occupied_wires: set[int] = set()
+        occupied_qubits: set[int] = set()
         cursor = index
         while cursor < len(program):
             candidate = program[cursor]
             if not _is_exact_cx_or_cz(candidate):
                 break
             assert isinstance(candidate, _StatevectorGateStep)
-            wires = set(map(int, candidate.instruction.wires))
-            if not occupied_wires.isdisjoint(wires):
+            qubits = set(map(int, candidate.instruction.wires))
+            if not occupied_qubits.isdisjoint(qubits):
                 break
             matching.append(candidate)
-            occupied_wires.update(wires)
+            occupied_qubits.update(qubits)
             cursor += 1
 
         cx_steps = tuple(
@@ -202,18 +287,18 @@ def _reorder_disjoint_clifford_matchings(
             continue
 
         matching: list[_StatevectorGateStep] = []
-        occupied_wires: set[int] = set()
+        occupied_qubits: set[int] = set()
         cursor = index
         while cursor < len(program):
             candidate = program[cursor]
             if not _is_exact_cx_or_cz(candidate):
                 break
             assert isinstance(candidate, _StatevectorGateStep)
-            wires = set(map(int, candidate.instruction.wires))
-            if not occupied_wires.isdisjoint(wires):
+            qubits = set(map(int, candidate.instruction.wires))
+            if not occupied_qubits.isdisjoint(qubits):
                 break
             matching.append(candidate)
-            occupied_wires.update(wires)
+            occupied_qubits.update(qubits)
             cursor += 1
 
         cz_steps = [

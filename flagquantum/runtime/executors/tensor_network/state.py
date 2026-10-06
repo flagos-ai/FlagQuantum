@@ -180,8 +180,8 @@ class DistributedTensorNetworkState:
         self.rank_placement = dict(rank_placement) if rank_placement else None
 
     @property
-    def n_wires(self) -> int:
-        return self.local_state.n_wires
+    def n_qubits(self) -> int:
+        return self.local_state.n_qubits
 
     @property
     def bsz(self) -> int:
@@ -352,7 +352,7 @@ class DistributedTensorNetworkExpectation:
     world_size: int
     tasks: tuple[DistributedTNSliceTask, ...]
     rank_partial_bytes: Mapping[int, int]
-    observable_wires: tuple[int, ...]
+    observable_qubits: tuple[int, ...]
     distribution_semantics: str
     working_set_preflight: Mapping[str, Any]
     rank_placement: Mapping[str, Any]
@@ -364,7 +364,7 @@ class DistributedTensorNetworkExpectation:
         return {
             "state_mode": "distributed_tensor_network_expectation",
             "output_target": "local_observables",
-            "observable_wires": self.observable_wires,
+            "observable_wires": self.observable_qubits,
             "slice_tasks": len(self.tasks),
             "slice_labels": _sliced_labels(self.tasks),
             "tasks_by_rank": _tasks_by_rank(self.tasks),

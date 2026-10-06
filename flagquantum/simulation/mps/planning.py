@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import os
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -15,6 +14,10 @@ from .models import (
     MPSConfig,
     MPSLocalRefinementPlan,
     MPSTruncationRecord,
+)
+from .one_site_dispatch import (
+    _mps_one_site_rollout_enabled,
+    _mps_two_site_rollout_enabled,
 )
 
 
@@ -36,7 +39,7 @@ class MPSPlanningMixin(ABC):
 
     @property
     @abstractmethod
-    def n_wires(self) -> int: ...
+    def n_qubits(self) -> int: ...
 
     @property
     @abstractmethod
@@ -96,7 +99,7 @@ class MPSPlanningMixin(ABC):
             else self.mixed_canonical_residual()
         )
         return MPSBondProfile(
-            n_wires=self.n_wires,
+            n_qubits=self.n_qubits,
             batch_size=self.bsz,
             bond_dims=bond_dims,
             max_bond=self.max_bond,
@@ -237,7 +240,7 @@ class MPSPlanningMixin(ABC):
         windows = []
         for bond in adaptive.hot_bonds:
             left = max(0, bond - window_radius)
-            right = min(self.n_wires - 1, bond + 1 + window_radius)
+            right = min(self.n_qubits - 1, bond + 1 + window_radius)
             windows.append((left, right))
         merged: list[tuple[int, int]] = []
         for left, right in sorted(windows):
@@ -258,7 +261,7 @@ class MPSPlanningMixin(ABC):
         refinement = self.local_refinement_plan()
         return {
             "state_mode": "mps",
-            "n_wires": profile.n_wires,
+            "n_qubits": profile.n_qubits,
             "batch_size": profile.batch_size,
             "bond_dims": profile.bond_dims,
             "max_bond": profile.max_bond,
@@ -282,15 +285,9 @@ class MPSPlanningMixin(ABC):
             "local_refinement_windows": refinement.windows,
             "dtype": str(self.dtype),
             "device": str(self.device),
-            "triton_mps_one_site_enabled": os.getenv("FQ_TRITON_MPS_ONE_SITE", "0")
-            .strip()
-            .lower()
-            not in {"0", "false", "off", "no"},
+            "triton_mps_one_site_enabled": _mps_one_site_rollout_enabled(),
             "triton_mps_one_site_regions": self.triton_one_site_regions,
-            "triton_mps_two_site_enabled": os.getenv("FQ_TRITON_MPS_TWO_SITE", "0")
-            .strip()
-            .lower()
-            not in {"0", "false", "off", "no"},
+            "triton_mps_two_site_enabled": _mps_two_site_rollout_enabled(),
             "triton_mps_two_site_regions": self.triton_two_site_regions,
             "eager_mps_two_site_regions": self.eager_two_site_regions,
             "fixed_rank_qr_regions": self.fixed_rank_qr_regions,

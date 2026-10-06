@@ -17,7 +17,7 @@ from .....simulation.jax.statevector.kernels import (
     jax_sharded_statevector_loss,
 )
 from .....simulation.jax.statevector.kernels import (
-    jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
+    jax_basis_indices_for_qubits as _jax_basis_indices_for_qubits,
 )
 from .....simulation.jax.statevector.kernels import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
@@ -43,16 +43,16 @@ class _PartitionSpecFactory(Protocol):
 def _jax_sharded_statevector_loss_from_shards(
     shards: Sequence[JAXStatevectorShardState],
     *,
-    n_wires: int,
+    n_qubits: int,
     observable: str,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
 ) -> Any:
     return jax_sharded_statevector_loss(
         tuple(shard.amplitudes for shard in shards),
         tuple(shard.global_indices for shard in shards),
-        n_wires=int(n_wires),
+        n_qubits=int(n_qubits),
         observable=observable,
-        observable_wires=observable_wires,
+        observable_qubits=observable_qubits,
     )
 
 
@@ -67,14 +67,14 @@ def _jax_apply_local_statevector_instruction(
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
-    wires = tuple(int(wire) for wire in instruction.wires)
+    qubits = tuple(int(qubit) for qubit in instruction.wires)
     return jax_apply_local_statevector_gate(
         amplitudes,
         global_indices,
         matrix,
-        wires,
-        n_wires=int(plan.n_wires),
-        sharded_wires=tuple(int(wire) for wire in plan.sharded_wires),
+        qubits,
+        n_qubits=int(plan.n_qubits),
+        sharded_qubits=tuple(int(qubit) for qubit in plan.sharded_qubits),
         diagonal=diagonal,
         gate_name=str(instruction.name),
     )
@@ -92,10 +92,10 @@ def _jax_apply_all_to_all_statevector_instruction(
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
-    wires = tuple(int(wire) for wire in instruction.wires)
-    sharded_wires = tuple(int(wire) for wire in plan.sharded_wires)
-    sharded_set = set(sharded_wires)
-    touched = tuple(wire for wire in wires if wire in sharded_set)
+    qubits = tuple(int(qubit) for qubit in instruction.qubits)
+    sharded_qubits = tuple(int(qubit) for qubit in plan.sharded_qubits)
+    sharded_set = set(sharded_qubits)
+    touched = tuple(qubit for qubit in qubits if qubit in sharded_set)
     if diagonal or not touched:
         return _jax_apply_local_statevector_instruction(
             amplitudes,
@@ -104,17 +104,17 @@ def _jax_apply_all_to_all_statevector_instruction(
             plan=plan,
             complex_bytes=complex_bytes,
         )
-    local_wires = tuple(
-        wire for wire in range(int(plan.n_wires)) if wire not in sharded_set
+    local_qubits = tuple(
+        qubit for qubit in range(int(plan.n_qubits)) if qubit not in sharded_set
     )
-    local_gate_wires = tuple(wire for wire in wires if wire not in sharded_set)
-    basis_out = _jax_basis_indices_for_wires(
-        global_indices, n_wires=int(plan.n_wires), wires=wires
+    local_gate_qubits = tuple(qubit for qubit in qubits if qubit not in sharded_set)
+    basis_out = _jax_basis_indices_for_qubits(
+        global_indices, n_qubits=int(plan.n_qubits), qubits=qubits
     )
     updated = jnp.zeros_like(amplitudes)
     for delta_code in range(2 ** len(touched)):
         rank_mask = jax_rank_mask_for_touched_delta(
-            sharded_wires,
+            sharded_qubits,
             touched,
             delta_code,
         )
@@ -133,11 +133,11 @@ def _jax_apply_all_to_all_statevector_instruction(
             global_indices,
             matrix,
             basis_out,
-            n_wires=int(plan.n_wires),
-            wires=wires,
-            touched_sharded_wires=touched,
-            local_wires=local_wires,
-            local_gate_wires=local_gate_wires,
+            n_qubits=int(plan.n_qubits),
+            qubits=qubits,
+            touched_sharded_qubits=touched,
+            local_qubits=local_qubits,
+            local_gate_qubits=local_gate_qubits,
             delta_code=delta_code,
         )
     return updated
@@ -155,9 +155,9 @@ def _jax_apply_pair_exchange_statevector_instruction(
     matrix, diagonal = _parameterized_gate_matrix_as_jax(
         instruction, complex_bytes=complex_bytes
     )
-    wires = tuple(int(wire) for wire in instruction.wires)
-    sharded_wires = tuple(int(wire) for wire in plan.sharded_wires)
-    touched = tuple(wire for wire in wires if wire in set(sharded_wires))
+    qubits = tuple(int(qubit) for qubit in instruction.qubits)
+    sharded_qubits = tuple(int(qubit) for qubit in plan.sharded_qubits)
+    touched = tuple(qubit for qubit in qubits if qubit in set(sharded_qubits))
     if diagonal or not touched:
         return _jax_apply_local_statevector_instruction(
             amplitudes,
@@ -166,7 +166,7 @@ def _jax_apply_pair_exchange_statevector_instruction(
             plan=plan,
             complex_bytes=complex_bytes,
         )
-    if len(wires) != 1 or len(touched) != 1:
+    if len(qubits) != 1 or len(touched) != 1:
         return _jax_apply_all_to_all_statevector_instruction(
             amplitudes,
             global_indices,
@@ -174,9 +174,9 @@ def _jax_apply_pair_exchange_statevector_instruction(
             plan=plan,
             complex_bytes=complex_bytes,
         )
-    wire = int(touched[0])
-    bit_index = sharded_wires.index(wire)
-    rank_mask = 1 << (len(sharded_wires) - bit_index - 1)
+    qubit = int(touched[0])
+    bit_index = sharded_qubits.index(qubit)
+    rank_mask = 1 << (len(sharded_qubits) - bit_index - 1)
     perm = tuple((rank, rank ^ rank_mask) for rank in range(int(plan.world_size)))
     partner = jax.lax.ppermute(amplitudes, axis_name="fq_rank", perm=perm)
     return jax_combine_pair_exchanged_statevector(
@@ -184,8 +184,8 @@ def _jax_apply_pair_exchange_statevector_instruction(
         partner,
         global_indices,
         matrix,
-        n_wires=int(plan.n_wires),
-        wire=wire,
+        n_qubits=int(plan.n_qubits),
+        qubit=qubit,
     )
 
 
@@ -196,7 +196,7 @@ def _jax_pmap_statevector_parameter_loss(
     plan: Any,
     complex_bytes: int,
     observable: str,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
 ) -> Any:
     jax, jnp = _require_jax()
     import numpy as np
@@ -237,9 +237,9 @@ def _jax_pmap_statevector_parameter_loss(
             local_value = _jax_sharded_statevector_rank_loss_from_local_amplitudes(
                 amplitudes,
                 global_indices,
-                n_wires=int(plan.n_wires),
+                n_qubits=int(plan.n_qubits),
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_qubits=observable_qubits,
             )
             return jax.lax.psum(local_value, axis_name="fq_rank")
         finally:
@@ -318,7 +318,7 @@ def _jax_shard_map_statevector_parameter_loss(
     plan: Any,
     complex_bytes: int,
     observable: str,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
 ) -> Any:
     jax, jnp = _require_jax()
     import numpy as np
@@ -375,9 +375,9 @@ def _jax_shard_map_statevector_parameter_loss(
             local_value = _jax_sharded_statevector_rank_loss_from_local_amplitudes(
                 amplitudes,
                 global_indices,
-                n_wires=int(plan.n_wires),
+                n_qubits=int(plan.n_qubits),
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_qubits=observable_qubits,
             )
             return jax.lax.psum(local_value, axis_name="fq_rank")
         finally:

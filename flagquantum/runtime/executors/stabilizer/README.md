@@ -2,7 +2,7 @@
 
 Serve computational-basis sampling for a Clifford circuit whose state is a Pauli
 tableau rather than an amplitude store. The tableau grows with the square of the
-wire count, so this is the only representation that reaches wire counts a dense
+qubit count, so this is the only representation that reaches qubit counts a dense
 state cannot hold.
 
 This package owns the plan-aware lifecycle of that route: binding a plan's

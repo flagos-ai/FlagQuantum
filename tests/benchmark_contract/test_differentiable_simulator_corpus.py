@@ -48,11 +48,14 @@ SAVED_PARAMETER_VALIDATION_RESULT_NAME = (
     "native_cpu_adjoint_saved_parameter_validation_cpu_arm64_20261002.json"
 )
 PARALLEL_GRAIN_RESULT_NAME = "native_cpu_adjoint_parallel_grain_cpu_arm64_20261002.json"
+EULER_POST_REDUCTION_RESULT_NAME = (
+    "native_cpu_adjoint_euler_post_reduction_cpu_arm64_20261002.json"
+)
 
 
 def test_differentiable_workloads_have_declared_structure() -> None:
-    vqe = build_workload("hardware_efficient_vqe", n_wires=4, layers=1)
-    qaoa = build_workload("qaoa_path_maxcut", n_wires=4, layers=1)
+    vqe = build_workload("hardware_efficient_vqe", n_qubits=4, layers=1)
+    qaoa = build_workload("qaoa_path_maxcut", n_qubits=4, layers=1)
 
     assert len(vqe.circuit.to_ir().instructions) == 15
     assert vqe.parameters.shape == (1, 4, 3)
@@ -66,7 +69,7 @@ def test_differentiable_workloads_have_declared_structure() -> None:
 def test_native_differentiable_corpus_records_forward_and_backward() -> None:
     payload = run_benchmark(
         workloads=WORKLOAD_NAMES,
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_native",),
         threads=1,
@@ -104,7 +107,7 @@ def test_native_differentiable_corpus_records_forward_and_backward() -> None:
 def test_native_adjoint_corpus_records_method_matched_gradient() -> None:
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe", "qaoa_path_maxcut"),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=(ADJOINT_ENGINE_NAMES[0],),
         threads=1,
@@ -138,7 +141,7 @@ def test_forward_cx_rollback_engine_restores_environment(
     monkeypatch.setenv("FQ_NATIVE_CPU_CX_GATHER", "custom")
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=(
             "flagquantum_adjoint",
@@ -164,7 +167,7 @@ def test_observable_cache_rollback_engine_restores_environment(
     monkeypatch.setenv("FQ_STATEVECTOR_ADJOINT_OBSERVABLE_CACHE", "custom")
     payload = run_benchmark(
         workloads=("qaoa_path_maxcut",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=(
             "flagquantum_adjoint",
@@ -190,7 +193,7 @@ def test_rotation_tile_rollback_engine_restores_environment(
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_WIDE_TILES", "custom")
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=(
             "flagquantum_adjoint",
@@ -216,7 +219,7 @@ def test_euler_triple_rollback_engine_restores_environment(
     monkeypatch.setenv("FQ_NATIVE_CPU_ADJOINT_EULER_TRIPLES", "custom")
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=(
             "flagquantum_adjoint",
@@ -243,7 +246,7 @@ def test_observable_boundary_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_observable_boundary_rollback"
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -268,7 +271,7 @@ def test_shared_rzz_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_shared_rzz_rollback"
     payload = run_benchmark(
         workloads=("qaoa_path_maxcut",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -293,7 +296,7 @@ def test_observable_rotation_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_observable_rotation_rollback"
     payload = run_benchmark(
         workloads=("qaoa_path_maxcut",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -323,7 +326,7 @@ def test_forward_rzz_rotation_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_forward_rzz_rotation_rollback"
     payload = run_benchmark(
         workloads=("qaoa_path_maxcut",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -348,7 +351,7 @@ def test_forward_wide_tile_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_forward_wide_tile_rollback"
     payload = run_benchmark(
         workloads=("qaoa_path_maxcut",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -373,7 +376,7 @@ def test_flat_pair_simd_rollback_engine_restores_environment(
     rollback = "flagquantum_adjoint_flat_pair_simd_rollback"
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -419,7 +422,7 @@ def test_adjoint_layer_rollback_engines_restore_environment(
     monkeypatch.setenv(variable, "custom")
     payload = run_benchmark(
         workloads=("hardware_efficient_vqe",),
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         engines=("flagquantum_adjoint", rollback),
         threads=1,
@@ -987,11 +990,79 @@ def test_checked_in_parallel_grain_comparison_is_reproducible() -> None:
     assert "## Reproduce" in report
 
 
+def test_checked_in_euler_post_reduction_comparison_is_reproducible() -> None:
+    path = (
+        ROOT
+        / "benchmarks"
+        / "results"
+        / "comparison"
+        / EULER_POST_REDUCTION_RESULT_NAME
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rollback = "flagquantum_adjoint_euler_post_reduction_rollback"
+
+    assert payload["passed"] is True
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["benchmark_evidence_class"] == "comparison_non_release"
+    assert payload["scalability_claim_allowed"] is False
+    assert payload["engines"] == [
+        "flagquantum_adjoint",
+        rollback,
+        "pennylane_lightning_adjoint",
+    ]
+    assert payload["n_wires"] == [14, 16, 18, 20, 22]
+    assert payload["environment"]["torch_threads"] == 8
+    assert payload["methodology"]["calls_per_sample"] == 3
+    assert len(payload["cases"]) == 10
+    for case in payload["cases"]:
+        assert case["correctness"]["passed"] is True
+        assert case["stability"]["passed"] is True
+        optimized = case["engines"]["flagquantum_adjoint"]
+        legacy = case["engines"][rollback]
+        lightning = case["engines"]["pennylane_lightning_adjoint"]
+        assert optimized["backward"]["sample_count"] == 21
+        assert (
+            optimized["value_and_grad"]["median_seconds"]
+            <= 1.10 * legacy["value_and_grad"]["median_seconds"]
+        )
+        assert (
+            lightning["value_and_grad"]["median_seconds"]
+            > optimized["value_and_grad"]["median_seconds"]
+        )
+
+    wide_vqe = [
+        case
+        for case in payload["cases"]
+        if case["workload"]["name"] == "hardware_efficient_vqe"
+        and case["workload"]["n_wires"] in {20, 22}
+    ]
+    assert all(
+        case["comparison"]["engine_over_flagquantum_median"][rollback]["backward"]
+        > 1.08
+        for case in wide_vqe
+    )
+    assert all(
+        case["comparison"]["engine_over_flagquantum_median"][rollback]["value_and_grad"]
+        > 1.04
+        for case in wide_vqe
+    )
+
+    report = path.with_name(
+        "NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION_CPU_ARM64_20261002.md"
+    ).read_text(encoding="utf-8")
+    assert "1.127x" in report
+    assert "19.394x" in report
+    assert "PennyLane Lightning" in report
+    assert "FlagQuantum example" in report
+    assert "## Reproduce" in report
+
+
 @pytest.mark.parametrize(
     "kwargs, message",
     (
         ({"workloads": ()}, "at least one"),
-        ({"n_wires": ()}, "at least one"),
+        ({"n_qubits": ()}, "at least one"),
         ({"threads": 0}, "threads must be positive"),
         ({"layers": 0}, "layers must be positive"),
         ({"workloads": ("unknown",)}, "unsupported workload"),
@@ -1002,7 +1073,7 @@ def test_differentiable_corpus_rejects_invalid_matrix(
 ) -> None:
     arguments = {
         "workloads": ("hardware_efficient_vqe",),
-        "n_wires": (4,),
+        "n_qubits": (4,),
         "layers": 1,
         "engines": ("flagquantum_native",),
         "threads": 1,

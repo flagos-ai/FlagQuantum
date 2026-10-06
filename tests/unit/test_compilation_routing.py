@@ -9,7 +9,7 @@ pytestmark = pytest.mark.unit
 
 
 def test_coupling_map_rejects_invalid_dimensions_and_wire_queries() -> None:
-    with pytest.raises(ValueError, match="positive wire count"):
+    with pytest.raises(ValueError, match="positive qubit count"):
         CouplingMap(0, ())
     with pytest.raises(ValueError, match="dimensions must be positive"):
         CouplingMap.grid(0, 2)

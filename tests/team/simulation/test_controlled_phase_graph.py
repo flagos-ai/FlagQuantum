@@ -112,10 +112,64 @@ def test_controlled_phase_graph_kernel_rejects_an_invalid_wire() -> None:
         _apply_controlled_phase_graph_cpu(state, factors, (0, 3), 3)
 
 
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_controlled_phase_graph_can_update_an_owned_state_in_place(dtype) -> None:
+    generator = torch.Generator().manual_seed(216)
+    state = torch.randn((2, 16), dtype=dtype, generator=generator)
+    factors, wires = _controlled_phase_graph_factors_cpu(
+        ((1, 0, math.pi / 4), (3, 2, math.pi / 8)),
+        device=state.device,
+        dtype=dtype,
+    )
+    expected = _apply_controlled_phase_graph_cpu(state.clone(), factors, wires, 4)
+    storage = state.untyped_storage().data_ptr()
+
+    actual = _apply_controlled_phase_graph_cpu(state, factors, wires, 4, inplace=True)
+
+    assert actual is state
+    assert actual.untyped_storage().data_ptr() == storage
+    torch.testing.assert_close(actual, expected)
+
+
+def test_qft_graphs_only_update_executor_owned_states_in_place(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.simulation.statevector.local as local_statevector
+
+    circuit = Circuit(5, bsz=2, dtype=torch.complex128)
+    circuit.h(0)
+    _append_portable_controlled_phase(circuit, 1, 0, math.pi / 4)
+    _append_portable_controlled_phase(circuit, 2, 0, math.pi / 8)
+    circuit.h(1)
+    _append_portable_controlled_phase(circuit, 2, 1, math.pi / 4)
+    _append_portable_controlled_phase(circuit, 3, 1, math.pi / 8)
+
+    calls: list[bool] = []
+    apply_graph = local_statevector._apply_controlled_phase_graph_cpu
+
+    def record_inplace(*args, inplace=False, **kwargs):
+        result = apply_graph(*args, inplace=inplace, **kwargs)
+        calls.append(result is args[0])
+        return result
+
+    monkeypatch.setattr(
+        local_statevector, "_apply_controlled_phase_graph_cpu", record_inplace
+    )
+    selected = circuit.state(refresh=True)
+    assert calls == [False, True]
+
+    calls.clear()
+    monkeypatch.setenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "0")
+    rollback = circuit.state(refresh=True)
+
+    assert calls == [False, False]
+    torch.testing.assert_close(selected, rollback)
+
+
 def test_product_state_graph_cache_isolated_by_dtype(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    circuit = build_workload("truncated_qft_statevector", n_wires=16)
+    circuit = build_workload("truncated_qft_statevector", n_qubits=16)
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "1")
 
     circuit.dtype = torch.complex64
@@ -134,9 +188,9 @@ def test_truncated_qft_graph_uses_product_state_and_matches_rollback(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
 ) -> None:
-    graph_circuit = build_workload("truncated_qft_statevector", n_wires=18)
+    graph_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     graph_circuit.dtype = dtype
-    rollback_circuit = build_workload("truncated_qft_statevector", n_wires=18)
+    rollback_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     rollback_circuit.dtype = dtype
 
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "0")

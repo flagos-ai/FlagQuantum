@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
 import torch
@@ -92,11 +93,32 @@ def _cz_graph_signs_cpu(
     return signs, graph_wires
 
 
+def _cached_cz_graph_signs(
+    cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor],
+    step: _StatevectorCZGraphStep,
+    n_qubits: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, tuple[int, ...]]:
+    """Return cached compact signs for one compiled CZ graph."""
+
+    key = (id(step), str(device), torch.int8, n_qubits)
+    cached = cache.get(key)
+    graph_wires = tuple(sorted({wire for edge in step.edges for wire in edge}))
+    if cached is None:
+        cached, built_wires = _cz_graph_signs_cpu(step.edges, device=device)
+        if built_wires != graph_wires:
+            raise RuntimeError("compiled CZ graph wire order changed unexpectedly")
+        cache[key] = cached
+    return cached, graph_wires
+
+
 def _apply_cz_graph_cpu(
     state: torch.Tensor,
     signs: torch.Tensor,
     wires: Sequence[int],
     n_wires: int,
+    *,
+    inplace: bool = False,
 ) -> torch.Tensor:
     """Apply cached CZ-graph signs with one pass over a CPU statevector."""
 
@@ -114,4 +136,13 @@ def _apply_cz_graph_cpu(
     for wire in normalized_wires:
         factor_shape[wire + 1] = 2
     tensor = state.reshape((state.shape[0],) + (2,) * int(n_wires))
-    return (tensor * signs.reshape(factor_shape)).reshape(state.shape)
+    shaped_signs = signs.reshape(factor_shape)
+    if (
+        inplace
+        and not state.requires_grad
+        and os.getenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    ):
+        tensor.mul_(shaped_signs)
+        return state
+    return (tensor * shaped_signs).reshape(state.shape)

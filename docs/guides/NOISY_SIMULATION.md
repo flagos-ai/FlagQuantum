@@ -63,8 +63,8 @@ import flagquantum.noise as fqn
 
 n_qubits = 24
 circuit = fq.Circuit(n_qubits).h(0)
-for wire in range(n_qubits - 1):
-    circuit.cx(wire, wire + 1)
+for qubit in range(n_qubits - 1):
+    circuit.cx(qubit, qubit + 1)
 
 noise = (
     fqn.NoiseModel()
@@ -111,7 +111,7 @@ threshold, bond dimension, or cutoff must be controlled directly.
 Users keep the same circuit API, but circuit structure matters after the
 planner selects MPS:
 
-- Put qubits that interact frequently next to each other in logical-wire order.
+- Put qubits that interact frequently next to each other in logical-qubit order.
   Nearest-neighbour two-qubit gates are the most MPS-friendly; distant gates
   require internal swaps and increase work.
 - Prefer shallow, local-entangling layers. One-dimensional hardware-efficient
@@ -120,7 +120,7 @@ planner selects MPS:
   patterns as high-risk. They can create volume-law entanglement and make the
   required bond dimension exponential.
 - Do not infer difficulty from gate count alone. The important quantity is the
-  entanglement crossing every cut in the chosen wire ordering; reordering
+  entanglement crossing every cut in the chosen qubit ordering; reordering
   logical qubits can change MPS cost substantially without changing the
   algorithm.
 - `shots` only reduces final measurement noise. It does not reduce trajectory
@@ -188,9 +188,9 @@ gate routing, trajectory count, and shots. The stable route uses one CPU process
 and 32 trajectories; public distributed noisy-MPS reduction is not implemented.
 
 For a managed `quafu:<device>-sim` target, the usable qubit count is additionally
-bounded by the logical wires covered by the selected physical-device
+bounded by the logical qubits covered by the selected physical-device
 calibration and by the service's admission policy. FlagQuantum rejects a
-profile that does not cover every logical wire. Consequently the honest
+profile that does not cover every logical qubit. Consequently the honest
 capacity statement is: up to 1,000 qubits are timed for this low-bond noisy GHZ
 workload; every other circuit must be admitted by memory and calibration checks
 and judged from its reported bond dimension and truncation evidence.
@@ -231,12 +231,12 @@ print(sampled_sv.standard_error)
 ```
 
 The state layout is
-`[trajectory_batch, circuit_batch, 2**n_wires]`. Seeded random streams belong
+`[trajectory_batch, circuit_batch, 2**n_qubits]`. Seeded random streams belong
 to global trajectory IDs, so changing `trajectory_batch_size` preserves every
 sampled trajectory. Pauli channels use a state-independent branch fast path;
 amplitude damping uses a branch-state-free specialized kernel, and other Kraus
 channels use batched probability, sampling, application, and normalization.
-Multi-wire Kraus channels are supported by the generic path.
+Multi-qubit Kraus channels are supported by the generic path.
 
 With `mode="auto"`, specifying `trajectories` selects this path when its
 trajectory block satisfies the supplied memory budget. `max_bond` or `cutoff`
@@ -297,7 +297,7 @@ selection = plan_noise_execution_selection(
 )
 ```
 
-A timing is used only when the circuit digest, noise-model identity, wire and
+A timing is used only when the circuit digest, noise-model identity, qubit and
 lowered-channel counts, backend mode, trajectory batch size, and world size
 match. If both eligible trajectory backends match, the measured-time estimate decides; an
 incomplete or mismatched calibration falls back to the analytic policy. The
@@ -463,6 +463,68 @@ exited all ranks without a collective hang. Raw evidence is
 The complete executable version is
 [`examples/noisy_simulation_v1.py`](../../examples/noisy_simulation_v1.py).
 
+## Channels written into the circuit
+
+Four channel opcodes declare the scalar they are defined by, so they can be
+written into a program directly instead of attached to a gate name:
+
+| Opcode | Parameter |
+| --- | --- |
+| `bit_flip` | `probability` |
+| `phase_flip` | `probability` |
+| `depolarizing` | `probability` |
+| `amplitude_damping` | `gamma` |
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(2).h(0).cx(0, 1).depolarizing(0, 0.01).amplitude_damping(1, 0.02)
+
+result = fq.run(circuit, outputs=fq.expectation(fq.Z(0) + fq.Z(1)))
+```
+
+The value is accepted positionally or by its declared name, so
+`depolarizing(0, 0.01)` and `depolarizing(0, probability=0.01)` are the same
+instruction. A name the channel does not declare, a missing value, a value
+outside `[0, 1]`, and a value that is not a real number are all refused before
+execution. Passing `matrix=` for a channel is refused too, because the declared
+parameters are what define its Kraus operators.
+
+`flagquantum.noise.channel_from_parameters(name, parameters)` builds the same
+`KrausChannel` the opcode would, which is the route to use when the parameters
+come from configuration rather than from source:
+
+```python
+import flagquantum.noise as fqn
+
+channel = fqn.channel_from_parameters("amplitude_damping", {"gamma": 0.02})
+```
+
+A program is treated as noisy because it carries a channel, not because a
+`NoiseModel` was passed, so the inline form is planned exactly like the model
+form and the two agree numerically. The consequence is a fail-closed route
+selection: the exact density-matrix path and the planner's automatic choice
+execute the program, while `mode="mps"`, `mode="tensor_network"`, and
+`mode="statevector"` refuse it, because a representation that holds amplitudes
+cannot apply Kraus operators. Selecting `mode="stabilizer"` reports the
+stabilizer engine's own reason instead. Before this, `mode="mps"` returned the
+noiseless number and `mode="statevector"` failed inside a kernel.
+
+The automatic choice with `allow_approximate=True` and a memory limit the density
+matrix cannot meet runs the MPS trajectory representation, and an inline channel
+takes that route too. The same question decides it in every place that asks:
+`fq.plan` and `fq.run` read the program, and a plan saved with `plan_to_json` and
+read back with `plan_from_dict` restores the trajectory representation rather
+than reverting to a noiseless run.
+
+A model rule and an inline channel are equivalent only when they produce the same
+instructions. `NoiseModel.add(name, channel)` applies the channel after *every*
+instruction with that name, so `add("cx", ...)` on a ladder of CNOTs is a
+different program from one inline channel placed once, and the two correctly give
+different numbers. Compare the instruction sequences, which
+`fq.plan(...).program.instructions` and
+`flagquantum.compiler.lower_noise_model(...)` both expose, rather than the source.
+
 ## Built-in channels
 
 The current built-ins are:
@@ -486,7 +548,7 @@ square, equal-sized, act on a power-of-two Hilbert space, and satisfy
 Invalid channels fail before compilation or execution.
 
 A rule that cannot apply is refused rather than ignored. Compiler lowering rejects
-a rule naming a wire outside the program width, and it rejects a model whose rules
+a rule naming a qubit outside the program width, and it rejects a model whose rules
 match no instruction in the program at all, naming the gate names the model
 declares and the opcodes the program contains. Partial application stays legal: a
 device model carries the gate vocabulary of the whole device and is routinely
@@ -515,13 +577,13 @@ a collective statistics reduction is available.
 
 `ReadoutError` is a classical true-to-observed confusion matrix. It is kept
 separate from quantum Kraus evolution. `run_noisy_mps` applies configured
-readout rules to its per-wire Z statistics, while
+readout rules to its per-qubit Z statistics, while
 `NoiseModel.apply_readout_probabilities` can transform an explicit ideal
 probability distribution.
 
 ## Calibration-driven timing and idle noise
 
-`DeviceNoiseProfile` stores timestamped per-wire T1/T2/readout calibration and
+`DeviceNoiseProfile` stores timestamped per-qubit T1/T2/readout calibration and
 gate durations in one declared time unit:
 
 ```python
@@ -546,7 +608,7 @@ profile = fqn.DeviceNoiseProfile(
 noise = fqn.NoiseModel.from_device_profile(profile)
 ```
 
-Lowering uses an ASAP wire-clock schedule. It inserts per-wire thermal
+Lowering uses an ASAP qubit-clock schedule. It inserts per-qubit thermal
 relaxation for gate duration, idle gaps before synchronization gates, and
 terminal idle time. Every generated channel records its placement, duration,
 time unit, source gate, and `device_profile_identity`. Missing gate duration or
@@ -641,9 +703,9 @@ definitions rather than introducing a second notion of “accuracy.”
 
 - Density-matrix evolution is exact but requires exponential memory.
 - Batched statevector trajectories support arbitrary gates and single- or
-  multi-wire Kraus channels; large target arity remains exponentially costly.
-- Single-wire MPS channels sample Kraus branches directly in MPS form.
-- Multi-wire MPS channels sample the correct Kraus branch but currently use an
+  multi-qubit Kraus channels; large target arity remains exponentially costly.
+- Single-qubit MPS channels sample Kraus branches directly in MPS form.
+- Multi-qubit MPS channels sample the correct Kraus branch but currently use an
   explicitly dense statevector correctness fallback before rebuilding the MPS.
 - Rank-local trajectory partitioning is semantic parallel ownership, not
   evidence of production multi-GPU scalability.

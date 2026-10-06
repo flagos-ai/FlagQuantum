@@ -49,15 +49,15 @@ BLOCKER_FULL_MPS_GATHER_IS_NOT_A_SCALING_RESULT = (
 )
 
 #: The site order an export publishes. The rank-owned state indexes its tensors by
-#: logical wire and its ownership map partitions exactly those wires, so placing
-#: each gathered site at its own wire index reproduces the logical order. A state
+#: logical qubit and its ownership map partitions exactly those qubits, so placing
+#: each gathered site at its own qubit index reproduces the logical order. A state
 #: whose tensors were indexed some other way could not be exported under this
 #: name, which is why the name is published rather than assumed.
 SITE_ORDER_CANONICAL_LOGICAL = "canonical_logical"
 
 
 def _owned_wires(state: RankOwnedMPSState) -> tuple[int, ...]:
-    """Return this rank's sites in wire order, refusing an empty or odd shard."""
+    """Return this rank's sites in qubit order, refusing an empty or odd shard."""
 
     wires = tuple(sorted(int(wire) for wire in state.local_tensors))
     if not wires:
@@ -83,7 +83,7 @@ def _validated_ownership(state: RankOwnedMPSState) -> tuple[tuple[int, ...], ...
     """Return the rank ownership map, or refuse to reconstruct without one.
 
     The gathered sites can only be returned as one state if the ownership map
-    says which rank holds which wire: a state that published tensors without a
+    says which rank holds which qubit: a state that published tensors without a
     map would leave each rank's block unplaceable, and placing it by assumption
     would hand back a state under a canonical name that is not the canonical one.
     """
@@ -100,10 +100,10 @@ def _validated_ownership(state: RankOwnedMPSState) -> tuple[tuple[int, ...], ...
             "contributes nothing to the gather and cannot receive the state"
         )
     flattened = sorted(wire for wires in ownership for wire in wires)
-    expected = list(range(int(state.n_wires)))
+    expected = list(range(int(state.n_qubits)))
     if flattened != expected:
         raise MPSFullMaterializationError(
-            "the ownership map is not a partition of the state's wires: "
+            "the ownership map is not a partition of the state's qubits: "
             f"covers={flattened} expected={expected}"
         )
     owned = tuple(sorted(int(wire) for wire in state.local_tensors))
@@ -116,10 +116,11 @@ def _validated_ownership(state: RankOwnedMPSState) -> tuple[tuple[int, ...], ...
 
 
 def _site_table(
-    wires: Sequence[int], tensors: Mapping[int, torch.Tensor]
+    qubits: Sequence[int], tensors: Mapping[int, torch.Tensor]
 ) -> tuple[tuple[int, tuple[int, ...]], ...]:
     return tuple(
-        (int(wire), tuple(int(dim) for dim in tensors[wire].shape)) for wire in wires
+        (int(qubit), tuple(int(dim) for dim in tensors[qubit].shape))
+        for qubit in qubits
     )
 
 
@@ -129,7 +130,7 @@ def _place_gathered_sites(
     *,
     ownership: tuple[tuple[int, ...], ...],
 ) -> tuple[torch.Tensor, ...]:
-    """Place every rank's block at the wire indices the ownership map assigns.
+    """Place every rank's block at the qubit indices the ownership map assigns.
 
     Each rank's contribution is padded to the widest block so one all-gather can
     carry them all, so the placement reads each rank's own length table rather
@@ -191,7 +192,7 @@ class DistributedMPSExportResult:
             "release_gate_allowed": False,
             "full_state_materialization": True,
             "site_order": SITE_ORDER_CANONICAL_LOGICAL,
-            "n_wires": int(self.state.n_wires),
+            "n_wires": int(self.state.n_qubits),
             "bsz": int(self.state.bsz),
             "max_bond": int(self.state.max_bond),
             "site_parameter_count": int(self.state.parameter_count),
@@ -237,7 +238,7 @@ def export_distributed_mps(
     Raises
     ------
     MPSFullMaterializationError
-        If the ownership map is not a partition of the state's wires, if this rank
+        If the ownership map is not a partition of the state's qubits, if this rank
         does not hold the sites the map gives it, if the owned sites disagree
         about their dtype or device, or if the process group's world size differs
         from the state's.

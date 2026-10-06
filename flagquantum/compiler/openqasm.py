@@ -11,34 +11,8 @@ import torch
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import is_parameterized_value, parameter_names_in_value
+from .openqasm_gates import EMITTED_GATES as _DIRECT_GATES
 from .operator_lowering import validate_lowering
-
-_DIRECT_GATES = {
-    "i": "id",
-    "x": "x",
-    "y": "y",
-    "z": "z",
-    "h": "h",
-    "s": "s",
-    "sdg": "sdg",
-    "t": "t",
-    "tdg": "tdg",
-    "rx": "rx",
-    "ry": "ry",
-    "rz": "rz",
-    "u1": "u1",
-    "u2": "u2",
-    "u3": "u3",
-    "cx": "cx",
-    "cy": "cy",
-    "cz": "cz",
-    "swap": "swap",
-    "crx": "crx",
-    "cry": "cry",
-    "crz": "crz",
-    "ccx": "ccx",
-    "cswap": "cswap",
-}
 
 
 def _format_number(value: Any) -> str:
@@ -75,13 +49,13 @@ def _parameter_text(instruction: Instruction) -> str:
     return f"({', '.join(values)})"
 
 
-def _gate(name: str, wires: tuple[int, ...], parameter_text: str = "") -> str:
-    operands = ", ".join(f"q[{wire}]" for wire in wires)
+def _gate(name: str, qubits: tuple[int, ...], parameter_text: str = "") -> str:
+    operands = ", ".join(f"q[{qubit}]" for qubit in qubits)
     return f"{name}{parameter_text} {operands};"
 
 
-def _rotation(name: str, theta: str, wire: int) -> str:
-    return _gate(name, (wire,), f"({theta})")
+def _rotation(name: str, theta: str, qubit: int) -> str:
+    return _gate(name, (qubit,), f"({theta})")
 
 
 def _rzz(theta: str, left: int, right: int) -> list[str]:
@@ -92,8 +66,8 @@ def _rzz(theta: str, left: int, right: int) -> list[str]:
     ]
 
 
-def _interaction_lines(opcode: str, theta: str, wires: tuple[int, ...]) -> list[str]:
-    left, right = wires
+def _interaction_lines(opcode: str, theta: str, qubits: tuple[int, ...]) -> list[str]:
+    left, right = qubits
     if opcode == "rzz":
         return _rzz(theta, left, right)
     if opcode == "rxx":
@@ -135,13 +109,13 @@ def _instruction_lines(instruction: Instruction, *, version: float) -> list[str]
     if opcode == "sx":
         if version == 3.0:
             return [_gate("sx", instruction.wires)]
-        wire = instruction.wires
-        return [_gate("h", wire), _gate("s", wire), _gate("h", wire)]
+        qubit = instruction.wires
+        return [_gate("h", qubit), _gate("s", qubit), _gate("h", qubit)]
     if opcode == "sxdg":
         if version == 3.0:
             return [f"pow(-1) @ {_gate('sx', instruction.wires)}"]
-        wire = instruction.wires
-        return [_gate("h", wire), _gate("sdg", wire), _gate("h", wire)]
+        qubit = instruction.wires
+        return [_gate("h", qubit), _gate("sdg", qubit), _gate("h", qubit)]
     try:
         target_name = _DIRECT_GATES[opcode]
     except KeyError as exc:
@@ -159,27 +133,27 @@ def emit_openqasm(
     program: Any,
     *,
     version: float = 3.0,
-    result_wires: tuple[int, ...] | None = None,
+    result_qubits: tuple[int, ...] | None = None,
 ) -> str:
     """Return deterministic OpenQASM text for a canonical FlagQuantum program."""
 
     if version not in {2.0, 3.0}:
         raise ValueError("OpenQASM version must be 2.0 or 3.0.")
     ir = _validated_ir(program)
-    projected = result_wires is not None
-    measured_wires = (
-        tuple(range(ir.n_wires)) if result_wires is None else tuple(result_wires)
+    projected = result_qubits is not None
+    measured_qubits = (
+        tuple(range(ir.n_wires)) if result_qubits is None else tuple(result_qubits)
     )
     if (
-        not measured_wires
-        or len(set(measured_wires)) != len(measured_wires)
+        not measured_qubits
+        or len(set(measured_qubits)) != len(measured_qubits)
         or any(
-            type(wire) is not int or wire < 0 or wire >= ir.n_wires
-            for wire in measured_wires
+            type(qubit) is not int or qubit < 0 or qubit >= ir.n_wires
+            for qubit in measured_qubits
         )
     ):
-        raise ValueError("OpenQASM result wires must be unique in-range integers.")
-    result_width = len(measured_wires)
+        raise ValueError("OpenQASM result qubits must be unique in-range integers.")
+    result_width = len(measured_qubits)
     if version == 2.0:
         lines = [
             "OPENQASM 2.0;",
@@ -198,13 +172,13 @@ def emit_openqasm(
         lines.extend(_instruction_lines(instruction, version=version))
     if version == 2.0:
         lines.extend(
-            f"measure q[{wire}] -> c[{result}];"
-            for result, wire in enumerate(measured_wires)
+            f"measure q[{qubit}] -> c[{result}];"
+            for result, qubit in enumerate(measured_qubits)
         )
     elif projected:
         lines.extend(
-            f"c[{result}] = measure q[{wire}];"
-            for result, wire in enumerate(measured_wires)
+            f"c[{result}] = measure q[{qubit}];"
+            for result, qubit in enumerate(measured_qubits)
         )
     else:
         lines.append("c = measure q;")

@@ -39,11 +39,11 @@ OPCODE_SCHEMAS = OPERATOR_SCHEMAS
 def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if not normalized:
-        raise IRValidationError(f"{owner} requires at least one wire")
+        raise IRValidationError(f"{owner} requires at least one qubit")
     if any(wire < 0 for wire in normalized):
-        raise IRValidationError(f"{owner} wires must be non-negative: {normalized}")
+        raise IRValidationError(f"{owner} qubits must be non-negative: {normalized}")
     if len(set(normalized)) != len(normalized):
-        raise IRValidationError(f"{owner} cannot repeat a wire: {normalized}")
+        raise IRValidationError(f"{owner} cannot repeat a qubit: {normalized}")
     return normalized
 
 
@@ -100,7 +100,7 @@ def _normalize_dtype(value: Any) -> str:
 def _normalize_count(value: Any, *, what: str) -> int:
     """Return a count as an integer, refusing anything that does not denote one.
 
-    ``n_wires`` is a number of wires and a ``shape`` entry is a dimension, so a value
+    ``n_wires`` is a number of qubits and a ``shape`` entry is a dimension, so a value
     that is not exactly an integer is not a count.  ``int(value)`` accepted ``2.7`` as
     ``2``, ``"3"`` as ``3`` and ``True`` as ``1``, which silently rewrote the width of
     the program the caller described and then executed it at that other width.  Only
@@ -274,8 +274,12 @@ def _require_finite_angle(value: Any, *, owner: str) -> None:
 def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     """Check that a gate parameter is a real angle, without rewriting it.
 
-    Every gate parameter in the operator registry is a rotation angle, so it has to
-    denote a real number.  ``Circuit.ry(0, "0.3")`` stored the string, and the only
+    Every parameter in the operator registry has to denote a finite real number.
+    For a gate that number is a rotation angle; for a channel it is a probability
+    or a damping rate, and the ``[0, 1]`` range is left to the channel factory
+    because that is where the number's physical meaning lives.  The refusal names
+    the opcode as the registry classifies it, so a channel mistake is not reported
+    as a gate.  ``Circuit.ry(0, "0.3")`` stored the string, and the only
     reader was the simulator: the failure surfaced as ``ExecutionError: planned
     execution failed`` wrapping ``TypeError: new(): invalid data type 'str'``, which
     reports neither the gate nor the parameter.  ``ry(0, True)`` was worse than a late
@@ -307,7 +311,9 @@ def _normalize_angle(value: Any, *, opcode: str, parameter: str) -> None:
     rules above are untouched by that: a type is static, so they hold on every path.
     """
 
-    owner = f"gate {opcode!r} parameter {parameter!r}"
+    schema = get_operator_schema(opcode)
+    kind = "channel" if schema is not None and schema.channel else "gate"
+    owner = f"{kind} {opcode!r} parameter {parameter!r}"
     if isinstance(value, (Parameter, ParameterExpression)):
         return
     if isinstance(value, bool):
@@ -366,17 +372,30 @@ class Instruction:
         if schema is not None:
             if len(self.wires) != schema.arity:
                 raise IRValidationError(
-                    f"opcode {name!r} requires {schema.arity} wire(s), got {len(self.wires)}"
+                    f"opcode {name!r} requires {schema.arity} qubit(s), got {len(self.wires)}"
                 )
-            missing = tuple(key for key in schema.parameters if key not in self.params)
-            if missing:
-                raise IRValidationError(
-                    f"opcode {name!r} is missing parameter(s): {', '.join(missing)}"
+            # A gate has one representation, so every parameter it declares is
+            # required. A channel has two: the declared probability or rate, and the
+            # Kraus operators those were turned into. An instruction that already
+            # carries the operators is the channel, and requiring the numbers again
+            # would make an IR written before channel opcodes declared them
+            # unreadable under an exact-match IR version. What a channel with no
+            # operators has to define it is its parameters, so there they are
+            # required -- earlier than the executor's own refusal to run one.
+            materialized = schema.channel and self.matrix is not None
+            if not materialized:
+                missing = tuple(
+                    key for key in schema.parameters if key not in self.params
                 )
+                if missing:
+                    raise IRValidationError(
+                        f"opcode {name!r} is missing parameter(s): {', '.join(missing)}"
+                    )
             for parameter in schema.parameters:
-                _normalize_angle(
-                    self.params[parameter], opcode=name, parameter=parameter
-                )
+                if parameter in self.params:
+                    _normalize_angle(
+                        self.params[parameter], opcode=name, parameter=parameter
+                    )
 
 
 @dataclass(frozen=True)
@@ -468,7 +487,7 @@ class CircuitIR:
                 outside = tuple(wire for wire in node.wires if wire >= self.n_wires)
                 if outside:
                     raise IRValidationError(
-                        f"{owner} {index} references wire(s) {outside} outside "
+                        f"{owner} {index} references qubit(s) {outside} outside "
                         f"circuit range [0, {self.n_wires - 1}]"
                     )
         return self
@@ -673,7 +692,7 @@ def _measurement_from_dict(payload: Mapping[str, Any]) -> MeasurementNode:
     )
 
 
-def from_engine_qir(n_wires: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR:
+def from_engine_qir(n_qubits: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR:
     """Normalize rich circuit QIR into validated canonical FlagQuantum IR."""
 
     instructions: list[Instruction] = []
@@ -687,13 +706,13 @@ def from_engine_qir(n_wires: int, qir: Sequence[Mapping[str, Any]]) -> CircuitIR
         instructions.append(
             Instruction(
                 name=str(item.get("name", "")),
-                wires=tuple(int(wire) for wire in item.get("index", ())),
+                wires=tuple(int(qubit) for qubit in item.get("index", ())),
                 params=params,
                 matrix=item.get("gate"),
                 metadata=metadata,
             )
         )
-    return CircuitIR(n_wires=int(n_wires), instructions=tuple(instructions))
+    return CircuitIR(n_wires=int(n_qubits), instructions=tuple(instructions))
 
 
 def ensure_circuit_ir(program: Any) -> CircuitIR:

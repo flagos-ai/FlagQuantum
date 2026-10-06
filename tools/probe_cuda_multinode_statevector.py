@@ -375,7 +375,7 @@ def _validation_state(result: Any) -> torch.Tensor:
     )
     for rank, shard in enumerate(gathered):
         internal[rank :: result.plan.world_size] = shard
-    mapping = tuple(int(wire) for wire in result.logical_to_physical_wires)
+    mapping = tuple(int(qubit) for qubit in result.logical_to_physical_qubits)
     return internal.reshape([2] * len(mapping)).permute(mapping).reshape(-1)
 
 
@@ -689,7 +689,7 @@ def _training_observations(
     first = train_distributed_statevector(
         interrupted,
         steps=CHECKPOINT_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory,
@@ -701,7 +701,7 @@ def _training_observations(
     fresh = train_distributed_statevector(
         uninterrupted,
         steps=RESUMED_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory / "uninterrupted",
@@ -713,7 +713,7 @@ def _training_observations(
     resumed = train_distributed_statevector(
         resuming,
         steps=RESUMED_STEPS,
-        observable_wire=_observable_wire(),
+        observable_qubit=_observable_wire(),
         optimizer=TRAINING_OPTIMIZER,
         lr=TRAINING_LR,
         checkpoint_dir=checkpoint_directory,
@@ -1061,7 +1061,7 @@ def probe(
         trainable, parameters = _trainable_circuit(device=device)
         gradient_probe = execute_torch_distributed_statevector_reverse(
             trainable,
-            observable_wire=_observable_wire(),
+            observable_qubit=_observable_wire(),
             checkpoint_policy=StatevectorCheckpointPolicy(
                 strategy="interval", interval=2
             ),

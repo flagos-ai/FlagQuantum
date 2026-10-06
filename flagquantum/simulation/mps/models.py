@@ -45,7 +45,7 @@ class MpsSplitInfo(_MpsSplitInfoCore, total=False):
 class MPSConfig:
     max_bond: int | None = None
     cutoff: float = 0.0
-    dense_observable_wires: int = 12
+    dense_observable_qubits: int = 12
     svd_driver: str | None = "gesvd"
 
 
@@ -81,12 +81,12 @@ def _mps_instruction_schedule(
         instruction = instructions[index]
         group = [index]
         if fuse_single_qubit and _is_fusible_one_qubit_instruction(instruction):
-            wire = int(instruction.wires[0])
+            qubit = int(instruction.wires[0])
             next_index = index + 1
             while (
                 next_index < len(instructions)
                 and _is_fusible_one_qubit_instruction(instructions[next_index])
-                and int(instructions[next_index].wires[0]) == wire
+                and int(instructions[next_index].wires[0]) == qubit
             ):
                 group.append(next_index)
                 next_index += 1
@@ -131,7 +131,7 @@ def _is_fusible_one_qubit_instruction(instruction: Instruction) -> bool:
 class CompiledMPSOperation:
     instruction_indices: tuple[int, ...]
     kind: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -153,22 +153,22 @@ class CompiledMPSProgram:
         operations = []
         for group in schedule:
             instruction = instructions[group[0]]
-            wires = tuple(instruction.wires)
+            qubits = tuple(instruction.wires)
             if len(group) > 1:
                 kind = (
                     "adjacent_two_bucket"
                     if len(instruction.wires) == 2
                     else "fused_one"
                 )
-            elif len(wires) == 1:
+            elif len(qubits) == 1:
                 kind = "one"
-            elif len(wires) == 2 and abs(wires[0] - wires[1]) == 1:
+            elif len(qubits) == 2 and abs(qubits[0] - qubits[1]) == 1:
                 kind = "adjacent_two"
-            elif len(wires) == 2:
+            elif len(qubits) == 2:
                 kind = "remote_two"
             else:
                 kind = "dense_fallback"
-            operations.append(CompiledMPSOperation(group, kind, wires))
+            operations.append(CompiledMPSOperation(group, kind, qubits))
         return cls(signature=signature, operations=tuple(operations))
 
 
@@ -280,7 +280,7 @@ class MPSAdaptiveRunResult:
 class MPSBondProfile:
     """Observable profile for an MPS state and its truncation budget."""
 
-    n_wires: int
+    n_qubits: int
     batch_size: int
     bond_dims: tuple[int, ...]
     max_bond: int
@@ -301,7 +301,7 @@ class MPSBondProfile:
 
     def summary(self) -> dict[str, Any]:
         return {
-            "n_wires": self.n_wires,
+            "n_qubits": self.n_qubits,
             "batch_size": self.batch_size,
             "bond_dims": self.bond_dims,
             "max_bond": self.max_bond,

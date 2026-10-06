@@ -742,7 +742,7 @@ def distributed_tensor_network_expectation(
         world_size=world_size,
         tasks=outcome.tasks,
         rank_partial_bytes=outcome.rank_partial_bytes,
-        observable_wires=plan.observable_wires,
+        observable_qubits=plan.observable_qubits,
         distribution_semantics=outcome.semantics,
         working_set_preflight=outcome.working_set_preflight,
         rank_placement=placement,
@@ -952,7 +952,7 @@ def run_distributed_tensor_network(
             _tensor_nbytes(partial), local_tensor=partial
         )
         partial = _all_reduce_sum_autograd(partial)
-        state_cache = partial.reshape(plan.bsz, 2**plan.n_wires)
+        state_cache = partial.reshape(plan.bsz, 2**plan.n_qubits)
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
         partials = []
         # One process contracted every simulated rank's slices, so these sizes
@@ -972,7 +972,7 @@ def run_distributed_tensor_network(
                 total = total + partial
         else:
             total = _zero_for_output(plan.nodes, plan.output_labels)
-        state_cache = total.reshape(plan.bsz, 2**plan.n_wires)
+        state_cache = total.reshape(plan.bsz, 2**plan.n_qubits)
         local_simulation = True
     local = run_tensor_network(
         circuit_or_ir,

@@ -47,7 +47,7 @@ extension discovery is intended for higher-level backend selection code.
 - local CPU statevector, computational-basis samples, and counts;
 - one fully bound, unbatched FlagQuantum circuit;
 - `complex64` and `complex128` statevectors;
-- explicit ordered wire selection for samples and counts;
+- explicit ordered qubit selection for samples and counts;
 - no gradients, noise model, dynamic circuit, automatic routing, or fallback.
 
 Unsupported requests fail before Aer execution. Native `fq.run` remains the

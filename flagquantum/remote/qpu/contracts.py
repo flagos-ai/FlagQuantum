@@ -101,11 +101,14 @@ class QuantumProvider:
     ) -> tuple[CloudBackendProfile, ...]:
         legacy_method = type(self).discover_backends
         if legacy_method is not QuantumProvider.discover_backends:
-            return legacy_method(self, n_wires=n_qubits)
+            # An override is the deprecated spelling's own business; passing the
+            # count positionally keeps this call site from pinning a keyword
+            # that the base class and its overrides may name differently.
+            return legacy_method(self, n_qubits)
         raise NotImplementedError(f"{self.provider} list_devices is not implemented")
 
     def discover_backends(
-        self, n_wires: int | None = None
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
         """Deprecated compatibility alias for :meth:`list_devices`."""
 
@@ -115,7 +118,7 @@ class QuantumProvider:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.list_devices(n_qubits=n_wires)
+        return self.list_devices(n_qubits=n_qubits)
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         raise NotImplementedError(f"{self.provider} submit is not implemented")

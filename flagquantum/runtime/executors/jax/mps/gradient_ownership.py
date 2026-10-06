@@ -35,7 +35,7 @@ def _execute_local_mps_parameter_gradient_ownership(
     )
     world_size = int(parameter_flow_plan.world_size)
     rank_site_ranges = {
-        int(shard.rank): tuple(int(wire) for wire in shard.wires)
+        int(shard.rank): tuple(int(qubit) for qubit in shard.qubits)
         for shard in shard_plans
     }
     gradient_host = np.asarray(gradient)
@@ -277,15 +277,15 @@ def _execute_local_mps_parameter_gradient_ownership(
 def _jax_sharded_mps_z_sum_from_rank_tensors(
     rank_tensors: Mapping[int, Mapping[int, Any]],
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     complex_bytes: int,
-    observable_wires: Sequence[int] | None,
+    observable_qubits: Sequence[int] | None,
 ) -> Any:
     return jax_sharded_mps_z_sum(
         rank_tensors,
-        n_wires=int(n_wires),
+        n_qubits=int(n_qubits),
         batch_size=int(bsz),
         dtype=_jax_complex_dtype(complex_bytes),
-        observable_wires=observable_wires,
+        observable_qubits=observable_qubits,
     )

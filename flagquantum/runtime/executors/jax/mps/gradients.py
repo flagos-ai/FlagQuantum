@@ -41,7 +41,7 @@ def jax_sharded_mps_parameter_value_and_grad(
     circuit_builder: Callable[[Any], Any],
     parameters: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     world_size: int | None = None,
     local_world_size: int | None = None,
     bsz: int = 1,
@@ -50,7 +50,7 @@ def jax_sharded_mps_parameter_value_and_grad(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     observable: str = "z_sum",
-    observable_wires: Sequence[int] | None = None,
+    observable_qubits: Sequence[int] | None = None,
     distributed_backend_policy: DistributedBackendPolicy | None = None,
     distributed_profile: str | None = None,
     jax_backend: str | None = None,
@@ -86,9 +86,9 @@ def jax_sharded_mps_parameter_value_and_grad(
     parameter_shape = tuple(int(dim) for dim in static_parameters.shape)
     example_circuit = circuit_builder(static_parameters)
     ir = _as_ir(example_circuit)
-    if int(ir.n_wires) != int(n_wires):
+    if int(ir.n_wires) != int(n_qubits):
         raise ValueError(
-            f"n_wires={n_wires} does not match circuit IR n_wires={ir.n_wires}."
+            f"n_qubits={n_qubits} does not match circuit IR n_qubits={ir.n_wires}."
         )
     shard_plans = _mps_shards(ir.n_wires, resolved_world_size)
     parameter_flow_plan = plan_jax_sharded_mps_parameter_flow(
@@ -144,7 +144,7 @@ def jax_sharded_mps_parameter_value_and_grad(
             circuit = circuit_builder(_JAXParameterProxy(parameter_array))
             rank_tensors, *_ = _jax_parameterized_mps_rank_tensors(
                 circuit,
-                n_wires=int(n_wires),
+                n_qubits=int(n_qubits),
                 bsz=bsz,
                 shard_plans=shard_plans,
                 complex_bytes=complex_bytes,
@@ -159,10 +159,10 @@ def jax_sharded_mps_parameter_value_and_grad(
                 )
             return _jax_sharded_mps_z_sum_from_rank_tensors(
                 rank_tensors,
-                n_wires=int(n_wires),
+                n_qubits=int(n_qubits),
                 bsz=bsz,
                 complex_bytes=complex_bytes,
-                observable_wires=observable_wires,
+                observable_qubits=observable_qubits,
             )
         finally:
             _set_active_jax_compute_dtype(previous_dtype)
@@ -188,7 +188,7 @@ def jax_sharded_mps_parameter_value_and_grad(
             boundary_protocols,
         ) = _jax_parameterized_mps_rank_tensors(
             summary_circuit,
-            n_wires=int(n_wires),
+            n_qubits=int(n_qubits),
             bsz=bsz,
             shard_plans=shard_plans,
             complex_bytes=complex_bytes,
@@ -222,7 +222,7 @@ def jax_sharded_mps_parameter_value_and_grad(
         shard_plans=tuple(shard_plans),
         jax_plan=jax_plan,
         backend_policy=policy,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         complex_bytes=complex_bytes,
         parameter_shape=parameter_shape,

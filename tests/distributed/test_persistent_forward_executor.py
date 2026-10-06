@@ -66,7 +66,7 @@ def _rank_summaries(
 def test_two_rank_gloo_persistent_layout_matches_canonical():
     """Replays layout swaps on a lane that needs no accelerator.
 
-    `persistent_wire_layout` is the only way into the swap replay, and nothing
+    `persistent_qubit_layout` is the only way into the swap replay, and nothing
     passed it to this executor on a CPU lane. The harness asserts the plan is
     non-empty before it runs, so the branch is reached rather than merely
     available.

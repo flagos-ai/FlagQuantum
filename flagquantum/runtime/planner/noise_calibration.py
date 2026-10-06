@@ -100,7 +100,7 @@ class NoiseSelectorCalibration:
         self,
         *,
         mode: str,
-        n_wires: int,
+        n_qubits: int,
         channel_count: int,
         circuit_digest: str,
         noise_model_identity: str,
@@ -117,7 +117,7 @@ class NoiseSelectorCalibration:
             item
             for item in self.records
             if item.mode == mode
-            and item.n_wires == n_wires
+            and item.n_wires == n_qubits
             and item.channel_count == channel_count
             and item.circuit_digest == circuit_digest
             and item.noise_model_identity == noise_model_identity

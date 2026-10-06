@@ -377,7 +377,7 @@ class _TensorNetworkPathPlan:
 class TensorNetworkContractionPlan(_TensorNetworkPathPlan):
     """Tensor network contraction plan generated from a circuit IR."""
 
-    n_wires: int
+    n_qubits: int
     bsz: int
     nodes: tuple[TensorNetworkNode, ...]
     output_labels: tuple[int, ...]
@@ -417,15 +417,15 @@ class TensorNetworkContractionPlan(_TensorNetworkPathPlan):
             result, _ = _contract_nodes_greedy(
                 self.nodes, self.output_labels, objective=objective
             )
-            return result.reshape(self.bsz, 2**self.n_wires)
+            return result.reshape(self.bsz, 2**self.n_qubits)
         if strategy == "beam":
             result, _ = _contract_nodes_beam(
                 self.nodes, self.output_labels, beam_width=beam_width
             )
-            return result.reshape(self.bsz, 2**self.n_wires)
+            return result.reshape(self.bsz, 2**self.n_qubits)
         if strategy == "optimal":
             result, _ = _contract_nodes_optimal(self.nodes, self.output_labels)
-            return result.reshape(self.bsz, 2**self.n_wires)
+            return result.reshape(self.bsz, 2**self.n_qubits)
         if strategy in {"sliced", "auto_sliced", "beam_sliced", "quality_sliced"}:
             sliced_strategy = {
                 "beam_sliced": "beam",
@@ -440,7 +440,7 @@ class TensorNetworkContractionPlan(_TensorNetworkPathPlan):
                 contraction_strategy=sliced_strategy,
                 beam_width=beam_width,
             )
-            return result.reshape(self.bsz, 2**self.n_wires)
+            return result.reshape(self.bsz, 2**self.n_qubits)
         if strategy != "einsum":
             raise ValueError(
                 "strategy must be 'greedy', 'memory_greedy', 'quality_greedy', 'beam', 'optimal', 'einsum', 'sliced', 'auto_sliced', or 'beam_sliced'."
@@ -450,14 +450,14 @@ class TensorNetworkContractionPlan(_TensorNetworkPathPlan):
             operands.extend([node.tensor, list(node.labels)])
         operands.append(list(self.output_labels))
         result = torch.einsum(*operands)
-        return result.reshape(self.bsz, 2**self.n_wires)
+        return result.reshape(self.bsz, 2**self.n_qubits)
 
     def summary(self) -> dict[str, Any]:
         return {
             "state_mode": "tensor_network",
             "n_nodes": self.n_nodes,
             "n_edges": self.n_edges,
-            "n_wires": self.n_wires,
+            "n_qubits": self.n_qubits,
             "path_length": len(self.path),
             "greedy_cost": self.contraction_cost("greedy")["estimated_cost"],
             "greedy_peak_size": self.contraction_cost("greedy")["peak_size"],
@@ -501,7 +501,7 @@ class CompiledTNStagePlan:
 class CompiledTNProgram:
     """Immutable TN topology with dynamic tensor binding slots."""
 
-    n_wires: int
+    n_qubits: int
     bsz: int
     nodes: tuple[CompiledTNNode, ...]
     output_labels: tuple[int, ...]
@@ -510,7 +510,7 @@ class CompiledTNProgram:
     @classmethod
     def compile(cls, plan: TensorNetworkContractionPlan) -> "CompiledTNProgram":
         return cls(
-            n_wires=plan.n_wires,
+            n_qubits=plan.n_qubits,
             bsz=plan.bsz,
             nodes=tuple(
                 CompiledTNNode(node.labels, node.name, node.metadata)
@@ -529,7 +529,7 @@ class CompiledTNProgram:
         if len(tensors) != len(self.nodes):
             raise RuntimeError("compiled TN tensor slot count changed")
         return TensorNetworkContractionPlan(
-            n_wires=self.n_wires,
+            n_qubits=self.n_qubits,
             bsz=self.bsz,
             nodes=tuple(
                 TensorNetworkNode(tensor, node.labels, node.name, node.metadata)
@@ -543,10 +543,10 @@ class CompiledTNProgram:
 
 @dataclass(frozen=True)
 class CompiledTNObservableProgram:
-    """Shared bra-ket program for a batch of single-wire Z observables."""
+    """Shared bra-ket program for a batch of single-qubit Z observables."""
 
-    n_wires: int
-    wires: tuple[int, ...]
+    n_qubits: int
+    qubits: tuple[int, ...]
 
     def bind(
         self, ket_plan: TensorNetworkContractionPlan
@@ -555,12 +555,12 @@ class CompiledTNObservableProgram:
 
         The program fixes an order for its slots, so the tensors are matched by
         position and a wrong count is refused rather than truncated or padded: a
-        short list would otherwise bind the wrong tensor to a wire and produce a
+        short list would otherwise bind the wrong tensor to a qubit and produce a
         plausible-looking expectation value.
         """
         from .contraction import _clone_nodes_with_offset
 
-        if ket_plan.n_wires != self.n_wires:
+        if ket_plan.n_qubits != self.n_qubits:
             raise RuntimeError("compiled TN observable qubit count changed")
         max_label = max(
             (label for node in ket_plan.nodes for label in node.labels), default=0
@@ -585,8 +585,8 @@ class CompiledTNObservableProgram:
             )
         )
         key = (
-            self.n_wires,
-            self.wires,
+            self.n_qubits,
+            self.qubits,
             str(reference.device),
             reference.dtype,
         )
@@ -598,25 +598,25 @@ class CompiledTNObservableProgram:
                 raise ValueError("Z observables require a fixed gate matrix.")
             z_matrix = z_gate.to(device=reference.device, dtype=reference.dtype)
             built = []
-            for wire in range(self.n_wires):
-                batch = identity.expand(len(self.wires), 2, 2).clone()
-                for observable, target in enumerate(self.wires):
-                    if wire == target:
+            for qubit in range(self.n_qubits):
+                batch = identity.expand(len(self.qubits), 2, 2).clone()
+                for observable, target in enumerate(self.qubits):
+                    if qubit == target:
                         batch[observable] = z_matrix
                 built.append(batch)
             matrices = tuple(built)
             _Z_OBSERVABLE_NODE_CACHE[key] = matrices
-        for wire, matrix in enumerate(matrices):
+        for qubit, matrix in enumerate(matrices):
             nodes.append(
                 TensorNetworkNode(
                     tensor=matrix,
                     labels=(
                         observable_label,
-                        bra_outputs[wire + 1],
-                        ket_outputs[wire + 1],
+                        bra_outputs[qubit + 1],
+                        ket_outputs[qubit + 1],
                     ),
-                    name=f"z_batch_{wire}",
-                    metadata={"wire": wire},
+                    name=f"z_batch_{qubit}",
+                    metadata={"qubit": qubit},
                 )
             )
         path = tuple(
@@ -629,11 +629,11 @@ class CompiledTNObservableProgram:
             for index, node in enumerate(nodes)
         )
         return TensorNetworkExpectationPlan(
-            n_wires=self.n_wires,
+            n_qubits=self.n_qubits,
             bsz=ket_plan.bsz,
             nodes=tuple(nodes),
             output_labels=(batch_label, observable_label),
-            observable_wires=self.wires,
+            observable_qubits=self.qubits,
             path=path,
         )
 
@@ -642,11 +642,11 @@ class CompiledTNObservableProgram:
 class TensorNetworkExpectationPlan(_TensorNetworkPathPlan):
     """Direct bra-operator-ket tensor-network expectation plan."""
 
-    n_wires: int
+    n_qubits: int
     bsz: int
     nodes: tuple[TensorNetworkNode, ...]
     output_labels: tuple[int, ...]
-    observable_wires: tuple[int, ...]
+    observable_qubits: tuple[int, ...]
     path: tuple[ContractionPathStep, ...]
 
     def contract(
@@ -714,8 +714,8 @@ class TensorNetworkExpectationPlan(_TensorNetworkPathPlan):
             "contraction": "expectation",
             "n_nodes": len(self.nodes),
             "n_edges": len({label for node in self.nodes for label in node.labels}),
-            "n_wires": self.n_wires,
-            "observable_wires": self.observable_wires,
+            "n_qubits": self.n_qubits,
+            "observable_wires": self.observable_qubits,
             "path_length": len(self.path),
             "greedy_cost": self.contraction_cost("greedy")["estimated_cost"],
             "greedy_peak_size": self.contraction_cost("greedy")["peak_size"],

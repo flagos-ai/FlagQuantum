@@ -106,22 +106,22 @@ class QuboProblem:
 
 
 def _constant_wire(n_variables: int) -> int:
-    """Return the wire that carries the constant term.
+    """Return the qubit that carries the constant term.
 
-    A constant term has no operator, so it contributes nothing to a Hamiltonian's wire
-    count on any wire: ``HamiltonianTerm.max_wire`` is ``-1`` for an identity-only term, so
+    A constant term has no operator, so it contributes nothing to a Hamiltonian's qubit
+    count on any qubit: ``HamiltonianTerm.max_wire`` is ``-1`` for an identity-only term, so
     a Hamiltonian whose only term is this constant reports ``n_wires == 0`` however wide
-    the problem was. The wire is still placed on the register's last wire, which is where
-    the width survives: ``ising_to_qubo`` reads a term's declared wires rather than the
-    Hamiltonian's count, so it recovers ``n_variables`` from this wire. A caller who asks
-    the Hamiltonian for its wire count instead gets nothing back, and has to carry the
+    the problem was. The qubit is still placed on the register's last qubit, which is where
+    the width survives: ``ising_to_qubo`` reads a term's declared qubits rather than the
+    Hamiltonian's count, so it recovers ``n_variables`` from this qubit. A caller who asks
+    the Hamiltonian for its qubit count instead gets nothing back, and has to carry the
     problem's width itself.
 
     Args:
         n_variables: The number of binary variables.
 
     Returns:
-        The wire index for the constant term.
+        The qubit index for the constant term.
     """
 
     return max(n_variables - 1, _IDENTITY_WIRE)
@@ -164,11 +164,11 @@ def qubo_energy(problem: QuboProblem, assignment: Sequence[int]) -> float:
 def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
     """Return the Ising Hamiltonian whose objective matches the QUBO objective.
 
-    Substituting ``x_i = (1 + s_i) / 2`` makes each variable a Pauli Z on its own wire.
+    Substituting ``x_i = (1 + s_i) / 2`` makes each variable a Pauli Z on its own qubit.
     Every variable in the register contributes ``c_i / 2 + (1/4) * (sum of the pair weights
-    that touch it)`` to its single-wire term, where ``c_i`` is its linear coefficient and
+    that touch it)`` to its single-qubit term, where ``c_i`` is its linear coefficient and
     is zero when the variable declares none; each declared pair contributes ``q_ij / 4`` to
-    a two-wire term. A constant is always emitted as one identity term, so the result is a
+    a two-qubit term. A constant is always emitted as one identity term, so the result is a
     valid Hamiltonian for every problem, including one that declares no coefficients at
     all.
 
@@ -176,7 +176,7 @@ def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
         problem: The problem to convert.
 
     Returns:
-        A Hamiltonian whose terms are single-wire Z products, two-wire ZZ products, and
+        A Hamiltonian whose terms are single-qubit Z products, two-qubit ZZ products, and
         one identity term carrying the constant offset.
     """
 
@@ -192,7 +192,7 @@ def qubo_to_ising(problem: QuboProblem) -> Hamiltonian:
         + sum(problem.linear.values()) / 2.0
         + sum(problem.quadratic.values()) / 4.0
     )
-    # Every variable in the register needs its single-wire term, including one that only
+    # Every variable in the register needs its single-qubit term, including one that only
     # ever appears as a pair endpoint: a pair expands to
     # ``q_ij/4 * Z_i Z_j - q_ij/4 * Z_i - q_ij/4 * Z_j + q_ij/4``.
     weights = {
@@ -215,8 +215,8 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
     """Return the QUBO problem whose objective matches a Hamiltonian in the Z basis.
 
     Args:
-        hamiltonian: The Hamiltonian to convert. It may carry single-wire ``Z`` terms,
-            two-wire ``ZZ`` terms, and one or more identity terms.
+        hamiltonian: The Hamiltonian to convert. It may carry single-qubit ``Z`` terms,
+            two-qubit ``ZZ`` terms, and one or more identity terms.
 
     Returns:
         A problem whose objective reproduces the Hamiltonian's value on every assignment.
@@ -234,8 +234,8 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
     declared_wires = 0
     for term in hamiltonian.terms:
         pauli = term.pauli
-        if term.wires:
-            declared_wires = max(declared_wires, 1 + max(term.wires))
+        if term.qubits:
+            declared_wires = max(declared_wires, 1 + max(term.qubits))
         raw = term.coefficient
         if isinstance(raw, complex) or (
             isinstance(raw, torch.Tensor) and raw.is_complex()
@@ -247,10 +247,10 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
         if pauli == "I":
             constant += coefficient
         elif pauli == "Z":
-            wire = term.wires[0]
+            wire = term.qubits[0]
             linear_weights[wire] = linear_weights.get(wire, 0.0) + coefficient
         elif pauli == "ZZ":
-            first, second = sorted(term.wires)
+            first, second = sorted(term.qubits)
             quadratic[first, second] = quadratic.get((first, second), 0.0) + coefficient
         else:
             raise ValueError(
@@ -263,8 +263,8 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
         pair_totals[second] = pair_totals.get(second, 0.0) + coefficient
 
     # The recovered linear coefficient is defined for every variable in the register, not
-    # only for wires that happen to carry a single-wire term: a wire whose weight is
-    # exactly zero emits no term, and a wire that is only ever a pair endpoint emits none
+    # only for qubits that happen to carry a single-qubit term: a qubit whose weight is
+    # exactly zero emits no term, and a qubit that is only ever a pair endpoint emits none
     # either. Both still have a linear coefficient of ``-2 * (sum of its pair weights)``.
     linear = {
         index: 2.0 * linear_weights.get(index, 0.0) - 2.0 * pair_totals.get(index, 0.0)
@@ -272,7 +272,7 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
     }
     recovered = {pair: 4.0 * coefficient for pair, coefficient in quadratic.items()}
     offset = constant - sum(linear_weights.values()) + sum(quadratic.values())
-    n_variables = max(hamiltonian.n_wires, declared_wires)
+    n_variables = max(hamiltonian.n_qubits, declared_wires)
     return QuboProblem(
         n_variables=n_variables,
         linear=linear,

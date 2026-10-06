@@ -35,14 +35,14 @@ def test_farthest_next_use_wire_is_evicted_from_local_residency():
     plan = plan_persistent_statevector_layout(circuit, world_size=2)
 
     first = plan.swaps[0]
-    assert first.sharded_logical_wire == 3
-    assert first.local_logical_wire == 2
-    assert first.local_physical_wire == 2
-    assert first.sharded_physical_wire == 3
+    assert first.sharded_logical_qubit == 3
+    assert first.local_logical_qubit == 2
+    assert first.local_physical_qubit == 2
+    assert first.sharded_physical_qubit == 3
 
 
 def test_initial_layout_must_be_a_permutation():
-    with pytest.raises(ValueError, match="wire permutation"):
+    with pytest.raises(ValueError, match="qubit permutation"):
         plan_persistent_statevector_layout(
             fq.Circuit(3).x(0),
             world_size=2,
@@ -150,10 +150,10 @@ def test_rank_local_bit_swap_transposes_global_basis_bits(monkeypatch):
         output, count, byte_count = distributed_swap_rank_local_bits(
             shards[rank],
             rank=rank,
-            n_wires=3,
+            n_qubits=3,
             rank_bits=1,
-            local_physical_wire=0,
-            sharded_physical_wire=2,
+            local_physical_qubit=0,
+            sharded_physical_qubit=2,
         )
         outputs.append(output)
         assert count == 1

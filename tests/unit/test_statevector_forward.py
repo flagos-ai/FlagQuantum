@@ -23,7 +23,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
     _wait_for_exchange,
-    communication_aware_wire_layout,
+    communication_aware_qubit_layout,
 )
 from flagquantum.runtime.executors.statevector.forward_executor import (
     execute_torch_distributed_statevector,
@@ -34,12 +34,16 @@ from flagquantum.runtime.executors.statevector.forward_sweep import (
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
 )
+from flagquantum.runtime.executors.statevector.local_gate_dispatch import (
+    _triton_local_1q_requested,
+    _triton_local_cx_requested,
+)
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
     StatevectorShardState,
 )
 from flagquantum.runtime.executors.statevector.program_cache import (
-    remap_instruction_wires,
+    remap_instruction_qubits,
 )
 from flagquantum.runtime.executors.statevector.transpose_dispatch import (
     _triton_transpose_1q_decision,
@@ -73,7 +77,7 @@ def test_flagos_exchange_uses_provider_neutral_wait():
     assert cuda_request.block_current_stream_calls == 1
 
 
-def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypatch):
+def test_cx_segment_default_window_and_override(monkeypatch):
     monkeypatch.setattr(
         "flagquantum.runtime.executors.statevector.kernel_dispatch.triton_available",
         lambda: True,
@@ -88,13 +92,27 @@ def test_dependency_schedule_auto_enables_cx_segments_unless_overridden(monkeypa
     )
 
     monkeypatch.delenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", raising=False)
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(2, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "0")
-    assert not _triton_local_cx_segment_enabled(scheduled)
+    assert not _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 24))
     monkeypatch.setenv("FQ_STATEVECTOR_TRITON_CX_SEGMENT", "1")
-    assert _triton_local_cx_segment_enabled(scheduled)
+    assert _triton_local_cx_segment_enabled(scheduled, shape=(1, 1 << 20))
+
+
+def test_local_cx_default_window_and_override(monkeypatch):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", raising=False)
+    assert _triton_local_cx_requested((1, 1 << 24))
+    assert not _triton_local_cx_requested((1, 1 << 20))
+    assert not _triton_local_cx_requested((2, 1 << 24))
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "1")
+    assert _triton_local_cx_requested((1, 1 << 20))
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_CX", "0")
+    assert not _triton_local_cx_requested((1, 1 << 24))
 
 
 def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
@@ -112,6 +130,7 @@ def test_local_cx_segment_decision_binds_catalog_identity(monkeypatch):
     decision = _triton_local_cx_segment_decision(
         device_type="cuda",
         dtype="complex64",
+        shape=(1, 1 << 24),
     )
 
     assert decision.accelerated
@@ -133,6 +152,7 @@ def test_local_cx_segment_decision_reports_catalog_mismatch(
     decision = _triton_local_cx_segment_decision(
         device_type=device_type,
         dtype=dtype,
+        shape=(1, 1 << 24),
     )
 
     assert not decision.accelerated
@@ -375,7 +395,7 @@ def test_a_world_size_the_executor_cannot_shard_is_refused_not_silently_run(
 ):
     """The planner describes an arbitrary shard count; this executor does not run it.
 
-    `contiguous_amplitude_range` leaves `sharded_wires` empty, so every gate
+    `contiguous_amplitude_range` leaves `sharded_qubits` empty, so every gate
     resolves to a rank-local kernel and no exchange is issued. Each rank would
     return its own contiguous slice of a gate nobody applied -- wrong
     amplitudes reported as a successful distributed run, and `indexed_all_to_all`
@@ -414,7 +434,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         for record in dispatch["decisions"]
     } == {
         ("local_1q", "disabled_by_policy", 2),
-        ("local_cx", "input_not_supported", 1),
+        ("local_cx", "disabled_by_policy", 1),
     }
     local_1q_dispatch = next(
         record for record in dispatch["decisions"] if record["feature"] == "local_1q"
@@ -439,7 +459,7 @@ def test_single_rank_uses_same_executor_contract_without_distributed_claim():
         "semantic_id": "statevector.apply.cnot.local",
         "implementation": "pytorch_eager",
         "integration_path": "pytorch",
-        "fallback": True,
+        "fallback": False,
         "implementation_id": None,
         "catalog_mismatches": ("device",),
     }
@@ -522,7 +542,7 @@ def test_single_rank_parameterized_gates_preserve_complex128_precision():
     result = execute_torch_distributed_statevector(
         circuit,
         dtype=torch.complex128,
-        persistent_wire_layout=False,
+        persistent_qubit_layout=False,
     )
 
     torch.testing.assert_close(
@@ -574,7 +594,9 @@ def test_scratch_accounting_does_not_count_aliasing_chunk_storage():
 def test_unsupported_gate_fails_before_state_initialization(monkeypatch):
     ir = CircuitIR(
         n_wires=1,
-        instructions=(Instruction(name="bit_flip", wires=(0,)),),
+        instructions=(
+            Instruction(name="bit_flip", wires=(0,), params={"probability": 0.5}),
+        ),
     )
     initialized = False
 
@@ -620,8 +642,8 @@ def test_communication_aware_layout_moves_inactive_wire_to_rank_bits():
     theta = torch.tensor(0.23, requires_grad=True)
     ir = fq.Circuit(6).ry(5, theta).cx(5, 4).ry(4, theta).to_ir()
 
-    remapped, mapping = communication_aware_wire_layout(
-        ir, world_size=4, preferred_local_wires=(4,)
+    remapped, mapping = communication_aware_qubit_layout(
+        ir, world_size=4, preferred_local_qubits=(4,)
     )
 
     assert mapping[4] < 4 and mapping[5] < 4
@@ -642,16 +664,16 @@ def test_training_layout_accounts_for_forward_reverse_and_parameter_work():
         circuit.x(1)
     ir = circuit.to_ir()
 
-    _, forward_mapping = communication_aware_wire_layout(
+    _, forward_mapping = communication_aware_qubit_layout(
         ir,
         world_size=2,
-        preferred_local_wires=(2, 3, 4),
+        preferred_local_qubits=(2, 3, 4),
         optimization_target="forward",
     )
-    remapped, training_mapping = communication_aware_wire_layout(
+    remapped, training_mapping = communication_aware_qubit_layout(
         ir,
         world_size=2,
-        preferred_local_wires=(2, 3, 4),
+        preferred_local_qubits=(2, 3, 4),
         optimization_target="training_step",
     )
 
@@ -664,7 +686,7 @@ def test_training_layout_accounts_for_forward_reverse_and_parameter_work():
 
 def test_communication_aware_layout_rejects_unknown_optimization_target():
     with pytest.raises(ValueError, match="forward or training_step"):
-        communication_aware_wire_layout(
+        communication_aware_qubit_layout(
             fq.Circuit(3).to_ir(),
             world_size=2,
             optimization_target="backward_only",
@@ -698,11 +720,11 @@ def test_repeat_layout_reuses_the_remapped_program(monkeypatch):
     theta = torch.tensor(0.23, requires_grad=True)
     ir = fq.Circuit(5).h(0).ry(4, theta).cx(4, 1).rx(3, theta).cx(0, 4).to_ir()
 
-    first, first_mapping = communication_aware_wire_layout(
+    first, first_mapping = communication_aware_qubit_layout(
         ir, world_size=2, local_world_size=1
     )
     after_first = validated
-    second, second_mapping = communication_aware_wire_layout(
+    second, second_mapping = communication_aware_qubit_layout(
         ir, world_size=2, local_world_size=1
     )
 
@@ -723,10 +745,10 @@ def test_layout_does_not_reuse_another_circuits_parameters():
     first = fq.Circuit(5).h(0).ry(4, 0.31).cx(4, 1).rx(3, -0.27).cx(0, 4).to_ir()
     second = fq.Circuit(5).h(0).ry(4, 0.77).cx(4, 1).rx(3, 0.11).cx(0, 4).to_ir()
 
-    remapped_first, _ = communication_aware_wire_layout(
+    remapped_first, _ = communication_aware_qubit_layout(
         first, world_size=2, local_world_size=1
     )
-    remapped_second, _ = communication_aware_wire_layout(
+    remapped_second, _ = communication_aware_qubit_layout(
         second, world_size=2, local_world_size=1
     )
 
@@ -768,16 +790,16 @@ def test_instruction_relabelling_does_not_revalidate_its_parameters(monkeypatch)
     mapping = [0, 1, 3, 2]
     before = validated
 
-    once = remap_instruction_wires(instruction, mapping)
+    once = remap_instruction_qubits(instruction, mapping)
     after_first = validated
-    twice = remap_instruction_wires(instruction, mapping)
+    twice = remap_instruction_qubits(instruction, mapping)
 
     assert tuple(once.wires) == (3,)
     assert once is twice, "the relabelled instruction was rebuilt a second time"
     assert after_first - before == 1
     assert validated == after_first
     # A mapping that leaves the wires alone must not rebuild at all.
-    identity = remap_instruction_wires(instruction, [0, 1, 2, 3])
+    identity = remap_instruction_qubits(instruction, [0, 1, 2, 3])
     assert identity is instruction
     assert validated == after_first
 
@@ -796,8 +818,8 @@ def test_instruction_relabelling_keeps_cached_entries_distinct():
     first = fq.Circuit(4).ry(2, 0.4).to_ir().instructions[0]
     second = fq.Circuit(4).rx(3, -0.9).to_ir().instructions[0]
 
-    remapped_first = remap_instruction_wires(first, [0, 1, 3, 2])
-    remapped_second = remap_instruction_wires(second, [1, 0, 3, 2])
+    remapped_first = remap_instruction_qubits(first, [0, 1, 3, 2])
+    remapped_second = remap_instruction_qubits(second, [1, 0, 3, 2])
 
     assert remapped_first is not remapped_second
     assert remapped_first.name == "ry" and remapped_second.name == "rx"
@@ -813,8 +835,8 @@ def test_communication_aware_layout_penalizes_full_shard_subgroup_alignment():
     for wire in range(5):
         circuit.cx(wire, wire + 1)
 
-    _, mapping = communication_aware_wire_layout(
-        circuit.to_ir(), world_size=2, preferred_local_wires=(3,)
+    _, mapping = communication_aware_qubit_layout(
+        circuit.to_ir(), world_size=2, preferred_local_qubits=(3,)
     )
 
     # Both endpoints have the same gate-touch score.  Sharding wire 0 would
@@ -831,22 +853,22 @@ def test_multi_node_rank_bit_order_puts_low_activity_wire_on_node_bit(monkeypatc
     for wire in range(27):
         circuit.cx(wire, wire + 1)
 
-    _, mapping = communication_aware_wire_layout(
+    _, mapping = communication_aware_qubit_layout(
         circuit.to_ir(),
         world_size=16,
         local_world_size=8,
-        preferred_local_wires=(14,),
+        preferred_local_qubits=(14,),
     )
 
     assert mapping[27] == 24
     assert {mapping[24], mapping[25], mapping[26]} == {25, 26, 27}
 
     monkeypatch.setenv("FQ_STATEVECTOR_TOPOLOGY_AWARE_RANK_BITS", "0")
-    _, canonical_rank_bits = communication_aware_wire_layout(
+    _, canonical_rank_bits = communication_aware_qubit_layout(
         circuit.to_ir(),
         world_size=16,
         local_world_size=8,
-        preferred_local_wires=(14,),
+        preferred_local_qubits=(14,),
     )
     assert canonical_rank_bits[24] == 24
     assert canonical_rank_bits[27] == 27
@@ -866,11 +888,11 @@ def test_the_layout_placement_comes_from_the_caller_not_the_environment(monkeypa
     ir = circuit.to_ir()
     monkeypatch.setenv("LOCAL_WORLD_SIZE", "1")
 
-    _, stated = communication_aware_wire_layout(
-        ir, world_size=16, local_world_size=8, preferred_local_wires=(14,)
+    _, stated = communication_aware_qubit_layout(
+        ir, world_size=16, local_world_size=8, preferred_local_qubits=(14,)
     )
-    _, from_environment = communication_aware_wire_layout(
-        ir, world_size=16, preferred_local_wires=(14,)
+    _, from_environment = communication_aware_qubit_layout(
+        ir, world_size=16, preferred_local_qubits=(14,)
     )
 
     assert stated[27] == 24
@@ -879,16 +901,16 @@ def test_the_layout_placement_comes_from_the_caller_not_the_environment(monkeypa
 
 def test_a_placement_that_is_not_a_rank_count_is_refused():
     with pytest.raises(ValueError, match="positive rank count"):
-        communication_aware_wire_layout(
+        communication_aware_qubit_layout(
             fq.Circuit(4).to_ir(), world_size=4, local_world_size=0
         )
 
 
 def test_single_rank_communication_aware_result_declares_basis_order():
     result = execute_torch_distributed_statevector(
-        fq.Circuit(3).h(2), wire_layout="communication_aware"
+        fq.Circuit(3).h(2), qubit_layout="communication_aware"
     )
-    assert result.logical_to_physical_wires == (0, 1, 2)
+    assert result.logical_to_physical_qubits == (0, 1, 2)
     assert result.summary()["amplitude_basis_order"] == "canonical_logical"
 
 
@@ -918,10 +940,10 @@ def _pair_exchange_plan(world_size: int, local_amplitudes: int) -> SimpleNamespa
         local_state_bytes=local_amplitudes * 8,
     )
     return SimpleNamespace(
-        sharded_wires=(3,),
+        sharded_qubits=(3,),
         world_size=world_size,
         shards=(shard,),
-        n_wires=4,
+        n_qubits=4,
         rank_address_bits=1,
     )
 
@@ -1092,7 +1114,7 @@ def test_rank_local_gate_writes_into_the_caller_buffer_when_invited():
     # An X on wire 0 pairs each local address with the one that differs in that
     # wire's bit. The bit is taken from the plan rather than written out, so the
     # expectation follows the addressing instead of restating it.
-    swap = 1 << (plan.n_wires - 1 - 0 - len(plan.sharded_wires))
+    swap = 1 << (plan.n_qubits - 1 - 0 - len(plan.sharded_qubits))
     indices = torch.arange(amplitudes.shape[1])
     expected = amplitudes[:, indices ^ swap].clone()
 
@@ -1141,3 +1163,25 @@ def test_a_program_that_trains_keeps_a_separate_output_buffer():
     assert any(matrix.requires_grad for matrix in trained.matrices)
     assert trained.local_output_in_place is False
     assert inferred.local_output_in_place is True
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected"),
+    (
+        ((1, 1 << 10), True),
+        ((1, 1 << 16), True),
+        ((1, 1 << 20), True),
+        ((1, 1 << 24), True),
+        ((1, 1 << 12), False),
+        ((2, 1 << 20), False),
+    ),
+)
+def test_local_1q_default_window_and_override(monkeypatch, shape, expected):
+    monkeypatch.delenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", raising=False)
+    assert _triton_local_1q_requested(shape) is expected
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "0")
+    assert not _triton_local_1q_requested(shape)
+
+    monkeypatch.setenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q", "1")
+    assert _triton_local_1q_requested(shape)

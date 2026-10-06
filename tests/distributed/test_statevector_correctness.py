@@ -51,7 +51,7 @@ def test_distributed_statevector_correctness_transport_pytest():
 
     result = run_statevector_correctness(
         world_size=world_size,
-        n_wires=4,
+        n_qubits=4,
         distribution=expected_distribution,
         topology=expected_topology,
         backend=backend,

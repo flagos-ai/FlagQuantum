@@ -24,6 +24,28 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
+  step=None, directions=1, generator=None)` entry point, which returns the
+  detached derivative together with the method that produced it, whether that
+  method is exact, and the displacement an approximation used. `method="auto"`
+  probes the program instead of declaring a route, so it reports `autograd` when
+  the program carries a graph, `parameter_shift` when the circuit behind the loss
+  is available, and `finite_difference` otherwise. `method="adjoint"` is refused
+  with a `CapabilityError` because FlagQuantum has no standalone adjoint entry
+  point; the reversible sweep is the backward pass behind PyTorch autograd and no
+  result reports whether backward replayed it. See
+  [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
+  [gradient methods example](../../examples/gradient_methods/README.md).
+- Added the stable `fq.from_openqasm(source)` entry point, which reads back the
+  OpenQASM 2 and OpenQASM 3 text
+  `flagquantum.compiler.openqasm.emit_openqasm` writes. It reports the imported
+  program, the version it declared, and the classical-bit to qubit mapping its
+  terminal measurement block records, and exposes `to_ir()`, `to_circuit()`, and
+  `to_openqasm()`. Text outside the canonical subset is refused with an
+  `OpenQASMImportError` whose `issue_code` names the reason, so nothing is
+  imported approximately. See
+  [OpenQASM import](../api-changes/FQ-OPENQASM-IMPORT-20261002.md).
+
 - Added the experimental
   `flagquantum.experimental.distributed.train_distributed_tensor_network`
   workflow, which slices one logical tensor-network contraction across ranks and
@@ -85,7 +107,7 @@ are otherwise unchanged.
 - Added `fq.twin.compose_region_twin()` and immutable `TwinRegionModel` for
   offline measurement-distribution prediction across a connected union of
   compatible local Twin cells. Composition remaps local calibration and noise
-  semantics into one regional wire order and fails closed on overlap conflicts;
+  semantics into one regional qubit order and fails closed on overlap conflicts;
   it does not infer cross-cell correlated noise or turn local evidence into
   regional accuracy. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
 
@@ -220,8 +242,8 @@ are otherwise unchanged.
   without changing the `ExecutionResult` return type or silently selecting a
   compiler, provider, or fallback.
 - Added `fq.compile(circuit, compiler="qsteed", target="quafu:<backend>")` as
-  the direct compiler-selection journey. QSteed results retain logical wire
-  numbers and carry an ordered physical `target_qubits` mapping through
+  the direct compiler-selection journey. QSteed results retain logical qubit
+numbers and carry an ordered physical `target_qubits` mapping through
   deployment; Quafu submission now uses `compiler=None` and no deprecated
   top-level compile flag.
 - Added explicit discovery for independently installed circuit-compiler plugins
@@ -285,8 +307,9 @@ are otherwise unchanged.
 - `fq.Circuit(n_qubits=...)` is now the preferred public spelling for circuit
   size, with `n_qubits` and Qiskit-compatible `num_qubits` properties.
   Positional construction and the `n_wires`/`nqubits` keyword aliases remain
-  compatible, while conflicting counts now fail during construction. Internal
-  IR, compiler, and runtime mappings continue to use wire terminology.
+  compatible, while conflicting counts now fail during construction. Serialized
+  IR and compiler payload keys are unchanged: renaming a key that a saved plan is
+  read back through is a schema version bump, not a vocabulary change.
 - Generated gate methods now accept optional semantic qubit keywords without
   removing concise positional calls: single-qubit gates use `qubit=`,
   controlled gates use `control=`/`target=`, and symmetric two-qubit gates use
@@ -316,7 +339,7 @@ are otherwise unchanged.
   rematerialization, explicit gate adjoints, and cross-rank VJP reduction.
 - An experimental PyTorch-native distributed statevector forward executor now
   runs validated unitary IR with rank-local amplitude ownership across local and
-  multi-sharded-wire gates on Gloo or NCCL. Full-state materialization is
+  multi-sharded-qubit gates on Gloo or NCCL. Full-state materialization is
   forbidden and forward-only training/release blockers remain explicit.
 - Correctness infrastructure now generates deterministic circuit properties,
   covers every registered operator/lowering pair, versions numerical

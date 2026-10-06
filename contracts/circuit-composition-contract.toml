@@ -1,0 +1,289 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Construction-time composition: the operations that build a larger program out of
+# smaller ones without introducing a second IR. `Circuit.compose` places a program
+# onto chosen qubits; `Circuit.adjoint` returns the program that undoes one. Both
+# emit instructions the IR already describes, so neither changes `IR_VERSION`, and
+# both are methods on an existing stable export rather than new root exports.
+#
+# This contract is the authoritative list of what those two operations guarantee and
+# of every way they refuse. `control` and `power` are recorded as absent on purpose:
+# a capability that is missing appears here as an owned gap rather than as silence.
+schema = "flagquantum_circuit_composition_contract_v1"
+maturity = "development_evidence"
+surface = "construction_time_program_composition"
+implementation = "flagquantum/circuit.py"
+placement_implementation = "flagquantum/core/qubit_mapping.py"
+adjoint_rule_source = "flagquantum/core/operator_schema.py"
+ir_version_effect = "none"
+root_export_effect = "none"
+authorization = [
+    "docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md",
+    "docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md",
+]
+
+[scope]
+provided = ["Circuit.compose", "Circuit.adjoint"]
+# `control` and `power` belong to the same construction-time family and are named
+# here so that their absence is contracted instead of discovered. Neither has an
+# approved proposal, so neither may be added under this contract's authority.
+not_provided = ["Circuit.control", "Circuit.power"]
+not_provided_reason = "no approved API change proposal; control and power are unplanned, not partial"
+
+[placement]
+# `Circuit.compose(other, *, qubits=None, qubit_map=None)`
+accepted_programs = ["Circuit", "CircuitIR"]
+program_argument = "other"
+arguments = ["qubits", "qubit_map"]
+arguments_are_mutually_exclusive = true
+default_placement = "identity"
+# A bare label is read as a length-one placement, so a one-qubit program accepts
+# `qubits=3` as well as `qubits=(3,)`.
+single_label_allowed_only_for_width_one = true
+# The map must be total over the source width: a source qubit with no image is
+# refused rather than mapped to itself, because an identity image turns a short or
+# mistyped map into a silently misplaced gate on a circuit that still runs.
+placement_is_total_over_source_width = true
+# The source is read once into a snapshot and then appended, so a program's own
+# instructions keep their relative order.
+source_order_preserved = true
+# Placement is not addition: the receiver keeps every instruction it already had, and
+# the composed ones follow them.
+existing_instructions_preserved = true
+batch_size_must_match = true
+# Composing appends, so a target qubit that already carries instructions is legal
+# and is not overwritten. Two source qubits may not share one target.
+occupied_target_qubits_are_legal = true
+instruction_payload_preserved = ["name", "params", "matrix", "metadata"]
+mutates_receiver = true
+returns = "receiver"
+
+[adjoint]
+# `Circuit.adjoint()`
+receiver_role = "an instruction sequence, not a program entry point"
+returns = "new_circuit"
+receiver_is_mutated = false
+instruction_order = "reversed"
+instruction_qubits = "unchanged"
+instruction_order_within_gate = "unchanged"
+# The current attribute names, not the deprecated `n_wires` alias for `n_qubits`.
+preserves = ["n_qubits", "bsz", "device", "dtype"]
+empty_circuit_result = "empty_circuit"
+# The rule vocabulary is owned by `flagquantum/core/operator_schema.py` and is read
+# from there rather than restated: this list must equal `ADJOINT_RULES`.
+declared_opcode_rules = [
+    "self_inverse",
+    "negate_parameters",
+    "adjoint_u2_angles",
+    "adjoint_u3_angles",
+    "matrix_adjoint",
+    "not_applicable",
+]
+# An `adjoint` value outside that list names the inverse opcode directly, which is
+# how `s` and `sdg` declare each other. The partner must be a parameter-free unitary
+# of the same arity that declares this opcode back, so the pairing is symmetric.
+partner_opcode_rule = "a value outside declared_opcode_rules names the inverse opcode directly"
+# The matrix recorded on an instruction is what the simulator executes, so it
+# decides the inverse whenever it is present; opcode rules apply to the rest.
+matrix_route_precedes_opcode_rule = true
+matrix_route = "conjugate_transpose"
+
+[issue_codes]
+# Refusal reasons exist in the implementation as prose today. The vocabulary below is
+# the contract for them: a caller may rely on the exception class and on the phrase,
+# and the phrase is the machine-readable handle until the implementation reports a
+# code of its own. Changing a phrase changes a documented refusal and therefore this
+# contract. Every phrase must also still appear in `message_source`, including the
+# refusal no user path reaches, because the vocabulary is frozen either way.
+delivery = "exception_class_and_message_phrase"
+vocabulary_frozen = true
+# `remap_qubits` in the same module also refuses a label its map does not name, as a
+# plain `ValueError`. Compose always passes the dense tuple that `qubit_map_from`
+# produced, so that branch is unreachable through `Circuit.compose` and is not part of
+# this vocabulary; it is listed here so the list is not read as accidentally short.
+[[issue_codes.internal_only]]
+source = "flagquantum/core/qubit_mapping.py"
+owner = "remap_qubits"
+exception = "ValueError"
+message_phrase = "which the qubit map does not name"
+reason = "the caller always adapts its input into the dense tuple form before remapping"
+
+[verification]
+contract = "tests/unit/test_circuit_composition_contract.py"
+# Each provided operation must have one test that expands it and compares the result
+# with the program a user would have written by hand, instruction by instruction. This
+# requirement is what `tools/check_circuit_composition_contract.py` enforces: it refuses
+# a contract that names a test which is not a test in the file above, and it refuses an
+# operation that has no test named. An operation is not contracted until both hold.
+expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse" }
+# Registering an opcode changes this census. It is the measurement behind the
+# `reachable = false` row below, so it is recorded as evidence rather than assumed.
+opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
+
+[[refusals]]
+entry_point = "compose"
+code = "both_placement_arguments"
+exception = "TypeError"
+message_phrase = "accepts either qubits or qubit_map, not both"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "compose(other, qubits=..., qubit_map=...)"
+
+[[refusals]]
+entry_point = "compose"
+code = "program_not_composable"
+exception = "TypeError"
+message_phrase = "accepts a Circuit or a CircuitIR, got"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "compose(other) where other is neither a Circuit nor a CircuitIR"
+
+[[refusals]]
+entry_point = "compose"
+code = "qubit_label_not_an_integer"
+exception = "TypeError"
+message_phrase = "qubit must be an integer, got"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "a placement label that is a float, a str, or a bool"
+
+[[refusals]]
+entry_point = "compose"
+code = "placement_not_a_mapping"
+exception = "TypeError"
+message_phrase = "must be a mapping, got"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "a qubit_map that is not a Mapping"
+
+[[refusals]]
+entry_point = "compose"
+code = "batch_size_mismatch"
+exception = "ValidationError"
+message_phrase = "cannot mix batch sizes"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "a batched program placed on a circuit of a different batch size"
+
+[[refusals]]
+entry_point = "compose"
+code = "placement_incomplete"
+exception = "ValidationError"
+message_phrase = "qubits must name all"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "len(qubits) that is not the source width"
+
+[[refusals]]
+entry_point = "compose"
+code = "placement_map_incomplete"
+exception = "ValidationError"
+message_phrase = "must name every local qubit; missing"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "a qubit_map that omits a source qubit"
+
+[[refusals]]
+entry_point = "compose"
+code = "placement_map_unknown_source"
+exception = "ValidationError"
+message_phrase = "names local qubit"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "a qubit_map key outside the source width"
+
+[[refusals]]
+entry_point = "compose"
+code = "target_qubit_repeated"
+exception = "ValidationError"
+message_phrase = "cannot place two local qubits on qubit"
+message_source = "flagquantum/core/qubit_mapping.py"
+reachable = true
+trigger = "two source qubits given the same target qubit"
+
+[[refusals]]
+entry_point = "compose"
+code = "target_qubit_negative"
+exception = "ValidationError"
+message_phrase = "must be non-negative"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "a negative target qubit"
+
+[[refusals]]
+entry_point = "compose"
+code = "target_qubit_out_of_range"
+exception = "ValidationError"
+message_phrase = "outside circuit range"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "a target qubit at or beyond the receiver's qubit count"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_channel"
+exception = "CapabilityError"
+message_phrase = "it is a noise channel, which has no unitary inverse"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "an instruction carrying is_channel metadata"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_dynamic_operation"
+exception = "CapabilityError"
+message_phrase = "it is a dynamic operation, which has no fixed inverse"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "an instruction carrying is_dynamic metadata, such as a measurement"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_conditioned_gate"
+exception = "CapabilityError"
+message_phrase = "it is classically conditioned, which has no fixed inverse"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "an instruction carrying conditions metadata"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_matrix_without_conjugate_transpose"
+exception = "CapabilityError"
+message_phrase = "its matrix does not expose a conjugate transpose"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "an explicit matrix that is not a tensor and so exposes no mH"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_undeclared_rule"
+exception = "CapabilityError"
+message_phrase = "names no inverse gate"
+message_source = "flagquantum/circuit.py"
+# `inverse_operator` returns None when the declaration alone determines no single
+# inverse gate, which is what `not_applicable` and `matrix_adjoint` both do. The route
+# a user reaches is `not_applicable` reached without channel metadata: the noise
+# channels are the only opcodes that declare it, and a program that records one
+# without `is_channel` -- through `from_ir`, or by appending a hand-built instruction --
+# arrives here instead of at the first refusal. `matrix_adjoint` is the other half of
+# this row and is not reached today, because no registered opcode declares it: the
+# matrix route above handles every instruction that carries a matrix.
+reachable = true
+trigger = "a noise-channel opcode recorded without its is_channel metadata"
+
+[[refusals]]
+entry_point = "adjoint"
+code = "inverse_of_unknown_opcode"
+exception = "CapabilityError"
+message_phrase = "it is an unknown opcode with no matrix"
+message_source = "flagquantum/circuit.py"
+# Measured, not assumed: `Instruction.__post_init__` refuses an unknown opcode that
+# carries no matrix, so no program can hold one, and an unknown opcode that does carry
+# a matrix is inverted by the matrix route above. Both routes were probed, and the
+# census below confirms that every registered opcode has a rule. This branch is kept as
+# a refusal rather than a copied-forward gate, and it is contracted as unreachable so
+# that reaching it becomes a visible change instead of a silent one.
+reachable = false
+reachability_note = "Instruction.__post_init__ refuses an unknown opcode with no matrix; one with a matrix takes the matrix route"
+trigger = "unreachable through Circuit.adjoint on a well-formed circuit"

@@ -32,6 +32,19 @@ _CLOSED_BASES = {
     "deployment-cloud-simulator": 7,
 }
 
+#: What the equivalence table reaches on its own, with no synthesis, on every
+#: basis including the one the synthesis cannot help. `clifford-t` reaches six
+#: names there -- the four it publishes, plus `sdg` as `s s s` and `x` as
+#: `h z h` with `z` as `s s` -- and its reach does not move, because it
+#: publishes no z-rotation for the synthesis to work against.
+_IDENTITY_TABLE_REACH = {
+    "ibm-rz-sx-cx": 3,
+    "ibm-heron-cz": 3,
+    "rotational": 2,
+    "deployment-cloud-simulator": 7,
+    "clifford-t": 6,
+}
+
 
 @pytest.fixture(scope="module")
 def payload() -> dict:
@@ -67,18 +80,30 @@ def test_every_basis_that_publishes_a_z_rotation_and_a_pulse_is_closed() -> None
         assert row["replacement_lengths"]["u3"] == 5
         assert row["replacement_lengths"]["i"] == 0
         # The count this change replaced, computed from the same descriptors.
-        assert row["rewrite_only_legalized_opcode_count"] == before
+        assert row["identity_table_reach_count"] == before
 
 
-def test_a_basis_without_a_z_rotation_gains_nothing_and_fails_closed() -> None:
+def test_a_basis_without_a_z_rotation_gains_nothing_from_the_synthesis() -> None:
+    """`clifford-t` publishes `h`, `s`, `t` and `cx`, and no z-rotation.
+
+    The synthesis needs a z-rotation and this basis has none, so the reach does
+    not move: the six opcodes that get through are the ones the basis names
+    directly plus the three the equivalence table rewrites into them. Every
+    refusal has to be explicit, and the reach has to equal the table's.
+    """
+
     row = next(
         item
         for item in (reach(basis) for basis in DEFAULT_BASES)
         if item["label"] == "clifford-t"
     )
-    assert row["legalized_opcode_count"] == 3
-    assert row["unresolved_opcode_count"] == 15
-    assert row["max_replacement_length"] == 0
+    assert row["legalized_opcode_count"] == 6
+    assert row["identity_table_reach_count"] == 6
+    assert row["unresolved_opcode_count"] == 12
+    # The longest replacement is `ry` -> `sdg h rz h s` with `sdg` expanded,
+    # which is four leaves once the two unsupported ones are dropped; nothing
+    # here was synthesized from a matrix.
+    assert row["max_replacement_length"] == 4
     assert all(
         "unsupported native gate" in error or "no verified decomposition" in error
         for error in row["unresolved_errors"].values()
@@ -87,7 +112,7 @@ def test_a_basis_without_a_z_rotation_gains_nothing_and_fails_closed() -> None:
 
 def test_the_baseline_replay_agrees_with_the_pinned_before_counts() -> None:
     for basis in DEFAULT_BASES:
-        expected = _CLOSED_BASES.get(basis.label, 3)
+        expected = _IDENTITY_TABLE_REACH[basis.label]
         assert baseline_reach(basis)["legalized_opcode_count"] == expected, basis.label
 
 

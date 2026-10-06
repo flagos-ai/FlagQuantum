@@ -17,8 +17,8 @@ import torch
 
 from flagquantum.kernels.provenance import triton_compiler_provenance
 
-RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_two_site_dispatch.v1"
-EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_two_site_dispatch.v1"
+RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_two_site_dispatch.v2"
+EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_two_site_dispatch.v2"
 SEMANTIC_ID = "mps.contract.two_site_gate"
 IMPLEMENTATION_ID = "FQKI-TRITON-MPS-001-A"
 RUNNER = "benchmarks/mps_two_site_dispatch.py"
@@ -410,7 +410,7 @@ def _case(
         },
         "contraction_elements": batch * left_dim * bond_dim * right_dim,
         "runtime_forward_eligible": (batch * left_dim * bond_dim * right_dim >= 2**12),
-        "runtime_backward_eligible": (batch * left_dim * bond_dim * right_dim >= 2**18),
+        "runtime_backward_eligible": False,
         "dtype": "complex64",
         "layout": "contiguous_mps_two_site_and_shared_or_batched_gate",
         "maximum_forward_absolute_error": max(item[0] for item in forward_errors),
@@ -576,7 +576,7 @@ def validate_run(payload: Mapping[str, Any]) -> None:
             raise ValueError(
                 f"cases[{index}] runtime_forward_eligible is not reproducible"
             )
-        if case.get("runtime_backward_eligible") != (expected_elements >= 2**18):
+        if case.get("runtime_backward_eligible") is not False:
             raise ValueError(
                 f"cases[{index}] runtime_backward_eligible is not reproducible"
             )
@@ -659,8 +659,19 @@ def merge_runs(
     def all_wins(field: str) -> bool:
         return all(case[field] > 1.0 for run in ordered for case in run["cases"])
 
+    def all_runtime_forward_wins(field: str) -> bool:
+        return all(
+            case[field] > 1.0
+            for run in ordered
+            for case in run["cases"]
+            if case["runtime_forward_eligible"]
+        )
+
     decisions = {
         "direct_forward_win_on_all_cases": all_wins(
+            "direct_forward_speedup_over_pytorch"
+        ),
+        "direct_forward_win_on_all_runtime_cases": all_runtime_forward_wins(
             "direct_forward_speedup_over_pytorch"
         ),
         "direct_forward_backward_win_on_all_cases": all_wins(
@@ -669,8 +680,14 @@ def merge_runs(
         "catalog_forward_win_over_eager_on_all_cases": all_wins(
             "catalog_forward_speedup_over_eager"
         ),
+        "catalog_forward_win_over_eager_on_all_runtime_cases": (
+            all_runtime_forward_wins("catalog_forward_speedup_over_eager")
+        ),
         "catalog_forward_win_over_compiled_on_all_cases": all_wins(
             "catalog_forward_speedup_over_compiled"
+        ),
+        "catalog_forward_win_over_compiled_on_all_runtime_cases": (
+            all_runtime_forward_wins("catalog_forward_speedup_over_compiled")
         ),
         "catalog_forward_backward_win_over_eager_on_all_cases": all_wins(
             "catalog_forward_backward_speedup_over_eager"
@@ -679,6 +696,10 @@ def merge_runs(
             "catalog_forward_backward_speedup_over_compiled"
         ),
     }
+    performance_gate_passed = (
+        decisions["direct_forward_win_on_all_runtime_cases"]
+        and decisions["catalog_forward_win_over_eager_on_all_runtime_cases"]
+    )
     return {
         "benchmark": "mps_two_site_dispatch",
         "schema": EVIDENCE_SCHEMA,
@@ -697,9 +718,12 @@ def merge_runs(
         "scalability_blockers": [
             "single-device kernel benchmark is not distributed scalability evidence"
         ],
+        "runtime_scope": "inference_forward_only",
+        "backward_measurements_are_diagnostic": True,
         "required_hosts": sorted(required_hosts),
         "required_compiler_lanes": list(COMPILER_LANES),
         **decisions,
+        "performance_gate_passed": performance_gate_passed,
         "dispatch_selection_decision": "retain_opt_in",
         "default_dispatch_blockers": [
             "catalog-route evidence excludes the downstream MPS factorization"
@@ -728,6 +752,8 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
         "scalability_blockers": [
             "single-device kernel benchmark is not distributed scalability evidence"
         ],
+        "runtime_scope": "inference_forward_only",
+        "backward_measurements_are_diagnostic": True,
         "required_compiler_lanes": list(COMPILER_LANES),
         "dispatch_selection_decision": "retain_opt_in",
         "default_dispatch_blockers": [
@@ -737,6 +763,8 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
     for field, value in expected.items():
         if payload.get(field) != value:
             raise ValueError(f"evidence field {field!r} must equal {value!r}")
+    if payload.get("performance_gate_passed") is not True:
+        raise ValueError("evidence performance_gate_passed must be true")
     hosts = _sequence(payload.get("required_hosts"), "required_hosts")
     runs = _sequence(payload.get("runs"), "runs")
     rebuilt = merge_runs(runs, required_hosts=hosts)
@@ -762,8 +790,8 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--host-label", default=socket.gethostname())
     run.add_argument("--compiler-lane", choices=COMPILER_LANES, required=True)
     run.add_argument("--source-revision", required=True)
-    run.add_argument("--warmup", type=int, default=10)
-    run.add_argument("--repeats", type=int, default=30)
+    run.add_argument("--warmup", type=int, default=100)
+    run.add_argument("--repeats", type=int, default=50)
     run.add_argument("--group-size", type=int, default=10)
     run.add_argument("--seed", type=int, default=270001)
     run.add_argument("--output", type=Path, required=True)

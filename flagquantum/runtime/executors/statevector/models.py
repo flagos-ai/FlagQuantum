@@ -82,7 +82,7 @@ class LocalDistributedStatevectorResult:
             "world_size": self.plan.world_size,
             "local_world_size": self.plan.local_world_size,
             "node_count": self.plan.node_count,
-            "n_wires": self.plan.n_wires,
+            "n_wires": self.plan.n_qubits,
             "batch_size": self.plan.bsz,
             "local_gate_count": self.local_gate_count,
             "distributed_gate_count": self.distributed_gate_count,
@@ -150,11 +150,11 @@ class StatevectorGatePlan:
 
     index: int
     name: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     layer: int
     execution: str
     communication: str
-    sharded_wires_touched: tuple[int, ...]
+    sharded_qubits_touched: tuple[int, ...]
     estimated_transfer_bytes: int = 0
 
     @property
@@ -168,7 +168,7 @@ class StatevectorFusionBlock:
 
     index: int
     gate_indices: tuple[int, ...]
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     communication_barrier: bool
     estimated_gate_width: int
 
@@ -181,7 +181,7 @@ class StatevectorExecutionSegment:
     kind: str
     gate_indices: tuple[int, ...]
     communication: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     estimated_transfer_bytes: int
     can_overlap_with_compute: bool = False
 
@@ -380,7 +380,7 @@ class StatevectorBufferPlan:
 class DistributedStatevectorPlan:
     """Full dense-state distributed execution plan."""
 
-    n_wires: int
+    n_qubits: int
     bsz: int
     world_size: int
     local_world_size: int
@@ -390,7 +390,7 @@ class DistributedStatevectorPlan:
     total_state_bytes: int
     per_rank_state_bytes: int
     rank_address_bits: int
-    sharded_wires: tuple[int, ...]
+    sharded_qubits: tuple[int, ...]
     shards: tuple[StatevectorShard, ...]
     gate_plans: tuple[StatevectorGatePlan, ...]
     fusion_blocks: tuple[StatevectorFusionBlock, ...]
@@ -475,13 +475,13 @@ class DistributedStatevectorPlan:
             "parameter_gradient_ready": False,
             "optimizer_update_semantics": "not_measured",
             "backward_uses_full_state_replay": False,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "bsz": self.bsz,
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
             "rank_address_bits": self.rank_address_bits,
-            "sharded_wires": self.sharded_wires,
+            "sharded_wires": self.sharded_qubits,
             "total_state_bytes": self.total_state_bytes,
             "per_rank_state_bytes": self.per_rank_state_bytes,
             "rank_shards": rank_shards,

@@ -1,11 +1,21 @@
 """Legalize CircuitIR instructions against an evidenced native gate set.
 
-A rewrite is chosen from two sources, most exact first: the hand-written rules
-in this module, then one-qubit Euler synthesis in `one_qubit_synthesis`, which
-applies when the target publishes a z-rotation and a pi/2 x-rotation. Synthesis
-is only equal to its source up to one global phase; see that module for why no
-basis of those two pulses can do better, and why the exact rules stay ahead of
-it.
+A rewrite is chosen from two sources: the exact named-gate equivalences in
+`basis_translation`, composed recursively until every leaf is native, and the
+one-qubit Euler and two-qubit KAK syntheses for a matrix-carrying instruction,
+which no operator schema describes. A synthesis applies only when the target
+publishes the basis it needs: a z-rotation and a pi/2 x-rotation for one qubit,
+plus a supercontrolled entangler for two. Among the rewrites that reach the
+native set the shortest wins, so a basis that can carry a gate exactly keeps its
+exact form instead of paying for the general one. A synthesized rewrite is equal
+to its source only up to one global phase, which FlagQuantum IR cannot record;
+see those modules for why.
+
+A named two-qubit gate that is not native is translated through the equivalence
+table rather than through a matrix decomposition, because the matrix of a named
+gate belongs to `flagquantum.simulation`, which this layer must not import. A
+named gate the table does not reach, and a matrix too wide for the entangler
+basis, are refused.
 """
 
 from __future__ import annotations
@@ -15,6 +25,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from functools import partial
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
@@ -32,7 +43,14 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
-from .one_qubit_synthesis import HALF_PI_PULSE_OPCODES, synthesize_one_qubit
+from .basis_translation import translate
+from .one_qubit_synthesis import (
+    HALF_PI_PULSE_OPCODES,
+    Z_ROTATION_OPCODES,
+    synthesize_one_qubit_matrix,
+)
+from .two_qubit_optimization import _split_instruction
+from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubit
 
 
 class NativeGateLegalizationError(CompilationError):
@@ -171,7 +189,7 @@ def _z_rotation_opcode(
     descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
 ) -> str | None:
     """Return the z-rotation the target publishes, or None when it has none."""
-    for opcode in ("rz", "phase", "u1"):
+    for opcode in Z_ROTATION_OPCODES:
         if opcode in descriptors:
             return opcode
     return None
@@ -187,80 +205,106 @@ def _half_pi_pulse_opcode(
     return None
 
 
-def _specialized_replacement(
+def _entangler_opcode(
+    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
+) -> str | None:
+    """Return the supercontrolled entangler the target publishes, or None.
+
+    The table is iterated rather than the target's descriptor map, because a
+    target may publish several entanglers and the choice has to be a fixed
+    function of the published set. `SUPERCONTROLLED_ENTANGLERS` is ordered so a
+    parameter-free spelling is always preferred over one that has to be applied
+    at an angle, and so the answer for a given target never depends on a mapping's
+    insertion order.
+    """
+
+    for opcode in SUPERCONTROLLED_ENTANGLERS:
+        if opcode in descriptors:
+            return opcode
+    return None
+
+
+def _matrix_replacement(
     instruction: Instruction,
+    *,
+    z_rotation: str | None,
+    pulse_opcode: str | None,
+    entangler: str | None,
 ) -> tuple[Instruction, ...] | None:
-    metadata = instruction.metadata
-    wires = instruction.wires
-    if instruction.name == "x":
-        return (
-            Instruction("h", wires, metadata=metadata),
-            Instruction("z", wires, metadata=metadata),
-            Instruction("h", wires, metadata=metadata),
+    """Rewrite a matrix-carrying instruction, which no schema table describes.
+
+    One qubit goes through Euler synthesis, two through KAK synthesis, and
+    anything wider is refused because the entangler basis reaches exactly two.
+
+    A two-qubit matrix that is a product of two single-qubit unitaries is answered
+    from the single-qubit route instead, and it is asked first. That route needs a
+    z-rotation and a pulse and no entangler at all, so it reaches an operator the
+    KAK route has to refuse on a target that publishes no entangler, and
+    `benchmarks/compiler_two_qubit_synthesis.py` measures that it is never longer
+    than KAK's answer on the same input and strictly shorter on some of it.
+    """
+
+    if z_rotation is None or pulse_opcode is None:
+        return None
+    if len(instruction.wires) == 1:
+        return synthesize_one_qubit_matrix(
+            instruction.matrix,
+            qubit=instruction.wires[0],
+            z_rotation=z_rotation,
+            pulse_opcode=pulse_opcode,
+            metadata=instruction.metadata,
         )
-    if instruction.name == "rx":
-        return (
-            Instruction("h", wires, metadata=metadata),
-            Instruction(
-                "rz",
-                wires,
-                params={"theta": instruction.params["theta"]},
-                metadata=metadata,
-            ),
-            Instruction("h", wires, metadata=metadata),
-        )
-    if instruction.name == "ry":
-        return (
-            Instruction("sdg", wires, metadata=metadata),
-            Instruction("h", wires, metadata=metadata),
-            Instruction(
-                "rz",
-                wires,
-                params={"theta": instruction.params["theta"]},
-                metadata=metadata,
-            ),
-            Instruction("h", wires, metadata=metadata),
-            Instruction("s", wires, metadata=metadata),
-        )
-    if instruction.name == "swap":
-        left, right = wires
-        return (
-            Instruction("cx", (left, right), metadata=metadata),
-            Instruction("cx", (right, left), metadata=metadata),
-            Instruction("cx", (left, right), metadata=metadata),
+    if len(instruction.wires) != 2:
+        return None
+    local = _local_replacement(
+        instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode
+    )
+    if local is not None:
+        return local
+    if entangler is not None:
+        return synthesize_two_qubit(
+            instruction.matrix,
+            qubits=instruction.wires,
+            entangler=entangler,
+            z_rotation=z_rotation,
+            pulse_opcode=pulse_opcode,
+            metadata=instruction.metadata,
         )
     return None
 
 
-def _replacement(
+def _local_replacement(
     instruction: Instruction,
-    descriptors: Mapping[str, tuple[_NativeGateDescriptor, ...]],
     *,
-    z_rotation: str | None,
-    pulse_opcode: str | None,
+    z_rotation: str,
+    pulse_opcode: str,
 ) -> tuple[Instruction, ...] | None:
-    """Return the shortest verified rewrite whose gates are all native.
+    """Synthesize a two-qubit matrix that acts on its two qubits independently.
 
-    A target that publishes a z-rotation and a pi/2 x-rotation gains the general
-    one-qubit Euler synthesis. The hand-written rewrites stay first in line, so a
-    basis where a three-gate rewrite is already native keeps it instead of paying
-    five gates for the general form. When no rewrite is fully native the shortest
-    one is returned anyway, so the caller can name the gate the target is missing.
+    None when the matrix is not such a product, which is the case the KAK route
+    owns. The two factors are each one single-qubit unitary, so each is served by
+    the one-qubit route and the result carries no entangler.
     """
-    candidates: list[tuple[Instruction, ...]] = []
-    specialized = _specialized_replacement(instruction)
-    if specialized is not None:
-        candidates.append(specialized)
-    if z_rotation is not None and pulse_opcode is not None:
-        synthesized = synthesize_one_qubit(
-            instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode
+
+    halves = _split_instruction(instruction)
+    if halves is None:
+        return None
+    replacement: list[Instruction] = []
+    for half in halves:
+        leaves = synthesize_one_qubit_matrix(
+            half.matrix,
+            qubit=half.wires[0],
+            z_rotation=z_rotation,
+            pulse_opcode=pulse_opcode,
+            metadata=half.metadata,
         )
-        if synthesized is not None:
-            candidates.append(synthesized)
-    for candidate in candidates:
-        if all(_supports(descriptors, item) for item in candidate):
-            return candidate
-    return candidates[0] if candidates else None
+        # `_matrix_replacement` only reaches here with a published z-rotation and
+        # pulse opcode, so a factor of a unitary always has a word. Refusing the
+        # whole instruction rather than half of it keeps the record honest.
+        if leaves is None:
+            return None
+        replacement.extend(leaves)
+    return tuple(replacement)
 
 
 def _identity(
@@ -315,19 +359,27 @@ def legalize_native_gates(
             instructions.append(instruction)
             continue
         if instruction.matrix is not None:
-            raise NativeGateLegalizationError(
-                f"custom matrix instruction {instruction.name!r} has no native contract"
+            replacement = _matrix_replacement(
+                instruction,
+                z_rotation=z_rotation,
+                pulse_opcode=pulse_opcode,
+                entangler=_entangler_opcode(descriptors),
             )
-        replacement = _replacement(
-            instruction,
-            descriptors,
-            z_rotation=z_rotation,
-            pulse_opcode=pulse_opcode,
-        )
-        if replacement is None:
-            raise NativeGateLegalizationError(
-                f"instruction {instruction.name!r} is not native and has no verified decomposition"
+            if replacement is None:
+                raise NativeGateLegalizationError(
+                    f"custom matrix instruction {instruction.name!r} has no native contract"
+                )
+        else:
+            replacement = translate(
+                instruction,
+                can_run=partial(_supports, descriptors),
+                z_rotation=z_rotation,
+                pulse_opcode=pulse_opcode,
             )
+            if replacement is None:
+                raise NativeGateLegalizationError(
+                    f"instruction {instruction.name!r} is not native and has no verified decomposition"
+                )
         for item in replacement:
             if not _supports(descriptors, item):
                 raise NativeGateLegalizationError(

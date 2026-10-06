@@ -13,21 +13,21 @@ from .operations import _environment_flag
 def apply_matrix_batched(
     state: torch.Tensor,
     matrix: torch.Tensor,
-    wires: tuple[int, ...],
-    n_wires: int,
+    qubits: tuple[int, ...],
+    n_qubits: int,
 ) -> torch.Tensor:
     """Apply an unbatched or circuit-batched matrix to trajectory states."""
 
     trajectories, circuit_batch, _ = state.shape
-    width = len(wires)
+    width = len(qubits)
     dimension = 2**width
-    other_wires = tuple(wire for wire in range(n_wires) if wire not in wires)
-    permutation = (0, 1) + tuple(wire + 2 for wire in wires + other_wires)
-    inverse = [0] * (n_wires + 2)
+    other_qubits = tuple(qubit for qubit in range(n_qubits) if qubit not in qubits)
+    permutation = (0, 1) + tuple(qubit + 2 for qubit in qubits + other_qubits)
+    inverse = [0] * (n_qubits + 2)
     for destination, source in enumerate(permutation):
         inverse[source] = destination
     flat = (
-        state.reshape(trajectories, circuit_batch, *((2,) * n_wires))
+        state.reshape(trajectories, circuit_batch, *((2,) * n_qubits))
         .permute(permutation)
         .reshape(trajectories * circuit_batch, dimension, -1)
     )
@@ -42,7 +42,7 @@ def apply_matrix_batched(
             "gate matrix must be unbatched or match the circuit batch dimension"
         )
     return (
-        applied.reshape(trajectories, circuit_batch, *((2,) * n_wires))
+        applied.reshape(trajectories, circuit_batch, *((2,) * n_qubits))
         .permute(tuple(inverse))
         .reshape(trajectories, circuit_batch, -1)
     )
@@ -123,15 +123,15 @@ def sample_rows(
 def apply_kraus_batched(
     state: torch.Tensor,
     operators: tuple[torch.Tensor, ...],
-    wires: tuple[int, ...],
-    n_wires: int,
+    qubits: tuple[int, ...],
+    n_qubits: int,
     generators: list[torch.Generator],
 ) -> torch.Tensor:
     """Sample and normalize a generic Kraus branch for each trajectory."""
 
     branches = torch.stack(
         [
-            apply_matrix_batched(state, operator, wires, n_wires)
+            apply_matrix_batched(state, operator, qubits, n_qubits)
             for operator in operators
         ],
         dim=2,
@@ -158,21 +158,21 @@ def apply_kraus_batched(
 def apply_amplitude_damping_batched(
     state: torch.Tensor,
     operators: tuple[torch.Tensor, ...],
-    wire: int,
-    n_wires: int,
+    qubit: int,
+    n_qubits: int,
     generators: list[torch.Generator],
 ) -> torch.Tensor:
     """Sample amplitude damping without materializing all branch states."""
 
     gamma = torch.abs(operators[1][0, 1]) ** 2
     trajectories, circuit_batch, _ = state.shape
-    other_wires = tuple(index for index in range(n_wires) if index != wire)
-    permutation = (0, 1, wire + 2) + tuple(index + 2 for index in other_wires)
-    inverse = [0] * (n_wires + 2)
+    other_qubits = tuple(index for index in range(n_qubits) if index != qubit)
+    permutation = (0, 1, qubit + 2) + tuple(index + 2 for index in other_qubits)
+    inverse = [0] * (n_qubits + 2)
     for destination, source in enumerate(permutation):
         inverse[source] = destination
     packed = (
-        state.reshape(trajectories, circuit_batch, *((2,) * n_wires))
+        state.reshape(trajectories, circuit_batch, *((2,) * n_qubits))
         .permute(permutation)
         .reshape(trajectories, circuit_batch, 2, -1)
     )
@@ -193,17 +193,17 @@ def apply_amplitude_damping_batched(
         / torch.sqrt(torch.clamp(selected_probability, min=1e-30))[..., None, None]
     )
     return (
-        packed_out.reshape(trajectories, circuit_batch, *((2,) * n_wires))
+        packed_out.reshape(trajectories, circuit_batch, *((2,) * n_qubits))
         .permute(tuple(inverse))
         .reshape_as(state)
     )
 
 
-def expectation_z(state: torch.Tensor, n_wires: int) -> torch.Tensor:
-    """Return per-trajectory Z expectations for every wire."""
+def expectation_z(state: torch.Tensor, n_qubits: int) -> torch.Tensor:
+    """Return per-trajectory Z expectations for every qubit."""
 
     indices = torch.arange(state.shape[-1], device=state.device)
-    shifts = torch.arange(n_wires - 1, -1, -1, device=state.device)
+    shifts = torch.arange(n_qubits - 1, -1, -1, device=state.device)
     signs = 1 - 2 * ((indices[:, None] >> shifts) & 1)
     return torch.matmul(torch.abs(state) ** 2, signs.to(dtype=state.real.dtype))
 

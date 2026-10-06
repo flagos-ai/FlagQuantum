@@ -80,9 +80,10 @@ from flagquantum.qec.circuit import (
     MemoryCircuit,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode
-from flagquantum.qec.dem import (
-    DetectorErrorModel,
+from flagquantum.qec.codes import CodeCheck, RepetitionCode, ancilla_bands
+from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem_construction import (
+    _FAULT_GATES,
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
@@ -139,22 +140,26 @@ def _injected_source(memory: MemoryCircuit, fired: Sequence[_Mechanism]) -> str:
     Each mechanism is injected by the Task 6 injector for its kind, into the
     *current* source rather than into the original one, because an injector
     rewrites one anchor and returns a new string. This helper only chains the
-    two injectors that exist; it is not a second injection implementation.
+    injectors that exist; it is not a second injection implementation.
     """
 
     current = memory
     for record in fired:
-        if record.kind == "data":
-            source = _inject_data_flip(
-                current, round_index=record.round_index, wire=record.wire
-            )
-        elif record.kind == "measurement":
+        if record.kind == "measurement":
             source = _inject_measurement_flip(
                 current, round_index=record.round_index, ancilla_wire=record.wire
             )
+        elif record.kind in _FAULT_GATES:
+            source = _inject_data_flip(
+                current,
+                round_index=record.round_index,
+                wire=record.wire,
+                kind=record.kind,
+            )
         else:
             # Unreachable through ``_mechanisms``; stated so a record whose kind
-            # is neither flip is refused here rather than injected as one.
+            # is neither a data family nor a measurement flip is refused here
+            # rather than injected as one.
             raise ValueError(f"unknown mechanism kind {record.kind!r}")
         current = replace(current, source=source)
     return current.source
@@ -185,15 +190,15 @@ def _measured_flips(
     sample = execution.samples.tolist()[0]
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(memory.code.checks)
     }
 
     def measurement_bit(reference: MeasurementRef) -> int:
         if reference.round_index is None:
-            return int(sample[reference.wire])
+            return int(sample[reference.qubit])
         return int(
-            classical[reference.round_index * checks + positions[reference.wire]]
+            classical[reference.round_index * checks + positions[reference.qubit]]
         )
 
     def parity(references: Sequence[MeasurementRef]) -> int:
@@ -385,11 +390,27 @@ class _SharedSupportCode:
         return 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3,)
 
     @property
@@ -397,9 +418,9 @@ class _SharedSupportCode:
         return (
             CodeCheck(
                 index=7,
-                stabilizer=Pauli(z_wires=(0, 1, 2)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3), (2, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1, 2)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3), (2, 3)),
             ),
         )
 
@@ -409,7 +430,7 @@ class _SharedSupportCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_merged_mechanisms_agree_with_sampled_rates() -> None:

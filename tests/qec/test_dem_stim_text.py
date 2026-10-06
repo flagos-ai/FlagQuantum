@@ -398,6 +398,142 @@ def test_a_separator_can_move_a_detector_flip_onto_an_observable_alone() -> None
     assert model.observable_rates().tolist() == pytest.approx([0.1])
 
 
+def test_the_suggestion_reading_splits_each_group_into_its_own_mechanism() -> None:
+    """The other reading of the same line, and the parameter is the only difference.
+
+    Upstream's ``dem_from_stim_text(dem_text, use_decomp_suggestions=True)``
+    expands a decomposed instruction into one column per component. This is that
+    reading: the groups stop being a hint about how the mechanism decomposes and
+    become mechanisms, each stated at the parent instruction's probability.
+    """
+
+    text = "detector D0\ndetector D1\ndetector D2\nerror(0.1) D0 D1 ^ D2\n"
+
+    combined = DetectorErrorModel.from_stim_text(text)
+    assert combined.errors == (DemError(probability=0.1, detectors=(0, 1, 2)),)
+
+    suggested = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+    assert suggested.errors == (
+        DemError(probability=0.1, detectors=(0, 1), observables=()),
+        DemError(probability=0.1, detectors=(2,), observables=()),
+    )
+    assert suggested.num_detectors == combined.num_detectors
+    assert suggested.num_observables == combined.num_observables
+
+
+def test_every_component_inherits_the_probability_of_the_line() -> None:
+    """One probability on the line, three mechanisms out of it."""
+
+    text = "detector D0\ndetector D1\ndetector D2\nerror(0.25) D0 ^ D1 ^ D2\n"
+    model = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+    assert model.errors == (
+        DemError(probability=0.25, detectors=(0,), observables=()),
+        DemError(probability=0.25, detectors=(1,), observables=()),
+        DemError(probability=0.25, detectors=(2,), observables=()),
+    )
+
+
+def test_the_suggestion_reading_keeps_groups_apart_where_the_default_cancels() -> None:
+    """The sharpest difference between the two readings of one line.
+
+    The line names ``D0`` twice, so the default reading cancels the detector and
+    leaves the observable flipping alone. The suggestion reading keeps the two
+    groups apart, so ``D0`` flips in one of its two mechanisms and the detector
+    rate stops being zero.
+    """
+
+    text = "detector D0\nlogical_observable L0\nerror(0.1) D0 L0 ^ D0\n"
+
+    combined = DetectorErrorModel.from_stim_text(text)
+    assert combined.errors == (
+        DemError(probability=0.1, detectors=(), observables=(0,)),
+    )
+    assert combined.detector_rates().tolist() == [0.0]
+
+    suggested = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+    assert suggested.errors == (
+        DemError(probability=0.1, detectors=(0,), observables=()),
+        DemError(probability=0.1, detectors=(0,), observables=(0,)),
+    )
+    assert suggested.observable_rates().tolist() == pytest.approx([0.1])
+    assert suggested.detector_rates().tolist() == pytest.approx([0.18])
+
+
+def test_the_suggestion_reading_is_not_an_equivalent_statement() -> None:
+    """Lossy relative to the line, and lossless relative to itself.
+
+    The decomposition a separator suggests is a set of independent mechanisms,
+    and that is what this reading returns: a model of its own, which prints and
+    re-reads exactly. What it does not do is reproduce the one mechanism the
+    line states, at the line's probability, and no amount of care in the reader
+    can make it, because the two are different distributions. The default
+    reading is the one that states the line.
+    """
+
+    text = "detector D0\ndetector D1\nerror(0.1) D0 ^ D1\n"
+    suggested = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+    # Not the line's model, and not the default reading of it either.
+    assert suggested != DetectorErrorModel.from_stim_text(text)
+    assert suggested.num_errors == 2
+
+    # But a model in its own right: its own text returns it unchanged.
+    printed = suggested.to_stim_text()
+    assert printed.count("error(") == 2
+    assert DetectorErrorModel.from_stim_text(printed) == suggested
+
+
+def test_a_separator_free_line_reads_the_same_either_way() -> None:
+    """The parameter decides about separators and about nothing else."""
+
+    for line in ("error(0.1) D0 D1", "error(0.1) D0", "error(0.1) D0 D0 D1"):
+        text = f"detector D0\ndetector D1\n{line}\n"
+        assert (
+            DetectorErrorModel.from_stim_text(text).errors
+            == DetectorErrorModel.from_stim_text(
+                text, use_decomp_suggestions=True
+            ).errors
+        )
+
+
+def test_the_suggestion_reading_refuses_a_component_that_flips_nothing() -> None:
+    """A component with no targets has no mechanism to become.
+
+    ``stim`` accepts the text, and the default reading states it as the
+    symmetric difference ``D1``. Expanding it would have to emit a mechanism
+    that flips nothing, which no model can hold, so the line is refused and the
+    combined reading is named as the route that states it.
+    """
+
+    text = "detector D0\ndetector D1\nerror(0.1) D0 D0 ^ D1\n"
+
+    combined = DetectorErrorModel.from_stim_text(text)
+    assert combined.errors == (DemError(probability=0.1, detectors=(1,)),)
+
+    with pytest.raises(ValueError, match="cannot be a mechanism of its own"):
+        DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+
+
+def test_the_suggestion_reading_splits_a_duplicated_component_into_two() -> None:
+    """The groups are not deduplicated: two groups mean two mechanisms.
+
+    The default reading of this line is refused outright, because the two groups
+    cancel and the line then flips nothing at all.
+    """
+
+    text = "detector D0\nerror(0.1) D0 ^ D0\n"
+
+    with pytest.raises(ValueError, match="must flip at least one"):
+        DetectorErrorModel.from_stim_text(text)
+
+    model = DetectorErrorModel.from_stim_text(text, use_decomp_suggestions=True)
+    assert model.errors == (
+        DemError(probability=0.1, detectors=(0,), observables=()),
+        DemError(probability=0.1, detectors=(0,), observables=()),
+    )
+
+
+@pytest.mark.parametrize("use_decomp_suggestions", [False, True])
 @pytest.mark.parametrize(
     ("targets", "refusal"),
     [
@@ -409,10 +545,17 @@ def test_a_separator_can_move_a_detector_flip_onto_an_observable_alone() -> None
         ("D0 ^D1", r"separated by spacing"),
     ],
 )
-def test_rejects_a_malformed_separator(targets: str, refusal: str) -> None:
-    """The independent reader refuses each of these too, so the shapes agree."""
+def test_rejects_a_malformed_separator(
+    targets: str, refusal: str, use_decomp_suggestions: bool
+) -> None:
+    """The independent reader refuses each of these too, so the shapes agree.
+
+    A malformed separator is malformed under either reading of a well-formed
+    one, so the parameter is crossed with the cases rather than left out.
+    """
 
     with pytest.raises(ValueError, match=refusal):
         DetectorErrorModel.from_stim_text(
-            f"detector D0\ndetector D1\nerror(0.1) {targets}\n"
+            f"detector D0\ndetector D1\nerror(0.1) {targets}\n",
+            use_decomp_suggestions=use_decomp_suggestions,
         )

@@ -1096,7 +1096,7 @@ def run_advanced(
         raise TypeError("measurements must contain MeasurementNode instances")
     from .measurements import validate_measurements
 
-    validate_measurements(requests, n_wires=source_ir.n_wires)
+    validate_measurements(requests, n_qubits=source_ir.n_wires)
     output, execution_plan = run_native(
         program,
         noise_model=noise_model,
@@ -1199,7 +1199,7 @@ def _normalize_execution_output(
     measurement_results = execute_measurements(
         output,
         requests,
-        n_wires=source_ir.n_wires,
+        n_qubits=source_ir.n_wires,
         noise_model=noise_model,
     )
     first_samples = next(

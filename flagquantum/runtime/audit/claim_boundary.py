@@ -85,7 +85,7 @@ MINIMUM_SWEPT_WIDTHS = 2
 #: The smallest parameterization any frozen release workload in this repository
 #: declares. It is derived from the contracts rather than chosen here: the
 #: statevector release path's narrowest accepted matched-speed configuration is
-#: 22 wires at depth 8 (176 leaves), the tensor-network path's is 14 wires at
+#: 22 qubits at depth 8 (176 leaves), the tensor-network path's is 14 qubits at
 #: six layers (84), and the MPS path's is 31 trainable leaves at every rung of
 #: its matched-speed ladder, so 31 is the minimum. The floor is what keeps
 #: `toy_circuit_claim_blockers` from being satisfied by a hand-written circuit

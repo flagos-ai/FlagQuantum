@@ -113,7 +113,7 @@ def execution_plan_contract(plan: ExecutionPlan) -> RuntimePlanContract:
         world_size=plan.world_size,
     )
     identity = (
-        f"{plan.analysis.n_wires}:{plan.analysis.n_instructions}:"
+        f"{plan.analysis.n_qubits}:{plan.analysis.n_instructions}:"
         f"{plan.state_mode}:{plan.world_size}:{plan.state_bytes}"
     )
     return RuntimePlanContract(
@@ -239,10 +239,17 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         runtime_config=_runtime_config_manifest(decision),
         _contract_payload_json=canonical_json(normalized),
     )
-    if normalized["extensions"]:
+    # A model arrives as an extension; an inline channel is already in
+    # `planned_program`. Both make the plan a noisy one, so the condition reads
+    # the restored program as well as the extension list. Restoring from the
+    # extension alone turned a saved inline-channel plan back into a noiseless
+    # one, and executing it returned the noiseless number.
+    from .planner import carries_noise_channels
+
+    if normalized["extensions"] or carries_noise_channels(planned_program):
         from .planner import build_noisy_execution_plan
 
-        extension = normalized["extensions"][0]
+        extension = normalized["extensions"][0] if normalized["extensions"] else None
         noisy_mps = plan.state_mode == "mps"
         resolved = normalized["resolved_options"]
         plan = replace(
@@ -257,7 +264,11 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
                 estimated_memory_bytes=(
                     plan.state_bytes * 32 if noisy_mps else plan.state_bytes
                 ),
-                noise_model_identity=str(extension["identity"]),
+                noise_model_identity=(
+                    str(extension["identity"])
+                    if extension is not None
+                    else program.content_hash
+                ),
             ),
         )
     return plan

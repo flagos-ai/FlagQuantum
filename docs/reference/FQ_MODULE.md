@@ -33,8 +33,8 @@ optimizer.step()
 result = model.execute()
 ```
 
-Request several per-wire Z features in one execution by selecting multiple
-observable wires. The result keeps the observable axis instead of reducing it:
+Request several per-qubit Z features in one execution by selecting multiple
+observable qubits. The result keeps the observable axis instead of reducing it:
 
 ```python
 features = fq.Module(
@@ -111,7 +111,7 @@ Gate requirements are discoverable without reading implementation code:
 import flagquantum.operators as fqo
 
 info = fqo.gate_info("u3")
-print(info.n_wires)          # 1
+print(info.n_qubits)         # 1
 print(info.parameters)       # ("theta", "phi", "lbd")
 print(info.parameter_shapes) # each parameter is scalar: ()
 ```

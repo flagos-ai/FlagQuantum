@@ -14,7 +14,12 @@ from collections import Counter
 import pytest
 
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import (
+    CodeCheck,
+    RepetitionCode,
+    RotatedSurfaceCode,
+    ancilla_bands,
+)
 from flagquantum.qec.pauli import Pauli
 
 pytestmark = pytest.mark.unit
@@ -44,8 +49,8 @@ def _gf2_rank(rows: list[list[int]]) -> int:
 
 
 def _symplectic(pauli: Pauli, wires: int) -> list[int]:
-    return [1 if wire in pauli.x_wires else 0 for wire in range(wires)] + [
-        1 if wire in pauli.z_wires else 0 for wire in range(wires)
+    return [1 if wire in pauli.x_qubits else 0 for wire in range(wires)] + [
+        1 if wire in pauli.z_qubits else 0 for wire in range(wires)
     ]
 
 
@@ -53,15 +58,15 @@ def _symplectic(pauli: Pauli, wires: int) -> list[int]:
 def test_check_counts_match_the_rotated_layout(distance: int) -> None:
     code = RotatedSurfaceCode(distance=distance)
     checks = code.checks
-    x_checks = sum(1 for check in checks if check.stabilizer.x_wires)
+    x_checks = sum(1 for check in checks if check.stabilizer.x_qubits)
     z_checks = len(checks) - x_checks
 
     assert code.num_data_qubits == distance * distance
     assert code.num_ancilla_qubits == distance * distance - 1
     assert len(checks) == distance * distance - 1
     assert x_checks == z_checks
-    assert code.data_wires == tuple(range(distance * distance))
-    assert code.ancilla_wires == tuple(
+    assert code.data_qubits == tuple(range(distance * distance))
+    assert code.ancilla_qubits == tuple(
         range(distance * distance, 2 * distance * distance - 1)
     )
 
@@ -111,15 +116,15 @@ def test_the_logical_observable_is_a_z_operator_outside_the_stabilizer_group(
     wires = code.num_data_qubits
     observable = code.logical_observables[0]
 
-    assert observable.z_wires
-    assert not observable.x_wires
+    assert observable.z_qubits
+    assert not observable.x_qubits
     assert observable.weight == distance
     # The declared operator is the data row ``j == 0``. Which weight-``d``
     # operator a patch declares is a convention, and the assertion pins the one
     # this record states rather than any of the equivalent choices: a column
     # would satisfy every other assertion below, because every member of row
     # zero also lies in its own column.
-    assert observable.z_wires == tuple(range(distance))
+    assert observable.z_qubits == tuple(range(distance))
     assert all(observable.commutes_with(check.stabilizer) for check in checks)
 
     rows = [_symplectic(check.stabilizer, wires) for check in checks]
@@ -137,13 +142,13 @@ def test_an_x_type_check_couples_the_ancilla_into_the_data(distance: int) -> Non
     """
 
     for check in RotatedSurfaceCode(distance=distance).checks:
-        controls = tuple(control for control, _ in check.cnot_wires)
-        targets = tuple(target for _, target in check.cnot_wires)
-        if check.stabilizer.x_wires:
-            assert controls == (check.ancilla_wire,) * len(check.cnot_wires)
+        controls = tuple(control for control, _ in check.cnot_qubits)
+        targets = tuple(target for _, target in check.cnot_qubits)
+        if check.stabilizer.x_qubits:
+            assert controls == (check.ancilla_qubit,) * len(check.cnot_qubits)
             assert targets == check.stabilizer.support
         else:
-            assert targets == (check.ancilla_wire,) * len(check.cnot_wires)
+            assert targets == (check.ancilla_qubit,) * len(check.cnot_qubits)
             assert controls == check.stabilizer.support
 
 
@@ -162,7 +167,7 @@ def test_memory_detector_count_follows_the_two_check_classes(
 
     code = RotatedSurfaceCode(distance=distance)
     memory = build_memory_circuit(code, rounds=rounds)
-    z_checks = sum(1 for check in code.checks if not check.stabilizer.x_wires)
+    z_checks = sum(1 for check in code.checks if not check.stabilizer.x_qubits)
     x_checks = len(code.checks) - z_checks
 
     assert len(memory.detectors) == z_checks * (rounds + 1) + x_checks * (rounds - 1)
@@ -207,11 +212,27 @@ class _XMemoryCode:
         return 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (2,)
 
     @property
@@ -219,9 +240,9 @@ class _XMemoryCode:
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=2,
-                cnot_wires=((0, 2), (1, 2)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=2,
+                cnot_qubits=((0, 2), (1, 2)),
             ),
         )
 
@@ -231,7 +252,7 @@ class _XMemoryCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(x_wires=(0, 1)),)
+        return (Pauli(x_qubits=(0, 1)),)
 
 
 def test_an_x_type_logical_observable_is_refused_rather_than_misread() -> None:

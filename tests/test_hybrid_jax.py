@@ -41,7 +41,7 @@ def test_jax_quantum_kernel_torch_autograd_matches_statevector():
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=2,
+        n_qubits=2,
         observable="z_sum",
     )
     loss = kernel(params)
@@ -66,7 +66,7 @@ def test_jax_quantum_kernel_parameters_can_update_between_calls():
         circuit.rx(0, theta=values[0]).ry(1, theta=values[1]).cx(0, 1)
         return circuit
 
-    kernel = compile_quantum_kernel(build, params, n_wires=2, observable_wires=(0,))
+    kernel = compile_quantum_kernel(build, params, n_qubits=2, observable_qubits=(0,))
     loss = kernel(params)
     shifted_loss = kernel(params + 0.3)
 
@@ -100,7 +100,7 @@ def test_jax_quantum_kernel_common_training_gate_set_matches_statevector():
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=3,
+        n_qubits=3,
         observable="z_sum",
     )
     loss = kernel(params)
@@ -124,7 +124,7 @@ def test_quantum_torch_layer_participates_in_optimizer_step():
     layer = QuantumTorchLayer(
         build,
         2,
-        n_wires=2,
+        n_qubits=2,
         init=torch.tensor([0.2, -0.1]),
     )
     optimizer = torch.optim.SGD(layer.parameters(), lr=0.05)
@@ -161,7 +161,7 @@ def test_jax_quantum_kernel_batched_parameters_match_per_sample_statevector():
         backend="jax",
         interface="torch",
         mode="statevector",
-        n_wires=2,
+        n_qubits=2,
         observable="z_sum",
     )
     losses = kernel(params)
@@ -192,7 +192,7 @@ def test_jax_quantum_kernel_rejects_mismatched_parameter_shape(
     def build(values: Any) -> fq.Circuit:
         return fq.Circuit(2).rx(0, theta=values[0, 0]).ry(1, theta=values[1, 2])
 
-    kernel = compile_quantum_kernel(build, torch.zeros(2, 3), n_wires=2, jit=jit)
+    kernel = compile_quantum_kernel(build, torch.zeros(2, 3), n_qubits=2, jit=jit)
     with pytest.raises(ValueError, match="parameter shape must end with"):
         kernel(torch.zeros(shape, requires_grad=True))
 
@@ -207,7 +207,7 @@ def test_jax_quantum_kernel_preserves_multiple_batch_axes(
         return fq.Circuit(1).rx(0, theta=angle)
 
     kernel = compile_quantum_kernel(
-        build, torch.zeros(sample_shape), n_wires=1, jit=jit
+        build, torch.zeros(sample_shape), n_qubits=1, jit=jit
     )
     parameters = torch.linspace(0.1, 0.8, 6).reshape(2, 3)
     if sample_shape:
@@ -237,7 +237,7 @@ def test_jax_quantum_kernel_batches_parameter_free_circuits(
         return fq.Circuit(1).x(0)
 
     kernel = compile_quantum_kernel(
-        build, torch.empty(sample_shape), n_wires=1, jit=jit
+        build, torch.empty(sample_shape), n_qubits=1, jit=jit
     )
     parameters = torch.empty(batch_shape + sample_shape, requires_grad=True)
     values = kernel(parameters)
@@ -261,7 +261,7 @@ def test_jax_quantum_kernel_rejects_double_backward(
     parameters = torch.tensor([0.3], requires_grad=True)
     inputs = torch.tensor([0.2], requires_grad=True) if accepts_inputs else None
     kernel = compile_quantum_kernel(
-        build, parameters.detach(), n_wires=1, jit=jit, accepts_inputs=accepts_inputs
+        build, parameters.detach(), n_qubits=1, jit=jit, accepts_inputs=accepts_inputs
     )
     loss = kernel(parameters, inputs).square()
     arguments = (parameters,) if inputs is None else (parameters, inputs)
@@ -297,7 +297,7 @@ def test_jax_quantum_kernel_hamiltonian_observable_matches_native_gradient():
     kernel = compile_quantum_kernel(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         hamiltonian=hamiltonian,
     )
     loss = kernel(params)
@@ -322,7 +322,7 @@ def test_quantum_torch_layer_accepts_hamiltonian_observable():
         circuit.rx(0, theta=values[0]).ry(1, theta=values[1]).cx(0, 1)
         return circuit
 
-    layer = QuantumTorchLayer(build, 2, n_wires=2, hamiltonian=hamiltonian)
+    layer = QuantumTorchLayer(build, 2, n_qubits=2, hamiltonian=hamiltonian)
     value = layer()
     value.backward()
 
@@ -350,7 +350,7 @@ def test_jax_mps_kernel_matches_native_mps_gradient():
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=4,
+        n_qubits=4,
         observable="z_sum",
         max_bond=8,
     )
@@ -392,7 +392,7 @@ def test_jax_mps_z_sum_does_not_materialize_statevector(monkeypatch):
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=4,
+        n_qubits=4,
         observable="z_sum",
         max_bond=8,
     )
@@ -437,7 +437,7 @@ def test_jax_mps_local_pauli_zz_chain_hamiltonian_uses_fastpath_and_matches_nati
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=6,
+        n_qubits=6,
         hamiltonian=hamiltonian,
         max_bond=16,
     )
@@ -483,7 +483,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=6,
+        n_qubits=6,
         hamiltonian=hamiltonian,
         max_bond=4,
         jit=False,
@@ -506,7 +506,7 @@ def test_jax_mps_cx_chain_scan_matches_stable_jax_path(monkeypatch):
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=6,
+        n_qubits=6,
         hamiltonian=hamiltonian,
         max_bond=4,
         jit=False,
@@ -541,7 +541,7 @@ def test_jax_mps_kernel_supports_complex128_compute_dtype():
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=4,
+        n_qubits=4,
         observable="z_sum",
         max_bond=8,
         compute_dtype="complex128",
@@ -578,7 +578,7 @@ def test_jax_tensor_network_kernel_matches_native_tn_gradient():
         backend="jax",
         interface="torch",
         mode="tensor_network",
-        n_wires=3,
+        n_qubits=3,
         observable="z_sum",
     )
     jax_params = params.detach().clone().requires_grad_(True)
@@ -621,7 +621,7 @@ def test_jax_tensor_network_z_sum_does_not_materialize_statevector(monkeypatch):
         backend="jax",
         interface="torch",
         mode="tensor_network",
-        n_wires=3,
+        n_qubits=3,
         observable="z_sum",
     )
     jax_params = params.detach().clone().requires_grad_(True)
@@ -673,7 +673,7 @@ def test_jax_tensor_network_kernel_remote_hamiltonian_gradient_precision():
         backend="jax",
         interface="torch",
         mode="tensor_network",
-        n_wires=4,
+        n_qubits=4,
         hamiltonian=hamiltonian,
         matmul_precision="highest",
     )
@@ -715,7 +715,7 @@ def test_jax_tensor_network_kernel_supports_complex128_compute_dtype():
         backend="jax",
         interface="torch",
         mode="tensor_network",
-        n_wires=4,
+        n_qubits=4,
         observable="z_sum",
         compute_dtype="complex128",
     )

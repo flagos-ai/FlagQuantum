@@ -28,9 +28,9 @@ class InMemoryRemoteTarget(QuantumProvider):
         self._counter = 0
 
     def discover_backends(
-        self, n_wires: int | None = None
+        self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        return (CloudBackendProfile.simulator(n_wires or 32, provider=self.provider),)
+        return (CloudBackendProfile.simulator(n_qubits or 32, provider=self.provider),)
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         validate_deployment_package(package)

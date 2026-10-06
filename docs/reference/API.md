@@ -15,12 +15,16 @@ tests, and rendered in the
 | Task | Primary interface | Result |
 | --- | --- | --- |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
+| Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
+| Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
+| Save or load OpenQASM text | `flagquantum.compiler.openqasm.emit_openqasm`, `fq.from_openqasm` | Imported program plus its measurement mapping |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
 | Execute locally or remotely | `fq.run` | `fq.ExecutionResult` |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
+| Differentiate a program and report the method | `fq.gradient` | Derivative, method, exactness, step |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -43,15 +47,55 @@ print(result.state)
 ```
 
 `n_qubits` is the preferred public name for circuit size. Positional
-`Circuit(2)`, `n_wires=2`, and the legacy `nqubits=2` remain compatible;
-conflicting aliases fail during construction. Runtime, compiler, and IR
-internals continue to use *wire* for logical mappings.
+`Circuit(2)` and the legacy `nqubits=2` remain compatible; `n_wires=2` still
+works as a deprecated alias that is removed in 0.4.0. Conflicting aliases fail
+during construction.
 
 Generated gate methods keep their concise positional form and also accept
 semantic qubit keywords. For example, `h(0)` and `h(qubit=0)` are equivalent;
 `cx(0, 1)` and `cx(control=0, target=1)` are equivalent. Symmetric two-qubit
-gates use `qubit1=` and `qubit2=`, while the generic `Circuit.gate(...)` and
-FlagQuantum IR continue to use `wires=`.
+gates use `qubit1=` and `qubit2=`, and the generic `Circuit.gate(name, qubits)`
+names its operand list `qubits` like every other gate method. A FlagQuantum IR
+payload keeps its key spelling because `IR_VERSION` is an exact-match pin: the
+instruction operand list is still read and written as `Instruction.wires`.
+
+`Circuit.compose(other, *, qubits=None, qubit_map=None)` continues a circuit with a
+program that was built on its own qubits, rewriting every instruction onto the qubits
+the caller names and returning the receiving circuit:
+
+```python
+block = fq.Circuit(2).h(0).cx(0, 1)
+circuit = fq.Circuit(4).x(0).compose(block, qubits=(1, 2))
+```
+
+`other` accepts a `fq.Circuit` or a `fq.CircuitIR`. With neither `qubits` nor
+`qubit_map` the placement is the identity. The map must name every qubit of `other`,
+must not place two of them on one target, and must stay inside the receiving circuit;
+a partial mapping is refused rather than completed by identity, because an identity
+image would move a gate silently.
+
+`Circuit.adjoint()` returns the circuit that undoes the one it is called on: the
+instructions in reverse order, each replaced by the single gate that inverts it. The
+rule belongs to the gate and is declared once in the operator schema, so a
+self-inverse gate is kept as it is, an angle is negated, and `s`/`t`/`sx` become
+`sdg`/`tdg`/`sxdg`:
+
+```python
+block = fq.Circuit(2).h(0).ry(0, 0.3).cx(0, 1)
+inverse = block.adjoint()
+[(item.name, item.params) for item in inverse.to_ir().instructions]
+# [('cx', {}), ('ry', {'theta': -0.3}), ('h', {})]
+```
+
+The block being inverted is left usable, and the result carries the same qubit
+count, batch size, device, and dtype. A gate recorded with its own matrix through
+`Circuit.unitary(...)` is inverted through that matrix. An operation with no
+unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
+classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
+the operation instead of being dropped from the inverse.
+
+Together, `compose` and `adjoint` express the block-reuse idiom: a sub-program is
+placed where it is needed, and the same sub-program undone is placed after it.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
@@ -108,7 +152,7 @@ provided name is trimmed and must not be empty. The provider-assigned task ID
 remains independent of this display name.
 
 `target_qubits` is also optional. When omitted, the selected compiler chooses a
-physical subgraph. When provided, its order maps logical wires to physical
+physical subgraph. When provided, its order maps logical qubits to physical
 qubits and compilation fails unless the current target snapshot proves that
 the selection is valid and connected. An explicit mapping is never silently
 replaced.
@@ -131,6 +175,39 @@ separate sealed jobs without changing the selected physical-qubit mapping.
 the estimator standard error, group count, per-group shots, and total shots;
 provenance records every provider task and deployment identity. Mixed outputs
 and unsupported remote outputs fail before compilation or submission.
+
+## OpenQASM interchange
+
+One program can be written as text and read back:
+
+```python
+import flagquantum as fq
+from flagquantum.compiler.openqasm import emit_openqasm
+
+text = emit_openqasm(fq.Circuit(2).h(0).cx(0, 1))
+program = fq.from_openqasm(text)
+```
+
+`emit_openqasm` writes OpenQASM 2 or 3 through `version=`. `fq.from_openqasm`
+reads the canonical subset that emitter writes and refuses everything else with
+an `OpenQASMImportError` whose `issue_code` names the reason, so nothing is
+imported approximately. Import does not execute the program.
+
+The result reports what was read: `instructions` in source order,
+`measurement_qubits` as the qubit behind each classical bit, the declared
+`version`, and the `source` text. It is not a bare `fq.Circuit`, because a
+`Circuit` cannot carry the terminal measurement that defines that mapping. Call
+`to_circuit()` for the ordinary sampling path, `to_ir()` when the measurement
+mapping must be preserved, or `to_openqasm()` to get the canonical text back:
+
+```python
+counts = fq.run(program.to_circuit(), outputs=fq.counts(), shots=256).counts[0]
+```
+
+Import accepts one quantum register and one classical register, requires bound
+numeric parameters, refuses `barrier` and `reset`, and requires the measurement
+block to be terminal. It reads `U` as `u3`, because OpenQASM 3 has no two-angle
+gate, and accepts `pow(-1) @ sx` as the one inverse the emitter writes.
 
 ## Optimize a program
 
@@ -225,6 +302,125 @@ sections may grow compatibly. `TrainingResult.final_loss` and its versioned
 The [examples index](../../examples/README.md) provides runnable statevector,
 MPS, JAX, distributed, and deployment workflows.
 
+## Differentiate a program
+
+`fq.train` covers a training loop. When the derivative itself is the question,
+`fq.gradient` takes the same program and parameter tensor and reports both the
+derivative and how it was obtained:
+
+```python
+import flagquantum as fq
+import torch
+
+def build_circuit(parameters):
+    return fq.Circuit(1).ry(0, theta=parameters[0])
+
+def loss(circuit):
+    return fq.run(circuit, outputs=fq.expectation(fq.Z(0))).expectations[0]
+
+parameters = torch.tensor([0.3], dtype=torch.float64)
+result = fq.gradient(build_circuit, parameters, loss)
+```
+
+`result.gradient` is detached, so it can be fed to an optimizer or a report
+without extending the autograd tape. `result.method` names the route that ran,
+`result.exact` says whether that route is exact or a declared approximation, and
+`result.step` records the displacement an approximation actually used.
+
+Accepted `method` values are `"auto"`, `"autograd"`, `"parameter_shift"`,
+`"finite_difference"`, and `"spsa"`. `"auto"` measures the program instead of
+declaring a route: it probes for an autograd graph, and only falls back to the
+shift rule or to a numerical difference when there is none. A program that
+cannot use a route is not silently rerouted, so read `result.method` rather than
+assuming the route that was requested.
+
+`"autograd"` and `"parameter_shift"` are exact. `"finite_difference"` and
+`"spsa"` are approximations that need a positive finite `step`; `"spsa"` also
+takes `directions` and `generator` and is the only method that does. Passing
+`step` to an exact method is refused rather than ignored.
+
+`method="adjoint"` is refused. FlagQuantum has no standalone adjoint entry
+point: the reversible adjoint sweep is the backward pass behind PyTorch
+autograd, and no result reports whether backward used it. Use `"autograd"` and
+read the execution mode instead.
+
+Differentiation needs an expectation value, which the stabilizer mode cannot
+serve. `"statevector"`, `"mps"`, and `"tensor_network"` all work and agree,
+because the mode selects how amplitudes are stored and not what the derivative
+is:
+
+```python
+def loss_in(mode):
+    def loss(circuit):
+        result = fq.run(
+            circuit,
+            options=fq.ExecutionOptions(mode=mode),
+            outputs=fq.expectation(fq.Z(0)),
+        )
+        return result.expectations[0]
+
+    return loss
+
+assert torch.allclose(
+    fq.gradient(build_circuit, parameters, loss_in("mps")).gradient,
+    fq.gradient(build_circuit, parameters, loss_in("statevector")).gradient,
+)
+```
+
+## Optimize without a gradient
+
+When the objective is a sampled measurement — or any callable whose only accessible
+value is a scalar — there is no autograd graph to differentiate and no exact
+gradient to hand a PyTorch optimizer.
+`flagquantum.algorithms.SPSAOptimizer` minimizes such an objective from two
+evaluations per step, whatever the parameter count:
+
+```python
+import torch
+import flagquantum as fq
+from flagquantum import algorithms as fqa
+
+def sampled_energy(values):
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    circuit = circuit.ry(0, values[0]).ry(1, values[1]).cx(0, 1)
+    outputs = fq.expectation(fq.Z(0) + fq.Z(1))
+    return -fq.run(circuit, outputs=outputs).expectation().sum()
+
+optimizer = fqa.SPSAOptimizer(
+    maxiter=120,
+    perturbation=0.25,
+    generator=torch.Generator().manual_seed(13),
+)
+values = torch.full((2,), 0.4, dtype=torch.float64)
+for _ in range(120):
+    values = optimizer.step(sampled_energy, values)
+```
+
+The objective is a plain callable, not an `fq.Module`, and the optimizer never
+inspects it. `step(objective, parameters)` applies one update,
+`step_and_cost(objective, parameters)` also returns the cost read at the
+pre-update parameters, and `estimate_gradient(objective, parameters)` returns the
+estimate without advancing. `optimizer.evaluations` reports the objective calls
+spent.
+
+`*_exponent` parameters keep Spall's names for what they control:
+`parameter_gain_exponent` is the published `alpha` (`0.602` by default),
+`perturbation_exponent` is `gamma` (`0.101`), `perturbation` is `c`,
+`stability` is `A`, and `parameter_gain` is `a`. Passing `maxiter` alone derives
+`stability` and a `parameter_gain` whose first step is `0.05`.
+
+**The estimate is biased, so it is not a gradient.** The update it produces is an
+approximation of a gradient step, and an objective with an exact gradient is
+cheaper and more accurate through autograd or parameter shift. The reason to use
+this unit is the cost: two evaluations per step instead of `2 * n`. The
+perturbation comes from the `torch.Generator` the caller passes, so a seeded run
+replays; without one, the draw is not reproducible from the call site. Every
+refusal — a missing gain sequence, a non-positive perturbation, an objective that
+returns anything but one finite scalar, or an objective that writes into the
+tensor it is handed — is a `flagquantum.errors.ValidationError` raised before the
+objective runs. `SPSAOptimizer` lives in `flagquantum.algorithms` and carries no
+root-level `fq.` name.
+
 ## Errors
 
 Catch stable lifecycle categories from `flagquantum.errors`:
@@ -276,7 +472,7 @@ bit_samples = result.require_samples()
 ```
 
 The public output factories are `expectation`, `probabilities`, `samples`, and
-`counts`. Sampling and counts accept computational-basis wires or one
+`counts`. Sampling and counts accept computational-basis qubits or one
 unweighted Pauli product, such as `fq.samples(fq.X(0) @ fq.Y(1))`, and require a
 positive shot count. Use `result.expectation()`, `result.expectations`,
 `result.probabilities`, `result.samples`, and `result.counts` for the ordinary
@@ -325,18 +521,19 @@ the plan. The first public alpha candidate supports stable noisy planning for
 `mode="auto"` and `mode="density_matrix"`; unsupported mode combinations fail
 during planning.
 
-`probabilities` computes an exact joint marginal over the requested wires.
+`probabilities` computes an exact joint marginal over the requested qubits.
 A statevector or density-matrix result reduces the distribution it already
 carries — the squared amplitudes or the diagonal — over the complement of those
-wires, which is one sum over `2**n_wires` values, and the surviving axes are
+qubits, which is one sum over `2**n_qubits` values, and the surviving axes are
 returned in the order the request named them. A marginal whose total is not one
 is normalised, so a dense result that was handed in unnormalised still returns a
 distribution. An MPS or tensor-network result keeps the parity route, because
 reading a distribution out of one means materialising a dense state it exists to
 avoid; so does a target that exposes only `expectation_ps`, which recovers the
-marginal from `2**len(wires)` Pauli-Z contractions. The default limit of eight
-wires bounds the marginal width itself; callers must set `max_marginal_wires`
-explicitly to request a wider one.
+marginal from `2**len(qubits)` Pauli-Z contractions. The default limit of eight
+qubits bounds the marginal width itself; the `max_marginal_wires` key on a
+measurement request raises it, and it keeps its spelling because it crosses a
+request boundary that moves only with a request-schema version.
 
 Core IR measurement nodes remain available to Runtime implementers for advanced
 capabilities such as bounded postselection, but are intentionally absent from
@@ -519,7 +716,7 @@ environment:
 from flagquantum.benchmarking.simulator_compare import build_workload
 from flagquantum.ecosystem.simulators import recommend
 
-decision = recommend(build_workload(n_wires=22, layers=2))
+decision = recommend(build_workload(n_qubits=22, layers=2))
 if decision.status == "recommended":
     print(decision.recommended_engine)
 ```
@@ -533,7 +730,7 @@ or CPU environment, or an ineligible dependency set returns a structured
 `insufficient_evidence` decision. Applications can explicitly set
 `calibration_budget_seconds` to run the exact unknown circuit on installed
 bridges, verify statevector equality, rank stable live medians, and cache that
-decision for the current process. Profile-only `recommend(n_wires=22)` queries
+decision for the current process. Profile-only `recommend(n_qubits=22)` queries
 remain available for table inspection but are explicitly not circuit-bound. See
 [Evidence-based simulator advisor](../guides/SIMULATOR_ADVISOR.md) for the
 initial ARM64 evidence scope and conservative native tie policy.
@@ -554,9 +751,9 @@ round_trip = to_pennylane(ir)
 
 The v1 conversion adapter is intentionally static and complex128-first. It
 supports the gate map recorded in `contracts/pennylane-interop-contract.toml`,
-bound real scalar parameters, and contiguous integer wires. QNodes, embedded
+bound real scalar parameters, and contiguous integer qubits. QNodes, embedded
 shots and measurement processes, autograd bridges, and symbolic parameters
-remain out of scope and fail closed. Nonstandard wire labels can only be
+remain out of scope and fail closed. Nonstandard qubit labels can only be
 flattened with an explicit `allow_lossy=True` report. PennyLane objects do not
 cross into the compiler, PyTorch runtime, Torch-FL, CUDA, vendor accelerator,
 or QPU layers.
@@ -643,7 +840,7 @@ Reverse conversion, symbolic or non-finite parameters, measurements, noise,
 control flow, kernel arguments, unsupported gates, and lossy export fail closed
 with machine-readable diagnostics. CUDA-Q objects remain inside
 `flagquantum.ecosystem.cudaq`. Statevector conformance explicitly reverses bit
-axes because CUDA-Q wire zero is least-significant while FlagQuantum wire zero
+axes because CUDA-Q wire zero is least-significant while FlagQuantum qubit zero
 is most-significant.
 
 ### Qiskit IR interoperability
@@ -679,7 +876,7 @@ does not import Qiskit.
 Custom unitary matrices on one to three qubits are supported in both
 directions. The adapter reverses the local input and output bit axes because
 Qiskit treats the first qarg as the least-significant local bit while
-FlagQuantum treats the first instruction wire as the most-significant local
+FlagQuantum treats the first instruction qubit as the most-significant local
 bit. Shape, finite-value, unitarity, and width checks fail closed with
 machine-readable issue codes before a matrix crosses the adapter boundary.
 

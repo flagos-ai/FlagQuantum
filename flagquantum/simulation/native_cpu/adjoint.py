@@ -40,7 +40,7 @@ def _wide_rotation_tiles_enabled() -> bool:
     }
 
 
-def _rotation_segment_tile_wires() -> int:
+def _rotation_segment_tile_qubits() -> int:
     """Return the native rotation tile width, including the legacy rollback."""
 
     return 11 if _wide_rotation_tiles_enabled() else 2
@@ -69,6 +69,12 @@ def _rotation_pair_fast_path_enabled() -> bool:
 def _flat_rotation_pair_simd_enabled() -> bool:
     return os.getenv(
         "FQ_NATIVE_CPU_ADJOINT_FLAT_PAIR_SIMD", "1"
+    ).strip().lower() not in {"0", "false", "off", "no"}
+
+
+def _euler_post_reduction_enabled() -> bool:
+    return os.getenv(
+        "FQ_NATIVE_CPU_ADJOINT_EULER_POST_REDUCTION", "1"
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
@@ -141,10 +147,10 @@ def native_cpu_observable_rotation_boundary_available() -> bool:
     ).strip().lower() not in {"0", "false", "off", "no"}
 
 
-def native_cpu_rotation_tile_wires() -> int:
+def native_cpu_rotation_tile_qubits() -> int:
     """Return the active native adjoint rotation tile width."""
 
-    return _rotation_segment_tile_wires()
+    return _rotation_segment_tile_qubits()
 
 
 def _load_extension() -> bool:
@@ -246,9 +252,9 @@ def fused_rotation_adjoint_(
     matrix: torch.Tensor,
     *,
     name: str,
-    wire: int,
-    second_wire: int | None = None,
-    n_wires: int,
+    qubit: int,
+    second_qubit: int | None = None,
+    n_qubits: int,
 ) -> torch.Tensor | None:
     """Mutate ket and adjoint to the pre-gate state and return one VJP.
 
@@ -266,7 +272,7 @@ def fused_rotation_adjoint_(
         or ket.dtype not in {torch.complex64, torch.complex128}
         or adjoint.dtype != ket.dtype
         or matrix.dtype != ket.dtype
-        or (name == "rzz" and second_wire is None)
+        or (name == "rzz" and second_qubit is None)
         or not ket.is_contiguous()
         or not adjoint.is_contiguous()
         or not matrix.is_contiguous()
@@ -279,9 +285,9 @@ def fused_rotation_adjoint_(
                 ket,
                 adjoint,
                 matrix,
-                wire,
-                -1 if second_wire is None else second_wire,
-                n_wires,
+                qubit,
+                -1 if second_qubit is None else second_qubit,
+                n_qubits,
                 gate_kind,
             ),
         )
@@ -292,13 +298,13 @@ def _fused_rotation_segment_adjoint_result(
     adjoint: torch.Tensor,
     angles: torch.Tensor,
     gate_kinds: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     aggregate_shared_parameter: bool = False,
     rzz_angles: torch.Tensor | None = None,
-    rzz_first_wires: torch.Tensor | None = None,
-    rzz_second_wires: torch.Tensor | None = None,
+    rzz_first_qubits: torch.Tensor | None = None,
+    rzz_second_qubits: torch.Tensor | None = None,
     fuse_preceding_hadamards: bool = False,
     observable_weights: torch.Tensor | None = None,
     cx_index: torch.Tensor | None = None,
@@ -307,27 +313,27 @@ def _fused_rotation_segment_adjoint_result(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
     """Run the native rotation adjoint with an optional preceding CX gather."""
 
-    rzz_tensors = (rzz_angles, rzz_first_wires, rzz_second_wires)
+    rzz_tensors = (rzz_angles, rzz_first_qubits, rzz_second_qubits)
     if (
         not native_cpu_rotation_segment_available()
         or ket.device.type != "cpu"
         or adjoint.device.type != "cpu"
         or angles.device.type != "cpu"
         or gate_kinds.device.type != "cpu"
-        or wires.device.type != "cpu"
+        or qubits.device.type != "cpu"
         or ket.dtype not in {torch.complex64, torch.complex128}
         or adjoint.dtype != ket.dtype
         or angles.dtype
         != (torch.float32 if ket.dtype == torch.complex64 else torch.float64)
         or gate_kinds.dtype != torch.int64
-        or wires.dtype != torch.int64
+        or qubits.dtype != torch.int64
         or angles.ndim != 1
         or angles.shape[0] < 2
         or angles.shape[0] > (256 if _wide_rotation_tiles_enabled() else 48)
         or gate_kinds.shape != angles.shape
-        or wires.shape != angles.shape
+        or qubits.shape != angles.shape
         or not all(
-            item.is_contiguous() for item in (ket, adjoint, angles, gate_kinds, wires)
+            item.is_contiguous() for item in (ket, adjoint, angles, gate_kinds, qubits)
         )
         or (
             any(item is None for item in rzz_tensors)
@@ -338,16 +344,16 @@ def _fused_rotation_segment_adjoint_result(
             and (
                 not native_cpu_rotation_rzz_fusion_available()
                 or rzz_angles.dtype != angles.dtype
-                or rzz_first_wires is None
-                or rzz_second_wires is None
-                or rzz_first_wires.dtype != torch.int64
-                or rzz_second_wires.dtype != torch.int64
+                or rzz_first_qubits is None
+                or rzz_second_qubits is None
+                or rzz_first_qubits.dtype != torch.int64
+                or rzz_second_qubits.dtype != torch.int64
                 or rzz_angles.ndim != 1
-                or rzz_first_wires.shape != rzz_angles.shape
-                or rzz_second_wires.shape != rzz_angles.shape
+                or rzz_first_qubits.shape != rzz_angles.shape
+                or rzz_second_qubits.shape != rzz_angles.shape
                 or not rzz_angles.is_contiguous()
-                or not rzz_first_wires.is_contiguous()
-                or not rzz_second_wires.is_contiguous()
+                or not rzz_first_qubits.is_contiguous()
+                or not rzz_second_qubits.is_contiguous()
             )
         )
         or (
@@ -376,7 +382,7 @@ def _fused_rotation_segment_adjoint_result(
                 not native_cpu_compact_cx_index_available()
                 or cx_images.device.type != "cpu"
                 or cx_images.dtype != torch.int64
-                or cx_images.shape != (n_wires,)
+                or cx_images.shape != (n_qubits,)
                 or not cx_images.is_contiguous()
             )
         )
@@ -391,19 +397,20 @@ def _fused_rotation_segment_adjoint_result(
                 adjoint,
                 angles,
                 gate_kinds,
-                wires,
-                n_wires,
+                qubits,
+                n_qubits,
                 aggregate_shared_parameter,
-                _rotation_segment_tile_wires(),
+                _rotation_segment_tile_qubits(),
                 _rotation_segment_parallel_grain(),
                 _rotation_pair_fast_path_enabled(),
                 _flat_rotation_pair_simd_enabled(),
+                _euler_post_reduction_enabled(),
                 restore_state,
                 fuse_preceding_hadamards
                 and native_cpu_adjoint_rzz_h_fusion_available(),
                 rzz_angles,
-                rzz_first_wires,
-                rzz_second_wires,
+                rzz_first_qubits,
+                rzz_second_qubits,
                 observable_weights,
                 cx_index,
                 cx_images,
@@ -416,30 +423,30 @@ def fused_rotation_segment_adjoint_(
     adjoint: torch.Tensor,
     angles: torch.Tensor,
     gate_kinds: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     aggregate_shared_parameter: bool = False,
     rzz_angles: torch.Tensor | None = None,
-    rzz_first_wires: torch.Tensor | None = None,
-    rzz_second_wires: torch.Tensor | None = None,
+    rzz_first_qubits: torch.Tensor | None = None,
+    rzz_second_qubits: torch.Tensor | None = None,
     fuse_preceding_hadamards: bool = False,
     observable_weights: torch.Tensor | None = None,
     restore_state: bool = True,
 ) -> torch.Tensor | None:
-    """Undo a multi-wire RX/RY/RZ segment and return one VJP per gate."""
+    """Undo a multi-qubit RX/RY/RZ segment and return one VJP per gate."""
 
     result = _fused_rotation_segment_adjoint_result(
         ket,
         adjoint,
         angles,
         gate_kinds,
-        wires,
-        n_wires=n_wires,
+        qubits,
+        n_qubits=n_qubits,
         aggregate_shared_parameter=aggregate_shared_parameter,
         rzz_angles=rzz_angles,
-        rzz_first_wires=rzz_first_wires,
-        rzz_second_wires=rzz_second_wires,
+        rzz_first_qubits=rzz_first_qubits,
+        rzz_second_qubits=rzz_second_qubits,
         fuse_preceding_hadamards=fuse_preceding_hadamards,
         observable_weights=observable_weights,
         restore_state=restore_state,
@@ -453,9 +460,9 @@ def fused_cx_rotation_segment_adjoint(
     cx_index: torch.Tensor | None,
     angles: torch.Tensor,
     gate_kinds: torch.Tensor,
-    wires: torch.Tensor,
+    qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     aggregate_shared_parameter: bool = False,
     observable_weights: torch.Tensor | None = None,
     cx_images: torch.Tensor | None = None,
@@ -468,8 +475,8 @@ def fused_cx_rotation_segment_adjoint(
         adjoint,
         angles,
         gate_kinds,
-        wires,
-        n_wires=n_wires,
+        qubits,
+        n_qubits=n_qubits,
         aggregate_shared_parameter=aggregate_shared_parameter,
         observable_weights=observable_weights,
         cx_index=cx_index,
@@ -482,10 +489,10 @@ def fused_rzz_segment_adjoint_(
     ket: torch.Tensor,
     adjoint: torch.Tensor,
     angles: torch.Tensor,
-    first_wires: torch.Tensor,
-    second_wires: torch.Tensor,
+    first_qubits: torch.Tensor,
+    second_qubits: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     aggregate_shared_parameter: bool = False,
 ) -> torch.Tensor | None:
     """Undo a commuting RZZ segment and return one VJP per gate."""
@@ -499,14 +506,14 @@ def fused_rzz_segment_adjoint_(
         or adjoint.dtype != ket.dtype
         or angles.device.type != "cpu"
         or angles.dtype != real_dtype
-        or first_wires.device.type != "cpu"
-        or second_wires.device.type != "cpu"
-        or first_wires.dtype != torch.int64
-        or second_wires.dtype != torch.int64
+        or first_qubits.device.type != "cpu"
+        or second_qubits.device.type != "cpu"
+        or first_qubits.dtype != torch.int64
+        or second_qubits.dtype != torch.int64
         or angles.numel() < 2
         or not all(
             item.is_contiguous()
-            for item in (ket, adjoint, angles, first_wires, second_wires)
+            for item in (ket, adjoint, angles, first_qubits, second_qubits)
         )
     ):
         return None
@@ -517,9 +524,9 @@ def fused_rzz_segment_adjoint_(
                 ket,
                 adjoint,
                 angles,
-                first_wires,
-                second_wires,
-                n_wires,
+                first_qubits,
+                second_qubits,
+                n_qubits,
                 aggregate_shared_parameter,
             ),
         )

@@ -12,11 +12,11 @@ for the whole program, and `routing.py` materializes that plan into Core
 the SABRE layout pass of routing the reversed program, and therefore restores the
 output layout with an explicit SWAP sequence instead of replaying the forward
 SWAPs in reverse.
-The planner swaps only between wires the program owns, so it plans on the
-coupling subgraph those wires induce rather than on the whole device. A device
+The planner swaps only between qubits the program owns, so it plans on the
+coupling subgraph those qubits induce rather than on the whole device. A device
 wider than the program is therefore supported exactly as far as the program's own
-wires connect it, and a program that the device connects only through a padding
-wire is refused rather than costed against a route the plan cannot emit. Routing
+qubits connect it, and a program that the device connects only through a padding
+qubit is refused rather than costed against a route the plan cannot emit. Routing
 through a physical ancilla remains the unsupported case it is for the
 shortest-path strategies.
 The beam search Qiskit ships as `LookaheadSwap` was ported and measured against
@@ -28,7 +28,7 @@ measurement, so the search does not need to be rebuilt to re-test the decision.
 The randomized layer-permutation search Qiskit shipped as `StochasticSwap` and
 removed in 2.0 was ported and measured the same way, and rejected on cost too. It
 is a correct planner -- the placements it records are the replay of its own SWAPs,
-and every two-wire operation it places sits on a device edge -- but it retains
+and every two-qubit operation it places sits on a device edge -- but it retains
 1.617 times the SWAPs `sabre_layout` retains and beats that strategy on none of the
 140 measured programs. Raising the trial count does not close the gap, and
 Qiskit's own compiled implementation of the same algorithm retains 0.5% fewer
@@ -36,7 +36,7 @@ SWAPs on the same basis -- effectively the same count -- so the shortfall belong
 to the algorithm rather than to the port. `benchmarks/compiler_stochastic_swap.py` holds that measurement, including
 the independent replay of every plan it produces.
 `layout.py` owns the logical-to-physical `Layout` value and the two
-transformations over it: applying a layout to a program by relabelling its wires,
+transformations over it: applying a layout to a program by relabelling its qubits,
 and removing the trailing restore SWAPs a routed program ends with. A routing
 strategy always returns a program that ends on the identity layout, because
 target legalization and the deployment routing evidence both require that
@@ -49,15 +49,49 @@ routing result to hand back to legalization.
 internal backend/operator capability registry used before lowering or
 serialization. `native_gate_legalization.py` validates evidenced native-gate
 descriptors and applies the bounded, verified CircuitIR decompositions.
+`basis_translation.py` owns the equivalence table and the deterministic search
+behind the named-instruction path of those decompositions: it holds eighteen
+exact identities from named opcodes to named opcodes, composes them so a rule
+whose leaves are themselves rewritable still resolves, and introduces no angle
+the source instruction did not carry. It is a private helper, not an
+expert-facing entry point, and it exists because a named gate has no matrix on
+this layer.
 `one_qubit_synthesis.py` owns the one-qubit Euler angles behind those
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
 expert-facing entry point.
+`one_qubit_optimization.py` owns the same-wire run fold that
+`pipeline._optimize_to_fixed_point` runs beside the identity, self-inverse, and
+adjacent-rotation passes: it composes a maximal run of single-qubit gates on one
+wire into one `u3`, plus a `phase` or an `rz` for any determinant a bare `u3`
+cannot carry, and it is a private helper. It is exact, because FlagQuantum IR has
+no global-phase field for a dropped phase to go to, and it declines a run one
+z-rotation/pulse alphabet already spells, because the target lowering would
+re-spell the fold into more gates than the run had. Its convention table, which
+resolves the three opcodes whose runtime matrix is not already in the `U3`
+convention `one_qubit_synthesis.py` tabulates, is pinned against
+`flagquantum.simulation` by
+`tests/unit/test_compilation_one_qubit_optimization.py`; this layer may not
+import that module.
+`two_qubit_synthesis.py` owns the two-qubit KAK angles, the entangler table, and
+the entangler cost behind the same decompositions: it turns a 4x4 unitary into a
+supercontrolled entangler repeated one to three times, with one one-qubit factor
+between each, and it too is a private helper. The table holds every declared
+arity-2 opcode that reaches a supercontrolled Weyl point together with the angle
+it has to be applied at, so a target whose only two-qubit gate is an interaction
+rotation is synthesizable. It takes a matrix rather than an instruction, because
+the matrix of a named two-qubit gate belongs to `flagquantum.simulation`, which
+this layer must not import. The three parameter-free entangler matrices and the
+closed form of the rotation family are the only gate matrices it holds, and
+`tests/unit/test_compilation_two_qubit_synthesis.py` pins them entry-by-entry
+against that table. Its input is a matrix, so a named two-qubit opcode reaches it
+only after `basis_translation.py` has rewritten it or has reported the gate the
+target is missing; the two paths are ordered, not alternative.
 `topology_legalization.py` applies the existing router to one explicit coupling
 map and verifies edge legality, restored output layout, bounded growth, and
 deterministic evidence.
 `schedule_legalization.py` constructs deterministic logical ASAP layers with
-explicit wire and classical-data dependencies. Dynamic operations and channels
+explicit qubit and classical-data dependencies. Dynamic operations and channels
 remain conservative barriers; this is not target timing or pulse scheduling.
 `target_emission.py` gates the existing OpenQASM and QCIS text emitters behind
 completed target legalization and binds deterministic emission audit facts. Its
@@ -103,8 +137,20 @@ expert-facing entry points. Change or compose them through `optimize`.
 - Change operator/backend lowering capabilities in `operator_lowering.py`.
 - Change native gate matching and verified decompositions in
   `native_gate_legalization.py`.
+- Change a named-opcode identity or the order the search tries them in
+  `basis_translation.py`; re-run
+  `tests/unit/test_compilation_basis_translation.py`, which pins every entry
+  against the runtime, before touching anything else.
+- Run `python -m examples.compiler_synthesis` before and after changing a
+  synthesis leaf form. It executes each emitted leaf against the original
+  program, so it localizes a broken form faster than a full test file.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
   `one_qubit_synthesis.py`.
+- Change a state-preparation ladder, its pulse emitter, or its refusal set in
+  `state_preparation_synthesis.py`.
+- Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in
+  `two_qubit_synthesis.py`; the example prints the entangler count, so a cost
+  change is visible without reading a test.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in

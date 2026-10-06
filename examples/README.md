@@ -13,12 +13,16 @@ Examples driven by the root-level `fq` alias use:
 These examples do not use that alias:
 
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
-  `quantum_kernel.py`, `feature_selection.py`, `qarm.py` and `svd.py`, which
-  import the unit they demonstrate from the subpackage surface because
-  `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
-  [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md) is the per-unit
-  reference they follow, and the place each unit's advantage premise is recorded
-  in full.
+  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
+  `error_mitigation.py`, which import the unit they demonstrate from the
+  subpackage surface because `flagquantum.algorithms.<unit>` carries no
+  root-level `fq.` name.
+  [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside
+  that directory: it imports its optimizer from the subpackage surface and also
+  `import flagquantum as fq`, because the objective it minimizes is a circuit it
+  has to build and run. [`docs/guides/ALGORITHMS.md`](../docs/guides/ALGORITHMS.md)
+  is the per-unit reference they follow, and the place each unit's advantage
+  premise is recorded in full.
 - [`extensions/reference_extensions.py`](extensions/reference_extensions.py) and
   [`extensions/reference_compiler_extension.py`](extensions/reference_compiler_extension.py)
   — they import the extension and ecosystem APIs, and the second also imports
@@ -73,6 +77,22 @@ fixed point, and compares the optimized program with the original numerical
 result. It uses `compiler.optimize`; target-aware lowering and routing belong to
 `compiler.compile`.
 
+To rewrite gates a target cannot run into the gates that target publishes:
+
+```bash
+python -m examples.compiler_synthesis
+```
+
+This example declares a target basis (a z-rotation, a pi/2 pulse about `x`, and
+one entangler) and then spells an `h`, a `swap`, and a four-amplitude state in
+that basis. Each case executes the rewrite next to the original on the shipped
+statevector engine, removes the global phase a synthesis result cannot record
+in FlagQuantum IR, and prints the residual that remains. It also prints what the
+boundary refuses -- a non-supercontrolled entangler, a z-rotation that is not
+entrywise exact, and a pulse opcode the module cannot emit -- because a refusal
+is the boundary's answer, not a fallback. The three entry points are reached by
+module path; none of them is a stable `fq.compiler` export.
+
 To exercise the optional single-GPU Triton kernel for local one-qubit gates:
 
 ```bash
@@ -83,8 +103,8 @@ FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
 The example uses the public `flagquantum.runtime.run_distributed` entry point.
 It compares the rank-owned CUDA state with a CPU reference, requires the runtime
 to select Triton, and prints the measured compiler distribution and integration
-path. On one GPU, every circuit wire is local. In a sharded statevector, this
-kernel is eligible only for a wire whose amplitude pairs remain on the same
+path. On one GPU, every circuit qubit is local. In a sharded statevector, this
+kernel is eligible only for a qubit whose amplitude pairs remain on the same
 rank. The ordinary single-GPU `fq.run(..., mode="statevector")` path currently
 uses the local simulator instead of this distributed-statevector kernel.
 
@@ -95,7 +115,7 @@ python -m examples.target_aware_compilation
 ```
 
 The example targets a five-qubit line, checks every emitted two-qubit operation
-against that connectivity, verifies logical-wire restoration, and executes the
+against that connectivity, verifies logical-qubit restoration, and executes the
 compiled IR against the original result.
 
 ## Start in one minute
@@ -128,6 +148,7 @@ boundaries are listed in the capability catalog.
 | Run one quantum algorithm unit end to end | [Algorithm examples](algorithms/README.md) and the [algorithms guide](../docs/guides/ALGORITHMS.md) | Demonstration-scale units, subpackage surface |
 | Verify the local CPU or one-GPU path | [Single-machine quantum AI](single_machine_quantum_ai/README.md) | Supported local workflows |
 | Train a local statevector VQE | [`01_vqe_statevector.py`](single_machine_quantum_ai/01_vqe_statevector.py) | Exact differentiable simulation |
+| Compare gradient methods and read the one that ran | [Gradient methods](gradient_methods/README.md) | One entry point, reported method |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |

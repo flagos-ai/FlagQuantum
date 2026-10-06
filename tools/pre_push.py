@@ -112,6 +112,18 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_interop_capability_gap_matrix.py"),
         ),
         Check(
+            "construction-time composition contract",
+            (python_executable, "tools/check_circuit_composition_contract.py"),
+        ),
+        Check(
+            "OpenQASM import contract",
+            (python_executable, "tools/check_openqasm_import_contract.py"),
+        ),
+        Check(
+            "qubit vocabulary ledgers",
+            (python_executable, "tools/check_qubit_vocabulary.py"),
+        ),
+        Check(
             "Double-Single FP32 contract",
             (python_executable, "tools/check_double_single_contract.py"),
         ),
@@ -196,6 +208,16 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         Check(
             "required-check contract",
             (python_executable, "tools/validate_required_checks.py"),
+        ),
+        Check(
+            # This gate reads checked-in evidence and the git object database, so it
+            # runs anywhere the repository is, and it is the only reader of the
+            # revisions a benchmark artifact records. A change that replaces an
+            # artifact's recorded revision and leaves `evidence-revision-origins.toml`
+            # naming the old one passes every other check in this list, so the one
+            # place it can be caught before the branch is published is here.
+            "evidence revision provenance",
+            (python_executable, "tools/check_evidence_revisions.py"),
         ),
         Check(
             "multi-team ownership policy",

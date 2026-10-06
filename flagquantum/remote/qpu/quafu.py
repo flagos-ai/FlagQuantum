@@ -267,7 +267,7 @@ class QuafuProvider(HttpQuantumProvider):
             if not isinstance(name, str) or not name.strip():
                 raise RuntimeError("quafu task API device has no name")
             if type(capacity) is not int or capacity <= 0:
-                capacity = n_qubits or self.default_n_wires
+                capacity = n_qubits or self.default_n_qubits
             metadata_fields = (
                 "status",
                 "queue",
@@ -315,7 +315,7 @@ class QuafuProvider(HttpQuantumProvider):
                 CloudBackendProfile(
                     provider="quafu",
                     name=str(name),
-                    n_qubits=n_qubits or self.default_n_wires,
+                    n_qubits=n_qubits or self.default_n_qubits,
                     metadata={
                         "source": "quafu-task-status",
                         "queue_status": queue_status,
@@ -411,7 +411,7 @@ class QuafuProvider(HttpQuantumProvider):
         _validate_quafu_shots(package.backend.name, package.shots)
         options = _submission_options(
             package.qasm,
-            n_wires=package.n_wires,
+            n_wires=package.n_qubits,
             options=dict(package.metadata.get("provider_options", {})),
         )
         task_api_required = _requires_task_api(package.backend.name)
@@ -511,8 +511,8 @@ class QuafuProvider(HttpQuantumProvider):
     ) -> ProviderTaskHandle:
         """Submit precompiled logical OpenQASM 2.0 to ordered physical qubits.
 
-        ``q[i]`` remains logical wire ``i``; ``target_qubits[i]`` identifies the
-        physical qubit selected for that wire. Quafu receives ``compiler=None``.
+        ``q[i]`` remains logical qubit ``i``; ``target_qubits[i]`` identifies the
+        physical qubit selected for that qubit. Quafu receives ``compiler=None``.
         """
 
         program = str(qasm)

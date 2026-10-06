@@ -64,7 +64,7 @@ def apply_rank_boundary_gate(
     return messages, sent_bytes, record
 
 
-def _device_footprint(state: RankOwnedMPSState, wire: int) -> torch.Tensor:
+def _device_footprint(state: RankOwnedMPSState, qubit: int) -> torch.Tensor:
     """One site's byte footprint as a device scalar, on the state's device.
 
     The footprint is `numel * element_size`, which the host already knows from
@@ -78,7 +78,7 @@ def _device_footprint(state: RankOwnedMPSState, wire: int) -> torch.Tensor:
     """
 
     reference = next(iter(state.local_tensors.values()))
-    tensor = state.local_tensors.get(wire)
+    tensor = state.local_tensors.get(qubit)
     if tensor is None:
         return torch.zeros((), dtype=torch.int64, device=reference.device)
     one = torch.ones((), dtype=torch.int64, device=reference.device)
@@ -88,7 +88,7 @@ def _device_footprint(state: RankOwnedMPSState, wire: int) -> torch.Tensor:
 def global_mps_tensor_bytes(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current per-site tensor footprint on every rank."""
     sizes = torch.stack(
-        [_device_footprint(state, wire) for wire in range(state.n_wires)]
+        [_device_footprint(state, qubit) for qubit in range(state.n_qubits)]
     )
     dist.all_reduce(sizes)
     return tuple(int(value) for value in sizes.tolist())
@@ -98,8 +98,8 @@ def global_mps_bond_dimensions(state: RankOwnedMPSState) -> tuple[int, ...]:
     """Collect the current internal bond dimensions on every rank."""
     reference = next(iter(state.local_tensors.values()))
     entries: list[torch.Tensor] = []
-    for wire in range(max(0, state.n_wires - 1)):
-        tensor = state.local_tensors.get(wire)
+    for qubit in range(max(0, state.n_qubits - 1)):
+        tensor = state.local_tensors.get(qubit)
         if tensor is None:
             entries.append(torch.zeros((), dtype=torch.int64, device=reference.device))
         else:
@@ -117,7 +117,7 @@ def migrate_mps_partitions(
     old = state.ownership
     reference = next(iter(state.local_tensors.values()))
     messages = byte_count = 0
-    for wire in range(state.n_wires):
+    for wire in range(state.n_qubits):
         source = _owner(old, wire)
         target = _owner(ownership, wire)
         if source == target:

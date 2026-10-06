@@ -38,15 +38,15 @@ source IR hash, the conversion report, and that no fallback occurred. Cirq
 circuits and result objects do not cross the ecosystem boundary.
 
 Cirq circuits do not retain idle qubits. The bridge supplies the complete
-FlagQuantum wire order explicitly to Cirq so that statevector dimensions and
-wire positions remain unchanged; this preservation is recorded in provenance.
+FlagQuantum qubit order explicitly to Cirq so that statevector dimensions and
+qubit positions remain unchanged; this preservation is recorded in provenance.
 
 ## Initial support boundary
 
 - local CPU statevector, computational-basis samples, and counts;
 - one fully bound, unbatched FlagQuantum circuit;
 - `complex64` and `complex128` statevectors;
-- explicit ordered wire selection for samples and counts;
+- explicit ordered qubit selection for samples and counts;
 - no gradients, noise model, dynamic circuit, automatic routing, device
   selection, or fallback.
 

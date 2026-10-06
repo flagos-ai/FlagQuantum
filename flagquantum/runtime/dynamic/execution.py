@@ -63,7 +63,7 @@ def _validate_feedback_plan(
             for bit in point.classical_bits
         ):
             raise ValueError("feedback point reads a measurement after its trigger")
-    if any(wire >= circuit.n_wires for wire in feedback_plan.allowed_wires):
+    if any(wire >= circuit.n_qubits for wire in feedback_plan.allowed_wires):
         raise ValueError("feedback allowed wire is outside the circuit")
 
 
@@ -164,13 +164,13 @@ def _apply_feedback_action(
         raise ValueError("feedback action mode is outside the plan")
     if action.wire is None or action.wire not in feedback_plan.allowed_wires:
         raise ValueError("feedback wire is outside the plan")
-    if action.wire >= circuit.n_wires:
+    if action.wire >= circuit.n_qubits:
         raise ValueError("feedback wire is outside the circuit")
     if action.mode == "physical_x":
         return _apply_noisy_instruction(
             state,
             Instruction("x", (action.wire,)),
-            circuit.n_wires,
+            circuit.n_qubits,
             noise_model,
             generator,
         )
@@ -215,7 +215,7 @@ def _measure_instruction(
     noise_model: NoiseModel | None,
     generator: torch.Generator,
 ) -> tuple[torch.Tensor, int, int, int, int]:
-    """Measure one wire and apply its configured readout noise."""
+    """Measure one qubit and apply its configured readout noise."""
 
     state, true_bit = _measure_wire(
         state,
@@ -275,7 +275,7 @@ def _reset_instruction(
     n_wires: int,
     generator: torch.Generator,
 ) -> tuple[torch.Tensor, int]:
-    """Measure and return one wire to the zero state."""
+    """Measure and return one qubit to the zero state."""
 
     state, bit = _measure_wire(
         state,
@@ -363,7 +363,7 @@ def _run_dynamic_trajectory(
                     state, true_bit, bit, classical_bit, count = _measure_instruction(
                         state,
                         instruction,
-                        circuit.n_wires,
+                        circuit.n_qubits,
                         noise_model,
                         generator,
                     )
@@ -405,7 +405,7 @@ def _run_dynamic_trajectory(
                     state, bit = _reset_instruction(
                         state,
                         instruction,
-                        circuit.n_wires,
+                        circuit.n_qubits,
                         generator,
                     )
                     reset_count += 1
@@ -414,7 +414,7 @@ def _run_dynamic_trajectory(
                     state, applications, events = _apply_noisy_instruction(
                         state,
                         instruction,
-                        circuit.n_wires,
+                        circuit.n_qubits,
                         noise_model,
                         generator,
                     )
@@ -423,7 +423,7 @@ def _run_dynamic_trajectory(
             final_states.append(state.reshape(-1))
             sample, count = _sample_trajectory(
                 state,
-                circuit.n_wires,
+                circuit.n_qubits,
                 noise_model,
                 frame_x_wires,
                 generator,
@@ -628,7 +628,7 @@ def _run_dynamic_batched(
                 state,
                 active,
                 instruction,
-                circuit.n_wires,
+                circuit.n_qubits,
                 noise_model,
                 generator,
             )
@@ -650,14 +650,14 @@ def _run_dynamic_batched(
                 state,
                 active,
                 instruction,
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
             )
             indices = torch.nonzero(active, as_tuple=False).reshape(-1)
             selected, applications, events = _apply_noise_after_instruction(
                 state.index_select(0, indices),
                 instruction,
                 noise_model,
-                n_wires=circuit.n_wires,
+                n_wires=circuit.n_qubits,
                 generator=generator,
             )
             state = state.index_copy(0, indices, selected)
@@ -671,12 +671,12 @@ def _run_dynamic_batched(
     ).reshape(-1)
     samples = torch.stack(
         tuple(
-            (sampled_indices >> (circuit.n_wires - wire - 1)) & 1
-            for wire in range(circuit.n_wires)
+            (sampled_indices >> (circuit.n_qubits - wire - 1)) & 1
+            for wire in range(circuit.n_qubits)
         ),
         dim=1,
     )
-    for wire in range(circuit.n_wires):
+    for wire in range(circuit.n_qubits):
         observed, count = _apply_readout_error(
             samples[:, wire],
             wire,
@@ -746,7 +746,7 @@ def _use_batched_execution(
     feedback_plan: DynamicFeedbackPlan | None,
 ) -> bool:
     element_size = torch.empty((), dtype=circuit.dtype).element_size()
-    estimated_bytes = shots * (2**circuit.n_wires) * element_size * 3
+    estimated_bytes = shots * (2**circuit.n_qubits) * element_size * 3
     batched_compatible = circuit.bsz == 1 and estimated_bytes <= max_batched_bytes
     if strategy == "batched" and not batched_compatible:
         reason = (

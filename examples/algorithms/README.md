@@ -15,6 +15,8 @@ python -m examples.algorithms.quantum_kernel
 python -m examples.algorithms.feature_selection
 python -m examples.algorithms.qarm
 python -m examples.algorithms.svd
+python -m examples.algorithms.error_mitigation
+python -m examples.algorithms.spsa_optimizer
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -35,15 +37,24 @@ What they show:
 - [`qarm.py`](qarm.py): the fraction of a database's items whose support meets a
   threshold, by amplitude estimation over a support register.
 - [`svd.py`](svd.py): a matrix's singular values read off the phase of its
-  Hermitian embedding's exponential, plus the boundary of a one-wire counting
+  Hermitian embedding's exponential, plus the boundary of a one-qubit counting
   register.
+- [`error_mitigation.py`](error_mitigation.py): an observable continued to zero
+  noise by polynomial least squares and by Richardson extrapolation over four
+  scaled models, with the residual of an underfit, of a square fit, and of a
+  non-polynomial family printed beside the estimate.
+- [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
+  at two evaluations per step, with the parameter-shift gradient's own evaluation
+  count measured beside it.
 
 ## These scripts use the subpackage surface
 
 The algorithm units are reachable at `flagquantum.algorithms.<unit>` and carry no
-root-level `fq.` name. These scripts therefore import from the subpackage --
-`from flagquantum.algorithms.pca import principal_components` -- rather than
-through `import flagquantum as fq`, and `examples/README.md` records that
+root-level `fq.` name, with one exception. The algorithm scripts import from the
+subpackage -- `from flagquantum.algorithms.pca import principal_components` --
+rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both:
+the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
+and `fq.run` calls its objective makes. `examples/README.md` records that
 boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
@@ -52,6 +63,9 @@ purification's amplitudes are all built classically here, quantum k-medians
 compares a distance table built classically and synthesizes its oracle from a
 truth table, quantum kernel estimation builds each feature state gate by gate
 from a classical vector, feature selection runs no solver, the frequent-item
-fractions iterate the transactions in Python, and the singular values come from a
-state built out of the classical `torch.linalg.svd` the readout estimates. The
+fractions iterate the transactions in Python, the singular values come from a
+state built out of the classical `torch.linalg.svd` the readout estimates,
+zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
+that is not checkable from the measurements it fits, and the SPSA update is built
+from a finite-difference estimate that is an estimate rather than a gradient. The
 guide holds the full boundary for each.

@@ -306,7 +306,7 @@ def _default_sliced_labels(expectation: Any, *, slice_count: int) -> tuple[int, 
 
     An internal label that appears in only one node cannot be sliced at all. A
     label carried by a state-copy node -- a node whose tensor has fewer than two
-    indexed dimensions, such as the `[1, 0]` a fresh wire contributes -- is a
+    indexed dimensions, such as the `[1, 0]` a fresh qubit contributes -- is a
     single index that is already determined, so every branch of that slice but
     one contracts to an exact zero and the rank owning it would add nothing to
     the reduction. Slicing those would report a partitioned workload while one

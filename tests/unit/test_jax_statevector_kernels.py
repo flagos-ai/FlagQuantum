@@ -28,13 +28,13 @@ def test_jax_basis_indices_for_wires_matches_reference():
     import numpy as np
 
     from flagquantum.simulation.jax.statevector.kernels import (
-        jax_basis_indices_for_wires,
+        jax_basis_indices_for_qubits,
     )
 
     n_wires = 5
     wires = (0, 2, 4)
     global_indices = jnp.arange(2**n_wires)
-    got = jax_basis_indices_for_wires(global_indices, n_wires=n_wires, wires=wires)
+    got = jax_basis_indices_for_qubits(global_indices, n_qubits=n_wires, qubits=wires)
     expected = [_pack_bits(idx, n_wires, wires) for idx in range(2**n_wires)]
     assert np.array_equal(np.asarray(got), np.asarray(expected))
 
@@ -76,7 +76,7 @@ def test_jax_apply_matrix_to_batched_local_state_matches_einsum():
         jnp.asarray(state),
         jnp.asarray(matrix),
         wires,
-        n_local_wires=n_local_wires,
+        n_local_qubits=n_local_wires,
     )
 
     remaining = tuple(w for w in range(n_local_wires) if w not in wires)
@@ -113,9 +113,9 @@ def test_jax_sharded_statevector_rank_loss_matches_reference():
     got = jax_sharded_statevector_rank_loss(
         jnp.asarray(amplitudes),
         global_indices,
-        n_wires=n_wires,
+        n_qubits=n_wires,
         observable="z_sum",
-        observable_wires=(observable_wire,),
+        observable_qubits=(observable_wire,),
     )
 
     expected = 0.0
@@ -138,9 +138,9 @@ def test_jax_rank_loss_state_norm_sums_probabilities():
     got = jax_sharded_statevector_rank_loss(
         amplitudes,
         jnp.arange(4),
-        n_wires=2,
+        n_qubits=2,
         observable="state_norm",
-        observable_wires=None,
+        observable_qubits=None,
     )
 
     expected = float(np.sum(np.abs(np.asarray(amplitudes)) ** 2))
@@ -161,7 +161,7 @@ def test_jax_apply_matrix_to_batched_local_state_accepts_a_batched_matrix():
     matrices = rng.standard_normal((2, 2, 2)).astype(np.float32)
 
     got = jax_apply_matrix_to_batched_local_state(
-        jnp.asarray(state), jnp.asarray(matrices), (0,), n_local_wires=2
+        jnp.asarray(state), jnp.asarray(matrices), (0,), n_local_qubits=2
     )
 
     expected = np.einsum("bij,bjk->bik", matrices, state.reshape(2, 2, 2))
@@ -181,5 +181,5 @@ def test_jax_apply_matrix_to_batched_local_state_rejects_a_wrong_shape():
             jnp.ones((1, 4), dtype=jnp.float32),
             jnp.eye(2, dtype=jnp.float32),
             (0, 1),
-            n_local_wires=2,
+            n_local_qubits=2,
         )

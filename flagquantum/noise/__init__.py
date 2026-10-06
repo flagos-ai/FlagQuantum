@@ -6,9 +6,11 @@ from importlib import import_module
 from typing import Any
 
 from .channels import (
+    CHANNEL_FACTORIES,
     KrausChannel,
     amplitude_damping_channel,
     bit_flip_channel,
+    channel_from_parameters,
     coherent_overrotation_channel,
     depolarizing_channel,
     phase_damping_channel,
@@ -27,6 +29,7 @@ from .model import (
 )
 
 __all__ = (
+    "CHANNEL_FACTORIES",
     "CorrelatedReadoutError",
     "KrausChannel",
     "DeviceNoiseProfile",
@@ -38,6 +41,7 @@ __all__ = (
     "QubitNoiseCalibration",
     "amplitude_damping_channel",
     "bit_flip_channel",
+    "channel_from_parameters",
     "coherent_overrotation_channel",
     "depolarizing_channel",
     "phase_damping_channel",

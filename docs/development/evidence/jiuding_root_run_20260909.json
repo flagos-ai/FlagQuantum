@@ -6,7 +6,9 @@
   "image": {
     "id": "676e971e-ef46-44a1-b583-ccee58402d34",
     "name": "flagquantum-runtime",
-    "tag": "v0.2.0-ef3affbd-cu128-a100"
+    "tag": "v0.2.0-ef3affbd-cu128-a100",
+    "base_commit": "ef3affbd",
+    "base_commit_full": "ef3affbd99cc5f0bbabc6ff6403ec1dbdfc48ddc"
   },
   "workspace": {
     "id": "641e867f-5c4e-455d-9ba3-e32d73099ae1",

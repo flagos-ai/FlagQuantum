@@ -2,6 +2,7 @@
   "schema": "flagquantum.jiuding_development_evidence",
   "date": "2026-09-09",
   "base_commit": "ef3affbd",
+  "base_commit_full": "ef3affbd99cc5f0bbabc6ff6403ec1dbdfc48ddc",
   "scope": "Pure-image resident executor startup and single-A100 Bell-state execution",
   "image": {
     "id": "676e971e-ef46-44a1-b583-ccee58402d34",

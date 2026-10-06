@@ -164,20 +164,20 @@ def semantic_fingerprint(program: Any) -> str:
     )
 
 
-def qiskit_statevector_to_flagquantum(statevector: Any, n_wires: int) -> torch.Tensor:
-    """Convert Qiskit's little-endian amplitude order to FlagQuantum wire order."""
+def qiskit_statevector_to_flagquantum(statevector: Any, n_qubits: int) -> torch.Tensor:
+    """Convert Qiskit's little-endian amplitude order to FlagQuantum qubit order."""
 
-    n_wires = int(n_wires)
-    if n_wires <= 0:
-        raise ValueError("n_wires must be positive")
+    n_qubits = int(n_qubits)
+    if n_qubits <= 0:
+        raise ValueError("n_qubits must be positive")
     tensor = torch.as_tensor(statevector)
-    expected = 2**n_wires
+    expected = 2**n_qubits
     if tensor.numel() != expected:
         raise ValueError(
             f"statevector has {tensor.numel()} amplitudes, expected {expected}"
         )
-    axes = tuple(reversed(range(n_wires)))
-    return tensor.reshape((2,) * n_wires).permute(axes).reshape(-1)
+    axes = tuple(reversed(range(n_qubits)))
+    return tensor.reshape((2,) * n_qubits).permute(axes).reshape(-1)
 
 
 def _seeded_unitary(rng: random.Random, width: int) -> torch.Tensor:
@@ -246,7 +246,7 @@ def _flagquantum_program(program: _DifferentialProgram) -> CircuitIR:
 
 
 def _qiskit_matrix(matrix: torch.Tensor, width: int) -> Any:
-    """Independently convert a wire-major matrix to Qiskit's local bit order."""
+    """Independently convert a qubit-major matrix to Qiskit's local bit order."""
 
     indices = tuple(int(f"{index:0{width}b}"[::-1], 2) for index in range(2**width))
     return matrix[list(indices)][:, list(indices)].numpy()

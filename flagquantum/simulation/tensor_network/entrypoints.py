@@ -121,20 +121,20 @@ def tensor_network_expectation_ps(
 
 def _normalize_bitstring(
     bitstring: int | str | Sequence[int],
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[int, ...]:
     if isinstance(bitstring, int):
-        if bitstring < 0 or bitstring >= 2**n_wires:
+        if bitstring < 0 or bitstring >= 2**n_qubits:
             raise ValueError("integer bitstring is outside the circuit state space")
-        bits = tuple(int(bit) for bit in f"{bitstring:0{n_wires}b}")
+        bits = tuple(int(bit) for bit in f"{bitstring:0{n_qubits}b}")
     elif isinstance(bitstring, str):
-        if len(bitstring) != n_wires or set(bitstring) - {"0", "1"}:
-            raise ValueError("bitstring must contain exactly n_wires binary digits")
+        if len(bitstring) != n_qubits or set(bitstring) - {"0", "1"}:
+            raise ValueError("bitstring must contain exactly n_qubits binary digits")
         bits = tuple(int(bit) for bit in bitstring)
     else:
         bits = tuple(int(bit) for bit in bitstring)
-        if len(bits) != n_wires or any(bit not in {0, 1} for bit in bits):
-            raise ValueError("bitstring must contain exactly n_wires binary values")
+        if len(bits) != n_qubits or any(bit not in {0, 1} for bit in bits):
+            raise ValueError("bitstring must contain exactly n_qubits binary values")
     return bits
 
 
@@ -152,13 +152,13 @@ def _basis_projectors(
     one host-to-device copy, and that copy sits inside whatever region the caller
     is timing even though it is plan construction rather than contraction.
     Writing each selected element from a host scalar, which is what this
-    replaced, is worse still: one lift per target per projected wire.
+    replaced, is worse still: one lift per target per projected qubit.
 
     The identity is two elements wide, so every selection is a view and no
     movement is needed to read it. ``stack`` gives the rows independent storage
     -- a projector that aliased another target's row would be a silent
     correctness bug -- and the cast is the only device-to-device work. The
-    returned tensor is indexed ``[target, wire]``.
+    returned tensor is indexed ``[target, qubit]``.
     """
 
     width = len(bits[0]) if bits else 0
@@ -175,21 +175,21 @@ def _amplitude_projection(
 ) -> tuple[tuple[TensorNetworkNode, ...], tuple[int, ...]]:
     """Attach computational-basis projectors to a ket contraction plan."""
 
-    bits = _normalize_bitstring(bitstring, plan.n_wires)
+    bits = _normalize_bitstring(bitstring, plan.n_qubits)
     reference = plan.nodes[0].tensor
     nodes = list(plan.nodes)
     projectors = _basis_projectors(
         [bits], device=reference.device, dtype=reference.dtype
     )
-    for wire, (label, bit) in enumerate(
+    for qubit, (label, bit) in enumerate(
         zip(plan.output_labels[1:], bits, strict=False)
     ):
         nodes.append(
             TensorNetworkNode(
-                tensor=projectors[0, wire].contiguous(),
+                tensor=projectors[0, qubit].contiguous(),
                 labels=(label,),
-                name=f"amplitude_projector_{wire}_{bit}",
-                metadata={"wire": wire, "bit": bit},
+                name=f"amplitude_projector_{qubit}_{bit}",
+                metadata={"qubit": qubit, "bit": bit},
             )
         )
     return tuple(nodes), (plan.output_labels[0],)
@@ -202,7 +202,7 @@ def _amplitude_batch_projection(
     """Attach a shared target axis for a batch of computational basis states."""
 
     bits = tuple(
-        _normalize_bitstring(bitstring, plan.n_wires) for bitstring in bitstrings
+        _normalize_bitstring(bitstring, plan.n_qubits) for bitstring in bitstrings
     )
     if not bits:
         raise ValueError("bitstrings must contain at least one target")
@@ -212,13 +212,13 @@ def _amplitude_batch_projection(
     )
     nodes = list(plan.nodes)
     projectors = _basis_projectors(bits, device=reference.device, dtype=reference.dtype)
-    for wire, label in enumerate(plan.output_labels[1:]):
+    for qubit, label in enumerate(plan.output_labels[1:]):
         nodes.append(
             TensorNetworkNode(
-                tensor=projectors[:, wire].contiguous(),
+                tensor=projectors[:, qubit].contiguous(),
                 labels=(target_label, label),
-                name=f"amplitude_batch_projector_{wire}",
-                metadata={"wire": wire, "targets": len(bits)},
+                name=f"amplitude_batch_projector_{qubit}",
+                metadata={"qubit": qubit, "targets": len(bits)},
             )
         )
     return tuple(nodes), (plan.output_labels[0], target_label)
@@ -356,7 +356,7 @@ def run_tensor_network(
     contraction_strategy: str = "greedy",
     max_intermediate_size: int | None = None,
     sliced_labels: Sequence[int] | None = None,
-    dense_observable_wires: int = 0,
+    dense_observable_qubits: int = 0,
     max_intermediate_bytes: int | None = None,
 ) -> TensorNetworkState:
     """Run a circuit through the general tensor-network contraction engine.
@@ -381,6 +381,6 @@ def run_tensor_network(
         contraction_strategy=contraction_strategy,
         max_intermediate_size=max_intermediate_size,
         sliced_labels=sliced_labels,
-        dense_observable_wires=dense_observable_wires,
+        dense_observable_qubits=dense_observable_qubits,
         max_intermediate_bytes=max_intermediate_bytes,
     )

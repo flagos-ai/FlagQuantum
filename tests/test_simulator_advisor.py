@@ -74,7 +74,7 @@ def test_bundled_advisor_evidence_tracks_the_measured_report() -> None:
 
     for measured_row in report["rows"]:
         decision = recommend(
-            n_wires=measured_row["workload"]["n_wires"],
+            n_qubits=measured_row["workload"]["n_wires"],
             environment=_environment(report),
             available_engines=ALL_ENGINES,
         )
@@ -116,7 +116,9 @@ def test_workload_manifest_binds_builder_ir_to_existing_timing_rows() -> None:
     }
     for entry in manifest["entries"]:
         workload = entry["workload"]
-        circuit = build_workload(n_wires=workload["n_wires"], layers=workload["layers"])
+        circuit = build_workload(
+            n_qubits=workload["n_wires"], layers=workload["layers"]
+        )
         measured = measured_by_fingerprint[entry["workload_fingerprint"]]
 
         assert entry["ir_content_hash"] == circuit.to_ir().content_hash
@@ -125,7 +127,7 @@ def test_workload_manifest_binds_builder_ir_to_existing_timing_rows() -> None:
 
 def test_advisor_recommends_only_for_an_exact_manifest_circuit() -> None:
     report = _report()
-    circuit = build_workload(n_wires=22, layers=2)
+    circuit = build_workload(n_qubits=22, layers=2)
 
     decision = recommend(
         circuit,
@@ -149,7 +151,7 @@ def test_advisor_recommends_only_for_an_exact_manifest_circuit() -> None:
 
 def test_advisor_rejects_same_width_and_gate_count_with_different_ir() -> None:
     report = _report()
-    measured = build_workload(n_wires=22, layers=2).to_ir()
+    measured = build_workload(n_qubits=22, layers=2).to_ir()
     first = measured.instructions[0]
     changed_first = replace(
         first,
@@ -311,7 +313,7 @@ def test_exact_evidence_does_not_execute_live_calibration(
 
     monkeypatch.setattr(_calibration, "_runner", unexpected_runner)
     decision = recommend(
-        build_workload(n_wires=10, layers=2),
+        build_workload(n_qubits=10, layers=2),
         environment=_environment(report),
         available_engines=ALL_ENGINES,
         calibration_budget_seconds=0.2,
@@ -323,7 +325,7 @@ def test_exact_evidence_does_not_execute_live_calibration(
 
 def test_profile_query_cannot_request_live_calibration() -> None:
     with pytest.raises(ValueError, match="requires a program"):
-        recommend(n_wires=22, calibration_budget_seconds=1.0)
+        recommend(n_qubits=22, calibration_budget_seconds=1.0)
 
 
 def test_advisor_rejects_malformed_ir_hash_evidence() -> None:
@@ -331,7 +333,7 @@ def test_advisor_rejects_malformed_ir_hash_evidence() -> None:
     report["rows"][0]["ir_content_hash"] = "not-a-sha256"
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match="ir_content_hash"):
-        recommend(build_workload(n_wires=10, layers=2), evidence=report)
+        recommend(build_workload(n_qubits=10, layers=2), evidence=report)
 
 
 def test_advisor_rejects_ir_hash_bound_to_inconsistent_metadata() -> None:
@@ -339,19 +341,19 @@ def test_advisor_rejects_ir_hash_bound_to_inconsistent_metadata() -> None:
     report["rows"][0]["workload"]["gate_count"] = 81
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match="inconsistent"):
-        recommend(build_workload(n_wires=10, layers=2), evidence=report)
+        recommend(build_workload(n_qubits=10, layers=2), evidence=report)
 
 
 def test_advisor_rejects_mixed_circuit_and_profile_selectors() -> None:
     with pytest.raises(ValueError, match="cannot be combined"):
-        recommend(build_workload(n_wires=10, layers=2), n_wires=10)
+        recommend(build_workload(n_qubits=10, layers=2), n_qubits=10)
 
 
 def test_advisor_prefers_native_when_external_gain_is_inside_tie_margin() -> None:
     report = _report()
 
     decision = recommend(
-        n_wires=10,
+        n_qubits=10,
         environment=_environment(report),
         available_engines=ALL_ENGINES,
     )
@@ -370,7 +372,7 @@ def test_advisor_recommends_the_fastest_stable_measured_engine(n_wires: int) -> 
     report = _report()
 
     decision = recommend(
-        n_wires=n_wires,
+        n_qubits=n_wires,
         environment=_environment(report),
         available_engines=ALL_ENGINES,
     )
@@ -385,7 +387,7 @@ def test_advisor_filters_unavailable_engines_without_importing_them() -> None:
     report = _report()
 
     decision = recommend(
-        n_wires=22,
+        n_qubits=22,
         environment=_environment(report),
         available_engines={"qiskit_aer"},
     )
@@ -402,7 +404,7 @@ def test_advisor_filters_an_installed_version_that_does_not_match_evidence() -> 
     report = _report()
 
     decision = recommend(
-        n_wires=22,
+        n_qubits=22,
         environment=_environment(report),
         available_engines={
             "flagquantum_native": "0.2.0",
@@ -422,12 +424,12 @@ def test_advisor_fails_closed_for_unmeasured_workload_or_environment() -> None:
     environment = _environment(report)
 
     workload_miss = recommend(
-        n_wires=20,
+        n_qubits=20,
         environment=environment,
         available_engines=ALL_ENGINES,
     )
     environment_miss = recommend(
-        n_wires=22,
+        n_qubits=22,
         environment={**environment, "machine": "x86_64"},
         available_engines=ALL_ENGINES,
     )
@@ -450,7 +452,7 @@ def test_advisor_can_select_a_clear_external_winner_from_future_evidence() -> No
     )
 
     decision = recommend(
-        n_wires=22,
+        n_qubits=22,
         evidence=changed,
         environment=_environment(report),
         available_engines=ALL_ENGINES,
@@ -474,7 +476,7 @@ def test_advisor_rejects_unsafe_report_claims(
     report[field] = value
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match=message):
-        recommend(n_wires=22, evidence=report)
+        recommend(n_qubits=22, evidence=report)
 
 
 def test_advisor_rejects_hidden_fallback_evidence() -> None:
@@ -484,7 +486,7 @@ def test_advisor_rejects_hidden_fallback_evidence() -> None:
     identity["hidden_fallback_allowed"] = True
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match="hidden backend fallback"):
-        recommend(n_wires=22, evidence=report)
+        recommend(n_qubits=22, evidence=report)
 
 
 def test_advisor_rejects_an_inconsistent_timing_ratio() -> None:
@@ -494,7 +496,7 @@ def test_advisor_rejects_an_inconsistent_timing_ratio() -> None:
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match="inconsistent"):
         recommend(
-            n_wires=22,
+            n_qubits=22,
             evidence=report,
             environment=_environment(report),
             available_engines=ALL_ENGINES,
@@ -509,13 +511,13 @@ def test_advisor_rejects_duplicate_json_fields(tmp_path: Path) -> None:
     )
 
     with pytest.raises(SimulatorAdvisorEvidenceError, match="duplicate field"):
-        recommend(n_wires=22, evidence=path)
+        recommend(n_qubits=22, evidence=path)
 
 
 def test_recommendation_is_json_compatible() -> None:
     report = _report()
     decision = recommend(
-        n_wires=22,
+        n_qubits=22,
         environment=_environment(report),
         available_engines=ALL_ENGINES,
     )

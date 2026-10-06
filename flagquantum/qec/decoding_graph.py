@@ -23,7 +23,10 @@ edges, because they are two different explanations of the same detection events.
 A mechanism of probability zero can never fire and contributes no edge; a
 mechanism that fires with probability above one half is refused, because its
 weight would be negative and a negative-weight cycle would make the cheapest
-explanation unbounded.
+explanation unbounded. A model that states two mechanisms are alternatives is
+refused as a whole: one weight per mechanism is the weight of a fault that fires
+alone, and a matcher given a group of alternatives would weigh every member as
+though the others could fire with it.
 """
 
 from __future__ import annotations
@@ -172,13 +175,32 @@ class DecodingGraph:
         Raises:
             CapabilityError: A mechanism flips three or more detectors, so the
                 model is not graphlike and minimum-weight matching cannot
-                represent it.
+                represent it, or the model states that two mechanisms are
+                alternatives, which one weight per edge cannot carry.
             ValueError: A mechanism fires with probability one or above one
                 half, where no finite non-negative edge weight exists.
         """
 
         if not isinstance(model, DetectorErrorModel):
             raise TypeError("model must be a DetectorErrorModel")
+        groups = model.exclusive_groups()
+        if groups:
+            shares = "; ".join(
+                " and ".join(
+                    "D" + ", D".join(str(index) for index in model.errors[at].detectors)
+                    for at in indices
+                )
+                for indices in groups
+            )
+            raise CapabilityError(
+                "minimum-weight matching weighs each mechanism by its own "
+                "log-likelihood ratio, which assumes the mechanisms fire "
+                "independently, and this model states that some of them are "
+                f"alternatives: {shares}. A group of alternatives is one fault, "
+                "whose weight is the negative log-likelihood of the group rather "
+                "than of each member, so a matcher needs the group folded into a "
+                "single mechanism before it can be given this model"
+            )
         boundary = model.num_detectors
         edges: list[DecodingGraphEdge] = []
         for error in model.errors:

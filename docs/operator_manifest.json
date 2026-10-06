@@ -301,11 +301,12 @@
         "complex128"
       ],
       "opcode": "i",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -318,11 +319,12 @@
         "complex128"
       ],
       "opcode": "x",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -335,11 +337,12 @@
         "complex128"
       ],
       "opcode": "y",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -352,11 +355,12 @@
         "complex128"
       ],
       "opcode": "z",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -371,14 +375,15 @@
         "complex128"
       ],
       "opcode": "h",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -388,14 +393,15 @@
         "complex128"
       ],
       "opcode": "s",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "s",
       "aliases": [
         "sd"
       ],
@@ -407,14 +413,15 @@
         "complex128"
       ],
       "opcode": "sdg",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "tdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -424,14 +431,15 @@
         "complex128"
       ],
       "opcode": "t",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "t",
       "aliases": [
         "td"
       ],
@@ -443,14 +451,15 @@
         "complex128"
       ],
       "opcode": "tdg",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sxdg",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -460,14 +469,15 @@
         "complex128"
       ],
       "opcode": "sx",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "sx",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -477,14 +487,15 @@
         "complex128"
       ],
       "opcode": "sxdg",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -494,16 +505,21 @@
         "complex128"
       ],
       "opcode": "rx",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -513,16 +529,21 @@
         "complex128"
       ],
       "opcode": "ry",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -532,16 +553,21 @@
         "complex128"
       ],
       "opcode": "rz",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [
         "p"
       ],
@@ -553,16 +579,21 @@
         "complex128"
       ],
       "opcode": "phase",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -572,16 +603,21 @@
         "complex128"
       ],
       "opcode": "u1",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "adjoint_u2_angles",
       "aliases": [],
       "arity": 1,
       "decomposition": [],
@@ -591,17 +627,25 @@
         "complex128"
       ],
       "opcode": "u2",
+      "parameter_frequencies": [
+        [
+          1.0
+        ],
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "adjoint_u3_angles",
       "aliases": [
         "u"
       ],
@@ -613,15 +657,26 @@
         "complex128"
       ],
       "opcode": "u3",
+      "parameter_frequencies": [
+        [
+          1.0
+        ],
+        [
+          1.0
+        ],
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta",
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -636,12 +691,13 @@
         "complex128"
       ],
       "opcode": "cx",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -654,12 +710,13 @@
         "complex128"
       ],
       "opcode": "cy",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -672,12 +729,13 @@
         "complex128"
       ],
       "opcode": "cz",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -690,15 +748,16 @@
         "complex128"
       ],
       "opcode": "swap",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -708,17 +767,23 @@
         "complex128"
       ],
       "opcode": "crx",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -728,17 +793,23 @@
         "complex128"
       ],
       "opcode": "cry",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -748,17 +819,23 @@
         "complex128"
       ],
       "opcode": "crz",
+      "parameter_frequencies": [
+        [
+          0.5,
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -768,17 +845,22 @@
         "complex128"
       ],
       "opcode": "cphase",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -788,17 +870,22 @@
         "complex128"
       ],
       "opcode": "rxx",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -808,17 +895,22 @@
         "complex128"
       ],
       "opcode": "ryy",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
-      "adjoint": "matrix_adjoint",
+      "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
       "decomposition": [],
@@ -828,14 +920,19 @@
         "complex128"
       ],
       "opcode": "rzz",
+      "parameter_frequencies": [
+        [
+          1.0
+        ]
+      ],
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -851,13 +948,14 @@
         "complex128"
       ],
       "opcode": "ccx",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -872,13 +970,14 @@
         "complex128"
       ],
       "opcode": "cswap",
+      "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "not_applicable",
@@ -891,11 +990,14 @@
         "complex128"
       ],
       "opcode": "bit_flip",
-      "parameters": [],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "parameter_frequencies": [],
+      "parameters": [
+        "probability"
+      ],
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -908,11 +1010,14 @@
         "complex128"
       ],
       "opcode": "phase_flip",
-      "parameters": [],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "parameter_frequencies": [],
+      "parameters": [
+        "probability"
+      ],
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -925,11 +1030,14 @@
         "complex128"
       ],
       "opcode": "depolarizing",
-      "parameters": [],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "parameter_frequencies": [],
+      "parameters": [
+        "probability"
+      ],
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
@@ -942,11 +1050,14 @@
         "complex128"
       ],
       "opcode": "amplitude_damping",
-      "parameters": [],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "parameter_frequencies": [],
+      "parameters": [
+        "gamma"
+      ],
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     }
   ],
   "schema_version": "flagquantum_operator_manifest_v1"

@@ -143,6 +143,12 @@ class CircuitAnalysis:
     channel_count: int = 0
     has_noise: bool = False
 
+    @property
+    def n_qubits(self) -> int:
+        """Qubit-named accessor for the field the plan payload pins by name."""
+
+        return self.n_wires
+
 
 @dataclass(frozen=True)
 class ExecutionPlan:
@@ -156,7 +162,7 @@ class ExecutionPlan:
 
     `recommended_mode` and `world_size` are recommendations, not enforcement:
     `fq.run` accepts a plan and still chooses. `shardable_wires` names the
-    wires a sharded statevector layout may cut, which is every wire but the
+    qubits a sharded statevector layout may cut, which is every qubit but the
     last. A `runtime_config` of ``None`` means the plan was built without one;
     `routing_plan` and `noisy_execution_plan` are present only when the
     corresponding feature was in play.
@@ -292,7 +298,7 @@ class ExecutionPlan:
             "world_size": self.world_size,
             "state_bytes": self.state_bytes,
             "depth": self.analysis.depth,
-            "n_wires": self.analysis.n_wires,
+            "n_wires": self.analysis.n_qubits,
             "n_instructions": self.analysis.n_instructions,
             "two_qubit_gates": self.analysis.two_qubit_gates,
             "multi_qubit_gates": self.analysis.multi_qubit_gates,

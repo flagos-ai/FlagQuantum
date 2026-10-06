@@ -330,7 +330,7 @@ def _file_sha256(path: Path) -> str:
 def _checkpoint_contract(
     ir: Any,
     *,
-    observable_wire: int,
+    observable_qubit: int,
     optimizer_name: str,
     lr: float,
     parameters: tuple[torch.Tensor, ...],
@@ -339,7 +339,7 @@ def _checkpoint_contract(
         "ir_content_hash": ir.content_hash,
         "ir_version": ir.version,
         "n_wires": ir.n_wires,
-        "observable_wire": int(observable_wire),
+        "observable_wire": int(observable_qubit),
         "optimizer": optimizer_name,
         "learning_rate": float(lr),
         "parameter_schema": tuple(
@@ -514,7 +514,7 @@ class _ShardedTrainingSweep:
         circuit_or_ir: Any,
         *,
         steps: int,
-        observable_wire: int = 0,
+        observable_qubit: int = 0,
         optimizer: Literal["sgd", "adam"] = "sgd",
         lr: float = 0.05,
         checkpoint_dir: str | Path | None = None,
@@ -531,7 +531,7 @@ class _ShardedTrainingSweep:
 
         self.circuit_or_ir = circuit_or_ir
         self.steps = steps
-        self.observable_wire = observable_wire
+        self.observable_qubit = observable_qubit
         self.optimizer = optimizer
         self.lr = lr
         self.checkpoint_dir = checkpoint_dir
@@ -567,7 +567,7 @@ class _ShardedTrainingSweep:
         )
         self.platform = get_platform_runtime(self.device.type)
         first_reverse = execute_torch_distributed_statevector_reverse(
-            self.ir, observable_wire=self.observable_wire, device=self.device
+            self.ir, observable_qubit=self.observable_qubit, device=self.device
         )
         self.parameters = first_reverse.parameters
         # Reverse-mode gradients are replicated after all-reduce. Optimizer owners
@@ -581,7 +581,7 @@ class _ShardedTrainingSweep:
         owned_parameters = [self.parameters[index] for index in self.owned_indices]
         self.checkpoint_contract = _checkpoint_contract(
             self.ir,
-            observable_wire=self.observable_wire,
+            observable_qubit=self.observable_qubit,
             optimizer_name=self.optimizer,
             lr=self.lr,
             parameters=self.parameters,
@@ -791,7 +791,7 @@ class _ShardedTrainingSweep:
             )
             reverse = execute_torch_distributed_statevector_reverse(
                 self.ir,
-                observable_wire=self.observable_wire,
+                observable_qubit=self.observable_qubit,
                 checkpoint_policy=policy,
                 device=self.device,
                 owners=self.owners,
@@ -934,7 +934,7 @@ def train_distributed_statevector(
     circuit_or_ir: Any,
     *,
     steps: int,
-    observable_wire: int = 0,
+    observable_qubit: int = 0,
     optimizer: Literal["sgd", "adam"] = "sgd",
     lr: float = 0.05,
     checkpoint_dir: str | Path | None = None,
@@ -951,7 +951,7 @@ def train_distributed_statevector(
     return _ShardedTrainingSweep(
         circuit_or_ir,
         steps=steps,
-        observable_wire=observable_wire,
+        observable_qubit=observable_qubit,
         optimizer=optimizer,
         lr=lr,
         checkpoint_dir=checkpoint_dir,

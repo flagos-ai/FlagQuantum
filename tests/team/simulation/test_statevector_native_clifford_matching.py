@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import pytest
 import torch
 
+import flagquantum.simulation.statevector.clifford_matching as clifford_matching
 from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.native_cpu import native_cpu_clifford_matching_available
@@ -31,6 +34,39 @@ def _matching_circuit(inputs: torch.Tensor) -> Circuit:
     circuit.cx(4, 5)
     circuit.cz(6, 7)
     return circuit
+
+
+def _repeated_matching_circuit(inputs: torch.Tensor) -> Circuit:
+    circuit = Circuit(8, bsz=inputs.shape[0], dtype=inputs.dtype, inputs=inputs)
+    for _ in range(3):
+        circuit.cx(0, 1).cz(2, 3).cx(4, 5).cz(6, 7)
+        circuit.h(0).h(2)
+    return circuit
+
+
+def test_native_scalar_matching_has_a_wide_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        clifford_matching,
+        "native_cpu_clifford_matching_available",
+        lambda: True,
+    )
+    instructions = (Instruction("cx", (0, 1)), Instruction("cz", (2, 3)))
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert not clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, narrow, batch_size=1
+    )
+    assert clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "0")
+    assert not clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -80,6 +116,45 @@ def test_native_clifford_matching_does_not_bypass_autograd(
     assert (
         circuit._last_statevector_runtime["native_cpu_clifford_matching_regions"] == 0
     )
+
+
+def test_native_clifford_matching_reuses_owned_output_with_exact_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if not native_cpu_clifford_matching_available():
+        pytest.skip("native CPU extension is not built in this source checkout")
+    generator = torch.Generator().manual_seed(7719)
+    inputs = (
+        torch.randn((3, 256), generator=generator)
+        + 1j * torch.randn((3, 256), generator=generator)
+    ).to(torch.complex128)
+    circuit = _repeated_matching_circuit(inputs)
+
+    monkeypatch.setenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "0")
+    expected = circuit.state(refresh=True)
+
+    requested_outputs: list[torch.Tensor | None] = []
+    implementation = clifford_matching.fused_clifford_matching_out
+
+    def record_output(
+        state: torch.Tensor,
+        cx_mapping: torch.Tensor,
+        cz_edges: Sequence[tuple[int, int]] | None,
+        n_qubits: int,
+        *,
+        output: torch.Tensor | None = None,
+    ) -> torch.Tensor | None:
+        requested_outputs.append(output)
+        return implementation(state, cx_mapping, cz_edges, n_qubits, output=output)
+
+    monkeypatch.setattr(clifford_matching, "fused_clifford_matching_out", record_output)
+    monkeypatch.setenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=0, rtol=0)
+    assert len(requested_outputs) == 3
+    assert requested_outputs[:2] == [None, None]
+    assert requested_outputs[2] is not None
 
 
 def test_native_clifford_phase_map_has_independent_rollback(
