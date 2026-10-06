@@ -34,16 +34,11 @@ import hashlib
 import json
 import math
 import os
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from benchmarks.internal.evidence.mps_shardable_ceiling import (
-    SERIAL_FRACTION_KEY,
-    calibration_errors,
-    frozen_serial_fraction,
-    shardable_ceiling_speedup,
-)
 from flagquantum.runtime.audit.mps_readiness import (
     _FORBIDDEN_FALLBACKS as _AUDITED_FORBIDDEN_FALLBACKS,
 )
@@ -54,6 +49,26 @@ from flagquantum.runtime.observability.evidence import (
     RuntimeProvenance,
     create_evidence_artifact,
     verify_evidence_artifact,
+)
+
+# The ceiling the speed threshold is measured against is a sibling package of this
+# file, and this file is published as `python
+# benchmarks/internal/evidence/mps_release_gate.py`, which puts
+# `benchmarks/internal/evidence` on the import path rather than the repository
+# root. The bootstrap lives here rather than in the caller's environment because
+# that path is the only invocation a reviewer has; the sibling statevector and
+# tensor-network gates import nothing from `benchmarks`, which is why only this
+# one needs it. `flagquantum` is installed into the environment, so it is imported
+# above and stays independent of this.
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from benchmarks.internal.evidence.mps_shardable_ceiling import (  # noqa: E402
+    SERIAL_FRACTION_KEY,
+    calibration_errors,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
 )
 
 MANIFEST = Path("benchmarks/manifests/mps_release_v1.json")
@@ -1115,6 +1130,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         else baseline_results(manifest)
     )
     directories = (baseline, *args.candidate) if args.candidate else (RESULTS, baseline)
+    # A candidate that is not a directory contributes no artifacts, because
+    # ``Path.glob`` on a file yields nothing. The gate would then evaluate a
+    # smaller set and report *fewer* blockers than the set has, which is a
+    # false pass rather than a refusal, so a non-directory is rejected here.
+    for directory in directories:
+        if not directory.is_dir():
+            raise SystemExit(f"evidence directory is not a directory: {directory}")
     artifacts = [
         json.loads(path.read_text(encoding="utf-8"))
         for directory in directories

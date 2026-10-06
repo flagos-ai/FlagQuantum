@@ -1604,3 +1604,75 @@ def test_promotion_moves_only_the_release_payloads(
     assert len(list(baseline.glob("*.json"))) == 1
     assert manifest_path.is_file()
     assert MANIFEST.is_file()
+
+
+def test_a_candidate_that_is_not_a_directory_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file-shaped candidate must not evaluate as an empty set.
+
+    ``Path.glob`` on a regular file yields nothing, so a candidate named as a
+    payload path would contribute no artifacts and the gate would report fewer
+    blockers than the set actually has. That is a false pass rather than a
+    refusal, and it is the mistake a reviewer makes when they read the promoted
+    payload's name out of the release directory instead of its directory. The
+    gate therefore rejects the shape before it reads anything, and the error names
+    the path so the caller can see which argument was wrong.
+    """
+
+    manifest_path, candidates, baseline = _candidate_set(
+        tmp_path, _sealable_topology_manifest()
+    )
+    payload = next(iter(sorted(candidates.glob("*.json"))))
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
+
+    with pytest.raises(SystemExit) as raised:
+        gate_main(
+            [
+                "--manifest",
+                str(manifest_path),
+                "--candidate",
+                str(payload),
+                "--baseline-directory",
+                str(baseline),
+            ]
+        )
+
+    assert str(payload) in str(raised.value)
+
+
+def test_the_documented_invocation_reaches_the_gate_without_a_pythonpath(
+    tmp_path: Path,
+) -> None:
+    """The runbook runs this file by path, so the file must import its sibling.
+
+    ``benchmarks/internal/evidence/mps_release_gate.py`` is the invocation
+    ``docs/guides/MULTINODE_RUNBOOK.md`` publishes and the one
+    ``capability-maturity.toml`` names as the release gate. Running it by path
+    puts ``benchmarks/internal/evidence`` on ``sys.path`` rather than the
+    repository root, and the ceiling module it imports is a sibling package, so
+    without the bootstrap in the module the documented command failed with
+    ``ModuleNotFoundError``. This runs the file the way the runbook does, in a
+    subprocess with no ``PYTHONPATH``, and asserts it reaches its own argument
+    parser rather than a traceback.
+    """
+
+    import os
+    import subprocess
+    import sys
+
+    source = Path("benchmarks/internal/evidence/mps_release_gate.py").resolve()
+    environment = {
+        key: value for key, value in os.environ.items() if key != "PYTHONPATH"
+    }
+    completed = subprocess.run(
+        [sys.executable, str(source), "--help"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--baseline-directory" in completed.stdout
