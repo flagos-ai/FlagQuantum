@@ -125,14 +125,36 @@ def _pauli_matrix(pauli: str, *, device: torch.device) -> torch.Tensor:
     return torch.kron(matrices[pauli[0]], matrices[pauli[1]])
 
 
-def collect_run(args: argparse.Namespace) -> dict[str, object]:
-    """Execute one host/compiler lane of the fixed SV-011 matrix."""
+def _apply_product_reference(
+    state: torch.Tensor,
+    angles: torch.Tensor,
+    *,
+    identity: torch.Tensor,
+    operator: torch.Tensor,
+    qubits: tuple[int, int],
+    n_qubits: int,
+    pauli: str,
+) -> torch.Tensor:
+    """Apply the existing dense-matrix route from the same angle inputs."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
     from flagquantum.simulation.statevector.operations import (
         _apply_diagonal_matrix,
         _apply_matrix_layout,
     )
+
+    cosine = torch.cos(angles / 2)
+    sine = torch.sin(angles / 2)
+    matrices = cosine[:, None, None] * identity - 1.0j * sine[:, None, None] * operator
+    matrix = matrices[0] if angles.shape == (1,) else matrices
+    if pauli == "ZZ":
+        return _apply_diagonal_matrix(state, matrix, qubits, n_qubits)
+    return _apply_matrix_layout(state, matrix, qubits, n_qubits)
+
+
+def collect_run(args: argparse.Namespace) -> dict[str, object]:
+    """Execute one host/compiler lane of the fixed SV-011 matrix."""
+
+    from flagquantum.kernels.provenance import triton_compiler_provenance
     from flagquantum.simulation.statevector.pauli_rotation_dispatch import (
         _pauli_rotation_kernel_enabled,
         _try_apply_cataloged_pauli_rotation,
@@ -171,14 +193,8 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
             dtype=torch.float32,
             device="cuda",
         )
-        cosine = torch.cos(angles / 2)
-        sine = torch.sin(angles / 2)
         identity = torch.eye(4, device="cuda", dtype=torch.complex64)
         operator = _pauli_matrix(pauli, device=state.device)
-        matrices = (
-            cosine[:, None, None] * identity - 1.0j * sine[:, None, None] * operator
-        )
-        matrix = matrices[0] if not batched_parameter else matrices
         opcode = f"r{pauli.lower()}"
         if not _pauli_rotation_kernel_enabled(
             state,
@@ -196,10 +212,15 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
             n_qubits=n_qubits,
             opcode=opcode,
         )
-        reference = (
-            partial(_apply_diagonal_matrix, state, matrix, qubits, n_qubits)
-            if pauli == "ZZ"
-            else partial(_apply_matrix_layout, state, matrix, qubits, n_qubits)
+        reference = partial(
+            _apply_product_reference,
+            state,
+            angles,
+            identity=identity,
+            operator=operator,
+            qubits=qubits,
+            n_qubits=n_qubits,
+            pauli=pauli,
         )
         actual = dispatch()
         expected = reference()
