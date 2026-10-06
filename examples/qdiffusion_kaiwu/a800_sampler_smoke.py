@@ -199,7 +199,7 @@ def run_probe(
         "parameter_delta_max": parameter_delta,
         "limitations": [
             "The transport is an in-memory fake and no QBoson task was submitted.",
-            "This environment is not the plugin-declared Python 3.10 and Torch 2.7 lane.",
+            "This environment is not the frozen composite Python 3.10, Torch 2.7, and Kaiwu 1.3.1 lane.",
             "This is a single-host, single-device probe and not distributed execution.",
             "This does not constitute QDiffusion system or application acceptance.",
         ],

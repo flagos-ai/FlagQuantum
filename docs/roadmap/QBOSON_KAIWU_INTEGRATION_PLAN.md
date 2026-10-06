@@ -107,8 +107,8 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   Torch 2.13.0+cu129. A committed development probe can exercise the plugin,
   bounded sampler, explicit fake transport, backward pass, and parameter
   update in that image, but it must remain classified as preliminary evidence
-  because it neither uses the declared Python 3.10/Torch 2.7 lane nor QBoson
-  hardware.
+  because it neither uses the frozen composite Python 3.10/Torch 2.7/Kaiwu
+  1.3.1 lane nor QBoson hardware.
 - The documented `kaiwu==1.3.1` package was not available from the configured
   public package index during a download-only probe. The proprietary wheel or
   an approved platform download is still required to inspect and implement its
@@ -151,7 +151,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   records a value-free schema of the returned dictionary (field names, value
   types, lengths, dtypes, and shapes) after completion. Raw values are never
   retained, and this diagnostic structure does not automatically map or accept
-  a provider identity.
+  a provider identity. This absence was rechecked on 2026-10-06 against the
+  official 1.3.1 and latest CIM API pages; both continue to document only the
+  dictionary return type rather than a stable result-field schema.
 - Result-schema diagnostics now bound field counts, field-name length and
   syntax, dimensions, dtype names, and sequence-type inspection. Unsafe names
   are omitted, and inspection failure remains redacted and nonfatal to valid
@@ -829,12 +831,15 @@ The Kaiwu dependency must be optional and lazily imported. Importing
 `flagquantum` or running local CPU and accelerator tests must not require Kaiwu,
 credentials, or network access.
 
-The initial compatibility environment should be pinned as a separate test lane
-because the current Kaiwu PyTorch plugin declares Python 3.10, Torch 2.7.0,
-NumPy 2.2.6, and Kaiwu 1.3.1, while current Kaiwu documentation describes SDK
-1.4.1. The project must validate the chosen SDK version instead of assuming
-that 1.3.1 and 1.4.1 are interchangeable. FlagQuantum's broader Torch support
-must not be narrowed for users who do not install the integration.
+The initial compatibility environment should be pinned as a separate test lane.
+At the reviewed plugin revision, `pyproject.toml` declares Python `>=3.8`, while
+its requirements file independently pins Torch 2.7.0, NumPy 2.2.6, and Kaiwu
+1.3.1. Python 3.10 is imposed by the proprietary Kaiwu SDK documentation, so it
+is a requirement of the composite provider lane rather than a plugin metadata
+claim. Current Kaiwu documentation describes SDK 1.4.1. The project must
+validate the chosen SDK version instead of assuming that 1.3.1 and 1.4.1 are
+interchangeable. FlagQuantum's broader Torch support must not be narrowed for
+users who do not install the integration.
 
 Before production support, record the Kaiwu package source, hashes or lockfile,
 license, cloud-service terms, credential requirements, and an exit path that

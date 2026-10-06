@@ -10,13 +10,22 @@ checkpoint bytes stay outside Git and inside the private evidence boundary.
 | Input | Candidate source | Candidate revision or release | License status | Intake status |
 | --- | --- | --- | --- | --- |
 | Human proteome FASTA | `https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29` | Exact UniProt release, query semantics, canonical/isoform choice, and returned bytes still to freeze | UniProt declares CC BY 4.0 for copyrightable database content; the exact release and attribution record still require review | Not downloaded; blocked on an approved frozen query and release |
-| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate upstream commit `7362881bcf802245a1a074e2d24137575f30d79f` | The model card reports missing YAML metadata and exposes no license declaration. The official `bytedance/dplm` code repository is Apache-2.0 and describes itself as containing pretrained weights, but that alone does not prove that its license notice covers these exact separately hosted Hugging Face bytes. | Not downloaded; **hard-blocked on an explicit license/linkage review** |
-| DPLM tokenizer | Same frozen DPLM repository and revision as the checkpoint | Must equal the checkpoint revision | Same unresolved linkage between the official repository license and the separately hosted tokenizer bytes | Not downloaded; **hard-blocked on an explicit license/linkage review** |
+| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate upstream commit `7362881bcf802245a1a074e2d24137575f30d79f` | The model card reports missing YAML metadata and exposes no license declaration. The Apache-2.0 official `bytedance/dplm` repository says it contains the pretrained weights and its generation command names the `airkingbd/dplm_150m` family. This is strong candidate linkage evidence, but the separately hosted bytes still require an explicit license review and approval. | Not downloaded; linkage evidence identified, still blocked on explicit approval |
+| DPLM tokenizer | Same frozen DPLM repository and revision as the checkpoint | Must equal the checkpoint revision | The pinned Hugging Face commit adds the checkpoint and tokenizer files together, and the official repository names the same model family; applicability of Apache-2.0 to those separately hosted bytes still requires explicit review | Not downloaded; linkage evidence identified, still blocked on explicit approval |
 | ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | Exact downloaded `.pt` bytes and upstream identity still to freeze | Candidate model distribution is identified as MIT by the official model repository; applicability to the selected `.pt` bytes must be recorded during review | Not downloaded; blocked on review and exact digest |
 | Kaiwu SDK wheel | QBoson platform download associated with the approved account | Exact SDK 1.3.1 wheel required by the selected plugin lane | Proprietary package and cloud-service terms are not present in the public source tree | Unavailable; blocked on QBoson account, terms, and reviewed wheel |
 
 The candidate DPLM commit above is discovery metadata, not an approved frozen
 revision. Public availability alone is insufficient for acceptance.
+
+The linkage evidence was rechecked on 2026-10-06 against the official
+[`bytedance/dplm` repository](https://github.com/bytedance/dplm), its
+[Apache-2.0 license](https://github.com/bytedance/dplm/blob/main/LICENSE), and
+the pinned
+[`airkingbd/dplm_150m` commit](https://huggingface.co/airkingbd/dplm_150m/commit/7362881bcf802245a1a074e2d24137575f30d79f).
+The Hugging Face commit records the checkpoint and tokenizer files together,
+but contains no license file or model-card license metadata. These facts narrow
+the review question; they do not authorize download or use.
 
 ## Freeze procedure
 
@@ -41,13 +50,13 @@ revision. Public availability alone is insufficient for acceptance.
 
 ## Remaining decisions
 
-- Determine whether the Apache-2.0 notice in the official
-  `https://github.com/bytedance/dplm` repository applies to the exact
-  `airkingbd/dplm_150m` checkpoint and tokenizer bytes, and retain authoritative
-  evidence for that linkage. The code-repository license must not be silently
-  projected onto separately hosted model artifacts. If the linkage cannot be
-  established, choose a separately reviewed compatible checkpoint or stop the
-  final protein acceptance.
+- Approve or reject the candidate linkage between the official Apache-2.0
+  `https://github.com/bytedance/dplm` repository and the exact
+  `airkingbd/dplm_150m` checkpoint and tokenizer bytes. Retain the review
+  decision and evidence; do not convert the repository statements above into
+  approval automatically. If the linkage is rejected or remains inconclusive,
+  choose a separately reviewed compatible checkpoint or stop final protein
+  acceptance.
 - Freeze one UniProt release and explicitly choose whether isoforms are included.
 - Confirm that the official ESM2 model license applies to the selected `.pt`
   checkpoint and retain the evidence URL used for that decision.
