@@ -276,6 +276,60 @@ def test_live_system_sdk_subclass_cannot_claim_real_transport(
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
 
 
+def test_live_system_producer_rejects_cpu_slice_even_with_provider_identity(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def execute_cpu_slice(
+        device: torch.device, *, sampler: object, **kwargs: object
+    ) -> dict[str, object]:
+        del device, kwargs
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        return {
+            "proposal_device": "cpu",
+            "energy_device": "cpu",
+            "generated_device": "cpu",
+            "objective": 1.0,
+            "gradient_norm": 0.5,
+            "parameter_delta_max": 0.1,
+            "fallback_occurred": False,
+            "token_constraints_passed": True,
+        }
+
+    monkeypatch.setattr(system_module, "KaiwuSDKClient", _IdentityClient)
+    monkeypatch.setattr(
+        system_module, "_execute_qdiffusion_slice", execute_cpu_slice
+    )
+    record = run_live_system_probe(
+        client=_IdentityClient(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        project_no="CPQC-test",
+        task_prefix="cpu-slice",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        real_provider_transport=True,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is True
+    assert record["provider_identity_complete"] is True
+    assert record["qboson_hardware_used"] is True
+    assert record["acceptance"] == {"system": "fail", "application": "not_run"}
+
+
 def test_live_system_converts_keyboard_interrupt_to_failed_record(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

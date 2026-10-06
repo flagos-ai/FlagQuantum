@@ -464,6 +464,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   names fail locally instead of consuming QBoson quota for a run that the
   acceptance validator must later reject. The two development entrypoints use
   the same explicit device restriction.
+- The live-system producer independently repeats the acceptance-critical
+  runtime checks before writing `acceptance.system=pass`: proven completed
+  provider use, A800 plus exact `cuda:0`, proposal/energy/generation placement,
+  finite objective and gradients, and positive finite gradient and parameter
+  update. This prevents a direct helper call or future CLI refactor from
+  emitting a passing component that only the final bundle validator rejects.
 - System-component acceptance now independently reconciles its exact SDK-client
   provenance, remote-call count, sampling receipts, matrix identities, requested
   sample counts, provider task IDs, and single provider target. Final summaries

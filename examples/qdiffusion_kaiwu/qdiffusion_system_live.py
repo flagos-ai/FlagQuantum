@@ -335,15 +335,37 @@ def run_live_system_probe(
         and sampler.remote_call_count > 0
         and _completed_provider_result_has_identity(sampler)
     )
+    tensor_devices_complete = all(
+        slice_record.get(field) == "cuda:0"
+        for field in ("proposal_device", "energy_device", "generated_device")
+    )
+    training_values = tuple(
+        slice_record.get(field)
+        for field in ("objective", "gradient_norm", "parameter_delta_max")
+    )
+    training_complete = bool(
+        all(
+            not isinstance(value, bool)
+            and isinstance(value, (int, float))
+            and math.isfinite(float(value))
+            for value in training_values
+        )
+        and float(training_values[1]) > 0.0
+        and float(training_values[2]) > 0.0
+    )
     system_acceptance = bool(
         run_completed
         and verified_provider_transport
+        and provider_use_proven
         and provider_identity_complete
         and precision_complete
         and retrieval_resubmitted is False
+        and device == torch.device("cuda:0")
+        and "A800" in observed_gpu
+        and tensor_devices_complete
+        and training_complete
         and slice_record.get("fallback_occurred") is False
         and slice_record.get("token_constraints_passed") is True
-        and slice_record.get("parameter_delta_max", 0.0) > 0.0
     )
     return {
         "schema": SCHEMA,
