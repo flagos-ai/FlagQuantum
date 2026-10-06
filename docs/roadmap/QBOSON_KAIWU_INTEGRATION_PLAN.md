@@ -22,9 +22,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - On 2026-10-06 the authenticated platform beginner tutorial accepted the
   independently computed Max Cut result, marked the tutorial mastered, and
   displayed a notification that free real-machine credits had been issued. The
-  dashboard subsequently returned inconsistent balances while SPQC-1000 was
-  reported out of service, so that notification is not treated as verified or
-  spendable quota evidence. No provider task was submitted.
+  platform subsequently returned inconsistent service and tutorial states. A
+  later authenticated dashboard snapshot showed SPQC-1000 as available with
+  zero sampling credits and one optimization credit, while the SDK page again
+  labeled the beginner tutorial incomplete. The task table and 30-day totals
+  both remained zero. This is account-state reconnaissance, not approval to
+  spend the displayed optimization credit, and it does not satisfy the required
+  sampling quota. No provider task was submitted.
 - On 2026-10-06 a credential-free support request was submitted through the
   authenticated platform. It asks QBoson for the Kaiwu 1.3.1 CPython 3.10 Linux
   distribution and its digest and terms, an SDK-capable project number,
@@ -32,6 +36,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   open-source adapter publication without SDK-wheel redistribution. Until the
   account-bound response is retained and reviewed, the SDK approval, project,
   sampling-quota, and live-provider gates remain closed.
+- The authenticated SDK page currently offers platform downloads for Kaiwu
+  1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
+  submission. It also shows that an account-bound SDK authorization code exists,
+  but that code was kept masked and was not copied, revealed, or imported into
+  the development environment. These observations do not substitute for the
+  pinned 1.3.1 package, project assignment, credentials, or use approval.
 - The Phase 1 pure-data boundary is implemented under
   `flagquantum/ecosystem/kaiwu`. Ising validation, independent
   Kaiwu-convention energy evaluation, symmetric QUBO-to-Ising encoding with
@@ -595,8 +605,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   URLs, an approved license identifier, and a timezone-aware review time. The
   validator rejects insecure or credential-bearing URLs, fragments,
   `NOASSERTION`, `UNKNOWN`, `UNLICENSED`, and placeholders before credentials
-  are resolved. The current candidate DPLM checkpoint exposes files but no
-  license metadata. Its official code repository is Apache-2.0 and describes
+  are resolved. The current candidate DPLM checkpoint reference and metadata
+  both identify revision
+  `49b7125a5d28c6418fcc2f3c4fe799352ac1488b`; its seven-file inventory exposes
+  checkpoint and tokenizer files but no license file, and the metadata has no
+  license field. Its official code repository is Apache-2.0 and describes
   pretrained weights, but the exact separately hosted checkpoint bytes have not
   been authoritatively linked to that notice. The checkpoint therefore remains
   blocked rather than being treated as approved merely because it is publicly

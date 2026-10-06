@@ -20,12 +20,15 @@ is imported as a module and user-site packages cannot silently replace it.
 
 On 2026-10-06 the authenticated QBoson beginner tutorial accepted the Max Cut
 answer, marked the tutorial mastered, and displayed a notification that free
-real-machine credits had been issued. A later dashboard refresh reported
-SPQC-1000 out of service and returned balances inconsistent with the earlier
-view. Treat the tutorial notification as completion evidence only, not as
-proof that either quota class is currently available. Do not submit a provider
-task until the required quota is shown consistently and separately approved
-for this validation.
+real-machine credits had been issued. Later authenticated views were
+inconsistent: one reported SPQC-1000 out of service, while a subsequent view
+reported it available with zero sampling credits and one optimization credit;
+the SDK page also relabeled the tutorial incomplete. The task table and 30-day
+task totals remained zero. Treat the tutorial notification and displayed
+optimization balance as account reconnaissance only, not as proof that the
+required quota pair is stable or approved. Do not submit a provider task until
+both required quota classes are shown consistently and separately approved for
+this validation.
 
 On the same date, a credential-free platform support request asked for the
 Kaiwu 1.3.1 CPython 3.10 Linux package and its digest and terms, an SDK-capable
@@ -35,6 +38,13 @@ The platform displayed `Submitted successfully`; no ticket identifier was
 provided. Retain the response received through the account-bound channel as a
 private review input. Do not copy account identifiers or SDK authorization
 codes into the repository while recording that response.
+
+The authenticated SDK page currently offers Kaiwu 1.4.1 downloads and retains
+a 1.3.1 release-note entry stating that sample-mode task submission was added.
+It displays an account-bound SDK authorization code only in masked form. That
+secret was not revealed, copied, or imported into the integration environment.
+The presence of a masked code is not an approved credential handoff and does
+not relax the pinned-version, project, quota, package, or terms gates.
 
 ## Required inputs
 
@@ -612,7 +622,7 @@ use. No dataset or model file was downloaded during this review.
 | Artifact | Candidate source and observed state | Intake decision |
 | --- | --- | --- |
 | Human proteome FASTA | [UniProt REST stream](https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29); UniProt publishes [CC BY 4.0 license information](https://www.uniprot.org/help/license). | Source and license evidence identified. Acquisition still requires explicit authorization, a frozen revision or retrieval identity, a content digest, and a completed review timestamp. |
-| DPLM 150M checkpoint and tokenizer | [`airkingbd/dplm_150m`](https://huggingface.co/airkingbd/dplm_150m) identifies itself as the 150M checkpoint and links the official implementation. The model repository currently exposes checkpoint and tokenizer files but no license badge, license metadata, or LICENSE file. The linked [implementation repository](https://github.com/bytedance/dplm) is Apache-2.0, but that notice is not treated as an authoritative license for the separately hosted model bytes. | Blocked. Do not download, stage, or fill the checkpoint/tokenizer `license_id` fields until the model publisher or an approved organizational review explicitly resolves the weights and tokenizer rights. |
+| DPLM 150M checkpoint and tokenizer | [`airkingbd/dplm_150m`](https://huggingface.co/airkingbd/dplm_150m) identifies itself as the 150M checkpoint and links the official implementation. Its `main` reference and public metadata resolved to candidate commit `49b7125a5d28c6418fcc2f3c4fe799352ac1488b` on 2026-10-06. The seven-file inventory contains checkpoint and tokenizer files but no license file, and the metadata has no license field. The linked [implementation repository](https://github.com/bytedance/dplm) is Apache-2.0, but that notice is not treated as an authoritative license for the separately hosted model bytes. | Blocked. Do not download, stage, or fill the checkpoint/tokenizer `license_id` fields until the model publisher or an approved organizational review explicitly resolves the weights and tokenizer rights. |
 | ESM2 evaluation model | [`facebook/esm2_t33_650M_UR50D`](https://huggingface.co/facebook/esm2_t33_650M_UR50D) declares MIT. The configured binary source remains the Meta-hosted checkpoint URL. | Source and license evidence identified. Acquisition still requires explicit authorization, an immutable revision or release identity, a content digest, and a completed review timestamp. |
 
 Before downloading any approved artifact, replace mutable branch names with an
