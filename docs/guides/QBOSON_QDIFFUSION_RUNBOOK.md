@@ -688,6 +688,13 @@ also verify the resolved `kaiwu.torch_plugin` and QDiffusion module files are
 inside that root. Every loaded `kaiwu.torch_plugin.*` and `dplm.*` transitive
 module must resolve inside the corresponding reviewed plugin subtree:
 
+Keep the selected training run directory and its files owner-only until both
+consumers finish. Evaluation and replay reject a public or symlinked run
+directory, public consumed artifacts, and a public trained checkpoint even when
+their byte digests still match. Evaluation completes the run-directory,
+artifact, and frozen ESM2 checks before initializing `cuda:0`; replay completes
+the training-directory and checkpoint checks before credential resolution.
+
 The evaluator retains a stable no-follow snapshot for every consumed training
 FASTA and quality JSON. Plugin FASTA reads are bracketed by identity checks,
 quality JSON is parsed from the captured descriptor, and the complete set is

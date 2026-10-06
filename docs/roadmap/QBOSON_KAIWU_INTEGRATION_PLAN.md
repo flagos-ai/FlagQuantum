@@ -534,6 +534,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   sampling receipts, call budget, no-fallback state, and precision completeness.
   Injected or incomplete training evidence therefore fails before either A800
   evaluation work or another quota-consuming replay can begin.
+- Evaluation and replay consumers now also require the recorded training run
+  directory to remain owner-only and non-symlinked, and reject any consumed
+  training artifact or selected checkpoint whose permissions were widened.
+  Evaluation performs both this check and the frozen ESM2 identity pass before
+  initializing CUDA, while replay performs it before resolving credentials.
 - The ESM2 evaluator now independently reloads the primary host's private
   post-extraction preflight and requires both its record digest and shared
   transfer-manifest digest to match the training record before loading the

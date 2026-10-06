@@ -13,6 +13,7 @@ import math
 import os
 import platform
 import socket
+import stat
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -122,6 +123,9 @@ def _verified_checkpoint_snapshot(
     checkpoint_path: Path,
     training_record: dict[str, Any],
 ) -> RegularFileSnapshot:
+    validate_private_directory(
+        run_directory, label="protein training run directory"
+    )
     try:
         checkpoint_path.resolve().relative_to(run_directory.resolve())
     except ValueError:
@@ -138,6 +142,9 @@ def _verified_checkpoint_snapshot(
         raise ValueError("trained checkpoint is absent or symbolic") from None
     if snapshot.sha256 != training_record.get("trained_energy_checkpoint_sha256"):
         raise ValueError("trained checkpoint digest differs from the training record")
+    if stat.S_IMODE(checkpoint_path.lstat().st_mode) & 0o077:
+        raise ValueError("trained checkpoint must be owner-only")
+    revalidate_regular_file(snapshot, label="trained energy checkpoint")
     return snapshot
 
 

@@ -34,6 +34,12 @@ def test_evaluation_preflights_private_output_before_workflow() -> None:
     assert source.index(
         "validate_private_json_output_path(args.output)"
     ) < source.index("config, config_sha256 = _load_frozen_config(args.config)")
+    assert source.index(
+        "paths = _verified_training_paths(args.run_directory, record)"
+    ) < source.index('device = torch.device("cuda:0")')
+    assert source.rindex(
+        "_artifact_identity_snapshot(args.evaluation_model)"
+    ) < source.index('device = torch.device("cuda:0")')
 
 
 def _provider_training_record() -> dict[str, Any]:
@@ -105,6 +111,7 @@ def _provider_training_record() -> dict[str, Any]:
 def _write(path: Path, content: str) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+    path.chmod(0o600)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -171,6 +178,37 @@ def test_verified_training_paths_recomputes_every_digest(tmp_path: Path) -> None
 
     expected["guided_fasta"].write_text(">p1\nXXXX\n", encoding="utf-8")
     with pytest.raises(ValueError, match="digest mismatch: guided_fasta"):
+        _verified_training_paths(tmp_path, record)
+
+
+def test_verified_training_paths_requires_private_run_directory(
+    tmp_path: Path,
+) -> None:
+    record, _ = _training_artifacts(tmp_path)
+    tmp_path.chmod(0o755)
+
+    with pytest.raises(ValueError, match="private, non-symlink directory"):
+        _verified_training_paths(tmp_path, record)
+
+
+def test_verified_training_paths_rejects_symlinked_run_directory(
+    tmp_path: Path,
+) -> None:
+    real_run = tmp_path / "real-run"
+    real_run.mkdir(mode=0o700)
+    record, _ = _training_artifacts(real_run)
+    linked_run = tmp_path / "linked-run"
+    linked_run.symlink_to(real_run, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="private, non-symlink directory"):
+        _verified_training_paths(linked_run, record)
+
+
+def test_verified_training_paths_rejects_public_artifact(tmp_path: Path) -> None:
+    record, paths = _training_artifacts(tmp_path)
+    paths["guided_fasta"].chmod(0o644)
+
+    with pytest.raises(ValueError, match="must be owner-only: guided_fasta"):
         _verified_training_paths(tmp_path, record)
 
 

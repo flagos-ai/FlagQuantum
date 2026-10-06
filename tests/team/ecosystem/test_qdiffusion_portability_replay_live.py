@@ -138,6 +138,7 @@ def test_verified_checkpoint_requires_primary_digest(tmp_path: Path) -> None:
     checkpoint = tmp_path / "checkpoints" / "best_epoch_3.pt"
     checkpoint.parent.mkdir()
     checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o600)
     digest = hashlib.sha256(b"trained").hexdigest()
     record = {
         "trained_energy_checkpoint_name": checkpoint.name,
@@ -148,6 +149,20 @@ def test_verified_checkpoint_requires_primary_digest(tmp_path: Path) -> None:
 
     checkpoint.write_bytes(b"changed")
     with pytest.raises(ValueError, match="digest differs"):
+        _verified_checkpoint(tmp_path, checkpoint, record)
+
+
+def test_verified_checkpoint_rejects_public_file(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_3.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o644)
+    record = {
+        "trained_energy_checkpoint_name": checkpoint.name,
+        "trained_energy_checkpoint_sha256": hashlib.sha256(b"trained").hexdigest(),
+    }
+
+    with pytest.raises(ValueError, match="must be owner-only"):
         _verified_checkpoint(tmp_path, checkpoint, record)
 
 

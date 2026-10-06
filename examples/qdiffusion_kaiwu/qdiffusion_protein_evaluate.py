@@ -8,6 +8,7 @@ import importlib
 import platform
 import re
 import socket
+import stat
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -23,6 +24,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
 )
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
+    validate_private_directory,
     validate_private_json_output_path,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
@@ -122,6 +124,9 @@ def _verified_training_paths(
     run_directory: Path,
     record: dict[str, Any],
 ) -> _VerifiedTrainingPaths:
+    validate_private_directory(
+        run_directory, label="protein training run directory"
+    )
     if run_directory.name != record.get("run_directory_name"):
         raise ValueError("training run directory name differs from its record")
     raw_artifacts = record.get("workflow_artifacts")
@@ -161,6 +166,9 @@ def _verified_training_paths(
             ) from None
         if snapshot.sha256 != expected:
             raise ValueError(f"training artifact digest mismatch: {name}")
+        if stat.S_IMODE(candidate.lstat().st_mode) & 0o077:
+            raise ValueError(f"training artifact must be owner-only: {name}")
+        revalidate_regular_file(snapshot, label=f"training artifact {name}")
         paths[name] = candidate
         snapshots[name] = snapshot
     return _VerifiedTrainingPaths(paths, snapshots)
@@ -417,6 +425,19 @@ def main() -> None:
         parser.error("training source revision differs from --source-revision")
     if record.get("kaiwu_pytorch_plugin_revision") != args.plugin_revision:
         parser.error("training plugin revision differs from --plugin-revision")
+    paths = _verified_training_paths(args.run_directory, record)
+    (
+        evaluation_digest,
+        algorithm,
+        file_count,
+        evaluation_snapshot,
+    ) = _artifact_identity_snapshot(args.evaluation_model)
+    if algorithm != "file-sha256-v1" or file_count != 1:
+        parser.error("ESM2 evaluation model must be one local checkpoint file")
+    if not isinstance(evaluation_snapshot, RegularFileSnapshot):
+        parser.error("ESM2 evaluation model must be one local checkpoint file")
+    if evaluation_digest != config["evaluation_model"]["sha256"]:
+        parser.error("ESM2 checkpoint digest differs from frozen configuration")
     try:
         source_preflight_sha256, transfer_manifest_sha256 = _verified_evaluation_source(
             args.source_preflight,
@@ -456,19 +477,6 @@ def main() -> None:
     if "A800" not in gpu:
         parser.error("ESM2 evaluation requires an NVIDIA A800")
 
-    (
-        evaluation_digest,
-        algorithm,
-        file_count,
-        evaluation_snapshot,
-    ) = _artifact_identity_snapshot(args.evaluation_model)
-    if algorithm != "file-sha256-v1" or file_count != 1:
-        parser.error("ESM2 evaluation model must be one local checkpoint file")
-    if not isinstance(evaluation_snapshot, RegularFileSnapshot):
-        parser.error("ESM2 evaluation model must be one local checkpoint file")
-    if evaluation_digest != config["evaluation_model"]["sha256"]:
-        parser.error("ESM2 checkpoint digest differs from frozen configuration")
-    paths = _verified_training_paths(args.run_directory, record)
     workflow, helpers = _load_pinned_eval_workflow(args.plugin_root)
     baseline, guided = evaluate_outputs(
         workflow=workflow,
