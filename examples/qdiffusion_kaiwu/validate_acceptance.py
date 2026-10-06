@@ -733,6 +733,15 @@ def _validate_execution_component_time(
                 errors.append(
                     f"{label}: remote receipt {index} submission follows its record"
                 )
+            for prerequisite_label, prerequisite_time in prerequisites:
+                if (
+                    prerequisite_time is not None
+                    and submitted_at < prerequisite_time
+                ):
+                    errors.append(
+                        f"{label}: remote receipt {index} predates the "
+                        f"{prerequisite_label}"
+                    )
     return recorded_at
 
 
@@ -2733,6 +2742,21 @@ def _validate_provider_smoke_component(
             raise ValueError
     except (TypeError, ValueError):
         errors.append(f"{label}: recorded_at must be an aware UTC timestamp")
+    smoke_prerequisites = (
+        ("frozen config", config.get("preregistered_at")),
+        (
+            "SDK rights review",
+            _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                "rights_reviewed_at"
+            ),
+        ),
+        (
+            "project assignment review",
+            _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                "project_assignment_reviewed_at"
+            ),
+        ),
+    )
     if smoke_time is not None:
         try:
             resources_ready, resource_reason = assess_provider_resources(
@@ -2746,21 +2770,7 @@ def _validate_provider_smoke_component(
                     f"{label}: provider resource snapshot was not ready: "
                     f"{resource_reason}"
                 )
-        for timestamp, timestamp_label in (
-            (config.get("preregistered_at"), "frozen config"),
-            (
-                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
-                    "rights_reviewed_at"
-                ),
-                "SDK rights review",
-            ),
-            (
-                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
-                    "project_assignment_reviewed_at"
-                ),
-                "project assignment review",
-            ),
-        ):
+        for timestamp_label, timestamp in smoke_prerequisites:
             try:
                 prerequisite = datetime.fromisoformat(
                     str(timestamp).replace("Z", "+00:00")
@@ -2829,6 +2839,16 @@ def _validate_provider_smoke_component(
                 raise ValueError
             if smoke_time is not None and submitted_at > smoke_time:
                 errors.append(f"{label}: task {index} submission follows its record")
+            for prerequisite_label, prerequisite_value in smoke_prerequisites:
+                prerequisite_time = _parse_timestamp(prerequisite_value)
+                if (
+                    prerequisite_time is not None
+                    and submitted_at < prerequisite_time
+                ):
+                    errors.append(
+                        f"{label}: task {index} submission predates the "
+                        f"{prerequisite_label}"
+                    )
             if (
                 snapshot_captured_at is not None
                 and submitted_at < snapshot_captured_at

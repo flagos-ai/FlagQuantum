@@ -241,6 +241,8 @@ def test_provider_smoke_tasks_cannot_predate_the_resource_snapshot() -> None:
 
     assert "provider smoke: task 0 submission predates its resource snapshot" in errors
     assert "provider smoke: task 1 submission predates its resource snapshot" in errors
+    assert "provider smoke: task 0 submission predates the SDK rights review" in errors
+    assert "provider smoke: task 1 submission predates the SDK rights review" in errors
 
 
 @pytest.mark.parametrize(
@@ -583,7 +585,7 @@ def test_execution_component_time_is_bound_to_prerequisites_and_receipts() -> No
     valid = {
         "recorded_at": "2026-10-06T00:00:00+00:00",
         "task_receipts": [
-            {"submitted_at": "2026-10-05T00:00:00+00:00"},
+            {"submitted_at": "2026-10-06T00:00:00+00:00"},
         ],
     }
     smoke_time = datetime.fromisoformat("2026-10-06T00:00:00+00:00")
@@ -611,6 +613,15 @@ def test_execution_component_time_is_bound_to_prerequisites_and_receipts() -> No
                 ],
             },
             "submission follows its record",
+        ),
+        (
+            {
+                **valid,
+                "task_receipts": [
+                    {"submitted_at": "2026-10-05T23:59:59+00:00"}
+                ],
+            },
+            "remote receipt 0 predates the provider smoke",
         ),
     )
     for record, message in mutations:

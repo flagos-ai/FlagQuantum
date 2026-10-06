@@ -218,7 +218,7 @@ def _system(
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",
-                "submitted_at": "2026-10-05T13:00:00+00:00",
+                "submitted_at": "2026-10-06T00:00:00+00:00",
                 "provider_task_id": task_id,
                 "provider_target": "SPQC-provider",
             }
@@ -470,7 +470,7 @@ def _components(
                             "mode": "sampling",
                             "requested_samples": 10,
                             "project_no": "CPQC-test",
-                            "submitted_at": "2026-10-05T13:00:00+00:00",
+                            "submitted_at": "2026-10-06T00:00:00+00:00",
                             "provider_task_id": f"protein-task-{seed}",
                             "provider_target": "SPQC-provider",
                         }
@@ -613,7 +613,7 @@ def _portability(
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",
-                "submitted_at": "2026-10-05T13:00:00+00:00",
+                "submitted_at": "2026-10-06T00:00:00+00:00",
                 "provider_task_id": "portability-task",
                 "provider_target": "SPQC-provider",
             }

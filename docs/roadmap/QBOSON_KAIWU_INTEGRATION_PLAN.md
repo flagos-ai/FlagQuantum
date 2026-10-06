@@ -1049,11 +1049,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - Executable component timestamps are now evidence rather than unchecked
   strings. System, training, evaluation, and portability records require an
   aware UTC `recorded_at` at or after preregistration, the SDK rights review,
-  and the retained Phase 2 smoke; every remote receipt must be submitted no
-  later than its enclosing record. Training cannot predate the primary system
-  probe, evaluation cannot predate its linked training record, and portability
-  cannot predate either the replay-host system probe or its selected training
-  record.
+  project-assignment review, and the retained Phase 2 smoke; every remote
+  receipt must itself follow those prerequisites and be submitted no later than
+  its enclosing record. The two smoke receipts must likewise follow
+  preregistration, rights review, and project-assignment review. Training cannot
+  predate the primary system probe, evaluation cannot predate its linked
+  training record, and portability cannot predate either the replay-host system
+  probe or its selected training record.
 - The frozen config now records a distinct machine-reported hostname for each
   validation alias. All four live QDiffusion entrypoints require
   `--expected-hostname` to equal that frozen mapping before observing the local
