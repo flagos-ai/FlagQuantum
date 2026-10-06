@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -207,6 +210,8 @@ def test_local_golden_path_is_pinned_and_credential_free() -> None:
     assert "status --porcelain --untracked-files=all" in source
     assert "unset QBOSON_USER_ID QBOSON_SDK_CODE QBOSON_PROJECT_NO" in source
     assert "PYTHONNOUSERSITE=1" in source
+    assert "FLAGQUANTUM_NETWORK_DISABLED=1" in source
+    assert 'PYTHONPATH="$OFFLINE_GUARD_DIR:' in source
     assert (
         'PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/flagquantum-kaiwu-pycache-$$"' in source
     )
@@ -217,3 +222,43 @@ def test_local_golden_path_is_pinned_and_credential_free() -> None:
     assert "test_qdiffusion_sdk_approval.py" in source
     assert "test_kaiwu_vertical_slice.py" in source
     assert "qboson_live_smoke.py" not in source
+
+
+def test_local_golden_path_offline_guard_denies_dns_and_ip_connections() -> None:
+    repository = Path(__file__).parents[3]
+    guard = repository / "examples" / "qdiffusion_kaiwu" / "offline_guard"
+    program = """
+import errno
+import socket
+
+operations = (
+    lambda: socket.getaddrinfo("example.com", 443),
+    lambda: socket.create_connection(("127.0.0.1", 9)),
+    lambda: socket.socket().connect(("127.0.0.1", 9)),
+)
+for operation in operations:
+    try:
+        operation()
+    except OSError as exc:
+        assert exc.errno == errno.ENETUNREACH
+        assert "local-conformance guard" in str(exc)
+    else:
+        raise AssertionError("network operation escaped the offline guard")
+"""
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(guard),
+        "PYTHONNOUSERSITE": "1",
+        "FLAGQUANTUM_NETWORK_DISABLED": "1",
+    }
+
+    completed = subprocess.run(
+        [sys.executable, "-s", "-c", program],
+        cwd=repository,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr

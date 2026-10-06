@@ -14,6 +14,7 @@ PLUGIN_ROOT="$2"
 PYTHON_BIN="${3:-python3}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPOSITORY_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
+OFFLINE_GUARD_DIR="$SCRIPT_DIR/offline_guard"
 
 for source_root in "$COMMUNITY_ROOT" "$PLUGIN_ROOT"; do
   if [[ "$source_root" != /* ]]; then
@@ -56,8 +57,9 @@ export PYTHONNOUSERSITE=1
 export PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/flagquantum-kaiwu-pycache-$$"
 export TRANSFORMERS_OFFLINE=1
 export HF_HUB_OFFLINE=1
+export FLAGQUANTUM_NETWORK_DISABLED=1
 export FLAGQUANTUM_TEST_KAIWU_SOURCE=1
-export PYTHONPATH="$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
+export PYTHONPATH="$OFFLINE_GUARD_DIR:$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
 
 cd -- "$REPOSITORY_ROOT"
 "$PYTHON_BIN" -B -m pytest -q \

@@ -13,7 +13,10 @@ precision, remote-lifecycle, sampler, pinned Kaiwu Community, and pinned Kaiwu
 PyTorch Plugin contracts. It performs no network or provider operation, removes
 QBoson credential variables from the child environment, requires clean source
 checkouts at the reviewed revisions, explicitly enables only those source-based
-conformance tests, and normally completes in under ten minutes:
+conformance tests, and normally completes in under ten minutes. A dedicated
+`sitecustomize` guard denies DNS resolution and IP socket connections throughout
+the pytest process tree, including Python subprocesses; offline-model variables
+alone are not treated as proof that the path cannot use the network:
 
 ```bash
 bash examples/qdiffusion_kaiwu/run_local_conformance.sh \

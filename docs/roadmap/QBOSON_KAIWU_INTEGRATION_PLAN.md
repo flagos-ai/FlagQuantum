@@ -547,7 +547,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   declaring an unapproved dependency extra, and runs conversion, lifecycle,
   sampler, plugin, and live-probe contract tests without network access or
   provider quota. It is explicitly local conformance evidence rather than A800
-  or QBoson evidence. After adding the quota planner, pinned 1.3.1 mode mapping,
+  or QBoson evidence. The entrypoint now prepends a dedicated `sitecustomize`
+  guard that denies DNS resolution and IP socket connections in pytest and its
+  Python subprocesses; Hugging Face offline variables are retained but are no
+  longer the only network control. After adding the quota planner, pinned 1.3.1
+  mode mapping,
   fail-closed SDK-lane selection, xattr-free stream contract, and pre-credential
   private-output validation, credential clearing, persisted-failure redaction,
   printable canonical provider-identity validation, and exact plugin metadata
