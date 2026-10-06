@@ -219,7 +219,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   printable project string can therefore no longer open the provider gate. The
   rights-review timestamp must also be on or after the bound service agreement's
   effective date; approval of an earlier terms version cannot authorize the
-  current SDK lane.
+  current SDK lane. Rights-review and project-assignment timestamps more than
+  five minutes in the future are rejected before readiness or credential
+  discovery, preventing a not-yet-effective approval from opening a
+  quota-consuming entrypoint.
 - The SDK approval, environment lock, and live frozen-config readers now share
   a bounded descriptor-relative private-input path. They require an owner-only
   non-symlink parent and owner-only regular leaf, open the leaf with

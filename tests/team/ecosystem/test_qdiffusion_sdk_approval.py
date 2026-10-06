@@ -81,12 +81,22 @@ def test_private_sdk_approval_loads_with_stable_identity(tmp_path: Path) -> None
             "2026-07-08T23:59:59Z",
             "predates the reviewed service terms",
         ),
+        (
+            "rights_reviewed_at",
+            "2999-01-01T00:00:00Z",
+            "review time is in the future",
+        ),
         ("approval_reference", "<required>", "frozen value is required"),
         ("project_no", "<required>", "assigned project is required"),
         (
             "project_assignment_reviewed_at",
             "2026-10-06",
             "timezone-aware timestamp",
+        ),
+        (
+            "project_assignment_reviewed_at",
+            "2999-01-01T00:00:00Z",
+            "review time is in the future",
         ),
         (
             "project_assignment_reference",

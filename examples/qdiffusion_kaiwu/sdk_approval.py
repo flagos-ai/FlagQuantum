@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +53,7 @@ EXPECTED_IDENTITY = {
 }
 SHA256 = re.compile(r"[0-9a-f]{64}")
 _MAX_APPROVAL_BYTES = 64 * 1024
+_MAX_CLOCK_SKEW = timedelta(minutes=5)
 
 
 def _canonical_printable_identifier(value: Any) -> bool:
@@ -81,6 +82,7 @@ def validate_sdk_approval_record(
     if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
         errors.append(f"{label}.sha256: expected a SHA-256 digest")
     reviewed_at = record.get("rights_reviewed_at")
+    observed_now = datetime.now(timezone.utc)
     reviewed_timestamp: datetime | None = None
     try:
         reviewed_timestamp = datetime.fromisoformat(
@@ -89,6 +91,7 @@ def validate_sdk_approval_record(
         if reviewed_timestamp.tzinfo is None:
             raise ValueError
     except ValueError:
+        reviewed_timestamp = None
         errors.append(f"{label}.rights_reviewed_at: expected a timezone-aware timestamp")
     service_terms_date = datetime.fromisoformat(
         EXPECTED_IDENTITY["service_terms_effective_date"]
@@ -100,6 +103,11 @@ def validate_sdk_approval_record(
         errors.append(
             f"{label}.rights_reviewed_at: predates the reviewed service terms"
         )
+    if (
+        reviewed_timestamp is not None
+        and reviewed_timestamp > observed_now + _MAX_CLOCK_SKEW
+    ):
+        errors.append(f"{label}.rights_reviewed_at: review time is in the future")
     approval_reference = record.get("approval_reference")
     if (
         not _canonical_printable_identifier(approval_reference)
@@ -121,6 +129,11 @@ def validate_sdk_approval_record(
             f"{label}.project_assignment_reviewed_at: expected a timezone-aware "
             "timestamp"
         )
+    else:
+        if project_reviewed_timestamp > observed_now + _MAX_CLOCK_SKEW:
+            errors.append(
+                f"{label}.project_assignment_reviewed_at: review time is in the future"
+            )
     project_reference = record.get("project_assignment_reference")
     if (
         not _canonical_printable_identifier(project_reference)
