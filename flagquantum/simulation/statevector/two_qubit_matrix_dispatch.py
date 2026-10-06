@@ -72,15 +72,17 @@ def _two_qubit_matrix_kernel_enabled(
 
     if not _two_qubit_matrix_dispatch_enabled():
         return False
-    if not _two_qubit_matrix_shape_supported(
-        state.shape,
-        matrix.shape,
-        wires=wires,
-        n_wires=n_wires,
-    ):
+    if state.ndim != 2 or matrix.shape != (4, 4) or len(wires) != 2 or n_wires < 2:
         return False
+    batch, amplitudes = state.shape
     return bool(
-        state.is_cuda
+        batch in _EVIDENCED_BATCHES
+        and _MIN_AMPLITUDES_PER_STATE <= amplitudes <= _MAX_AMPLITUDES_PER_STATE
+        and amplitudes == 1 << n_wires
+        and wires[0] != wires[1]
+        and 0 <= wires[0] < n_wires
+        and 0 <= wires[1] < n_wires
+        and state.is_cuda
         and matrix.is_cuda
         and state.device == matrix.device
         and state.dtype == torch.complex64
@@ -140,13 +142,6 @@ def _apply_cataloged_two_qubit_matrix(
     """Execute SV-009 after exact catalog authorization."""
 
     normalized_wires = tuple(int(wire) for wire in wires)
-    if not _two_qubit_matrix_kernel_enabled(
-        state,
-        matrix,
-        wires=normalized_wires,
-        n_wires=n_wires,
-    ):
-        raise ValueError("dense local two-qubit kernel does not support this request")
     _require_two_qubit_matrix_kernel(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
