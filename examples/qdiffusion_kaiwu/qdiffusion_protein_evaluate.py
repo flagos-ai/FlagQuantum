@@ -517,6 +517,8 @@ def main() -> None:
         "provider_quota_consumed": False,
         "acceptance": "candidate_evidence_only",
     }
+    revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")
+    _revalidate_training_paths(paths)
     _write_private_redacted_json(args.output, payload, forbidden_values=())
     print(f"Private protein-evaluation record written to {args.output}")
 

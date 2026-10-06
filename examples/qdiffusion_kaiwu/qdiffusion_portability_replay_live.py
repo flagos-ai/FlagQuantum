@@ -622,6 +622,7 @@ def main() -> None:
         revalidate_regular_file(
             checkpoint_snapshot, label="trained energy checkpoint"
         )
+        revalidate_artifact_snapshots(artifact_snapshots)
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
         payload["acceptance"]["portability"] = "fail"

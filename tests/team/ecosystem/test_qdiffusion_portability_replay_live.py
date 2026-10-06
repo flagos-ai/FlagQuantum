@@ -567,6 +567,14 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     assert source.index("validate_private_directory(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    postflight = source[
+        source.index("artifact_postflight_error: BaseException | None = None") :
+        source.index("apply_artifact_postflight(payload, artifact_postflight_error)")
+    ]
+    assert postflight.count("revalidate_artifact_snapshots(artifact_snapshots)") == 2
+    assert postflight.rindex(
+        "revalidate_artifact_snapshots(artifact_snapshots)"
+    ) > postflight.index("_revalidate_training_paths(training_paths)")
     assert source.index('os.environ.pop("QBOSON_USER_ID", None)') < source.index(
         "client = KaiwuSDKClient("
     )

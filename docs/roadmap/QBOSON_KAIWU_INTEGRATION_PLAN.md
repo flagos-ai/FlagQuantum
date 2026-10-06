@@ -809,6 +809,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   descriptor, and both evaluation and portability replay revalidate the
   original snapshots after consumption instead of relying only on a later
   same-digest path lookup.
+- Evaluation rechecks its ESM2 and consumed-training snapshots again after the
+  evidence payload is constructed and immediately before exclusive record
+  publication. Replay likewise finishes postflight by rechecking all four
+  frozen artifact snapshots after the training-output and checkpoint checks,
+  so payload construction cannot leave an unverified last-write window.
 - Portability replay now carries the selected trained-energy checkpoint as a
   stable snapshot after matching its name and digest to the primary training
   record. The plugin weight loader is bracketed by identity checks, generation

@@ -40,6 +40,11 @@ def test_evaluation_preflights_private_output_before_workflow() -> None:
     assert source.rindex(
         "_artifact_identity_snapshot(args.evaluation_model)"
     ) < source.index('device = torch.device("cuda:0")')
+    write_index = source.index("_write_private_redacted_json(args.output")
+    assert source.rindex(
+        'revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")'
+    ) < write_index
+    assert source.rindex("_revalidate_training_paths(paths)") < write_index
 
 
 def _provider_training_record() -> dict[str, Any]:
