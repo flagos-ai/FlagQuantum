@@ -106,9 +106,9 @@ def test_dispatch_run_validator_accepts_complete_measurements() -> None:
 
 def test_dispatch_run_validator_recomputes_median_and_enforces_floor() -> None:
     payload = _run(HOSTS[0], COMPILER_LANES[0])
-    payload["cases"][0]["public_catalog_dispatch"][
-        "median_seconds_per_invocation"
-    ] = 9.0
+    payload["cases"][0]["public_catalog_dispatch"]["median_seconds_per_invocation"] = (
+        9.0
+    )
     with pytest.raises(ValueError, match="median is invalid"):
         validate_run(payload)
 
