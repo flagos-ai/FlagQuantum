@@ -66,8 +66,8 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wir
 indices; a `StabilizerCode` is a value that declares its distance, wire layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode` and
-`triangular_colour_code` are the four records that implement it.
+layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode`, `triangular_colour_code`
+and `toric_code` are the five records that implement it.
 
 `CssCode` is the second way into that protocol, and it is the way in for a code
 this package does not declare. It takes the four CSS blocks as plain sequences of
@@ -121,13 +121,15 @@ to it, and saying so is the honest boundary: a `CodeCheck` states one ancilla an
 one CNOT direction chosen by the check's type, so a mixed X-and-Z stabilizer still
 has no row here, and `build_memory_circuit` still refuses a declared product that
 is neither pure X nor pure Z. The named qLDPC, Reichardt and Floquet families
-remain absent as *records* -- a matrix has a route in, and one family now arrives
-that way without a caller writing it, but none of these three does. What the
+remain absent as *records* -- a matrix has a route in, and two families now arrive
+that way without a caller writing them, but none of these three does. What the
 colour record changes about the layer above it is the shape of a check: a face on
 the triangular patch's edge spans four qubits and a face in its bulk spans six, so
-`triangular_colour_code` is the first record whose checks are not all of one
-weight, and its two check blocks are literally one matrix because every face
-carries both stabilizers. A check still names one ancilla and one CNOT direction,
+`triangular_colour_code` is the record whose checks reach weight six, and its two
+check blocks are literally one matrix because every face carries both stabilizers.
+The rotated surface patch also has checks of two weights, but its reduced checks
+are weight two, which is a boundary wire pair rather than a face that could have
+carried more. A check still names one ancilla and one CNOT direction,
 so a weight-six face is six CNOTs onto one ancilla rather than a second ancilla,
 and the patch stays inside the protocol. It is also the first record here whose
 matrices are derived from a rule about its lattice rather than transcribed, which
@@ -135,6 +137,24 @@ is what keeps a declaration from being copied out of another framework's source;
 `tests/qec/test_colour_code.py` holds the derivation to the closed forms its
 distance implies, and it is the record's own numbers rather than a comparison
 against another framework's patch that stand behind them.
+
+The periodic route reaches the same protocol from the other side, and it changes
+the shape of the *layout* rather than the shape of a check. `toric_code` identifies
+the opposite sides of a square grid, so no face is cut down, every check has weight
+four at every size, and the record's distance search bound is the linear size
+itself. Two consequences matter downstream. First, the code leaves **two** logical
+qubits, so `css_code_matrices` reports four logical operators and
+`build_memory_circuit` declares two observables -- the first layout here with more
+than one, which is what `tests/qec/test_toric_code.py` holds against the rank of
+the record's own rows rather than against a stated ``k``. Second, graphlikeness
+becomes a property of the **noise declaration**: a single-round model is graphlike
+under any noise, because a Z-type check has a detector at each round boundary and
+an X-type check only in the interior rounds, and one round has no interior. Add a
+Y fault and run at least two rounds and that fault's X and Z halves land on
+different round boundaries, so a mechanism reaches weight four and the matcher
+refuses a model it accepted one round earlier. `tests/qec/test_toric_memory_execution.py`
+measures both sides at the same code, round count and fault rate rather than
+recording the refusal alone.
 
 Detector semantics are fixed. A detector is a measurement parity that is
 deterministic in the noiseless circuit. Which parity that is depends on the

@@ -1,12 +1,13 @@
 """Declare a stabilizer code this package does not ship, and run it end to end.
 
-Four code records this package ships -- the repetition code, the rotated surface
-code, the Steane code, and the triangular colour code -- each state their own
-wires, checks, logical operators, and distance.  This script takes the other
-route: it writes a code down as parity-check matrices and lets the record do the
-rest.  That is the route a user needs when the code they care about is not one of
-the four, and it is the route a Calderbank-Shor-Steane family needs before it can
-reach a detector error model at all.
+Five code records this package ships -- the repetition code, the rotated surface
+code, the Steane code, the triangular colour code, and the square-lattice toric
+code -- each state their own wires, checks, logical operators, and distance.
+This script takes the other route: it writes a code down as parity-check matrices
+and lets the record do the rest.  That is the route a user needs when the code
+they care about is not one of the five, and it is the route a
+Calderbank-Shor-Steane family needs before it can reach a detector error model at
+all.
 
 Two codes are worth walking through, and they answer two different questions.
 
@@ -17,7 +18,8 @@ the same distance three.  Without that, the matrix route would be a second,
 disagreeing description of a code that already exists rather than an alternative
 way to state one.
 
-The toric code is the point.  Nothing in this package declares it.  One qubit
+The toric code is the point.  It is also the one code here that this package now
+declares as well, so the two routes can be held against each other.  One qubit
 sits on each edge of an ``L``-by-``L`` torus, a face is a Z-type check, a star is
 an X-type check, and the logical operators are the cycles that wrap around the
 torus.  Every check touches four data qubits however large the lattice is, while
@@ -25,6 +27,16 @@ the shortest logical operator touches ``L`` of them, so the distance grows with
 the lattice and the code is a low-density parity-check code rather than a family
 whose checks grow with its size.  That is the shape the record could not admit
 before: the declared records carry a constant distance and this one does not.
+
+The matrices written here number the edges one way and ``toric_code`` numbers
+them another, so the two descriptions do not agree row by row and no attempt is
+made to relabel one into the other.  What they must agree on is everything the
+wire numbering cannot change -- the qubit and check counts, the distance, the
+number of logical qubits, the weight of a fault's signature, and the verdict the
+matcher reaches -- and that agreement is printed rather than argued.  Two
+independent derivations of one code agreeing on those is a stronger statement
+than either derivation alone, because a transcription error in the shipped record
+would show up as a disagreement here.
 
 What the script measures, and what it does not:
 
@@ -42,6 +54,10 @@ What the script measures, and what it does not:
   distance three, so it corrects one, and the observable rate under decoding
   falls.  Both halves are printed, because the second alone would not separate a
   decoder that works from one that guesses.
+* The written matrices and the shipped record are compared on the quantities the
+  wire numbering cannot change, including the full weight histogram of the
+  detector error model.  No decoding claim rests on the comparison; it is about
+  the two derivations describing one code.
 
 This is a local, single-process demonstration of an experimental QEC surface.  It
 builds small lattices only, because the distance search tries every wire subset
@@ -68,6 +84,7 @@ from flagquantum.qec import (
     build_memory_circuit,
     css_code_matrices,
     sample_memory_circuit,
+    toric_code,
 )
 
 LABEL_WIDTH = 40
@@ -230,18 +247,57 @@ def steane_section() -> None:
     report("shipped lz row equal written lz", lifted.lz.tolist() == [list(STEANE_LOGICAL)])
 
 
+def weight_histogram(model: DetectorErrorModel) -> dict[int, int]:
+    """Return how many mechanisms flip each number of detectors.
+
+    The wire numbering moves detectors around, so this is what the numbering cannot
+    change: how many faults there are of each signature weight.
+    """
+
+    histogram: dict[int, int] = {}
+    for error in model.errors:
+        weight = len(error.detectors)
+        histogram[weight] = histogram.get(weight, 0) + 1
+    return dict(sorted(histogram.items()))
+
+
 def toric_section(lattice: int, shots: int) -> None:
-    """Run a code with no record in this package through the whole path."""
+    """Run a code through the whole path and hold it against the shipped record."""
 
     code = toric(lattice)
+    declared = toric_code(lattice)
     print()
-    print(f"the toric code on a {lattice}-by-{lattice} torus: no record here declares it")
+    print(f"the toric code on a {lattice}-by-{lattice} torus: written here, and shipped")
     report("data qubits / ancillas", f"{code.num_data_qubits} / {code.num_ancilla_qubits}")
     report("checks / logical observables", f"{len(code.checks)} / {len(code.logical_observables)}")
     report("data qubits per check", sorted({check.stabilizer.weight for check in code.checks}))
     report(
         "distance / x_distance / z_distance",
         f"{code.distance} / {code.x_distance} / {code.z_distance}",
+    )
+
+    # Everything below is indexed by the wire numbering, so it is where a
+    # transcription error in either derivation would show. The two matrices are not
+    # compared row by row, because the two derivations number the edges differently
+    # and relabelling one into the other would be a third derivation to get wrong.
+    report(
+        "shipped counts match written",
+        (declared.num_data_qubits, declared.num_ancilla_qubits, len(declared.checks))
+        == (code.num_data_qubits, code.num_ancilla_qubits, len(code.checks)),
+    )
+    report(
+        "shipped distance matches written",
+        (declared.distance, declared.x_distance, declared.z_distance)
+        == (code.distance, code.x_distance, code.z_distance),
+    )
+    report(
+        "shipped check weights match written",
+        sorted({check.stabilizer.weight for check in declared.checks})
+        == sorted({check.stabilizer.weight for check in code.checks}),
+    )
+    report(
+        "shipped logical count matches written",
+        len(css_code_matrices(declared).lz) == len(css_code_matrices(code).lz),
     )
 
     noise = PhenomenologicalNoise(
@@ -251,11 +307,19 @@ def toric_section(lattice: int, shots: int) -> None:
     )
     memory = build_memory_circuit(code, rounds=1)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+    shipped_model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(declared, rounds=1), noise=noise
+    )
     widest = max(len(error.detectors) for error in model.errors)
     report("detectors / observables", f"{model.num_detectors} / {model.num_observables}")
     report("mechanisms", len(model.errors))
     report("most detectors one fault flips", widest)
     report("matching decoder", "accepted" if widest <= 2 else "refused: hyperedge")
+    report(
+        "shipped model agrees mechanism for mechanism",
+        (shipped_model.num_detectors, shipped_model.num_observables, weight_histogram(shipped_model))
+        == (model.num_detectors, model.num_observables, weight_histogram(model)),
+    )
 
     sample = sample_memory_circuit(memory, noise=noise, shots=shots, seed=SEED)
     decoder = MinimumWeightMatchingDecoder.from_detector_error_model(model)

@@ -287,7 +287,7 @@ by row, with the Z-type checks first.
 ## Declare a code this package does not ship
 
 The other direction of the same record: `CssCode` takes the four blocks a caller
-writes and returns the same kind of code record the four declared families
+writes and returns the same kind of code record the five declared families
 return, so a code no record here declares reaches the memory circuit, the model,
 the sampler and the decoder through the same `StabilizerCode` protocol.
 
@@ -359,6 +359,42 @@ distance is a property of the patch and not of the logical string the record
 declares. At distance three that patch is the Steane code under a relabelling of
 its wires; the family grows away from it, and either way nothing downstream can
 tell which route produced the record.
+
+## Derive a family from a torus
+
+The same route reaches a family whose lattice is periodic. `toric_code` identifies
+the opposite sides of a square grid, so no check sits on a boundary and every check
+has the same weight at every linear size.
+
+```python
+from flagquantum.qec import build_memory_circuit, toric_code
+
+torus = toric_code(3)
+print(torus.num_data_qubits, torus.num_ancilla_qubits, torus.distance)  # 18 18 3
+memory = build_memory_circuit(torus, rounds=3)
+print(len(memory.observables), [len(o.pauli.support) for o in memory.observables.observables])
+# 2 [3, 3]
+```
+
+This is the first record here that leaves **two** logical qubits, so the default
+memory experiment reads out two observables rather than one: a logical operator is
+a cycle that wraps the torus, and the two directions are separate operators whose
+representatives must be written down one per logical qubit. The linear size is the
+distance, so `toric_code(3)` and `toric_code(5)` are different codes rather than
+one code asked for at two distances, and the distance is searched for over the
+derived matrices with the linear size as the bound. That bound is the whole cost of
+the build, which is why the family is affordable at the small tori an experiment
+is built from and is not a way to write down a large one.
+
+The torus is also the clearest case of a model whose graphlikeness is a property of
+the **noise declaration** rather than of the code. A Z-type check has a detector at
+every round boundary and an X-type check only in the interior rounds, so a
+single-round model is graphlike under any noise: one round has no interior for an X
+fault to separate into. Add a Y fault and run at least two rounds, and that fault's
+X half and Z half land on different round boundaries, so one data fault lights four
+detectors, the model stops being graphlike, and the matcher refuses a model it
+accepted at one round. The belief-propagation decoder answers that model, and
+nothing about the code changed.
 
 ## Give one location its own rate
 

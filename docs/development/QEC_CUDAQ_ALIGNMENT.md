@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Four records declared — repetition, rotated surface, Steane and triangular colour — and each feeds both the circuit and the matrix route in either readout basis; the colour record is the first whose matrices are derived from a rule about its lattice rather than transcribed, and the record set is still one code per family, so a qLDPC or bivariate-bicycle code has no record and a mixed-type observable is refused. |
+| `qec_code_record` | partial | now | `qec_code_library` | Five records declared — repetition, rotated surface, Steane, triangular colour and square-lattice toric — and each feeds both the circuit and the matrix route in either readout basis; the colour and toric records are derived from a rule about their lattices rather than transcribed, the toric record is the first that leaves two logical qubits, and the record set is still one code per family, so a qLDPC or bivariate-bicycle code has no record and a mixed-type observable is refused. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -346,17 +346,38 @@ but upstream's `CssNoise` also carries `px`/`py`/`pz`/`pm` per qubit or per chec
 and here the record states uniform scalars, so a per-location profile is still
 not expressible. That limit is carried by `dem_code_capacity_noise`, which stays
 `reshaped`. The record set is the other thing the code-row target implies, and
-it has grown by one: the triangular colour code is declared as
-`flagquantum.qec.triangular_colour_code`, which derives its patch from its
-distance instead of transcribing a table, so the family is stated as a rule about
-its lattice rather than copied out of another framework's source. What the record
-set still does not have is a second family beyond the four, which is the absence
+it has grown by two: the triangular colour code is declared as
+`flagquantum.qec.triangular_colour_code` and the square-lattice toric code as
+`flagquantum.qec.toric_code`, and both derive their lattices from an argument
+instead of transcribing a table, so each family is stated as a rule about its
+lattice rather than copied out of another framework's source. What the record
+set still does not have is a family beyond the five, which is the absence
 `symbol:flagquantum.qec.qldpc_code` and
 `symbol:flagquantum.qec.bivariate_bicycle_code` state. The colour patch is worth
 naming for one further reason: its two check families are literally one matrix,
 because every face carries one X-type and one Z-type stabilizer, so it is the
 second self-dual record here and the first that exercises the both-basis readout
 on a lattice nobody wrote down.
+
+The torus is worth naming for two reasons of its own, and both are recorded as
+measurements rather than as properties of the family. It is the first record here
+whose matrices leave **two** logical qubits, so the change is in the shape of the
+layout rather than the contents of a row: `css_code_matrices` reports four
+logical operators and a default Z-basis memory experiment declares two
+observables instead of one. The count is not read off a stated `k` — it is the
+rank of the record's own check rows, taken by an independent GF(2) reduction, and
+the two logical qubits are pinned further by requiring the anticommutation matrix
+between the declared families to be a permutation matrix, so a code with one
+logical qubit whose operator was written down twice would fail rather than pass.
+It is also the first record whose **graphlikeness depends on the noise
+declaration** rather than on the code. A Z-type check carries a detector at every
+round boundary and an X-type check only in the interior rounds, so a
+single-round model is graphlike under any noise; add a Y data fault and run at
+least two rounds and that fault's X and Z halves land on different round
+boundaries, one mechanism reaches weight four, and the matcher refuses a model it
+accepted at one round. `tests/qec/test_toric_memory_execution.py` measures both
+sides at the same code, round count and fault rate, so the row records a
+comparison rather than a refusal on its own.
 
 **What `qec_logical_operations` closed, and what it did not.** The row was
 `absent` on all three of its named operations and on an absent module path. Of
