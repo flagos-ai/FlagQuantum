@@ -25,6 +25,7 @@ from .contracts import (
     KaiwuTaskResult,
 )
 from .jobs import (
+    _freeze_matrix,
     _open_private_directory,
     _read_private_json,
     _verify_open_directory_binding,
@@ -206,9 +207,7 @@ class KaiwuSDKClient:
             if not isinstance(raw, dict) or set(raw) != {"receipt", "matrix"}:
                 raise ValueError("unexpected recovery bundle fields")
             stored = KaiwuTaskReceipt(**raw["receipt"])
-            stored_matrix = tuple(
-                tuple(float(value) for value in row) for row in raw["matrix"]
-            )
+            stored_matrix = _freeze_matrix(raw["matrix"])
             submitted_at = datetime.fromisoformat(stored.submitted_at)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise KaiwuSDKError("Existing Kaiwu recovery receipt is invalid") from None

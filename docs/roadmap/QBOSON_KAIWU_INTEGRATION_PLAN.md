@@ -240,6 +240,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   submission timestamp, and absent provider task/target identities. Local
   receipt editing therefore cannot fabricate the provider evidence that the
   documented SDK mapping does not expose.
+- SDK recovery matrices now reuse the strict Remote matrix boundary instead of
+  coercing JSON values with `float(...)`. Boolean and numeric-string elements
+  that compare equal to original coefficients are rejected before SDK access,
+  so type-forged checkpoint content cannot preserve a false matrix identity.
 - Every SDK solve, poll, and result operation reopens the deterministic
   recovery bundle and requires the in-memory receipt to match it exactly. The
   generic job-restore API cannot bypass checkpoint validation, and a separately

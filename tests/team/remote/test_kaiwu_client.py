@@ -480,6 +480,40 @@ def test_conflicting_recovery_receipt_fails_before_sdk_operation(
     assert _FakeOptimizer.solve_calls == solve_calls
 
 
+@pytest.mark.parametrize("forged_value", (True, "1.0"))
+def test_recovery_receipt_rejects_coercible_matrix_values_before_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    forged_value: object,
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+    first = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="forged-matrix-type",
+        mode="sampling",
+        requested_samples=10,
+    )
+    path = client.recovery_receipt_path(first.receipt)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["matrix"][0][1] = forged_value
+    payload["matrix"][1][0] = forged_value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    solve_calls = _FakeOptimizer.solve_calls
+
+    restarted, _ = _client(monkeypatch, tmp_path)
+    with pytest.raises(KaiwuSDKError, match="recovery receipt is invalid"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=restarted,
+            task_name="forged-matrix-type",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
 @pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
 def test_unsafe_recovery_receipt_fails_before_sdk_operation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, unsafe_kind: str

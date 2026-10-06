@@ -59,6 +59,9 @@ solve, poll, and result path reopens that authoritative recovery bundle and
 requires the in-memory receipt to match it exactly. A separately saved job
 receipt is therefore resumable only alongside the original checkpoint
 directory and cannot override its identity.
+Recovery matrices pass through the same strict Remote scalar boundary as new
+submissions; JSON booleans and numeric strings are rejected rather than being
+coerced into apparently matching floating-point coefficients.
 If the first vendor operation fails after the bundle is published, rebuilding
 the client with the same task name, matrix, mode, sample count, and project
 reuses the original receipt timestamp and recovery path; it must not create a
