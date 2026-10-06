@@ -11,11 +11,55 @@ from flagquantum.runtime.observability.evidence import (
     create_evidence_artifact,
     verify_evidence_artifact,
 )
+from tools.seal_runtime_evidence import _rank_devices
 from tools.seal_runtime_evidence import main as seal_main
 
 pytestmark = pytest.mark.unit
 
 KEY = b"issue-038-test-key"
+
+
+def test_declared_rank_devices_can_name_a_second_host():
+    """A rank on another host must be recorded as such, not as a local device."""
+
+    devices, mapping = _rank_devices(
+        ("GPU-aaa@jp-a800-172", "GPU-bbb@jp-a800-171"), world_size=2
+    )
+
+    assert devices == ("GPU-aaa", "GPU-bbb")
+    assert mapping == (
+        "rank=0:node=jp-a800-172:device_uuid=GPU-aaa",
+        "rank=1:node=jp-a800-171:device_uuid=GPU-bbb",
+    )
+
+
+def test_declared_rank_devices_must_cover_every_rank():
+    with pytest.raises(SystemExit, match="received 1 device UUIDs"):
+        _rank_devices(("GPU-aaa",), world_size=2)
+
+
+def test_undeclared_rank_devices_still_map_ranks_positionally(monkeypatch):
+    monkeypatch.setattr(
+        "tools.seal_runtime_evidence._output",
+        lambda command: "GPU-aaa\nGPU-bbb\nGPU-ccc\n",
+    )
+
+    devices, mapping = _rank_devices(None, world_size=2)
+
+    assert devices == ("GPU-aaa", "GPU-bbb")
+    assert mapping == (
+        "rank=0:device_uuid=GPU-aaa",
+        "rank=1:device_uuid=GPU-bbb",
+    )
+
+
+def test_undeclared_rank_devices_fail_closed_when_the_host_is_too_small(monkeypatch):
+    monkeypatch.setattr(
+        "tools.seal_runtime_evidence._output", lambda command: "GPU-aaa\n"
+    )
+
+    with pytest.raises(SystemExit, match="requested world size 4, detected 1 GPUs"):
+        _rank_devices(None, world_size=4)
 
 
 def _provenance(device_count=2) -> RuntimeProvenance:
@@ -64,7 +108,41 @@ def test_artifact_classes_are_immutable_and_scopes_are_distinct():
         "one_gpu_local",
         "two_gpu_semantic_regression",
         "scheduled_4_8_gpu_scale",
+        "multi_node_16_gpu_scale",
     }
+
+
+def test_multi_node_scale_carries_sixteen_devices_and_nothing_nearer():
+    """The widest scope states the one device count it was added to carry.
+
+    Sixteen devices is two full hosts of the measured cluster, and it is the
+    smallest world in which the frozen MPS capacity workload fits. The scope
+    must therefore accept exactly that count and refuse its neighbours, so a
+    fifteen- or seventeen-device provenance record cannot be sealed as if it had
+    crossed the node boundary at the frozen topology.
+    """
+
+    artifact = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.MULTI_NODE_SCALE,
+        provenance=_provenance(16),
+        evidence=_measured_payload(),
+        signing_key=KEY,
+    )
+    payload = artifact.summary()
+    assert payload["evidence_scope"] == "multi_node_16_gpu_scale"
+    assert len(payload["provenance"]["devices"]) == 16
+    assert verify_evidence_artifact(payload, signing_key=KEY) == (True, ())
+
+    for device_count in (1, 2, 4, 8, 15, 17):
+        with pytest.raises(ValueError, match="requires device count"):
+            create_evidence_artifact(
+                artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+                evidence_scope=EvidenceScope.MULTI_NODE_SCALE,
+                provenance=_provenance(device_count),
+                evidence=_measured_payload(),
+                signing_key=KEY,
+            )
 
 
 @pytest.mark.parametrize(

@@ -13,7 +13,6 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import CircuitIR
-from ....kernels.catalog import KernelRequest
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -33,18 +32,16 @@ from ...distributed.identity import DistributedIdentity
 from .control_subspace_dispatch import _triton_control_subspace_tensor_decisions
 from .environment import mode
 from .errors import FullStateMaterializationError
-from .kernel_dispatch import (
-    KernelDecision,
-    KernelDispatchEvidence,
-    select_cataloged_triton_kernel,
+from .kernel_dispatch import KernelDispatchEvidence
+from .local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_1q_decision,
 )
 from .models import DistributedStatevectorPlan, StatevectorShardState
 from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
-_TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset((1, 1 << e) for e in (10, 16, 20, 24))
-_TRITON_LOCAL_CX_DEFAULT_SHAPES = frozenset({(1, 1 << 24)})
 
 
 def _is_diagonal_instruction(name: str) -> bool:
@@ -68,89 +65,6 @@ def _single_process_cpu_direct_enabled() -> bool:
         os.getenv("FQ_STATEVECTOR_ADJOINT_CPU_DIRECT", "1"),
     )
     return raw.strip().lower() not in {"0", "false", "off", "no"}
-
-
-def _triton_local_1q_decision(
-    *,
-    runtime_supported: bool = True,
-    device_type: str,
-    dtype: str,
-    shape: tuple[int, int],
-) -> KernelDecision:
-    requested = _triton_local_1q_requested(shape)
-    return select_cataloged_triton_kernel(
-        "local_1q",
-        request=KernelRequest(
-            semantic_id="statevector.apply.matrix_1q.local",
-            device=device_type,
-            dtype=dtype,
-            layout="flat_statevector",
-            direction="forward",
-            addressing=("local",),
-            providers=("triton",),
-        ),
-        implementation_id="FQKI-TRITON-SV-001-A",
-        requested=requested,
-        runtime_supported=runtime_supported,
-        device_runtime_provider="pytorch",
-        compiler_backend="cuda",
-        capture_compiler_identity=True,
-    )
-
-
-def _triton_local_1q_requested(shape: tuple[int, int]) -> bool:
-    """Select the measured default window, while retaining an explicit override."""
-
-    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_1Q")
-    if configured is None:
-        return shape in _TRITON_LOCAL_1Q_DEFAULT_SHAPES
-    return configured.strip().lower() in {"1", "true", "on", "yes"}
-
-
-def _triton_local_cx_decision(
-    *,
-    runtime_supported: bool = True,
-    device_type: str,
-    dtype: str,
-    shape: tuple[int, int],
-) -> KernelDecision:
-    return select_cataloged_triton_kernel(
-        "local_cx",
-        request=KernelRequest(
-            semantic_id="statevector.apply.cnot.local",
-            device=device_type,
-            dtype=dtype,
-            layout="flat_statevector",
-            direction="forward",
-            addressing=("local",),
-            providers=("triton",),
-        ),
-        implementation_id="FQKI-TRITON-SV-002-A",
-        requested=_triton_local_cx_requested(shape),
-        runtime_supported=runtime_supported,
-        device_runtime_provider="pytorch",
-        compiler_backend="cuda",
-        capture_compiler_identity=True,
-    )
-
-
-def _triton_local_cx_requested(shape: tuple[int, int]) -> bool:
-    configured = os.getenv("FQ_STATEVECTOR_TRITON_LOCAL_CX")
-    if configured is None:
-        return shape in _TRITON_LOCAL_CX_DEFAULT_SHAPES
-    return configured.strip().lower() in {"1", "true", "on", "yes"}
-
-
-def _triton_local_cx_enabled(
-    *, device_type: str, dtype: str, shape: tuple[int, int]
-) -> bool:
-    return bool(
-        _triton_local_cx_decision(
-            device_type=device_type,
-            dtype=dtype,
-            shape=shape,
-        ).accelerated
-    )
 
 
 def _local_block_fusion_enabled() -> bool:
@@ -640,6 +554,7 @@ def _vectorized_local_gate(
         runtime_supported=triton_runtime_supported,
         device_type=shard_state.amplitudes.device.type,
         dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+        addressable=_flat_local_address_supported(shard_state.amplitudes),
         shape=(
             int(shard_state.amplitudes.shape[0]),
             int(shard_state.amplitudes.shape[1]),

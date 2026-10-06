@@ -442,3 +442,111 @@ def test_tn_training_requires_a_process_group() -> None:
         train_distributed_tensor_network(
             circuit, (theta,), steps=1, observable={0: "z"}, sliced_labels=(1,)
         )
+
+
+def _install_single_rank_group(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the training lifecycle's collectives legal inside one process.
+
+    Every collective here is the world-size-one case, so each one is the
+    identity on the single rank. The point of the install is not to fake work
+    that did not happen but to let the real step loop run without a second
+    process, because what is under test is the tape budget, not the transport.
+    """
+
+    monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)
+    monkeypatch.setattr(torch.distributed, "get_backend", lambda *a, **k: "gloo")
+    monkeypatch.setattr(torch.distributed, "get_world_size", lambda *a, **k: 1)
+    monkeypatch.setattr(torch.distributed, "get_rank", lambda *a, **k: 0)
+    monkeypatch.setattr(
+        torch.distributed,
+        "all_reduce",
+        lambda tensor, *args, **kwargs: None,
+    )
+
+    def all_gather(outputs: list[torch.Tensor], tensor: torch.Tensor, **_: Any) -> None:
+        outputs[0].copy_(tensor)
+
+    def all_gather_single(
+        gathered: torch.Tensor, local: torch.Tensor, **_: Any
+    ) -> torch.Tensor:
+        gathered.copy_(local.reshape(-1))
+        return gathered
+
+    monkeypatch.setattr(torch.distributed, "all_gather", all_gather)
+    monkeypatch.setattr(
+        torch.distributed, "all_gather_single", all_gather_single, raising=False
+    )
+
+
+def _training_circuit() -> tuple[fq.Circuit, tuple[torch.Tensor, ...]]:
+    theta = torch.tensor(0.31, dtype=torch.float64, requires_grad=True)
+    phi = torch.tensor(-0.17, dtype=torch.float64, requires_grad=True)
+    circuit = fq.Circuit(4)
+    circuit.ry(0, theta=theta).cx(0, 3).rzz(1, 2, theta=phi).cx(2, 3)
+    return circuit, (theta, phi)
+
+
+def test_tn_training_tape_budget_is_a_memory_choice_not_a_different_update(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One step under a bounded tape must equal the same step under no bound.
+
+    The budget exists so a workload whose lossless reverse tape does not fit one
+    device can still be trained on it. That is only admissible while the budget
+    is a residency decision: the step has to reach the same loss from the same
+    parameters, and it has to be observably rematerializing rather than quietly
+    keeping the tape it said it would bound.
+    """
+
+    from flagquantum.runtime.executors.tensor_network.training import (
+        train_distributed_tensor_network,
+    )
+
+    default = train_distributed_tensor_network.__kwdefaults__["checkpoint_budget_bytes"]
+    assert default is None, "the unbounded tape stays the default"
+
+    _install_single_rank_group(monkeypatch)
+    labels = _sliced_labels(count=2)
+
+    def step(budget: int | None) -> Any:
+        circuit, parameters = _training_circuit()
+        return train_distributed_tensor_network(
+            circuit,
+            parameters,
+            steps=1,
+            observable={0: "z"},
+            sliced_labels=labels,
+            checkpoint_budget_bytes=budget,
+        )
+
+    retained = step(None)
+    bounded = step(0)
+
+    assert retained.losses == bounded.losses
+    retained_reverse = retained.step_records[0]["reverse"]
+    bounded_reverse = bounded.step_records[0]["reverse"]
+    assert retained_reverse["local_rematerialized_operation_count"] == 0
+    assert retained_reverse["local_saved_tape_bytes"] == 0
+    assert bounded_reverse["local_rematerialized_operation_count"] > 0
+    assert bounded_reverse["local_saved_tape_bytes"] > 0
+
+
+def test_tn_training_rejects_a_negative_tape_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.runtime.executors.tensor_network.training import (
+        train_distributed_tensor_network,
+    )
+
+    _install_single_rank_group(monkeypatch)
+    circuit, parameters = _training_circuit()
+
+    with pytest.raises(ValueError, match="checkpoint_budget_bytes"):
+        train_distributed_tensor_network(
+            circuit,
+            parameters,
+            steps=1,
+            observable={0: "z"},
+            sliced_labels=_sliced_labels(count=2),
+            checkpoint_budget_bytes=-1,
+        )

@@ -130,6 +130,16 @@ $ python -c "from pathlib import Path; from tools.census_wire_vocabulary import 
 At the branch point `6a6c080be` the same command prints `226`, and the removed entry is
 `flagquantum/twin/region_model.py::_remap_wires::wires`.
 
+**Amended:** both numbers above describe the revisions they name, and the number on the
+tree that carries this change is `224`. `origin/main` removed a second private wire-named
+parameter in the same window — `flagquantum/runtime/executors/statevector/reverse_adjoint_sweep.py::_local_expectation_z_hamiltonian_adjoint::n_wires`,
+which moved into `reverse_observable.py` as the public `hamiltonian_adjoint_seed` reading
+`n_qubits` — and neither branch could see the other's removal, so each re-measured `226`
+to `225` on its own. The merge is the first tree to hold both, and it carries `224` in
+`[boundary] measured_private` and in `tests/unit/test_census_wire_vocabulary.py`. What
+this section argues is unchanged: the private bucket moved only as a side effect of
+deleting a copy, and neither public bucket moved.
+
 ## Evidence
 
 ```console

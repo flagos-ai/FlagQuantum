@@ -196,11 +196,22 @@ def test_the_repository_scan_separates_the_three_populations() -> None:
     assert len(scanned.aliases) == 11
     # The private bucket moves only as a side effect: `WQ-5` renamed the 41,
     # `WQ-6` the 23, `WQ-7` the 18 and `WQ-8` the 49 `wire`-named parameters of
-    # their own private helpers, which no ledger counts. It fell by one more when
-    # `flagquantum/twin/region_model.py::_remap_wires` was deleted, because the Twin
-    # region composer relabels through `flagquantum.core.qubit_mapping.remap_qubits`
-    # rather than through a private copy of it.
-    assert len(scanned.internal) == 225
+    # their own private helpers, which no ledger counts. It has fallen by two
+    # more, through two changes that could not see each other: one deleted
+    # `flagquantum/twin/region_model.py::_remap_wires`, because the Twin region
+    # composer relabels through `flagquantum.core.qubit_mapping.remap_qubits`
+    # rather than through a private copy of it; the other moved the
+    # observable-boundary Hamiltonian adjoint seed out of
+    # `statevector/reverse_adjoint_sweep.py` into `reverse_observable.py`, which
+    # already owns the statevector synthetic-boundary helpers, and the copy that
+    # moved was the branch's one private `n_wires` parameter, now the public
+    # `hamiltonian_adjoint_seed`'s `n_qubits`; the move is what returned the sweep
+    # module to the architecture ceiling. Each branch re-measured 226 to 225 on
+    # its own, so 224 is the measurement of the merge rather than of either
+    # parent. Removing a site shrinks the set, which the gate permits for a
+    # private bucket no ledger covers, and the contract's measured number is
+    # re-measured to match.
+    assert len(scanned.internal) == 224
     assert scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"
