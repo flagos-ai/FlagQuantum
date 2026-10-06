@@ -255,9 +255,12 @@ the program unchanged, `1` cancels and merges without commuting across a gate, a
 `2` -- the default, and the behaviour of every release before the parameter
 existed -- additionally removes diagonal gates before a measurement and merges
 rotations across a proven commuting gap. Level `3` is declared and reserved and
-raises `CompilationError`, because the unitary-synthesis stage it would add has no
-pass-over-IR counterpart in this package yet. Any other value is refused the same
-way. The level that ran is recorded in `optimized_ir.metadata["optimization"]`.
+raises `CompilationError`: the unitary-synthesis stage it would add needs a target
+basis to rewrite into, and `optimize` is target-independent. Target-aware unitary
+synthesis is the separate entry point
+`flagquantum.compiler.native_gate_legalization.legalize_native_gates(program,
+snapshot=...)`. Any other value is refused the same way. The level that ran is
+recorded in `optimized_ir.metadata["optimization"]`.
 
 For target-aware compilation, provide an explicit coupling map:
 
