@@ -50,6 +50,7 @@ from numbers import Integral
 
 import torch
 
+from ..noise import NoiseModel
 from .circuit import MeasurementRef, MemoryCircuit
 from .codes import CodeCheck
 from .dem import DetectorErrorModel
@@ -500,7 +501,7 @@ class DecoderContext:
 
 
 def decoder_context_from_memory_circuit(
-    circuit: MemoryCircuit, *, noise: PhenomenologicalNoise
+    circuit: MemoryCircuit, *, noise: PhenomenologicalNoise | NoiseModel
 ) -> DecoderContext:
     """Build a memory experiment's decoder inputs, constructing the model once.
 
@@ -508,15 +509,22 @@ def decoder_context_from_memory_circuit(
     ``decoder_context_from_memory_circuit(code, statePrep, numRounds, noise)``.
     Here the memory circuit already carries the code, the round count and the
     state preparation the experiment is configured with, so the circuit is the
-    whole configuration and the noise is the only second argument. The model is
-    built eagerly and stored, because a context is asked for exactly to be read
-    a basis at a time, and every one of those reads needs the same model.
+    whole configuration and the noise is the only second argument. The noise may
+    be stated either as the round-boundary
+    `~flagquantum.qec.PhenomenologicalNoise` record or as a gate-bound
+    `~flagquantum.noise.NoiseModel`, and the model is built from whichever record
+    it is. The model is built eagerly and stored, because a context is asked for
+    exactly to be read a basis at a time, and every one of those reads needs the
+    same model.
     """
 
     if not isinstance(circuit, MemoryCircuit):
         raise TypeError("circuit must be a MemoryCircuit")
-    if not isinstance(noise, PhenomenologicalNoise):
-        raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
     return DecoderContext(
         circuit=circuit,
         dem=DetectorErrorModel.from_memory_circuit(circuit, noise=noise),

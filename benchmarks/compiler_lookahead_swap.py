@@ -62,6 +62,7 @@ import flagquantum as fq
 import flagquantum.compiler.routing as routing_module
 import flagquantum.compiler.sabre as sabre_module
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
+from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
 from flagquantum.compiler.routing import record_post_routing_optimization
 from flagquantum.compiler.sabre import (
     LOOKAHEAD_DECAY,
@@ -89,6 +90,14 @@ _TOPOLOGIES: dict[str, tuple[int, tuple[tuple[int, int], ...], tuple[int, ...]]]
 }
 SEEDS = (0, 1, 2, 3, 4)
 GATE_FACTORS = (2, 6)
+#: The optimization level every retained count below is read at.
+#:
+#: A retained count is what survives *after* the optimization passes that remove
+#: inserted SWAPs, so the level is part of what the number means rather than an
+#: implementation detail. It is named here, passed explicitly, and reported in the
+#: payload, so a run that measured a different level would publish a different
+#: number under this schema.
+OPTIMIZATION_LEVEL: int = DEFAULT_OPTIMIZATION_LEVEL
 _ROTATIONS = ("rx", "ry", "rz")
 _TWO_WIRE = ("cx", "cz")
 
@@ -625,7 +634,9 @@ def _routed(
     planner = configuration.planner()
     with _reference_planner(planner) if planner else nullcontext():
         routed = route_to_topology(program, device, strategy=configuration.strategy)
-    return record_post_routing_optimization(optimize(routed))
+    return record_post_routing_optimization(
+        optimize(routed, optimization_level=OPTIMIZATION_LEVEL)
+    )
 
 
 def _state(program: CircuitIR) -> torch.Tensor:
@@ -799,6 +810,7 @@ def run_benchmark(
         )
     return {
         "schema": "flagquantum_compiler_lookahead_swap_benchmark_v1",
+        "optimization_level": OPTIMIZATION_LEVEL,
         "artifact_classification": "local_compiler_microbenchmark",
         "distribution_semantics": "single_device_fast_path",
         "scalability_claim_allowed": False,

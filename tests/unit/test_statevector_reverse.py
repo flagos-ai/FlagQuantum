@@ -1388,3 +1388,173 @@ def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch
     assert summary["parameter_gradient_ready"] is False
     assert "injected backward failure" in summary["backward_error"]
     assert result.ownership[0].distribution == "failed"
+
+
+class _SimulatedWorld:
+    """A whole process group simulated inside one test process.
+
+    The real collective is NCCL's; what these tests can check is the packing the
+    collective is handed and what is done with the block it returns. So every
+    rank's own packed input is built here, the block that ``rank`` would receive
+    is computed by summing those inputs, and the reducer is then given that
+    block exactly as a real reduce-scatter would deliver it.
+    """
+
+    def __init__(self, world_size: int, rank: int) -> None:
+        self.world_size = world_size
+        self.rank = rank
+        self.segments: list[int] = []
+        self.inputs: list[torch.Tensor] = []
+        self.calls = 0
+
+    def install(self, monkeypatch) -> None:
+        def get_world_size(group=None):
+            return self.world_size
+
+        def get_rank(group=None):
+            return self.rank
+
+        def reduce_scatter_tensor(output, tensor, **kwargs):
+            self.calls += 1
+            segment = tensor.numel() // self.world_size
+            self.segments.append(segment)
+            self.inputs.append(tensor.detach().clone())
+            output.copy_(
+                tensor.detach()[self.rank * segment : (self.rank + 1) * segment]
+            )
+
+        monkeypatch.setattr(torch.distributed, "get_world_size", get_world_size)
+        monkeypatch.setattr(torch.distributed, "get_rank", get_rank)
+        monkeypatch.setattr(
+            torch.distributed, "reduce_scatter_tensor", reduce_scatter_tensor
+        )
+
+
+def _sharded_reducer(gradients, owners, *, evidence=None, rank=0, world_size=2):
+    return AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence if evidence is not None else BackwardExecutionEvidence(),
+        owners=owners,
+        async_op=True,
+        max_parameters=len(gradients),
+        max_bytes=1 << 20,
+    )
+
+
+def test_owner_sharded_reduction_packs_each_owner_block_contiguously(monkeypatch):
+    world = _SimulatedWorld(world_size=2, rank=0)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0, 2.0]),
+        torch.tensor([3.0]),
+        torch.tensor([4.0, 5.0]),
+    ]
+    evidence = BackwardExecutionEvidence(
+        ownership=[
+            SimpleNamespace(
+                owner_rank=None, reduction="pending", distribution="pending"
+            )
+            for _ in gradients
+        ]
+    )
+    reducer = _sharded_reducer(gradients, [0, 1, 1], evidence=evidence)
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    # Owner 0 holds two amplitudes, owner 1 holds three, so the widest block
+    # sets the segment and owner 0's lane is padded with zeros.
+    assert world.calls == 1
+    assert world.segments == [3]
+    assert world.inputs[0].tolist() == [1.0, 2.0, 0.0, 3.0, 4.0, 5.0]
+    # Rank 0 owns only parameter 0, so only its block survives here.
+    assert [gradient.tolist() for gradient in gradients] == [
+        [1.0, 2.0],
+        [0.0],
+        [0.0, 0.0],
+    ]
+    assert evidence.gradient_reduction_scheme == "owner_sharded_reduce_scatter"
+    assert evidence.gradient_collective_count == 1
+    assert evidence.gradient_collective_bytes == 6 * 4
+
+
+def test_owner_sharded_reduction_delivers_the_other_ranks_block(monkeypatch):
+    world = _SimulatedWorld(world_size=2, rank=1)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0, 2.0]),
+        torch.tensor([3.0]),
+        torch.tensor([4.0, 5.0]),
+    ]
+    reducer = _sharded_reducer(gradients, [0, 1, 1])
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert [gradient.tolist() for gradient in gradients] == [
+        [0.0, 0.0],
+        [3.0],
+        [4.0, 5.0],
+    ]
+
+
+def test_owner_sharded_reduction_groups_separate_dtypes_into_separate_collectives(
+    monkeypatch,
+):
+    world = _SimulatedWorld(world_size=2, rank=0)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0], dtype=torch.float32),
+        torch.tensor([2.0], dtype=torch.float64),
+    ]
+    reducer = _sharded_reducer(gradients, [0, 1])
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert world.calls == 2
+    assert [item.dtype for item in world.inputs] == [torch.float32, torch.float64]
+
+
+def test_owner_sharded_reduction_rejects_a_mismatched_owner_count():
+    gradients = [torch.tensor(1.0), torch.tensor(2.0)]
+
+    with pytest.raises(ValueError, match="one owner per gradient"):
+        AsyncGradientReducer(
+            gradients,
+            process_group=None,
+            evidence=BackwardExecutionEvidence(),
+            owners=[0],
+        )
+
+
+def test_reducer_without_owners_keeps_the_replicated_all_reduce(monkeypatch):
+    calls = []
+
+    def fake_all_reduce(tensor, **kwargs):
+        calls.append(tensor.detach().clone())
+        tensor.mul_(2)
+
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+    gradients = [torch.tensor([1.0]), torch.tensor([2.0])]
+    evidence = BackwardExecutionEvidence()
+    reducer = AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence,
+        max_parameters=2,
+        max_bytes=1 << 20,
+        async_op=False,
+    )
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert len(calls) == 1
+    assert [gradient.tolist() for gradient in gradients] == [[2.0], [4.0]]
+    assert evidence.gradient_reduction_scheme == "replicated_all_reduce"

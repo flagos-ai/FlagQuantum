@@ -5,6 +5,9 @@ device carries the couplings its operands actually interact over, because no
 router in this package synthesizes one onto physical couplings and a strategy
 cannot insert SWAPs for it. Every strategy therefore has to refuse the rest, and
 the refusal has to be observable rather than a physically unrealizable program.
+A barrier is the exception, and the reason is that it is not a device operation
+at all: it carries no unitary and states an order, so there is nothing to
+synthesize and no coupling to require.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import pytest
+import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_circuit
@@ -242,3 +246,183 @@ def test_two_wire_routing_behaviour_is_unchanged() -> None:
     routed = route_to_topology(source, CouplingMap.line(5), strategy="sabre")
     assert routed.metadata["routing"]["inserted_swap_count"] > 0
     assert _multi_wire_instructions(routed) == []
+
+
+# ``barrier`` is not a Core opcode, and IR admits an opcode it does not declare
+# only when the instruction carries a matrix or one of the two markers. A barrier
+# is an ordering directive, so it arrives through the dynamic marker and every
+# compiler pass that reads it reads it by name.
+_LINE4 = CouplingMap.line(4)
+_BARRIER_SPAN = (0, 1, 2, 3)
+
+
+def _barrier(*qubits: int) -> Instruction:
+    return Instruction("barrier", qubits, {}, None, {"is_dynamic": True})
+
+
+def _measure(qubit: int) -> Instruction:
+    return Instruction(
+        "measure",
+        (qubit,),
+        {},
+        None,
+        {"is_dynamic": True, "classical_bit": qubit},
+    )
+
+
+def _spans(program) -> list[tuple[int, ...]]:
+    return [item.wires for item in program.instructions if item.name == "barrier"]
+
+
+def _barrier_first() -> CircuitIR:
+    """A device-wide barrier ahead of the only routed gate."""
+
+    return CircuitIR(
+        4,
+        (
+            _barrier(*_BARRIER_SPAN),
+            Instruction("cx", (0, 3)),
+            *(_measure(qubit) for qubit in range(4)),
+        ),
+    )
+
+
+@pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
+def test_a_barrier_is_not_a_device_operation(strategy: str) -> None:
+    """A directive the device cannot host a coupling for is still routable."""
+
+    routed = route_to_topology(_barrier_first(), _LINE4, strategy=strategy)
+    spans = _spans(routed)
+
+    assert len(spans) == 1, "routing dropped or duplicated the ordering directive"
+    span = spans[0]
+    assert len(span) == len(_BARRIER_SPAN), "the directive changed arity"
+    assert len(set(span)) == len(span), "the directive collapsed onto one wire"
+    assert all(qubit < _LINE4.n_qubits for qubit in span)
+    # A line carries no three-wire coupling, so the refusal this test replaces
+    # would have fired had the directive been read as a device operation.
+    assert not _LINE4.has_edge(0, 2)
+
+
+@pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
+def test_a_routed_barrier_names_the_qubits_the_layout_puts_it_on(strategy: str) -> None:
+    """The span is recomputed from the layout, not copied from the source."""
+
+    routed = route_to_topology(_barrier_first(), _LINE4, strategy=strategy)
+    initial = routed.metadata["routing"]["initial_logical_to_physical"]
+
+    assert _spans(routed) == [tuple(initial[qubit] for qubit in _BARRIER_SPAN)]
+
+
+def test_the_barrier_span_assertion_above_is_not_vacuous() -> None:
+    """One strategy starts from a non-identity layout, so the span must move."""
+
+    routed = route_to_topology(_barrier_first(), _LINE4, strategy="sabre_layout")
+    initial = routed.metadata["routing"]["initial_logical_to_physical"]
+
+    assert initial != tuple(range(4)), (
+        "every strategy starts from the identity layout, so this test cannot "
+        "distinguish a recomputed span from a copied one"
+    )
+    assert _spans(routed) == [tuple(initial[qubit] for qubit in _BARRIER_SPAN)]
+
+
+def _final_measurements_after_a_device_wide_barrier() -> CircuitIR:
+    """The program Qiskit's barrier pass exists to protect.
+
+    The gate is off-device for ``_LINE4``, so routing has to move it, and every
+    measurement is written after the barrier that covers all four wires.
+    """
+
+    return CircuitIR(
+        4,
+        (
+            Instruction("cx", (0, 3)),
+            _barrier(*_BARRIER_SPAN),
+            *(_measure(qubit) for qubit in range(4)),
+        ),
+    )
+
+
+def _measurements_before_the_routed_gate(program) -> bool:
+    """Whether any measurement ended up ahead of the gate it was written after."""
+
+    names = [item.name for item in program.instructions]
+    gate = names.index("cx")
+
+    return any(name == "measure" and index < gate for index, name in enumerate(names))
+
+
+@pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
+def test_a_device_wide_barrier_keeps_the_measurements_after_it(strategy: str) -> None:
+    """The directive still separates the phases it was written to separate.
+
+    This is the property Qiskit's ``BarrierBeforeFinalMeasurements`` depends on,
+    measured through routing instead of inferred from the directive being present.
+    """
+
+    routed = route_to_topology(
+        _final_measurements_after_a_device_wide_barrier(), _LINE4, strategy=strategy
+    )
+    names = [item.name for item in routed.instructions]
+    barrier_index = names.index("barrier")
+
+    assert names.index("cx") < barrier_index
+    assert not _measurements_before_the_routed_gate(routed)
+
+
+def test_the_barrier_property_above_is_not_vacuous() -> None:
+    """One strategy does move a measurement across the gate without the barrier.
+
+    Without this anchor the parametrized assertion above could hold because no
+    strategy ever reorders a measurement, rather than because the barrier held.
+    """
+
+    passing = [
+        strategy
+        for strategy in ROUTING_STRATEGIES
+        if _measurements_before_the_routed_gate(
+            route_to_topology(
+                CircuitIR(
+                    4,
+                    (
+                        Instruction("cx", (0, 3)),
+                        *(_measure(qubit) for qubit in range(4)),
+                    ),
+                ),
+                _LINE4,
+                strategy=strategy,
+            )
+        )
+    ]
+
+    assert passing, (
+        "no strategy moves a final measurement ahead of the gate it follows, so "
+        "the barrier assertion above holds without the barrier"
+    )
+
+
+@pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
+def test_a_barrier_named_instruction_that_carries_a_matrix_is_still_a_gate(
+    strategy: str,
+) -> None:
+    """The exemption is the missing unitary, not the opcode name."""
+
+    wide = torch.eye(8, dtype=torch.complex128)
+    source = CircuitIR(
+        5,
+        (Instruction("barrier", (0, 2, 4), {}, wide, {"is_dynamic": True}),),
+    )
+    with pytest.raises(ValueError, match="no verified physical connectivity rule"):
+        route_to_topology(source, _TRIANGLE_AND_TAIL, strategy=strategy)
+
+
+def test_the_directed_router_shares_the_directive_exemption() -> None:
+    """One rule serves both routers, so the exemption is not duplicated."""
+
+    routed = route_to_directed_topology(
+        CircuitIR(5, (_barrier(0, 1, 2), Instruction("cx", (0, 1)))),
+        _DIRECTED_TRIANGLE_AND_TAIL,
+    )
+
+    assert _spans(routed) == [(0, 1, 2)]

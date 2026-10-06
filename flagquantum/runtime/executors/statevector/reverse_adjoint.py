@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections import OrderedDict
+from collections.abc import Sequence
 from threading import Lock
 from typing import Any
 
@@ -248,6 +249,7 @@ def _explicit_sharded_adjoint(
     saved_final_state: Any | None = None,
     saved_observable_weights: torch.Tensor | None = None,
     saved_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...] = (),
+    owners: Sequence[int] | None = None,
 ) -> tuple[torch.Tensor, ...]:
     """Rematerialize rank-local forward states and propagate gate adjoints."""
 
@@ -260,6 +262,7 @@ def _explicit_sharded_adjoint(
         policy=policy,
         process_group=process_group,
         evidence=evidence,
+        owners=owners,
         saved_final_state=saved_final_state,
         saved_observable_weights=saved_observable_weights,
         saved_inter_node_ket_checkpoints=saved_inter_node_ket_checkpoints,
