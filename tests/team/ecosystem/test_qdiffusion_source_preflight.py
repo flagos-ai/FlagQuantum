@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import stable_source_tree as source_tree_module
 from examples.qdiffusion_kaiwu.source_preflight import (
     COMMUNITY_REVISION,
     MAX_SOURCE_PREFLIGHT_BYTES,
@@ -258,5 +259,46 @@ def test_runtime_source_root_is_recomputed_against_preflight(
         validate_runtime_source_root(
             record,  # type: ignore[arg-type]
             filename_prefix=filename_prefix,
+            root=root,
+        )
+
+
+def test_runtime_source_root_rejects_change_during_stable_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / f"FlagQuantum-{SOURCE_REVISION[:10]}"
+    root.mkdir()
+    source = root / "source.py"
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    verified_files = [
+        {
+            "path": f"{root.name}/source.py",
+            "bytes": source.stat().st_size,
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        }
+    ]
+    record = _record()
+    artifact = record["artifacts"][0]  # type: ignore[index]
+    artifact["file_count"] = 1
+    artifact["content_set_sha256"] = hashlib.sha256(
+        json.dumps(
+            verified_files,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    real_hash = source_tree_module._stream_sha256
+
+    def mutate_after_hash(stream):
+        digest = real_hash(stream)
+        source.write_text("VALUE = 2\n", encoding="utf-8")
+        return digest
+
+    monkeypatch.setattr(source_tree_module, "_stream_sha256", mutate_after_hash)
+
+    with pytest.raises(ValueError, match="changed during hashing"):
+        validate_runtime_source_root(
+            record,  # type: ignore[arg-type]
+            filename_prefix="flagquantum-qboson-",
             root=root,
         )

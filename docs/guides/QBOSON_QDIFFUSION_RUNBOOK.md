@@ -235,6 +235,9 @@ description for extracted-content comparison; changing an archive after the
 initial bundle pass therefore fails closed. Each extracted regular file is
 hashed from a no-follow descriptor, and the complete file/directory set plus
 inode and content-relevant metadata are rechecked before the record is emitted.
+The same stable-tree implementation is used again by every execution entrypoint
+when it recomputes the FlagQuantum and plugin roots from this preflight; runtime
+source validation cannot fall back to ordinary path reads.
 Preserve both preflight records and the bundle manifest with the run evidence.
 These records remain preflight-only evidence.
 Public Kaiwu Community source is conformance input, not a substitute for the

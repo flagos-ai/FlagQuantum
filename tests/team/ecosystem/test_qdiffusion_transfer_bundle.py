@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import stable_source_tree as source_tree_module
 from examples.qdiffusion_kaiwu import verify_extracted_bundle as extracted_module
 from examples.qdiffusion_kaiwu import verify_transfer_bundle as transfer_module
 from examples.qdiffusion_kaiwu.verify_extracted_bundle import verify_extracted_bundle
@@ -370,19 +371,19 @@ def test_extracted_bundle_rejects_source_change_after_content_hash(
         with tarfile.open(archive_path, mode="r:gz") as archive:
             archive.extractall(extracted, filter="data")
     target = extracted / f"FlagQuantum-{'a' * 10}" / "src" / "package.py"
-    real_hash = extracted_module._stream_sha256
+    real_hash = source_tree_module._stream_sha256
     calls = 0
 
     def mutate_after_first_extracted_hash(stream):
         nonlocal calls
         calls += 1
         digest = real_hash(stream)
-        if calls == 3:
+        if calls == 1:
             target.write_text("changed after hashing", encoding="utf-8")
         return digest
 
     monkeypatch.setattr(
-        extracted_module, "_stream_sha256", mutate_after_first_extracted_hash
+        source_tree_module, "_stream_sha256", mutate_after_first_extracted_hash
     )
 
     with pytest.raises(
@@ -402,7 +403,9 @@ def test_extracted_bundle_has_no_unsafe_no_follow_fallback(
     target.write_text("reviewed", encoding="utf-8")
     metadata = target.lstat()
 
-    monkeypatch.delattr(extracted_module.os, "O_NOFOLLOW")
+    monkeypatch.delattr(source_tree_module.os, "O_NOFOLLOW")
 
     with pytest.raises(ValueError, match="cannot safely hash"):
-        extracted_module._hash_stable_extracted_file(target, metadata)
+        source_tree_module._hash_stable_file(
+            target, metadata, label="extracted tree"
+        )

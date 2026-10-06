@@ -382,6 +382,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   path set and stable file/directory metadata, so a source mutation after its
   content comparison cannot survive into an `extracted_content_verified=true`
   record.
+- Extraction preflight and execution-time source-root validation now share that
+  stable-tree implementation. Runtime FlagQuantum and plugin verification no
+  longer reintroduce ordinary path reads after the stronger extraction gate;
+  both recompute the same path-aware content-set identity while rejecting
+  mid-read mutation and platforms without no-follow support.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat
