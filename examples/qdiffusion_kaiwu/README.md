@@ -96,6 +96,10 @@ records:
 1. Copy `acceptance_config.example.json` to an evidence directory and replace
    every placeholder before any baseline or guided experiment runs. Its parent
    must be a real mode-0700 directory and the config itself must be mode `0600`.
+   Freeze the machine-reported hostname for each validation alias under
+   `host_identities`; the two values must be distinct. Every live command's
+   `--expected-hostname` must match this mapping, while `--execution-host`
+   remains the stable `jp-a800-171` or `jp-a800-172` alias.
 2. Record the file's SHA-256 digest in each host record and in a manifest based
    on `acceptance_manifest.example.json`.
 3. Run the bounded system path independently on `jp-a800-171` and

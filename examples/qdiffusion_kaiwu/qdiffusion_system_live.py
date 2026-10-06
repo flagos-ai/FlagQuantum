@@ -474,6 +474,10 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(arguments.config)
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
+    if arguments.expected_hostname != config["host_identities"][
+        arguments.execution_host
+    ]:
+        parser.error("--expected-hostname differs from the frozen host identity")
     observed_hostname = socket.gethostname()
     if observed_hostname != arguments.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

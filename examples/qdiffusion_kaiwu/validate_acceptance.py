@@ -1036,6 +1036,18 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         errors.append("config.primary_host: expected one declared A800 host")
     if replay_host not in HOSTS or replay_host == primary_host:
         errors.append("config.replay_host: expected the other declared A800 host")
+    host_identities = _mapping(
+        config.get("host_identities"), "config.host_identities", errors
+    )
+    if set(host_identities) != HOSTS:
+        errors.append("config.host_identities: expected both validation hosts")
+    elif any(
+        not _canonical_printable_identifier(hostname) or hostname == "<required>"
+        for hostname in host_identities.values()
+    ):
+        errors.append("config.host_identities: expected frozen machine hostnames")
+    elif len(set(host_identities.values())) != len(HOSTS):
+        errors.append("config.host_identities: machine hostnames must be distinct")
     preregistered_at = config.get("preregistered_at")
     try:
         timestamp = datetime.fromisoformat(str(preregistered_at).replace("Z", "+00:00"))
@@ -2463,6 +2475,18 @@ def _validate_component_bundle(
         _validate_executable_component_nested_fields(
             payload, label=f"component {digest}", errors=errors
         )
+        if payload.get("schema") in COMPONENT_FIELDS_BY_SCHEMA:
+            execution_host = payload.get("execution_host")
+            expected_hostname = (
+                config.get("host_identities", {}).get(execution_host)
+                if isinstance(config.get("host_identities"), dict)
+                and isinstance(execution_host, str)
+                else None
+            )
+            if payload.get("observed_hostname") != expected_hostname:
+                errors.append(
+                    f"component {digest}: observed hostname differs from frozen identity"
+                )
         if (
             payload.get("schema")
             not in (

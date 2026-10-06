@@ -528,6 +528,10 @@ def _config() -> dict[str, Any]:
         "preregistered_at": "2026-10-05T00:00:00Z",
         "primary_host": "jp-a800-171",
         "replay_host": "jp-a800-172",
+        "host_identities": {
+            "jp-a800-171": "node-a800-171",
+            "jp-a800-172": "node-a800-172",
+        },
         "software": {
             "source_revision": _REVISION,
             "kaiwu_pytorch_plugin_revision": _PLUGIN_REVISION,
@@ -1243,6 +1247,32 @@ def test_config_requires_environment_lock_digest() -> None:
     _validate_config(config, errors)
 
     assert any("environment_lock_sha256" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "host_identities",
+    (
+        {"jp-a800-171": "node-a800-171"},
+        {
+            "jp-a800-171": "<required>",
+            "jp-a800-172": "node-a800-172",
+        },
+        {
+            "jp-a800-171": "same-node",
+            "jp-a800-172": "same-node",
+        },
+    ),
+)
+def test_config_requires_two_distinct_frozen_host_identities(
+    host_identities: dict[str, str],
+) -> None:
+    config = _config()
+    config["host_identities"] = host_identities
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any("config.host_identities" in error for error in errors)
 
 
 @pytest.mark.parametrize(

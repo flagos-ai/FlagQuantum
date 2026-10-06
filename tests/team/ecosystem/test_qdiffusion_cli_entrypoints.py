@@ -37,6 +37,13 @@ PINNED_SDK_ENTRYPOINTS = (
     "qdiffusion_system_live",
 )
 
+LIVE_HOST_ENTRYPOINTS = (
+    "qdiffusion_portability_replay_live",
+    "qdiffusion_protein_evaluate",
+    "qdiffusion_protein_training_live",
+    "qdiffusion_system_live",
+)
+
 
 @pytest.mark.parametrize("entrypoint", ENTRYPOINTS)
 def test_documented_module_entrypoint_binds_current_checkout(
@@ -97,3 +104,23 @@ def test_live_entrypoint_rejects_unpinned_sdk_version_before_other_inputs(
 
     assert completed.returncode == 2
     assert "invalid choice: '1.4.1'" in completed.stderr
+
+
+@pytest.mark.parametrize("entrypoint", LIVE_HOST_ENTRYPOINTS)
+def test_live_entrypoint_binds_expected_hostname_to_frozen_host_identity(
+    entrypoint: str,
+) -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / f"{entrypoint}.py"
+    ).read_text(encoding="utf-8")
+
+    assert "expected_hostname !=" in source
+    assert "config[\"host_identities\"]" in source
+    assert (
+        'parser.error("--expected-hostname differs from the frozen host identity")'
+        in source
+    )
+    assert source.index("expected_hostname !=") < source.index("socket.gethostname()")

@@ -445,6 +445,8 @@ def main() -> None:
         parser.error("--requested-samples differs from the frozen configuration")
     if args.seed not in config["seeds"]:
         parser.error("--seed is not present in the frozen seed list")
+    if args.expected_hostname != config["host_identities"][args.execution_host]:
+        parser.error("--expected-hostname differs from the frozen host identity")
     observed_hostname = socket.gethostname()
     if observed_hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

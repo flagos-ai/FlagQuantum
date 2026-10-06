@@ -86,6 +86,10 @@ def _config() -> dict[str, object]:
     return {
         "primary_host": "jp-a800-171",
         "replay_host": "jp-a800-172",
+        "host_identities": {
+            "jp-a800-171": "node-a800-171",
+            "jp-a800-172": "node-a800-172",
+        },
         "software": {
             "source_revision": "a" * 40,
             "kaiwu_pytorch_plugin_revision": "b" * 40,

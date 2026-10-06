@@ -26,6 +26,10 @@ PRIMARY_SOURCE_PREFLIGHT_SHA = "d" * 64
 REPLAY_SOURCE_PREFLIGHT_SHA = "e" * 64
 TRANSFER_MANIFEST_SHA = "f" * 64
 ENVIRONMENT_LOCK_SHA = "6" * 64
+OBSERVED_HOSTNAMES = {
+    "jp-a800-171": "node-a800-171",
+    "jp-a800-172": "node-a800-172",
+}
 
 
 def _config() -> dict[str, Any]:
@@ -137,7 +141,7 @@ def _system(
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
         "execution_host": host,
-        "observed_hostname": host,
+        "observed_hostname": OBSERVED_HOSTNAMES[host],
         "run_role": role,
         "requested_cuda_device": "cuda:0",
         "observed_tensor_device": "cuda:0",
@@ -350,7 +354,7 @@ def _components(
                     "failure": None,
                     "artifact_inputs_unchanged": True,
                     "execution_host": "jp-a800-171",
-                    "observed_hostname": "jp-a800-171",
+                    "observed_hostname": OBSERVED_HOSTNAMES["jp-a800-171"],
                     "requested_cuda_device": "cuda:0",
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "transport": "kaiwu_cim",
@@ -478,7 +482,7 @@ def _components(
                     "python_version": "3.10.18",
                     "torch_version": "2.7.0",
                     "execution_host": "jp-a800-171",
-                    "observed_hostname": "jp-a800-171",
+                    "observed_hostname": OBSERVED_HOSTNAMES["jp-a800-171"],
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "observed_tensor_device": "cuda:0",
                     "evaluation_model_sha256": "f" * 64,
@@ -512,7 +516,7 @@ def _portability(
         "recorded_at": "2026-10-06T00:00:00+00:00",
         "experiment_config_sha256": config_sha256,
         "execution_host": "jp-a800-172",
-        "observed_hostname": "jp-a800-172",
+        "observed_hostname": OBSERVED_HOSTNAMES["jp-a800-172"],
         "run_completed": True,
         "failure": None,
         "artifact_inputs_unchanged": True,
@@ -1242,6 +1246,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "system component transport differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    primary_system_sha = _write_json(component_paths[0], primary_system_record)
+    primary["system_evidence_sha256"] = primary_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = primary_system_sha
+
+    tampered_system = json.loads(component_paths[0].read_text(encoding="utf-8"))
+    tampered_system["observed_hostname"] = "unrelated-host"
+    tampered_system_sha = _write_json(component_paths[0], tampered_system)
+    primary["system_evidence_sha256"] = tampered_system_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][0]["sha256"] = tampered_system_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "observed hostname differs from frozen identity" in error
         for error in validate_acceptance(manifest_path)
     )
 

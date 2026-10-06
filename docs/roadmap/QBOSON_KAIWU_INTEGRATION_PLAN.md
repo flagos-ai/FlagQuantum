@@ -650,6 +650,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   probe, evaluation cannot predate its linked training record, and portability
   cannot predate either the replay-host system probe or its selected training
   record.
+- The frozen config now records a distinct machine-reported hostname for each
+  validation alias. All four live QDiffusion entrypoints require
+  `--expected-hostname` to equal that frozen mapping before observing the local
+  hostname, and final validation independently binds every executable
+  component's `observed_hostname` to its declared `execution_host`. This
+  preserves the real alias/hostname distinction found during Phase 0 instead
+  of treating a caller-controlled alias or Docker container ID as host proof.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

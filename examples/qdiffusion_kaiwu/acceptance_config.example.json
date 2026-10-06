@@ -4,6 +4,10 @@
   "preregistered_at": "<required>",
   "primary_host": "jp-a800-171",
   "replay_host": "jp-a800-172",
+  "host_identities": {
+    "jp-a800-171": "<required>",
+    "jp-a800-172": "<required>"
+  },
   "software": {
     "source_revision": "<required>",
     "kaiwu_pytorch_plugin_revision": "<required>",

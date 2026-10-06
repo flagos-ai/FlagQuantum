@@ -360,6 +360,8 @@ def main() -> None:
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
     verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
+    if args.expected_hostname != config["host_identities"][args.execution_host]:
+        parser.error("--expected-hostname differs from the frozen host identity")
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")
