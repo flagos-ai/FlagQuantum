@@ -154,6 +154,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-012-A",
+        "tests/unit/test_statevector_controlled_matrix_triton.py::test_local_controlled_matrix_matches_reference",
+        "tests/unit/test_statevector_controlled_matrix_triton.py::test_local_controlled_matrix_supports_exact_aliasing",
+        capability_tests=(
+            "tests/unit/test_statevector_controlled_matrix_triton.py::test_local_controlled_matrix_rejects_non_cuda_state",
+            "tests/unit/test_statevector_controlled_matrix_triton.py::test_local_controlled_matrix_rejects_unsupported_contracts",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_controlled_matrix_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-GR-001-A",
         "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         gradient_tests=(

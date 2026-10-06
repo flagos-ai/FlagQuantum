@@ -118,6 +118,16 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "many_body_simulation",
     ),
     _semantic(
+        "FQK-SV-012",
+        "statevector.apply.controlled_matrix_1q.local",
+        "statevector",
+        "Apply a one-qubit matrix inside a local control-one subspace.",
+        "circuit_simulation",
+        "phase_estimation",
+        "amplitude_amplification",
+        "variational_algorithms",
+    ),
+    _semantic(
         "FQK-GR-001",
         "gradient.vjp.adjoint_1q.local",
         "gradient",

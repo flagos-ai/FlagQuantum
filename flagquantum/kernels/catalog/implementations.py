@@ -172,6 +172,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         maturity="provisional",
     ),
     _triton(
+        "FQKI-TRITON-SV-012-A",
+        "statevector.apply.controlled_matrix_1q.local",
+        "statevector_controlled_matrix",
+        "apply_complex64_local_controlled_1q",
+        layouts=("flat_statevector", "controlled_matrix_1q"),
+        maturity="provisional",
+    ),
+    _triton(
         "FQKI-TRITON-GR-001-A",
         "gradient.vjp.adjoint_1q.local",
         "statevector_adjoint",

@@ -78,6 +78,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
 | FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
 | FQK-SV-011 | `statevector.apply.pauli_rotation_2q.local` | `apply_complex64_local_pauli_rotation_2q` |
+| FQK-SV-012 | `statevector.apply.controlled_matrix_1q.local` | `apply_complex64_local_controlled_1q` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -464,6 +465,37 @@ scalability claim. Reproduce or validate it with
 This semantic is used by Ising interactions, Trotter and qDrift Hamiltonian
 simulation, VQE and QAOA ansatz layers, quantum machine-learning circuits, and
 spin-model or many-body dynamics.
+
+`FQKI-TRITON-SV-012-A` applies a shared or batch-resolved two-by-two matrix
+only in the control-one subspace of a flat statevector. Each Triton program
+owns one disjoint four-amplitude group: it preserves the control-zero pair and
+updates the control-one target pair without materializing a four-by-four
+controlled matrix or permuting the complete state. The wrapper accepts
+contiguous CUDA `complex64` tensors, distinct local control and target qubits,
+and an optional matching output buffer. Exact input/output aliasing is safe;
+gradient-bearing inputs fail closed because this implementation is
+forward-only.
+
+The checked-in
+[`statevector_controlled_matrix_a800.json`](../../benchmarks/results/local/statevector_controlled_matrix_a800.json)
+artifact records 30 alternating, synchronized groups of 10 invocations for
+five fixed cases on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1
+and FlagTree 0.7.0. It covers ordered and reversed control/target positions,
+shared and batch-resolved matrices, batches one and four, and state sizes from
+`2**16` through `2**24`. Maximum absolute and relative L2 errors are below
+`5.4e-7` and `3.4e-8`. The four `2**16` measurements remain as an excluded
+boundary because FlagTree launch overhead reaches only `0.71x` to `0.73x` the
+layout/BMM reference there. Starting at 20 qubits, all 16
+host/compiler/shape cases win by at least `1.72x` and as much as `6.99x`.
+The aggregate decision is `eligible_for_bounded_dispatch_evaluation`; runtime
+dispatch remains a separate review and must preserve the reference below the
+measured window. This is bounded single-device development evidence, not a
+release or distributed scalability claim. Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_controlled_matrix_probe.py`](../../benchmarks/internal/evidence/statevector_controlled_matrix_probe.py).
+
+This semantic serves controlled rotations and controlled unitaries in QPE,
+QFT, amplitude amplification, Hamiltonian simulation, and variational
+circuits.
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -1135,12 +1167,12 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 29 semantics and 36 implementations are implemented. The 27 direct
-Triton `-A` implementations from SV-001 through SV-011, GR-001 through GR-006,
+The current 30 semantics and 37 implementations are implemented. The 28 direct
+Triton `-A` implementations from SV-001 through SV-012, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, SV-009 and SV-010 await separate dispatch reviews, SV-011 has an
-evidenced bounded default route, and the other listed routes have evidenced
+reason above, SV-009, SV-010, and SV-012 await separate dispatch reviews,
+SV-011 has an evidenced bounded default route, and the other listed routes have evidenced
 default-dispatch promotions. The two
 generic-autograd Triton `-B` implementations, the two NUM implementations, and
 the five explicit FlagTree implementations remain experimental, for nine
