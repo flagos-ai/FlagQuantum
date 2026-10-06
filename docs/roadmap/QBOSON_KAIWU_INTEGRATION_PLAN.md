@@ -1065,7 +1065,12 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   ambiguous failure may have occurred before provider acceptance. Recovery is
   intentionally not disabled by an expired Resource Bill snapshot, and its
   diagnostic record does not establish provider, system, or application
-  acceptance.
+  acceptance. At revision
+  `ba30ca0c9f6ebd05bfbef805a1e5aa972e5841ce`, five focused recovery tests and
+  the complete credential-free golden path passed; the latter ran all 776
+  selected tests in 23.97 seconds against the pinned clean Kaiwu Community and
+  Kaiwu PyTorch Plugin revisions with credentials removed and the socket guard
+  active.
 - The isolated development rehearsal was refreshed on both validation hosts at
   source revision `10e4b2345c5e18219ae369e7a7821848bf8ad46c`, after the
   provider-resource budget, submission-deadline, and reviewed-project gates
