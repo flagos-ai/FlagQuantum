@@ -267,14 +267,20 @@ python -m pytest tests/test_gradient_api.py tests/integration/test_gradient_mode
 ```
 
 The broader `python -m pytest -m "smoke or unit" -q` tier reports
-`9 failed, 7495 passed, 270 skipped, 2629 deselected`. All nine failures are
-pre-existing: the identical nine ids fail on a pristine detached `origin/main`
-worktree (`8495a258d`), measured with the same interpreter. They are
-`test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]`,
-`[dtype1]`, `test_product_state_qft_uses_hadamard_phase_fusion`,
+`11 failed, 7719 passed, 271 skipped, 2629 deselected`. All eleven failures are
+pre-existing: the identical ids fail on a pristine detached `origin/main`
+worktree (`0ebc710b2`), measured with the same interpreter. Seven of them were
+already failing at `8495a258d` before this branch merged `main` --
+`test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]`
+and `[dtype1]`, `test_product_state_qft_uses_hadamard_phase_fusion`,
 `test_native_fused_rotation_layer_only_promotes_terminal_regions`,
 `test_compact_cx_runtime_threshold_and_rollback`, and four chunking cases in
-`tests/unit/test_statevector_batch_chunking.py`. None of them reads
+`tests/unit/test_statevector_batch_chunking.py`. The other two arrive with
+`main` itself (merged by #552 and #560) and fail there:
+`tests/unit/test_circuit_control.py::test_control_is_a_method_and_not_a_root_export`
+and
+`tests/unit/test_dependency_policy.py::test_collected_modules_guard_every_optional_reference`
+(open PRs #569 and #578 are the fixes for those two). None of the eleven reads
 `flagquantum/gradients.py`.
 
 `python -m mypy flagquantum` reports the same **five** errors on this branch and
