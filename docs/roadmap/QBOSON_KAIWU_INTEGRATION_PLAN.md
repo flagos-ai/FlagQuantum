@@ -716,6 +716,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   upstream MD5 `4e4f5aca22ba12eabda1e347765db069`. The canonical filename
   matches the plugin's missing default input, while the separately published
   `_additional` FASTA is excluded from the candidate semantics. The official
+  `previous_releases` index was also checked on 2026-10-06 and listed releases
+  only through `2026_02`; no immutable `2026_03` archive path is yet available,
+  so the intake must not invent one and must freeze the exact approved
+  `current_release` bytes if acquisition precedes archival. The official
   ESM README directly maps `esm2_t33_650M_UR50D` to the selected checkpoint URL
   and its repository is MIT-licensed. These facts narrow source and license
   review; they do not authorize acquisition or establish that repository

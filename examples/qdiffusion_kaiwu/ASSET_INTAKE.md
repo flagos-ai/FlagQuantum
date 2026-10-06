@@ -45,7 +45,12 @@ published MD5 is discovery evidence only, while the final configuration
 requires a SHA-256 of the exact uncompressed FASTA consumed by the workflow.
 Because the official path is under `current_release`, retain the metalink and
 release identifier and require a matching archived release or reviewed bytes
-before treating the source as reproducible.
+before treating the source as reproducible. A read-only check of the official
+`previous_releases` index on 2026-10-06 found entries only through
+`release-2026_02`; no `release-2026_03` directory was listed. Do not construct
+or record a guessed archive URL. Until UniProt publishes that immutable path,
+an approved acquisition must retain the exact `current_release` archive and
+metalink bytes and freeze both compressed and decompressed identities.
 
 The ESM candidate was refreshed against the archived official ESM README and
 license. The README directly maps `esm2_t33_650M_UR50D` to the selected
