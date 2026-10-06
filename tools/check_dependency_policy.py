@@ -26,10 +26,13 @@ EXPECTED_INTEROP_EXTRAS = ("braket", "cirq", "pennylane", "quafu", "qiskit")
 #: by pre-push, and both run in an environment installed from `.[dev]` alone.
 #: A reference to an optional root in either tree is therefore a failure on the
 #: lane that has no such extra -- a collection error in `tests`, an import error
-#: in `tools` -- rather than a skip. `benchmarks` is excluded deliberately: it
-#: holds standalone comparison scripts that a lane installs the comparison
-#: extras to run, and their module-level imports are script entry points, not
-#: modules any marker selects.
+#: in `tools` -- rather than a skip. `benchmarks` is excluded deliberately, and
+#: that exclusion is measured rather than assumed: `pytest --collect-only
+#: benchmarks` reports `collected 0 items` (pytest.ini sets `testpaths = tests`),
+#: and the lanes that do run those files (`local-gpu.yml`,
+#: `scheduled-hardware.yml`) run them as scripts through `torchrun` on hardware
+#: lanes that never touch `cpu-core`. Their module-level imports are script entry
+#: points, not modules any marker selects.
 COLLECTION_TREES = ("tests", "tools")
 
 #: Trees whose Python sources are read for rules about the interpreter itself.

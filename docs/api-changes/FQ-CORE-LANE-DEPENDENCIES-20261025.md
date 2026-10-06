@@ -87,7 +87,10 @@ A guard on a root that *requires* the referenced root also counts. That is the
 
 `benchmarks` is deliberately out of scope: it holds standalone comparison
 scripts whose module-level imports are entry points, not modules a marker
-selects.
+selects. That is measured rather than assumed: `pytest --collect-only benchmarks`
+reports `collected 0 items` because `pytest.ini` sets `testpaths = tests`, and the
+CI lanes that do run those files (`local-gpu.yml`, `scheduled-hardware.yml`) run
+them as scripts through `torchrun`, on hardware lanes that never touch `cpu-core`.
 
 `flagquantum` is out of scope for the same rule for a different reason: it is not
 a collection surface, and the gate that covers it is stronger. `check_import_time.py`
