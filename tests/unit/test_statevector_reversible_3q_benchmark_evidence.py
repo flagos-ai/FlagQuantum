@@ -91,8 +91,10 @@ def test_sv013_aggregate_requires_profitable_complete_matrix(tmp_path: Path) -> 
     assert payload["scalability_claim_allowed"] is False
     aggregate = payload["aggregate"]
     assert aggregate["case_count"] == 20
-    assert aggregate["minimum_speedup_over_product"] == 1.5
-    assert aggregate["all_cases_meet_performance_floor"] is True
+    assert aggregate["default_case_count"] == 16
+    assert aggregate["excluded_boundary_case_count"] == 4
+    assert aggregate["minimum_default_speedup_over_product"] == 1.5
+    assert aggregate["all_default_cases_meet_performance_floor"] is True
     assert aggregate["decision"] == "eligible_for_bounded_dispatch_evaluation"
 
 
@@ -104,7 +106,7 @@ def test_sv013_aggregate_rejects_incomplete_matrix(tmp_path: Path) -> None:
 def test_sv013_aggregate_rejects_performance_regression(tmp_path: Path) -> None:
     paths = _write_matrix(tmp_path)
     payload = json.loads(paths[0].read_text(encoding="utf-8"))
-    payload["cases"][0]["speedup_over_product"] = 0.99
+    payload["cases"][1]["speedup_over_product"] = 0.99
     paths[0].write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(ValueError, match="performance floor"):

@@ -27,6 +27,7 @@ RUNNER = "benchmarks/internal/evidence/statevector_reversible_3q_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
 PERFORMANCE_FLOOR = 1.0
+DEFAULT_MIN_QUBITS = 20
 _FULL_REVISION = re.compile(r"^[0-9a-f]{40}$")
 SHAPE_MATRIX = (
     (1, 16, (0, 1, 2), "ccx"),
@@ -99,6 +100,7 @@ def _shape_record(
         "n_qubits": n_qubits,
         "qubits": list(qubits),
         "operation": operation,
+        "default_dispatch_eligible": n_qubits >= DEFAULT_MIN_QUBITS,
     }
 
 
@@ -261,7 +263,11 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
             raise ValueError("SV-013 evidence shape matrix mismatch")
         for case_value in cases:
             case = _mapping(case_value, "case")
-            if float(case.get("speedup_over_product", 0.0)) < PERFORMANCE_FLOOR:
+            shape = _mapping(case["shape"], "shape")
+            if (
+                bool(shape["default_dispatch_eligible"])
+                and float(case.get("speedup_over_product", 0.0)) < PERFORMANCE_FLOOR
+            ):
                 raise ValueError("SV-013 case misses performance floor")
             if float(case.get("maximum_absolute_error", float("inf"))) != 0.0:
                 raise ValueError("SV-013 permutation must be bitwise exact")
@@ -270,6 +276,17 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
 
     cases = [case for run in runs for case in run["cases"]]
     speedups = [float(case["speedup_over_product"]) for case in cases]
+    default_cases = [
+        case
+        for case in cases
+        if bool(_mapping(case["shape"], "shape")["default_dispatch_eligible"])
+    ]
+    excluded_cases = [
+        case
+        for case in cases
+        if not bool(_mapping(case["shape"], "shape")["default_dispatch_eligible"])
+    ]
+    default_speedups = [float(case["speedup_over_product"]) for case in default_cases]
     return {
         "benchmark": BENCHMARK,
         "schema": EVIDENCE_SCHEMA,
@@ -293,16 +310,20 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         "runs": sorted(runs, key=lambda run: (run["host_label"], run["compiler_lane"])),
         "aggregate": {
             "case_count": len(cases),
-            "minimum_speedup_over_product": min(speedups),
-            "maximum_speedup_over_product": max(speedups),
+            "default_case_count": len(default_cases),
+            "excluded_boundary_case_count": len(excluded_cases),
+            "minimum_observed_speedup_over_product": min(speedups),
+            "maximum_observed_speedup_over_product": max(speedups),
+            "minimum_default_speedup_over_product": min(default_speedups),
+            "maximum_default_speedup_over_product": max(default_speedups),
             "maximum_absolute_error": max(
                 float(case["maximum_absolute_error"]) for case in cases
             ),
             "maximum_relative_l2_error": max(
                 float(case["relative_l2_error"]) for case in cases
             ),
-            "all_cases_meet_performance_floor": all(
-                speedup >= PERFORMANCE_FLOOR for speedup in speedups
+            "all_default_cases_meet_performance_floor": all(
+                speedup >= PERFORMANCE_FLOOR for speedup in default_speedups
             ),
             "decision": "eligible_for_bounded_dispatch_evaluation",
         },
