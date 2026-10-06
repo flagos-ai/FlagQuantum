@@ -247,14 +247,40 @@ Measured by the gate:
   first-order route still charges `6` for the same three-parameter program.
 - **All 11 refusals fire** with the recorded exception class and a message
   containing the recorded phrase.
+- **The bound is a claim about a declared precision, and all of it is only true
+  there.** `fq.run` resolves an unset `precision` to `complex64`, so an
+  unqualified `fq.Circuit` returns `float32` expectations. This sweep is a
+  second derivative assembled from those expectations, and it is three orders of
+  magnitude finer than `float32` can carry: re-reading the `u2`/`mps` cell with
+  the circuit left unqualified gives `1.7544981051331732e-07` against the pinned
+  reference and `0.030165275765790034` when the reference route is taken at
+  `float32` too. Both readings are recorded in the contract and re-derived by
+  the gate, and neither is inside the bound. The witness program therefore pins
+  `complex128`, the contract names the dtype it pins, and the gate refuses a
+  contract whose recorded dtype the witness does not actually use. Without that
+  pinning the sweep would still have passed and the bound would have described
+  the wrong quantity.
 
-`tests/unit/test_parameter_shift_hessian_contract.py` (72 tests) owns the
+The same reading at the user's own scale, for the two-parameter program of the
+docstring example, where the diagonal cell is exactly `-cos(0.4) * cos(0.9)`:
+
+| Execution | Diagonal cell | Deviation from the exact value |
+| --- | --- | --- |
+| unqualified `fq.run` | `-0.5725407600402832` | `6.478e-08` |
+| `precision="complex128"` | `-0.5725406952574803` | `3.331e-16` |
+
+The public guidance follows the measurement: the docstring names the precision
+the caller controls, and the contract records the deviation a caller who does not
+set it should expect.
+
+`tests/unit/test_parameter_shift_hessian_contract.py` (77 tests) owns the
 contract and the gate. Its last section mutates one clause at a time -- a term
 count, an admission, a cost, a cell cost, the agreement bound, the reference
 floor, an opcode row, a refusal's exception class, a refusal's message, a dropped
 refusal, a claimed root export, a claimed autograd graph, a claimed method value,
-a scope string, the contract test path, and a census string -- and requires the
-gate to name each one. An earlier draft of this gate **crashed** on a mutated
+a scope string, the contract test path, a census string, the recorded program
+dtype, the cell the default-precision reading names, and each of the two
+default-precision numbers -- and requires the gate to name each one. An earlier draft of this gate **crashed** on a mutated
 contract instead of reporting it, which is the failure mode those tests exist to
 catch.
 

@@ -450,6 +450,15 @@ def parameter_shift_hessian(
     evaluations in total -- ``33`` for the three-parameter reference program,
     against the ``6`` a first-order gradient of the same program costs.
 
+    The result is only as precise as the loss it is assembled from, and the loss
+    precision belongs to the execution rather than to ``parameters``. An
+    unqualified :func:`flagquantum.run` resolves to ``complex64``, so a Hessian
+    assembled from it plateaus near ``1e-07``; the same call on the same program
+    with ``precision="complex128"`` reaches ``1e-16``. Ask for the wider
+    precision on the execution options -- or build the circuit with
+    ``dtype=torch.complex128`` -- when the second derivatives are read past about
+    seven digits.
+
     Args:
         circuit_builder: Builds a circuit from a parameter tensor, exactly as
             :func:`parameter_shift_gradient` receives it.

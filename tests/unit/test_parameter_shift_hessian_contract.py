@@ -253,6 +253,79 @@ def test_the_matrix_is_symmetric_to_summation_order() -> None:
         assert asymmetry <= 1e-12, (opcode, asymmetry)
 
 
+def test_the_recorded_bound_is_a_claim_about_a_declared_precision() -> None:
+    """The sweep is three orders finer than the precision the executor defaults to.
+
+    An unqualified ``fq.Circuit`` carries ``complex64``, so this measurement is
+    the one a user gets from the documented example rather than from the gate.
+    It is recorded so that neither reading can be quoted as the other.
+    """
+
+    contract = _contract()
+    exactness = contract["exactness"]
+    bound = float(exactness["agreement_bound"])
+    opcode, mode = (str(part) for part in exactness["default_program_dtype_witness"])
+    measured = _GATE._measured_at_default_precision((opcode,), mode)
+    pinned = _GATE._difference((opcode,), mode)
+    width = _GATE._width((opcode,))
+    implementation = (measured - pinned).abs().max().item()
+    reference = (
+        (measured - _GATE._difference((opcode,), mode, pinned=False)).abs().max().item()
+    )
+
+    assert _GATE._witness((opcode,))(_GATE._point(width)).dtype == getattr(
+        torch, str(exactness["program_dtype"])
+    )
+    assert (
+        _GATE._default_precision_witness((opcode,))(_GATE._point(width)).dtype
+        == torch.complex64
+    )
+    # The implementation on its own is the smaller of the two readings, and both
+    # are above the bound. The record exists so that neither is quoted as it.
+    assert implementation == pytest.approx(
+        float(exactness["default_program_dtype_implementation_deviation"]), rel=1e-06
+    )
+    assert reference == pytest.approx(
+        float(exactness["default_program_dtype_reference_deviation"]), rel=1e-06
+    )
+    assert implementation > bound
+    assert reference > implementation
+
+
+def test_the_documented_precision_advice_is_the_measured_one() -> None:
+    """The docstring's precision sentence is a claim, so it is re-derived here."""
+
+    def build(parameters: torch.Tensor, dtype: Any = None):
+        circuit = fq.Circuit(2) if dtype is None else fq.Circuit(2, dtype=dtype)
+        circuit.ry(0, theta=parameters[0])
+        circuit.ry(1, theta=parameters[1])
+        return circuit.cx(0, 1)
+
+    def loss(circuit: Any) -> torch.Tensor:
+        return fq.run(
+            circuit,
+            options=fq.ExecutionOptions(precision="complex128"),
+            outputs=fq.expectation(fq.Z(1)),
+        ).expectations[0]
+
+    def default_loss(circuit: Any) -> torch.Tensor:
+        return fq.run(circuit, outputs=fq.expectation(fq.Z(1))).expectations[0]
+
+    parameters = torch.tensor([0.4, -0.9], dtype=torch.float64)
+    exact = -math.cos(0.4) * math.cos(0.9)
+    default = gradient_module.parameter_shift_hessian(build, parameters, default_loss)
+    widened = gradient_module.parameter_shift_hessian(build, parameters, loss)
+    widened_dtype = gradient_module.parameter_shift_hessian(
+        lambda values: build(values, torch.complex128), parameters, default_loss
+    )
+
+    assert default[0, 0].item() == pytest.approx(exact, abs=6.5e-08)
+    assert abs(default[0, 0].item() - exact) > 1e-08
+    for result in (widened, widened_dtype):
+        assert result[0, 0].item() == pytest.approx(exact, abs=1e-12)
+        assert torch.equal(result, widened)
+
+
 # --------------------------------------------------------------------------------------
 # What the route costs and what it returns
 # --------------------------------------------------------------------------------------
@@ -505,6 +578,22 @@ def _drop_a_census_string(contract: dict[str, Any]) -> None:
     contract["verification"]["census"] = ["def parameter_shift_laplace("]
 
 
+def _claim_the_wrong_program_dtype(contract: dict[str, Any]) -> None:
+    contract["exactness"]["program_dtype"] = "complex64"
+
+
+def _misname_the_precision_witness(contract: dict[str, Any]) -> None:
+    contract["exactness"]["default_program_dtype_witness"] = ["ry", "statevector"]
+
+
+def _misstate_the_precision_deviation(contract: dict[str, Any]) -> None:
+    contract["exactness"]["default_program_dtype_implementation_deviation"] = 1e-30
+
+
+def _misstate_the_reference_deviation(contract: dict[str, Any]) -> None:
+    contract["exactness"]["default_program_dtype_reference_deviation"] = 1e-30
+
+
 @pytest.mark.parametrize(
     "mutate, expected",
     [
@@ -524,6 +613,10 @@ def _drop_a_census_string(contract: dict[str, Any]) -> None:
         (_claim_the_wrong_scope, "which this gate cannot check"),
         (_vanish_the_contract_test, "does not exist"),
         (_drop_a_census_string, "census string"),
+        (_claim_the_wrong_program_dtype, "records program_dtype"),
+        (_misname_the_precision_witness, "default_program_dtype_implementation"),
+        (_misstate_the_precision_deviation, "for default_program_dtype_implementation"),
+        (_misstate_the_reference_deviation, "for default_program_dtype_reference"),
     ],
 )
 def test_the_gate_refuses_a_contract_that_stopped_being_true(

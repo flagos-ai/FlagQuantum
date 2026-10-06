@@ -145,31 +145,38 @@ def _rules(
     return collected
 
 
-def _witness(opcodes: Sequence[str]) -> Callable[[torch.Tensor], Any]:
-    """A program whose gate parameters are driven one-to-one by the inputs."""
+def _witness_circuit(values: torch.Tensor, opcodes: Sequence[str], dtype: Any):
+    """Build the witness program, optionally pinning the circuit precision."""
 
     fixed = (0.9, 1.4, 0.6, 1.1)
+    flat = values.reshape(-1)
+    circuit = fq.Circuit(3) if dtype is None else fq.Circuit(3, dtype=dtype)
+    for index in range(3):
+        circuit = circuit.ry(index, theta=fixed[index])
+    circuit = circuit.cx(0, 1).cx(1, 2)
+    cursor = 0
+    for position, opcode in enumerate(opcodes):
+        schema = OPERATOR_SCHEMAS[opcode]
+        qubits = tuple(range(position, position + max(1, schema.arity)))
+        driven = {
+            name: flat[cursor + offset] for offset, name in enumerate(schema.parameters)
+        }
+        cursor += len(schema.parameters)
+        circuit = circuit.gate(opcode, qubits, **driven)
+    # Turn the measurement basis so no cell of the reference is degenerate.
+    return circuit.cx(2, 0).ry(0, theta=fixed[3])
 
-    def build(values: torch.Tensor):
-        flat = values.reshape(-1)
-        circuit = fq.Circuit(3, dtype=torch.complex128)
-        for index in range(3):
-            circuit = circuit.ry(index, theta=fixed[index])
-        circuit = circuit.cx(0, 1).cx(1, 2)
-        cursor = 0
-        for position, opcode in enumerate(opcodes):
-            schema = OPERATOR_SCHEMAS[opcode]
-            qubits = tuple(range(position, position + max(1, schema.arity)))
-            driven = {
-                name: flat[cursor + offset]
-                for offset, name in enumerate(schema.parameters)
-            }
-            cursor += len(schema.parameters)
-            circuit = circuit.gate(opcode, qubits, **driven)
-        # Turn the measurement basis so no cell of the reference is degenerate.
-        return circuit.cx(2, 0).ry(0, theta=fixed[3])
 
-    return build
+def _witness(opcodes: Sequence[str]) -> Callable[[torch.Tensor], Any]:
+    """The witness program with the precision the contract declares."""
+
+    return lambda values: _witness_circuit(values, opcodes, torch.complex128)
+
+
+def _default_precision_witness(opcodes: Sequence[str]) -> Callable[[torch.Tensor], Any]:
+    """The same program built without pinning the precision the executor defaults to."""
+
+    return lambda values: _witness_circuit(values, opcodes, None)
 
 
 def _width(opcodes: Sequence[str]) -> int:
@@ -300,12 +307,32 @@ def _measured(opcodes: tuple[str, ...], mode: str) -> tuple[torch.Tensor, int]:
 
 
 @functools.cache
-def _difference(opcodes: tuple[str, ...], mode: str) -> torch.Tensor:
+def _measured_at_default_precision(opcodes: tuple[str, ...], mode: str) -> torch.Tensor:
+    """The same call with the witness built without pinning the circuit precision."""
+
+    width = _width(opcodes)
+
+    def loss(circuit: Any) -> torch.Tensor:
+        return _scalar(circuit, mode)
+
+    return _gradients_module().parameter_shift_hessian(
+        _default_precision_witness(opcodes), _point(width), loss
+    )
+
+
+@functools.cache
+def _difference(
+    opcodes: tuple[str, ...], mode: str, *, pinned: bool = True
+) -> torch.Tensor:
     """Richardson central differences of ``fq.run`` alone."""
 
     width = _width(opcodes)
     parameters = _point(width)
-    evaluate = _evaluate(opcodes, mode)
+    build = _witness(opcodes) if pinned else _default_precision_witness(opcodes)
+
+    def evaluate(values: torch.Tensor) -> torch.Tensor:
+        return _scalar(build(values), mode)
+
     steps = (0.01, 0.005, 0.0025)
     matrix = torch.zeros((width, width), dtype=torch.float64)
     for left in range(width):
@@ -669,6 +696,63 @@ def _exactness_errors(contract: Mapping[str, Any]) -> list[str]:
     return []
 
 
+def _precision_errors(contract: Mapping[str, Any]) -> list[str]:
+    """The recorded bound is only true at the precision the witness pins."""
+
+    exactness = contract["exactness"]
+    name = str(exactness["program_dtype"])
+    dtype = getattr(torch, name, None)
+    if not isinstance(dtype, torch.dtype):
+        return [f"the recorded program_dtype {name!r} is not a torch dtype"]
+    built = _witness(("ry",))(_point(_width(("ry",))))
+    if built.dtype != dtype:
+        return [
+            f"the witness program is built at {built.dtype} but the contract "
+            f"records program_dtype {name!r}"
+        ]
+    witness = [str(part) for part in exactness["default_program_dtype_witness"]]
+    if len(witness) != 2:
+        return [
+            "default_program_dtype_witness must name one opcode and one serving "
+            f"mode, got {witness}"
+        ]
+    opcode, mode = witness
+    if opcode not in _admitted(contract):
+        return [f"default_program_dtype_witness names unadmitted opcode {opcode!r}"]
+    if mode not in [str(item) for item in contract["protocol"]["serving_modes"]]:
+        return [f"default_program_dtype_witness names unserved mode {mode!r}"]
+    default_witness = _default_precision_witness((opcode,))(_point(_width((opcode,))))
+    if default_witness.dtype == dtype:
+        return [
+            f"the unpinned witness for {opcode!r} is already {dtype}, so the "
+            "recorded default-precision deviation measures nothing"
+        ]
+    measured = _measured_at_default_precision((opcode,), mode)
+    pinned = _difference((opcode,), mode)
+    readings = (
+        (
+            "default_program_dtype_implementation_deviation",
+            (measured - pinned).abs().max().item(),
+        ),
+        (
+            "default_program_dtype_reference_deviation",
+            (measured - _difference((opcode,), mode, pinned=False)).abs().max().item(),
+        ),
+    )
+    for field, deviation in readings:
+        recorded = float(exactness[field])
+        # A relative tolerance with a floor far below every recorded reading: an
+        # absolute floor of `1e-06` would accept any value at all for a reading
+        # this small, which is how a contract stops constraining its own number.
+        tolerance = 1e-06 * max(abs(recorded), 1e-12)
+        if abs(deviation - recorded) > tolerance:
+            return [
+                f"at the executor default the {opcode}/{mode} cell reads "
+                f"{deviation} for {field}, but the contract records {recorded}"
+            ]
+    return []
+
+
 def _refusal_errors(contract: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     exceptions = _exceptions()
@@ -919,6 +1003,7 @@ def contract_errors(contract: Mapping[str, Any]) -> tuple[str, ...]:
     errors.extend(_scope_errors(contract))
     errors.extend(_verification_errors(contract))
     errors.extend(_exactness_errors(contract))
+    errors.extend(_precision_errors(contract))
     errors.extend(_rule_errors(contract))
     return tuple(errors)
 
@@ -938,12 +1023,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     admitted = _admitted(contract)
     modes = len(contract["protocol"]["serving_modes"])
     cells = len(admitted) * modes
+    exactness = contract["exactness"]
+    witness, witness_mode = (
+        str(part) for part in exactness["default_program_dtype_witness"]
+    )
     print(
         "Parameter-shift Hessian contract passed: "
         f"{len(admitted)} admitted opcodes x {modes} serving modes = {cells} "
-        "cells re-measured against central differences of fq.run, "
+        "cells re-measured against central differences of fq.run at "
+        f"{exactness['program_dtype']}, "
         f"{len(contract.get('cell', ()))} cell-cost rows and "
-        f"{len(contract.get('refusal', ()))} refusals driven "
+        f"{len(contract.get('refusal', ()))} refusals driven, and the "
+        f"{witness}/{witness_mode} cell re-read at the executor default "
         f"(contract {contract['schema']})"
     )
     return 0

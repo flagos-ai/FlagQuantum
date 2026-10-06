@@ -119,6 +119,27 @@ agreement_bound = 1e-09
 # smallest cell magnitude over the whole sweep has a floor as well.
 minimum_cell_magnitude = 1e-03
 qubits = 3
+# `agreement_bound` is a statement about a *pair* of routes at a *declared*
+# execution precision. `fq.run` resolves an unset `precision` to `complex64`, so
+# an unqualified circuit returns `float32` expectations, and this sweep is three
+# orders of magnitude finer than that. The witness program therefore pins the
+# precision, and both readings the pinning changes are recorded next to the
+# bound so that neither can be quoted as the bound. Neither is inside it: the
+# bound is not true at the executor default, and this file says so rather than
+# relying on the witness to hide it.
+program_dtype = "complex128"
+default_program_dtype_witness = ["u2", "mps"]
+# The implementation alone, driven by `float32` losses, measured against the
+# pinned reference. This is what a user who builds an unqualified circuit sees:
+# `1.75e-07`, roughly two hundred times the bound. It is second-order error
+# amplification through `complex64`, not a defect in the composed rule, and it
+# is why the documented example above asks for `float64` parameters.
+default_program_dtype_implementation_deviation = 1.7544981051331732e-07
+# The same cell when the reference route is also taken at the executor default.
+# A fourth-order central stencil with a `1e-02` base step cancels catastrophically
+# in `float32`, so this reading measures the stencil and not the implementation
+# and is two and a half orders larger than the line above.
+default_program_dtype_reference_deviation = 0.030165275765790034
 # Off-axis preparation, so no cell of the reference is degenerate by symmetry.
 fixed_rotations = [0.9, 1.4, 0.6, 1.1]
 # One evaluation point per parameter position, reused by every opcode row.
