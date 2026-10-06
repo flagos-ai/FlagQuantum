@@ -1197,9 +1197,9 @@ The current 30 semantics and 37 implementations are implemented. The 28 direct
 Triton `-A` implementations from SV-001 through SV-012, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, SV-009, SV-010, and SV-012 await separate dispatch reviews,
-SV-011 has an evidenced bounded default route, and the other listed routes have evidenced
-default-dispatch promotions. The two
+reason above, SV-009 and SV-010 await separate dispatch reviews, SV-011 and
+SV-012 have evidenced bounded default routes, and the other listed routes have
+evidenced default-dispatch promotions. The two
 generic-autograd Triton `-B` implementations, the two NUM implementations, and
 the five explicit FlagTree implementations remain experimental, for nine
 experimental implementations in total.
