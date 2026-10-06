@@ -92,6 +92,46 @@ def _require_private_directory(path: Path, *, description: str) -> None:
         )
 
 
+def _capture_output_parent(path: Path) -> os.stat_result:
+    """Freeze the private output parent identity for the publication window."""
+
+    try:
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(
+            "acceptance output parent must be an existing private, "
+            f"non-symlink directory: {path}"
+        ) from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_mode & 0o077
+    ):
+        raise ValueError(
+            "acceptance output parent must be an existing private, "
+            f"non-symlink directory: {path}"
+        )
+    return metadata
+
+
+def _verify_output_parent(path: Path, expected: os.stat_result) -> None:
+    """Reject a replaced or permission-widened output parent."""
+
+    try:
+        visible = path.lstat()
+    except OSError:
+        raise ValueError(
+            "acceptance output parent changed during publication"
+        ) from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(visible.st_mode)
+        or visible.st_mode & 0o077
+        or (visible.st_dev, visible.st_ino) != (expected.st_dev, expected.st_ino)
+    ):
+        raise ValueError("acceptance output parent changed during publication")
+
+
 def _require_private_input(path: Path) -> None:
     if not path.is_absolute():
         raise ValueError(f"evidence input must use an absolute path: {path}")
@@ -607,15 +647,14 @@ def _publish_acceptance_bundle(
             raise ValueError(f"component record changed after assembly: {name}")
         component_bytes[name] = encoded
     destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    _require_private_directory(
-        destination.parent, description="acceptance output parent"
-    )
+    output_parent = _capture_output_parent(destination.parent)
     with TemporaryDirectory(
         prefix=f".{destination.name}.staging-",
         dir=destination.parent,
     ) as temporary_directory:
         staging = Path(temporary_directory)
         staging.chmod(0o700)
+        _verify_output_parent(destination.parent, output_parent)
         manifest_path = _materialize_acceptance_bundle(
             staging,
             config_bytes=config_bytes,
@@ -630,9 +669,12 @@ def _publish_acceptance_bundle(
             raise RuntimeError(
                 "final acceptance validation failed: " + "; ".join(errors)
             )
+        _verify_output_parent(destination.parent, output_parent)
         _require_absent_destination(destination, final_check=True)
         os.replace(staging, destination)
+        _verify_output_parent(destination.parent, output_parent)
         _sync_directory(destination.parent)
+        _verify_output_parent(destination.parent, output_parent)
 
 
 def main() -> None:

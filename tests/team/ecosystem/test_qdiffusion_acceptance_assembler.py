@@ -828,6 +828,52 @@ def test_bundle_publisher_detects_dangling_symlink_created_during_validation(
     assert list(tmp_path.glob(".acceptance.staging-*")) == []
 
 
+def test_bundle_publisher_rejects_output_parent_replacement_during_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
+    component_path = tmp_path / "component.json"
+    _write_json(config_path, {"schema": "test.config", "version": "1.0"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
+    _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    output_parent = tmp_path / "private-output"
+    output_parent.mkdir(mode=0o700)
+    moved_parent = tmp_path / "moved-output"
+    destination = output_parent / "acceptance"
+
+    def replace_parent(manifest_path: Path) -> list[str]:
+        staging_name = manifest_path.parent.name
+        output_parent.rename(moved_parent)
+        output_parent.mkdir(mode=0o700)
+        attacker_staging = output_parent / staging_name
+        attacker_staging.mkdir(mode=0o700)
+        (attacker_staging / "attacker.json").write_text("{}", encoding="utf-8")
+        return []
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        replace_parent,
+    )
+
+    with pytest.raises(ValueError, match="output parent changed"):
+        _publish_acceptance_bundle(
+            destination,
+            config_path=config_path,
+            environment_lock_path=environment_lock_path,
+            config={
+                "primary_host": "jp-a800-171",
+                "replay_host": "jp-a800-172",
+            },
+            primary={},
+            replay={},
+            component_sources={"component.json": component_path},
+        )
+
+    assert not destination.exists()
+    assert not (output_parent / "acceptance").exists()
+
+
 def test_bundle_publisher_revalidates_component_parent(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

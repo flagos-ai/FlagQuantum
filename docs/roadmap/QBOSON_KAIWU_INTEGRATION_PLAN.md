@@ -635,6 +635,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   directory, the staging root, and the output parent after the atomic directory
   rename. A successful assembler exit therefore represents durable evidence
   publication rather than only page-cache visibility.
+- The assembler freezes the output parent's device/inode and private mode for
+  that publication window, then rechecks it after staging creation, final
+  validation, atomic rename, and directory sync. Replacing the parent and
+  planting a same-named attacker staging directory cannot redirect publication.
 - A credential-free local golden-path script now verifies clean checkouts at the
   pinned Kaiwu Community and Kaiwu PyTorch Plugin revisions, clears provider
   credential variables, explicitly gates source-only conformance without
