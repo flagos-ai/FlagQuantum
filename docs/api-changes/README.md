@@ -26,6 +26,7 @@ process.
 - [The drawer reads a legacy device's spelling without publishing it](FQ-DRAWER-LEGACY-QDEV-20261012.md)
 - [The Twin region composer relabels through the one qubit-relabelling rule](FQ-QUBIT-VOCABULARY-TWIN-REGION-20261018.md)
 - [The primitives package admits an export on three dimensions, and one export was deleted](FQ-ALGORITHMS-PRIMITIVES-ADMISSION-20261019.md)
+- [The primitive append forms are placements, and placement is `Circuit.compose`](FQ-ALGORITHMS-PRIMITIVES-PLACEMENT-20261023.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)
