@@ -14,6 +14,73 @@ def _require_cuda() -> None:
         pytest.skip("requires CUDA")
 
 
+def _reference_local_2q(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    first_bit_position: int,
+    second_bit_position: int,
+) -> torch.Tensor:
+    n_qubits = state.shape[1].bit_length() - 1
+    wires = (
+        n_qubits - 1 - first_bit_position,
+        n_qubits - 1 - second_bit_position,
+    )
+    rest = tuple(qubit for qubit in range(n_qubits) if qubit not in wires)
+    permutation = (0, wires[0] + 1, wires[1] + 1) + tuple(qubit + 1 for qubit in rest)
+    inverse = [0] * len(permutation)
+    for index, axis in enumerate(permutation):
+        inverse[axis] = index
+    tensor = state.reshape((state.shape[0],) + (2,) * n_qubits).permute(permutation)
+    flat = tensor.reshape(state.shape[0], 4, -1)
+    result = torch.matmul(matrix, flat)
+    return (
+        result.reshape((state.shape[0],) + (2,) * n_qubits)
+        .permute(tuple(inverse))
+        .reshape_as(state)
+    )
+
+
+def test_generic_local_2q_matches_layout_reference_and_exact_alias() -> None:
+    _require_cuda()
+    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+
+    torch.manual_seed(43)
+    state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+    for first_bit_position, second_bit_position in (
+        (0, 1),
+        (1, 0),
+        (0, 5),
+        (5, 0),
+        (1, 4),
+        (4, 2),
+    ):
+        expected = _reference_local_2q(
+            state,
+            matrix,
+            first_bit_position,
+            second_bit_position,
+        )
+        actual = apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=first_bit_position,
+            second_bit_position=second_bit_position,
+        )
+        torch.testing.assert_close(actual, expected, atol=2e-6, rtol=2e-6)
+
+        aliased = state.clone()
+        returned = apply_complex64_local_2q(
+            aliased,
+            matrix,
+            first_bit_position=first_bit_position,
+            second_bit_position=second_bit_position,
+            output=aliased,
+        )
+        assert returned.data_ptr() == aliased.data_ptr()
+        torch.testing.assert_close(aliased, expected, atol=2e-6, rtol=2e-6)
+
+
 def test_control_one_pack_unpack_matches_index_reference() -> None:
     _require_cuda()
     from flagquantum.kernels.triton.statevector_gates import (

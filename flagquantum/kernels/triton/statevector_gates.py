@@ -130,6 +130,135 @@ def apply_complex64_local_1q(
     return output
 
 
+@jit(do_not_specialize=["first_bit_position", "second_bit_position"])
+def _complex64_local_2q_kernel(
+    state_parts: tl.tensor,
+    matrix_parts: tl.tensor,
+    output_parts: tl.tensor,
+    group_count: tl.tensor,
+    batch_count: tl.tensor,
+    state_batch_stride: tl.tensor,
+    first_bit_position: tl.tensor,
+    second_bit_position: tl.tensor,
+    BLOCK_GROUPS: tl.constexpr,  # noqa: N803
+) -> None:
+    linear = tl.program_id(0) * BLOCK_GROUPS + tl.arange(0, BLOCK_GROUPS)
+    total_groups = group_count * batch_count
+    mask = linear < total_groups
+    batch = linear // group_count
+    group = linear - batch * group_count
+
+    low_bit = tl.minimum(first_bit_position, second_bit_position)
+    high_bit = tl.maximum(first_bit_position, second_bit_position)
+    low_mask = (1 << low_bit) - 1
+    low = group & low_mask
+    with_low_hole = ((group - low) << 1) | low
+    high_mask = (1 << high_bit) - 1
+    below_high = with_low_hole & high_mask
+    base = ((with_low_hole - below_high) << 1) | below_high
+
+    first_stride = 1 << first_bit_position
+    second_stride = 1 << second_bit_position
+    batch_base = batch * state_batch_stride + base
+    index0 = batch_base
+    index1 = batch_base + second_stride
+    index2 = batch_base + first_stride
+    index3 = batch_base + first_stride + second_stride
+
+    value0_real = tl.load(state_parts + 2 * index0, mask=mask, other=0.0)
+    value0_imag = tl.load(state_parts + 2 * index0 + 1, mask=mask, other=0.0)
+    value1_real = tl.load(state_parts + 2 * index1, mask=mask, other=0.0)
+    value1_imag = tl.load(state_parts + 2 * index1 + 1, mask=mask, other=0.0)
+    value2_real = tl.load(state_parts + 2 * index2, mask=mask, other=0.0)
+    value2_imag = tl.load(state_parts + 2 * index2 + 1, mask=mask, other=0.0)
+    value3_real = tl.load(state_parts + 2 * index3, mask=mask, other=0.0)
+    value3_imag = tl.load(state_parts + 2 * index3 + 1, mask=mask, other=0.0)
+    values_real = (value0_real, value1_real, value2_real, value3_real)
+    values_imag = (value0_imag, value1_imag, value2_imag, value3_imag)
+    output_indices = (index0, index1, index2, index3)
+
+    for row in tl.static_range(0, 4):
+        output_real = tl.zeros((BLOCK_GROUPS,), dtype=tl.float32)
+        output_imag = tl.zeros((BLOCK_GROUPS,), dtype=tl.float32)
+        for column in tl.static_range(0, 4):
+            matrix_offset = 2 * (4 * row + column)
+            coefficient_real = tl.load(matrix_parts + matrix_offset)
+            coefficient_imag = tl.load(matrix_parts + matrix_offset + 1)
+            output_real += (
+                coefficient_real * values_real[column]
+                - coefficient_imag * values_imag[column]
+            )
+            output_imag += (
+                coefficient_real * values_imag[column]
+                + coefficient_imag * values_real[column]
+            )
+        tl.store(output_parts + 2 * output_indices[row], output_real, mask=mask)
+        tl.store(output_parts + 2 * output_indices[row] + 1, output_imag, mask=mask)
+
+
+def apply_complex64_local_2q(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    *,
+    first_bit_position: int,
+    second_bit_position: int,
+    output: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Apply an arbitrary 4x4 matrix without permuting the statevector."""
+
+    if (
+        state.device.type != "cuda"
+        or state.dtype != torch.complex64
+        or state.ndim != 2
+        or not state.is_contiguous()
+    ):
+        raise ValueError("Triton local 2q requires contiguous CUDA complex64 [B, N]")
+    state_size = state.shape[1]
+    if state_size < 4 or state_size & (state_size - 1):
+        raise ValueError("Triton local 2q requires a power-of-two state dimension")
+    local_bits = state_size.bit_length() - 1
+    first_bit_position = int(first_bit_position)
+    second_bit_position = int(second_bit_position)
+    if (
+        first_bit_position == second_bit_position
+        or not 0 <= first_bit_position < local_bits
+        or not 0 <= second_bit_position < local_bits
+    ):
+        raise ValueError("Triton local 2q requires two distinct local bit positions")
+    if matrix.shape != (4, 4):
+        raise ValueError("Triton local 2q requires a 4x4 matrix")
+    matrix = matrix.to(device=state.device, dtype=state.dtype).contiguous()
+    output = torch.empty_like(state) if output is None else output
+    if (
+        output.shape != state.shape
+        or output.dtype != state.dtype
+        or output.device != state.device
+        or not output.is_contiguous()
+    ):
+        raise ValueError(
+            "Triton local 2q output must be contiguous and match the input"
+        )
+    # Exact aliasing is safe: one program owns each disjoint four-amplitude
+    # group and loads the complete group before writing any result.
+    group_count = state_size // 4
+    block_groups = 128
+    grid = (triton.cdiv(group_count * state.shape[0], block_groups),)
+    _complex64_local_2q_kernel[grid](
+        torch.view_as_real(state),
+        torch.view_as_real(matrix),
+        torch.view_as_real(output),
+        group_count,
+        state.shape[0],
+        state.stride(0),
+        first_bit_position,
+        second_bit_position,
+        BLOCK_GROUPS=block_groups,
+        num_warps=8,
+        num_stages=2,
+    )
+    return output
+
+
 @jit(do_not_specialize=["bit_position", "exchanged_bit_value"])
 def _complex64_transpose_1q_kernel(
     state_parts: tl.tensor,
