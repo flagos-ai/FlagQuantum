@@ -44,7 +44,8 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --dataset /private/proteins.fasta \
   --base-checkpoint /private/dplm_150m \
   --tokenizer /private/dplm_150m \
-  --evaluation-model /private/esm2_t33_650M_UR50D.pt
+  --evaluation-model /private/esm2_t33_650M_UR50D.pt \
+  --require-stage protein-experiment
 ```
 
 The audit validates credential and project-variable presence and basic format
@@ -52,9 +53,11 @@ without recording their values, then checks the frozen quota ceiling and SDK env
 standalone/frozen approval alignment, common transfer manifest, and protein
 artifacts, and performs no network or provider operation. Provider-smoke
 readiness is reported independently of the unfinished protein configuration;
-the command exits zero only when the complete protein experiment is ready. A
-passing report is readiness information, not provider, execution, hardware, or
-acceptance evidence.
+use `--require-stage provider-smoke` for that earlier gate and omit the config,
+source-preflight, and protein arguments. `system-probe` selects the intermediate
+gate. The default `protein-experiment` gate exits zero only when the complete
+experiment is ready. A passing report is readiness information, not provider,
+execution, hardware, or acceptance evidence.
 
 `verify_transfer_bundle.py` is the pre-extraction gate for approved host
 transfers. It verifies the three colocated source archives against their

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -40,6 +41,8 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
     assert report["ready_to_start_provider_smoke"] is False
     assert report["ready_to_start_system_probe"] is False
     assert report["ready_to_start_protein_experiment"] is False
+    assert report["required_stage"] == "protein-experiment"
+    assert report["required_stage_ready"] is False
     assert report["credential_values_recorded"] is False
 
 
@@ -279,11 +282,64 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
             "QBOSON_SDK_CODE": "present",
             "QBOSON_PROJECT_NO": "present",
         },
+        required_stage="provider-smoke",
     )
 
     assert report["ready_to_start_provider_smoke"] is True
     assert report["ready_to_start_system_probe"] is False
+    assert report["required_stage"] == "provider-smoke"
+    assert report["required_stage_ready"] is True
     assert report["checks"]["config"]["status"] == "missing"
+
+
+def test_readiness_rejects_unknown_required_stage() -> None:
+    with pytest.raises(ValueError, match="required_stage"):
+        audit_readiness(
+            config_path=None,
+            environment_lock_path=None,
+            sdk_approval_path=None,
+            plugin_root=None,
+            primary_source_preflight=None,
+            replay_source_preflight=None,
+            artifact_paths=dict.fromkeys(_paths()),
+            environ={},
+            required_stage="unknown",
+        )
+
+
+@pytest.mark.parametrize(("ready", "expected_exit"), ((True, None), (False, 1)))
+def test_readiness_cli_exit_tracks_selected_stage(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    ready: bool,
+    expected_exit: int | None,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _audit(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {
+            "schema": readiness_module.SCHEMA,
+            "required_stage": kwargs["required_stage"],
+            "required_stage_ready": ready,
+        }
+
+    monkeypatch.setattr(readiness_module, "audit_readiness", _audit)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["audit_readiness", "--require-stage", "provider-smoke"],
+    )
+
+    if expected_exit is None:
+        readiness_module.main()
+    else:
+        with pytest.raises(SystemExit) as raised:
+            readiness_module.main()
+        assert raised.value.code == expected_exit
+
+    assert captured["required_stage"] == "provider-smoke"
+    assert json.loads(capsys.readouterr().out)["required_stage_ready"] is ready
 
 
 def test_system_readiness_rejects_different_sdk_approval_records(

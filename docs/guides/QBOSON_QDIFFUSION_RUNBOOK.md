@@ -87,7 +87,8 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --dataset /private/proteins.fasta \
   --base-checkpoint /private/dplm_150m \
   --tokenizer /private/dplm_150m \
-  --evaluation-model /private/esm2_t33_650M_UR50D.pt
+  --evaluation-model /private/esm2_t33_650M_UR50D.pt \
+  --require-stage protein-experiment
 ```
 
 Arguments may be omitted on an inventory run; missing prerequisites are reported
@@ -101,7 +102,10 @@ acceptance workload has run.
 The report separates provider-smoke readiness from system and protein readiness.
 The first requires the standalone SDK approval but not the unfinished protein
 configuration. Later stages additionally require that the approval embedded in
-the frozen configuration exactly matches that standalone record.
+the frozen configuration exactly matches that standalone record. Select
+`--require-stage provider-smoke` before section 5, `system-probe` before section
+6, or the default `protein-experiment` before section 9. The process exit status
+tracks the selected stage while the JSON always reports all three gates.
 
 ## Current environment facts
 

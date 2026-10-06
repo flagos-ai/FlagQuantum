@@ -755,9 +755,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   inputs, and performs no provider operation.
   Provider-smoke readiness uses the standalone approval without requiring the
   unfinished protein config; system readiness additionally requires that the
-  frozen approval is identical. This closes the local handoff checklist but does
-  not resolve the absent approval, SDK artifact, credentials, quota, frozen
-  protein assets, or any live evidence.
+  frozen approval is identical. Its explicit provider-smoke, system-probe, and
+  protein-experiment selectors make the process exit status enforce the chosen
+  stage while retaining the final protein gate as the default. This closes the
+  local handoff checklist but does not resolve the absent approval, SDK artifact,
+  credentials, quota, frozen protein assets, or any live evidence.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

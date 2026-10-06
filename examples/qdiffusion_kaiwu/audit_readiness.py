@@ -26,6 +26,11 @@ from examples.qdiffusion_kaiwu.verify_environment_lock import (
 
 SCHEMA = "flagquantum.qboson_qdiffusion_readiness"
 HOSTS = ("jp-a800-171", "jp-a800-172")
+REQUIRED_STAGE_FIELDS = {
+    "provider-smoke": "ready_to_start_provider_smoke",
+    "system-probe": "ready_to_start_system_probe",
+    "protein-experiment": "ready_to_start_protein_experiment",
+}
 
 
 def _check(status: str, reason: str) -> dict[str, str]:
@@ -47,9 +52,12 @@ def audit_readiness(
     artifact_paths: dict[str, Path | None],
     environ: Mapping[str, str] | None = None,
     source_root: Path | None = None,
+    required_stage: str = "protein-experiment",
 ) -> dict[str, Any]:
     """Return a value-free, offline readiness report for the live runbook."""
 
+    if required_stage not in REQUIRED_STAGE_FIELDS:
+        raise ValueError("required_stage is not a supported readiness stage")
     environment = os.environ if environ is None else environ
     checks: dict[str, dict[str, str]] = {}
     user_id = environment.get("QBOSON_USER_ID")
@@ -240,15 +248,20 @@ def audit_readiness(
     protein_experiment_ready = system_probe_ready and (
         checks["protein_artifacts"]["status"] == "pass"
     )
+    readiness = {
+        "ready_to_start_provider_smoke": provider_smoke_ready,
+        "ready_to_start_system_probe": system_probe_ready,
+        "ready_to_start_protein_experiment": protein_experiment_ready,
+    }
     return {
         "schema": SCHEMA,
         "version": "1.0",
         "offline_readiness_only": True,
         "credential_values_recorded": False,
         "checks": checks,
-        "ready_to_start_provider_smoke": provider_smoke_ready,
-        "ready_to_start_system_probe": system_probe_ready,
-        "ready_to_start_protein_experiment": protein_experiment_ready,
+        **readiness,
+        "required_stage": required_stage,
+        "required_stage_ready": readiness[REQUIRED_STAGE_FIELDS[required_stage]],
         "claim_boundary": (
             "Readiness is not provider, execution, hardware, or acceptance evidence."
         ),
@@ -267,6 +280,11 @@ def main() -> None:
     parser.add_argument("--base-checkpoint", type=Path)
     parser.add_argument("--tokenizer", type=Path)
     parser.add_argument("--evaluation-model", type=Path)
+    parser.add_argument(
+        "--require-stage",
+        choices=tuple(REQUIRED_STAGE_FIELDS),
+        default="protein-experiment",
+    )
     args = parser.parse_args()
     report = audit_readiness(
         config_path=args.config,
@@ -281,9 +299,10 @@ def main() -> None:
             "tokenizer": args.tokenizer,
             "evaluation_model": args.evaluation_model,
         },
+        required_stage=args.require_stage,
     )
     print(json.dumps(report, indent=2, sort_keys=True))
-    if not report["ready_to_start_protein_experiment"]:
+    if not report["required_stage_ready"]:
         raise SystemExit(1)
 
 
