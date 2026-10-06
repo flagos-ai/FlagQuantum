@@ -46,6 +46,7 @@ RESULT_NAMES = (
     "native_einsum_forward_backward",
 )
 MEASUREMENT_ORDERING = "balanced Latin square across all measured operations"
+FALLBACK_OVERHEAD_ESTIMATOR = "median paired per-repeat public-minus-native seconds"
 
 LayoutShapes: TypeAlias = tuple[
     tuple[int, ...],
@@ -615,20 +616,33 @@ def validate_run(payload: Mapping[str, Any]) -> None:
 
 
 def _fallback_within_overhead_budget(case: Mapping[str, Any]) -> bool:
-    public_seconds = _positive_number(
-        case["public_catalog_dispatch"]["median_seconds_per_invocation"],
-        "public dispatch median",
+    public_result = _mapping(
+        case.get("public_catalog_dispatch"), "public_catalog_dispatch"
     )
-    native_seconds = _positive_number(
-        case["native_einsum_forward"]["median_seconds_per_invocation"],
-        "native einsum median",
+    native_result = _mapping(case.get("native_einsum_forward"), "native_einsum_forward")
+    public_samples = _sequence(
+        public_result.get("samples_seconds_per_invocation"),
+        "public dispatch samples",
     )
+    native_samples = _sequence(
+        native_result.get("samples_seconds_per_invocation"),
+        "native einsum samples",
+    )
+    if len(public_samples) != len(native_samples) or not public_samples:
+        raise ValueError("fallback measurements require paired non-empty samples")
+    paired_overheads = [
+        _positive_number(public_sample, f"public sample {index}")
+        - _positive_number(native_sample, f"native sample {index}")
+        for index, (public_sample, native_sample) in enumerate(
+            zip(public_samples, native_samples, strict=True)
+        )
+    ]
     public_speedup = _positive_number(
         case["public_dispatch_speedup_over_native"], "public dispatch speedup"
     )
     return (
         public_speedup >= FALLBACK_MINIMUM_SPEEDUP
-        or public_seconds - native_seconds <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+        or statistics.median(paired_overheads) <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
     )
 
 
@@ -706,6 +720,7 @@ def merge_runs(
         "fallback_within_overhead_budget_on_all_cases": fallback_within_budget,
         "fallback_minimum_speedup": FALLBACK_MINIMUM_SPEEDUP,
         "fallback_maximum_overhead_seconds": FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
+        "fallback_overhead_estimator": FALLBACK_OVERHEAD_ESTIMATOR,
         "direct_training_win_on_all_cases": direct_training_wins,
         "dispatch_evidence_decision": (
             "retain_current_policy"
@@ -733,6 +748,7 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
         "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "fallback_overhead_estimator": FALLBACK_OVERHEAD_ESTIMATOR,
         "scalability_blockers": [
             "single-device kernel benchmark is not distributed scalability evidence"
         ],
