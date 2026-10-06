@@ -652,9 +652,19 @@ def _require_multi_qubit_device_local(
     interact on consecutive operands; an instruction with no entry is refused
     instead of assumed local. Two-qubit instructions keep their existing
     SWAP-based handling.
+
+    A barrier is the one multi-qubit instruction this rule does not apply to: it
+    carries no unitary and constrains only the order of the operations around it,
+    so it needs no coupling and cannot be decomposed onto one. The optimizer, the
+    commutation rules, and the schedule legalizer already read it that way, and
+    the router is where a directive was being turned into a device operation. An
+    instruction that names the barrier while carrying a matrix is a gate wearing
+    the name, so it keeps the connectivity requirement below.
     """
 
     if len(qubits) < 3:
+        return
+    if instruction.name == "barrier" and instruction.matrix is None:
         return
     required = _MULTI_QUBIT_OPERAND_PAIRS.get(instruction.name)
     if required is None:
