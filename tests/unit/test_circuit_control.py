@@ -469,7 +469,7 @@ def test_control_is_a_method_and_not_a_root_export() -> None:
 
     assert callable(fq.Circuit.control)
     assert "control" not in fq.__all__
-    assert len(fq.__all__) == 36
+    assert len(fq.__all__) == 37
 
 
 # --------------------------------------------------------------------------------------
