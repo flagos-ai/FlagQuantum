@@ -127,9 +127,11 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_non_cuda_state",
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_diagonal_catalog_dispatch.py::test_diagonal_matrix_dispatch_binds_exact_catalog_implementation",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_local_diagonal_a800.json",
+            "benchmarks/results/local/statevector_local_diagonal_dispatch_a800.json",
         ),
     ),
     _evidence(
