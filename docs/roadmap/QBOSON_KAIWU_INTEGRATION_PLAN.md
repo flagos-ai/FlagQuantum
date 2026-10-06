@@ -77,6 +77,15 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   message history, so the success notification proves form acceptance only;
   every requested approval, assignment, mapping, and sampling resource remains
   unresolved until a response is retained and reviewed.
+- The authenticated credits panel also exposes a single-choice channel-source
+  survey that promises one free SPQC-1000 real-machine quota. It does not state
+  whether the reward is an optimization or sampling resource, so it cannot be
+  counted toward provider-smoke readiness before a post-award Resource Bill
+  observation. The survey requires a truthful answer selected from Business
+  BD, Campus Talk, Competition/Event, Offline Exhibition, Recruitment,
+  Recommendation from Teachers/Friends, Online Search, or Social Media. No
+  answer was inferred or submitted; the form remains pending explicit user
+  input and submission confirmation.
 - The authenticated SDK page currently offers platform downloads for Kaiwu
   1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
   submission. It also shows that an account-bound SDK authorization code exists,
