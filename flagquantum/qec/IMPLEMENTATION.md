@@ -855,3 +855,72 @@ flagquantum.qec` does not import `pymatching` — a test starts a fresh interpre
 and measures that rather than asserting it. No name is preferred over another, so
 `get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
 happens to be installed; the cross-check is never reached by accident.
+
+## Cutting a model into rounds
+
+`chunks.py` is the substrate a sliding-window decoder slides over, and it is
+deliberately only the substrate: nothing in it decodes, and a window's matrices
+are not produced, because those are the input shape of the decoder that reads a
+window rather than of the model record.
+
+A *layer* is the set of detectors sharing one round index, so the widths are the
+round sizes in detector order and sum to the model's detector count.
+`ChunkLayout.from_memory_circuit` reads them off a circuit rather than accepting
+them, and the two conventions that matter are decided there. A terminal detector
+— one whose parity references the terminal data readout and no round — is placed
+in the last layer instead of being given a round of its own, which is what makes
+a memory circuit's layers contiguous. And a numbering that reaches a layer after
+skipping one is refused rather than closed up: renumbering the rounds after a
+missing one would silently move every window that follows it, which is the kind
+of error a decomposition must not absorb.
+
+A *window* spans a contiguous run of layers, and its bands are fixed rather than
+configurable: the leading boundary layer it shares with its predecessor, its own
+interior, and the trailing boundary layer it shares with its successor. A stride
+of `window - 1` is what makes the windows share exactly one layer each, and a
+layer count that does not tile at that stride is refused with the count named —
+a caller who wants to advance by less reads overlapping windows and simply does
+not stitch them, rather than asking for a decomposition that does not tile.
+
+The property that makes the windows a partition rather than a cover is a fact
+about the model rather than a rule imposed on it: a mechanism spans exactly two
+adjacent layers, because a fault is placed at one location and flips that round's
+detectors and the round before's, and a mechanism lying inside one layer does not
+arise. So the first window that contains a mechanism whole owns it, every
+mechanism is owned once, and `dem_close_all(dem_chunks_from_spec(spec)) == model`
+is an equality the tests assert. Two mechanisms are refused rather than placed. A
+mechanism no window contains whole is refused and never split, because splitting
+it would state two weaker faults where the model stated one; the caller's remedy
+is a wider window or the fault stated per round. And a mechanism flipping no
+detector is refused, because an observable-only fault has no round to be placed
+in and choosing one would be inventing placement.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so the result spans one layer fewer than the sum
+of its parts; `dem_stitch_merged` follows that with the model's own
+`merge_duplicate_mechanisms` under a stated rule, which is the only place in this
+module where a probability is combined. `dem_close` lays one window out at its
+own place in the model's own numbering without renumbering from zero, so a
+window's detectors are the model's detectors, and a close of a decomposition is
+the model again.
+
+A chunk may name only the two standard boundary seams, at most once each, ordered
+by row, with the leading band starting at local row zero, the trailing band
+ending at the last local row, and the bands not overlapping. A stitch adds four
+refusals: a non-adjacent pair, an observable count that differs between the two
+sides, a boundary either side does not carry, and a contracted band whose
+detectors are not the same rows in the same order on both sides. That last one is
+what makes the operation an identity check rather than arithmetic on widths.
+
+Three differences from the CUDA-Q QEC seam surface are decisions rather than
+gaps, and the alignment checklist records all three. A seam here is identified by
+its name text, where upstream hashes a seam's name into a `uint32` at compile
+time and keeps a registry only so a diagnostic can turn the hash back into text —
+so nothing here hashes, nothing interns, and two seams are the same seam exactly
+when their names are equal. A seam's rows carry the global detector index rather
+than a position within the seam, where upstream's per-seam tags are caller-chosen
+labels numbered positionally. And what upstream calls `expand_dem_chunks` has no
+counterpart, because its spec is a phase graph with a sparse shorthand that must
+be expanded against a round count supplied at expansion time, while the spec here
+is linear: `DemChunksSpec.chunk_specs` is that expansion, and a second name for
+one operation would be a second spelling of it.

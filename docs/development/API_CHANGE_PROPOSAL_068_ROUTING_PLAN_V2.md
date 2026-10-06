@@ -2,7 +2,8 @@
 
 ## Status
 
-**Proposed. No Stable Core change requested. Not implemented by this proposal.**
+**Proposed. No Stable Core change requested. The two vocabulary moves are not
+implemented. Obstacle 5 was a defect and has been fixed.**
 
 This proposal asks for a decision, not for a code change. It adds no strategy, no
 pass, and no public name. It records what the deployment routing contract
@@ -10,6 +11,15 @@ pass, and no public name. It records what the deployment routing contract
 `flagquantum/deployment/routing_evidence.py`) refuses today, with a measurement
 for each refusal, and proposes the smallest vocabulary that would let a caller
 describe the programs the compiler already produces.
+
+One obstacle below was not a missing capability but a defect *inside* the v1
+contract, and it has been fixed without this proposal's authorization: obstacle 5,
+which compared two serializations of one device as though the serialization order
+were part of the hardware. That section records the closure and states exactly why
+it needed no authorization; `implementation.authorized` stays `false`, because the
+vocabulary and the re-routing semantics this proposal asks for are still
+unimplemented. Fixing the comparison removed the trigger of the second refusal,
+not the question behind it, so obstacle 5's second half remains an open decision.
 
 The Compiler owns `flagquantum/compiler/**`. The contract below is consumed by
 `flagquantum/deployment/routing_evidence.py` and
@@ -167,7 +177,10 @@ of the same compiler, do not share a schema and cannot be compared. A consumer
 that wants to know "is this program routed onto this device" has to know which
 compiler entry produced it.
 
-### Obstacle 5: the device identity is compared by edge order, in two places
+### Obstacle 5: the device identity is compared by edge order — CLOSED as a defect fix
+
+**Status: closed by a defect fix that did not need this proposal's authorization.
+The re-routing question it exposed is still open.**
 
 `CouplingMap.edges` stores the caller's tuple verbatim; it is not canonicalized.
 So two objects describing the same physical couplings compare unequal when their
@@ -180,7 +193,7 @@ DirectedCouplingMap(6, grid6): ((0, 1), (0, 3), (1, 2), (1, 4), (2, 5), (3, 4), 
 CouplingMap(6, grid6):         ((0, 1), (1, 2), (0, 3), (1, 4), (2, 5), (3, 4), (4, 5))
 ```
 
-Both deployment sites test that ordered tuple:
+Both deployment sites tested that ordered tuple:
 
 ```python
 # flagquantum/deployment/routing_evidence.py
@@ -208,13 +221,13 @@ equal as tuples (the test)    = False
 equal as sets (the meaning)   = True
 ```
 
-Two refusals then follow from the one inequality:
+Two refusals then followed from the one inequality:
 
-- the plan is refused outright against the backend device with *"routing coupling
+- the plan was refused outright against the backend device with *"routing coupling
   edges do not match the deployment backend"*, even though the two devices are the
   same device; and
-- through `create_deployment_package` the plan is treated as unrouted, the program
-  is routed a second time, and the package is refused with *"post-optimization SWAP
+- through `create_deployment_package` the plan was treated as unrouted, the program
+  was routed a second time, and the package was refused with *"post-optimization SWAP
   count must be within planned count"*.
 
 The second refusal needs its own explanation, because it is a different bug: the
@@ -223,10 +236,9 @@ second pass reports `planned_inserted_swap_count = 0` while
 second pass never planned. The invariant `retained <= planned` is sound for one
 self-contained plan and false for a program that arrives already routed, so even
 after the order comparison is fixed, re-routing an already-routed program has no
-defined meaning. The proposal fixes the comparison and asks for the second
-meaning to be decided rather than assumed.
+defined meaning.
 
-The order comparison is the trigger; the count invariant is the amplifier. Together
+The order comparison was the trigger; the count invariant is the amplifier. Together
 they turn a routed program into a refusal whose message names a SWAP count rather
 than the reuse decision that caused it.
 
@@ -235,10 +247,88 @@ This is the second order-sensitivity defect found in this device vocabulary: rou
 came first, and this is the same shape — an unordered fact compared as though its
 serialization order were part of it.
 
+#### Where else it reached: the third site
+
+The two sites above were found by reading the two files that name the schema, and
+that is how this obstacle was first written up. An AST census of *every* equality
+comparison in `flagquantum/` that mentions `.edges` finds three, and the third is
+`flagquantum/runtime/dynamic/deployment.py`, which makes the same reuse decision
+for `DynamicCircuit` from its own module:
+
+```python
+# flagquantum/runtime/dynamic/deployment.py
+routing_reused = bool(
+    isinstance(existing_routing, Mapping)
+    and backend.coupling_map is not None
+    and tuple(existing_routing.get("coupling_edges", ()))
+    == backend.coupling_map.edges
+    and existing_routing.get("mapping_restored") is True
+)
+```
+
+A routed `DynamicCircuit` deployed against another serialization of its own device
+is the same three-wire program either way, and the failure there is worse than a
+refusal. There is no validator between the decision and the artifact on that path,
+so the package builds and the published evidence silently disagrees with the
+program it ships:
+
+```text
+                              same object        same device, re-ordered
+routing_reused                True               False
+published inserted_swap_count 2                  0
+published planned count       2                  0
+' swap ' occurrences in QASM  2                  2
+source program SWAP count     2                  2
+```
+
+The SWAPs are in the shipped QASM; the evidence says none were planned. Neither
+the device nor the program changed — only the order of a tuple. That is the shape
+engineering decision principle 9 forbids, so the third site is part of the same
+defect, not a follow-up.
+
+#### The fix, and why it needed no authorization
+
+One named predicate now states what device identity means, in the module that owns
+the device comparison, and all three sites call it:
+
+```python
+def same_undirected_device(left_couplings, right_couplings) -> bool:
+    return _undirected_couplings(left_couplings) == _undirected_couplings(right_couplings)
+```
+
+`_undirected_couplings` normalizes each coupling to an ascending pair and collects
+a `frozenset`, so the coupling order, the endpoint order inside a coupling, and
+duplicate couplings all stop being part of device identity. The validator reuses
+that same normalization on the plan's own `coupling_edges`, and does so
+unconditionally: a field that is not a list of pairs is now refused by name
+(*"routing coupling edges must be pairs of qubits"*) whether or not there is a
+device to compare against. It used to be read only when a device was present, which
+made the same field acceptable with one argument and refused with the other. No
+clause was removed and none was weakened; the one clause that moved became
+reachable in a case where it previously was not, and
+`test_every_clause_that_refuses_today_is_still_a_contract` pins it.
+
+This needed no authorization because it implements none of the moves below:
+no schema, field, signature, default, or vocabulary changes, and `mapping_restored`
+keeps both of its values. Acceptance is strictly wider — every plan the old
+comparison accepted is still accepted, and the only inputs that move are the ones
+that were refused for having the same couplings in another order. Reproduced by
+mutation: reverting any one of the three sites fails the reconciliation test, and
+so does weakening the normalization to ignore the endpoints' order or the coupling
+set itself.
+
+Re-measured after the fix, for the same six-wire reproduction: the plan validates
+against the device it was routed onto, `create_deployment_package` reuses it, and
+the published plan carries its own `inserted_swap_count`. A *genuinely* different
+device is still routed again and still refused by the SWAP-count clause, which is
+the open half.
+
+
 ## Decision requested
 
-Admit a routing plan that reports a placement instead of asserting the identity,
-in three moves.
+Admit a routing plan that reports a placement instead of asserting the identity.
+Two moves are requested; the third, the comparison fix, has landed as a defect fix
+and is recorded here so the decision below is read against the fixed state.
 
 ### 1. Read the strategy vocabulary from its authority
 
@@ -269,26 +359,27 @@ The vocabulary is a string, not a boolean, for the same reason
 `capability-maturity.toml` uses a level name rather than a number: a third state
 cannot be added to a boolean later without changing what `false` means.
 
-### 3. Compare devices as the set they are
+### 3. Compare devices as the set they are — LANDED
 
-Compare a normalized `frozenset` of edges rather than the edge tuple, in both
-sites. The edge *order* is a serialization detail of whichever device object was
-constructed, and the deployment question is whether the two describe the same
-physical couplings.
+Compare a normalized `frozenset` of edges rather than the edge tuple, in every
+site that makes the decision. The edge *order* is a serialization detail of
+whichever device object was constructed, and the deployment question is whether the
+two describe the same physical couplings.
 
-This one is independent of the other two and can be taken alone: it is a
-correctness fix, not a vocabulary change. Without it the deployment contract
-answers "is this device object the one my plan was built from" when the question
-is "is this the same device", and a plan can be refused against the very device it
-was routed onto.
+This one was independent of the other two and has been taken alone, because it is a
+correctness fix rather than a vocabulary change; see obstacle 5 for the three
+sites, the mutation evidence, and why it needed no authorization. Without it the
+deployment contract answers "is this device object the one my plan was built from"
+when the question is "is this the same device", and a plan can be refused against
+the very device it was routed onto.
 
-It does not, on its own, make re-routing an already-routed program correct. Once
-the comparison is fixed, the programs measured here are no longer re-routed and
-the count refusal stops being reachable *through this path* — but re-routing must
-still be either defined or refused by name, because the second pass reports
-`planned_inserted_swap_count = 0` for a program that already contains SWAPs. That
-half is a decision, not a fix, and this proposal requests it rather than assumes a
-value for it.
+It does not, on its own, make re-routing an already-routed program correct. The
+programs measured in obstacle 5 are no longer re-routed onto their own device, so
+the count refusal is no longer reachable through that path — but a program routed
+onto a genuinely different device is still routed again, and the second pass
+reports `planned_inserted_swap_count = 0` for a program that already contains
+SWAPs. That half is a decision, not a fix, and this proposal requests it rather
+than assumes a value for it.
 
 ## Compatibility
 
@@ -320,9 +411,11 @@ If approved, the change is accepted when all of the following hold, and
 3. A plan produced from an explicit `plan_dense_layout` placement passes, with
    the placement readable from the plan alone.
 4. A plan routed against one serialization of a device validates against another
-   serialization of the same device, in both comparison sites, and the reuse
+   serialization of the same device, in every comparison site, and the reuse
    decision is observable in the package metadata rather than only in the SWAP
-   counts that follow from it.
+   counts that follow from it. **Met** — see obstacle 5; the third site, in
+   `flagquantum/runtime/dynamic/deployment.py`, is what made this one a
+   three-site fix rather than a two-site one.
 5. Re-routing an already-routed program is either refused by a message that names
    the reuse decision, or defined with both passes' counts reported separately.
    It is never reported as one pass that planned nothing and retained something.

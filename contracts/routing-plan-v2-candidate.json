@@ -8,7 +8,7 @@
   "owner": "integration",
   "implementation": {
     "authorized": false,
-    "note": "The contract is proposed, not approved. No code change is made by the commit that adds this file; every obstacle below is reconciled by tests/unit/test_routing_plan_v2_candidate.py against the running code, so the document cannot silently go stale."
+    "note": "The contract is proposed, not approved, and implementation.authorized stays false: the final_layout vocabulary, the widened strategy vocabulary, and the re-routing semantics are unimplemented. One obstacle below, device identity compared by edge order, was a defect inside the existing v1 contract rather than a missing capability, and was fixed without that authorization; its status records the closure and the exact scope of it. Every obstacle below is reconciled by tests/unit/test_routing_plan_v2_candidate.py against the running code, so the document cannot silently go stale."
   },
   "public_api_change": false,
   "stable_core_change": false,
@@ -84,10 +84,6 @@
         "flagquantum/deployment/routing_evidence.py",
         "flagquantum/deployment/cloud.py"
       ],
-      "clauses": [
-        "plan_edges != coupling_map.edges",
-        "tuple(existing_routing.get(\"coupling_edges\", ())) == backend.coupling_map.edges"
-      ],
       "why_it_is_wrong": "CouplingMap.edges stores the caller's tuple verbatim and does not canonicalize it, so the deployment contract identifies a device by the order in which someone serialized its edge list. DirectedCouplingMap canonicalizes and CouplingMap does not, so the compiler's own two device types disagree about the same device by construction.",
       "minimal_reproduction": "Route a six-wire program declared by coupling_map=CouplingMap(6, edges) where edges is grid6 written in another order, then validate it against a backend built from grid6 in canonical order. The plan is flagquantum_routing_plan_v1 and satisfies every permutation the v1 contract requires; only the edge order differs.",
       "measured": {
@@ -161,11 +157,41 @@
       ],
       "second_defect_in_the_same_chain": "The second pass reports planned_inserted_swap_count = 0 while record_post_routing_optimization counts 4, the first pass's SWAPs. The retained <= planned invariant is sound for one self-contained plan and false for a program that arrives already routed, so fixing the order comparison removes the trigger but does not define what re-routing an already-routed program means. That is a decision this proposal requests rather than takes.",
       "defect_class": "This is the second order-sensitivity defect in this device vocabulary. Round 22 fixed CouplingMap.shortest_path returning a path that depended on which query came first; this is the same shape, an unordered fact compared as though its serialization order were part of it.",
-      "proposed_change": "compare a normalized frozenset of edges in both sites, and make the reuse decision observable in the package metadata rather than only in the SWAP counts that follow from it",
-      "who_refuses": [
+      "proposed_change": "compare a normalized frozenset of edges in every site that makes the decision, and make the reuse decision observable in the package metadata rather than only in the SWAP counts that follow from it",
+      "status": "closed_by_defect_fix_re_routing_decision_still_open",
+      "re_routing_decision_status": "open",
+      "sites_today": [
+        "flagquantum/deployment/routing_evidence.py",
+        "flagquantum/deployment/cloud.py",
+        "flagquantum/runtime/dynamic/deployment.py"
+      ],
+      "previous_clauses": [
+        "plan_edges != coupling_map.edges",
+        "tuple(existing_routing.get(\"coupling_edges\", ())) == backend.coupling_map.edges"
+      ],
+      "clauses": [
+        "plan_couplings != _undirected_couplings(coupling_map.edges)",
+        "same_undirected_device(existing_routing.get(\"coupling_edges\", ()), backend.coupling_map.edges)"
+      ],
+      "change_landed": "compare a normalized frozenset of undirected couplings in all three sites that make the device-identity decision, through the single named predicate same_undirected_device; the deployment validator normalizes the plan's own coupling_edges unconditionally, so a field that is not a list of pairs is now refused by name whether or not there is a device to compare against -- it used to be read only when a device was present, which made the same field acceptable with one argument and refused with the other",
+      "why_this_needed_no_authorization": "The proposal asks to be authorized for a new final_layout vocabulary, a widened strategy vocabulary, and a re-routing decision. This change implements none of them. It repairs the existing v1 contract so that it compares couplings as couplings, which is what its own refusal message already claims, and it changes no schema, field, signature, default, or vocabulary. Acceptance of the comparison is strictly wider and every plan the old comparison accepted is still accepted, so implementation.authorized stays false for the proposal as a whole.",
+      "scope_of_the_closure": "The third site was found by an AST census of every equality comparison in flagquantum/ that mentions .edges (three sites, all fixed), not by grepping the two literals the round-24 page recorded. Without it, a routed DynamicCircuit reached another serialization of its own device and was refused for the same reason, and -- with the reuse decision mis-taken -- the dynamic package published inserted_swap_count = 0 while shipping the SWAPs of the plan it discarded, so the provider-facing evidence disagreed with the program it shipped.",
+      "measured_after_the_fix": {
+        "cloud_reuse": true,
+        "dynamic_reuse": true,
+        "plan_inserted_swap_count_published": 2,
+        "refusal_for_a_genuinely_different_device": "post-optimization SWAP count must be within planned count"
+      },
+      "proposed_change_status": "the comparison landed; making the reuse decision observable is already satisfied by package metadata routing_reused and routing_evidence.routing_reused, and the re-routing semantics remain the open decision",
+      "who_refused_before_the_fix": [
         "validate_deployment_routing_plan, against the very device the plan was routed onto",
-        "create_deployment_package, after the plan is treated as unrouted and the program is routed a second time"
-      ]
+        "create_deployment_package, after the plan was treated as unrouted and the program was routed a second time"
+      ],
+      "who_refuses_a_genuinely_different_device_today": [
+        "validate_deployment_routing_plan, for a device that really differs by a coupling",
+        "create_deployment_package, over the SWAP accounting of a program that arrived already routed"
+      ],
+      "clause_reachability": "No clause was removed and no clause was weakened. One clause became reachable in a case where it previously was not (a malformed coupling_edges with coupling_map = None), which is strictly narrower acceptance, and it is pinned by test_every_clause_that_refuses_today_is_still_a_contract."
     }
   },
   "proposed_vocabulary": {
@@ -206,7 +232,7 @@
     "a plan from each of the four ROUTING_STRATEGIES validates on a device it was routed onto",
     "a plan from remove_layout_restore validates when it names its final permutation and is refused by name, not by a SWAP count, when it does not",
     "a plan from an explicit plan_dense_layout placement validates with the placement readable from the plan alone",
-    "a plan routed against one serialization of a device validates against another serialization of the same device, in both comparison sites",
+    "a plan routed against one serialization of a device validates against another serialization of the same device, in every comparison site (met: three sites, the third in flagquantum/runtime/dynamic/deployment.py)",
     "re-routing an already-routed program is either refused by a message naming the reuse decision or defined with both passes' counts reported separately; it is never reported as one pass that planned nothing and retained something",
     "every refusal clause keeps a reachable input",
     "tests/unit/test_routing_plan_v2_candidate.py reconciles this document's obstacle list against the running code"

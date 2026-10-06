@@ -34,6 +34,7 @@ ENTRIES = (
     fq.Module,
     fq.Observable,
     fq.compile,
+    fq.density_matrix,
     fq.expectation,
     fq.from_openqasm,
     fq.gradient,

@@ -35,6 +35,7 @@ from benchmarks.compiler_diagonal_before_measure import (
     _SWEEP_SEED,
     run_benchmark,
 )
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -239,10 +240,15 @@ _FORMS = {
 #: The anchor. It is asked about every row, and its answer is allowed to differ from
 #: the pass's only where one of the three published class-membership facts explains
 #: the difference. ``removed_count`` is the anchor's own reach over the same rows.
+#:
+#: The Qiskit release is deliberately not in here. It is the instrument the readings
+#: were taken with, not one of them, and folding it into the same equality made this
+#: anchor report that a newer certified instrument had produced a wrong measurement.
+#: The instrument is checked separately below, against the certified lanes rather
+#: than against whichever release one machine happened to have.
 _ANCHOR = {
     "available": True,
     "pass_name": "RemoveDiagonalGatesBeforeMeasure",
-    "qiskit_version": "1.2.4",
     "row_count": 196,
     "removed_count": 20,
     "disagreement_count": 6,
@@ -576,6 +582,11 @@ def test_the_qiskit_anchor_is_optional_and_reports_its_own_reach(payload: dict) 
     It is asked about the same rows the pass is, and its reach is reported next to the
     pass's rather than folded into it: the two ports are not the same rule and the
     module has to run on a machine with no Qiskit at all.
+
+    The release it was read on is checked before the readings are, because the
+    readings are only reproducible on a certified lane. That check fails rather than
+    skips, and the reason is in ``qiskit_lane``: no lane that collects this file ever
+    installs Qiskit, so a skip would be invisible everywhere it would matter.
     """
 
     anchor = payload["shape_table"]["reference_anchor"]
@@ -585,6 +596,7 @@ def test_the_qiskit_anchor_is_optional_and_reports_its_own_reach(payload: dict) 
         # scope pins the readings that must hold when the anchor did not run, so the
         # absent case is measured rather than passed over.
         pytest.skip(f"Qiskit is not installed here: {anchor['reason']}")
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     for key, expected in _ANCHOR.items():
         assert anchor[key] == expected, key
     assert anchor["row_count"] == payload["anchor_row_count"]
