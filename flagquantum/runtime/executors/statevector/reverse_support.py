@@ -176,6 +176,11 @@ class BackwardExecutionEvidence:
     intra_node_communication_bytes: int = 0
     inter_node_communication_count: int = 0
     inter_node_communication_bytes: int = 0
+    #: Which collective left the gradients where they are. A replicated
+    #: all-reduce and an owner-sharded reduce-scatter compute the same sum and
+    #: support different ownership claims, so the scheme is recorded rather
+    #: than inferred from the parameter count.
+    gradient_reduction_scheme: str = "replicated_all_reduce"
     kernel_dispatch_evidence: KernelDispatchEvidence = field(
         default_factory=KernelDispatchEvidence
     )

@@ -22,8 +22,15 @@ import torch.distributed as dist
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
 
+# A calibration run may go without a manifest, and the name it records then has
+# to say so: a name that claimed a frozen workload would let this run's digest be
+# mistaken for a frozen one.
+CALIBRATION_WORKLOAD_NAME = "unfrozen_single_node_capacity_calibration"
 
-def _workload(n_wires: int, device: torch.device) -> tuple[fq.Circuit, list[torch.Tensor]]:
+
+def _workload(
+    n_wires: int, device: torch.device
+) -> tuple[fq.Circuit, list[torch.Tensor]]:
     theta = torch.tensor(0.23, device=device, requires_grad=True)
     phi = torch.tensor(-0.37, device=device, requires_grad=True)
     circuit = fq.Circuit(n_wires, device=device)
@@ -44,7 +51,9 @@ def _commit() -> str:
         return "unversioned-worktree"
 
 
-def _classify_capacity_outcome(*, observed_oom: bool, expect_oom: bool) -> dict[str, object]:
+def _classify_capacity_outcome(
+    *, observed_oom: bool, expect_oom: bool
+) -> dict[str, object]:
     """Return an explicit, fail-closed classification for a capacity probe."""
     expectation = "cuda_oom" if expect_oom else "completion"
     expectation_met = observed_oom == expect_oom
@@ -90,7 +99,7 @@ def main() -> None:
     if world > 1:
         dist.init_process_group("nccl", device_id=device)
     workload = {
-        "name": "issue044_single_node_capacity_v1",
+        "name": CALIBRATION_WORKLOAD_NAME,
         "n_wires": args.n_wires,
         "steps": args.steps,
         "optimizer": args.optimizer,
@@ -140,7 +149,9 @@ def main() -> None:
         if args.crash_after_completion_rank == rank:
             os._exit(137)
         record = {
-            **_classify_capacity_outcome(observed_oom=False, expect_oom=args.expect_oom),
+            **_classify_capacity_outcome(
+                observed_oom=False, expect_oom=args.expect_oom
+            ),
             "training": result.summary(),
             "parameters": [float(item.detach().cpu()) for item in parameters],
         }
@@ -178,7 +189,11 @@ def main() -> None:
             "device": {
                 "name": properties.name,
                 "total_memory_bytes": properties.total_memory,
-                "capability": list(properties.major_minor) if hasattr(properties, "major_minor") else [properties.major, properties.minor],
+                "capability": (
+                    list(properties.major_minor)
+                    if hasattr(properties, "major_minor")
+                    else [properties.major, properties.minor]
+                ),
                 "peak_allocated_bytes": torch.cuda.max_memory_allocated(device),
                 "peak_reserved_bytes": torch.cuda.max_memory_reserved(device),
             },

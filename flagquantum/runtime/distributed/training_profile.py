@@ -9,6 +9,14 @@ from typing import Any
 FLAGOS_TRAINING_WORLD_SIZES = (2, 4, 8)
 FLAGOS_TRAINING_DTYPES = ("complex64", "complex128")
 FLAGOS_TRAINING_CASES = ("gradient_reference", "sgd_trajectory", "adam_trajectory")
+#: Gradient distributions that leave every owner rank holding the full sum over
+#: all ranks. ``replicated_after_all_reduce`` leaves that sum on every rank and
+#: ``owner_sharded_reduce_scatter`` leaves each rank with only its own
+#: parameters' sums. Both are rank-summed; a rank-local value is not, so a run
+#: that reports one is rejected rather than accepted under a second name.
+FLAGOS_RANK_SUMMED_GRADIENT_DISTRIBUTIONS = frozenset(
+    {"replicated_after_all_reduce", "owner_sharded_reduce_scatter"}
+)
 
 
 @dataclass(frozen=True)
@@ -111,7 +119,8 @@ class FlagOSTrainingRun:
                 case.passed
                 and case.device_type == "flagos"
                 and case.distribution_semantics == "sharded_across_ranks"
-                and case.gradient_distribution == "replicated_after_all_reduce"
+                and case.gradient_distribution
+                in FLAGOS_RANK_SUMMED_GRADIENT_DISTRIBUTIONS
                 and case.optimizer_update_semantics == "owner_step_then_broadcast"
                 and not case.full_state_materialization
                 and not case.backward_uses_full_state_replay
@@ -158,11 +167,23 @@ class FlagOSTrainingProfile:
 
     @property
     def accepted(self) -> bool:
+        # A profile that lists a measurement blocker is not accepted. Reading the
+        # blockers here rather than repeating their conditions keeps ``status``
+        # and ``blockers`` from ever disagreeing in the emitted payload.
         return bool(
             len(self.runs) == len(FLAGOS_TRAINING_WORLD_SIZES)
             and {run.world_size for run in self.runs}
             == set(FLAGOS_TRAINING_WORLD_SIZES)
             and all(run.accepted for run in self.runs)
+            and not self.measurement_blockers
+        )
+
+    @property
+    def gradient_distributions(self) -> frozenset[str]:
+        """Every gradient distribution the measured cases actually reported."""
+
+        return frozenset(
+            case.gradient_distribution for run in self.runs for case in run.cases
         )
 
     @property
@@ -172,6 +193,8 @@ class FlagOSTrainingProfile:
             blockers.append("training_scale_ladder_incomplete")
         if any(not run.accepted for run in self.runs):
             blockers.append("statevector_training_run_failed")
+        if len(self.gradient_distributions) > 1:
+            blockers.append("gradient_distribution_inconsistent_across_cases")
         return tuple(blockers)
 
     def require_accepted(self) -> None:
@@ -180,12 +203,18 @@ class FlagOSTrainingProfile:
 
     def to_dict(self) -> dict[str, Any]:
         blockers = tuple(dict.fromkeys((*self.blockers, *self.measurement_blockers)))
+        distributions = self.gradient_distributions
         return {
             "schema": self.schema,
             "status": "passed" if self.accepted else "failed",
             "validation_scope": "flagos_statevector_single_node_2_4_8_card_training",
             "distribution_semantics": "sharded_across_ranks",
-            "gradient_distribution": "replicated_after_all_reduce",
+            "gradient_distribution": (
+                next(iter(distributions))
+                if len(distributions) == 1
+                else "inconsistent_across_cases"
+            ),
+            "gradient_distributions_observed": sorted(distributions),
             "optimizer_update_semantics": "owner_step_then_broadcast",
             "claim_evidence_type": "development_hardware_profile",
             "world_sizes": [run.world_size for run in self.runs],

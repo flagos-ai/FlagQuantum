@@ -45,6 +45,20 @@ fields plus:
   reason;
 - explicit no-fallback semantics and empty blockers.
 
+The single-device baseline is the capacity premise, so it has to describe the
+frozen workload rather than a workload of its own: the gate re-reads the site
+count, logical MPS size, bond dimension, peak memory, device capacity, workload
+digest, workload body digest, and trainable parameter count against the manifest
+and refuses a baseline that disagrees. The workload digest is the launcher that
+pins the site count; the body digest is the module that builds the rank
+boundaries and the parameterization, so a payload reports both, and a completion
+payload that repeats a body digest this manifest never froze is refused as
+evidence about a circuit nobody released. The
+files the manifest cites for the premise are re-read and digested as well, so a
+premise is established only while its sources resolve; a manifest that discloses
+an absent source or a drifted artifact therefore reports
+`capacity_premise_evidence_not_verifiable` until the files agree.
+
 Synthetic contract fixtures in pytest are schema tests only. They are not
 benchmark results or public production evidence. A promoted MPS claim also
 requires real accelerator or multi-node execution and must pass the audit
