@@ -329,6 +329,50 @@ def test_restore_rejects_matrix_identity_tampering(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "encoded",
     (
+        '{"receipt":"credential-secret"',
+        json.dumps(
+            {
+                "matrix": [[0.0, 1.0], [1.0, 0.0]],
+                "receipt": {"credential-secret-field": "credential-secret-value"},
+            }
+        ),
+    ),
+)
+def test_restore_discards_untrusted_parser_details(
+    tmp_path: Path,
+    encoded: str,
+) -> None:
+    receipt_path = tmp_path / "receipt.json"
+    receipt_path.write_text(encoded, encoding="utf-8")
+
+    with pytest.raises(ValueError) as caught:
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+    assert "credential-secret" not in str(caught.value)
+    assert caught.value.__cause__ is None
+
+
+def test_matrix_conversion_discards_untrusted_iterator_exception() -> None:
+    class _SecretMatrix:
+        def __iter__(self) -> object:
+            raise RuntimeError("credential-secret")
+
+    client = _FakeClient()
+    with pytest.raises(ValueError, match="rectangular real numeric") as caught:
+        submit_kaiwu_task(
+            _SecretMatrix(),  # type: ignore[arg-type]
+            client=client,
+            task_name="invalid-matrix",
+        )
+
+    assert "credential-secret" not in str(caught.value)
+    assert caught.value.__cause__ is None
+    assert client.submit_calls == 0
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    (
         '{"matrix": [[0, 1], [1, 0]], "matrix": [[0, 2], [2, 0]], "receipt": {}}',
         '{"matrix": [[0, 1], [1, 0]], "receipt": {"task_name": "a", "task_name": "b"}}',
     ),

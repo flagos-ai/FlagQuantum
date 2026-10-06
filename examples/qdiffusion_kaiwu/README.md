@@ -165,7 +165,8 @@ parent-directory metadata are synchronized. A
 timeout, provider failure, malformed result, or keyboard interruption after a
 task receipt exists is converted into a failed attempted record; the smoke
 sequence stops without submitting its next task, and hardware acceptance stays
-closed.
+closed. Failure records retain only a stable category and an empty message;
+arbitrary vendor or plugin exception text is never persisted.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
 private checkpoint directory, and an explicitly selected project. All

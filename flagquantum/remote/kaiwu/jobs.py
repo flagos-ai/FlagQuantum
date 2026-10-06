@@ -208,10 +208,10 @@ def _freeze_matrix(matrix: MatrixInput) -> FrozenIsingMatrix:
                 values.append(0.0 if numeric == 0.0 else numeric)
             rows.append(tuple(values))
         frozen = tuple(rows)
-    except (TypeError, ValueError, OverflowError) as exc:
+    except Exception:
         raise ValueError(
             "Kaiwu matrix must be a rectangular real numeric array"
-        ) from exc
+        ) from None
     if not frozen or any(len(row) != len(frozen) for row in frozen):
         raise ValueError("Kaiwu matrix must be non-empty and square")
     if any(not math.isfinite(value) for row in frozen for value in row):
@@ -483,16 +483,16 @@ def restore_kaiwu_job(path: str | Path, *, client: KaiwuTaskClient) -> KaiwuRemo
 
     try:
         raw = _read_private_json(path)
-    except json.JSONDecodeError as exc:
-        raise ValueError("Invalid Kaiwu task receipt bundle") from exc
+    except json.JSONDecodeError:
+        raise ValueError("Invalid Kaiwu task receipt bundle") from None
     if not isinstance(raw, dict) or set(raw) != {"matrix", "receipt"}:
         raise ValueError("Invalid Kaiwu task receipt bundle")
     if not isinstance(raw["receipt"], dict):
         raise ValueError("Invalid Kaiwu task receipt fields")
     try:
         receipt = KaiwuTaskReceipt(**raw["receipt"])
-    except TypeError as exc:
-        raise ValueError("Invalid Kaiwu task receipt fields") from exc
+    except TypeError:
+        raise ValueError("Invalid Kaiwu task receipt fields") from None
     matrix = _freeze_matrix(cast(MatrixInput, raw["matrix"]))
     return KaiwuRemoteJob(receipt, matrix, client)
 

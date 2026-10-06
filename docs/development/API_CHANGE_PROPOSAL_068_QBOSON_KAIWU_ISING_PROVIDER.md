@@ -142,6 +142,10 @@ provider values or infer a mapping from field names alone.
 - Every successful result has valid spin shape and domain, matched sample and
   energy counts, independently recomputed finite energies, and explicit
   `fallback_occurred=false`.
+- Persisted attempt failures contain only a fixed category and an empty message;
+  arbitrary vendor, parser, plugin, and dynamic exception text is discarded.
+  Malformed receipt and matrix inputs likewise do not retain their original
+  exception as a public cause.
 - Credentials are in-memory, redacted, and non-serializable. Vendor exception
   text is discarded at credential and SDK-operation boundaries.
 

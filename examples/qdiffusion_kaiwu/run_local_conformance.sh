@@ -76,6 +76,7 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_cli_entrypoints.py \
   tests/team/ecosystem/test_qdiffusion_environment_lock.py \
   tests/team/ecosystem/test_qdiffusion_environment_lock_builder.py \
+  tests/team/ecosystem/test_qdiffusion_failure_evidence.py \
   tests/team/ecosystem/test_qdiffusion_portability_replay_live.py \
   tests/team/ecosystem/test_qdiffusion_private_io.py \
   tests/team/ecosystem/test_qdiffusion_protein_evaluate.py \

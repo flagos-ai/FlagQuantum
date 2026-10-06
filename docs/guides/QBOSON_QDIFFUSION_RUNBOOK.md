@@ -713,6 +713,11 @@ guided result that misses the preregistered application criteria.
 | CPU tensor or non-A800 observation | System-path failure | Correct device execution; do not claim A800 validation |
 | Finite system run but failed protein metric | Application-effectiveness failure | Report it without weakening thresholds |
 
+Attempt records intentionally retain only one stable failure category and an
+empty message. Do not add raw vendor, parser, model, artifact, or plugin
+exception text to the evidence bundle; diagnose it in a separately approved
+private session without weakening the immutable record.
+
 ## Claim boundary
 
 A passing bundle establishes only the declared A800 plus QBoson QDiffusion

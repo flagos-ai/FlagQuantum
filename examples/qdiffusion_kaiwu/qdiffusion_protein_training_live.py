@@ -21,6 +21,7 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
 from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
@@ -261,7 +262,7 @@ def run_training_seed(
         checkpoint_name, checkpoint_sha256 = _checkpoint_identity(run_directory)
         workflow_artifacts = _workflow_artifact_identities(run_directory)
     except (Exception, KeyboardInterrupt) as exc:
-        failure = {"type": type(exc).__name__, "message": str(exc)}
+        failure = redacted_failure_record(exc)
 
     receipts = _receipt_records(sampler)
     provider_identity_complete = bool(receipts) and all(
@@ -534,10 +535,7 @@ def main() -> None:
     try:
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
     except (OSError, ValueError) as exc:
-        artifact_postflight_failure = {
-            "type": type(exc).__name__,
-            "message": str(exc),
-        }
+        artifact_postflight_failure = redacted_failure_record(exc)
         payload["run_completed"] = False
     payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None
     payload["artifact_postflight_failure"] = artifact_postflight_failure

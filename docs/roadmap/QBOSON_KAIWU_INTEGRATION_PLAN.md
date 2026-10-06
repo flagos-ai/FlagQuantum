@@ -221,6 +221,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   available task receipt and raw status, stops before submitting its next task,
   and keeps all hardware gates closed; this aligns it with the training and
   replay failure-evidence behavior.
+- Smoke, system, training, and replay failure evidence now records only a fixed
+  exception category with an empty message. Arbitrary vendor, plugin, parser,
+  artifact, and dynamically named exception text is never serialized. Remote
+  matrix conversion and receipt restoration also discard untrusted exception
+  causes, preventing malformed inputs from reappearing in tracebacks while
+  preserving the owned failure classification.
 - A read-only host recheck confirmed that the SSH validation aliases differ
   from the machine-reported hostnames. The A800 development probe now records
   and verifies both identities separately, requires full source revisions, and

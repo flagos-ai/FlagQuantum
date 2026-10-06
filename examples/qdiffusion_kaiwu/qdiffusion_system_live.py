@@ -21,6 +21,7 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
 from examples.qdiffusion_kaiwu.private_io import (
     validate_private_directory,
     validate_private_json_output_path,
@@ -273,7 +274,7 @@ def run_live_system_probe(
             sampler.remote_call_count == call_count and repeated.receipt == receipt
         )
     except (Exception, KeyboardInterrupt) as exc:
-        failure = {"type": type(exc).__name__, "message": str(exc)}
+        failure = redacted_failure_record(exc)
 
     receipts = _receipt_records(sampler)
     provider_identity_complete = bool(receipts) and all(

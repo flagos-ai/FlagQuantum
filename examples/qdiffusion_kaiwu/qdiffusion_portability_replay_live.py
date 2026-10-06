@@ -22,6 +22,7 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
     assert_artifacts_unchanged,
@@ -242,7 +243,7 @@ def run_portability_replay(
             sampler.remote_call_count == call_count and repeated.receipt == receipt
         )
     except (Exception, KeyboardInterrupt) as exc:
-        failure = {"type": type(exc).__name__, "message": str(exc)}
+        failure = redacted_failure_record(exc)
 
     receipts = _receipt_records(sampler)
     provider_identity_complete = bool(receipts) and all(
@@ -540,10 +541,7 @@ def main() -> None:
             args.training_run_directory, args.trained_checkpoint, training_record
         )
     except (OSError, ValueError) as exc:
-        artifact_postflight_failure = {
-            "type": type(exc).__name__,
-            "message": str(exc),
-        }
+        artifact_postflight_failure = redacted_failure_record(exc)
         payload["run_completed"] = False
         payload["acceptance"]["portability"] = "fail"
     payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None

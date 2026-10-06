@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
 from examples.qdiffusion_kaiwu.private_io import (
     validate_private_directory,
     validate_private_json_output_path,
@@ -121,7 +122,7 @@ def run_live_smoke(
         except (Exception, KeyboardInterrupt) as exc:
             if job is not None:
                 records.append(_attempt_record(job))
-            failure = {"type": type(exc).__name__, "message": str(exc)}
+            failure = redacted_failure_record(exc)
             break
 
     provider_identity_complete = len(records) == 2 and all(
