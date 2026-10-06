@@ -29,6 +29,7 @@ def _mps_sampling_collapse_kernel(
     block_next: tl.constexpr,
 ) -> None:
     batch = tl.program_id(0)
+    physical = tl.program_id(1)
     right_offsets = tl.arange(0, block_right)
     next_offsets = tl.arange(0, block_next)
     right_mask = right_offsets < right_dim
@@ -54,49 +55,49 @@ def _mps_sampling_collapse_kernel(
     boundary_real *= inverse_norm
     boundary_imag *= inverse_norm
 
-    collapsed_base = batch * 2
-    tl.store(collapsed_parts + 2 * collapsed_base, tl.where(bit == 0, 1.0, 0.0))
-    tl.store(collapsed_parts + 2 * collapsed_base + 1, 0.0)
-    tl.store(
-        collapsed_parts + 2 * (collapsed_base + 1),
-        tl.where(bit == 1, 1.0, 0.0),
-    )
-    tl.store(collapsed_parts + 2 * (collapsed_base + 1) + 1, 0.0)
+    if physical == 0:
+        collapsed_base = batch * 2
+        tl.store(collapsed_parts + 2 * collapsed_base, tl.where(bit == 0, 1.0, 0.0))
+        tl.store(collapsed_parts + 2 * collapsed_base + 1, 0.0)
+        tl.store(
+            collapsed_parts + 2 * (collapsed_base + 1),
+            tl.where(bit == 1, 1.0, 0.0),
+        )
+        tl.store(collapsed_parts + 2 * (collapsed_base + 1) + 1, 0.0)
 
-    for physical in range(2):
-        next_element = (
-            (batch * right_dim + right_offsets[:, None]) * 2 + physical
-        ) * next_right_dim + next_offsets[None, :]
-        matrix_mask = right_mask[:, None] & next_mask[None, :]
-        next_real = tl.load(
-            next_parts + 2 * next_element,
-            mask=matrix_mask,
-            other=0.0,
-        )
-        next_imag = tl.load(
-            next_parts + 2 * next_element + 1,
-            mask=matrix_mask,
-            other=0.0,
-        )
-        output_real = tl.sum(
-            boundary_real[:, None] * next_real - boundary_imag[:, None] * next_imag,
-            axis=0,
-        )
-        output_imag = tl.sum(
-            boundary_real[:, None] * next_imag + boundary_imag[:, None] * next_real,
-            axis=0,
-        )
-        output_element = (batch * 2 + physical) * next_right_dim + next_offsets
-        tl.store(
-            propagated_parts + 2 * output_element,
-            output_real,
-            mask=next_mask,
-        )
-        tl.store(
-            propagated_parts + 2 * output_element + 1,
-            output_imag,
-            mask=next_mask,
-        )
+    next_element = (
+        (batch * right_dim + right_offsets[:, None]) * 2 + physical
+    ) * next_right_dim + next_offsets[None, :]
+    matrix_mask = right_mask[:, None] & next_mask[None, :]
+    next_real = tl.load(
+        next_parts + 2 * next_element,
+        mask=matrix_mask,
+        other=0.0,
+    )
+    next_imag = tl.load(
+        next_parts + 2 * next_element + 1,
+        mask=matrix_mask,
+        other=0.0,
+    )
+    output_real = tl.sum(
+        boundary_real[:, None] * next_real - boundary_imag[:, None] * next_imag,
+        axis=0,
+    )
+    output_imag = tl.sum(
+        boundary_real[:, None] * next_imag + boundary_imag[:, None] * next_real,
+        axis=0,
+    )
+    output_element = (batch * 2 + physical) * next_right_dim + next_offsets
+    tl.store(
+        propagated_parts + 2 * output_element,
+        output_real,
+        mask=next_mask,
+    )
+    tl.store(
+        propagated_parts + 2 * output_element + 1,
+        output_imag,
+        mask=next_mask,
+    )
 
 
 def _validate(
@@ -197,7 +198,7 @@ def _launch(
     norms = torch.empty(batch, dtype=torch.float32, device=site.device)
     block_right = 1 << (right_dim - 1).bit_length()
     block_next = 1 << (next_right_dim - 1).bit_length()
-    _mps_sampling_collapse_kernel[(batch,)](
+    _mps_sampling_collapse_kernel[(batch, 2)](
         torch.view_as_real(site),
         torch.view_as_real(next_site),
         bits,
