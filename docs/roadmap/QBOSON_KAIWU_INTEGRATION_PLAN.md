@@ -223,6 +223,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   an operation prevents SDK access; replacement during an operation is detected
   as a failed attempt and must never trigger an automatic retry because the
   provider may already have observed the original task identity.
+- Every status and result lookup now repeats that frozen-directory check both
+  before and after reading its authoritative recovery bundle, including when a
+  completed solution is already cached in memory. A replacement private
+  directory containing copied valid-looking receipt bytes therefore cannot
+  legitimize cached provider results or bypass the original checkpoint inode.
 - Pinned 1.3.1 recovery also enforces an exact top-level schema, an aware UTC
   submission timestamp, and absent provider task/target identities. Local
   receipt editing therefore cannot fabricate the provider evidence that the

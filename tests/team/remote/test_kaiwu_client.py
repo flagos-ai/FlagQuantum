@@ -18,6 +18,7 @@ from flagquantum.remote.kaiwu import (
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
+from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskReceipt
 
 pytestmark = pytest.mark.unit
 
@@ -203,6 +204,70 @@ def test_checkpoint_replacement_during_sdk_operation_fails_closed(
     assert manager.save_dir == "original"
     assert not any(checkpoint.iterdir())
     assert len(tuple(moved.glob("flagquantum-kaiwu-*.json"))) == 1
+
+
+def test_checkpoint_replacement_before_cached_status_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir(mode=0o700)
+    client, _ = _client(monkeypatch, checkpoint)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="replaced-before-cached-status",
+        mode="sampling",
+        requested_samples=10,
+    )
+    recovery_path = client.recovery_receipt_path(job.receipt)
+    recovery_bytes = recovery_path.read_bytes()
+    solve_calls = _FakeOptimizer.solve_calls
+    moved = tmp_path / "moved-checkpoint"
+    checkpoint.rename(moved)
+    checkpoint.mkdir(mode=0o700)
+    replacement = checkpoint / recovery_path.name
+    replacement.write_bytes(recovery_bytes)
+    replacement.chmod(0o600)
+
+    with pytest.raises(KaiwuSDKError, match="binding changed"):
+        job.status()
+
+    assert _FakeOptimizer.solve_calls == solve_calls
+
+
+def test_checkpoint_replacement_during_cached_recovery_read_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir(mode=0o700)
+    client, _ = _client(monkeypatch, checkpoint)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="replaced-during-cached-recovery-read",
+        mode="sampling",
+        requested_samples=10,
+    )
+    solve_calls = _FakeOptimizer.solve_calls
+    moved = tmp_path / "moved-checkpoint"
+    original_loader = client._load_recovery_receipt
+
+    def replace_after_read(
+        path: Path, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> KaiwuTaskReceipt:
+        stored = original_loader(path, receipt, matrix)
+        checkpoint.rename(moved)
+        checkpoint.mkdir(mode=0o700)
+        return stored
+
+    monkeypatch.setattr(client, "_load_recovery_receipt", replace_after_read)
+
+    with pytest.raises(KaiwuSDKError, match="binding changed"):
+        job.status()
+
+    assert _FakeOptimizer.solve_calls == solve_calls
 
 
 def test_submit_and_poll_reuse_documented_task_identity(
