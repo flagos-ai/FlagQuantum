@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
-import subprocess
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -68,17 +67,6 @@ def _measure(
     }
 
 
-def _source_revision() -> str:
-    root = Path(__file__).resolve().parents[3]
-    return subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=root,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
@@ -86,6 +74,7 @@ def main() -> None:
     parser.add_argument(
         "--compiler-lane", choices=("stock_triton", "flagtree"), required=True
     )
+    parser.add_argument("--source-revision", required=True)
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--repeats", type=int, default=30)
     parser.add_argument("--group-size", type=int, default=10)
@@ -175,7 +164,7 @@ def main() -> None:
     properties = torch.cuda.get_device_properties(0)
     payload = {
         "schema": "flagquantum.kernel_probe.mps_sampling_collapse.v1",
-        "source_revision": _source_revision(),
+        "source_revision": args.source_revision,
         "host_label": args.host_label,
         "compiler_lane": args.compiler_lane,
         "compiler": {
