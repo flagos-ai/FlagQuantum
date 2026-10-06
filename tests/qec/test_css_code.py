@@ -379,6 +379,13 @@ def test_the_matrix_route_has_no_statevector_ceiling() -> None:
 def test_a_rebuilt_record_runs_as_a_memory_experiment() -> None:
     """A record that was never declared by a class still samples a memory circuit."""
 
+    # Sampling is the one route in this file that runs the program through the
+    # stabilizer engine, which is an optional distribution; every other test here
+    # reads a record, a circuit or a model. The file therefore keeps running where
+    # stim is absent and this test alone skips, rather than the file skipping the
+    # thirty-nine claims that need no engine.
+    pytest.importorskip("stim")
+
     record = _rebuilt(RotatedSurfaceCode(distance=3))
     circuit = build_memory_circuit(record, rounds=_ROUNDS)
     samples = sample_memory_circuit(circuit, noise=_NOISE, shots=64, seed=5)
