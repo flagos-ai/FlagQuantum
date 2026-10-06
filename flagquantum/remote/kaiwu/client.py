@@ -311,12 +311,24 @@ class KaiwuSDKClient:
             ) from None
         if raw_solution is None:
             return None
-        array = np.asarray(raw_solution)
-        if array.ndim != 2 or array.shape[1] != receipt.matrix_size:
-            raise KaiwuSDKError("Kaiwu CIM returned an invalid solution shape")
-        if not bool(np.all((array == -1) | (array == 1))):
-            raise KaiwuSDKError("Kaiwu CIM returned values outside the spin domain")
-        solutions = tuple(tuple(int(spin) for spin in row) for row in array.tolist())
+        try:
+            array = np.asarray(raw_solution)
+            if array.ndim != 2 or array.shape[1] != receipt.matrix_size:
+                raise KaiwuSDKError("Kaiwu CIM returned an invalid solution shape")
+            if not bool(np.all((array == -1) | (array == 1))):
+                raise KaiwuSDKError(
+                    "Kaiwu CIM returned values outside the spin domain"
+                )
+            solutions = tuple(
+                tuple(int(spin) for spin in row) for row in array.tolist()
+            )
+        except KaiwuSDKError:
+            raise
+        except Exception:
+            raise KaiwuSDKError(
+                "Kaiwu CIM returned an invalid solution payload; "
+                "vendor details were redacted"
+            ) from None
         self._solutions[key] = solutions
         return solutions
 

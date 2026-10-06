@@ -80,6 +80,10 @@ valid evidence or allowed to surface as incidental attribute/type errors. A
 client response that is not a `KaiwuTaskReceipt`, an invalid runtime task-mode
 type, and boolean, string, complex, or nonfinite wait controls likewise fail
 through FlagQuantum-owned boundary errors.
+The pinned client applies the same redaction to result decoding after the
+vendor call: exceptions raised while converting or inspecting the returned
+array are replaced with a stable Kaiwu error without retaining an exception
+chain or vendor-controlled message.
 Both save and restore require the receipt's immediate parent to be an existing
 private, non-symlink directory; private file bits alone are insufficient when
 another user could replace the directory entry. Publication synchronizes both

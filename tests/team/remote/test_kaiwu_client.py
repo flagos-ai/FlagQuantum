@@ -831,6 +831,31 @@ def test_malformed_sdk_solution_fails_closed(
         )
 
 
+def test_solution_decoding_error_is_redacted(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class _LeakingArray:
+        def __array__(self, *args: object, **kwargs: object) -> np.ndarray:
+            del args, kwargs
+            raise RuntimeError("provider-task-secret sdk-code-secret")
+
+    _FakeOptimizer.responses = [_LeakingArray()]
+    client, _ = _client(monkeypatch, tmp_path)
+
+    with pytest.raises(KaiwuSDKError, match="invalid solution payload") as caught:
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="redacted-solution-decode",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert "provider-task-secret" not in str(caught.value)
+    assert "sdk-code-secret" not in str(caught.value)
+    assert caught.value.__cause__ is None
+
+
 def test_vendor_operation_error_is_redacted_and_checkpoint_is_restored(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

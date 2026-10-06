@@ -210,6 +210,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   syntax, dimensions, dtype names, and sequence-type inspection. Unsafe names
   are omitted, and inspection failure remains redacted and nonfatal to valid
   samples rather than causing unbounded or value-bearing evidence output.
+- Solution-array decoding is now inside the same redacted SDK boundary as the
+  vendor call itself. Exceptions from `np.asarray`, provider-controlled element
+  comparison, list conversion, or integer conversion become a stable
+  cause-free `KaiwuSDKError`; their dynamic text cannot enter logs or evidence.
 - Before its first SDK operation, that client now atomically persists a
   mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
   This closes the ambiguous-submission window: a process restart reuses the
