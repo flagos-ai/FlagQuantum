@@ -232,12 +232,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   file. It uses no host bind mount and disables container logging. A separate
   local capture gate rejects identity drift, non-A800 or non-`cuda:0` execution,
   unbounded call accounting, or any record that claims real provider use or
-  acceptance. The complete path passed again on both hosts at revision
-  `178bb9e589e600411dc3c5c1e46f765e6e81465a`; the two private development
+  acceptance. The committed path passed again on both hosts at revision
+  `413f9435f4326598e2414a19b59d741cbb6a523d`; the two private development
   records have SHA-256 digests
-  `5f6d576ffbdf9bd8b96bb18472c0958ed5c6dbd42ed5df2fa311926ecaf7c3cc`
+  `b0ab6e255275ec735043fd07ff53c14f32d42aecd7480a65aa916d9e315b3ab6`
   and
-  `6752739ae2b53eb02b5d1eab4ccca0378d0011c87beda8ab6b8e4ae8e6215bc`.
+  `2b05e56326e62531a292b6224e61e0f4407635f25d0c8c951acc20f96130cc72`.
   These remain development-only records and are not inputs to the live
   acceptance manifest.
 - A separate quota-guarded live-system command now composes that QDiffusion
