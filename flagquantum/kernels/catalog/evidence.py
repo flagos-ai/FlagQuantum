@@ -400,6 +400,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_triton_complex_bmm.py::test_fused_complex_bmm_cpu_fallback_matches_torch",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/complex_bmm_dispatch_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-NUM-002-A",

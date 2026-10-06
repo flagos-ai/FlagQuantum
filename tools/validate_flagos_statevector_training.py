@@ -261,6 +261,11 @@ def _run_case(
     peak_memory = int(probe_summary["local_state_bytes"]) + int(
         probe_summary["peak_backward_scratch_bytes"]
     )
+    # The probe above runs the plain sharded reverse path, which all-reduces onto
+    # every rank. The trajectory below runs the production training path, which
+    # reduce-scatters each gradient onto its owner rank. The case records which
+    # of the two the run it names actually produced.
+    trajectory_gradient_distribution = probe_summary["gradient_distribution"]
     if name != "gradient_reference":
         for parameter in parameters:
             parameter.grad = None
@@ -292,10 +297,13 @@ def _run_case(
         communication_count += int(summary["communication_events"])
         communication_bytes += int(summary["communication_bytes"])
         peak_memory = max(peak_memory, int(summary["peak_memory_bytes"]))
-        if summary["gradient_ownership_semantics"] != "reduced_across_ranks":
-            raise AssertionError("training gradients were not reduced across ranks")
+        if summary["gradient_ownership_semantics"] != "sharded_across_ranks":
+            raise AssertionError(
+                "training gradients were not reduced onto their owner ranks"
+            )
         if summary["optimizer_update_semantics"] != "sharded_across_ranks":
             raise AssertionError("optimizer owner routing was not sharded")
+        trajectory_gradient_distribution = summary["gradient_distribution"]
     passed = bool(
         probe_summary["parameter_gradient_ready"]
         and probe_summary["backward_distribution_semantics"] == "sharded_across_ranks"
@@ -335,6 +343,7 @@ def _run_case(
         communication_bytes=communication_bytes,
         peak_memory_bytes=peak_memory,
         device_type=probe.value.device.type,
+        gradient_distribution=trajectory_gradient_distribution,
     )
 
 

@@ -10,7 +10,10 @@ from ....simulation.native_cpu import (
     fused_observable_adjoint_seed,
     native_cpu_observable_rotation_boundary_available,
 )
+from ....simulation.statevector.adjoint import z_hamiltonian_chunk
+from .forward import _storage_global_indices
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
+from .reverse_support import _reverse_chunk_amplitudes
 
 
 def seed_adjoint(amplitudes: torch.Tensor, weights: torch.Tensor) -> torch.Tensor:
@@ -52,7 +55,33 @@ def materialize_pending_observable_adjoint(sweep: Any) -> None:
     sweep.pending_observable_weights = None
 
 
+def hamiltonian_adjoint_seed(
+    shard_state: Any,
+    *,
+    plan: Any,
+    n_qubits: int,
+    terms: tuple[tuple[float, tuple[int, ...]], ...],
+) -> torch.Tensor:
+    """Construct one adjoint seed for a weighted Z/ZZ Hamiltonian."""
+
+    adjoint = torch.zeros_like(shard_state.amplitudes)
+    local_count = shard_state.shard.local_amplitudes
+    with torch.no_grad():
+        for start in range(0, local_count, _reverse_chunk_amplitudes()):
+            end = min(local_count, start + _reverse_chunk_amplitudes())
+            indices = _storage_global_indices(shard_state, start, end, plan=plan)
+            _, chunk = z_hamiltonian_chunk(
+                shard_state.amplitudes[:, start:end],
+                indices,
+                n_qubits=n_qubits,
+                terms=terms,
+            )
+            adjoint[:, start:end].copy_(chunk)
+    return adjoint
+
+
 __all__ = (
+    "hamiltonian_adjoint_seed",
     "materialize_pending_observable_adjoint",
     "prepare_observable_adjoint",
     "seed_adjoint",
