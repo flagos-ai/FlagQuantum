@@ -79,7 +79,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe \
   --output /workspace/evidence/development.json >&2
 cat /workspace/evidence/development.json"
 
-tar -cf - \
+COPYFILE_DISABLE=1 tar -cf - \
   -C "$transfer_dir" \
   "$source_archive" "$plugin_archive" "$community_archive" "$manifest_name" \
   -C "$(dirname "$source_preflight_path")" "$preflight_name" \

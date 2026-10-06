@@ -239,7 +239,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   read-only, auto-removed container, uses tmpfs for both the extracted workspace
   and remote record, and streams JSON back to an exclusive local mode-0600
   file. It uses no host bind mount and disables container logging. A separate
-  local capture gate rejects identity drift, non-A800 or non-`cuda:0` execution,
+  `COPYFILE_DISABLE=1` transfer guard prevents macOS extended attributes from
+  entering the outer tar stream alongside the manifest-bound inputs. The local
+  capture gate rejects identity drift, non-A800 or non-`cuda:0` execution,
   unbounded call accounting, or any record that claims real provider use or
   acceptance. The committed path passed again on both hosts at revision
   `413f9435f4326598e2414a19b59d741cbb6a523d`; the two private development

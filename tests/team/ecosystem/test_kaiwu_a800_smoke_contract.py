@@ -76,6 +76,7 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert "--hostname $expected_hostname" in source
     assert "--tmpfs /workspace:" in source
     assert "--volume" not in source
+    assert "COPYFILE_DISABLE=1 tar -cf -" in source
     assert '| ssh "$execution_host"' in source
     assert "stream_development_evidence capture" in source
     assert "--source-preflight /workspace/input/" in source
