@@ -87,6 +87,17 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "distributed_training",
     ),
     _semantic(
+        "FQK-SV-010",
+        "statevector.apply.diagonal.local",
+        "statevector",
+        "Apply a one- or two-qubit diagonal operator to local amplitudes.",
+        "circuit_simulation",
+        "qft",
+        "qaoa",
+        "hamiltonian_simulation",
+        "variational_algorithms",
+    ),
+    _semantic(
         "FQK-GR-001",
         "gradient.vjp.adjoint_1q.local",
         "gradient",

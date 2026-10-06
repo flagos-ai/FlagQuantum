@@ -46,9 +46,9 @@ def _literal_all(tree: ast.Module) -> set[str]:
 def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     validate_catalog()
 
-    assert len(SEMANTICS) == 26
-    assert len(IMPLEMENTATIONS) == 33
-    assert len(EVIDENCE) == 33
+    assert len(SEMANTICS) == 27
+    assert len(IMPLEMENTATIONS) == 34
+    assert len(EVIDENCE) == 34
     assert {semantic.domain for semantic in SEMANTICS} == {
         "gradient",
         "mps",
@@ -63,6 +63,7 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     assert maturity_by_id["FQKI-TRITON-SV-001-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-SV-002-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-SV-003-A"] == "provisional"
+    assert maturity_by_id["FQKI-TRITON-SV-010-A"] == "experimental"
     assert maturity_by_id["FQKI-TRITON-GR-002-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-GR-003-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-GR-004-A"] == "provisional"

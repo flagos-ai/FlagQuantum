@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 26 semantics,
-28 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 27 semantics,
+29 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -75,6 +75,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-006 | `statevector.distributed.transpose_apply_1q` | `apply_complex64_transpose_1q_inplace`, `apply_complex64_transpose_1q_tle_inplace` (FlagTree TLE) |
 | FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
+| FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -351,6 +352,22 @@ surface, but does not authorize default dispatch. This is single-device
 development evidence only, not a distributed scalability or release claim.
 Reproduce or validate it with
 [`benchmarks/flagtree_tle_control_transport.py`](../../benchmarks/flagtree_tle_control_transport.py).
+
+`FQKI-TRITON-SV-010-A` applies one- or two-qubit diagonal operators directly
+to a flat statevector. It derives the operator-basis index from each
+amplitude's local address, then performs one complex multiply without a
+full-state permutation, contiguous materialization, or dense batched matrix
+multiplication. The ordered qubit tuple defines the diagonal basis order. The
+wrapper supports a shared diagonal or one diagonal per batch, contiguous CUDA
+`complex64` states, and an optional matching output buffer; exact input/output
+aliasing is safe because every amplitude is independent. It rejects gradient
+inputs rather than silently detaching them.
+
+SV-010-A is experimental until the fixed A800 benchmark matrix establishes an
+evidenced support window. Runtime dispatch remains a separate review step. The
+semantic serves diagonal gates including Z, S, T, RZ, phase, CZ, controlled
+phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian simulation,
+and variational workloads.
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -988,14 +1005,14 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. The 24 direct
+The current 27 semantics and 34 implementations are implemented. The 24 direct
 Triton `-A` implementations from SV-001 through SV-008, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
 reason above, while the other listed routes have evidenced default-dispatch
-promotions. The two generic-autograd Triton `-B` implementations, the two NUM
-implementations, and the five explicit FlagTree implementations remain
-experimental, for nine experimental implementations in total.
+promotions. SV-010-A, the two generic-autograd Triton `-B` implementations, the
+two NUM implementations, and the five explicit FlagTree implementations remain
+experimental, for ten experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
