@@ -297,6 +297,47 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
     assert "raise SystemExit(1)" in source
 
 
+def test_live_smoke_cli_rejects_existing_output_before_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "existing.json"
+    output.write_text("preserve", encoding="utf-8")
+    credential_resolution_attempted = False
+
+    def resolve() -> tuple[str, str]:
+        nonlocal credential_resolution_attempted
+        credential_resolution_attempted = True
+        raise AssertionError("credentials must not be resolved")
+
+    monkeypatch.setattr(smoke_module, "resolve_kaiwu_credentials", resolve)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "qboson_live_smoke",
+            "--checkpoint-dir",
+            str(tmp_path),
+            "--environment-lock",
+            str(tmp_path / "lock.json"),
+            "--output",
+            str(output),
+            "--project-no",
+            "CPQC-test",
+            "--task-prefix",
+            "smoke",
+            "--acknowledge-provider-cost",
+            smoke_module.ACKNOWLEDGEMENT,
+        ],
+    )
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        smoke_module.main()
+
+    assert credential_resolution_attempted is False
+    assert output.read_text(encoding="utf-8") == "preserve"
+
+
 def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

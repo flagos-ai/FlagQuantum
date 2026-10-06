@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -354,3 +355,58 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     assert 'parser.add_argument("--plugin-root"' in source
     assert "source_root=Path(__file__).resolve().parents[2]" in source
     assert "plugin_root=arguments.plugin_root" in source
+
+
+def test_live_system_cli_rejects_existing_output_before_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "existing.json"
+    output.write_text("preserve", encoding="utf-8")
+    credential_resolution_attempted = False
+
+    def resolve() -> tuple[str, str]:
+        nonlocal credential_resolution_attempted
+        credential_resolution_attempted = True
+        raise AssertionError("credentials must not be resolved")
+
+    monkeypatch.setattr(system_module, "resolve_kaiwu_credentials", resolve)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "qdiffusion_system_live",
+            "--config",
+            str(tmp_path / "config.json"),
+            "--checkpoint-dir",
+            str(tmp_path),
+            "--output",
+            str(output),
+            "--execution-host",
+            "jp-a800-171",
+            "--expected-hostname",
+            "test-host",
+            "--source-revision",
+            "0" * 40,
+            "--plugin-revision",
+            "1" * 40,
+            "--plugin-root",
+            str(tmp_path),
+            "--source-preflight",
+            str(tmp_path / "source-preflight.json"),
+            "--environment-lock",
+            str(tmp_path / "environment-lock.json"),
+            "--project-no",
+            "CPQC-test",
+            "--task-prefix",
+            "system",
+            "--acknowledge-provider-cost",
+            system_module.ACKNOWLEDGEMENT,
+        ],
+    )
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        system_module.main()
+
+    assert credential_resolution_attempted is False
+    assert output.read_text(encoding="utf-8") == "preserve"
