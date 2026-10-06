@@ -32,6 +32,69 @@ ADJOINT_RULES: tuple[str, ...] = (
     "not_applicable",
 )
 
+#: Rule names ``OperatorSchema.control`` may use, and what each one emits.
+#:
+#: A controlled form is not a corner of the matrix library but a closed identity over
+#: the same registered opcodes, so it is declared here with the standing ``adjoint``
+#: has. Two facts are declared: which registered opcode already is the single-control
+#: form (``CONTROL_PARTNERS``, consulted before any rule below is read), and which
+#: identity carries the remaining control count.
+#:
+#: Every identity is exact and uses no ancilla, which is what makes it safe inside a
+#: program builder. A builder has no way to learn which qubit starts in ``|0>``, so a
+#: construction that borrowed an ancilla would be right on a clean one and silently
+#: wrong on a dirty one. The price is depth: the ladder for ``k`` controls emits
+#: ``4 * 3 ** (k - 1) - 3`` gates, so ``MAX_LADDER_LEVEL`` bounds it rather than
+#: letting an arithmetic request produce a program nobody can inspect.
+#:
+#: ``identity``              the controlled form of the gate is the empty program.
+#: ``diagonal_ladder``       the gate is a phase ``P(phi)``, so ``C^k`` is the phase
+#:                           ladder itself.
+#: ``x_conjugated_ladder``   the gate is ``H P(phi) H``.
+#: ``y_conjugated_ladder``   the gate is ``(S H) P(phi) (S H)^dagger``.
+#: ``ry_conjugated_ladder``  the gate is ``RY(pi/4) P(pi) RY(-pi/4)``.
+#: ``rz_ladder``             the gate is ``P(theta)`` up to one eigenvalue phase
+#:                           ``-theta/2``, which stops being global once controlled.
+#: ``rx_ladder``             ``H P(theta) H`` up to the same eigenvalue phase.
+#: ``ry_ladder``             ``(S H) P(theta) (S H)^dagger`` up to the same phase.
+#: ``u_angle_ladder``        a gate whose two or three angles are two diagonal phases
+#:                           around one conjugated rotation.
+#: ``swap_ladder``           ``SWAP`` as three ``CX``.
+#: ``cswap_ladder``          ``CSWAP`` as three ``CCX``.
+#: ``rzz_ladder``            ``RZZ`` as ``CX RZ CX``.
+#: ``rxx_ladder``            ``RXX`` as ``(H x H) RZZ (H x H)``.
+#: ``ryy_ladder``            ``RYY`` as ``(S H x S H) RZZ (S H x S H)^dagger``.
+#: ``not_available``         the opcode has no controlled form this IR can express.
+CONTROL_RULES: tuple[str, ...] = (
+    "identity",
+    "diagonal_ladder",
+    "x_conjugated_ladder",
+    "y_conjugated_ladder",
+    "ry_conjugated_ladder",
+    "rz_ladder",
+    "rx_ladder",
+    "ry_ladder",
+    "u_angle_ladder",
+    "swap_ladder",
+    "cswap_ladder",
+    "rzz_ladder",
+    "rxx_ladder",
+    "ryy_ladder",
+    "not_available",
+)
+
+#: The deepest phase ladder one controlled instruction may need.
+#:
+#: A ladder of level ``level`` emits ``4 * 3 ** (level - 1) - 3`` instructions, so the
+#: cost is exponential and this bound is what keeps a control count from producing a
+#: program no one can inspect. It is a bound on the *ladder*, not on the control count,
+#: because a wider gate reaches a deeper ladder for the same count:
+#: ``control_ladder_level`` returns ``n_controls + arity - 1``. At this level the
+#: widest route -- ``CSWAP``, whose three Toffolis each reach one level further -- emits
+#: 236193 instructions, which the circuit composition contract records as measured
+#: evidence rather than as an estimate.
+MAX_LADDER_LEVEL = 10
+
 
 @dataclass(frozen=True)
 class OperatorSchema:
@@ -45,8 +108,17 @@ class OperatorSchema:
     decomposition: tuple[str, ...]
     qubit_convention: tuple[str, ...]
     parameter_frequencies: tuple[tuple[float, ...], ...] = ()
+    #: How one more control is added to this opcode; see ``CONTROL_RULES``. The
+    #: default is the refusal, so an opcode added without a controlled form is
+    #: uncontrollable rather than silently controlled by the wrong identity.
+    control: str = "not_available"
 
     def __post_init__(self) -> None:
+        if self.control not in CONTROL_RULES:
+            raise ValueError(
+                f"opcode {self.opcode!r} declares control rule {self.control!r}, "
+                f"which is not one of {CONTROL_RULES}"
+            )
         if not self.parameter_frequencies:
             return
         if self.semantic_kind != "unitary":
@@ -187,6 +259,7 @@ def _unitary(
     frequencies: tuple[tuple[float, ...], ...] = (),
     adjoint: str = "matrix_adjoint",
     decomposition: tuple[str, ...] = (),
+    control: str = "not_available",
 ) -> OperatorSchema:
     qubit_names = {
         1: ("target",),
@@ -204,6 +277,7 @@ def _unitary(
         decomposition=decomposition,
         qubit_convention=qubit_names,
         parameter_frequencies=frequencies,
+        control=control,
     )
 
 
@@ -236,23 +310,30 @@ def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
 
 
 _SCHEMAS = (
-    _unitary("i", 1, aliases=("id",), adjoint="self_inverse"),
-    _unitary("x", 1, adjoint="self_inverse"),
-    _unitary("y", 1, adjoint="self_inverse"),
-    _unitary("z", 1, adjoint="self_inverse"),
-    _unitary("h", 1, aliases=("hadamard",), adjoint="self_inverse"),
-    _unitary("s", 1, adjoint="sdg"),
-    _unitary("sdg", 1, aliases=("sd",), adjoint="s"),
-    _unitary("t", 1, adjoint="tdg"),
-    _unitary("tdg", 1, aliases=("td",), adjoint="t"),
-    _unitary("sx", 1, adjoint="sxdg"),
-    _unitary("sxdg", 1, adjoint="sx"),
+    _unitary("i", 1, aliases=("id",), adjoint="self_inverse", control="identity"),
+    _unitary("x", 1, adjoint="self_inverse", control="x_conjugated_ladder"),
+    _unitary("y", 1, adjoint="self_inverse", control="y_conjugated_ladder"),
+    _unitary("z", 1, adjoint="self_inverse", control="diagonal_ladder"),
+    _unitary(
+        "h",
+        1,
+        aliases=("hadamard",),
+        adjoint="self_inverse",
+        control="ry_conjugated_ladder",
+    ),
+    _unitary("s", 1, adjoint="sdg", control="diagonal_ladder"),
+    _unitary("sdg", 1, aliases=("sd",), adjoint="s", control="diagonal_ladder"),
+    _unitary("t", 1, adjoint="tdg", control="diagonal_ladder"),
+    _unitary("tdg", 1, aliases=("td",), adjoint="t", control="diagonal_ladder"),
+    _unitary("sx", 1, adjoint="sxdg", control="x_conjugated_ladder"),
+    _unitary("sxdg", 1, adjoint="sx", control="x_conjugated_ladder"),
     _unitary(
         "rx",
         1,
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rx_ladder",
     ),
     _unitary(
         "ry",
@@ -260,6 +341,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="ry_ladder",
     ),
     _unitary(
         "rz",
@@ -267,6 +349,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rz_ladder",
     ),
     _unitary(
         "phase",
@@ -275,6 +358,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "u1",
@@ -282,6 +366,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "u2",
@@ -289,6 +374,7 @@ _SCHEMAS = (
         parameters=("phi", "lbd"),
         frequencies=((1.0,), (1.0,)),
         adjoint="adjoint_u2_angles",
+        control="u_angle_ladder",
     ),
     _unitary(
         "u3",
@@ -297,17 +383,25 @@ _SCHEMAS = (
         parameters=("theta", "phi", "lbd"),
         frequencies=((1.0,), (1.0,), (1.0,)),
         adjoint="adjoint_u3_angles",
+        control="u_angle_ladder",
     ),
-    _unitary("cx", 2, aliases=("cnot",), adjoint="self_inverse"),
-    _unitary("cy", 2, adjoint="self_inverse"),
-    _unitary("cz", 2, adjoint="self_inverse"),
-    _unitary("swap", 2, adjoint="self_inverse"),
+    _unitary(
+        "cx",
+        2,
+        aliases=("cnot",),
+        adjoint="self_inverse",
+        control="x_conjugated_ladder",
+    ),
+    _unitary("cy", 2, adjoint="self_inverse", control="y_conjugated_ladder"),
+    _unitary("cz", 2, adjoint="self_inverse", control="diagonal_ladder"),
+    _unitary("swap", 2, adjoint="self_inverse", control="swap_ladder"),
     _unitary(
         "crx",
         2,
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="rx_ladder",
     ),
     _unitary(
         "cry",
@@ -315,6 +409,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="ry_ladder",
     ),
     _unitary(
         "crz",
@@ -322,6 +417,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="rz_ladder",
     ),
     _unitary(
         "cphase",
@@ -329,6 +425,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "rxx",
@@ -336,6 +433,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rxx_ladder",
     ),
     _unitary(
         "ryy",
@@ -343,6 +441,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="ryy_ladder",
     ),
     _unitary(
         "rzz",
@@ -350,9 +449,22 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rzz_ladder",
     ),
-    _unitary("ccx", 3, aliases=("ccnot", "toffoli"), adjoint="self_inverse"),
-    _unitary("cswap", 3, aliases=("fredkin",), adjoint="self_inverse"),
+    _unitary(
+        "ccx",
+        3,
+        aliases=("ccnot", "toffoli"),
+        adjoint="self_inverse",
+        control="x_conjugated_ladder",
+    ),
+    _unitary(
+        "cswap",
+        3,
+        aliases=("fredkin",),
+        adjoint="self_inverse",
+        control="cswap_ladder",
+    ),
     _channel("bit_flip", parameters=("probability",)),
     _channel("phase_flip", parameters=("probability",)),
     _channel("depolarizing", parameters=("probability",)),
@@ -366,6 +478,29 @@ OPERATOR_ALIASES: Mapping[str, str] = MappingProxyType(
     {alias: schema.opcode for schema in _SCHEMAS for alias in schema.aliases}
 )
 
+#: Opcodes that already are the one-control form of another opcode.
+#:
+#: These are read before the ``control`` rule of the *controlling* opcode, so that
+#: ``control.z`` at one control emits ``cz`` rather than rebuilding it, and
+#: ``control.cx`` at one control emits ``ccx``. A gate's own rule describes how to add
+#: controls beyond the ones it already has; this table describes when none need to be
+#: added. Each pair is validated against the registry below: the partner has to exist,
+#: be a parameter-free unitary of the same arity, and be the canonical opcode.
+CONTROL_PARTNERS: Mapping[str, str] = MappingProxyType(
+    {
+        "x": "cx",
+        "y": "cy",
+        "z": "cz",
+        "rx": "crx",
+        "ry": "cry",
+        "rz": "crz",
+        "phase": "cphase",
+        "u1": "cphase",
+        "swap": "cswap",
+        "cx": "ccx",
+    }
+)
+
 
 def canonical_opcode(name: str) -> str:
     normalized = str(name).strip().lower()
@@ -374,6 +509,58 @@ def canonical_opcode(name: str) -> str:
 
 def get_operator_schema(name: str) -> OperatorSchema | None:
     return OPERATOR_SCHEMAS.get(canonical_opcode(name))
+
+
+def _control_partner_errors() -> tuple[str, ...]:
+    """Return the pairs in ``CONTROL_PARTNERS`` a gate's own rule already covers.
+
+    The pair table is a shortcut, so a wrong entry would be invisible: the emitted
+    program would still be a program, just not the controlled gate. Each pair is
+    therefore checked against the registry at import time -- the partner has to be a
+    registered, parameter-free, unitary of the same arity written under its canonical
+    name -- and a pair is refused when the two opcodes declare different rules, which
+    is how a copy-paste mistake in this table would first show up.
+    """
+
+    errors = []
+    for opcode, partner in CONTROL_PARTNERS.items():
+        schema = OPERATOR_SCHEMAS.get(opcode)
+        partner_schema = OPERATOR_SCHEMAS.get(partner)
+        if schema is None or partner_schema is None:
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} names an unregistered opcode"
+            )
+            continue
+        if (
+            not partner_schema.unitary
+            or partner_schema.parameters
+            or partner_schema.arity != schema.arity
+            or canonical_opcode(partner) != partner
+        ):
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} is not a parameter-free "
+                "unitary of the same arity"
+            )
+            continue
+        if partner_schema.control != schema.control:
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} disagrees on the control "
+                f"rule: {schema.control!r} against {partner_schema.control!r}"
+            )
+    return tuple(errors)
+
+
+def control_ladder_level(arity: int, n_controls: int) -> int:
+    """Return the deepest phase ladder a controlled gate of this shape needs.
+
+    A gate of ``arity`` qubits has ``arity - 1`` partners that a control can be
+    attached to directly and one place left over where the phase ladder starts, so the
+    ladder level is ``n_controls + arity - 1``. One control on a one-qubit gate is the
+    shallowest case, level one, and one control on ``CSWAP`` is the deepest, level
+    three.
+    """
+
+    return n_controls + arity - 1
 
 
 def _negate_angle(value: Any) -> Any:
@@ -477,6 +664,7 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
             "dtype_policy": schema.dtype_policy,
             "semantic_kind": schema.semantic_kind,
             "adjoint": schema.adjoint,
+            "control": schema.control,
             "decomposition": schema.decomposition,
             "differentiable": schema.differentiable,
             "qubit_convention": schema.qubit_convention,

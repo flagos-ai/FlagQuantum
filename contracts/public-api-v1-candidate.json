@@ -34,6 +34,7 @@
       "__version__",
       "compile",
       "counts",
+      "density_matrix",
       "expectation",
       "experimental",
       "from_openqasm",
@@ -169,6 +170,7 @@
     "Y",
     "Z",
     "counts",
+    "density_matrix",
     "expectation",
     "from_openqasm",
     "gradient",
@@ -224,7 +226,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 39,
+    "root_export_budget": 40,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,

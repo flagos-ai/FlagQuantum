@@ -28,6 +28,7 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.__version__` | Stable | executable contract |
 | `fq.compile` | Stable | executable contract |
 | `fq.counts` | Stable | executable contract |
+| `fq.density_matrix` | Stable | executable contract |
 | `fq.expectation` | Stable | executable contract |
 | `fq.experimental` | Stable | executable contract |
 | `fq.from_openqasm` | Stable | executable contract |

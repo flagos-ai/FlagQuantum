@@ -19,12 +19,17 @@ things and make the factory's argument mean one of two things, so the registry
 holds one family and the other stays directly constructed.
 
 **Registration is checked at import rather than at the call site.** A registered
-class must carry the two members the family shares -- a ``decode`` method and a
-``from_detector_error_model`` constructor -- and a class that lacks either is
-refused when it is registered, which is while the module that registers it is
-being imported. Upstream checks the same thing for the same reason: a registry
-that accepted any class would move the failure to the first caller, where the
-name is all the caller has to go on.
+class must carry the member the family's instances share -- a ``decode`` method --
+and the two constructors ``get_decoder``'s carriers select: a
+``from_detector_error_model`` for a model or for stim's text, and a
+``from_decoding_graph`` for the graph a model defines. A class that lacks any of
+the three is refused when it is registered, which is while the module that
+registers it is being imported. Upstream checks the same thing for the same
+reason: a registry that accepted any class would move the failure to the first
+caller, where the name is all the caller has to go on. The two constructors are
+required together because the three carriers are one documented surface: a name
+that could be built from a model and not from a graph would be a name whose
+accepted sources depend on which name was asked for.
 
 **The optional name is always there; the optional distribution is not.**
 ``PyMatchingDecoder`` is imported and registered whether or not PyMatching is
@@ -59,14 +64,17 @@ from collections.abc import Callable, Iterable
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from .adapters import PyMatchingDecoder
+from .belief_propagation import BeliefPropagationDecoder
 from .decoding_graph import DecodingGraph
 from .dem import DetectorErrorModel
-from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
+from .matching import MinimumWeightMatchingDecoder
 
 #: The name of the implementation this package is authoritative for.
 AUTHORITY_NAME = "minimum_weight_matching"
 #: The name of the optional implementation this package is cross-checked against.
 CROSS_CHECK_NAME = "pymatching"
+#: The name of the in-tree decoder for the models a matcher cannot represent.
+BELIEF_PROPAGATION_NAME = "belief_propagation"
 
 _DecoderT = TypeVar("_DecoderT", bound="DetectorErrorModelDecoder")
 
@@ -75,26 +83,32 @@ _DecoderT = TypeVar("_DecoderT", bound="DetectorErrorModelDecoder")
 class DetectorErrorModelDecoder(Protocol):
     """What a decoder this registry hands back carries.
 
-    The protocol states the instance contract and not the constructor one: a
-    caller of :func:`get_decoder` holds a decoder and asks it for ``decode``, and
-    reads ``graph`` to see what was built. Registration additionally requires the
-    class to carry ``from_detector_error_model``, which is a classmethod and so is
-    not part of the instance contract a return type can state; the two members
-    are checked together in :func:`register_decoder`, where a class that lacks
-    either is refused.
+    The protocol states the instance contract, and the instance contract of this
+    family is one member: a caller of :func:`get_decoder` holds a decoder and asks
+    it for ``decode``. The constructors are deliberately not stated here --
+    ``from_detector_error_model`` and ``from_decoding_graph`` are classmethods, so
+    no return type can state them -- and are checked in :func:`register_decoder`
+    instead, where a class that lacks either is refused.
 
-    ``graph`` is stated as a read-only property rather than as an attribute,
-    because the decoders in this family are frozen records: a protocol that
-    promised a writable ``graph`` would not be satisfied by a record whose
-    ``graph`` cannot be reassigned, and a registry that returned one decoder type
-    and refused another for being immutable would be checking a property no
-    caller uses.
+    What ``decode`` *returns* is likewise not stated, because the family does not
+    share one result record and should not pretend to. A matcher's correction is a
+    set of graph edges with a weight, and a belief-propagation decoder's is a set
+    of mechanism indices with the beliefs' convergence; both answer "which
+    mechanisms explain this syndrome, and what do they flip", and a protocol that
+    named either record would refuse the other family for being a different
+    answer rather than a different shape.
+
+    ``graph`` is not part of this contract either. Two of the three carriers build
+    a graph and the text route builds one indirectly, but a decoder whose input is
+    the model as written -- a mechanism touching three detectors is a variable
+    touching three checks -- has no graph to hand back for exactly the models it
+    exists to read, so requiring one would make the protocol untrue of the family
+    it names. A decoder that does build a graph exposes it as a read-only
+    ``graph`` property, which is a fact about that decoder rather than about the
+    family.
     """
 
-    @property
-    def graph(self) -> DecodingGraph: ...
-
-    def decode(self, detection_events: Iterable[int]) -> MatchingDecodeResult: ...
+    def decode(self, detection_events: Iterable[int]) -> Any: ...
 
 
 #: The instance contract is what a caller gets back; the value here is the class
@@ -122,7 +136,8 @@ def register_decoder(
 
     Raises:
         TypeError: The name is not a string, or the registered object does not
-            carry the two members the family shares.
+            carry the three members the family shares -- a ``decode`` method and
+            the two constructors the three carriers select.
         ValueError: The name is empty or carries whitespace, or it is already
             registered and ``replace`` is not set.
     """
@@ -142,16 +157,16 @@ def register_decoder(
     def decorate(candidate: type[_DecoderT]) -> type[_DecoderT]:
         missing = [
             member
-            for member in ("decode", "from_detector_error_model")
+            for member in ("decode", "from_detector_error_model", "from_decoding_graph")
             if not callable(getattr(candidate, member, None))
         ]
         if missing:
             raise TypeError(
                 f"{candidate.__name__} cannot be registered as {name!r}: a detector "
-                f"error model decoder needs a decode method and a "
-                f"from_detector_error_model constructor, and "
-                f"{', '.join(missing)} {'is' if len(missing) == 1 else 'are'} missing "
-                "or not callable"
+                f"error model decoder needs a decode method, a "
+                f"from_detector_error_model constructor and a from_decoding_graph "
+                f"constructor, and {', '.join(missing)} "
+                f"{'is' if len(missing) == 1 else 'are'} missing or not callable"
             )
         _DECODERS[name] = candidate
         return candidate
@@ -181,9 +196,10 @@ def get_decoder(
         source: The detector error model to decode, stim's text for one, or the
             decoding graph that model defines. A model is lifted through the
             class's own ``from_detector_error_model``; a graph is passed to the
-            constructor, because the graph is already the thing a matcher
-            searches and rebuilding a model from it would lose the observable
-            labels the caller has in hand; text is read through
+            class's own ``from_decoding_graph``, which for a matcher is the graph
+            it already searches and for a decoder that reads the model as written is
+            the lift of the graph's own edges back into a model; text is read
+            through
             :meth:`DetectorErrorModel.from_stim_text`, so ``options`` must be the
             options that reader takes, and the model it returns is then lifted.
         **options: Forwarded to whichever route the source selects, so a name
@@ -224,19 +240,19 @@ def get_decoder(
         ) from None
     # A registered value is a class, and it is reached through two different
     # constructors: its own ``from_detector_error_model`` for a model or text, and
-    # its ``__init__(graph=...)`` for a graph. The protocol above states the
+    # its own ``from_decoding_graph`` for a graph. The protocol above states the
     # instance a caller receives, because that is what this function returns and
-    # what a caller then holds; no one protocol can state both class-level
-    # signatures without widening one of them, so the routes call the class
-    # through a constructor-shaped local and the contract is enforced where it can
-    # be enforced -- at registration, on the members the class actually carries.
+    # what a caller then holds; no one protocol can state class-level signatures
+    # without widening it, so the routes call the class through a
+    # constructor-shaped local and the contract is enforced where it can be
+    # enforced -- at registration, on the members the class actually carries.
     build: Any = factory
     if isinstance(source, DetectorErrorModel):
         decoder: DetectorErrorModelDecoder = build.from_detector_error_model(
             source, **options
         )
     elif isinstance(source, DecodingGraph):
-        decoder = build(graph=source, **options)
+        decoder = build.from_decoding_graph(source, **options)
     elif isinstance(source, str):
         decoder = build.from_detector_error_model(
             DetectorErrorModel.from_stim_text(source, **options)
@@ -251,3 +267,4 @@ def get_decoder(
 
 register_decoder(AUTHORITY_NAME)(MinimumWeightMatchingDecoder)
 register_decoder(CROSS_CHECK_NAME)(PyMatchingDecoder)
+register_decoder(BELIEF_PROPAGATION_NAME)(BeliefPropagationDecoder)

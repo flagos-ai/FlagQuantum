@@ -17,7 +17,7 @@ from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
-from flagquantum.qec import CssCode, CssCodeMatrices
+from flagquantum.qec import CssCode, CssCodeMatrices, build_memory_circuit
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 
@@ -29,10 +29,12 @@ ENTRIES = (
     CssCode,
     CssCodeMatrices,
     Layout,
+    build_memory_circuit,
     fq.Circuit,
     fq.Module,
     fq.Observable,
     fq.compile,
+    fq.density_matrix,
     fq.expectation,
     fq.from_openqasm,
     fq.gradient,

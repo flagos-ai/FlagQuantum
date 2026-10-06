@@ -17,6 +17,7 @@ tests, and rendered in the
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
 | Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
 | Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
+| Condition a program on added control qubits | `Circuit.control` | A wider new circuit whose block runs only when every control is set |
 | Save or load OpenQASM text | `flagquantum.compiler.openqasm.emit_openqasm`, `fq.from_openqasm` | Imported program plus its measurement mapping |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
@@ -95,8 +96,31 @@ unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
 classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
 the operation instead of being dropped from the inverse.
 
-Together, `compose` and `adjoint` express the block-reuse idiom: a sub-program is
-placed where it is needed, and the same sub-program undone is placed after it.
+`Circuit.control(n_controls, ctrl_qubits)` returns a new circuit in which the block runs
+only when every one of the control qubits it adds is set:
+
+```python
+conditional = fq.Circuit(1).h(0).control(2, ctrl_qubits=(1, 2))
+conditional.n_qubits
+# 3
+```
+
+The controls are **added** rather than borrowed, so each label must lie outside the
+receiver's own range, the result is a new circuit, and the receiver keeps its own width and
+program. The controlled form belongs to the opcode and is declared once in the operator
+schema, so a gate the registry already has in controlled form is used directly — `x` under
+one control is `cx`, `swap` under one control is `cswap` — and every wider control is
+emitted as an ancilla-free ladder of registered gates. A symbolic angle stays symbolic and
+stays inside the autograd graph. The ladder is exact and it is deep: a `w`-qubit block under
+`k` controls needs a ladder of level `k + w - 1`, which is exponential in that level, and a
+request past `flagquantum.core.MAX_LADDER_LEVEL` is refused by name. A gate with no
+controlled form — a noise channel, a mid-circuit measurement or reset, or a
+classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming the
+operation rather than being approximated.
+
+Together, `compose`, `adjoint`, and `control` express the block-reuse idiom: a sub-program
+is placed where it is needed, conditioned on the qubits that decide whether it runs, and
+the same sub-program undone is placed after it.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;

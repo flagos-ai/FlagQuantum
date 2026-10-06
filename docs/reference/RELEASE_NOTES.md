@@ -24,6 +24,19 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added the stable `fq.density_matrix(qubits=None, *, name=None)` output request and
+  the `ExecutionResult.density_matrix` property, so an execution can be asked for the
+  state on a named subset of qubits instead of only for outcome statistics.
+  `qubits=None` means every qubit, a subset answers as a `(batch, 2 ** k, 2 ** k)`
+  tensor whose index order is the order the caller named, and `Tr(O rho)` read off
+  the matrix agrees with `fq.expectation(O)` on the same qubits. Every execution mode
+  answers the same matrix; a statevector route refuses above ten qubits and names
+  `options=fq.ExecutionOptions(mode='density_matrix')` as the cheaper route, and a
+  noise model carrying a readout rule is refused by name because readout confusion is
+  applied to outcomes after the state. `Circuit.noisy_density_matrix` now reads the
+  circuit's dtype the way `Circuit.density_matrix` already did, so the two no longer
+  disagree by the `complex64` rounding floor on a `complex128` circuit. See
+  [the density-matrix output change](../api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md).
 - Added `optimization_level` to `flagquantum.compiler.optimize` and
   `flagquantum.compiler.compile`. It is keyword-only and defaults to `2`, which is
   the pass composition those entry points already ran, so a caller that does not

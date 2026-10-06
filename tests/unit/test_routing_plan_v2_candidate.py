@@ -1,10 +1,17 @@
 """Reconcile the placement-in-routing-plan proposal against the running code.
 
-Every obstacle asserted here is a refusal that exists today. Asserting a refusal
+Most obstacles asserted here are refusals that exist today. Asserting a refusal
 is what stops the proposal from describing the repository as it would like it to
 be: when an obstacle is closed, the assertion fails and the proposal has to be
 updated in the same commit. The contract is a candidate with
 ``implementation.authorized: false``, so that is the intended reading.
+
+Obstacle 5 is the exception: it was a defect inside the existing v1 contract
+rather than a missing capability, so it was fixed without the authorization the
+proposal asks for, and the test now asserts the *closed* state together with the
+two ways the fix could have gone too far. Its companion assertion, the one that
+pins what re-routing an already-routed program still does, is deliberately left
+as a refusal because deciding it is the proposal's business and not the fix's.
 
 Two of the obstacles sit behind each other: the strategy clause refuses before
 the permutation clauses are reached. Removing one clause to see what the *next*
@@ -37,7 +44,13 @@ from flagquantum.compiler.routing import ROUTING_STRATEGIES
 from flagquantum.deployment.cloud import CloudBackendProfile, create_deployment_package
 from flagquantum.deployment.routing_evidence import (
     DeploymentRoutingEvidenceError,
+    same_undirected_device,
     validate_deployment_routing_plan,
+)
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic import (
+    create_dynamic_deployment_package,
+    route_dynamic_circuit,
 )
 
 pytestmark = pytest.mark.unit
@@ -46,6 +59,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "contracts" / "routing-plan-v2-candidate.json"
 PROPOSAL = ROOT / "docs" / "development" / "API_CHANGE_PROPOSAL_068_ROUTING_PLAN_V2.md"
 
+LINE3 = ((0, 1), (1, 2))
 LINE4 = ((0, 1), (1, 2), (2, 3))
 GRID3X3 = (
     (0, 1),
@@ -391,26 +405,50 @@ def test_obstacle_4_the_directed_plan_is_a_foreign_schema() -> None:
     )
 
 
-def test_obstacle_5_a_device_is_identified_by_the_order_of_its_edges() -> None:
-    """Two objects over the same couplings are two devices to this contract.
+def test_obstacle_5_a_device_is_identified_by_its_couplings_not_their_order() -> None:
+    """Obstacle 5 was closed as a defect fix; this asserts the closed state.
 
-    The reproduction needs no placement, no workspace and no foreign schema: a v1
-    plan that satisfies every permutation clause is refused because the edge list
-    was serialized in a different order.
+    Round 24 pinned the refusal: two serializations of one device were two
+    devices to this contract. The comparison now runs over undirected coupling
+    sets in all three sites that make the decision, so the plan is accepted and
+    reused. The assertions below are the closed state, the two ways the fix could
+    have gone too far, and the third site that makes it a three-site fix.
     """
 
     candidate = _candidate()
     obstacle = candidate["obstacles"]["device_identity_is_compared_by_edge_order"]
-    shuffled = ((1, 2), (0, 1), (0, 3), (2, 5), (1, 4), (4, 5), (3, 4))
-    assert set(shuffled) == set(GRID6)
-    assert shuffled != GRID6
-    assert shuffled != tuple(sorted(shuffled)), (
+    assert obstacle["status"].startswith("closed_by_defect_fix")
+    assert obstacle["re_routing_decision_status"] == "open", (
+        "the order fix removed a trigger, not the decision behind it, so the "
+        "contract cannot report this chain as closed"
+    )
+
+    shifted = ((1, 2), (0, 1), (0, 3), (2, 5), (1, 4), (4, 5), (3, 4))
+    assert set(shifted) == set(GRID6)
+    assert shifted != GRID6
+    assert shifted != tuple(sorted(shifted)), (
         "the re-ordered device happens to be its own canonical order, so this "
         "test could not tell canonicalization from its absence"
     )
-    assert CouplingMap(6, shuffled).edges == shuffled, (
-        "CouplingMap canonicalized its edges, so the device identity is no "
-        "longer order-sensitive and obstacle 5 is closed"
+    assert CouplingMap(6, shifted).edges == shifted, (
+        "CouplingMap canonicalizes its edges, so the shifted sequence is no "
+        "longer reachable from a real device and this test would stop being "
+        "evidence that the deployment contract tolerates edge order"
+    )
+    canonical = CouplingMap(6, GRID6).edges
+
+    # The comparison ignores the order of the couplings and the order of the
+    # endpoints inside one coupling ...
+    assert same_undirected_device(shifted, canonical)
+    assert same_undirected_device(
+        tuple((right, left) for left, right in shifted), canonical
+    )
+    assert same_undirected_device(canonical, canonical)
+    # ... and still separates devices that differ by a single coupling.
+    assert not same_undirected_device(GRID6[:-1], canonical)
+    assert not same_undirected_device(GRID6 + ((5, 8),), canonical)
+    assert not same_undirected_device(
+        ((0, 1), (1, 2), (0, 3), (1, 4), (2, 5), (3, 4), (5, 8)), canonical
     )
 
     backend = CloudBackendProfile(
@@ -423,15 +461,15 @@ def test_obstacle_5_a_device_is_identified_by_the_order_of_its_edges() -> None:
     assert backend.coupling_map is not None
     routed = compile_program(
         _program(n_wires=6),
-        coupling_map=CouplingMap(6, shuffled),
+        coupling_map=CouplingMap(6, shifted),
         routing_strategy="persistent_layout",
     )
-    plan = routed.metadata["routing"]
-    assert tuple(plan["coupling_edges"]) == shuffled
+    plan = dict(routed.metadata["routing"])
+    assert tuple(plan["coupling_edges"]) == shifted
     assert tuple(plan["coupling_edges"]) != backend.coupling_map.edges
     assert set(plan["coupling_edges"]) == set(backend.coupling_map.edges)
 
-    # Site 1: the validator refuses the plan against the device it was routed on.
+    # Site 1: the validator accepts the plan against the device it was routed on.
     assert (
         _verdict(
             validate_deployment_routing_plan,
@@ -439,18 +477,111 @@ def test_obstacle_5_a_device_is_identified_by_the_order_of_its_edges() -> None:
             plan,
             backend.coupling_map,
         )
-        == obstacle["refusals_that_follow"][0]
-    ), obstacle["who_refuses"][0]
+        == "accepted"
+    )
 
-    # Site 2: the deployment entry decides the plan is for another device, routes
-    # the already-routed program again, and refuses it over a SWAP count.
+    # The normalization runs whether or not there is a device to compare against,
+    # so a field that is not a list of pairs is refused by name in both cases. It
+    # used to be read only when a device was present, which made the same field
+    # acceptable with one argument and refused with the other.
+    with pytest.raises(DeploymentRoutingEvidenceError) as malformed:
+        validate_deployment_routing_plan(
+            plan | {"coupling_edges": ((0, 1, 2),)}, n_qubits=6, coupling_map=None
+        )
+    assert str(malformed.value) == "routing coupling edges must be pairs of qubits"
+
+    # Site 2: the deployment entry reuses the plan instead of routing the
+    # already-routed program a second time, so the plan's own counts survive and
+    # the SWAP-count refusal that the second pass used to produce is not reached.
+    package = create_deployment_package(routed, backend=backend)
+    assert package.metadata["routing_reused"] is True
+    assert package.metadata["routing_evidence"]["routing_reused"] is True
+    published = package.metadata["routing_plan"]
+    assert published["inserted_swap_count"] == plan["inserted_swap_count"] != 0, (
+        "the plan has to carry SWAPs, or its count could not show that the "
+        "second pass's zero was an accounting artifact rather than a reuse"
+    )
+
+    # Site 3: dynamic packaging makes the same decision from its own module, so
+    # one comparison in one file would have left this path re-routing.
+    dynamic = DynamicCircuit(3)
+    dynamic.measure(0, classical_bit=0)
+    dynamic.conditional("cx", (0, 2), classical_bit=0)
+    dynamic_backend = CloudBackendProfile(
+        provider="local",
+        name="dynamic-line3",
+        n_qubits=3,
+        supports_openqasm=True,
+        supports_dynamic_circuits=True,
+        max_classical_bits=4,
+        coupling_map=CouplingMap(3, LINE3),
+    )
+    dynamic_routed = route_dynamic_circuit(
+        dynamic, CouplingMap(3, tuple(reversed(LINE3)))
+    )
+    dynamic_plan = dict(dynamic_routed.to_ir().metadata["routing"])
+    assert tuple(dynamic_plan["coupling_edges"]) == tuple(reversed(LINE3))
+    assert set(dynamic_plan["coupling_edges"]) == set(LINE3)
+    assert dynamic_backend.coupling_map is not None
+    dynamic_package = create_dynamic_deployment_package(
+        dynamic_routed, backend=dynamic_backend, shots=32
+    )
+    assert dynamic_package.metadata["routing_reused"] is True
+    assert (
+        dynamic_package.metadata["routing_plan"]["inserted_swap_count"]
+        == dynamic_plan["inserted_swap_count"]
+        != 0
+    ), (
+        "the dynamic package has to report the plan it reused, not a second "
+        "pass that planned nothing while shipping the first pass's SWAPs"
+    )
+
+
+def test_re_routing_onto_a_different_device_is_still_the_open_decision() -> None:
+    """The order fix removed a trigger, not the decision behind it.
+
+    A program that arrives routed onto a genuinely *different* device is routed
+    again, and the second pass reports that it planned no SWAPs while shipping
+    the first pass's. That is the accounting question the proposal asks to decide
+    rather than take, so this test pins it: when the decision lands, this
+    assertion fails and the contract has to be updated in the same commit.
+    """
+
+    candidate = _candidate()
+    obstacle = candidate["obstacles"]["device_identity_is_compared_by_edge_order"]
+    assert obstacle["re_routing_decision_status"] == "open", (
+        "record the decision in the contract before changing the behaviour it "
+        "describes"
+    )
+    assert any(
+        "re-routing an already-routed program" in item
+        for item in candidate["acceptance"]
+    ), "the open decision has to stay an acceptance criterion"
+
+    routed = compile_program(
+        _program(n_wires=4),
+        coupling_map=CouplingMap(4, LINE4),
+        routing_strategy="persistent_layout",
+    )
+    plan = dict(routed.metadata["routing"])
+    assert plan["inserted_swap_count"] != 0
+    other_device = CloudBackendProfile(
+        provider="local",
+        name="ring4",
+        n_qubits=4,
+        coupling_map=CouplingMap.ring(4),
+        is_simulator=True,
+    )
+
+    # Re-routing is the right *action* here, because the plan is for another
+    # device. What is not defined is what the program's counts then mean.
     with pytest.raises(DeploymentRoutingEvidenceError) as refused:
-        create_deployment_package(routed, backend=backend)
+        create_deployment_package(routed, backend=other_device)
     assert str(refused.value) == obstacle["refusals_that_follow"][1]
 
     second_pass = compile_program(
         routed,
-        coupling_map=backend.coupling_map,
+        coupling_map=other_device.coupling_map,
         routing_strategy="restore_after_each_gate",
     ).metadata["routing"]
     assert second_pass["planned_inserted_swap_count"] == 0
@@ -493,6 +624,11 @@ def test_every_clause_that_refuses_today_is_still_a_contract() -> None:
             good,
             wider_device,
             "routing coupling edges do not match the deployment backend",
+        ),
+        (
+            good | {"coupling_edges": ((0, 1, 2),)},
+            coupling,
+            "routing coupling edges must be pairs of qubits",
         ),
         (
             good | {"initial_logical_to_physical": (1, 0, 2, 3)},

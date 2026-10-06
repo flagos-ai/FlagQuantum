@@ -369,6 +369,34 @@ from the circuit's free qubits; and what the exact refusal phrase is for each ro
 An ancilla argument, if it exists, is a qubit sequence and is spelled with
 `qubit`.
 
+**Settled by `N1-4`**, recorded in
+[`FQ-CIRCUIT-CONTROL-20261022.md`](../api-changes/FQ-CIRCUIT-CONTROL-20261022.md), and
+now the reading of this section:
+
+| Decision | Settled reading | Evidence |
+|---|---|---|
+| mechanism | each opcode declares its controlled form in `flagquantum/core/operator_schema.py` as a rule name, and `flagquantum/core/controlled.py` emits the resulting instruction sequence | 31 of the 35 registered opcodes declare a rule; the four that do not are exactly the channels |
+| ancilla ladder precedent | **not** reused. `flagquantum/algorithms/primitives/oracle.py` is outside `core` and `append_multi_controlled_x` returns a wrong answer on a dirty ancilla, which was measured: 8 of 32 operands at three controls, 32 of 128 at four, with the ancilla itself restored | the emitter is ancilla-free, and the contract records `ancilla_qubits = 0` |
+| ancilla argument | **declined**, because the chosen mechanism needs none | no `ancillas=` keyword exists; the declined candidate is recorded in the record's Decision Candidates |
+| exact refusal phrases | 13 rows, all reachable, frozen in `[[refusals]]` of `contracts/circuit-composition-contract.toml` and read back by `tools/check_circuit_composition_contract.py` | the contract holds 30 refusal rows, of which 29 are reachable |
+| the identity opcode | `i` under any number of controls emits **no** instruction, which is a rule about that one opcode and not a no-op path for the operation: `n_controls` below one is still refused, and a control label that is not outside the receiver is still refused | Section 7's prohibition is about the operation, not about the one gate whose controlled form is empty |
+
+The acceptance test in the fourth bullet is measured twice: once as a simulated operator
+comparison over all 31 unitary opcodes at one to four controls — 124 cases, which is where
+the diagonal ladder, the basis change, the target's own arity and the phase correction all
+have to be right at once — and once as an instruction-for-instruction comparison against a
+hand-built ladder. The second is what makes the first load-bearing, because an operator
+comparison alone cannot separate a correct expansion from a differently-written one that
+happens to agree at the probe angle.
+
+One cost this section did not anticipate, and which `N1-4` had to publish rather than
+absorb: an ancilla-free ladder is **exponential** in the control count. A `w`-qubit block
+under `k` controls needs a ladder of level `k + w - 1`, which emits
+`4 * 3 ** (level - 1) - 3` instructions at its minimum — 1, 9, 33, 105, 321, 969, 2913,
+8745, 26241, 78729 at levels one through ten. `MAX_LADDER_LEVEL` is 10 and a request past
+it is refused by name. The narrow reading of the third bullet would have been cheaper and
+wrong: it would refuse a control count the framework can express exactly.
+
 ### 6.2 `Circuit.power`
 
 Proposed shape, following the plan's `N1-5`:
@@ -424,8 +452,10 @@ stays 36 names and `IR_VERSION` stays `"1.0"`.
   is the operation itself; a control qubit outside the circuit is an error, not a
   promotion.
 - **Do not repurpose the contract's `not_provided` text ahead of the
-  implementation.** It is accurate until `N1-4`/`N1-5` land, and it is the
-  document that predicted this one.
+  implementation.** It was accurate while `control` and `power` were both absent,
+  and it is the document that predicted this one. `N1-4` retired the `control`
+  half of it in the same slice that added the method, which is the order this
+  bullet asks for; the `power` half stays until `N1-5` lands.
 - **Do not add a fourth spelling for a control qubit.** `ctrl_qubits` is the name
   fixed by the alignment plan's `N1-4` row and by its `wires=` → `qubits=` naming
   map (`ctrl_wires=` → `ctrl_qubits=`, `wire_map=` → `qubit_map=`, `work_wire=` →
@@ -444,9 +474,13 @@ Section 5, and it records the acceptance criteria and refusal classes in Section
 6 as the basis for review. It does not itself grant API-owner approval: under
 `PUBLIC_API_PROTECTION.md` item 5 that is a review act, and `N1-4`/`N1-5` may not
 treat this document as a substitute for it. The composition contract's
-`not_provided_reason` says "no approved API change proposal", and it becomes false
-only when this proposal is approved, at which point the implementing slice is the
-one that edits it.
+`not_provided_reason` said "no approved API change proposal", which was true of
+both operations at `45a85cc3`; the `control` half of it is now false, and the slice
+that made it false is the slice that edited it — `N1-4`, whose own record is
+[`FQ-CIRCUIT-CONTROL-20261022.md`](../api-changes/FQ-CIRCUIT-CONTROL-20261022.md).
+That record carries the authorization this proposal could not, because the Stable
+Core surface it changes (`Circuit.control`'s signature, and the new public keyword
+`ctrl_qubits=`) is a rule-8 change that only the user can authorize.
 
 Not approved here: any change to `IR_VERSION`, to a root export, to the 35-opcode
 registry, or to the compiler passes named by `N4-2`.
@@ -455,6 +489,9 @@ registry, or to the compiler passes named by `N4-2`.
 
 Every number in Sections 2, 4, 5, and 6 is produced by a command on this checkout;
 none is transcribed by hand.
+
+The Section 2 measurement, re-run after `N1-4` with the one assertion that `N1-4`
+changed renamed rather than deleted:
 
 ```bash
 python -c "
@@ -470,24 +507,33 @@ for i in block.to_ir().instructions:
 assert composed.to_ir().to_dict() == hand.to_ir().to_dict()
 assert semantic_fingerprint(composed) == semantic_fingerprint(hand)
 assert IR_VERSION == '1.0' and len(fq.__all__) == 36
-assert len(_SCHEMAS) == 35 and not ({'compose','adjoint'} & {s.opcode for s in _SCHEMAS})
-for m in ('control', 'power'):
-    assert not hasattr(fq.Circuit(2), m)
-print('composition is not a second IR; control and power are absent')
+assert len(_SCHEMAS) == 35 and not ({'compose','adjoint','control'} & {s.opcode for s in _SCHEMAS})
+assert not hasattr(fq.Circuit(2), 'power')
+print('composition is not a second IR; power is absent on this revision')
 "
+```
 
+`control` is a method now and not an opcode, so it moved from the second clause of
+the absence assertion into the first, which is what that assertion was always
+testing for: an operation the IR does not describe. `power` remains absent here
+and is provided by the separate `N1-5` change.
+
+```bash
 python -m pytest tests/unit/test_circuit_compose.py tests/unit/test_circuit_adjoint.py \
     tests/unit/test_circuit_composition_contract.py -q
-# 155 passed
+# 193 passed
+
+python -m pytest tests/unit/test_circuit_control.py -q
+# 57 passed
 
 python tools/check_circuit_composition_contract.py
 # Circuit composition contract passed
 
 python tools/check_docs_links.py
-# Checked 546 markdown files; all local links and anchors resolve.
+# Checked 551 markdown files; all local links and anchors resolve.
 ```
 
-The composition contract's own verifier is the reason the two shipped members
+The composition contract's own verifier is the reason the shipped members
 cannot drift from this document: it refuses a contract that names a test which is
 not a test, and it refuses an operation that has no expansion test named.
 
@@ -500,12 +546,32 @@ not a test, and it refuses an operation that has no expansion test named.
    `mutates_receiver = true`. The two members disagreeing is defensible only
    because widening in place is a different hazard from rewriting labels in place,
    and `N1-4` should confirm that reading rather than inherit it.
+   **Settled by `N1-4`: it copies.** The contract records
+   `receiver_is_mutated = false` and `result_width` as a separate key from the
+   receiver's width, and the reading is measured rather than asserted — the
+   contract verifier takes a two-qubit receiver, records its instruction list,
+   controls it onto a fifth qubit, and checks that the receiver's instruction list
+   is byte-for-byte what it was, that the receiver still reports the same batch
+   size, device and dtype, and that the result reports width 5.
 3. **Does `control` need an ancilla argument?** The ladder precedent in
    `algorithms/primitives/oracle.py:72` consumes `len(controls) - 2` ancillas for
    three or more controls and requires each to enter in `|0>`. Whether that
    requirement becomes part of `Circuit.control`'s signature, or whether the
    operation is restricted to control counts the IR can express without ancillas,
    is `N1-4`'s decision and it changes the user's call.
+   **Settled by `N1-4`: no ancilla argument, and the precedent is not reused.**
+   The third reading — restrict control counts to what fits without ancillas —
+   was rejected too: the framework can express every control count exactly, so
+   refusing one would be refusing a solvable request. The emitter is ancilla-free
+   and pays for it in depth, which the contract publishes as
+   `ladder_depth_growth` and `ladder_instruction_bound`. The measurement that
+   decided it is in
+   [`FQ-CIRCUIT-CONTROL-20261022.md`](../api-changes/FQ-CIRCUIT-CONTROL-20261022.md):
+   `append_multi_controlled_x` restores its ancillas but returns a wrong answer on
+   an ancilla that entered dirty — 8 of 32 basis operands at three controls, 32 of
+   128 at four — and `Circuit` cannot certify that any qubit entered in `|0>`. An
+   ancilla argument was therefore a hazard rather than a facility, and adding one
+   would have needed its own rule-8 authorization.
 4. **Should `control` and `power` be methods on `Circuit` or on the instruction
    sequence?** They are methods here because `Circuit` owns the instruction list,
    but `power` in particular could be read as a property of each instruction.
@@ -516,3 +582,9 @@ not a test, and it refuses an operation that has no expansion test named.
    gate that checks every `API_CHANGE_PROPOSAL_0NN` reference resolves to a file
    with a matching title would catch the next one; none exists today, and this
    document does not add one.
+6. **An ancilla-free ladder is exponential. Is a linear construction wanted
+   later?** `N1-4` publishes the depth instead of hiding it, which is the right
+   default, but a caller who already knows a qubit is clean may reasonably want the
+   cheaper route. That is a new public argument and a new authorization, so it is
+   recorded here as an open question rather than left to the next slice to
+   rediscover.

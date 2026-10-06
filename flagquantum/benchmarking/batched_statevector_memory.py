@@ -203,6 +203,31 @@ def run_benchmark(
         raise ValueError("widths and batch sizes must be positive")
 
     thread_environment = _configure_threads(threads)
+    memory_results: dict[tuple[WorkloadName, int, int, EngineName], dict[str, Any]] = {}
+    # Linux preserves a process's historical ru_maxrss across exec. Collect every
+    # isolated probe before this parent executes a large statevector, otherwise a
+    # later worker inherits the parent's earlier high-water mark and all engines
+    # appear to have the same peak.
+    for workload in workloads:
+        for width in n_qubits:
+            for batch_size in batch_sizes:
+                for engine in engines:
+                    memory_results[(workload, width, batch_size, engine)] = (
+                        _summarize_memory_probes(
+                            tuple(
+                                _probe_engine(
+                                    workload=workload,
+                                    n_qubits=width,
+                                    batch_size=batch_size,
+                                    engine=engine,
+                                    threads=threads,
+                                    seed=seed,
+                                )
+                                for _ in range(memory_probes)
+                            )
+                        )
+                    )
+
     cases: list[dict[str, Any]] = []
     for workload in workloads:
         for width in n_qubits:
@@ -218,21 +243,9 @@ def run_benchmark(
                     seed=seed,
                 )
                 for engine in engines:
-                    case["engines"][engine]["isolated_memory"] = (
-                        _summarize_memory_probes(
-                            tuple(
-                                _probe_engine(
-                                    workload=workload,
-                                    n_qubits=width,
-                                    batch_size=batch_size,
-                                    engine=engine,
-                                    threads=threads,
-                                    seed=seed,
-                                )
-                                for _ in range(memory_probes)
-                            )
-                        )
-                    )
+                    case["engines"][engine]["isolated_memory"] = memory_results[
+                        (workload, width, batch_size, engine)
+                    ]
                 cases.append(case)
 
     passed = all(case["correctness"]["passed"] for case in cases)

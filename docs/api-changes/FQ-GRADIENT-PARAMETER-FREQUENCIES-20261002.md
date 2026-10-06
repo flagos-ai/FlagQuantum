@@ -163,6 +163,15 @@ path and makes the schema's numbers depend on a floating-point decomposition.
 - **`batched_parameter_shift_gradient` is unchanged.** It still supports only
   `H, X, RX, RY, RZ, CX` and still says so; the five hardcoded executor lists are
   untouched by this proposal and are recorded as open questions.
+  **Delivered:** [_The batch parameter-shift profile reads the opcode
+  declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) fulfilled part of
+  this sentence. `batched_parameter_shift_gradient` no longer states a gate list:
+  it derives the parameters it can differentiate from
+  `OperatorSchema.shift_rule` and admits `U1`, `U2`, `U3`, `PHASE`, `CPHASE`,
+  `RXX`, `RYY`, and `RZZ` as well, refusing `CRX`/`CRY`/`CRZ` by name and pair
+  count. The five hardcoded executor lists are still untouched, and Open Question
+  1 below is expired rather than resolved -- measurement showed they encode a
+  kernel capability, not this rule.
 - **No capability row moves.** `capability-maturity.toml` records gradient support
   for the training entry points (`fq.train`, `fq.Module`, autograd), and
   `parameter_shift_gradient` is an auxiliary helper outside that surface: it is not
@@ -205,6 +214,13 @@ path and makes the schema's numbers depend on a floating-point decomposition.
    a backend capability rather than a gate rule, so the derivation is not the same
    one; `split_real_imag.py` and `double_single_device_gates.py` may need to answer
    "which gates can this kernel split" instead of "which gates are differentiable".
+   **Delivered:** [_The batch parameter-shift profile reads the opcode
+   declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) measured this and
+   left the lists in place. The guess in this question was right: they are a
+   kernel-capability question, `SPLIT_REAL_IMAG_PARAMETER_SHIFT_GATES` is already
+   read by `tools/check_split_real_imag_p1_contract.py`, and `P4_PARAMETER_GATES`
+   is a subset of what the derivation admits. This question is **expired,
+   superseded by measurement** rather than resolved.
 2. **Which eigenvalues does `CRX`'s generator actually have?** The declared
    `{0.5, 1.0}` is verified against autograd for three preparations, not derived.
    A generator-spectrum test would make the declaration self-checking, and that is
@@ -212,6 +228,14 @@ path and makes the schema's numbers depend on a floating-point decomposition.
 3. **Does `batched_parameter_shift_gradient` need the same treatment?** It refuses
    `RXX`/`RYY`/`RZZ` today, which are one-frequency gates the generic path already
    handles. The restriction may be about the batched kernel, not the rule.
+   **Delivered:** [_The batch parameter-shift profile reads the opcode
+   declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) answered this. The
+   restriction was not about the batched kernel: the profile sends one evaluation
+   pair per parameter, so a one-frequency gate is exactly what it can answer, and
+   the gate list was simply narrower than the rule. `batched_parameter_shift_gradient`
+   now derives its parameterized profile from `OperatorSchema.shift_rule` and
+   `contracts/parameter-shift-coverage-contract.toml` records the measured result
+   for all 35 registered opcodes.
 4. **Should `shift_rule` be public?** It is reachable as
    `fq.core.OPERATOR_SCHEMAS["crx"].shift_rule("theta")`. Exporting it from
    `flagquantum.core` is done; promoting it into `fq.__all__` would make it a

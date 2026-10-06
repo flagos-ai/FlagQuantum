@@ -400,6 +400,7 @@ def _validate_authorized_execution_options(
         "Module.load_checkpoint": fq.Module.load_checkpoint,
         "compile": fq.compile,
         "counts": fq.counts,
+        "density_matrix": fq.density_matrix,
         "expectation": fq.expectation,
         "from_openqasm": fq.from_openqasm,
         "gradient": fq.gradient,

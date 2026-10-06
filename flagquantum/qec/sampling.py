@@ -66,6 +66,13 @@ from .noise import PhenomenologicalNoise
 _MEASURE_OPCODE = "measure"
 _NOISE_OPCODE = "bit_flip"
 
+# The one lowered opcode a memory experiment's readout-basis rotation is a
+# sequence of. The rotation itself is built once, in
+# :func:`~flagquantum.qec.circuit.build_memory_circuit`, as one gate per data
+# qubit; naming the opcode here is what lets the plan recognise it in the lowered
+# program without re-deriving the experiment's basis semantics.
+_ROTATION_OPCODE = "h"
+
 # The Clifford conjugation the engine's one channel needs around it to become the
 # record's other data-fault families, as (before, after) opcodes.
 # ``H X H = Z`` and ``S_DAG X S = iY``, so a single bit-flip draw conjugated this
@@ -90,14 +97,21 @@ _FAMILY_CONJUGATION: Mapping[_MechanismKind, tuple[str, str]] = MappingProxyType
 class _MeasurementPlan:
     """Where every detection-event reference sits in the engine's record.
 
-    ``block`` is the number of instructions one syndrome round lowers to, so
-    round ``r`` owns ``program.instructions[r * block : (r + 1) * block]``.
-    ``measure_offsets`` is the template position of each check's readout, in the
-    code's declared check order. ``syndrome_columns`` and ``terminal_columns``
-    are engine record columns: the first indexes ``(round_index, ancilla_qubit)``, the second a data qubit.
+    ``offset`` is the number of instructions the experiment's readout-basis
+    rotation lowers to, and ``block`` the number one syndrome round lowers to, so
+    round ``r`` owns
+    ``program.instructions[offset + r * block : offset + (r + 1) * block]``.
+    The two are stated separately rather than folded into one arithmetic because
+    the rotation belongs to the experiment and not to a round: it is what makes
+    the instruction at ``offset`` a round-boundary location rather than part of
+    the preparation. ``measure_offsets`` is the template position of each check's
+    readout, in the code's declared check order. ``syndrome_columns`` and
+    ``terminal_columns`` are engine record columns: the first indexes
+    ``(round_index, ancilla_qubit)``, the second a data qubit.
     """
 
     program: CircuitIR
+    offset: int
     block: int
     measure_offsets: tuple[int, ...]
     syndrome_columns: Mapping[tuple[int, int], int]
@@ -250,42 +264,81 @@ def _checked_seed(seed: int | None) -> int | None:
     return None if seed is None else int(seed)
 
 
+def _rotation_template(
+    memory: MemoryCircuit,
+) -> tuple[tuple[str, tuple[int, ...]], ...]:
+    """Return the lowered instruction template of the experiment's rotation.
+
+    One rotation instruction per data qubit, in the code's declared data-qubit
+    order. A Z-basis experiment is the all-zero preparation the runtime already
+    starts in and reads out through the runtime's final sample, so its rotation
+    is the empty sequence and its program begins at round zero.
+    """
+
+    if memory.readout_basis == "z":
+        return ()
+    return tuple((_ROTATION_OPCODE, (qubit,)) for qubit in memory.code.data_qubits)
+
+
 def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
     """Return the record columns of every syndrome and terminal readout.
 
-    The plan is read off the lowered program, not asserted about it: the loop
-    must have lowered to identical round blocks, and each block must measure
-    every check exactly once, in the code's declared check order. Both
-    properties are what makes a round index and a check index name one recorded
-    bit, so a program without them is refused.
+    The plan is read off the lowered program, not asserted about it. Before the
+    rounds the program must carry the experiment's basis rotation, and after them
+    the same rotation again, because that is what makes the first instruction of
+    round zero a round boundary rather than part of the preparation and the
+    terminal sample the readout the observable is declared in; a program whose
+    ends are anything else is refused rather than attributed to a round. What is
+    left between them must be identical round blocks, and each block must measure
+    every check exactly once, in the code's declared check order. Those three
+    properties are what make a round index and a check index name one recorded
+    bit.
     """
 
     program = _lowered_program(memory)
     instructions = program.instructions
     rounds = memory.rounds
     checks = tuple(memory.code.checks)
-    if len(instructions) % rounds:
+    rotation = _rotation_template(memory)
+    offset = len(rotation)
+
+    def template_of(
+        source: Sequence[Instruction],
+    ) -> tuple[tuple[str, tuple[int, ...]], ...]:
+        return tuple((item.name, item.wires) for item in source)
+
+    if len(instructions) < 2 * offset:
         raise ValueError(
             f"the memory program lowers to {len(instructions)} instruction(s), "
-            f"which {rounds} rounds cannot divide into identical syndrome rounds"
+            f"which cannot carry the {memory.readout_basis.upper()}-basis "
+            f"rotation of its {offset} data qubit(s) on both ends"
         )
-    block = len(instructions) // rounds
+    for end, source in (
+        ("prepare", instructions[:offset]),
+        ("read out", instructions[len(instructions) - offset :]),
+    ):
+        if template_of(source) != rotation:
+            raise ValueError(
+                f"the memory program does not {end} its data qubits in the "
+                f"experiment's {memory.readout_basis.upper()} basis, so a noise "
+                "location would be placed in a program the layouts do not describe"
+            )
+    body = instructions[offset : len(instructions) - offset]
+    if len(body) % rounds:
+        raise ValueError(
+            f"the memory program lowers to {len(body)} instruction(s) between its "
+            f"rotations, which {rounds} rounds cannot divide into identical "
+            "syndrome rounds"
+        )
+    block = len(body) // rounds
     # Two rounds are the same round when they execute the same operations on the
     # same qubits. They are not the same records: a lowered measurement carries
     # the absolute classical bit it writes, which necessarily differs per round,
     # so equality of the whole instruction would refuse every program.
-    template = tuple(
-        (instruction.name, instruction.wires) for instruction in instructions[:block]
-    )
+    template = template_of(body[:block])
     for round_index in range(1, rounds):
         start = round_index * block
-        if (
-            tuple(
-                (instruction.name, instruction.wires)
-                for instruction in instructions[start : start + block]
-            )
-            != template
-        ):
+        if template_of(body[start : start + block]) != template:
             raise ValueError(
                 f"the memory program's round {round_index} is not identical to "
                 "round zero, so a noise location cannot be attributed to a round"
@@ -312,6 +365,7 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
     }
     return _MeasurementPlan(
         program=program,
+        offset=offset,
         block=block,
         measure_offsets=measures,
         syndrome_columns=syndrome_columns,
@@ -418,14 +472,14 @@ def _round_boundary_locations(
     locations: list[_NoiseLocation] = []
     for kind, rates in _data_family_rates(noise, num_qubits=len(data_wires)):
         for round_index in range(memory.rounds):
-            start = round_index * plan.block
+            start = plan.offset + round_index * plan.block
             locations.extend(
                 _NoiseLocation(kind, round_index, int(qubit), start, rates[position])
                 for position, qubit in enumerate(data_wires)
                 if rates[position]
             )
     for round_index in range(memory.rounds):
-        start = round_index * plan.block
+        start = plan.offset + round_index * plan.block
         locations.extend(
             _NoiseLocation(
                 "measurement",

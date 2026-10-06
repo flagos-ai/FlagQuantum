@@ -14,6 +14,7 @@ from benchmarks.tn_layout_contraction import (
     EQUATION,
     FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
     FALLBACK_MINIMUM_SPEEDUP,
+    FALLBACK_OVERHEAD_ESTIMATOR,
     IMPLEMENTATION_ID,
     MEASUREMENT_ORDERING,
     RESULT_NAMES,
@@ -292,15 +293,36 @@ def test_fallback_budget_accepts_bounded_absolute_wrapper_overhead() -> None:
     case = {
         "native_einsum_forward": {
             "median_seconds_per_invocation": native_seconds,
+            "samples_seconds_per_invocation": [native_seconds] * 6,
         },
         "public_catalog_dispatch": {
             "median_seconds_per_invocation": public_seconds,
+            "samples_seconds_per_invocation": [public_seconds] * 6,
         },
         "public_dispatch_speedup_over_native": native_seconds / public_seconds,
     }
 
     assert case["public_dispatch_speedup_over_native"] < FALLBACK_MINIMUM_SPEEDUP
     assert _fallback_within_overhead_budget(case)
+
+
+def test_fallback_budget_uses_paired_repeat_overhead() -> None:
+    native_samples = [50e-6, 100e-6, 50e-6, 100e-6, 50e-6, 100e-6]
+    public_samples = [value + 4e-6 for value in native_samples]
+    case = {
+        "native_einsum_forward": {
+            "median_seconds_per_invocation": statistics.median(native_samples),
+            "samples_seconds_per_invocation": native_samples,
+        },
+        "public_catalog_dispatch": {
+            "median_seconds_per_invocation": statistics.median(public_samples),
+            "samples_seconds_per_invocation": public_samples,
+        },
+        "public_dispatch_speedup_over_native": 0.9,
+    }
+
+    assert _fallback_within_overhead_budget(case)
+    assert FALLBACK_OVERHEAD_ESTIMATOR.startswith("median paired")
 
 
 def test_evidence_validator_rejects_noncanonical_summary() -> None:
@@ -315,12 +337,12 @@ def test_evidence_validator_rejects_noncanonical_summary() -> None:
         validate_evidence(changed)
 
 
-def test_checked_in_a800_evidence_is_canonical_and_revisits_policy() -> None:
+def test_checked_in_a800_evidence_is_canonical_and_retains_policy() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
 
     validate_evidence(payload)
     assert not payload["direct_forward_win_on_all_cases"]
     assert not payload["direct_training_win_on_all_cases"]
-    assert not payload["selected_kernel_win_on_all_cases"]
-    assert not payload["fallback_within_overhead_budget_on_all_cases"]
-    assert payload["dispatch_evidence_decision"] == "revisit_current_policy"
+    assert payload["selected_kernel_win_on_all_cases"]
+    assert payload["fallback_within_overhead_budget_on_all_cases"]
+    assert payload["dispatch_evidence_decision"] == "retain_current_policy"

@@ -113,6 +113,8 @@ jobs:
         run: python tools/check_pennylane_interop_contract.py
       - name: Verify construction-time composition contract
         run: python tools/check_circuit_composition_contract.py
+      - name: Verify the density-matrix output contract
+        run: python tools/check_density_matrix_output_contract.py
       - name: Verify primitives admission contract
         run: python tools/check_primitives_admission_contract.py
       - name: Verify interoperability capability-gap matrix
@@ -153,6 +155,8 @@ jobs:
         run: python tools/check_domestic_single_card_contract.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
+      - name: Verify batch parameter-shift coverage against the opcode declaration
+        run: python tools/check_parameter_shift_coverage_contract.py
       - name: Verify runtime contract schema
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
@@ -264,6 +268,32 @@ jobs:
         run: python tools/ci_tier.py pr-runtime
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove NumPy and the 3.11 standard library are absent
+        # NumPy is not an external quantum framework, so it does not belong in
+        # the list below; it gets its own assertion because its absence is what
+        # makes a collected module that says `import numpy` fail on this lane
+        # and nowhere else. torch declares no NumPy requirement, so the absence
+        # is real -- every leg reports `Failed to initialize NumPy` and the
+        # suite still passes -- and asserting it turns that coincidence into a
+        # checked property.
+        #
+        # `tomllib` is the 3.11 standard library, so the oldest supported
+        # interpreter does not have it at all. A module that imports it behind
+        # `sys.version_info` passes on 3.11 and 3.12 and fails to collect on
+        # 3.10; the `try`/`except ModuleNotFoundError` form is the one that
+        # survives both this lane and a stripped standard library, and
+        # `tools/check_dependency_policy.py` holds every site to it. This step
+        # proves the lane is what that fallback assumes: the standard library
+        # module is there exactly where the version says, and where it is not,
+        # the substitute the fallback imports is installed.
+        run: >-
+          python -c "import importlib.util as u, sys;
+          has_stdlib = u.find_spec('tomllib') is not None;
+          assert u.find_spec('numpy') is None, 'NumPy must be absent from this lane';
+          assert has_stdlib == (sys.version_info >= (3, 11)),
+          'tomllib must be present exactly where the interpreter provides it';
+          assert has_stdlib or u.find_spec('tomli') is not None,
+          'the tomllib fallback must be installed where the standard library lacks it'"
       - name: Prove external quantum frameworks are absent from core
         run: >-
           python -c "import importlib.util;
