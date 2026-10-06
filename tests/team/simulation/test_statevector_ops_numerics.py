@@ -123,6 +123,110 @@ def test_native_scalar_fused_rotation_has_a_wide_state_and_rollback_boundary(
     )
 
 
+def test_native_disjoint_one_qubit_layer_has_large_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        fixed_layer_cpu, "native_cpu_one_qubit_layer_available", lambda: True
+    )
+    monkeypatch.setattr(
+        fixed_layer_cpu, "fused_rotation_block_forward_", lambda *args, **kwargs: True
+    )
+    step = fixed_layer_cpu._StatevectorDisjointDenseStep(
+        (
+            fixed_layer_cpu._StatevectorGateStep(Instruction("h", (0,)), ((0,), ())),
+            fixed_layer_cpu._StatevectorGateStep(Instruction("x", (1,)), ((1,), ())),
+        )
+    )
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert (
+        fixed_layer_cpu.apply_native_fixed_one_qubit_layer(
+            step,
+            narrow,
+            n_qubits=15,
+            owns_state=True,
+            parameter_bindings=None,
+        )
+        is None
+    )
+    assert (
+        fixed_layer_cpu.apply_native_fixed_one_qubit_layer(
+            step,
+            wide,
+            n_qubits=16,
+            owns_state=True,
+            parameter_bindings=None,
+        )
+        is wide
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_DISJOINT_ONE_QUBIT_LAYER", "0")
+    assert (
+        fixed_layer_cpu.apply_native_fixed_one_qubit_layer(
+            step,
+            wide,
+            n_qubits=16,
+            owns_state=True,
+            parameter_bindings=None,
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_disjoint_one_qubit_layer_matches_functional_execution(
+    dtype: torch.dtype,
+) -> None:
+    if not native_cpu_one_qubit_layer_available():
+        pytest.skip("native CPU one-qubit layer is unavailable")
+    generator = torch.Generator().manual_seed(2293)
+    state = torch.randn((1, 2**16), dtype=dtype, generator=generator)
+    step = fixed_layer_cpu._StatevectorDisjointDenseStep(
+        (
+            fixed_layer_cpu._StatevectorGateStep(Instruction("h", (0,)), ((0,), ())),
+            fixed_layer_cpu._StatevectorGateStep(Instruction("x", (9,)), ((9,), ())),
+        )
+    )
+    actual = fixed_layer_cpu.apply_native_fixed_one_qubit_layer(
+        step,
+        state,
+        n_qubits=16,
+        owns_state=False,
+        parameter_bindings=None,
+    )
+    assert actual is not None
+    expected = _apply_matrix(
+        state,
+        torch.tensor([[1.0, 1.0], [1.0, -1.0]], dtype=dtype) / math.sqrt(2.0),
+        (0,),
+        16,
+    )
+    expected = _apply_matrix(
+        expected,
+        torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype),
+        (9,),
+        16,
+    )
+
+    tolerance = 2e-6 if dtype == torch.complex64 else 2e-14
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    assert actual.data_ptr() != state.data_ptr()
+
+    differentiable = state.detach().requires_grad_(True)
+    assert (
+        fixed_layer_cpu.apply_native_fixed_one_qubit_layer(
+            step,
+            differentiable,
+            n_qubits=16,
+            owns_state=True,
+            parameter_bindings=None,
+        )
+        is None
+    )
+
+
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_native_static_clifford_layer_fuses_wide_layer_with_exact_rollback(
     monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype

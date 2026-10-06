@@ -31,6 +31,7 @@ _MAX_NATIVE_FIXED_LAYER_WIRES = 11
 _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES = 11
 _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES = 6
 _MIN_NATIVE_SCALAR_ROTATION_AMPLITUDES = 1 << 16
+_MIN_NATIVE_DISJOINT_LAYER_AMPLITUDES = 1 << 16
 _NATIVE_FIXED_GATES = frozenset({"h", "s", "sdg", "x", "y", "z"})
 _NATIVE_PARAMETERIZED_GATES = frozenset({"rx", "ry", "rz"})
 _NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "sdg": 3, "x": 4, "y": 5, "z": 6}
@@ -433,8 +434,17 @@ def apply_native_fixed_one_qubit_layer(
 ) -> torch.Tensor | None:
     """Apply one shared or batch-specific inference layer natively."""
 
+    large_disjoint_one_qubit_layer = bool(
+        state.shape[1] >= _MIN_NATIVE_DISJOINT_LAYER_AMPLITUDES
+        and os.getenv("FQ_CPU_NATIVE_DISJOINT_ONE_QUBIT_LAYER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
     if (
-        not (step.native_preferred or step.native_parameterized)
+        not (
+            step.native_preferred
+            or step.native_parameterized
+            or large_disjoint_one_qubit_layer
+        )
         or state.device.type != "cpu"
         or state.requires_grad
         or not native_cpu_one_qubit_layer_available()
