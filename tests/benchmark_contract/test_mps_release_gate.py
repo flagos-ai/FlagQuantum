@@ -738,31 +738,37 @@ ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
 )
 
 
-def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly one named reason.
+def test_the_checked_in_manifest_satisfies_every_requirement() -> None:
+    """The checked-in contract is releasable over a complete payload set.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains is the one thing the frozen document itself discloses
-    about its premise: it is not established. The sixteen-rank release world used
-    to appear here as well, because no evidence scope could carry it; API change
-    proposal 065 added ``MULTI_NODE_SCALE`` and this contract was re-frozen
-    against it, so the world is now sealable. The matched-speed ladder used to
-    appear here too, while the manifest froze no rungs; it now freezes a ladder
-    whose shapes were measured, so a speed payload is a payload this contract can
-    accept. Unverifiable premise provenance used to appear here as well, while the
-    raw log and the device telemetry the premise cites were absent from this
-    repository; both are now recovered at the digests the premise recorded, so the
-    provenance re-resolves and the premise's remaining half is its own measurement.
-    Asserting the exact tuple means a second blocker appearing here would have to
-    be explained rather than absorbed.
+    satisfied, and the frozen document's own disclosures are closed rather than
+    open. The sixteen-rank release world used to be one of them, because no
+    evidence scope could carry it; API change proposal 065 added
+    ``MULTI_NODE_SCALE`` and this contract was re-frozen against it. The
+    matched-speed ladder used to be another, while the manifest froze no rungs; it
+    now freezes a ladder whose shapes were measured, so a speed payload is a
+    payload this contract can accept. Unverifiable premise provenance used to be a
+    third, while the raw log and the device telemetry the premise cites were
+    absent from this repository; both are now recovered at the digests the premise
+    recorded. The premise itself was the last, and it is established by a signed
+    pair at this contract's own digests rather than by restating it: the failure
+    half reproduced ``measured_single_device_peak_memory_bytes`` and the
+    completion half reached that same shape across sixteen ranks.
+
+    This test asserted exactly one blocker -- ``capacity_premise_not_established``
+    -- for as long as the premise was open, so that a second blocker appearing
+    here would have to be explained rather than absorbed. The same exactness now
+    applies in the other direction: the tuple is asserted empty, so a requirement
+    that stopped being met would have to be explained rather than absorbed.
     """
 
     manifest = load_manifest()
     passed, blockers = _read(manifest)
 
-    assert passed is False
-    assert blockers == ("capacity_premise_not_established",)
-    assert manifest["capacity_workload"]["premise_established"] is False
+    assert passed is True
+    assert blockers == ()
+    assert manifest["capacity_workload"]["premise_established"] is True
     assert manifest["speed_workload"]["configuration_ladder"]
 
 
@@ -825,7 +831,8 @@ def test_the_frozen_release_world_is_carriable_by_the_evidence_envelope() -> Non
                 signing_key=KEYS,
             )
     passed, blockers = _read(frozen)
-    assert passed is False
+    assert passed is True
+    assert blockers == ()
     assert "release_world_size_not_carriable_by_evidence_envelope" not in blockers
 
 
@@ -1489,7 +1496,24 @@ def test_the_gate_evaluates_a_candidate_set_before_promotion(
 def test_a_candidate_set_is_not_promoted_when_the_gate_refuses_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An unsatisfied requirement stops the promotion before any file moves.
+
+    The checked-in contract is releasable, so the refusal is staged by withholding
+    one payload the contract requires rather than by mutating the document: the
+    promoter reads the frozen manifest from its own declared path, so a candidate
+    set that is missing its timed comparison is a set the gate refuses, and a
+    promoter that moved files regardless would be promoting candidates the gate
+    had just refused.
+    """
+
     manifest_path, candidates, baseline = _candidate_set(tmp_path, load_manifest())
+    withheld = next(
+        path
+        for path in sorted(candidates.glob("*.json"))
+        if json.loads(path.read_text(encoding="utf-8"))["evidence"]["acceptance_case"]
+        == "matched_speed"
+    )
+    withheld.unlink()
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
     release = tmp_path / "release"
 
@@ -1507,7 +1531,7 @@ def test_a_candidate_set_is_not_promoted_when_the_gate_refuses_it(
             ]
         )
 
-    assert "capacity_premise_not_established" in str(excinfo.value)
+    assert "missing_statistically_significant_speedup_artifact" in str(excinfo.value)
     assert not release.exists()
     assert manifest_path.is_file()
 
@@ -1545,17 +1569,20 @@ def test_promotion_moves_only_the_release_payloads(
 ) -> None:
     """The single-device baseline is read as provenance and left where it is.
 
-    Promote now uses the frozen manifest, so the topology it checks is the
-    checked-in sixteen-rank one and the staged set cannot pass. The promotion path
-    that moves files is therefore exercised through its refusal, and the baseline
-    is asserted to stay in place -- which is the property that matters here.
+    The promoted set is the checked-in contract's own, so this is the promotion
+    the campaign runs: the release payloads move into the release directory and
+    the baseline stays in the provenance directory it declares. One device has no
+    ranks to shard across, so a baseline that moved into the release directory
+    would be a single-device claim sitting where the strict audit reads scalability
+    evidence.
     """
 
-    _, candidates, baseline = _candidate_set(tmp_path, load_manifest())
+    manifest_path, candidates, baseline = _candidate_set(tmp_path, load_manifest())
     staged = sorted(path.name for path in candidates.glob("*.json"))
+    release = tmp_path / "release"
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
 
-    with pytest.raises(SystemExit):
+    assert (
         promote_main(
             [
                 "--gate",
@@ -1565,10 +1592,15 @@ def test_promotion_moves_only_the_release_payloads(
                 "--baseline-directory",
                 str(baseline),
                 "--release-directory",
-                str(tmp_path / "release"),
+                str(release),
             ]
         )
+        == 0
+    )
 
-    assert sorted(path.name for path in candidates.glob("*.json")) == staged
+    assert staged
+    assert sorted(path.name for path in release.glob("*.json")) == staged
+    assert sorted(path.name for path in candidates.glob("*.json")) == []
     assert len(list(baseline.glob("*.json"))) == 1
+    assert manifest_path.is_file()
     assert MANIFEST.is_file()
