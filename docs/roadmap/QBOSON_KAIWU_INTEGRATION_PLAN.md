@@ -864,6 +864,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   retaining the final protein gate as the default. This closes the
   local handoff checklist but does not resolve the absent approval, SDK artifact,
   credentials, quota, frozen protein assets, or any live evidence.
+- The readiness audit now also requires a private, closed-schema Resource Bill
+  snapshot whose validity window is no longer than 24 hours. It rejects
+  duplicate, incomplete, negative, boolean, expired, or future-dated resource
+  rows and requires one SPQC target to expose at least one optimization and one
+  sampling resource before the two-task provider smoke can be called ready.
+  This prevents the frozen budget ceiling from being mistaken for an available
+  account allocation. The authenticated 2026-10-06 state therefore fails with
+  `sampling_resource_unavailable`. Its private mode-0600 snapshot has SHA-256
+  `1ebe3cfc866213d8152076dd19f08b0486034011bcd48da989f4fd69da785222`;
+  the snapshot remains observation only and does not authorize spending or
+  establish a project assignment.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

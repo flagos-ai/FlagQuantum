@@ -14,6 +14,10 @@ import torch
 from examples.qdiffusion_kaiwu.plan_quota import build_quota_plan
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import _inspect_artifacts
 from examples.qdiffusion_kaiwu.private_io import validate_private_directory
+from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_resources,
+    load_provider_resources,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
@@ -41,7 +45,9 @@ def _check(status: str, reason: str) -> dict[str, str]:
 
 
 def _valid_private_value(value: object) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and value.strip().isprintable()
+    return (
+        isinstance(value, str) and bool(value.strip()) and value.strip().isprintable()
+    )
 
 
 def _inspect_a800_cuda_zero() -> str:
@@ -63,6 +69,7 @@ def audit_readiness(
     primary_source_preflight: Path | None,
     replay_source_preflight: Path | None,
     artifact_paths: dict[str, Path | None],
+    provider_resources_path: Path | None = None,
     checkpoint_dir: Path | None = None,
     environ: Mapping[str, str] | None = None,
     source_root: Path | None = None,
@@ -91,6 +98,25 @@ def audit_readiness(
         checks["project"] = _check("pass", "project_present")
     else:
         checks["project"] = _check("fail", "project_invalid")
+
+    if provider_resources_path is None:
+        checks["provider_resources"] = _check(
+            "missing", "provider_resource_snapshot_absent"
+        )
+    else:
+        try:
+            provider_resources, _ = load_provider_resources(provider_resources_path)
+            resources_ready, resource_reason = assess_provider_resources(
+                provider_resources
+            )
+        except (OSError, ValueError):
+            checks["provider_resources"] = _check(
+                "fail", "provider_resource_snapshot_invalid"
+            )
+        else:
+            checks["provider_resources"] = _check(
+                "pass" if resources_ready else "fail", resource_reason
+            )
 
     if checkpoint_dir is None:
         checks["checkpoint_directory"] = _check(
@@ -175,16 +201,12 @@ def audit_readiness(
     if config is None:
         checks["frozen_environment"] = _check("blocked", "config_not_validated")
     elif environment_record is None or environment_sha256 is None:
-        checks["frozen_environment"] = _check(
-            "blocked", "environment_not_validated"
-        )
+        checks["frozen_environment"] = _check("blocked", "environment_not_validated")
     else:
         try:
             if environment_sha256 != config["software"]["environment_lock_sha256"]:
                 raise ValueError("environment lock differs from frozen configuration")
-            verify_approved_kaiwu_distribution(
-                environment_record, config["kaiwu_sdk"]
-            )
+            verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
         except (KeyError, ValueError):
             checks["frozen_environment"] = _check(
                 "fail", "frozen_environment_or_sdk_approval_invalid"
@@ -197,9 +219,7 @@ def audit_readiness(
     if config is None:
         checks["approval_alignment"] = _check("blocked", "config_not_validated")
     elif sdk_approval is None:
-        checks["approval_alignment"] = _check(
-            "blocked", "sdk_approval_not_validated"
-        )
+        checks["approval_alignment"] = _check("blocked", "sdk_approval_not_validated")
     elif config.get("kaiwu_sdk") != sdk_approval:
         checks["approval_alignment"] = _check("fail", "sdk_approvals_differ")
     else:
@@ -238,13 +258,9 @@ def audit_readiness(
                 (preflight_records[0], preflight_records[1])
             )
         except (KeyError, OSError, ValueError):
-            checks["source_preflights"] = _check(
-                "fail", "source_preflight_invalid"
-            )
+            checks["source_preflights"] = _check("fail", "source_preflight_invalid")
         else:
-            checks["source_preflights"] = _check(
-                "pass", "both_source_preflights_valid"
-            )
+            checks["source_preflights"] = _check("pass", "both_source_preflights_valid")
 
     if config_path is None or config is None:
         checks["protein_artifacts"] = _check("blocked", "config_not_validated")
@@ -259,16 +275,16 @@ def audit_readiness(
         try:
             _inspect_artifacts(
                 config_path,
-                {name: path for name, path in artifact_paths.items() if path is not None},
+                {
+                    name: path
+                    for name, path in artifact_paths.items()
+                    if path is not None
+                },
             )
         except (OSError, ValueError):
-            checks["protein_artifacts"] = _check(
-                "fail", "protein_artifacts_invalid"
-            )
+            checks["protein_artifacts"] = _check("fail", "protein_artifacts_invalid")
         else:
-            checks["protein_artifacts"] = _check(
-                "pass", "protein_artifacts_valid"
-            )
+            checks["protein_artifacts"] = _check("pass", "protein_artifacts_valid")
 
     provider_smoke_ready = all(
         checks[name]["status"] == "pass"
@@ -277,6 +293,7 @@ def audit_readiness(
             "sdk_approval",
             "credentials",
             "project",
+            "provider_resources",
             "checkpoint_directory",
         )
     )
@@ -320,6 +337,7 @@ def main() -> None:
     parser.add_argument("--environment-lock", type=Path)
     parser.add_argument("--sdk-approval", type=Path)
     parser.add_argument("--checkpoint-dir", type=Path)
+    parser.add_argument("--provider-resources", type=Path)
     parser.add_argument("--plugin-root", type=Path)
     parser.add_argument("--primary-source-preflight", type=Path)
     parser.add_argument("--replay-source-preflight", type=Path)
@@ -346,6 +364,7 @@ def main() -> None:
             "tokenizer": args.tokenizer,
             "evaluation_model": args.evaluation_model,
         },
+        provider_resources_path=args.provider_resources,
         checkpoint_dir=args.checkpoint_dir,
         required_stage=args.require_stage,
     )

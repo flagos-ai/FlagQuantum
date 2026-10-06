@@ -21,6 +21,19 @@ def _paths() -> dict[str, Path]:
     }
 
 
+def _pass_provider_resources(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        readiness_module,
+        "load_provider_resources",
+        lambda path: ({"resources": True}, "2" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "assess_provider_resources",
+        lambda record: (True, "provider_smoke_resources_available"),
+    )
+
+
 def test_readiness_reports_missing_inputs_without_credentials() -> None:
     report = audit_readiness(
         config_path=None,
@@ -41,6 +54,10 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
     assert report["checks"]["checkpoint_directory"] == {
         "status": "missing",
         "reason": "checkpoint_directory_absent",
+    }
+    assert report["checks"]["provider_resources"] == {
+        "status": "missing",
+        "reason": "provider_resource_snapshot_absent",
     }
     assert report["ready_to_start_provider_smoke"] is False
     assert report["ready_to_start_system_probe"] is False
@@ -97,8 +114,11 @@ def test_readiness_never_serializes_credential_values(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
-    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
     monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
+    _pass_provider_resources(monkeypatch)
 
     report = audit_readiness(
         config_path=Path("/private/config.json"),
@@ -108,6 +128,7 @@ def test_readiness_never_serializes_credential_values(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "sensitive-user",
@@ -285,7 +306,9 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
-    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
     monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
 
     report = audit_readiness(
@@ -331,7 +354,10 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
         "verify_approved_kaiwu_distribution",
         lambda environment, approval: None,
     )
-    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
+    _pass_provider_resources(monkeypatch)
 
     report = audit_readiness(
         config_path=None,
@@ -341,6 +367,7 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
         primary_source_preflight=None,
         replay_source_preflight=None,
         artifact_paths=dict.fromkeys(_paths()),
+        provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
@@ -355,6 +382,65 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
     assert report["required_stage"] == "provider-smoke"
     assert report["required_stage_ready"] is True
     assert report["checks"]["config"]["status"] == "missing"
+
+
+def test_provider_smoke_readiness_rejects_zero_sampling_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk_approval = {"approved": True}
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_approved_kaiwu_distribution",
+        lambda environment, approval: None,
+    )
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_provider_resources",
+        lambda path: ({"resources": True}, "2" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "assess_provider_resources",
+        lambda record: (False, "sampling_resource_unavailable"),
+    )
+
+    report = audit_readiness(
+        config_path=None,
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        provider_resources_path=Path("/private/provider-resources.json"),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "present",
+        },
+        required_stage="provider-smoke",
+    )
+
+    assert report["checks"]["provider_resources"] == {
+        "status": "fail",
+        "reason": "sampling_resource_unavailable",
+    }
+    assert report["ready_to_start_provider_smoke"] is False
+    assert report["required_stage_ready"] is False
 
 
 def test_readiness_rejects_unknown_required_stage() -> None:
@@ -454,8 +540,11 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
-    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
     monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
+    _pass_provider_resources(monkeypatch)
 
     report = audit_readiness(
         config_path=Path("/private/config.json"),
@@ -465,6 +554,7 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
@@ -527,7 +617,10 @@ def test_system_readiness_requires_a800_cuda_zero(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
-    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
+    _pass_provider_resources(monkeypatch)
 
     def _no_a800() -> str:
         raise RuntimeError("not an A800")
@@ -542,6 +635,7 @@ def test_system_readiness_requires_a800_cuda_zero(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",

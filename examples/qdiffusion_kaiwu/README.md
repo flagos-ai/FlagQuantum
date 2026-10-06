@@ -38,6 +38,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
   --sdk-approval /private/sdk-approval.json \
+  --provider-resources /private/provider-resources.json \
   --checkpoint-dir /private/kaiwu-checkpoints \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
@@ -50,8 +51,10 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 ```
 
 The audit validates credential and project-variable presence and basic format
-without recording their values, then checks the private Kaiwu checkpoint
-directory, frozen quota ceiling, SDK environment,
+without recording their values, then checks a private, at-most-24-hour-old
+Resource Bill snapshot against the optimization-plus-sampling requirement of
+the provider smoke, the private Kaiwu checkpoint directory, frozen quota
+ceiling, SDK environment,
 standalone/frozen approval alignment, common transfer manifest, and protein
 artifacts, and performs no network or provider operation. Provider-smoke
 readiness is reported independently of the unfinished protein configuration;
@@ -62,6 +65,15 @@ gate inside the intended validation host environment. The default
 `protein-experiment` gate exits zero only when the complete
 experiment is ready. A passing report is readiness information, not provider,
 execution, hardware, or acceptance evidence.
+
+Create the resource snapshot from an authenticated read-only Resource Bill
+view by copying `provider_resources.example.json` to a mode-0600 file in a
+mode-0700 directory. Record all six SPQC target/mode rows without account IDs,
+batch IDs, credentials, or project numbers. `captured_at` and `valid_until`
+must be aware UTC timestamps no more than 24 hours apart. The provider-smoke
+gate passes only when one target has at least one optimization and one sampling
+resource. A snapshot is account-state reconnaissance; it does not authorize
+spending and does not replace the explicit live-command cost acknowledgement.
 
 `verify_transfer_bundle.py` is the pre-extraction gate for approved host
 transfers. It verifies the three colocated source archives against their

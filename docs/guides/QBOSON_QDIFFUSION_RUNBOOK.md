@@ -114,6 +114,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
   --sdk-approval /private/sdk-approval.json \
+  --provider-resources /private/provider-resources.json \
   --checkpoint-dir /private/kaiwu-checkpoints \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
@@ -128,14 +129,23 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 Arguments may be omitted on an inventory run; missing prerequisites are reported
 with stable reason codes. The command checks credential and project-variable
 presence and basic format, never records their values, and performs no network
-or provider operation. It also validates the private checkpoint directory. A
+or provider operation. It also validates a private Resource Bill snapshot and
+the private checkpoint directory. Copy
+`examples/qdiffusion_kaiwu/provider_resources.example.json` to a private file,
+record all displayed target/mode balances without account or batch identifiers,
+and set aware UTC `captured_at` and `valid_until` timestamps no more than 24
+hours apart. The provider-smoke gate requires at least one optimization and one
+sampling resource on the same target. The snapshot remains observation only;
+it is neither spend approval nor provider evidence. A
 zero exit means all locally inspectable prerequisites for the protein experiment
 are present and valid. It is not evidence that QBoson, either A800 host, or the
 acceptance workload has run.
 
 The report separates provider-smoke readiness from system and protein readiness.
 The first requires the standalone SDK approval but not the unfinished protein
-configuration. Later stages additionally require that the approval embedded in
+configuration. It also requires a current Resource Bill snapshot that can fund
+the one-optimization-plus-one-sampling smoke. Later stages additionally require
+that the approval embedded in
 the frozen configuration exactly matches that standalone record and that the
 current process observes an NVIDIA A800 at `cuda:0`. Select
 `--require-stage provider-smoke` before section 5, `system-probe` before section
