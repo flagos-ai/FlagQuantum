@@ -238,12 +238,20 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
     maximum_relative_l2_error = max(float(case["relative_l2_error"]) for case in cases)
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
     return {
+        "benchmark": "mps_sampling_collapse",
         "schema": EVIDENCE_SCHEMA,
         "semantic_id": SEMANTIC_ID,
         "implementation_id": IMPLEMENTATION_ID,
         "source_revision": revisions.pop(),
         "runner": RUNNER,
         "execution_semantics": "single_device_fast_path",
+        "distribution_semantics": "single_device_fast_path",
+        "claim_evidence_type": "development_smoke",
+        "non_release_evidence": True,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+            "single-device kernel benchmark is not distributed scalability evidence"
+        ],
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
         "measurement": runs[0]["measurement"],
