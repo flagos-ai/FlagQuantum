@@ -108,6 +108,25 @@ class _ConcurrentClient(_CompletedClient):
         )
 
 
+class _IndeterminateSubmitClient(_CompletedClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.submit_attempts = 0
+
+    def submit(
+        self,
+        matrix: FrozenIsingMatrix,
+        *,
+        task_name: str,
+        mode: KaiwuTaskMode,
+        requested_samples: int,
+        project_no: str | None,
+    ) -> KaiwuTaskReceipt:
+        del matrix, task_name, mode, requested_samples, project_no
+        self.submit_attempts += 1
+        raise RuntimeError("indeterminate provider submission")
+
+
 @pytest.mark.parametrize(
     ("options", "message"),
     (
@@ -236,6 +255,29 @@ def test_remote_call_budget_fails_before_second_unique_submission() -> None:
         sampler.solve([[0.0, 1.0, 0.0], [1.0, 0.0, 1.0], [0.0, 1.0, 0.0]])
 
     assert len(client.submitted) == 1
+
+
+def test_indeterminate_submission_consumes_budget_before_client_call() -> None:
+    client = _IndeterminateSubmitClient()
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="indeterminate-budget",
+        max_remote_calls=1,
+    )
+    matrix = [[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]]
+
+    with pytest.raises(RuntimeError, match="indeterminate provider submission"):
+        sampler.solve(matrix)
+
+    assert client.submit_attempts == 1
+    assert sampler.remote_call_count == 1
+    assert sampler.receipts == ()
+
+    with pytest.raises(RuntimeError, match="budget exhausted"):
+        sampler.solve(matrix)
+
+    assert client.submit_attempts == 1
+    assert sampler.remote_call_count == 1
 
 
 def test_retry_after_timeout_resumes_same_job_without_resubmission() -> None:

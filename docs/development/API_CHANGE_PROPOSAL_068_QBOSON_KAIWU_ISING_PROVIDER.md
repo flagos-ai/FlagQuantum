@@ -159,8 +159,9 @@ provider values or infer a mapping from field names alone.
   `int8` NumPy spin array compatible with the plugin.
 - Identical matrices are deduplicated in-process. A timed-out matrix retains
   its job and a later call waits on that job.
-- Each unique matrix consumes one declared remote-call budget slot; exhaustion
-  fails before submission.
+- Each attempted unique matrix consumes one declared remote-call budget slot
+  before the client boundary; exhaustion fails before submission, and an
+  indeterminate client exception never releases its possibly consumed slot.
 - Precision conversion occurs only when the caller supplies an explicit target
   range. Reports remain available for every distinct original matrix even when
   quantization allows remote-task deduplication. No classical or local solver

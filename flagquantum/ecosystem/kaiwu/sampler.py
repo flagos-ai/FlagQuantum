@@ -283,6 +283,11 @@ class KaiwuSampler:
                     "KaiwuSampler remote-call budget exhausted before submission"
                 )
 
+            # Reserve the slot before crossing the client boundary. A client
+            # exception may be indeterminate: the provider could already have
+            # observed the task identity, so releasing the slot would permit a
+            # later matrix to exceed the declared quota ceiling.
+            self._remote_call_count += 1
             job = submit_kaiwu_task(
                 matrix_rows,
                 client=self._client,
@@ -291,7 +296,6 @@ class KaiwuSampler:
                 requested_samples=self._requested_samples,
                 project_no=self._project_no,
             )
-            self._remote_call_count += 1
             self._jobs[cache_key] = job
             self._receipts.append(job.receipt)
         if report is not None:

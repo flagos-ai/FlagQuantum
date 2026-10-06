@@ -61,7 +61,10 @@ booleans are not accepted as numeric configuration values.
 Exhausting the remote-call budget raises before submission; there is no local
 or classical fallback. A sampler instance serializes its complete synchronous
 solve transaction, so concurrent callers cannot race cache registration or the
-remote-call counter and submit the same matrix more than once.
+remote-call counter and submit the same matrix more than once. A budget slot is
+reserved before entering the Remote client and is never released after an
+exception, because the provider may already have observed an indeterminate
+submission.
 
 For a ten-minute local check, run:
 
