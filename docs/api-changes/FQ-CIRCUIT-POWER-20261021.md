@@ -214,7 +214,7 @@ below was measured on this branch, not transcribed from the plan.
 | Claim | Command | Result |
 | --- | --- | --- |
 | A power is the program applied that many times | `pytest tests/unit/test_circuit_power.py -k matches_the_repeated_program` | 155 tests; worst `max abs(U^power(k) - U applied k times)` = `3.51e-16` over the 31 unitary opcodes times `k in {0,1,2,3,5}` at `complex128` |
-| A negative power is the matrix power of the program | `pytest tests/unit/test_circuit_power.py -k "matches_the_matrix_power or matches_the_inverse_applied"` | worst `1.45e-15` over the 31 unitary opcodes times `k in {-1,-2,-3}`, and `4.71e-16` for `h(0).rz(1,0.7).cnot(0,1)` against `numpy.linalg.matrix_power` |
+| A negative power is the matrix power of the program | `pytest tests/unit/test_circuit_power.py -k "negative_power_matches_the_inverse_applied or equals_the_matrix_power_of_the_program"` | 101 tests: worst `1.45e-15` over the 31 unitary opcodes times `k in {-1,-2,-3}` (93 of them), and `4.71e-16` for `h(0).rz(1,0.7).cnot(0,1)` against `numpy.linalg.matrix_power` (8 of them) |
 | The single-gate rewrite is exact for the gates it names | `python -m tools.check_circuit_composition_contract` (`_power_measurement_errors`) | worst `5.551e-16` over 12 opcodes times 3 angles times 3 exponents |
 | The rewrite is not vacuously true | same gate, `u2` and `u3` rows | `u3(theta=0.4, phi=0.9, lbd=1.3)` `2.191289381e-01`, `u2(phi=0.9, lbd=1.3)` `4.135343356e-01` — both above the `1e-9` tolerance |
 | The rewrite happens only for a one-instruction program | `pytest tests/unit/test_circuit_power.py -k rewrite_is_not_applied_to_a_longer_program` | `rx(0.3).cnot(0,1)` at `k=2` is `['rx', 'cx', 'rx', 'cx']`, not `rx(0.6).cnot.cnot` |
