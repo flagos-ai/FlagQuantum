@@ -38,6 +38,25 @@ def _config() -> dict[str, Any]:
     return _full_config()
 
 
+def _provider_resources() -> dict[str, Any]:
+    return {
+        "schema": "flagquantum.qboson_provider_resources",
+        "version": "1.0",
+        "source": "authenticated_resource_bill",
+        "captured_at": "2026-10-05T12:00:00+00:00",
+        "valid_until": "2026-10-06T12:00:00+00:00",
+        "resources": [
+            {"target": target, "mode": mode, "available": 1, "used": 0}
+            for target in ("SPQC-1", "SPQC-550", "SPQC-1000")
+            for mode in ("optimization", "sampling")
+        ],
+        "claim_boundary": (
+            "Account-resource observation only; it is not spend approval, project "
+            "assignment, provider evidence, execution evidence, or acceptance evidence."
+        ),
+    }
+
+
 def _artifact_preflight(config: dict[str, Any], config_sha256: str) -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_qdiffusion_artifact_preflight",
@@ -62,7 +81,10 @@ def _artifact_preflight(config: dict[str, Any], config_sha256: str) -> dict[str,
 
 
 def _provider_smoke(
-    *, environment_lock_sha256: str, sdk_approval_sha256: str
+    *,
+    environment_lock_sha256: str,
+    sdk_approval_sha256: str,
+    provider_resources_sha256: str,
 ) -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_kaiwu_live_smoke",
@@ -75,6 +97,7 @@ def _provider_smoke(
         "project_no": "CPQC-test",
         "environment_lock_sha256": environment_lock_sha256,
         "sdk_approval_sha256": sdk_approval_sha256,
+        "provider_resources_sha256": provider_resources_sha256,
         "tasks": [
             {
                 "receipt_schema": "flagquantum.kaiwu-task.v1",
@@ -1236,10 +1259,16 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     sdk_approval_path = components / "sdk-approval.json"
     sdk_approval_record = config["kaiwu_sdk"]
     sdk_approval_sha = _write_json(sdk_approval_path, sdk_approval_record)
+    provider_resources_path = components / "provider-resources.json"
+    provider_resources_record = _provider_resources()
+    provider_resources_sha = _write_json(
+        provider_resources_path, provider_resources_record
+    )
     provider_smoke_path = components / "provider-smoke.json"
     provider_smoke_record = _provider_smoke(
         environment_lock_sha256=environment_lock_sha,
         sdk_approval_sha256=sdk_approval_sha,
+        provider_resources_sha256=provider_resources_sha,
     )
     _write_json(provider_smoke_path, provider_smoke_record)
     transfer_manifest_path = components / "transfer-manifest.json"
@@ -1315,6 +1344,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     component_paths.append(artifact_preflight_path)
     component_paths.append(sdk_approval_path)
     component_paths.append(provider_smoke_path)
+    component_paths.append(provider_resources_path)
 
     primary, replay = assemble_records(
         config=config,
@@ -1455,6 +1485,40 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     restored_approval_sha = _write_json(component_paths[13], sdk_approval_record)
     manifest["component_records"][13]["sha256"] = restored_approval_sha
+    _write_json(manifest_path, manifest)
+    assert validate_acceptance(manifest_path) == []
+
+    tampered_resources = json.loads(json.dumps(provider_resources_record))
+    for resource in tampered_resources["resources"]:
+        if resource["mode"] == "sampling":
+            resource["available"] = 0
+    tampered_resources_sha = _write_json(
+        component_paths[15], tampered_resources
+    )
+    manifest["component_records"][15]["sha256"] = tampered_resources_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider resource snapshot identity mismatch" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["provider_resources_sha256"] = tampered_resources_sha
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider resource snapshot was not ready: sampling_resource_unavailable"
+        in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    provider_resources_sha = _write_json(
+        component_paths[15], provider_resources_record
+    )
+    manifest["component_records"][15]["sha256"] = provider_resources_sha
+    restored_smoke_sha = _write_json(component_paths[14], provider_smoke_record)
+    manifest["component_records"][14]["sha256"] = restored_smoke_sha
     _write_json(manifest_path, manifest)
     assert validate_acceptance(manifest_path) == []
 

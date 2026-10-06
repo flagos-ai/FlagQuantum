@@ -21,6 +21,10 @@ from examples.qdiffusion_kaiwu.private_io import (
     write_private_json_exclusive,
 )
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
+from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_resources,
+    load_provider_resources,
+)
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
     verify_approved_kaiwu_distribution,
@@ -78,6 +82,7 @@ SMOKE_RECORD_FIELDS = frozenset(
         "project_no",
         "environment_lock_sha256",
         "sdk_approval_sha256",
+        "provider_resources_sha256",
         "tasks",
         "run_completed",
         "failure",
@@ -163,6 +168,7 @@ def run_live_smoke(
     poll_interval: float,
     environment_lock_sha256: str,
     sdk_approval_sha256: str,
+    provider_resources_sha256: str,
     requested_samples: int = 10,
 ) -> dict[str, Any]:
     """Run one optimization and one sampling task without fallback."""
@@ -173,6 +179,8 @@ def run_live_smoke(
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
     if SHA256.fullmatch(sdk_approval_sha256) is None:
         raise ValueError("sdk_approval_sha256 must be a lowercase SHA-256 digest")
+    if SHA256.fullmatch(provider_resources_sha256) is None:
+        raise ValueError("provider_resources_sha256 must be a lowercase SHA-256 digest")
     real_provider_transport = type(client) is KaiwuSDKClient
     records: list[dict[str, Any]] = []
     failure: dict[str, str] | None = None
@@ -266,6 +274,7 @@ def run_live_smoke(
         "project_no": project_no,
         "environment_lock_sha256": environment_lock_sha256,
         "sdk_approval_sha256": sdk_approval_sha256,
+        "provider_resources_sha256": provider_resources_sha256,
         "tasks": records,
         "run_completed": failure is None,
         "failure": failure,
@@ -308,6 +317,7 @@ def main() -> None:
     parser.add_argument("--checkpoint-dir", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--sdk-approval", required=True, type=Path)
+    parser.add_argument("--provider-resources", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
@@ -336,6 +346,13 @@ def main() -> None:
         arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
     )
 
+    provider_resources, provider_resources_sha256 = load_provider_resources(
+        arguments.provider_resources
+    )
+    resources_ready, resource_reason = assess_provider_resources(provider_resources)
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
+
     sdk_approval, sdk_approval_sha256 = load_sdk_approval(arguments.sdk_approval)
     environment_record, environment_lock_sha256 = verify_environment_lock(
         arguments.environment_lock
@@ -358,6 +375,7 @@ def main() -> None:
         poll_interval=arguments.poll_interval,
         environment_lock_sha256=environment_lock_sha256,
         sdk_approval_sha256=sdk_approval_sha256,
+        provider_resources_sha256=provider_resources_sha256,
         requested_samples=arguments.requested_samples,
     )
     _write_private_json(

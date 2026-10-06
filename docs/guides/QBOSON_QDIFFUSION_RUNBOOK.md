@@ -455,6 +455,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
   --sdk-approval /absolute/private-evidence/sdk-approval.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --output /absolute/private-evidence/qboson-smoke-attempt-001.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-smoke-${RUN_ID}" \
@@ -464,11 +465,13 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
 ```
 
 Before credential discovery, the smoke command requires the private approval
-record, validates its exact field set and four explicit approvals, and binds
-its Kaiwu version and wheel SHA-256 to the exact environment-lock distribution.
-The record digest is retained in smoke evidence. A missing, public, symlinked,
-placeholder, mismatched, or unapproved record fails without initializing the
-SDK license or consuming quota.
+record and the current Resource Bill snapshot. It validates the snapshot first,
+requiring both smoke modes on one target, then validates the approval's exact
+field set and four explicit decisions and binds its Kaiwu version and wheel
+SHA-256 to the exact environment-lock distribution. Both input digests are
+retained in smoke evidence. A missing, public, symlinked, expired, insufficient,
+placeholder, mismatched, or unapproved input fails without initializing the SDK
+license or consuming quota.
 
 `QBOSON_PROJECT_NO` is not a credential, but it should still be managed in the
 private run environment. The command has no simulator fallback. It writes the
@@ -908,6 +911,7 @@ python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --replay-source-preflight /absolute/evidence/jp-a800-172-extraction-preflight.json \
   --transfer-manifest /absolute/evidence/flagquantum-qboson-a800-bundle.manifest.json \
   --sdk-approval /absolute/private-evidence/sdk-approval.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --provider-smoke /absolute/private-evidence/qboson-smoke-attempt-001.json \
   --artifact-preflight /absolute/evidence/artifact-preflight.json \
   --portability /absolute/evidence/jp-a800-172-portability.json \

@@ -24,6 +24,13 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.provider_resources import (
+    SCHEMA as PROVIDER_RESOURCES_COMPONENT_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_resources,
+    validate_provider_resources,
+)
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     SCHEMA as PROVIDER_SMOKE_COMPONENT_SCHEMA,
 )
@@ -2560,6 +2567,7 @@ def _validate_provider_smoke_component(
     *,
     config: dict[str, Any],
     sdk_approval_sha256: str,
+    provider_resources: tuple[dict[str, Any], str],
     errors: list[str],
 ) -> None:
     """Prove the retained Phase 2 optimization and sampling smoke passed."""
@@ -2576,6 +2584,13 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: environment lock identity mismatch")
     if record.get("sdk_approval_sha256") != sdk_approval_sha256:
         errors.append(f"{label}: SDK approval identity mismatch")
+    provider_resource_record, provider_resources_sha256 = provider_resources
+    if record.get("provider_resources_sha256") != provider_resources_sha256:
+        errors.append(f"{label}: provider resource snapshot identity mismatch")
+    try:
+        validate_provider_resources(provider_resource_record)
+    except ValueError as exc:
+        errors.append(f"{label}: provider resource snapshot is invalid: {exc}")
     required_true = (
         "real_provider_evidence",
         "qboson_hardware_used",
@@ -2608,6 +2623,18 @@ def _validate_provider_smoke_component(
     except (TypeError, ValueError):
         errors.append(f"{label}: recorded_at must be an aware UTC timestamp")
     if smoke_time is not None:
+        try:
+            resources_ready, resource_reason = assess_provider_resources(
+                provider_resource_record, now=smoke_time
+            )
+        except ValueError as exc:
+            errors.append(f"{label}: provider resource snapshot is invalid: {exc}")
+        else:
+            if not resources_ready:
+                errors.append(
+                    f"{label}: provider resource snapshot was not ready: "
+                    f"{resource_reason}"
+                )
         for timestamp, timestamp_label in (
             (config.get("preregistered_at"), "frozen config"),
             (
@@ -2789,6 +2816,7 @@ def _validate_component_bundle(
     expected_schema_counts = {
         ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA: 1,
         SDK_APPROVAL_COMPONENT_SCHEMA: 1,
+        PROVIDER_RESOURCES_COMPONENT_SCHEMA: 1,
         PROVIDER_SMOKE_COMPONENT_SCHEMA: 1,
         SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
         TRANSFER_MANIFEST_SCHEMA: 1,
@@ -2833,6 +2861,7 @@ def _validate_component_bundle(
             not in (
                 ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
                 SDK_APPROVAL_COMPONENT_SCHEMA,
+                PROVIDER_RESOURCES_COMPONENT_SCHEMA,
                 PROVIDER_SMOKE_COMPONENT_SCHEMA,
                 SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
                 TRANSFER_MANIFEST_SCHEMA,
@@ -2856,6 +2885,12 @@ def _validate_component_bundle(
     if sdk_approval != config.get("kaiwu_sdk"):
         errors.append("retained sdk approval differs from frozen configuration")
 
+    provider_resources = [
+        (digest, payload)
+        for digest, payload in component_payloads.items()
+        if payload.get("schema") == PROVIDER_RESOURCES_COMPONENT_SCHEMA
+    ]
+
     provider_smokes = [
         payload
         for payload in component_payloads.values()
@@ -2865,6 +2900,7 @@ def _validate_component_bundle(
         provider_smokes[0],
         config=config,
         sdk_approval_sha256=sdk_approval_digest,
+        provider_resources=(provider_resources[0][1], provider_resources[0][0]),
         errors=errors,
     )
     provider_smoke_time = _parse_timestamp(provider_smokes[0].get("recorded_at"))
@@ -3024,6 +3060,7 @@ def _validate_component_bundle(
         if payload.get("schema") in (
             ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
             SDK_APPROVAL_COMPONENT_SCHEMA,
+            PROVIDER_RESOURCES_COMPONENT_SCHEMA,
             PROVIDER_SMOKE_COMPONENT_SCHEMA,
             SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
             TRANSFER_MANIFEST_SCHEMA,
@@ -3608,7 +3645,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     for label, record in (("primary", primary), ("replay", replay)):
         if record.get("component_bundle_required") is not True:
             errors.append(f"{label}: component bundle must be explicitly required")
-    expected_component_count = 9 + 2 * len(config.get("seeds", []))
+    expected_component_count = 10 + 2 * len(config.get("seeds", []))
     if len(component_payloads) != expected_component_count:
         errors.append(
             "manifest: component bundle does not contain every source record"
@@ -3714,7 +3751,11 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         digest
         for digest, component in component_payloads.items()
         if component.get("schema")
-        in (SDK_APPROVAL_COMPONENT_SCHEMA, PROVIDER_SMOKE_COMPONENT_SCHEMA)
+        in (
+            SDK_APPROVAL_COMPONENT_SCHEMA,
+            PROVIDER_RESOURCES_COMPONENT_SCHEMA,
+            PROVIDER_SMOKE_COMPONENT_SCHEMA,
+        )
     )
     if referenced_component_hashes != set(component_payloads):
         errors.append(

@@ -875,6 +875,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `1ebe3cfc866213d8152076dd19f08b0486034011bcd48da989f4fd69da785222`;
   the snapshot remains observation only and does not authorize spending or
   establish a project assignment.
+- The Phase 2 live-smoke command now requires that same private resource
+  snapshot and validates it before SDK approval loading, credential discovery,
+  license initialization, or task submission. Its SHA-256 is retained in the
+  smoke record. Final assembly copies the exact snapshot into the immutable
+  component bundle, and offline validation independently binds its digest,
+  closed schema, validity interval, and same-target optimization-plus-sampling
+  balance to the smoke timestamp. Directly invoking the quota-consuming smoke
+  can therefore no longer bypass the readiness-only resource check.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

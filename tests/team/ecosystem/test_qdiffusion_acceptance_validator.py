@@ -1156,6 +1156,28 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
         "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
         "a" * 64: _transfer_manifest(),
         "d" * 64: config["kaiwu_sdk"],
+        "c" * 64: {
+            "schema": "flagquantum.qboson_provider_resources",
+            "version": "1.0",
+            "source": "authenticated_resource_bill",
+            "captured_at": "2026-10-05T12:00:00+00:00",
+            "valid_until": "2026-10-06T12:00:00+00:00",
+            "resources": [
+                {
+                    "target": target,
+                    "mode": mode,
+                    "available": 1,
+                    "used": 0,
+                }
+                for target in ("SPQC-1", "SPQC-550", "SPQC-1000")
+                for mode in ("optimization", "sampling")
+            ],
+            "claim_boundary": (
+                "Account-resource observation only; it is not spend approval, "
+                "project assignment, provider evidence, execution evidence, or "
+                "acceptance evidence."
+            ),
+        },
         "e" * 64: {
             "schema": "flagquantum.qboson_kaiwu_live_smoke",
             "version": "1.0",
@@ -1169,6 +1191,7 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
                 "environment_lock_sha256"
             ],
             "sdk_approval_sha256": "d" * 64,
+            "provider_resources_sha256": "c" * 64,
             "tasks": [
                 {
                     "receipt_schema": "flagquantum.kaiwu-task.v1",

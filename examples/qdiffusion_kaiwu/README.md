@@ -266,7 +266,10 @@ The live smoke, system, training, and replay producers require the exact pinned
 caller sets a real-transport flag.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
-private checkpoint directory, and an explicitly selected project. All
+private checkpoint directory, an explicitly selected project, and a current
+private provider-resource snapshot that passes the optimization-plus-sampling
+gate. The snapshot is loaded before SDK approval, credentials, or license
+initialization, and its exact digest is retained in the smoke record. All
 quota-consuming entrypoints reject a missing, public, relative, or symlinked
 checkpoint directory before resolving credentials; the SDK client repeats the
 check before license initialization. After resolving a valid pair, each CLI
@@ -285,6 +288,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
   --sdk-approval /absolute/private-evidence/sdk-approval.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --output /absolute/private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \
   --task-prefix flagquantum-smoke-20261005 \
@@ -431,9 +435,12 @@ directories are unavailable. The frozen protein-artifact preflight is also a
 required copied component: every training record and the portability replay
 must reference its exact digest, allowing offline revalidation of the dataset,
 checkpoint, tokenizer, and evaluation-model identities. The
-standalone SDK approval and successful Phase 2 provider smoke are required
-copied components as well. Final validation requires the approval to equal the
-frozen config decision, binds its byte digest to the smoke, and independently
+standalone SDK approval, provider-resource snapshot, and successful Phase 2
+provider smoke are required copied components as well. Final validation
+requires the approval to equal the frozen config decision, binds both private
+input digests to the smoke, verifies that the smoke time fell within the
+snapshot's bounded validity interval, rechecks that one target had both
+required modes, and independently
 checks that the smoke retained one successful optimization task and one
 successful sampling task over the independently recomputed exact smoke-matrix
 identity, with recoverable receipt schema/project/submission-time fields, real

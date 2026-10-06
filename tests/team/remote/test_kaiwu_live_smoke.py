@@ -92,6 +92,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
         poll_interval=0.01,
         environment_lock_sha256="a" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert client.submissions == 2
@@ -110,6 +111,7 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["fallback_occurred"] is False
     assert record["environment_lock_sha256"] == "a" * 64
     assert record["sdk_approval_sha256"] == "f" * 64
+    assert record["provider_resources_sha256"] == "9" * 64
     assert record["qboson_target"] is None
     assert all(
         task["receipt_schema"] == "flagquantum.kaiwu-task.v1"
@@ -136,6 +138,7 @@ def test_injected_live_smoke_cannot_claim_hardware_with_complete_identity() -> N
         poll_interval=0.01,
         environment_lock_sha256="b" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert record["provider_identity_complete"] is True
@@ -174,6 +177,7 @@ def test_live_smoke_rejects_inconsistent_provider_targets(
         poll_interval=0.01,
         environment_lock_sha256="b" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert record["live_provider_smoke_passed"] is True
@@ -194,6 +198,7 @@ def test_live_smoke_requires_exact_sdk_client_type(
         poll_interval=0.01,
         environment_lock_sha256="c" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert record["transport"] == "kaiwu_cim"
@@ -213,6 +218,7 @@ def test_live_smoke_rejects_invalid_environment_lock_digest() -> None:
             poll_interval=0.01,
             environment_lock_sha256="not-a-digest",
             sdk_approval_sha256="f" * 64,
+            provider_resources_sha256="9" * 64,
         )
 
 
@@ -226,6 +232,21 @@ def test_live_smoke_rejects_invalid_sdk_approval_digest() -> None:
             poll_interval=0.01,
             environment_lock_sha256="a" * 64,
             sdk_approval_sha256="not-a-digest",
+            provider_resources_sha256="9" * 64,
+        )
+
+
+def test_live_smoke_rejects_invalid_provider_resources_digest() -> None:
+    with pytest.raises(ValueError, match="provider_resources_sha256"):
+        run_live_smoke(
+            client=_CompletedClient(expose_provider_identity=True),
+            task_prefix="smoke",
+            project_no="CPQC-test",
+            timeout=1.0,
+            poll_interval=0.01,
+            environment_lock_sha256="a" * 64,
+            sdk_approval_sha256="f" * 64,
+            provider_resources_sha256="not-a-digest",
         )
 
 
@@ -247,6 +268,7 @@ def test_live_smoke_retains_failed_task_and_stops_before_another_submission() ->
         poll_interval=0.01,
         environment_lock_sha256="d" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert client.submissions == 1
@@ -285,6 +307,7 @@ def test_live_smoke_preserves_proven_provider_use_when_later_task_fails(
         poll_interval=0.01,
         environment_lock_sha256="d" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert client.submissions == 2
@@ -318,6 +341,7 @@ def test_live_smoke_converts_keyboard_interrupt_to_failed_attempt_record() -> No
         poll_interval=0.01,
         environment_lock_sha256="e" * 64,
         sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
     )
 
     assert client.submissions == 1
@@ -399,6 +423,13 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
 
     assert "--environment-lock" in source
     assert "--sdk-approval" in source
+    assert "--provider-resources" in source
+    assert source.index("load_provider_resources(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("assess_provider_resources(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index("load_sdk_approval(") < source.index(
         "resolve_kaiwu_credentials()"
     )
@@ -453,6 +484,8 @@ def test_live_smoke_cli_rejects_existing_output_before_credentials(
             str(tmp_path / "lock.json"),
             "--sdk-approval",
             str(tmp_path / "approval.json"),
+            "--provider-resources",
+            str(tmp_path / "resources.json"),
             "--output",
             str(output),
             "--project-no",
@@ -496,6 +529,8 @@ def test_live_smoke_cli_rejects_public_checkpoint_before_credentials(
             str(tmp_path / "lock.json"),
             "--sdk-approval",
             str(tmp_path / "approval.json"),
+            "--provider-resources",
+            str(tmp_path / "resources.json"),
             "--output",
             str(tmp_path / "smoke.json"),
             "--project-no",
@@ -511,6 +546,69 @@ def test_live_smoke_cli_rejects_public_checkpoint_before_credentials(
         smoke_module.main()
 
     assert credential_resolution_attempted is False
+    assert not (tmp_path / "smoke.json").exists()
+
+
+def test_live_smoke_cli_rejects_zero_sampling_resources_before_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    credential_resolution_attempted = False
+    sdk_approval_loaded = False
+
+    def resolve() -> tuple[str, str]:
+        nonlocal credential_resolution_attempted
+        credential_resolution_attempted = True
+        raise AssertionError("credentials must not be resolved")
+
+    def load_approval(path: Path) -> tuple[dict[str, object], str]:
+        del path
+        nonlocal sdk_approval_loaded
+        sdk_approval_loaded = True
+        raise AssertionError("SDK approval must not be loaded")
+
+    monkeypatch.setattr(smoke_module, "resolve_kaiwu_credentials", resolve)
+    monkeypatch.setattr(smoke_module, "load_sdk_approval", load_approval)
+    monkeypatch.setattr(
+        smoke_module,
+        "load_provider_resources",
+        lambda path: ({"resources": True}, "9" * 64),
+    )
+    monkeypatch.setattr(
+        smoke_module,
+        "assess_provider_resources",
+        lambda record: (False, "sampling_resource_unavailable"),
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "qboson_live_smoke",
+            "--checkpoint-dir",
+            str(tmp_path),
+            "--environment-lock",
+            str(tmp_path / "lock.json"),
+            "--sdk-approval",
+            str(tmp_path / "approval.json"),
+            "--provider-resources",
+            str(tmp_path / "resources.json"),
+            "--output",
+            str(tmp_path / "smoke.json"),
+            "--project-no",
+            "CPQC-test",
+            "--task-prefix",
+            "smoke",
+            "--acknowledge-provider-cost",
+            smoke_module.ACKNOWLEDGEMENT,
+        ],
+    )
+
+    with pytest.raises(SystemExit) as raised:
+        smoke_module.main()
+
+    assert raised.value.code == 2
+    assert credential_resolution_attempted is False
+    assert sdk_approval_loaded is False
     assert not (tmp_path / "smoke.json").exists()
 
 
@@ -574,6 +672,16 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
         lambda path: (approval, "e" * 64),
     )
     monkeypatch.setattr(
+        smoke_module,
+        "load_provider_resources",
+        lambda path: ({"resources": True}, "9" * 64),
+    )
+    monkeypatch.setattr(
+        smoke_module,
+        "assess_provider_resources",
+        lambda record: (True, "provider_smoke_resources_available"),
+    )
+    monkeypatch.setattr(
         sys,
         "argv",
         [
@@ -584,6 +692,8 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
             str(tmp_path / "lock.json"),
             "--sdk-approval",
             str(tmp_path / "approval.json"),
+            "--provider-resources",
+            str(tmp_path / "resources.json"),
             "--output",
             str(output),
             "--project-no",
