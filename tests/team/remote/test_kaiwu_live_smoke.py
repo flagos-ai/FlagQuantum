@@ -106,6 +106,12 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     assert record["environment_lock_sha256"] == "a" * 64
     assert record["sdk_approval_sha256"] == "f" * 64
     assert all(
+        task["receipt_schema"] == "flagquantum.kaiwu-task.v1"
+        and task["project_no"] == "CPQC-test"
+        and task["submitted_at"].endswith("+00:00")
+        for task in record["tasks"]
+    )
+    assert all(
         task["provider_result_schema"] == {"available": False, "reason": "test_client"}
         for task in record["tasks"]
     )

@@ -27,6 +27,7 @@ from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     SCHEMA as PROVIDER_SMOKE_COMPONENT_SCHEMA,
 )
+from examples.qdiffusion_kaiwu.qboson_live_smoke import SMOKE_MATRIX_SHA256
 from examples.qdiffusion_kaiwu.sdk_approval import (
     SCHEMA as SDK_APPROVAL_COMPONENT_SCHEMA,
 )
@@ -1597,6 +1598,8 @@ def _validate_provider_smoke_component(
         zip(tasks, expected_modes, strict=True)
     ):
         task_record = _mapping(task, f"{label}.tasks[{index}]", errors)
+        if task_record.get("receipt_schema") != TASK_RECEIPT_SCHEMA:
+            errors.append(f"{label}: task {index} receipt schema is unsupported")
         if task_record.get("task_mode") != expected_mode:
             errors.append(f"{label}: task {index} mode differs")
         for field in ("task_name", "provider_task_id", "provider_target"):
@@ -1615,17 +1618,28 @@ def _validate_provider_smoke_component(
         if task_record.get("fallback_occurred") is not False:
             errors.append(f"{label}: task {index} fallback is not false")
         matrix_digest = task_record.get("matrix_sha256")
-        if (
-            not isinstance(matrix_digest, str)
-            or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
-        ):
-            errors.append(f"{label}: task {index} matrix digest is invalid")
+        if matrix_digest != SMOKE_MATRIX_SHA256:
+            errors.append(f"{label}: task {index} matrix identity differs")
         else:
             matrix_digests.add(matrix_digest)
         if task_record.get("matrix_size") != 2:
             errors.append(f"{label}: task {index} matrix size differs")
         if task_record.get("requested_samples") != config.get("requested_samples"):
             errors.append(f"{label}: task {index} sample count differs from config")
+        if task_record.get("project_no") != record.get("project_no"):
+            errors.append(f"{label}: task {index} project number differs")
+        try:
+            submitted_at = datetime.fromisoformat(
+                str(task_record.get("submitted_at")).replace("Z", "+00:00")
+            )
+            if submitted_at.utcoffset() != timedelta(0):
+                raise ValueError
+            if smoke_time is not None and submitted_at > smoke_time:
+                errors.append(f"{label}: task {index} submission follows its record")
+        except (TypeError, ValueError):
+            errors.append(
+                f"{label}: task {index} submitted_at must be an aware UTC timestamp"
+            )
         returned = task_record.get("returned_samples")
         if returned != task_record.get("requested_samples"):
             errors.append(f"{label}: task {index} returned sample count is invalid")

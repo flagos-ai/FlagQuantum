@@ -605,8 +605,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   components. Offline validation requires the approval object to equal the
   frozen config, binds its exact file digest into the smoke, and independently
   proves one successful optimization plus one successful sampling task with
-  real provider task/target identities, no fallback, and the frozen environment
-  lock before Phase 4 evidence can pass.
+  real provider task/target identities, the independently recomputed exact
+  2-by-2 smoke-matrix identity, no fallback, and the frozen environment lock
+  before Phase 4 evidence can pass. Each smoke task also retains its receipt
+  schema, project number, and aware-UTC submission time, which must precede the
+  enclosing smoke record.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

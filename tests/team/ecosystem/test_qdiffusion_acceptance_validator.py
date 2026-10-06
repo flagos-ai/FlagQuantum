@@ -695,11 +695,16 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
             "sdk_approval_sha256": "d" * 64,
             "tasks": [
                 {
+                    "receipt_schema": "flagquantum.kaiwu-task.v1",
                     "task_name": f"smoke-{mode}",
                     "task_mode": mode,
-                    "matrix_sha256": "7" * 64,
+                    "matrix_sha256": (
+                        "0352923b6964d8a65fc742c5a5b251ab967d43e8c4db9e3ee3a0f2f2fa5b0487"
+                    ),
                     "matrix_size": 2,
                     "requested_samples": config["requested_samples"],
+                    "project_no": "CPQC-test",
+                    "submitted_at": "2026-10-06T00:00:00+00:00",
                     "returned_samples": config["requested_samples"],
                     "provider_task_id": f"task-{mode}",
                     "provider_target": "SPQC-provider",

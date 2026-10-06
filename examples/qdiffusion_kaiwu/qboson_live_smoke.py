@@ -33,22 +33,27 @@ from flagquantum.remote.kaiwu import (
     resolve_kaiwu_credentials,
     submit_kaiwu_task,
 )
+from flagquantum.remote.kaiwu.jobs import _freeze_matrix, _matrix_sha256
 
 from .verify_environment_lock import SHA256, verify_environment_lock
 
 SCHEMA = "flagquantum.qboson_kaiwu_live_smoke"
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
 _MATRIX = ((0.0, 1.0), (1.0, 0.0))
+SMOKE_MATRIX_SHA256 = _matrix_sha256(_freeze_matrix(_MATRIX))
 
 
 def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
     receipt = result.receipt
     return {
+        "receipt_schema": receipt.schema,
         "task_name": receipt.task_name,
         "task_mode": receipt.mode,
         "matrix_sha256": receipt.matrix_sha256,
         "matrix_size": receipt.matrix_size,
         "requested_samples": receipt.requested_samples,
+        "project_no": receipt.project_no,
+        "submitted_at": receipt.submitted_at,
         "returned_samples": len(result.samples),
         "provider_task_id": receipt.provider_task_id,
         "provider_target": receipt.provider_target,
@@ -71,11 +76,14 @@ def _attempt_record(job: KaiwuRemoteJob) -> dict[str, Any]:
 
     receipt = job.receipt
     return {
+        "receipt_schema": receipt.schema,
         "task_name": receipt.task_name,
         "task_mode": receipt.mode,
         "matrix_sha256": receipt.matrix_sha256,
         "matrix_size": receipt.matrix_size,
         "requested_samples": receipt.requested_samples,
+        "project_no": receipt.project_no,
+        "submitted_at": receipt.submitted_at,
         "returned_samples": None,
         "provider_task_id": receipt.provider_task_id,
         "provider_target": receipt.provider_target,

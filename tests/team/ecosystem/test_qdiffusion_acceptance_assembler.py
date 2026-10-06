@@ -70,11 +70,16 @@ def _provider_smoke(
         "sdk_approval_sha256": sdk_approval_sha256,
         "tasks": [
             {
+                "receipt_schema": "flagquantum.kaiwu-task.v1",
                 "task_name": f"smoke-{mode}",
                 "task_mode": mode,
-                "matrix_sha256": "7" * 64,
+                "matrix_sha256": (
+                    "0352923b6964d8a65fc742c5a5b251ab967d43e8c4db9e3ee3a0f2f2fa5b0487"
+                ),
                 "matrix_size": 2,
                 "requested_samples": 10,
+                "project_no": "CPQC-test",
+                "submitted_at": "2026-10-06T00:00:00+00:00",
                 "returned_samples": 10,
                 "provider_task_id": f"smoke-{mode}-task",
                 "provider_target": "SPQC-provider",
@@ -1084,6 +1089,16 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "provider smoke: hardware_acceptance is not proven" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["tasks"][0]["matrix_sha256"] = "0" * 64
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider smoke: task 0 matrix identity differs" in error
         for error in validate_acceptance(manifest_path)
     )
 
