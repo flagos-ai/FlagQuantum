@@ -150,6 +150,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   retained workflow artifacts must be owned by the current effective UID.
   Stable source and artifact snapshots now include UID in their metadata
   identity, so an ownership change after capture invalidates the evidence.
+- The streamed A800 runner extracts the outer input and all three reviewed
+  archives with `--no-same-owner`. This normalizes tmpfs content to the
+  container's effective UID instead of weakening the ownership gate for files
+  whose workstation UID differs from the container UID.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

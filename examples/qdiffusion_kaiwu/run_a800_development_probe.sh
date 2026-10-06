@@ -61,10 +61,10 @@ manifest_sha256=$(python3 -B -s -m examples.qdiffusion_kaiwu.stream_development_
 
 remote_script="umask 077
 mkdir -p /workspace/input /workspace/evidence
-tar -xf - -C /workspace/input
-tar -xzf /workspace/input/$source_archive -C /workspace
-tar -xzf /workspace/input/$plugin_archive -C /workspace
-tar -xzf /workspace/input/$community_archive -C /workspace
+tar --no-same-owner -xf - -C /workspace/input
+tar --no-same-owner -xzf /workspace/input/$source_archive -C /workspace
+tar --no-same-owner -xzf /workspace/input/$plugin_archive -C /workspace
+tar --no-same-owner -xzf /workspace/input/$community_archive -C /workspace
 export PYTHONPATH=/workspace/FlagQuantum-$source_prefix:/workspace/kaiwu-pytorch-plugin-$plugin_prefix/src
 cd /workspace/FlagQuantum-$source_prefix
 python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe \\

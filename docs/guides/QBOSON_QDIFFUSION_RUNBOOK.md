@@ -360,6 +360,9 @@ extracted workspace, and remote evidence only in tmpfs, and uses no host bind
 mount. The remote JSON is streamed back through standard output and is written
 only to one exclusive local mode-0600 record after a second fail-closed
 validation. No source or evidence file is written to the validation host.
+Container-side extraction uses `--no-same-owner`, so every streamed input is
+owned by the container's effective UID rather than retaining a workstation UID;
+the private-evidence ownership gate remains strict.
 Pass the host's full reviewed `sha256:...` image ID as the final argument. Do
 not use the mutable `flagquantum/flagtree:0.7.0-validation` tag directly: the
 tag currently resolves to different image IDs on `jp-a800-171` and

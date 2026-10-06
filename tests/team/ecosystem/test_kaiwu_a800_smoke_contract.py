@@ -83,6 +83,7 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert "--tmpfs /workspace:" in source
     assert "--volume" not in source
     assert "COPYFILE_DISABLE=1 tar --no-xattrs -cf -" in source
+    assert source.count("tar --no-same-owner -") == 4
     assert '| ssh "$execution_host"' in source
     assert "stream_development_evidence capture" in source
     assert "--source-preflight /workspace/input/" in source
