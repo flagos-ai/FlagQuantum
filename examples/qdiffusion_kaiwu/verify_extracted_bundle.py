@@ -12,11 +12,15 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
 
-from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.private_io import (
+    open_private_binary,
+    read_private_bytes,
+)
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
     ARCHIVE_ROOT_PREFIXES,
     ARTIFACT_PREFIXES,
+    MAX_COMPRESSED_BYTES,
     MAX_TRANSFER_MANIFEST_BYTES,
     _write_private_json,
     verify_transfer_bundle,
@@ -50,12 +54,12 @@ def _regular_tree(root: Path) -> tuple[set[str], set[str]]:
 
 
 def _expected_tree(
-    archive_path: Path, *, extraction_root: Path
+    archive_stream: BinaryIO, *, extraction_root: Path
 ) -> tuple[set[str], set[str], list[dict[str, Any]]]:
     files: set[str] = set()
     directories: set[str] = set()
     verified_files: list[dict[str, Any]] = []
-    with tarfile.open(archive_path, mode="r:gz") as archive:
+    with tarfile.open(fileobj=archive_stream, mode="r:gz") as archive:
         for member in archive:
             relative = PurePosixPath(member.name)
             parents = list(relative.parents)
@@ -117,7 +121,8 @@ def verify_extracted_bundle(
     if hashlib.sha256(encoded_manifest).hexdigest() != preflight["manifest_sha256"]:
         raise ValueError("transfer manifest changed after bundle verification")
     manifest = loads_json_strict(encoded_manifest)
-    manifest_root = manifest_path.resolve().parent
+    manifest_root = manifest_path.parent
+    listed_filenames = {entry["filename"] for entry in manifest["artifacts"]}
     for entry in manifest["artifacts"]:
         filename = entry["filename"]
         revision = entry["revision"]
@@ -125,10 +130,21 @@ def verify_extracted_bundle(
             prefix for prefix in ARTIFACT_PREFIXES if filename.startswith(prefix)
         )
         expected_archive_root = f"{ARCHIVE_ROOT_PREFIXES[role]}{revision[:10]}"
-        archive_files, archive_directories, verified_files = _expected_tree(
+        with open_private_binary(
             manifest_root / filename,
-            extraction_root=extraction_root,
-        )
+            label=f"transfer artifact {filename}",
+            max_bytes=MAX_COMPRESSED_BYTES,
+        ) as archive_stream:
+            archive_sha256 = _stream_sha256(archive_stream)
+            if archive_sha256 != entry["sha256"]:
+                raise ValueError(
+                    f"transfer artifact changed after bundle verification: {filename}"
+                )
+            archive_stream.seek(0)
+            archive_files, archive_directories, verified_files = _expected_tree(
+                archive_stream,
+                extraction_root=extraction_root,
+            )
         if not all(
             PurePosixPath(path).parts[0] == expected_archive_root
             for path in archive_files | archive_directories
@@ -155,6 +171,10 @@ def verify_extracted_bundle(
         raise ValueError("extracted file set differs from the reviewed archives")
     if observed_directories != expected_directories:
         raise ValueError("extracted directory set differs from the reviewed archives")
+    if {path.name for path in manifest_root.glob("*.tar.gz")} != listed_filenames:
+        raise ValueError(
+            "transfer directory archives changed during extraction verification"
+        )
     return {
         "schema": "flagquantum.qboson_a800_extracted_bundle_verification",
         "version": "1.0",

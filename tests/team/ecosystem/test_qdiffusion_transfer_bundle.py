@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import verify_extracted_bundle as extracted_module
 from examples.qdiffusion_kaiwu import verify_transfer_bundle as transfer_module
 from examples.qdiffusion_kaiwu.verify_extracted_bundle import verify_extracted_bundle
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
@@ -314,6 +315,41 @@ def test_extracted_bundle_rejects_manifest_drift_between_reads(
         "examples.qdiffusion_kaiwu.verify_extracted_bundle.read_private_bytes",
         lambda *args, **kwargs: b"{}",
     )
+    with pytest.raises(ValueError, match="changed after bundle verification"):
+        verify_extracted_bundle(
+            manifest,
+            extraction_root=extracted,
+            target_host="jp-a800-171",
+        )
+
+
+def test_extracted_bundle_rejects_archive_drift_after_bundle_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transfer = tmp_path / "transfer"
+    transfer.mkdir(mode=0o700)
+    manifest = _bundle(transfer)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    archive = transfer / payload["artifacts"][0]["filename"]
+    moved = transfer / "bundle-verified-archive.tar.gz"
+    extracted = tmp_path / "extracted"
+    extracted.mkdir()
+    for archive_path in transfer.glob("*.tar.gz"):
+        with tarfile.open(archive_path, mode="r:gz") as tar:
+            tar.extractall(extracted, filter="data")
+    real_verify = extracted_module.verify_transfer_bundle
+
+    def verify_then_replace(*args, **kwargs):
+        result = real_verify(*args, **kwargs)
+        archive.rename(moved)
+        archive.write_bytes(b"replacement")
+        archive.chmod(0o600)
+        return result
+
+    monkeypatch.setattr(
+        extracted_module, "verify_transfer_bundle", verify_then_replace
+    )
+
     with pytest.raises(ValueError, match="changed after bundle verification"):
         verify_extracted_bundle(
             manifest,

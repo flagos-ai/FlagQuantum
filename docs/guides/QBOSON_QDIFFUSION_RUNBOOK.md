@@ -229,7 +229,10 @@ python -B -s -m examples.qdiffusion_kaiwu.verify_extracted_bundle \
 
 Repeat with the other target alias. The extracted-tree verifier rejects changed,
 missing, extra, linked, or special filesystem entries, and records the exact
-manifest and source revisions. Preserve both preflight records and the bundle
+manifest and source revisions. It reopens every archive through the private
+directory descriptor, rechecks its manifest SHA-256, and uses that same file
+description for extracted-content comparison; changing an archive after the
+initial bundle pass therefore fails closed. Preserve both preflight records and the bundle
 manifest with the run evidence. These records remain preflight-only evidence.
 Public Kaiwu Community source is conformance input, not a substitute for the
 proprietary SDK.

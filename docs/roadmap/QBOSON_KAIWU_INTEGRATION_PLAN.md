@@ -372,6 +372,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   description, after which leaf metadata, visible path binding, parent binding,
   and the exact colocated archive-name set are rechecked. Replacement can no
   longer splice independently valid bytes into the hash and archive passes.
+- Post-extraction verification independently reopens each archive through the
+  same private descriptor boundary, rehashes it against the captured manifest,
+  and compares extracted content using that identical open description. An
+  archive replaced after the initial bundle pass cannot become the authority
+  for a source-preflight record.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat
