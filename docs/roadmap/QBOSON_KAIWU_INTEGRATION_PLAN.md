@@ -1049,6 +1049,28 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `real_provider_evidence=false`, and `system_acceptance=false`; they establish
   no live-provider, system, protein, distributed, multi-node, or domestic-
   accelerator acceptance.
+- The isolated rehearsal was refreshed at source revision
+  `d329b10419c6470757bb0e1d789d06033980935e` after freezing the reviewed
+  Kaiwu 1.3.1 artifact identity, adding the bounded no-import wheel inspection,
+  and recording the protein-source candidates. The two mode-0600 records passed
+  independent offline manifest, extraction-preflight, host, image, and revision
+  hash-chain validation. Their SHA-256 digests are
+  `2a87e4cf12ed3d1b6fcb0e1f83a4c4ea9f9937106db9c4d62b968a29f9cabec8`
+  (`jp-a800-171`) and
+  `2f41113d78b639f7dc1530303834743e1b96c346534e6f4b4f068f229cbf5e1b`
+  (`jp-a800-172`). Each independent run observed
+  `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten calls within the
+  64-call development budget, produced a finite objective plus nonzero gradient
+  and parameter update, passed token constraints, and reported no fallback.
+  Source, workspace, and remote evidence existed only in tmpfs inside a
+  network-disabled, read-only, logging-disabled, auto-removed container; no
+  source or evidence was written to either validation host. No QBoson
+  credential, service, or quota was used. Both records remain
+  `development_fake_transport` with `qboson_hardware_used=false`,
+  `real_provider_evidence=false`, and `system_acceptance=false`; they refresh
+  only the two independent A800 development paths and establish no live-
+  provider, system, protein, distributed, multi-node, or domestic-accelerator
+  acceptance.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor
