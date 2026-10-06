@@ -255,6 +255,74 @@ def test_runtime_sealer_requires_a_complete_provenance_source(tmp_path, monkeypa
         )
 
 
+def test_runtime_sealer_accepts_a_declared_inventory_from_a_second_host(
+    tmp_path, monkeypatch
+):
+    """A world this host cannot see must still seal when the caller declared it.
+
+    The preflight asks whether the invocation has the devices its world size
+    claims. Only the caller knows the other host's devices, so counting what
+    this process can detect would refuse every multi-node seal after the run had
+    already been measured. Detection is stubbed to one device here, which is the
+    situation on each of the two hosts that ran the sixteen ranks.
+    """
+
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEY.decode())
+    monkeypatch.setattr("tools.seal_runtime_evidence._output", lambda command: "a" * 40)
+    measurements = tmp_path / "measurements.json"
+    measurements.write_text(
+        json.dumps(dict(_measured_payload(), world_size=2)), encoding="utf-8"
+    )
+    raw_log = tmp_path / "run.log"
+    raw_log.write_text("executed", encoding="utf-8")
+    workload = tmp_path / "workload.json"
+    workload.write_text("{}", encoding="utf-8")
+    destination = tmp_path / "sealed.json"
+
+    assert (
+        seal_main(
+            [
+                "--measurements",
+                str(measurements),
+                "--raw-log",
+                str(raw_log),
+                "--workload",
+                str(workload),
+                "--output",
+                str(destination),
+                "--scope",
+                "two_gpu_semantic_regression",
+                "--command",
+                "torchrun benchmark.py",
+                "--collective-backend",
+                "nccl",
+                "--warmup",
+                "1",
+                "--iterations",
+                "2",
+                "--world-size",
+                "2",
+                "--seed",
+                "7",
+                "--device-uuid",
+                "GPU-aaa@host-a",
+                "--device-uuid",
+                "GPU-bbb@host-b",
+            ]
+        )
+        == 0
+    )
+
+    sealed = json.loads(destination.read_text(encoding="utf-8"))
+    assert sealed["provenance"]["devices"] == ["GPU-aaa", "GPU-bbb"]
+    assert sealed["provenance"]["rank_mapping"] == [
+        "rank=0:node=host-a:device_uuid=GPU-aaa",
+        "rank=1:node=host-b:device_uuid=GPU-bbb",
+    ]
+    valid, errors = verify_evidence_artifact(sealed, signing_key=KEY)
+    assert valid, errors
+
+
 def test_runtime_sealer_reseal_reuses_the_recorded_provenance(tmp_path, monkeypatch):
     """A re-seal states the run it re-seals, not the checkout doing the re-seal.
 

@@ -188,11 +188,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             "--collective-backend, --warmup, --iterations and --seed; supply "
             "--recorded-provenance only to re-seal a payload that already has one"
         )
+    # The preflight asks whether this invocation has the devices the world size
+    # it claims needs. For a run whose ranks span hosts, only the caller knows
+    # the second host's devices: detection here sees one host's eight devices
+    # and would refuse every multi-node seal after the run had already been
+    # measured, even though --device-uuid had named all sixteen. The declared
+    # inventory is counted instead, and _rank_devices validates it entry by
+    # entry when the provenance is built.
+    if recorded is not None:
+        declared_devices: Sequence[str] | None = recorded.devices
+    else:
+        declared_devices = tuple(args.device_uuid or ()) or None
     preflight_errors = environment_errors(
         world_size=args.world_size,
         seal_destination=args.output,
         commit=recorded.commit if recorded is not None else None,
-        device_uuids=recorded.devices if recorded is not None else None,
+        device_uuids=declared_devices,
     )
     if preflight_errors:
         raise SystemExit(
