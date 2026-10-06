@@ -120,7 +120,7 @@ def test_a_reduction_is_a_trace_and_not_a_marginal() -> None:
     torch.testing.assert_close(
         single[0], torch.tensor([[0.5, 0.0], [0.0, 0.5]], dtype=torch.complex128)
     )
-    assert single[0].diagonal().sum().real == pytest.approx(1.0)
+    assert single[0].diagonal().sum().real.item() == pytest.approx(1.0)
 
 
 def test_the_request_records_the_order_the_caller_named() -> None:
@@ -252,7 +252,7 @@ def test_a_noisy_matrix_agrees_between_the_two_routes() -> None:
     torch.testing.assert_close(
         analytic.density_matrix, held.density_matrix, atol=1e-10, rtol=0
     )
-    assert analytic.density_matrix[0].diagonal().sum().real == pytest.approx(1.0)
+    assert analytic.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])

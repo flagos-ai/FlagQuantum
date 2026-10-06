@@ -269,7 +269,7 @@ def test_density_matrix_output_traces_out_unnamed_qubits() -> None:
     reversed_order = fq.run(circuit, outputs=fq.density_matrix(qubits=(1, 0)))
 
     assert full.density_matrix.shape == (1, 4, 4)
-    assert full.density_matrix[0].diagonal().sum().real == pytest.approx(1.0)
+    assert full.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
 
     # Each single-qubit reduction is the 2x2 block structure of the full matrix
     # with the other qubit contracted, and its own trace is one.
@@ -285,8 +285,8 @@ def test_density_matrix_output_traces_out_unnamed_qubits() -> None:
         atol=1e-4,
         rtol=0,
     )
-    assert first.density_matrix[0].diagonal().sum().real == pytest.approx(1.0)
-    assert second.density_matrix[0].diagonal().sum().real == pytest.approx(1.0)
+    assert first.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
+    assert second.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
 
     # Naming the qubits in the other order is a different basis order, not the
     # same matrix: the entry the caller reads at [0, 1] is a different amplitude.
