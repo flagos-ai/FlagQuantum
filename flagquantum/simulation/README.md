@@ -37,6 +37,33 @@ against independent references; truncation and emulated precision need their
 own error envelope. Local numerical changes must not introduce a dependency on
 Runtime orchestration.
 
+## One instruction, one dense operator
+
+Every torch engine in this directory reaches
+[`gate_matrix.py`](gate_matrix.py) for the dense operator of one instruction, so
+that function is where an instruction with no dense operator is refused. It
+refuses by category and names the repair, because the alternative is a dictionary
+key: `barrier`, `measure`, `reset`, a misspelled gate, and a channel whose
+declared parameters were never turned into Kraus operators all used to escape as
+`KeyError: 'barrier'`, and a carried matrix of the wrong size escaped from
+`reshape` naming no instruction at all.
+
+| Instruction | Refusal |
+| --- | --- |
+| A unitary opcode the operator registry declares | The operator is returned |
+| An instruction carrying its own dense operator | That operator is returned, whatever the opcode is called |
+| A declared channel, with or without its Kraus operators | `CapabilityError` naming the operators it carries, or the declared parameters that still have to become operators |
+| An opcode the registry does not declare | `CapabilityError` saying a misspelled gate and a directive both arrive here |
+| A carried value that is not a dense operator of the instruction's size | `ValidationError`, or `TypeError` when it is not a matrix type at all |
+
+Refusal is not new policy: [engineering decision principle 9](../../AGENTS.md)
+requires unsupported capabilities to fail at the earliest knowable stage, and
+`contracts/errors-module-boundary-v1-candidate.json` already declares these
+categories. A directive is still not executed by any engine here — engine
+selection, and the `barrier` directive in particular, is Runtime's decision, not
+this directory's. What this directory owns is saying so clearly instead of
+raising a key error.
+
 ## Continuous-time open-system evolution
 
 `flagquantum.simulation.evolve_density_matrix` integrates the Lindblad master

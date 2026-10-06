@@ -37,6 +37,18 @@ are otherwise unchanged.
   circuit's dtype the way `Circuit.density_matrix` already did, so the two no longer
   disagree by the `complex64` rounding floor on a `complex128` circuit. See
   [the density-matrix output change](../api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md).
+- Added `optimization_level` to `flagquantum.compiler.optimize` and
+  `flagquantum.compiler.compile`. It is keyword-only and defaults to `2`, which is
+  the pass composition those entry points already ran, so a caller that does not
+  name it receives the program it received before. Level `0` returns the submitted
+  program unchanged, level `1` cancels and merges what is adjacent, and level `2`
+  also removes diagonal gates before a measurement and merges rotations across a
+  proven commuting gap. Level `3` is declared and reserved and raises
+  `CompilationError`, because the unitary-synthesis stage it would add has no
+  pass-over-IR counterpart yet; a value that is not an integer is refused the same
+  way. The level that ran is recorded in `metadata["optimization"]`. See
+  [the optimization-level API change](../api-changes/FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md).
+
 - Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
   step=None, directions=1, generator=None)` entry point, which returns the
   detached derivative together with the method that produced it, whether that
