@@ -601,6 +601,40 @@ def test_bundle_publisher_revalidates_component_parent(
     assert not destination.exists()
 
 
+def test_bundle_publisher_rejects_inputs_changed_after_assembly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
+    component_path = tmp_path / "component.json"
+    config_sha = _write_json(config_path, {"schema": "test.config"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
+    component_sha = _write_json(component_path, {"schema": "test.component"})
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        lambda _: [],
+    )
+
+    _write_json(component_path, {"schema": "changed.component"})
+    with pytest.raises(ValueError, match="component record changed after assembly"):
+        _publish_acceptance_bundle(
+            tmp_path / "acceptance",
+            config_path=config_path,
+            environment_lock_path=environment_lock_path,
+            config={
+                "primary_host": "jp-a800-171",
+                "replay_host": "jp-a800-172",
+            },
+            primary={},
+            replay={},
+            component_sources={"component.json": component_path},
+            expected_config_sha256=config_sha,
+            expected_component_sha256={"component.json": component_sha},
+        )
+
+    assert not (tmp_path / "acceptance").exists()
+
+
 @pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
 def test_bundle_publisher_requires_private_real_output_parent(
     tmp_path: Path, unsafe_kind: str

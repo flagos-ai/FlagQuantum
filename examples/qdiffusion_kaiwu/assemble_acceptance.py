@@ -13,6 +13,7 @@ from statistics import fmean
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
     SCHEMA as PORTABILITY_SCHEMA,
 )
@@ -63,9 +64,9 @@ METRIC_NAMES = (
     "invalid_sequence_count",
 )
 
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+_MAX_CONFIG_BYTES = 1024 * 1024
+_MAX_ENVIRONMENT_LOCK_BYTES = 4 * 1024 * 1024
+_MAX_COMPONENT_BYTES = 64 * 1024 * 1024
 
 
 def _require_private_directory(path: Path, *, description: str) -> None:
@@ -98,8 +99,11 @@ def _require_private_input(path: Path) -> None:
 
 
 def _load_component(path: Path, schema: str) -> tuple[dict[str, Any], str]:
-    _require_private_input(path)
-    encoded = path.read_bytes()
+    encoded = read_private_bytes(
+        path,
+        label="component record",
+        max_bytes=_MAX_COMPONENT_BYTES,
+    )
     value = loads_json_strict(encoded)
     if not isinstance(value, dict):
         raise ValueError(f"component record must be a JSON object: {path}")
@@ -459,45 +463,50 @@ def _json_bytes(value: object) -> bytes:
 def _materialize_acceptance_bundle(
     root: Path,
     *,
-    config_path: Path,
-    environment_lock_path: Path,
+    config_bytes: bytes,
+    environment_lock_bytes: bytes,
     config: dict[str, Any],
     primary: dict[str, Any],
     replay: dict[str, Any],
-    component_sources: dict[str, Path],
+    component_bytes: dict[str, bytes],
 ) -> Path:
     """Write a complete candidate bundle inside an existing private directory."""
 
     components = root / "components"
     components.mkdir(mode=0o700)
-    _write_exclusive(root / "acceptance_config.json", config_path.read_bytes())
-    _write_exclusive(root / "environment_lock.json", environment_lock_path.read_bytes())
+    _write_exclusive(root / "acceptance_config.json", config_bytes)
+    _write_exclusive(root / "environment_lock.json", environment_lock_bytes)
     component_entries = []
-    for name, source in component_sources.items():
+    for name, encoded in component_bytes.items():
         destination = components / name
-        _write_exclusive(destination, source.read_bytes())
+        _write_exclusive(destination, encoded)
         component_entries.append(
-            {"path": f"components/{name}", "sha256": _sha256(destination)}
+            {
+                "path": f"components/{name}",
+                "sha256": hashlib.sha256(encoded).hexdigest(),
+            }
         )
 
     primary_name = f"{config['primary_host']}.json"
     replay_name = f"{config['replay_host']}.json"
-    _write_exclusive(root / primary_name, _json_bytes(primary))
-    _write_exclusive(root / replay_name, _json_bytes(replay))
+    primary_bytes = _json_bytes(primary)
+    replay_bytes = _json_bytes(replay)
+    _write_exclusive(root / primary_name, primary_bytes)
+    _write_exclusive(root / replay_name, replay_bytes)
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "version": "1.0",
         "config": {
             "path": "acceptance_config.json",
-            "sha256": _sha256(root / "acceptance_config.json"),
+            "sha256": hashlib.sha256(config_bytes).hexdigest(),
         },
         "environment_lock": {
             "path": "environment_lock.json",
-            "sha256": _sha256(root / "environment_lock.json"),
+            "sha256": hashlib.sha256(environment_lock_bytes).hexdigest(),
         },
         "records": [
-            {"path": primary_name, "sha256": _sha256(root / primary_name)},
-            {"path": replay_name, "sha256": _sha256(root / replay_name)},
+            {"path": primary_name, "sha256": hashlib.sha256(primary_bytes).hexdigest()},
+            {"path": replay_name, "sha256": hashlib.sha256(replay_bytes).hexdigest()},
         ],
         "component_records": component_entries,
     }
@@ -515,11 +524,43 @@ def _publish_acceptance_bundle(
     primary: dict[str, Any],
     replay: dict[str, Any],
     component_sources: dict[str, Path],
+    expected_config_sha256: str | None = None,
+    expected_component_sha256: dict[str, str] | None = None,
 ) -> None:
     """Validate in a private sibling directory before atomically publishing."""
 
-    for source in (config_path, environment_lock_path, *component_sources.values()):
-        _require_private_input(source)
+    config_bytes = read_private_bytes(
+        config_path,
+        label="frozen configuration",
+        max_bytes=_MAX_CONFIG_BYTES,
+    )
+    config_digest = hashlib.sha256(config_bytes).hexdigest()
+    if expected_config_sha256 is not None and config_digest != expected_config_sha256:
+        raise ValueError("frozen configuration changed after assembly")
+    environment_lock_bytes = read_private_bytes(
+        environment_lock_path,
+        label="environment lock",
+        max_bytes=_MAX_ENVIRONMENT_LOCK_BYTES,
+    )
+    if (
+        expected_component_sha256 is not None
+        and expected_component_sha256.keys() != component_sources.keys()
+    ):
+        raise ValueError("component digest set differs from component sources")
+    component_bytes: dict[str, bytes] = {}
+    for name, source in component_sources.items():
+        encoded = read_private_bytes(
+            source,
+            label=f"component record {name}",
+            max_bytes=_MAX_COMPONENT_BYTES,
+        )
+        digest = hashlib.sha256(encoded).hexdigest()
+        if (
+            expected_component_sha256 is not None
+            and expected_component_sha256.get(name) != digest
+        ):
+            raise ValueError(f"component record changed after assembly: {name}")
+        component_bytes[name] = encoded
     destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     _require_private_directory(
         destination.parent, description="acceptance output parent"
@@ -532,12 +573,12 @@ def _publish_acceptance_bundle(
         staging.chmod(0o700)
         manifest_path = _materialize_acceptance_bundle(
             staging,
-            config_path=config_path,
-            environment_lock_path=environment_lock_path,
+            config_bytes=config_bytes,
+            environment_lock_bytes=environment_lock_bytes,
             config=config,
             primary=primary,
             replay=replay,
-            component_sources=component_sources,
+            component_bytes=component_bytes,
         )
         errors = validate_acceptance(manifest_path)
         if errors:
@@ -629,6 +670,18 @@ def main() -> None:
         component_sources[f"training-{index}.json"] = path
     for index, path in enumerate(args.evaluation_record):
         component_sources[f"evaluation-{index}.json"] = path
+    component_digests = {
+        "primary-system.json": primary_system[1],
+        "replay-system.json": replay_system[1],
+        "primary-source-preflight.json": primary_source_preflight[1],
+        "replay-source-preflight.json": replay_source_preflight[1],
+        "transfer-manifest.json": transfer_manifest[1],
+        "portability.json": portability[1],
+    }
+    for index, (_, digest) in enumerate(training):
+        component_digests[f"training-{index}.json"] = digest
+    for index, (_, digest) in enumerate(evaluations):
+        component_digests[f"evaluation-{index}.json"] = digest
     _publish_acceptance_bundle(
         args.evidence_dir,
         config_path=args.config,
@@ -637,6 +690,8 @@ def main() -> None:
         primary=primary,
         replay=replay,
         component_sources=component_sources,
+        expected_config_sha256=config_sha256,
+        expected_component_sha256=component_digests,
     )
     print(f"Validated acceptance bundle written to {args.evidence_dir}")
 

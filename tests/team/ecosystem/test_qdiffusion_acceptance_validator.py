@@ -556,6 +556,36 @@ def test_complete_two_host_real_provider_bundle_passes(tmp_path: Path) -> None:
     assert validate_acceptance(manifest_path) == []
 
 
+def test_validator_reads_each_evidence_member_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    from examples.qdiffusion_kaiwu import validate_acceptance as validator
+
+    original = validator.read_private_bytes
+    reads: list[Path] = []
+
+    def counted_read(path: Path, *, label: str, max_bytes: int) -> bytes:
+        reads.append(path)
+        return original(path, label=label, max_bytes=max_bytes)
+
+    monkeypatch.setattr(validator, "read_private_bytes", counted_read)
+
+    assert validator.validate_acceptance(manifest_path) == []
+    assert len(reads) == len(set(reads)) == 5
+
+
+def test_validator_requires_private_real_manifest_parent(tmp_path: Path) -> None:
+    private_parent = tmp_path / "bundle"
+    private_parent.mkdir(mode=0o700)
+    manifest_path, _ = _bundle(private_parent)
+    private_parent.chmod(0o755)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("manifest" in error and "parent" in error for error in errors)
+
+
 def test_validator_rejects_symlinked_or_public_bundle_members(tmp_path: Path) -> None:
     manifest_path, _ = _bundle(tmp_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

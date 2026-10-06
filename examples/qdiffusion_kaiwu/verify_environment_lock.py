@@ -81,12 +81,9 @@ def _installed_distribution_inventory() -> dict[str, tuple[str, str]]:
     return installed
 
 
-def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
-    encoded = read_private_bytes(
-        path,
-        label="environment lock",
-        max_bytes=_MAX_ENVIRONMENT_LOCK_BYTES,
-    )
+def parse_environment_lock_bytes(encoded: bytes) -> tuple[dict[str, Any], str]:
+    """Validate one captured lock payload and return its bound digest."""
+
     try:
         record = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:
@@ -147,6 +144,15 @@ def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
             "environment lock distributions must be unique and sorted by name"
         )
     return record, hashlib.sha256(encoded).hexdigest()
+
+
+def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
+    encoded = read_private_bytes(
+        path,
+        label="environment lock",
+        max_bytes=_MAX_ENVIRONMENT_LOCK_BYTES,
+    )
+    return parse_environment_lock_bytes(encoded)
 
 
 def verify_environment_lock(path: Path) -> tuple[dict[str, Any], str]:

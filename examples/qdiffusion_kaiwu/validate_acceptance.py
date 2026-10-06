@@ -19,6 +19,7 @@ from examples.qdiffusion_kaiwu.plan_quota import (
 from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.sdk_approval import (
     validate_sdk_approval_record,
     verify_approved_kaiwu_distribution,
@@ -33,7 +34,9 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     validate_transfer_manifest_record,
 )
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
-from examples.qdiffusion_kaiwu.verify_environment_lock import load_environment_lock
+from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    parse_environment_lock_bytes,
+)
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")
@@ -99,13 +102,19 @@ METRIC_NAMES = (
     "invalid_sequence_count",
 )
 
+_MAX_MANIFEST_BYTES = 4 * 1024 * 1024
+_MAX_CONFIG_BYTES = 1024 * 1024
+_MAX_ENVIRONMENT_LOCK_BYTES = 4 * 1024 * 1024
+_MAX_EVIDENCE_MEMBER_BYTES = 64 * 1024 * 1024
 
-def _read_json(path: Path) -> Any:
-    return loads_json_strict(path.read_text(encoding="utf-8"))
 
+def _read_private_json(
+    path: Path, *, label: str, max_bytes: int
+) -> tuple[Any, bytes, str]:
+    """Read once through an anchored descriptor, then parse and hash those bytes."""
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    encoded = read_private_bytes(path, label=label, max_bytes=max_bytes)
+    return loads_json_strict(encoded), encoded, hashlib.sha256(encoded).hexdigest()
 
 
 def _mapping(value: Any, label: str, errors: list[str]) -> dict[str, Any]:
@@ -1846,7 +1855,15 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     if manifest_path.stat().st_mode & 0o077:
         return ["manifest: must not be accessible by group or others"]
     root = manifest_path.resolve().parent
-    manifest = _mapping(_read_json(manifest_path), "manifest", errors)
+    try:
+        manifest_value, _, _ = _read_private_json(
+            manifest_path,
+            label="acceptance manifest",
+            max_bytes=_MAX_MANIFEST_BYTES,
+        )
+    except (OSError, ValueError) as exc:
+        return [f"manifest: cannot be read safely: {exc}"]
+    manifest = _mapping(manifest_value, "manifest", errors)
     if manifest.get("schema") != MANIFEST_SCHEMA or manifest.get("version") != "1.0":
         errors.append("manifest: unsupported schema or version")
 
@@ -1923,10 +1940,18 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     config_path = resolve_member(config_entry.get("path"), "manifest.config.path")
     if config_path is None:
         return errors
-    config_hash = _sha256(config_path)
+    try:
+        config_value, _, config_hash = _read_private_json(
+            config_path,
+            label="acceptance configuration",
+            max_bytes=_MAX_CONFIG_BYTES,
+        )
+    except (OSError, ValueError) as exc:
+        errors.append(f"manifest.config: cannot be read safely: {exc}")
+        return errors
     if config_entry.get("sha256") != config_hash:
         errors.append("manifest.config: SHA-256 mismatch")
-    config = _mapping(_read_json(config_path), "config", errors)
+    config = _mapping(config_value, "config", errors)
     _validate_config(config, errors)
 
     environment_entry = _mapping(
@@ -1937,12 +1962,27 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     )
     if environment_path is None:
         return errors
-    environment_hash = _sha256(environment_path)
+    try:
+        environment_bytes = read_private_bytes(
+            environment_path,
+            label="acceptance environment lock",
+            max_bytes=_MAX_ENVIRONMENT_LOCK_BYTES,
+        )
+    except (OSError, ValueError) as exc:
+        errors.append(
+            f"manifest.environment_lock: cannot be read safely: {exc}"
+        )
+        return errors
+    environment_hash = hashlib.sha256(environment_bytes).hexdigest()
     if environment_entry.get("sha256") != environment_hash:
         errors.append("manifest.environment_lock: SHA-256 mismatch")
     environment_record: dict[str, Any] | None = None
     try:
-        environment_record, _ = load_environment_lock(environment_path)
+        environment_record, parsed_environment_hash = parse_environment_lock_bytes(
+            environment_bytes
+        )
+        if parsed_environment_hash != environment_hash:
+            errors.append("manifest.environment_lock: internal digest mismatch")
     except ValueError as exc:
         errors.append(f"manifest.environment_lock: {exc}")
     software = _mapping(config.get("software"), "config.software", errors)
@@ -1972,14 +2012,25 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
                 )
                 if component_path is None:
                     continue
-                digest = _sha256(component_path)
+                try:
+                    component_value, _, digest = _read_private_json(
+                        component_path,
+                        label=f"acceptance component record {index}",
+                        max_bytes=_MAX_EVIDENCE_MEMBER_BYTES,
+                    )
+                except (OSError, ValueError) as exc:
+                    errors.append(
+                        f"manifest.component_records[{index}]: "
+                        f"cannot be read safely: {exc}"
+                    )
+                    continue
                 if entry.get("sha256") != digest:
                     errors.append(
                         f"manifest.component_records[{index}]: SHA-256 mismatch"
                     )
                     continue
                 component_payloads[digest] = _mapping(
-                    _read_json(component_path),
+                    component_value,
                     f"component_record[{index}]",
                     errors,
                 )
@@ -1996,9 +2047,20 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         )
         if record_path is None:
             continue
-        if entry.get("sha256") != _sha256(record_path):
+        try:
+            record_value, _, record_digest = _read_private_json(
+                record_path,
+                label=f"acceptance host record {index}",
+                max_bytes=_MAX_EVIDENCE_MEMBER_BYTES,
+            )
+        except (OSError, ValueError) as exc:
+            errors.append(
+                f"manifest.records[{index}]: cannot be read safely: {exc}"
+            )
+            continue
+        if entry.get("sha256") != record_digest:
             errors.append(f"manifest.records[{index}]: SHA-256 mismatch")
-        record = _mapping(_read_json(record_path), f"record[{index}]", errors)
+        record = _mapping(record_value, f"record[{index}]", errors)
         _validate_system_record(
             record,
             config=config,

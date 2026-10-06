@@ -604,6 +604,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   publisher repeats that validation internally so a direct helper call cannot
   bypass the CLI gate. Its output parent is checked by the same rule before a
   staging directory or final atomic rename is allowed.
+- Final assembly and independent validation now bind every private evidence
+  member to one descriptor-anchored byte capture. Assembly refuses a config or
+  component whose captured digest differs from the record used to construct
+  the final host evidence, then copies those same captured bytes. Validation
+  computes each declared digest and parses JSON from the same bytes, including
+  the environment lock, closing the check-then-reread replacement window.
 - Revalidation now rejects a symlink anywhere in a manifest member path and
   requires the manifest, config, host records, and copied components to remain
   inaccessible to group and other users.
