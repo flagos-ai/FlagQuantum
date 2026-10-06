@@ -502,8 +502,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   provider quota. It is explicitly local conformance evidence rather than A800
   or QBoson evidence. After adding the quota planner, pinned 1.3.1 mode mapping,
   fail-closed SDK-lane selection, xattr-free stream contract, and pre-credential
-  private-output validation to that gate, the complete path passed at revision
-  `dab407f96f8662a804df606f6d80bbc7f77957c6` on 2026-10-06 with 458 tests and
+  private-output validation, credential clearing, persisted-failure redaction,
+  and printable canonical provider-identity validation to that gate, the
+  complete path passed at revision
+  `f57854dbbbcbd48c2445086a4f022e1465618edf` on 2026-10-06 with 476 tests and
   no provider credentials present.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
