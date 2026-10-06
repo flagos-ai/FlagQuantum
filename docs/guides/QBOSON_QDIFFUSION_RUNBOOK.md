@@ -638,6 +638,14 @@ and replay-host runner apply the provider checks while loading the selected
 training record, before loading a model, allocating A800 work, resolving
 credentials, or submitting another task.
 
+The training launcher captures stable no-follow snapshots for the dataset,
+base checkpoint, tokenizer, and evaluation model immediately after their
+identities match the exclusive preflight record. It revalidates all four before
+the plugin workflow, immediately after it returns, and again during postflight.
+Consequently an input rewritten or replaced during the run fails the component
+even when the replacement has the same bytes and would pass a later digest-only
+check.
+
 For training evidence, those provider checks reconcile the ordered task-ID
 list and single provider-reported target with every receipt; require unique
 matrix identities, the frozen sample count, and aware submission timestamps;
@@ -679,12 +687,13 @@ the frozen config is passed into the evaluator, brackets
 `load_model_and_alphabet_local`, and remains unchanged through metric
 calculation.
 
-Training rehashes the frozen config and all four input roles after the workflow
-returns. Replay repeats that check and also revalidates the transferred test
-FASTA and trained checkpoint. Evaluation revalidates its ESM2 checkpoint and
-all consumed training outputs after metrics are computed. Preserve the original
-inputs unchanged until each command exits; a component without
-`artifact_inputs_unchanged=true` cannot enter the final acceptance bundle.
+Training revalidates the retained stable snapshots and rehashes the frozen
+config and all four input roles after the workflow returns. Replay repeats that
+check and also revalidates the transferred test FASTA and trained checkpoint.
+Evaluation revalidates its ESM2 checkpoint and all consumed training outputs
+after metrics are computed. Preserve the original inputs unchanged until each
+command exits; a component without `artifact_inputs_unchanged=true` cannot
+enter the final acceptance bundle.
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \

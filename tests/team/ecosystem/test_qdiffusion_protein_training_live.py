@@ -10,6 +10,10 @@ import pytest
 from examples.qdiffusion_kaiwu import (
     qdiffusion_protein_training_live as training_module,
 )
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    _artifact_identity,
+    capture_artifact_snapshots,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
     _checkpoint_identity,
@@ -161,6 +165,83 @@ def test_run_workflow_binds_sampler_and_restores_factories(tmp_path: Path) -> No
     assert workflow.build_qdiffusion is original_builder
     assert workflow.build_default_workflow_config is original_config
     assert workflow.default_outputs_root is original_outputs
+
+
+def test_training_seed_rejects_frozen_asset_change_during_workflow(
+    tmp_path: Path,
+) -> None:
+    dataset = tmp_path / "dataset.fasta"
+    dataset.write_text(">p1\nACDE\n", encoding="utf-8")
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "weights.bin").write_bytes(b"weights")
+    evaluation_model = tmp_path / "esm2.pt"
+    evaluation_model.write_bytes(b"esm2")
+    artifact_paths = {
+        "dataset": dataset,
+        "base_checkpoint": checkpoint,
+        "tokenizer": checkpoint,
+        "evaluation_model": evaluation_model,
+    }
+    artifact_record = {"artifacts": {}}
+    for name, path in artifact_paths.items():
+        digest, algorithm, file_count = _artifact_identity(path)
+        artifact_record["artifacts"][name] = {
+            "sha256": digest,
+            "algorithm": algorithm,
+            "file_count": file_count,
+        }
+    snapshots = capture_artifact_snapshots(artifact_paths, artifact_record)
+    workflow = _workflow_types()
+    workflow.build_qdiffusion = lambda **kwargs: SimpleNamespace(
+        energy_model=SimpleNamespace(sampler=kwargs["bm_sampler"])
+    )
+    workflow.build_default_workflow_config = lambda: None
+    workflow.default_outputs_root = lambda: tmp_path
+
+    def mutate_asset() -> None:
+        dataset.write_text(">p1\nXXXX\n", encoding="utf-8")
+        (workflow.default_outputs_root() / "run").mkdir()
+
+    workflow.main = mutate_asset
+    sampler = cast(
+        KaiwuSampler,
+        SimpleNamespace(
+            client=object(),
+            remote_call_count=0,
+            last_result=None,
+            receipts=(),
+            precision_reports=(),
+            precision_evidence=(),
+            transfer_records=(),
+        ),
+    )
+
+    record = run_training_seed(
+        workflow=workflow,
+        config=_frozen_config(),
+        config_sha256="a" * 64,
+        sampler=sampler,
+        dataset_path=dataset,
+        checkpoint_path=checkpoint,
+        output_root=tmp_path / "runs",
+        seed=1701,
+        execution_host="jp-a800-171",
+        observed_hostname="host-171",
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        source_revision="b" * 40,
+        plugin_revision="c" * 40,
+        source_preflight_sha256="e" * 64,
+        transfer_manifest_sha256="f" * 64,
+        environment_lock_sha256="0" * 64,
+        sdk_version="1.3.1",
+        preflight_sha256="d" * 64,
+        artifact_snapshots=snapshots,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "ValueError"
+    assert record["remote_call_count"] == 0
 
 
 def test_checkpoint_identity_selects_latest_best_epoch(tmp_path: Path) -> None:

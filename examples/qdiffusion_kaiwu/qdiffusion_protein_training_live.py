@@ -29,8 +29,11 @@ from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    ArtifactSnapshot,
     assert_artifacts_unchanged,
+    capture_artifact_snapshots,
     preflight_artifacts,
+    revalidate_artifact_snapshots,
 )
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
@@ -252,6 +255,7 @@ def run_training_seed(
     environment_lock_sha256: str,
     sdk_version: str,
     preflight_sha256: str,
+    artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
 ) -> dict[str, Any]:
     failure: dict[str, str] | None = None
     run_directory: Path | None = None
@@ -259,6 +263,8 @@ def run_training_seed(
     checkpoint_sha256: str | None = None
     workflow_artifacts: dict[str, dict[str, str]] = {}
     try:
+        if artifact_snapshots is not None:
+            revalidate_artifact_snapshots(artifact_snapshots)
         workflow_config = _build_workflow_config(
             workflow,
             config,
@@ -269,6 +275,8 @@ def run_training_seed(
         run_directory = _run_workflow(
             workflow, workflow_config, sampler, output_root / f"seed-{seed}"
         )
+        if artifact_snapshots is not None:
+            revalidate_artifact_snapshots(artifact_snapshots)
         checkpoint_name, checkpoint_sha256 = _checkpoint_identity(run_directory)
         workflow_artifacts = _workflow_artifact_identities(run_directory)
     except (Exception, KeyboardInterrupt) as exc:
@@ -498,6 +506,9 @@ def main() -> None:
     )
     if artifact_preflight.get("config_sha256") != config_sha256:
         raise RuntimeError("frozen experiment config changed before training")
+    artifact_snapshots = capture_artifact_snapshots(
+        artifact_paths, artifact_preflight
+    )
     preflight_sha256 = hashlib.sha256(
         read_private_bytes(
             args.artifact_preflight_output,
@@ -549,9 +560,11 @@ def main() -> None:
         environment_lock_sha256=environment_lock_sha256,
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
+        artifact_snapshots=artifact_snapshots,
     )
     artifact_postflight_error: BaseException | None = None
     try:
+        revalidate_artifact_snapshots(artifact_snapshots)
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc

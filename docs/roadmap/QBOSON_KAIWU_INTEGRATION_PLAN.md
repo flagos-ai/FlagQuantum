@@ -779,6 +779,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   inode and rechecks its leaf and parent identity after parsing, while model
   trees retain the unchanged `tree-sha256-v1` path-aware digest format. A
   dataset swap between hashing and split validation therefore fails preflight.
+- Primary protein training now retains the stable snapshots for all four frozen
+  input roles after matching them to the preflight record. It revalidates the
+  dataset, base checkpoint, tokenizer, and evaluation model before and after
+  the plugin workflow and once more during postflight; a same-content path
+  replacement cannot separate preflight identity from the assets used by the
+  run.
 - ESM2 evaluation now retains those stable snapshots for every training FASTA
   and quality JSON after matching the training record. Plugin FASTA reads are
   bracketed by identity checks, quality JSON is parsed from its captured

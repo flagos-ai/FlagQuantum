@@ -19,6 +19,8 @@ from examples.qdiffusion_kaiwu.stable_source_tree import (
     capture_regular_file,
     capture_regular_tree,
     open_captured_regular_file,
+    revalidate_regular_file,
+    revalidate_regular_tree,
 )
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
@@ -32,6 +34,7 @@ ARTIFACT_FIELDS = {
     "evaluation_model": "evaluation_model",
 }
 AMINO_ACIDS = frozenset("ACDEFGHIKLMNPQRSTVWYBXZJUO")
+ArtifactSnapshot = RegularFileSnapshot | RegularTreeSnapshot
 
 
 def _artifact_identity_snapshot(
@@ -75,6 +78,48 @@ def _artifact_identity(path: Path) -> tuple[str, str, int]:
 
     digest, algorithm, file_count, _ = _artifact_identity_snapshot(path)
     return digest, algorithm, file_count
+
+
+def capture_artifact_snapshots(
+    artifact_paths: dict[str, Path], preflight_record: dict[str, Any]
+) -> dict[str, ArtifactSnapshot]:
+    """Capture the exact artifact identities accepted by one preflight record."""
+
+    if set(artifact_paths) != set(ARTIFACT_FIELDS):
+        raise ValueError("all four named artifact paths are required")
+    expected_artifacts = preflight_record.get("artifacts")
+    if not isinstance(expected_artifacts, dict):
+        raise ValueError("artifact preflight has no artifact identities")
+    snapshots: dict[str, ArtifactSnapshot] = {}
+    for name, path in artifact_paths.items():
+        digest, algorithm, file_count, snapshot = _artifact_identity_snapshot(path)
+        expected = expected_artifacts.get(name)
+        if not isinstance(expected, dict) or any(
+            expected.get(field) != value
+            for field, value in (
+                ("sha256", digest),
+                ("algorithm", algorithm),
+                ("file_count", file_count),
+            )
+        ):
+            raise ValueError(f"{name} differs from artifact preflight")
+        snapshots[name] = snapshot
+    return snapshots
+
+
+def revalidate_artifact_snapshots(
+    snapshots: dict[str, ArtifactSnapshot],
+) -> None:
+    """Require every frozen artifact to retain its original captured identity."""
+
+    if set(snapshots) != set(ARTIFACT_FIELDS):
+        raise ValueError("all four artifact snapshots are required")
+    for name, snapshot in snapshots.items():
+        label = f"frozen {name} artifact"
+        if isinstance(snapshot, RegularFileSnapshot):
+            revalidate_regular_file(snapshot, label=label)
+        else:
+            revalidate_regular_tree(snapshot, label=label)
 
 
 def _read_config(path: Path) -> tuple[dict[str, Any], str]:

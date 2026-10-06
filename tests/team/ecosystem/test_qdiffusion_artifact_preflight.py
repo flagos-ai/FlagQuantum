@@ -10,7 +10,9 @@ from examples.qdiffusion_kaiwu import preflight_protein_artifacts as preflight_m
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     _artifact_identity,
     assert_artifacts_unchanged,
+    capture_artifact_snapshots,
     preflight_artifacts,
+    revalidate_artifact_snapshots,
 )
 
 pytestmark = pytest.mark.unit
@@ -202,6 +204,20 @@ def test_preflight_binds_dataset_profile_to_hashed_file_snapshot(
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_artifact_snapshot_rejects_same_digest_rewrite_after_preflight(
+    tmp_path: Path,
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    preflight = preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+    snapshots = capture_artifact_snapshots(paths, preflight)
+    original = paths["dataset"].read_bytes()
+
+    paths["dataset"].write_bytes(original)
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        revalidate_artifact_snapshots(snapshots)
 
 
 def test_postflight_rejects_artifact_drift(tmp_path: Path) -> None:
