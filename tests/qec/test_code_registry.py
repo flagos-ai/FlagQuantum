@@ -457,20 +457,27 @@ def test_builder_rejects_a_record_whose_stated_bands_disagree_with_its_checks() 
 def test_builder_accepts_a_record_whose_bands_its_checks_define() -> None:
     """The guard passes exactly the records ``ancilla_bands`` agrees with.
 
-    The Steane code is not among them, and not because of its bands: it declares
-    an X-type logical observable as well as a Z-type one, and the memory
-    experiment builds a Z-basis preparation and readout, so it is refused by the
-    readout guard before this one can agree with it.
+    The Steane code is among them: it declares a logical observable in each
+    basis, and the default readout basis is the Z one, so it builds. The refusal
+    that remains is per basis rather than per record -- a code that declares no
+    logical observable in the requested basis has no memory experiment there --
+    and the two Z-memory records are the ones that name it, because neither
+    declares an X-type observable.
     """
 
     from flagquantum.qec.circuit import build_memory_circuit
 
-    for record in (RepetitionCode(3), RotatedSurfaceCode(3)):
+    for record in (RepetitionCode(3), RotatedSurfaceCode(3), SteaneCode()):
         built = build_memory_circuit(record, rounds=2)
         assert built.code is record
+        assert built.readout_basis == "z"
 
-    with pytest.raises(ValueError, match="requires a Z-type logical observable"):
-        build_memory_circuit(SteaneCode(), rounds=2)
+    with pytest.raises(ValueError, match="requires an X-type logical observable"):
+        build_memory_circuit(RotatedSurfaceCode(3), rounds=2, readout_basis="x")
+
+    steane_x = build_memory_circuit(SteaneCode(), rounds=2, readout_basis="x")
+    assert steane_x.readout_basis == "x"
+    assert steane_x.observables.observables[0].pauli == Pauli(x_qubits=(0, 1, 2))
 
 
 def test_public_namespace_publishes_the_bands_and_the_registry() -> None:

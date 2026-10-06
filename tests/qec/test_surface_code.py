@@ -13,7 +13,7 @@ from collections import Counter
 
 import pytest
 
-from flagquantum.qec.circuit import build_memory_circuit
+from flagquantum.qec.circuit import MeasurementRef, build_memory_circuit
 from flagquantum.qec.codes import (
     CodeCheck,
     RepetitionCode,
@@ -255,12 +255,30 @@ class _XMemoryCode:
         return (Pauli(x_qubits=(0, 1)),)
 
 
-def test_an_x_type_logical_observable_is_refused_rather_than_misread() -> None:
-    """The terminal readout is in the Z basis, so an X memory is not expressible.
+def test_an_x_type_memory_is_read_out_in_the_basis_it_declares() -> None:
+    """A code declaring only an X observable has no Z memory, and does have an X one.
 
-    Accepting it would produce a detector layout whose terminal detectors assert
-    a determinism the readout cannot observe, so the code is refused instead.
+    The mismatch is refused rather than misread: under the default Z-basis
+    readout the terminal detectors would assert a determinism the readout cannot
+    observe. Asking for the basis the code does declare builds an experiment
+    whose terminal detectors are carried by the code's Z-type check, because
+    under a ``|+>`` preparation that is the check class deterministic in round
+    zero and at the terminal readout, and whose observable is the X-type logical
+    operator over the terminal data readouts.
     """
 
-    with pytest.raises(ValueError, match="Z-type logical observable"):
+    with pytest.raises(ValueError, match="requires a Z-type logical observable"):
         build_memory_circuit(_XMemoryCode(), rounds=2)
+
+    built = build_memory_circuit(_XMemoryCode(), rounds=2, readout_basis="x")
+
+    assert built.readout_basis == "x"
+    assert built.observables.observables[0].pauli == Pauli(x_qubits=(0, 1))
+    # The code's one check is Z-type, so it is the check the X-basis experiment
+    # compares only against the previous round: one detector per round after the
+    # first, and no round-zero or terminal detector.
+    assert len(built.detectors) == 1
+    assert built.detectors.detectors[0].parity == (
+        MeasurementRef(1, 2),
+        MeasurementRef(0, 2),
+    )

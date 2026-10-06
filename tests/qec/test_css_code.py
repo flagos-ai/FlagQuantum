@@ -457,19 +457,34 @@ def test_a_code_stating_both_bases_reads_one_observable_per_row() -> None:
     assert record.logical_observables[1].x_qubits == (0, 1, 2)
 
 
-def test_the_circuit_route_refuses_an_x_type_logical_a_matrix_record_admits() -> None:
-    """The matrix route is wider than the memory-circuit route, and not silently.
+def test_the_circuit_route_reads_the_basis_the_caller_states() -> None:
+    """A record holding both families builds one experiment per basis.
 
-    A memory circuit starts and ends in the Z basis, so it can only read out a
-    Z-type logical observable. A record with an X-type observable is therefore
-    perfectly well formed and still has no circuit here, which is the boundary
-    this route does not move.
+    A memory circuit prepares and reads out in one basis, and that basis is what
+    selects which of the record's logical observables the terminal readout
+    realizes, so a matrices record declaring both families reaches two
+    experiments rather than one. The route is still narrower than the record
+    where the record declares nothing in the requested basis, and that is refused
+    where the basis is chosen rather than answered by building an experiment with
+    no logical qubit.
     """
 
     record = CssCode(matrices=css_code_matrices(SteaneCode()), distance=3)
 
-    with pytest.raises(ValueError, match="Z-type logical observable"):
-        build_memory_circuit(record, rounds=_ROUNDS)
+    z_memory = build_memory_circuit(record, rounds=_ROUNDS)
+    x_memory = build_memory_circuit(record, rounds=_ROUNDS, readout_basis="x")
+
+    assert z_memory.readout_basis == "z"
+    assert x_memory.readout_basis == "x"
+    assert z_memory.observables.observables[0].pauli == record.logical_observables[0]
+    assert x_memory.observables.observables[0].pauli == record.logical_observables[1]
+
+    with pytest.raises(ValueError, match="requires an X-type logical observable"):
+        build_memory_circuit(
+            CssCode(matrices=_shor_matrices(), distance=3),
+            rounds=_ROUNDS,
+            readout_basis="x",
+        )
 
 
 # --- every refusal by name --------------------------------------------------
