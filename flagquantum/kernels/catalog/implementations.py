@@ -276,6 +276,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_sampling_collapse",
         "fused_mps_sampling_collapse",
         layouts=("mps_sampling_step",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(
