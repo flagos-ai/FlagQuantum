@@ -11,6 +11,7 @@ studies.
 - [Evidence-based simulator advisor](SIMULATOR_ADVISOR.md)
 - [Simulator workload corpus](SIMULATOR_WORKLOAD_CORPUS.md)
 - [Quantum algorithms (demonstration scale)](ALGORITHMS.md)
+- [Construction-time circuit composition](CIRCUIT_COMPOSITION.md)
 
 ## Performance engineering
 

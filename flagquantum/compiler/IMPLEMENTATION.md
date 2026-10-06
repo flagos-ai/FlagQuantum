@@ -60,6 +60,14 @@ this layer.
 decompositions: it turns any declared single-qubit unitary into z-rotations plus
 a pi/2 x-rotation, `sx` or `rx`, and it is a private helper rather than an
 expert-facing entry point.
+`optimization_levels.py` owns the declared levels and the sequence of pass names
+each one runs, including why the sequence is ordered the way it is, why level 3 is
+reserved rather than approximated, and which Qiskit pass each FlagQuantum pass
+corresponds to. It is a declaration and a validator, not a pass: `pipeline.py`
+resolves the names it returns and runs them to a fixed point, so the composition
+lives in one place and the level parameter is a selection over it rather than a
+second copy of it. It imports nothing from this package except the error type, so
+the declaration can be read without importing the passes it names.
 `one_qubit_optimization.py` owns the same-wire run fold that
 `pipeline._optimize_to_fixed_point` runs beside the identity, self-inverse, and
 adjacent-rotation passes: it composes a maximal run of single-qubit gates on one
@@ -122,12 +130,24 @@ python -m examples.compiler_optimize
 python -m examples.target_aware_compilation
 ```
 
+`examples/compiler_optimize.py` is the Compiler domain's ten-minute golden path.
+It reads the level vocabulary from `optimization_levels.py` and reports the gate
+count at every implemented level, shows level `2` reaching two gates on a circuit
+where level `1` stops at three, forwards a level through `compile`, and prints a
+reserved level failing closed with its reason. Re-run it after changing a pass
+set or a level's composition: it re-measures rather than re-asserting, so a
+level whose contract changed shows up as a changed count.
+
 Individual canonicalization functions are pipeline implementation details, not
 expert-facing entry points. Change or compose them through `optimize`.
 
 ## Ten-minute change path
 
 - Change local canonical optimization in `pipeline.py`.
+- Change how much optimization a level runs, or add a level, in
+  `optimization_levels.py`; the declaration is what `pipeline.py` executes, so a
+  pass added to a level and not to the loop's roster fails
+  `tests/team/compiler/test_optimization_levels.py` rather than passing silently.
 - Change instruction layer scheduling in `pipeline.py`.
 - Change coupling maps or SWAP routing in `routing.py`.
 - Change lookahead SWAP planning or the SABRE layout search in `sabre.py`.
@@ -141,10 +161,16 @@ expert-facing entry points. Change or compose them through `optimize`.
   `basis_translation.py`; re-run
   `tests/unit/test_compilation_basis_translation.py`, which pins every entry
   against the runtime, before touching anything else.
+- Run `python -m examples.compiler_synthesis` before and after changing a
+  synthesis leaf form. It executes each emitted leaf against the original
+  program, so it localizes a broken form faster than a full test file.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in
   `one_qubit_synthesis.py`.
+- Change a state-preparation ladder, its pulse emitter, or its refusal set in
+  `state_preparation_synthesis.py`.
 - Change two-qubit KAK angles, the Weyl-chamber fold, or the entangler cost in
-  `two_qubit_synthesis.py`.
+  `two_qubit_synthesis.py`; the example prints the entangler count, so a cost
+  change is visible without reading a test.
 - Change topology postconditions and routing audit in
   `topology_legalization.py`.
 - Change dependency-preserving logical scheduling and its audit in

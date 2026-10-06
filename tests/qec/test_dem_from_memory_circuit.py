@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, replace
 
 import pytest
 
+from flagquantum.errors import CapabilityError
 from flagquantum.qec import dem_construction as dem_module
 from flagquantum.qec.circuit import (
     Detector,
     DetectorLayout,
     MeasurementRef,
+    MemoryCircuit,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, ancilla_bands
+from flagquantum.qec.codes import (
+    CodeCheck,
+    RepetitionCode,
+    RotatedSurfaceCode,
+    ancilla_bands,
+)
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
     _forced_signature,
@@ -22,6 +30,7 @@ from flagquantum.qec.dem_construction import (
     _Mechanism,
     _mechanisms,
 )
+from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
 
@@ -702,3 +711,225 @@ def test_empty_signature_mechanisms_are_discarded() -> None:
         [(0.1, (0,), ()), (0.1, (), ())], num_detectors=1, num_observables=0
     )
     assert merged.num_errors == 1
+
+
+# Composite faults: the Y family read as one fault or as the X and Z faults it is
+# the XOR of. The decoder-facing question is which of the two readings states a
+# model a minimum-weight matcher can weight, and the answer is measured on a
+# rotated surface code rather than asserted, because the repetition code's
+# composite faults are already graphlike under either reading and would pass
+# either way.
+
+_COMPOSITE_READINGS = "decompose_composite_faults"
+
+
+def _signatures(
+    model: DetectorErrorModel,
+) -> dict[tuple[tuple[int, ...], tuple[int, ...]], float]:
+    """Return each signature's probability, which a model states once."""
+
+    return {
+        (error.detectors, error.observables): error.probability
+        for error in model.errors
+    }
+
+
+def _every_noise() -> PhenomenologicalNoise:
+    """Return a record with all four families at one rate."""
+
+    return PhenomenologicalNoise(
+        data_flip=0.01, phase_flip=0.01, both_flip=0.01, measurement_flip=0.01
+    )
+
+
+def _surface(rounds: int) -> MemoryCircuit:
+    """Return a distance-three rotated surface code's memory experiment."""
+
+    return build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=rounds)
+
+
+def test_the_option_defaults_to_the_combined_reading() -> None:
+    """A caller that states nothing gets the model every earlier caller got.
+
+    This is the whole compatibility claim of the option: the combined reading is
+    what the route has always produced, so naming it explicitly and omitting it
+    have to reach the same model rather than two that agree on the marginals.
+    """
+
+    built = _surface(2)
+    omitted = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    stated = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=False
+    )
+    assert _signatures(omitted) == _signatures(stated)
+
+
+def test_the_option_refuses_a_flag_that_is_not_a_boolean() -> None:
+    """``1`` is an integer and not a decision, so it fails closed by type."""
+
+    built = _surface(2)
+    with pytest.raises(TypeError, match="decompose_composite_faults must be a bool"):
+        DetectorErrorModel.from_memory_circuit(
+            built, noise=_every_noise(), decompose_composite_faults=1
+        )
+
+
+def test_a_composite_fault_is_the_x_and_z_faults_at_its_own_rate() -> None:
+    """The decomposed model is the two single-Pauli families at the same rate.
+
+    The reference is the route's own answer for an X fault and for a Z fault: a
+    record whose composite family is the only noisy one, read apart, has to reach
+    the model two records with the composite rate placed in the X field and in
+    the Z field reach. Nothing here re-derives a signature; both sides are read
+    off the program by the construction route's own injector.
+    """
+
+    built = _surface(2)
+    composite = DetectorErrorModel.from_memory_circuit(
+        built,
+        noise=PhenomenologicalNoise(both_flip=0.01),
+        decompose_composite_faults=True,
+    )
+    parts: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
+    for field in ("data_flip", "phase_flip"):
+        model = DetectorErrorModel.from_memory_circuit(
+            built, noise=PhenomenologicalNoise(**{field: 0.01})
+        )
+        for signature, probability in _signatures(model).items():
+            # The two halves touch disjoint detector and observable index ranges,
+            # so a signature is stated by at most one of them and a sum cannot
+            # hide an overlap that the decomposed model would have merged.
+            assert signature not in parts
+            parts[signature] = probability
+    assert set(_signatures(composite)) == set(parts)
+    for signature, probability in parts.items():
+        assert _signatures(composite)[signature] == pytest.approx(probability)
+
+
+def test_decomposing_widens_the_matcher_to_a_model_it_refused() -> None:
+    """The authority matcher refuses the combined model and answers the split one.
+
+    The refusal is the gap the option exists to close, so it is asserted by the
+    name it is reported under: the combined model states five mechanisms the
+    matcher calls hyperedges, four of three detectors and one of four, and the
+    decomposed model states none above two and the same matcher builds on it.
+    """
+
+    built = _surface(2)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    hyperedges = [error for error in combined.errors if len(error.detectors) > 2]
+    assert sorted(len(error.detectors) for error in hyperedges) == [3, 3, 3, 3, 4]
+    assert max(len(error.detectors) for error in decomposed.errors) == 2
+    with pytest.raises(CapabilityError, match="hyperedge"):
+        MinimumWeightMatchingDecoder.from_detector_error_model(combined)
+    matcher = MinimumWeightMatchingDecoder.from_detector_error_model(decomposed)
+    assert matcher.decode(()).observables == ()
+    assert matcher.decode((0,)).weight > 0.0
+    assert (
+        matcher.decode(tuple(error.detectors[0] for error in hyperedges)).weight > 0.0
+    )
+
+
+def test_decomposing_preserves_the_detector_and_observable_rates() -> None:
+    """Each detector's and each observable's own flip rate survives the reading.
+
+    A rate is the marginal of one target, and the parts of a composite fault
+    touch disjoint targets -- the X part reaches Z-type detectors and the Z part
+    X-type ones -- so replacing one fault by two changes the joint law and not a
+    single marginal. The tolerance is floating-point rounding and nothing wider:
+    the two models fold the same probabilities in a different order and no step
+    of either arithmetic is approximate.
+    """
+
+    built = _surface(2)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    assert combined.num_detectors == decomposed.num_detectors
+    assert combined.num_observables == decomposed.num_observables
+    for name in ("detector_rates", "observable_rates"):
+        left = getattr(combined, name)()
+        right = getattr(decomposed, name)()
+        assert bool((left - right).abs().max().item() < 1e-15)
+
+
+def test_a_noiseless_record_still_builds_an_empty_model() -> None:
+    """The reading does not invent a part where the program states no fault.
+
+    A location whose own probability is zero is not enumerated at all, and the
+    enumeration is the one place that rule is stated, so it holds under either
+    reading: a record that states no rate has no composite fault to read apart
+    and the decomposed model is the empty one with the circuit's shape, rather
+    than two parts of nothing at a rate nothing states.
+    """
+
+    built = _surface(2)
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built,
+        noise=PhenomenologicalNoise(),
+        decompose_composite_faults=True,
+    )
+    assert decomposed.num_errors == 0
+    assert decomposed.num_detectors == 16
+
+
+def test_a_code_whose_composite_faults_are_already_parts_changes_nothing() -> None:
+    """Where the program already separates the parts the two readings agree.
+
+    A repetition code's checks are Z-type alone, so a Z fault on a data qubit
+    reaches no detector in any round and the composite fault's X part carries its
+    whole signature; the two readings then state the same mechanisms at the same
+    rates rather than two models that happen to share their marginals.
+    """
+
+    for distance in (3, 5):
+        built = build_memory_circuit(RepetitionCode(distance=distance), rounds=3)
+        combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+        decomposed = DetectorErrorModel.from_memory_circuit(
+            built, noise=_every_noise(), decompose_composite_faults=True
+        )
+        assert combined.num_errors > 0
+        assert _signatures(combined) == _signatures(decomposed)
+
+
+def test_a_one_round_experiment_changes_nothing() -> None:
+    """One round places the composite fault where its parts are not separable yet.
+
+    At one round the composite fault of a rotated surface code flips at most two
+    detectors whole, so the combined model is already graphlike and the reading
+    costs nothing; the option is not a rewrite that changes a model it has no
+    room to change.
+    """
+
+    built = _surface(1)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    assert max(len(error.detectors) for error in combined.errors) == 2
+    assert _signatures(combined) == _signatures(decomposed)
+
+
+def test_the_matrix_route_states_no_decomposition_option() -> None:
+    """The code-capacity route makes no graphlike promise, so it has no keyword.
+
+    The matrix route reads a fault's signature as the support of a column against
+    two detector bands instead of off an executed program, so a part there reaches
+    four detectors at two rounds and decomposing it would not hand the matcher the
+    shape the option names. An option named for the reading on that route would
+    promise a model it cannot deliver, so its absence is pinned and adding the
+    keyword later is a decision rather than a slip.
+    """
+
+    matrix_route = inspect.signature(DetectorErrorModel.from_code_matrices)
+    assert _COMPOSITE_READINGS not in matrix_route.parameters
+    with pytest.raises(TypeError):
+        DetectorErrorModel.from_code_matrices(  # type: ignore[call-arg]
+            dem_module.css_code_matrices(RotatedSurfaceCode(distance=3)),
+            noise=_every_noise(),
+            decompose_composite_faults=True,
+        )

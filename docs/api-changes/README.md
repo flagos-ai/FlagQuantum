@@ -25,6 +25,7 @@ process.
 - [The algorithms slice of the qubit vocabulary migration](FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md)
 - [The drawer reads a legacy device's spelling without publishing it](FQ-DRAWER-LEGACY-QDEV-20261012.md)
 - [The Twin region composer relabels through the one qubit-relabelling rule](FQ-QUBIT-VOCABULARY-TWIN-REGION-20261018.md)
+- [The primitives package admits an export on three dimensions, and one export was deleted](FQ-ALGORITHMS-PRIMITIVES-ADMISSION-20261019.md)
 - [Azure Quantum remote run contract](FQ-AZURE-REMOTE-RUN-20260922.md)
 - [CPU noisy-MPS counts through `fq.run`](FQ-CPU-NOISY-MPS-COUNTS-20260924.md)
 - [Channel instruction parameters on the public `fq.Circuit` surface](FQ-CHANNEL-INSTRUCTION-PARAMETERS-20261002.md)
@@ -42,3 +43,4 @@ process.
 - [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
 - [A native SPSA optimizer for objectives with no gradient](FQ-SPSA-OPTIMIZER-20261002.md)
 - [A global phase on the program](FQ-IR-GLOBAL-PHASE-20261006.md)
+- [The optimization-level parameter on the compiler entry points](FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md)

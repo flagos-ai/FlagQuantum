@@ -15,9 +15,9 @@ import torch
 
 
 def _projected_kernel_enabled() -> bool:
-    """Return whether the experimental MPS-002 route is explicitly enabled."""
+    """Return whether the MPS-002 route is enabled inside fixed-rank QR."""
 
-    return os.getenv("FQ_TRITON_MPS_PROJECTED_TWO_SITE", "0").strip().lower() not in {
+    return os.getenv("FQ_TRITON_MPS_PROJECTED_TWO_SITE", "1").strip().lower() not in {
         "0",
         "false",
         "off",

@@ -77,6 +77,31 @@ fixed point, and compares the optimized program with the original numerical
 result. It uses `compiler.optimize`; target-aware lowering and routing belong to
 `compiler.compile`.
 
+It is also the compiler's optimization-level path. It prints the gate count at
+every implemented level, proves each level preserves the source state, shows a
+circuit where level `2` reaches two gates where level `1` stops at three and
+where level `0` returns the program as submitted, forwards the same level through
+`compiler.compile`, and prints the reserved level failing closed with its reason.
+The level vocabulary is read from
+`flagquantum.compiler.optimization_levels`, so adding a level changes one module
+and this path reports it.
+
+To rewrite gates a target cannot run into the gates that target publishes:
+
+```bash
+python -m examples.compiler_synthesis
+```
+
+This example declares a target basis (a z-rotation, a pi/2 pulse about `x`, and
+one entangler) and then spells an `h`, a `swap`, and a four-amplitude state in
+that basis. Each case executes the rewrite next to the original on the shipped
+statevector engine, removes the global phase a synthesis result cannot record
+in FlagQuantum IR, and prints the residual that remains. It also prints what the
+boundary refuses -- a non-supercontrolled entangler, a z-rotation that is not
+entrywise exact, and a pulse opcode the module cannot emit -- because a refusal
+is the boundary's answer, not a fallback. The three entry points are reached by
+module path; none of them is a stable `fq.compiler` export.
+
 To exercise the optional single-GPU Triton kernel for local one-qubit gates:
 
 ```bash

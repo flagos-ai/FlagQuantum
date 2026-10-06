@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import replace
 from math import isclose
 from typing import Any
@@ -10,6 +10,10 @@ from typing import Any
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
 from ..errors import CompilationError
+from .optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    optimization_level_stages,
+)
 from .routing import (
     CouplingMap,
     record_post_routing_optimization,
@@ -244,14 +248,14 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
     return layers
 
 
-def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
-    # Imported here rather than at module scope: these passes read this layer, so a
-    # module-level import in this direction would be circular.
-    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
-    # parameter arithmetic below, `inverse_cancellation` reads
-    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
-    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
-    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
+def _round_passes() -> dict[str, Callable[[CircuitIR], CircuitIR]]:
+    """Resolve the declared pass names to the implementations that own them.
+
+    The mapping is keyed on the names a level's declaration lists, so a name a
+    level lists and this mapping does not define is a `KeyError` at the first call
+    rather than a silently skipped pass.
+    """
+
     from .commutation_cancellation import (
         cancel_commuting_self_inverse,
         merge_commuting_rotations,
@@ -261,45 +265,92 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
     from .one_qubit_optimization import collapse_one_qubit_runs
     from .two_qubit_optimization import collapse_two_qubit_blocks
 
+    return {
+        "remove_zero_state_resets": remove_zero_state_resets,
+        "remove_diagonal_gates_before_measure": remove_diagonal_gates_before_measure,
+        "remove_identity_gates": remove_identity_gates,
+        "merge_self_inverse": merge_self_inverse,
+        "merge_inverse_pairs": merge_inverse_pairs,
+        "merge_adjacent_rotations": merge_adjacent_rotations,
+        "merge_commuting_rotations": merge_commuting_rotations,
+        "cancel_commuting_self_inverse": cancel_commuting_self_inverse,
+        "collapse_one_qubit_runs": collapse_one_qubit_runs,
+        "collapse_two_qubit_blocks": collapse_two_qubit_blocks,
+    }
+
+
+def _with_recorded_level(ir: CircuitIR, level: int) -> CircuitIR:
+    """Record the level the caller asked for, so the request is readable.
+
+    A caller who asked for level 0 and a caller who passed `optimize=False` to
+    `compile` get different programs only in this field: level 0 is a request
+    that was honored, and no field at all means no request was made.
+    """
+
+    metadata = dict(ir.metadata)
+    metadata["optimization"] = {"level": level}
+    return replace(ir, metadata=metadata)
+
+
+def _optimize_to_fixed_point(
+    circuit_or_ir: Any,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+) -> CircuitIR:
+    """Run one declared level's pass sequence to a fixed point.
+
+    The sequence, and the reason each pass sits where it does, are declared in
+    `optimization_levels.OPTIMIZATION_LEVEL_STAGES`; this function is the loop
+    that runs the declaration rather than a second copy of it. A level whose
+    sequence is empty is answered with the program unchanged, which is what
+    level 0 means.
+    """
+
+    stages = optimization_level_stages(optimization_level)
     ir = _as_ir(circuit_or_ir)
+    if not stages:
+        return _with_recorded_level(ir, optimization_level)
+    # `_round_passes` imports the passes here rather than at module scope: they read
+    # this layer, so a module-level import in this direction would be circular.
+    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
+    # parameter arithmetic below, `inverse_cancellation` reads
+    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
+    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
+    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
+    passes = _round_passes()
     max_rounds = len(ir) + 1
     for _ in range(max_rounds):
         previous_count = len(ir)
-        # First, because a reset this pass can remove is removable whatever the passes
-        # below do, and removing it hands them a shorter program. The loop, not this
-        # ordering, is what earns the reach on a qubit the passes below only empty out
-        # later: `x(0) x(0) reset(0)` needs a second round.
-        ir = remove_zero_state_resets(ir)
-        # Second, for the same reason: a diagonal gate read out only by measurements is
-        # unobservable whatever the passes below do to the rest of the program, and
-        # dropping it hands them a shorter one. Its own reach is what needs the loop --
-        # `x(0) x(0) z(0) measure(0)` only exposes `z` once the pair cancels.
-        ir = remove_diagonal_gates_before_measure(ir)
-        ir = remove_identity_gates(ir)
-        ir = merge_self_inverse(ir)
-        ir = merge_inverse_pairs(ir)
-        ir = merge_adjacent_rotations(ir)
-        # Straight after the adjacent merge, because it is the same arithmetic on
-        # the same parameter and differs only in how far apart the halves may sit.
-        ir = merge_commuting_rotations(ir)
-        ir = cancel_commuting_self_inverse(ir)
-        ir = remove_identity_gates(ir)
-        ir = collapse_one_qubit_runs(ir)
-        # Last, so that a block this pass composes is one the single-qubit passes have
-        # already had: `collapse_one_qubit_runs` folds the single-qubit gates it draws
-        # in as members, and running it first keeps those members the smallest spelling
-        # of themselves. Its own reach needs the loop: the `cz` that replaces
-        # `swap cz swap` is a gate the next round can then cancel against a neighbour.
-        ir = collapse_two_qubit_blocks(ir)
+        for name in stages:
+            ir = passes[name](ir)
         if len(ir) == previous_count:
-            return ir
+            return _with_recorded_level(ir, optimization_level)
     raise CompilationError("compiler optimization passes did not reach a fixed point")
 
 
-def optimize(circuit_or_ir: Any) -> CircuitIR:
-    """Apply target-independent circuit optimizations to a fixed point."""
+def optimize(
+    circuit_or_ir: Any,
+    *,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+) -> CircuitIR:
+    """Apply target-independent circuit optimizations to a fixed point.
 
-    return _optimize_to_fixed_point(circuit_or_ir)
+    `optimization_level` selects one of the declared pass sequences in
+    `flagquantum.compiler.optimization_levels`: 1 collapses adjacent gates and
+    removes work that cannot be observed, 2 additionally commutes gates past one
+    another, and 0 is the request to leave the program as submitted. The level
+    this call used is recorded under `metadata["optimization"]`. A reserved or
+    unknown level raises `CompilationError` rather than falling back, so a
+    caller cannot be handed a weaker program than it asked for.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.compiler import optimize
+        >>> program = fq.Circuit(1).h(0).h(0).to_ir()
+        >>> len(optimize(program, optimization_level=1).instructions)
+        0
+    """
+
+    return _optimize_to_fixed_point(circuit_or_ir, optimization_level)
 
 
 def compile(
@@ -308,17 +359,27 @@ def compile(
     coupling_map: CouplingMap | Iterable[tuple[int, int]] | None = None,
     routing_strategy: str = "restore_after_each_gate",
     optimize: bool = True,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     config: RuntimeConfig | None = None,
 ) -> CircuitIR:
-    """Compile a circuit with optional topology routing and optimization."""
+    """Compile a circuit with optional topology routing and optimization.
 
+    `optimization_level` is forwarded to `optimize` at both points this function
+    optimizes -- before routing and again after it, because routing inserts SWAPs
+    and the second pass is what cancels them. It is validated here whether or not
+    `optimize` is set: a reserved level is a capability this release does not
+    have, and a caller that also asked for no optimization is the one case where
+    ignoring the level would hide that instead of reporting it.
+    """
+
+    optimization_level_stages(optimization_level)
     ir = _as_ir(circuit_or_ir)
     selected_config = config or get_runtime_config()
     metadata = dict(ir.metadata)
     metadata["runtime_config"] = selected_config.to_manifest()
     ir = replace(ir, metadata=metadata)
     if optimize:
-        ir = _optimize_to_fixed_point(ir)
+        ir = _optimize_to_fixed_point(ir, optimization_level)
     if coupling_map is not None:
         coupling = (
             coupling_map
@@ -336,7 +397,7 @@ def compile(
             strategy=selected_routing_strategy,
         )
         if optimize:
-            ir = _optimize_to_fixed_point(ir)
+            ir = _optimize_to_fixed_point(ir, optimization_level)
         ir = record_post_routing_optimization(ir)
         if strategy_selection is not None:
             metadata = dict(ir.metadata)
