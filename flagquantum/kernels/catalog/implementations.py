@@ -164,6 +164,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         maturity="provisional",
     ),
     _triton(
+        "FQKI-TRITON-SV-011-A",
+        "statevector.apply.pauli_rotation_2q.local",
+        "statevector_pauli_rotation",
+        "apply_complex64_local_pauli_rotation_2q",
+        layouts=("flat_statevector", "pauli_rotation_coefficients"),
+        maturity="provisional",
+    ),
+    _triton(
         "FQKI-TRITON-GR-001-A",
         "gradient.vjp.adjoint_1q.local",
         "statevector_adjoint",

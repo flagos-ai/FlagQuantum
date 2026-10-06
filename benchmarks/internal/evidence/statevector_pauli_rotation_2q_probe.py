@@ -25,6 +25,7 @@ IMPLEMENTATION_ID = "FQKI-TRITON-SV-011-A"
 RUNNER = "benchmarks/internal/evidence/statevector_pauli_rotation_2q_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
+DEFAULT_MIN_QUBITS = 20
 SHAPE_MATRIX = (
     (1, 16, (0, 1), "XX", False),
     (1, 20, (0, 19), "YY", False),
@@ -98,6 +99,7 @@ def _shape_record(
         "qubits": list(qubits),
         "pauli": pauli,
         "batched_parameter": batched_parameter,
+        "default_dispatch_eligible": n_qubits >= DEFAULT_MIN_QUBITS,
     }
 
 
@@ -286,7 +288,21 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
 
     cases = [case for run in runs for case in run["cases"]]
     speedups = [float(case["speedup_over_product"]) for case in cases]
+    default_cases = [
+        case
+        for case in cases
+        if bool(_mapping(case["shape"], "shape")["default_dispatch_eligible"])
+    ]
+    excluded_cases = [
+        case
+        for case in cases
+        if not bool(_mapping(case["shape"], "shape")["default_dispatch_eligible"])
+    ]
+    default_speedups = [
+        float(case["speedup_over_product"]) for case in default_cases
+    ]
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
+    all_default_cases_win = all(speedup > 1.0 for speedup in default_speedups)
     return {
         "benchmark": BENCHMARK,
         "schema": EVIDENCE_SCHEMA,
@@ -311,6 +327,11 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
             "case_count": len(cases),
             "minimum_speedup_over_product": min(speedups),
             "maximum_speedup_over_product": max(speedups),
+            "default_dispatch_case_count": len(default_cases),
+            "excluded_small_state_case_count": len(excluded_cases),
+            "minimum_default_dispatch_speedup_over_product": min(
+                default_speedups
+            ),
             "maximum_absolute_error": max(
                 float(case["maximum_absolute_error"]) for case in cases
             ),
@@ -318,9 +339,10 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
                 float(case["relative_l2_error"]) for case in cases
             ),
             "all_cases_win": all_cases_win,
+            "all_default_dispatch_cases_win": all_default_cases_win,
             "decision": (
-                "eligible_for_dispatch_evaluation"
-                if all_cases_win
+                "eligible_for_bounded_dispatch_evaluation"
+                if all_default_cases_win
                 else "optimize_before_promotion"
             ),
         },
