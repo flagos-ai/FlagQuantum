@@ -416,6 +416,22 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `real_provider_evidence`, and `system_acceptance` false. They update only the
   two-host development evidence; they do not satisfy any live-provider,
   pinned-runtime, portability, protein, or final acceptance gate.
+- After the explicit `cuda:0` entrypoint restriction and the system, training,
+  portability, and evaluation producer gates were hardened, the same isolated
+  rehearsal passed again on both hosts at source revision
+  `d35f3ec35aafa3bd71c57ff0f878544bb3f65be2`. The private mode-0600 record
+  digests are
+  `0582c7c2c595b07bac291fcc5099b19464373a9b28cacf2fe945eeaed5e1b830`
+  (`jp-a800-171`) and
+  `43c49e51e688ef5569d439207434dfb1f6a12dbfcd2d1bda51767df807334d0e`
+  (`jp-a800-172`). Both offline retained-record validations passed; each run
+  observed `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, made ten calls within
+  the 64-call development budget, reported no fallback, and retained
+  `qboson_hardware_used=false`, `real_provider_evidence=false`, and
+  `system_acceptance=false`. The reviewed sources and records again existed on
+  the hosts only inside network-disabled, read-only, auto-removed tmpfs
+  containers with logging disabled. This is current-revision development
+  evidence only and does not advance a live QBoson or protein acceptance gate.
 - Retained development records now have an offline `validate-record` path that
   rechecks the private record, extraction preflight, retained manifest, host,
   image, and revision hash chain without SSH or provider access. Source
