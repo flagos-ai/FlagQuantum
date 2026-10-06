@@ -729,3 +729,50 @@ def test_vendor_operation_error_is_redacted_and_checkpoint_is_restored(
     assert "sdk-code-secret" not in encoded
     assert json.loads(encoded)["receipt"]["task_name"] == "redacted"
     monkeypatch.setattr(_FakeOptimizer, "solve", original_solve)
+
+
+def test_restart_after_indeterminate_sdk_failure_reuses_original_receipt(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    original_solve = _FakeOptimizer.solve
+
+    def failing_solve(self: _FakeOptimizer, matrix: np.ndarray) -> object:
+        del self, matrix
+        raise RuntimeError("indeterminate provider failure")
+
+    monkeypatch.setattr(_FakeOptimizer, "solve", failing_solve)
+    first_client, _ = _client(monkeypatch, tmp_path)
+
+    with pytest.raises(KaiwuSDKError, match="task operation failed"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=first_client,
+            task_name="restart-after-indeterminate",
+            mode="sampling",
+            requested_samples=10,
+            project_no="CPQC-test",
+        )
+
+    recovery_paths = list(tmp_path.glob("flagquantum-kaiwu-*.json"))
+    assert len(recovery_paths) == 1
+    first_payload = json.loads(recovery_paths[0].read_text(encoding="utf-8"))
+    first_submitted_at = first_payload["receipt"]["submitted_at"]
+
+    monkeypatch.setattr(_FakeOptimizer, "solve", original_solve)
+    restarted_client, _ = _client(monkeypatch, tmp_path)
+    resumed = submit_kaiwu_task(
+        _MATRIX,
+        client=restarted_client,
+        task_name="restart-after-indeterminate",
+        mode="sampling",
+        requested_samples=10,
+        project_no="CPQC-test",
+    )
+
+    assert resumed.receipt.submitted_at == first_submitted_at
+    assert resumed.receipt.task_name == "restart-after-indeterminate"
+    assert resumed.receipt.matrix_sha256 == first_payload["receipt"]["matrix_sha256"]
+    assert resumed.receipt.project_no == "CPQC-test"
+    assert restarted_client.recovery_receipt_path(resumed.receipt) == recovery_paths[0]
+    assert len(list(tmp_path.glob("flagquantum-kaiwu-*.json"))) == 1
+    assert resumed.result().samples == tuple((1, -1) for _ in range(10))

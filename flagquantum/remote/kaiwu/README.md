@@ -59,6 +59,10 @@ solve, poll, and result path reopens that authoritative recovery bundle and
 requires the in-memory receipt to match it exactly. A separately saved job
 receipt is therefore resumable only alongside the original checkpoint
 directory and cannot override its identity.
+If the first vendor operation fails after the bundle is published, rebuilding
+the client with the same task name, matrix, mode, sample count, and project
+reuses the original receipt timestamp and recovery path; it must not create a
+second local task identity.
 
 The generic lifecycle independently validates every restored receipt before
 calling a client: runtime field types, exact matrix identity, task mode,

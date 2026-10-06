@@ -203,6 +203,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   This closes the ambiguous-submission window: a process restart reuses the
   original timestamp and task/matrix identity, while corrupt or conflicting
   bundles fail before any SDK operation.
+- Recovery coverage now includes an indeterminate first SDK-operation failure:
+  a newly constructed client with the same frozen request reuses the original
+  receipt timestamp and sole deterministic recovery path before retrieving the
+  result, rather than creating a second local task identity.
 - Checkpoint directories now fail before license initialization unless they are
   private, regular directories. Recovery and explicit job receipts are synced
   before atomic no-overwrite publication and reopened without following
