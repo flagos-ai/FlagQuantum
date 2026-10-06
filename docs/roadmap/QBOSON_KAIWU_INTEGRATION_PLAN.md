@@ -986,6 +986,26 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   only the two independent single-host A800 development records and establish
   no live-provider, system, protein, distributed, multi-node, or domestic-
   accelerator acceptance.
+- After extending effective-UID ownership to shared evidence, final bundle
+  publication, protein outputs, and stable snapshots, and after normalizing
+  streamed extraction ownership, the rehearsal passed again at source revision
+  `f44323912fda05c8e39dcc3ea75a5ebd39c40c0a`. The two retained mode-0600
+  records passed their offline manifest, extraction-preflight, host, image, and
+  revision hash-chain validation. Their SHA-256 digests are
+  `450f1940bb9542b530aaeaafd84368b68ca0e112eb1d515adcfedd230461e6c9`
+  (`jp-a800-171`) and
+  `b31525376161b1d09099a2556e8db8e1e776435d0ea6f8aa5ad9f3fc108a4fa1`
+  (`jp-a800-172`). Each independent run observed
+  `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten calls within the
+  64-call development budget, passed forward, bounded fake sampling, backward,
+  update, generation, and token constraints, and reported no fallback. Inputs,
+  workspace, and evidence existed on each host only in tmpfs inside a
+  network-disabled, read-only, logging-disabled, auto-removed container. No
+  QBoson credential, service, or quota was used. Both records remain
+  `development_fake_transport` with `qboson_hardware_used=false`,
+  `real_provider_evidence=false`, and `system_acceptance=false`; they establish
+  no live-provider, system, protein, distributed, multi-node, or domestic-
+  accelerator acceptance.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor
