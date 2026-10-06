@@ -593,6 +593,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   parameterized subprocess test starts all thirteen commands from an unrelated
   working directory with only the reviewed root on `PYTHONPATH`, preventing an
   older installed FlagQuantum from silently satisfying imports.
+- The acceptance runbook is now contract-tested against every core CLI parser:
+  each documented command must include all `required=True` long options and
+  may not contain an option absent from the corresponding implementation. CLI
+  drift therefore fails locally before an A800 or quota-consuming session.
 - Transfer verification now binds each archive's internal top-level directory
   to its declared revision. A separate post-extraction verifier compares every
   regular file and the exact file/directory set with the reviewed archives,

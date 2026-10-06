@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -44,6 +46,22 @@ LIVE_HOST_ENTRYPOINTS = (
     "qdiffusion_system_live",
 )
 
+RUNBOOK_ACCEPTANCE_ENTRYPOINTS = (
+    "build_transfer_bundle",
+    "verify_transfer_bundle",
+    "verify_extracted_bundle",
+    "build_environment_lock",
+    "verify_environment_lock",
+    "qboson_live_smoke",
+    "qdiffusion_system_live",
+    "preflight_protein_artifacts",
+    "qdiffusion_protein_training_live",
+    "qdiffusion_protein_evaluate",
+    "qdiffusion_portability_replay_live",
+    "assemble_acceptance",
+    "validate_acceptance",
+)
+
 
 def _runbook_command(entrypoint: str) -> str:
     runbook = (
@@ -56,6 +74,38 @@ def _runbook_command(entrypoint: str) -> str:
     start = runbook.index(marker)
     end = runbook.index("```", start)
     return runbook[start:end]
+
+
+def _argument_flags(entrypoint: str) -> tuple[set[str], set[str]]:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / f"{entrypoint}.py"
+    ).read_text(encoding="utf-8")
+    all_flags: set[str] = set()
+    required_flags: set[str] = set()
+    for node in ast.walk(ast.parse(source)):
+        if (
+            not isinstance(node, ast.Call)
+            or not isinstance(node.func, ast.Attribute)
+            or node.func.attr != "add_argument"
+            or not node.args
+            or not isinstance(node.args[0], ast.Constant)
+            or not isinstance(node.args[0].value, str)
+            or not node.args[0].value.startswith("--")
+        ):
+            continue
+        flag = node.args[0].value
+        all_flags.add(flag)
+        if any(
+            keyword.arg == "required"
+            and isinstance(keyword.value, ast.Constant)
+            and keyword.value.value is True
+            for keyword in node.keywords
+        ):
+            required_flags.add(flag)
+    return all_flags, required_flags
 
 
 @pytest.mark.parametrize("entrypoint", ENTRYPOINTS)
@@ -141,6 +191,16 @@ def test_runbook_never_relies_on_default_provider_sample_count(
     command = _runbook_command(entrypoint)
 
     assert '--requested-samples "$FROZEN_REQUESTED_SAMPLES"' in command
+
+
+@pytest.mark.parametrize("entrypoint", RUNBOOK_ACCEPTANCE_ENTRYPOINTS)
+def test_runbook_commands_match_required_cli_contract(entrypoint: str) -> None:
+    command = _runbook_command(entrypoint)
+    all_flags, required_flags = _argument_flags(entrypoint)
+    documented_flags = set(re.findall(r"--[a-z][a-z0-9-]*", command))
+
+    assert required_flags <= documented_flags
+    assert documented_flags <= all_flags
 
 
 @pytest.mark.parametrize("entrypoint", LIVE_HOST_ENTRYPOINTS)
