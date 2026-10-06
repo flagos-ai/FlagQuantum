@@ -482,13 +482,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   single-host A800 development records, not multi-node, distributed, domestic-
   accelerator, live-provider, system, or protein acceptance evidence.
 - The isolated development rehearsal was refreshed again at source revision
-  `1cd19888fcd98e76520541ae5512bce072a9eada` after the platform-coordination
-  record and current local conformance evidence were committed. Both streamed
+  `902a3bb70e81352efb40ba13ded8d788611b1894` after the provider-identifier
+  pre-credential gate, current platform state, and asset intake were committed.
+  Both streamed
   records passed the offline retained-record validator from a persistent local
   mode-0700 evidence directory. Their mode-0600 SHA-256 digests are
-  `922ec83c7573746b038ed4616a4831cd90c9c864bba5efad2a7ccf522d037583`
+  `fb4be8b82ebe5f3f2905bb81c8dbca5fdb8d8bc2f1bc5a80a28dac556f5e276f`
   (`jp-a800-171`) and
-  `14f082bc48d13b8cbbbfc04542a558454ccda4f961b6abecf8aa3801899feccd`
+  `922716d8e1627c104774091282a0c7ff9d9a0fbf26ab4b4b906510a9993d44e8`
   (`jp-a800-172`). Each independent run observed
   `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten calls within the
   64-call development budget, produced a finite objective plus nonzero gradient
