@@ -46,6 +46,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
+    _completed_provider_result_has_identity,
     _load_frozen_config,
     _precision_evidence_complete,
     _receipt_records,
@@ -267,11 +268,11 @@ def run_portability_replay(
     precision_reports = sampler.precision_reports
     precision_evidence = sampler.precision_evidence
     precision_complete = _precision_evidence_complete(sampler, receipts)
-    verified_transport = real_provider_transport and isinstance(client, KaiwuSDKClient)
+    verified_transport = real_provider_transport and type(client) is KaiwuSDKClient
     provider_use_proven = bool(
         verified_transport
-        and provider_identity_complete
         and sampler.remote_call_count > 0
+        and _completed_provider_result_has_identity(sampler)
     )
     run_completed = failure is None
     portability_pass = bool(

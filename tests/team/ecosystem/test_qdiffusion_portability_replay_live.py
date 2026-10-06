@@ -211,6 +211,64 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
     assert record["acceptance"]["portability"] == "fail"
 
 
+def test_portability_replay_sdk_subclass_cannot_claim_real_transport(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _InjectedSubclass(_CompletedClient):
+        pass
+
+    checkpoint = tmp_path / "trained.pt"
+    checkpoint.write_bytes(b"trained")
+    builder = SimpleNamespace(
+        build_qdiffusion=lambda **kwargs: _Generator(kwargs["bm_sampler"])
+    )
+    runtime = SimpleNamespace(
+        load_trained_energy_weights=lambda *args: {},
+        seed_torch=lambda seed: None,
+        encode_sequence=lambda *args, **kwargs: torch.tensor([[1, 2, 3]]),
+    )
+    io_module = SimpleNamespace(read_fasta_records=lambda path: [("protein", "ACDE")])
+    monkeypatch.setattr(portability_module, "KaiwuSDKClient", _CompletedClient)
+
+    record = run_portability_replay(
+        builder=builder,
+        runtime=runtime,
+        io_module=io_module,
+        client=_InjectedSubclass(),
+        config=_config(),
+        config_sha256="a" * 64,
+        artifact_preflight_sha256="e" * 64,
+        training_record_sha256="b" * 64,
+        test_fasta=tmp_path / "test.fasta",
+        base_checkpoint=tmp_path / "dplm",
+        trained_checkpoint=checkpoint,
+        trained_checkpoint_sha256=hashlib.sha256(b"trained").hexdigest(),
+        execution_host="jp-a800-172",
+        observed_hostname="host-172",
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        source_revision="c" * 40,
+        plugin_revision="d" * 40,
+        source_preflight_sha256="f" * 64,
+        transfer_manifest_sha256="0" * 64,
+        environment_lock_sha256="1" * 64,
+        sdk_version="1.3.1",
+        project_no="project",
+        task_prefix="replay-subclass",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        device=torch.device("cpu"),
+        real_provider_transport=True,
+    )
+
+    assert record["run_completed"] is True
+    assert record["transport"] == "injected_test"
+    assert record["pinned_sdk_client"] is False
+    assert record["qboson_hardware_used"] is False
+    assert record["real_provider_evidence"] is False
+    assert record["acceptance"]["portability"] == "fail"
+
+
 def test_portability_replay_preserves_proven_provider_use_after_local_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -265,6 +323,69 @@ def test_portability_replay_preserves_proven_provider_use_after_local_failure(
     assert record["qboson_hardware_used"] is True
     assert record["real_provider_evidence"] is True
     assert record["acceptance"]["portability"] == "fail"
+
+
+def test_portability_replay_receipt_only_timeout_does_not_claim_provider_use(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _PendingClient(_CompletedClient):
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            return "Pending"
+
+    checkpoint = tmp_path / "trained.pt"
+    checkpoint.write_bytes(b"trained")
+    builder = SimpleNamespace(
+        build_qdiffusion=lambda **kwargs: _Generator(kwargs["bm_sampler"])
+    )
+    runtime = SimpleNamespace(
+        load_trained_energy_weights=lambda *args: {},
+        seed_torch=lambda seed: None,
+        encode_sequence=lambda *args, **kwargs: torch.tensor([[1, 2, 3]]),
+    )
+    io_module = SimpleNamespace(read_fasta_records=lambda path: [("protein", "ACDE")])
+    monkeypatch.setattr(portability_module, "KaiwuSDKClient", _PendingClient)
+
+    record = run_portability_replay(
+        builder=builder,
+        runtime=runtime,
+        io_module=io_module,
+        client=_PendingClient(),
+        config=_config(),
+        config_sha256="a" * 64,
+        artifact_preflight_sha256="e" * 64,
+        training_record_sha256="b" * 64,
+        test_fasta=tmp_path / "test.fasta",
+        base_checkpoint=tmp_path / "dplm",
+        trained_checkpoint=checkpoint,
+        trained_checkpoint_sha256=hashlib.sha256(b"trained").hexdigest(),
+        execution_host="jp-a800-172",
+        observed_hostname="host-172",
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        source_revision="c" * 40,
+        plugin_revision="d" * 40,
+        source_preflight_sha256="f" * 64,
+        transfer_manifest_sha256="0" * 64,
+        environment_lock_sha256="1" * 64,
+        sdk_version="1.3.1",
+        project_no="project",
+        task_prefix="replay-receipt-only-timeout",
+        requested_samples=10,
+        timeout=0.0,
+        poll_interval=0.01,
+        device=torch.device("cpu"),
+        real_provider_transport=True,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "TimeoutError"
+    assert record["remote_call_count"] == 1
+    assert record["provider_identity_complete"] is True
+    assert record["returned_samples"] is None
+    assert record["qboson_hardware_used"] is False
+    assert record["real_provider_evidence"] is False
 
 
 def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> None:

@@ -215,6 +215,9 @@ later task or local step fails, `qboson_hardware_used` and
 erased. `run_completed`, the relevant acceptance gate, and hardware acceptance
 remain false. A receipt-only timeout or failed attempt is retained for recovery
 but is not by itself sufficient to prove hardware use.
+The live smoke, system, training, and replay producers require the exact pinned
+`KaiwuSDKClient` type; an injected subclass remains test transport even if a
+caller sets a real-transport flag.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
 private checkpoint directory, and an explicitly selected project. All

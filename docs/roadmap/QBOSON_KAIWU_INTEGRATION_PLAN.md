@@ -629,6 +629,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   artifact postflight fails, so consumed quota is not erased from evidence.
   The run and acceptance gates still fail; a submitted receipt without a
   validated result does not by itself claim hardware use.
+- All four quota-consuming evidence producers now require the exact pinned
+  `KaiwuSDKClient` type before claiming real transport or hardware use. An
+  injected subclass cannot promote itself through `isinstance` plus a
+  caller-controlled transport flag.
 - Final validation now builds one global provider-task identity set across the
   Phase 2 smoke, both system probes, every protein-training seed, and the
   portability replay. Reusing one provider task ID across nominally distinct

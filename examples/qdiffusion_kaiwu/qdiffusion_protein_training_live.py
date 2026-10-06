@@ -43,6 +43,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     ACKNOWLEDGEMENT,
+    _completed_provider_result_has_identity,
     _load_frozen_config,
     _precision_evidence_complete,
     _validate_lane,
@@ -294,8 +295,8 @@ def run_training_seed(
     verified_provider_transport = type(sampler.client) is KaiwuSDKClient
     qboson_hardware_used = bool(
         verified_provider_transport
-        and provider_identity_complete
         and sampler.remote_call_count > 0
+        and _completed_provider_result_has_identity(sampler)
     )
     return {
         "schema": SCHEMA,

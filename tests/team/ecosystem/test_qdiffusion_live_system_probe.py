@@ -215,6 +215,54 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     ]
 
 
+def test_live_system_sdk_subclass_cannot_claim_real_transport(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class _InjectedSubclass(_IdentityClient):
+        pass
+
+    def execute_once(
+        device: torch.device, *, sampler: object, **kwargs: object
+    ) -> dict[str, object]:
+        del device, kwargs
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        return {}
+
+    monkeypatch.setattr(system_module, "KaiwuSDKClient", _IdentityClient)
+    monkeypatch.setattr(system_module, "_execute_qdiffusion_slice", execute_once)
+    record = run_live_system_probe(
+        client=_InjectedSubclass(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="test CPU",
+        project_no="CPQC-test",
+        task_prefix="subclass-system-test",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        real_provider_transport=True,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is True
+    assert record["transport"] == "injected_test"
+    assert record["pinned_sdk_client"] is False
+    assert record["qboson_hardware_used"] is False
+    assert record["real_provider_evidence"] is False
+    assert record["acceptance"] == {"system": "fail", "application": "not_run"}
+
+
 def test_live_system_converts_keyboard_interrupt_to_failed_record(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -301,6 +349,143 @@ def test_live_system_preserves_proven_provider_use_after_local_failure(
     assert record["qboson_hardware_used"] is True
     assert record["real_provider_evidence"] is True
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
+
+
+def test_live_system_receipt_only_timeout_does_not_claim_provider_use(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class _PendingClient(_IdentityClient):
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            return "Pending"
+
+    def submit_then_timeout(
+        device: torch.device, *, sampler: object, **kwargs: object
+    ) -> dict[str, object]:
+        del device, kwargs
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        return {}
+
+    monkeypatch.setattr(system_module, "KaiwuSDKClient", _PendingClient)
+    monkeypatch.setattr(
+        system_module, "_execute_qdiffusion_slice", submit_then_timeout
+    )
+    record = run_live_system_probe(
+        client=_PendingClient(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="test CPU",
+        project_no="CPQC-test",
+        task_prefix="receipt-only-timeout",
+        requested_samples=10,
+        timeout=0.0,
+        poll_interval=0.01,
+        real_provider_transport=True,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "TimeoutError"
+    assert record["remote_call_count"] == 1
+    assert record["provider_identity_complete"] is True
+    assert record["returned_samples"] is None
+    assert record["qboson_hardware_used"] is False
+    assert record["real_provider_evidence"] is False
+
+
+def test_live_system_preserves_completed_result_when_later_receipt_times_out(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class _PartialClient(_IdentityClient):
+        def submit(
+            self,
+            matrix: FrozenIsingMatrix,
+            *,
+            task_name: str,
+            mode: KaiwuTaskMode,
+            requested_samples: int,
+            project_no: str | None,
+        ) -> KaiwuTaskReceipt:
+            self.submissions += 1
+            return new_receipt(
+                task_name=task_name,
+                matrix=matrix,
+                mode=mode,
+                requested_samples=requested_samples,
+                project_no=project_no,
+                provider_task_id=(
+                    f"completed-{self.submissions}" if self.submissions == 1 else None
+                ),
+                provider_target=(
+                    "injected-target" if self.submissions == 1 else None
+                ),
+            )
+
+        def query_status(
+            self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+        ) -> str:
+            del receipt, matrix
+            return "Completed" if self.submissions == 1 else "Pending"
+
+    def complete_then_timeout(
+        device: torch.device, *, sampler: object, **kwargs: object
+    ) -> dict[str, object]:
+        del device, kwargs
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
+        )
+        sampler.solve(  # type: ignore[attr-defined]
+            np.asarray([[0.0, 0.5, 0.5], [0.5, 0.0, 0.0], [0.5, 0.0, 0.0]])
+        )
+        return {}
+
+    monkeypatch.setattr(system_module, "KaiwuSDKClient", _PartialClient)
+    monkeypatch.setattr(
+        system_module, "_execute_qdiffusion_slice", complete_then_timeout
+    )
+    record = run_live_system_probe(
+        client=_PartialClient(),
+        config=_config(),
+        config_sha256="c" * 64,
+        execution_host="jp-a800-171",
+        observed_hostname="test-hostname",
+        source_revision="a" * 40,
+        plugin_revision="b" * 40,
+        source_preflight_sha256="d" * 64,
+        transfer_manifest_sha256="e" * 64,
+        environment_lock_sha256="f" * 64,
+        sdk_version="1.3.1",
+        device=torch.device("cpu"),
+        observed_gpu="test CPU",
+        project_no="CPQC-test",
+        task_prefix="completed-then-timeout",
+        requested_samples=10,
+        timeout=0.0,
+        poll_interval=0.01,
+        real_provider_transport=True,
+        plugin_root=tmp_path,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "TimeoutError"
+    assert record["remote_call_count"] == 2
+    assert record["provider_identity_complete"] is False
+    assert record["returned_samples"] == 10
+    assert record["qboson_hardware_used"] is True
+    assert record["real_provider_evidence"] is True
 
 
 @pytest.mark.parametrize(

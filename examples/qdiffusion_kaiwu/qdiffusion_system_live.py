@@ -127,6 +127,19 @@ def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
     ]
 
 
+def _completed_provider_result_has_identity(sampler: KaiwuSampler) -> bool:
+    """Require a validated result, not merely a submitted task receipt."""
+
+    result = sampler.last_result
+    return bool(
+        result is not None
+        and isinstance(result.receipt.provider_task_id, str)
+        and bool(result.receipt.provider_task_id.strip())
+        and isinstance(result.receipt.provider_target, str)
+        and bool(result.receipt.provider_target.strip())
+    )
+
+
 def _precision_evidence_complete(
     sampler: KaiwuSampler,
     receipts: list[dict[str, Any]],
@@ -302,13 +315,13 @@ def run_live_system_probe(
     precision_reports = sampler.precision_reports
     precision_evidence = sampler.precision_evidence
     precision_complete = _precision_evidence_complete(sampler, receipts)
-    verified_provider_transport = real_provider_transport and isinstance(
-        client, KaiwuSDKClient
+    verified_provider_transport = (
+        real_provider_transport and type(client) is KaiwuSDKClient
     )
     provider_use_proven = bool(
         verified_provider_transport
-        and provider_identity_complete
         and sampler.remote_call_count > 0
+        and _completed_provider_result_has_identity(sampler)
     )
     system_acceptance = bool(
         run_completed

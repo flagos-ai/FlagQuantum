@@ -250,8 +250,27 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert "HF_HUB_OFFLINE" in source
 
 
+@pytest.mark.parametrize(
+    ("last_result", "expected_hardware_used"),
+    (
+        (None, False),
+        (
+            SimpleNamespace(
+                receipt=SimpleNamespace(
+                    provider_task_id="provider-task",
+                    provider_target="SPQC-provider",
+                ),
+                samples=((1, -1, 1),),
+            ),
+            True,
+        ),
+    ),
+)
 def test_training_seed_records_interruption_without_claiming_acceptance(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    last_result: object,
+    expected_hardware_used: bool,
 ) -> None:
     workflow = _workflow_types()
     workflow.build_qdiffusion = lambda **kwargs: SimpleNamespace(
@@ -324,6 +343,7 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         SimpleNamespace(
             client=object(),
             remote_call_count=1,
+            last_result=last_result,
             receipts=(receipt,),
             precision_reports=(precision_report,),
             precision_evidence=(precision_evidence,),
@@ -369,8 +389,8 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["failure"]["type"] == "KeyboardInterrupt"
     assert record["transport"] == "kaiwu_cim"
     assert record["pinned_sdk_client"] is True
-    assert record["real_provider_evidence"] is True
-    assert record["qboson_hardware_used"] is True
+    assert record["real_provider_evidence"] is expected_hardware_used
+    assert record["qboson_hardware_used"] is expected_hardware_used
     assert record["qboson_target"] == "SPQC-provider"
     assert record["qboson_task_ids"] == ["provider-task"]
     assert record["requested_samples"] == 10
