@@ -82,9 +82,9 @@ Do not change thresholds after seeing results.
 Use mode `0700` for evidence and checkpoint directories:
 
 ```bash
-install -d -m 700 private-evidence private-kaiwu-checkpoints
+install -d -m 700 /absolute/private-evidence /absolute/private-kaiwu-checkpoints
 cp examples/qdiffusion_kaiwu/acceptance_config.example.json \
-  private-evidence/acceptance_config.json
+  /absolute/private-evidence/acceptance_config.json
 ```
 
 The SDK client rejects a checkpoint directory that is a symlink or is
@@ -96,7 +96,7 @@ files before any SDK task operation.
 Review the completed JSON and record its digest:
 
 ```bash
-sha256sum private-evidence/acceptance_config.json
+sha256sum /absolute/private-evidence/acceptance_config.json
 ```
 
 The config must designate one primary host and the other portability-replay
@@ -261,9 +261,9 @@ one optimization task and one sampling task and may consume quota:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
-  --checkpoint-dir private-kaiwu-checkpoints \
+  --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
-  --output private-evidence/qboson-smoke-attempt-001.json \
+  --output /absolute/private-evidence/qboson-smoke-attempt-001.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-smoke-${RUN_ID}" \
   --expected-sdk-version 1.3.1 \
@@ -277,6 +277,12 @@ pinned SDK mapping cannot supply stable provider task and target identities.
 Only the command's real SDK path records `transport=kaiwu_cim`,
 `real_provider_evidence=true`, and `qboson_hardware_used=true`; injected test
 clients cannot produce hardware acceptance.
+
+The project and task prefix must be nonempty. The output path must be absolute,
+its parent must already be a private real directory, and the output itself must
+not exist. These conditions are checked before credential resolution and again
+at exclusive publication; a raced or accidentally reused filename is never
+overwritten after quota has been consumed.
 
 The smoke record includes a redacted `provider_result_schema` from the SDK's
 documented `get_task_result` dictionary. It contains field names and structural
@@ -297,9 +303,9 @@ recorded identity is not a random container ID.
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
-  --config private-evidence/acceptance_config.json \
-  --checkpoint-dir private-kaiwu-checkpoints \
-  --output private-evidence/system-attempt-001.json \
+  --config /absolute/private-evidence/acceptance_config.json \
+  --checkpoint-dir /absolute/private-kaiwu-checkpoints \
+  --output /absolute/private-evidence/system-attempt-001.json \
   --execution-host jp-a800-171 \
   --expected-hostname "$EXPECTED_MACHINE_HOSTNAME" \
   --source-revision "$FLAGQUANTUM_REVISION" \
@@ -610,7 +616,7 @@ summary cannot pass after its underlying remote evidence is removed or changed.
 This demonstrates portability between the two available A800 environments
 only; it is not multi-node or distributed execution.
 
-## 11. Assemble the immutable evidence bundle
+## 10. Assemble the immutable evidence bundle
 
 After both system probes, the portability replay, and every configured
 training/evaluation seed pass, assemble them without manually copying metrics:
@@ -656,20 +662,19 @@ paths, and the on-disk file tree must exactly equal the manifest's declared set;
 unlisted files are rejected.
 Missing, extra, replaced, or selectively omitted source or seed records fail.
 
-## 10. Assemble and validate final evidence
+## 11. Independently revalidate final evidence
 
 The live-system probe record is an attempt record, not by itself the final
-acceptance record. Join accepted system evidence with the primary application
-metrics and the replay result into exactly two host records following the
-schema enforced by `validate_acceptance.py`. Create a manifest based on
-`acceptance_manifest.example.json`, using relative paths and freshly computed
-SHA-256 digests.
+acceptance record. The assembler is the only supported path for joining
+accepted system evidence, primary application metrics, and the replay result
+into exactly two host records. Do not hand-edit its records or construct a
+replacement manifest from `acceptance_manifest.example.json`.
 
 Run the fail-closed validator from the same source revision:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.validate_acceptance \
-  private-evidence/acceptance_manifest.json
+  /absolute/final/qboson-qdiffusion-acceptance/manifest.json
 ```
 
 The validator recomputes the decision. It rejects changed software or config,
