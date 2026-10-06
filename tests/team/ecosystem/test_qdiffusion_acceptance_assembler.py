@@ -32,6 +32,29 @@ def _config() -> dict[str, Any]:
     return _full_config()
 
 
+def _artifact_preflight(config: dict[str, Any], config_sha256: str) -> dict[str, Any]:
+    return {
+        "schema": "flagquantum.qboson_qdiffusion_artifact_preflight",
+        "version": "1.0",
+        "offline_preflight_only": True,
+        "acceptance_evidence": False,
+        "config_sha256": config_sha256,
+        "artifacts": {
+            artifact_name: {
+                "sha256": config[config_name]["sha256"],
+                "algorithm": "file-sha256-v1",
+                "file_count": 1,
+            }
+            for artifact_name, config_name in {
+                "dataset": "dataset",
+                "base_checkpoint": "checkpoint",
+                "tokenizer": "tokenizer",
+                "evaluation_model": "evaluation_model",
+            }.items()
+        },
+    }
+
+
 def _system(
     host: str,
     role: str,
@@ -853,8 +876,15 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     config_path = tmp_path / "acceptance_config.json"
     config_sha = _write_json(config_path, config)
 
+    artifact_preflight_path = tmp_path / "components" / "artifact-preflight.json"
+    artifact_preflight_record = _artifact_preflight(config, config_sha)
+    artifact_preflight_sha = _write_json(
+        artifact_preflight_path, artifact_preflight_record
+    )
+
     components = tmp_path / "components"
-    components.mkdir(mode=0o700)
+    components.mkdir(mode=0o700, exist_ok=True)
+    components.chmod(0o700)
     transfer_manifest_path = components / "transfer-manifest.json"
     transfer_manifest_record = _transfer_manifest()
     transfer_manifest_sha = _write_json(
@@ -901,6 +931,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     ]
     for index, (training_record, _) in enumerate(training_templates):
         training_record["environment_lock_sha256"] = environment_lock_sha
+        training_record["artifact_preflight_sha256"] = artifact_preflight_sha
         path = tmp_path / "components" / f"training-{index}.json"
         digest = _write_json(path, training_record)
         training_entries.append((training_record, digest))
@@ -920,9 +951,11 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         transfer_manifest_sha256=transfer_manifest_sha,
         environment_lock_sha256=environment_lock_sha,
     )
+    portability_record["artifact_preflight_sha256"] = artifact_preflight_sha
     portability_path = tmp_path / "components" / "portability.json"
     portability_sha = _write_json(portability_path, portability_record)
     component_paths.append(portability_path)
+    component_paths.append(artifact_preflight_path)
 
     primary, replay = assemble_records(
         config=config,
@@ -966,6 +999,27 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest_path = tmp_path / "manifest.json"
     _write_json(manifest_path, manifest)
 
+    assert validate_acceptance(manifest_path) == []
+
+    tampered_artifact_preflight = json.loads(
+        component_paths[12].read_text(encoding="utf-8")
+    )
+    tampered_artifact_preflight["artifacts"]["dataset"]["sha256"] = "0" * 64
+    tampered_artifact_preflight_sha = _write_json(
+        component_paths[12], tampered_artifact_preflight
+    )
+    manifest["component_records"][12]["sha256"] = tampered_artifact_preflight_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "artifact preflight: dataset identity differs from config" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_artifact_preflight_sha = _write_json(
+        component_paths[12], artifact_preflight_record
+    )
+    manifest["component_records"][12]["sha256"] = restored_artifact_preflight_sha
+    _write_json(manifest_path, manifest)
     assert validate_acceptance(manifest_path) == []
 
     loaded_training, loaded_sha = _load_component(
@@ -1220,5 +1274,15 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
 
     assert any(
         "differs from component aggregation" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_training = dict(training_entries[0][0])
+    tampered_training["artifact_preflight_sha256"] = "0" * 64
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training references another artifact preflight" in error
         for error in validate_acceptance(manifest_path)
     )

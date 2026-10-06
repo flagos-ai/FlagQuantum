@@ -29,6 +29,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     preflight_artifacts,
 )
 from examples.qdiffusion_kaiwu.private_io import (
+    read_private_bytes,
     validate_private_directory,
     validate_private_json_output_path,
 )
@@ -64,6 +65,7 @@ from flagquantum.remote.kaiwu import (
 )
 
 SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay"
+_MAX_ARTIFACT_PREFLIGHT_BYTES = 4 * 1024 * 1024
 
 
 def _load_pinned_modules(
@@ -485,7 +487,11 @@ def main() -> None:
     if artifact_preflight.get("config_sha256") != config_sha256:
         raise RuntimeError("frozen experiment config changed before portability replay")
     artifact_preflight_sha256 = hashlib.sha256(
-        args.artifact_preflight_output.read_bytes()
+        read_private_bytes(
+            args.artifact_preflight_output,
+            label="artifact preflight",
+            max_bytes=_MAX_ARTIFACT_PREFLIGHT_BYTES,
+        )
     ).hexdigest()
 
     device = torch.device("cuda:0")

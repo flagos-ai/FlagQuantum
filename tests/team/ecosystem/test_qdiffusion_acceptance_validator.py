@@ -657,6 +657,26 @@ def test_validator_rejects_extra_or_public_evidence_directories(
 def test_component_validator_rejects_different_host_transfer_manifests() -> None:
     config = _config()
     component_payloads = {
+        "0" * 64: {
+            "schema": "flagquantum.qboson_qdiffusion_artifact_preflight",
+            "version": "1.0",
+            "offline_preflight_only": True,
+            "acceptance_evidence": False,
+            "config_sha256": "c" * 64,
+            "artifacts": {
+                artifact_name: {
+                    "sha256": config[config_name]["sha256"],
+                    "algorithm": "file-sha256-v1",
+                    "file_count": 1,
+                }
+                for artifact_name, config_name in {
+                    "dataset": "dataset",
+                    "base_checkpoint": "checkpoint",
+                    "tokenizer": "tokenizer",
+                    "evaluation_model": "evaluation_model",
+                }.items()
+            },
+        },
         "1" * 64: _source_preflight("jp-a800-171", "a" * 64),
         "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
         "a" * 64: _transfer_manifest(),

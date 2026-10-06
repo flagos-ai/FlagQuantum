@@ -596,6 +596,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   them and the exact shared transfer manifest as immutable components, and
   revalidates every execution record's link to the correct host preflight and
   that self-contained manifest.
+- Final evidence now retains the frozen protein-artifact preflight as a required
+  component instead of leaving only an external digest. Every seed's training
+  record and the replay-host portability record must reference that one copied
+  preflight, whose config and four artifact identities are independently
+  checked during offline final validation.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

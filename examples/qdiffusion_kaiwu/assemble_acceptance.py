@@ -13,6 +13,9 @@ from statistics import fmean
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_SCHEMA,
+)
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
     SCHEMA as PORTABILITY_SCHEMA,
@@ -599,6 +602,7 @@ def main() -> None:
     parser.add_argument("--primary-source-preflight", required=True, type=Path)
     parser.add_argument("--replay-source-preflight", required=True, type=Path)
     parser.add_argument("--transfer-manifest", required=True, type=Path)
+    parser.add_argument("--artifact-preflight", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
     parser.add_argument("--training-record", action="append", required=True, type=Path)
     parser.add_argument(
@@ -614,6 +618,7 @@ def main() -> None:
         args.primary_source_preflight,
         args.replay_source_preflight,
         args.transfer_manifest,
+        args.artifact_preflight,
         args.portability,
         *args.training_record,
         *args.evaluation_record,
@@ -640,6 +645,9 @@ def main() -> None:
     transfer_manifest = _load_component(
         args.transfer_manifest, TRANSFER_MANIFEST_SCHEMA
     )
+    artifact_preflight = _load_component(
+        args.artifact_preflight, ARTIFACT_PREFLIGHT_SCHEMA
+    )
     portability = _load_component(args.portability, PORTABILITY_SCHEMA)
     training = [_load_component(path, TRAINING_SCHEMA) for path in args.training_record]
     evaluations = [
@@ -664,6 +672,7 @@ def main() -> None:
         "primary-source-preflight.json": args.primary_source_preflight,
         "replay-source-preflight.json": args.replay_source_preflight,
         "transfer-manifest.json": args.transfer_manifest,
+        "artifact-preflight.json": args.artifact_preflight,
         "portability.json": args.portability,
     }
     for index, path in enumerate(args.training_record):
@@ -676,6 +685,7 @@ def main() -> None:
         "primary-source-preflight.json": primary_source_preflight[1],
         "replay-source-preflight.json": replay_source_preflight[1],
         "transfer-manifest.json": transfer_manifest[1],
+        "artifact-preflight.json": artifact_preflight[1],
         "portability.json": portability[1],
     }
     for index, (_, digest) in enumerate(training):

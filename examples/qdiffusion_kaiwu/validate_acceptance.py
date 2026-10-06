@@ -19,6 +19,10 @@ from examples.qdiffusion_kaiwu.plan_quota import (
 from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import ARTIFACT_FIELDS
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
+)
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.sdk_approval import (
     validate_sdk_approval_record,
@@ -1523,6 +1527,7 @@ def _validate_component_bundle(
 
     seeds = config.get("seeds", [])
     expected_schema_counts = {
+        ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA: 1,
         SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
         TRANSFER_MANIFEST_SCHEMA: 1,
         SYSTEM_COMPONENT_SCHEMA: 2,
@@ -1545,12 +1550,59 @@ def _validate_component_bundle(
             errors.append(f"component {digest}: unsupported version")
         if (
             payload.get("schema")
-            not in (SOURCE_PREFLIGHT_COMPONENT_SCHEMA, TRANSFER_MANIFEST_SCHEMA)
+            not in (
+                ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
+                SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
+                TRANSFER_MANIFEST_SCHEMA,
+            )
             and payload.get("experiment_config_sha256") != config_sha256
         ):
             errors.append(
                 f"component {digest}: frozen experiment config identity mismatch"
             )
+
+    artifact_preflights = [
+        (digest, payload)
+        for digest, payload in component_payloads.items()
+        if payload.get("schema") == ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA
+    ]
+    artifact_preflight_digest, artifact_preflight = artifact_preflights[0]
+    if artifact_preflight.get("offline_preflight_only") is not True:
+        errors.append("artifact preflight: offline-only flag is not proven")
+    if artifact_preflight.get("acceptance_evidence") is not False:
+        errors.append("artifact preflight: record overstates acceptance")
+    if artifact_preflight.get("config_sha256") != config_sha256:
+        errors.append("artifact preflight: frozen config identity mismatch")
+    preflight_artifacts = _mapping(
+        artifact_preflight.get("artifacts"), "artifact preflight.artifacts", errors
+    )
+    if set(preflight_artifacts) != set(ARTIFACT_FIELDS):
+        errors.append("artifact preflight: artifact set is incomplete")
+    else:
+        for artifact_name, config_name in ARTIFACT_FIELDS.items():
+            identity = _mapping(
+                preflight_artifacts.get(artifact_name),
+                f"artifact preflight.{artifact_name}",
+                errors,
+            )
+            frozen = _mapping(
+                config.get(config_name), f"config.{config_name}", errors
+            )
+            if identity.get("sha256") != frozen.get("sha256"):
+                errors.append(
+                    f"artifact preflight: {artifact_name} identity differs from config"
+                )
+            if identity.get("algorithm") not in {
+                "file-sha256-v1",
+                "tree-sha256-v1",
+            }:
+                errors.append(
+                    f"artifact preflight: {artifact_name} algorithm is unsupported"
+                )
+            if type(identity.get("file_count")) is not int or identity["file_count"] <= 0:
+                errors.append(
+                    f"artifact preflight: {artifact_name} file count is invalid"
+                )
 
     software = _mapping(config.get("software"), "config.software", errors)
     source_preflights: dict[str, tuple[str, dict[str, Any]]] = {}
@@ -1607,6 +1659,7 @@ def _validate_component_bundle(
 
     for digest, payload in component_payloads.items():
         if payload.get("schema") in (
+            ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
             SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
             TRANSFER_MANIFEST_SCHEMA,
         ):
@@ -1746,6 +1799,10 @@ def _validate_component_bundle(
             label=f"seed {seed}",
             errors=errors,
         )
+        if training.get("artifact_preflight_sha256") != artifact_preflight_digest:
+            errors.append(
+                f"seed {seed}: training references another artifact preflight"
+            )
     for seed, (_, evaluation) in evaluation_by_seed.items():
         _validate_evaluation_component(
             evaluation,
@@ -1837,6 +1894,8 @@ def _validate_component_bundle(
     )
     if portability.get("acceptance") != {"portability": "pass"}:
         errors.append("replay: portability component did not pass")
+    if portability.get("artifact_preflight_sha256") != artifact_preflight_digest:
+        errors.append("replay: portability references another artifact preflight")
     for field in ("training_record_sha256", "trained_energy_checkpoint_sha256"):
         if portability.get(field) != portability_evidence.get(field):
             errors.append(
@@ -2109,7 +2168,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     primary = by_host[primary_host]
     replay = by_host[replay_host]
     if primary.get("component_bundle_required") is True:
-        expected_component_count = 6 + 2 * len(config.get("seeds", []))
+        expected_component_count = 7 + 2 * len(config.get("seeds", []))
         if len(component_payloads) != expected_component_count:
             errors.append(
                 "manifest: component bundle does not contain every source record"
@@ -2197,12 +2256,23 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         if isinstance(evidence_records, list):
             for record in evidence_records:
                 if isinstance(record, dict):
-                    referenced_component_hashes.add(
-                        record.get("training_record_sha256")
-                    )
+                    training_digest = record.get("training_record_sha256")
+                    referenced_component_hashes.add(training_digest)
                     referenced_component_hashes.add(
                         record.get("evaluation_record_sha256")
                     )
+                    training_component = component_payloads.get(training_digest)
+                    if isinstance(training_component, dict):
+                        referenced_component_hashes.add(
+                            training_component.get("artifact_preflight_sha256")
+                        )
+        portability_component = component_payloads.get(
+            portability_evidence.get("record_sha256")
+        )
+        if isinstance(portability_component, dict):
+            referenced_component_hashes.add(
+                portability_component.get("artifact_preflight_sha256")
+            )
         if referenced_component_hashes != set(component_payloads):
             errors.append(
                 "manifest: final records do not reference the exact component bundle"
