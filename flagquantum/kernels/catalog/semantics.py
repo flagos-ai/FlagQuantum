@@ -107,6 +107,17 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "variational_algorithms",
     ),
     _semantic(
+        "FQK-SV-011",
+        "statevector.apply.pauli_rotation_2q.local",
+        "statevector",
+        "Apply an XX, YY, or ZZ two-qubit Pauli rotation to local amplitudes.",
+        "hamiltonian_simulation",
+        "vqe",
+        "qaoa",
+        "quantum_machine_learning",
+        "many_body_simulation",
+    ),
+    _semantic(
         "FQK-SV-013",
         "statevector.apply.reversible_permutation_3q.local",
         "statevector",

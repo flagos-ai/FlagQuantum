@@ -143,6 +143,17 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-011-A",
+        "tests/unit/test_statevector_pauli_rotation_2q_triton.py::test_local_pauli_rotation_matches_matrix_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_pauli_rotation_2q_triton.py::test_local_pauli_rotation_rejects_non_cuda_state",
+            "tests/unit/test_statevector_pauli_rotation_2q_triton.py::test_local_pauli_rotation_rejects_unsupported_contracts",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_pauli_rotation_2q_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-SV-013-A",
         "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
         capability_tests=(
