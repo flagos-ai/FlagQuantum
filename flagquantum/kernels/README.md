@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 26 semantics,
-28 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 28 semantics,
+30 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -89,6 +89,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-MPS-005 | `mps.environment.transfer_channels` | `fused_mps_environment_channels` |
 | FQK-MPS-006 | `mps.gradient.hermitian_observable_adjoint.local` | `fused_mps_hermitian_observable_adjoint` |
 | FQK-MPS-007 | `mps.measurement.wire_probabilities.local` | `fused_mps_qubit_probabilities` |
+| FQK-MPS-008 | `mps.sampling.collapse_wire.local` | `fused_mps_sampling_collapse` |
 | FQK-MEAS-001 | `measurement.probabilities.statevector` | `statevector_probabilities` |
 | FQK-MEAS-002 | `measurement.expectation.pauli_product.statevector` | `statevector_pauli_expectation` |
 | FQK-MEAS-003 | `measurement.probabilities.marginal.statevector` | `statevector_marginal_probabilities` |
@@ -901,6 +902,27 @@ scalability claim.
 Reproduce or validate it with
 [`benchmarks/mps_wire_probability_dispatch.py`](../../benchmarks/mps_wire_probability_dispatch.py).
 
+MPS-008 is the forward-only sampled-wire update that follows MPS-007 in
+sequential MPS sampling. It selects the measured physical slice, normalizes the
+resulting right boundary, contracts that boundary into the next site, and
+materializes the collapsed basis tensor. The experimental direct Triton wrapper
+supports contiguous CUDA `complex64` inputs with both bond dimensions at most
+64 and retains the exact PyTorch operation elsewhere. It is not connected to
+runtime dispatch in this change.
+
+The checked-in
+[`mps_sampling_collapse_a800.json`](../../benchmarks/results/local/mps_sampling_collapse_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for five fixed
+sampling-step shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
+3.7.1 and FlagTree 0.7.0. Across all 20 host, compiler, and shape cases, the
+direct wrapper is `1.435x` to `1.785x` faster than the exact PyTorch semantic.
+Maximum absolute and relative L2 error are `1.20e-6` and `1.97e-7`. The
+aggregate decision is `eligible_for_dispatch_evaluation`: this authorizes a
+separate public-path benchmark and dispatch PR, not default routing, maturity
+promotion, a release gate, or a scalability claim. Reproduce or validate it
+with
+[`benchmarks/internal/evidence/mps_sampling_collapse_probe.py`](../../benchmarks/internal/evidence/mps_sampling_collapse_probe.py).
+
 NUM-002 contracts the explicit non-view layout `azcb,czdb->zad` as a strided
 complex batched matrix multiplication, avoiding canonical input
 materialization. The checked-in
@@ -1048,14 +1070,14 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 27 semantics and 34 implementations are implemented. The 25 direct
+The current 28 semantics and 35 implementations are implemented. The 25 direct
 Triton `-A` implementations from SV-001 through SV-009, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
 reason above, while the other listed routes have evidenced default-dispatch
-promotions. The two generic-autograd Triton `-B` implementations, the two NUM
-implementations, and the five explicit FlagTree implementations remain
-experimental, for nine experimental implementations in total.
+promotions. MPS-008, the two generic-autograd Triton `-B` implementations, the
+two NUM implementations, and the five explicit FlagTree implementations remain
+experimental, for ten experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 

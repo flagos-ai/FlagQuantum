@@ -316,6 +316,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-MPS-008-A",
+        "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cuda_matches_reference",
+        capability_tests=(
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cpu_fallback_matches_reference",
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_unsupported_input_uses_fallback",
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_validates_input",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_sampling_collapse_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-MEAS-001-A",
         "tests/unit/test_statevector_probabilities_triton.py::test_statevector_probabilities_cuda_matches_reference",
         "tests/unit/test_statevector_probability_catalog_dispatch.py::test_statevector_probability_runtime_uses_catalog",

@@ -279,6 +279,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         internal_fallback=True,
     ),
     _triton(
+        "FQKI-TRITON-MPS-008-A",
+        "mps.sampling.collapse_wire.local",
+        "mps_sampling_collapse",
+        "fused_mps_sampling_collapse",
+        layouts=("mps_sampling_step",),
+        internal_fallback=True,
+    ),
+    _triton(
         "FQKI-TRITON-MEAS-001-A",
         "measurement.probabilities.statevector",
         "statevector_measurement",
