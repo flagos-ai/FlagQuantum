@@ -161,6 +161,7 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         )
         cosine = torch.cos(angles / 2)
         sine = torch.sin(angles / 2)
+        rotation = torch.complex(cosine, sine)
         identity = torch.eye(4, device="cuda", dtype=torch.complex64)
         operator = _pauli_matrix(pauli, device=state.device)
         matrices = (
@@ -170,8 +171,7 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         direct = partial(
             apply_complex64_local_pauli_rotation_2q,
             state,
-            cosine,
-            sine,
+            rotation,
             qubits=qubits,
             pauli=pauli,
         )
