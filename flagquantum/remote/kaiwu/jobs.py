@@ -29,6 +29,7 @@ from .contracts import (
 
 _MAX_PRIVATE_JSON_BYTES = 64 * 1024 * 1024
 _PRIVATE_JSON_READ_CHUNK_BYTES = 1024 * 1024
+_MAX_RECEIPT_CLOCK_SKEW = timedelta(minutes=5)
 
 
 def _effective_uid() -> int:
@@ -363,6 +364,8 @@ def _validate_receipt(
         submitted_at = None
     if submitted_at is None or submitted_at.utcoffset() != timedelta(0):
         raise ValueError("Kaiwu task receipt must have an aware UTC submission time")
+    if submitted_at > datetime.now(timezone.utc) + _MAX_RECEIPT_CLOCK_SKEW:
+        raise ValueError("Kaiwu task receipt submission time is in the future")
     for field_name in ("provider_task_id", "provider_target"):
         value = getattr(receipt, field_name)
         if value is not None and (

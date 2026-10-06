@@ -4,6 +4,7 @@ import json
 import os
 import stat
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -92,6 +93,41 @@ def test_submit_status_and_result_never_resubmit() -> None:
     assert result.metadata["fallback_occurred"] is False
     assert client.submit_calls == 1
     assert client.result_calls == 1
+
+
+def test_submit_rejects_future_provider_receipt_before_status() -> None:
+    class FutureReceiptClient(_FakeClient):
+        def submit(
+            self,
+            matrix: FrozenIsingMatrix,
+            *,
+            task_name: str,
+            mode: KaiwuTaskMode,
+            requested_samples: int,
+            project_no: str | None,
+        ) -> KaiwuTaskReceipt:
+            receipt = super().submit(
+                matrix,
+                task_name=task_name,
+                mode=mode,
+                requested_samples=requested_samples,
+                project_no=project_no,
+            )
+            return replace(
+                receipt,
+                submitted_at=(
+                    datetime.now(timezone.utc) + timedelta(hours=1)
+                ).isoformat(),
+            )
+
+    client = FutureReceiptClient()
+
+    with pytest.raises(ValueError, match="submission time is in the future"):
+        submit_kaiwu_task(_MATRIX, client=client, task_name="future-receipt")
+
+    assert client.submit_calls == 1
+    assert client.status_calls == 0
+    assert client.result_calls == 0
 
 
 def test_wait_polls_to_completion_without_resubmission(
@@ -529,6 +565,11 @@ def test_restore_rejects_duplicate_json_keys(tmp_path: Path, encoded: str) -> No
         ("project_no", "project\tname", "invalid project number"),
         ("submitted_at", "2026-10-05T00:00:00", "aware UTC"),
         ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
+        (
+            "submitted_at",
+            (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+            "submission time is in the future",
+        ),
         ("provider_task_id", 7, "invalid provider_task_id"),
         ("provider_task_id", "   ", "invalid provider_task_id"),
         ("provider_task_id", "task\nid", "invalid provider_task_id"),

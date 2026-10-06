@@ -116,10 +116,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - Task names and optional project numbers must be nonempty printable text before
   sampler construction or Remote submission. Restored receipt task/project and
   provider task/target identities additionally require canonical surrounding
-  whitespace, and provider status text rejects control characters. The final
-  acceptance validator independently enforces the same receipt identity rule,
-  preventing log or JSON injection without inventing an undocumented vendor
-  character alphabet or length limit.
+  whitespace, receipt submission times more than five minutes in the future are
+  rejected before polling or result retrieval, and provider status text rejects
+  control characters. The final acceptance validator independently enforces the
+  same receipt identity rule, preventing log or JSON injection without inventing
+  an undocumented vendor character alphabet or length limit.
 - All four quota-consuming CLI paths now share one project-number and
   task-prefix normalizer. They trim once and reject empty, control, or format
   characters before credential resolution or SDK construction, so an invalid
