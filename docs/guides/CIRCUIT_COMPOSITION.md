@@ -1,16 +1,17 @@
 # Construction-time circuit composition
 
 `fq.Circuit.compose` continues one circuit with another program placed on chosen
-qubits. `fq.Circuit.adjoint` returns a new circuit that undoes one. Both are
+qubits. `fq.Circuit.adjoint` returns a new circuit that undoes one. `fq.Circuit.power`
+returns a new circuit that applies one a whole number of times. All three are
 **construction-time** operations: they emit instructions the existing IR already
-describes, so `IR_VERSION` stays `"1.0"` and neither adds a root export. This guide is
+describes, so `IR_VERSION` stays `"1.0"` and none adds a root export. This guide is
 about writing programs that use them; the guarantees and every refusal are frozen in
 [`contracts/circuit-composition-contract.toml`](../../contracts/circuit-composition-contract.toml).
 
 Two things this guide does not do. It does not describe a second program
 representation — a composed circuit *is* a `fq.Circuit`, and `to_ir()` on it is the same
-IR as before. And it does not present `control` or `power`: those are recorded as absent
-in the contract, see [What is not provided](#what-is-not-provided).
+IR as before. And it does not present `control`: that is recorded as absent in the
+contract, see [What is not provided](#what-is-not-provided).
 
 ## Placing a program on chosen qubits
 
@@ -303,22 +304,81 @@ classically conditioned gate (`it is classically conditioned, which has no fixed
 inverse`). Each refusal names the reason, so `except CapabilityError` tells you what
 happened instead of where.
 
+## Repeating a program
+
+`Circuit.power(k)` applies the program `k` times, for an integer `k`. The definition is
+the repetition, so the instructions come back in the receiver's own order rather than
+merged:
+
+```python
+import flagquantum as fq
+
+block = fq.Circuit(2).rx(0, 0.3).cx(0, 1)
+print([(item.name, item.params) for item in block.power(2).to_ir().instructions])
+# [('rx', {'theta': 0.3}), ('cx', {}), ('rx', {'theta': 0.3}), ('cx', {})]
+print([item.name for item in block.power(0).to_ir().instructions], block.power(0).n_qubits)
+# [] 2  -- zero is the empty program of the same width
+```
+
+One rewrite shortens the common case. When the receiver is exactly one instruction that
+declares exactly one parameter, `k` multiplies that parameter instead of repeating the
+gate, so `rx(0.3)` raised to four is the single gate `rx(1.2)`. The rule belongs to the
+gate and is declared once per opcode in `flagquantum/core/operator_schema.py`; 12 of the
+35 registered opcodes take it and the other 23 repeat, because scaling every angle of a
+gate that declares several of them is a different operator:
+
+```python
+import flagquantum as fq
+
+print([(item.name, item.params) for item in fq.Circuit(1).rx(0, 0.3).power(4).to_ir().instructions])
+# [('rx', {'theta': 1.2})]  -- one instruction, the angle scaled
+print([item.name for item in fq.Circuit(1).h(0).power(2).to_ir().instructions])
+# ['h', 'h']  -- no angle to scale, so the gate repeats
+```
+
+A negative exponent is `adjoint().power(-k)`, which keeps the inverse rule in one place:
+`power(-1)` is exactly `adjoint()`, so a channel under a negative exponent raises the
+same `CapabilityError` that `adjoint` raises rather than a second refusal of its own:
+
+```python
+import flagquantum as fq
+
+block = fq.Circuit(2).h(0).ry(0, 0.3).cx(0, 1)
+print([(item.name, item.params) for item in block.power(-1).to_ir().instructions])
+# [('cx', {}), ('ry', {'theta': -0.3}), ('h', {})]  -- the same as block.adjoint()
+```
+
+A fractional exponent is refused rather than approximated, because the IR has no
+instruction form for a matrix root. That is an owned gap: PennyLane constructs and runs
+`qml.Hadamard(0) ** 0.5`, and closing the difference needs a new instruction form rather
+than a change to `power`:
+
+```python
+import flagquantum as fq
+
+try:
+    fq.Circuit(1).rx(0, 0.3).power(0.5)
+except TypeError as error:
+    print(error)
+# Circuit power must be an integer, got 0.5
+```
+
 ## What is not provided
 
-`Circuit.control` and `Circuit.power` belong to the same construction-time family and
-are **not** provided. They are named in the contract as `not_provided`, with the reason,
-so that their absence is a recorded gap rather than something you discover by trying:
+`Circuit.control` belongs to the same construction-time family and is **not** provided.
+It is named in the contract as `not_provided`, with the reason, so that its absence is a
+recorded gap rather than something you discover by trying:
 
 ```python
 import flagquantum as fq
 
 print(hasattr(fq.Circuit, "control"), hasattr(fq.Circuit, "power"))
-# False False
+# False True  -- control is absent, power landed with its own API change record
 ```
 
-Adding either one changes the contract, and the contract names the authority it needs —
-an approved API change proposal. Until one exists, a controlled block is written by hand,
-or by placing the block on the qubits a control gate you already have acts on.
+Adding it changes the contract, and the contract names the authority it needs — an
+approved API change proposal. Until one exists, a controlled block is written by hand, or
+by placing the block on the qubits a control gate you already have acts on.
 
 ## Where the guarantees are written down
 
@@ -326,8 +386,9 @@ or by placing the block on the qubits a control gate you already have acts on.
 |---|---|
 | What does `compose` guarantee about placement? | `[placement]` in `contracts/circuit-composition-contract.toml` |
 | What does `adjoint` guarantee about order and qubits? | `[adjoint]` in the same contract |
-| Which refusals exist, and are they reachable? | `[[refusals]]`, 17 rows, 16 reachable |
-| Does a composed circuit equal the hand-built one? | `contract["verification"].expansion_tests`, two named tests |
+| What does `power` guarantee about order and about scaling? | `[power]` in the same contract |
+| Which refusals exist, and are they reachable? | `[[refusals]]`, 19 rows, 18 reachable |
+| Does a composed circuit equal the hand-built one? | `contract["verification"].expansion_tests`, three named tests |
 | Does the contract still describe the code? | `python tools/check_circuit_composition_contract.py` |
 
 The refusal vocabulary is deliberately message-phrase based, because the operations raise
@@ -339,5 +400,6 @@ changes a documented refusal, and therefore changes the contract.
 
 - [API change: construction-time composition](../api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md)
 - [API change: circuit adjoint](../api-changes/FQ-CIRCUIT-ADJOINT-20261003.md)
+- [API change: circuit power](../api-changes/FQ-CIRCUIT-POWER-20261021.md)
 - [Algorithms at demonstration scale](ALGORITHMS.md)
 - [Local simulation, measurement, and training](LOCAL_WORKFLOWS.md)

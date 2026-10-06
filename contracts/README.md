@@ -29,7 +29,7 @@ must validate the resulting behavior directly.
 | `split-real-imag-statevector-*-contract.toml` | Statevector representation, precision, device, and training acceptance boundaries. |
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
-| `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose` and `Circuit.adjoint` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
+| `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose`, `Circuit.adjoint` and `Circuit.power` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
 | `primitives-admission-contract.toml` | The admission rule of `flagquantum/algorithms/primitives`: every export with the admission basis it was admitted on, the consumer that grounds it, its distribution semantics, and its differentiability shape. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
@@ -68,11 +68,12 @@ checks reject drift or omission of that packaged mirror.
 
 `circuit-composition-contract.toml` is the only contract that describes the
 construction-time composition surface. The approval record is not restated here:
-`docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md` and
-`docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md` own the decision and the
-authorization for the two methods, this contract owns their guaranteed behavior,
-the refusal vocabulary that callers may rely on, and the fact that `control` and
-`power` are unplanned rather than partial. Its conformance test in
+`docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md`,
+`docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md` and
+`docs/api-changes/FQ-CIRCUIT-POWER-20261021.md` own the decision and the
+authorization for the three methods, this contract owns their guaranteed behavior,
+the refusal vocabulary that callers may rely on, and the fact that `control` is
+unplanned rather than partial. Its conformance test in
 `tests/unit/test_circuit_composition_contract.py` checks the contract against the
 implementation, so a change to a refusal message or to an operation's presence in
 that family is a contract change rather than a private detail.

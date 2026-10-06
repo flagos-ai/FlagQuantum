@@ -32,6 +32,30 @@ ADJOINT_RULES: tuple[str, ...] = (
     "not_applicable",
 )
 
+#: Rule names :attr:`OperatorSchema.power_rule` may return, and what each one means.
+#:
+#: ``scale_single_parameter``  the opcode declares exactly one parameter and its
+#:                             operator is the exponential of that parameter, so the
+#:                             gate applied ``k`` times is the same gate with that one
+#:                             parameter multiplied by ``k``. This is the only rewrite
+#:                             a power performs, and it is measured rather than
+#:                             assumed: the circuit composition contract gate
+#:                             compares the two forms through the dense operator of
+#:                             every opcode this rule names, so an opcode whose angle
+#:                             does not scale linearly is caught by the gate instead
+#:                             of being mis-announced here.
+#: ``repeat_instruction``      the declaration fixes no single-gate form, so the power
+#:                             is written out as further copies of the program. This
+#:                             is exact for every instruction, unitary or not, which
+#:                             is why it is the rule for everything else: a
+#:                             multi-angle opcode such as ``u3``, a gate with no
+#:                             parameters at all, a custom operation carrying its own
+#:                             matrix, and a noise channel all get it.
+POWER_RULES: tuple[str, ...] = (
+    "scale_single_parameter",
+    "repeat_instruction",
+)
+
 
 @dataclass(frozen=True)
 class OperatorSchema:
@@ -88,6 +112,34 @@ class OperatorSchema:
         """
 
         return bool(self.parameter_frequencies)
+
+    @property
+    def power_rule(self) -> str:
+        """Whether this opcode's angles scale, or its power is a repetition.
+
+        This is read from the declaration rather than stored beside it, so
+        "the gate's angle scales linearly" and "the powered gate is one
+        instruction" cannot drift apart. The derivation is a measurement of the
+        gates:
+
+        * a unitary that declares exactly one parameter is the exponential of that
+          parameter, so the gate applied ``k`` times is that gate with the parameter
+          multiplied by ``k``, which is one instruction and an exact result;
+        * every other instruction -- no parameter at all, several whose joint action
+          is not linear in them, an unknown opcode carrying its own matrix, or a noise
+          channel -- has no single-gate form, so the power is written as further
+          copies of the program, which is exact for any instruction and needs no
+          property of the gate beyond being executable.
+
+        The first claim is a property of the gates and not of the field, so the circuit
+        composition contract gate measures it through each opcode's dense operator and
+        refuses a gate whose angle turns out not to scale. A prediction read off a
+        declaration is only as good as the measurement behind it.
+        """
+
+        if self.unitary and len(self.parameters) == 1:
+            return "scale_single_parameter"
+        return "repeat_instruction"
 
     def shift_rule(self, parameter: str) -> tuple[tuple[float, float], ...]:
         """Coefficients and shifts that differentiate ``parameter``.
@@ -392,6 +444,20 @@ def _shift_angle(value: Any, delta: float) -> Any:
     return value - delta
 
 
+def _scale_angle(value: Any, factor: int) -> Any:
+    """Multiply one angle by an integer, or every angle of a per-batch sequence.
+
+    A tensor, a float, and a symbolic ``Parameter`` all multiply on the right, so one
+    expression covers the three forms an angle is stored in. ``factor`` is multiplied
+    rather than added ``factor`` times, which is what keeps ``power(1)`` the identity
+    on the parameters and keeps a batched angle a single instruction.
+    """
+
+    if isinstance(value, (list, tuple)):
+        return type(value)(_scale_angle(item, factor) for item in value)
+    return value * factor
+
+
 def inverse_operator(
     schema: OperatorSchema, params: Mapping[str, Any]
 ) -> tuple[str, dict[str, Any]] | None:
@@ -449,6 +515,58 @@ def inverse_operator(
     return None
 
 
+#: A power is a rewriting of instructions the IR already describes, so the only limit
+#: is readability: beyond this many emitted instructions the arithmetic is still exact
+#: but the program is no longer something a user can inspect, and a product is the
+#: better way to ask for it.
+MAX_POWER_REPEATS = 4096
+
+
+def power_operator(
+    schema: OperatorSchema, params: Mapping[str, Any], exponent: int
+) -> tuple[str, dict[str, Any]] | None:
+    """Return the single gate that equals ``exponent`` copies of one gate, if any.
+
+    A gate whose declaration is the exponential of one parameter has a one-instruction
+    ``exponent``-fold action: the same gate with that parameter multiplied by
+    ``exponent``. That is the whole of this function, and it returns the opcode and the
+    scaled parameters.
+
+    ``None`` means no single gate equals the repeated one, and the caller must write
+    the power out as further copies of the program. This is the common case rather than
+    an error: no parameter-free gate has a one-instruction square that is not itself,
+    a multi-angle gate's angles do not scale, a custom operation is defined by its
+    matrix rather than by a declaration, and a noise channel is not a unitary at all.
+
+    The caller must only reach for this when the power is of a *single-instruction*
+    program. For a longer program the copies of one gate are separated by the other
+    gates, so they do not compose into one instruction even when each of them does.
+
+    Args:
+        schema: The declaration of the gate being raised to a power.
+        params: That gate's parameter mapping.
+        exponent: A positive integer count of applications.
+
+    Returns:
+        The opcode and its scaled parameters, or ``None`` when no single gate equals
+        the repetition.
+
+    Raises:
+        ValueError: If ``exponent`` is not positive.
+    """
+
+    if exponent < 1:
+        raise ValueError(f"power requires a positive exponent, got {exponent}")
+    if schema.power_rule != "scale_single_parameter":
+        return None
+    return schema.opcode, {
+        name: (
+            _scale_angle(params[name], exponent) if name in schema.parameters else value
+        )
+        for name, value in params.items()
+    }
+
+
 def gate_info(name: str) -> GateInfo:
     """Return discoverable parameter and qubit requirements for a built-in gate."""
 
@@ -477,6 +595,7 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
             "dtype_policy": schema.dtype_policy,
             "semantic_kind": schema.semantic_kind,
             "adjoint": schema.adjoint,
+            "power": schema.power_rule,
             "decomposition": schema.decomposition,
             "differentiable": schema.differentiable,
             "qubit_convention": schema.qubit_convention,
@@ -490,12 +609,15 @@ __all__ = [
     "OperatorSchema",
     "GateInfo",
     "ADJOINT_RULES",
+    "MAX_POWER_REPEATS",
     "OPERATOR_ALIASES",
     "OPERATOR_SCHEMAS",
+    "POWER_RULES",
     "canonical_opcode",
     "get_operator_schema",
     "gate_info",
     "inverse_operator",
     "operator_manifest",
     "parameter_shift_rule",
+    "power_operator",
 ]

@@ -43,8 +43,10 @@ from .numerics import (
 )
 from .operator_schema import (
     ADJOINT_RULES,
+    MAX_POWER_REPEATS,
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
+    POWER_RULES,
     GateInfo,
     OperatorSchema,
     canonical_opcode,
@@ -53,6 +55,7 @@ from .operator_schema import (
     inverse_operator,
     operator_manifest,
     parameter_shift_rule,
+    power_operator,
 )
 from .parameters import (
     Parameter,
@@ -102,12 +105,15 @@ __all__ = [
     "OperatorSchema",
     "GateInfo",
     "ADJOINT_RULES",
+    "MAX_POWER_REPEATS",
+    "POWER_RULES",
     "canonical_opcode",
     "get_operator_schema",
     "gate_info",
     "inverse_operator",
     "operator_manifest",
     "parameter_shift_rule",
+    "power_operator",
     "RUNTIME_CONFIG_VERSION",
     "RuntimeConfig",
     "get_runtime_config",

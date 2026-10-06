@@ -7,7 +7,10 @@
 construction-time composition family together with the two members that have
 already shipped, `Circuit.compose` and `Circuit.adjoint`. The two shipped members
 are re-examined here as the mechanism evidence for the family, not re-authorized;
-Section 1.1 states which document owns which member.
+Section 1.1 states which document owns which member. **One of the two has since
+landed**: `Circuit.power` shipped on `N1-5`, and its own authorization record is
+[`FQ-CIRCUIT-POWER-20261021.md`](../api-changes/FQ-CIRCUIT-POWER-20261021.md).
+`Circuit.control` remains proposed and unimplemented.
 
 It adds no root export, no result field, no default on an existing signature, and
 no serialized schema change. `IR_VERSION` stays `"1.0"`. Measured on this checkout:
@@ -20,13 +23,17 @@ The authorization records it answers to are
 [`FQ-CIRCUIT-ADJOINT-20261003.md`](../api-changes/FQ-CIRCUIT-ADJOINT-20261003.md)
 (inversion). The machine-checked half is
 [`contracts/circuit-composition-contract.toml`](../../contracts/circuit-composition-contract.toml),
-whose `[scope]` section already names the two missing operations and states why
-they are missing:
+whose `[scope]` section named the two missing operations and stated why they were
+missing:
 
 ```toml
 not_provided = ["Circuit.control", "Circuit.power"]
 not_provided_reason = "no approved API change proposal; control and power are unplanned, not partial"
 ```
+
+That block is quoted as the state this proposal was written against. `N1-5` has
+since moved `Circuit.power` into `provided` and rewritten the reason to cover
+`control` alone; the live contract, not this quotation, is the source of truth.
 
 This document is that proposal. It is written under non-negotiable rule 8 of
 `AGENTS.md` ("Treat the Stable Core public API as protected"), and it answers the
@@ -34,7 +41,7 @@ four questions the alignment plan asked of `N1-11`.
 
 ## 1. What already exists, and what is actually being authorized
 
-The family has four members and two of them have shipped. Stating that plainly
+The family has four members and three of them have shipped. Stating that plainly
 matters, because a proposal that reads as if it were authorizing all four would be
 claiming authority over history it does not have.
 
@@ -42,14 +49,14 @@ claiming authority over history it does not have.
 |---|---|---|
 | `Circuit.compose` | implemented, contracted, tested | `FQ-CIRCUIT-COMPOSITION-20261002.md` |
 | `Circuit.adjoint` | implemented, contracted, tested | `FQ-CIRCUIT-ADJOINT-20261003.md` |
+| `Circuit.power` | **implemented by `N1-5`**, contracted, tested | this proposal, recorded by `FQ-CIRCUIT-POWER-20261021.md` |
 | `Circuit.control` | **absent** — `AttributeError` | **this proposal** |
-| `Circuit.power` | **absent** — `AttributeError` | **this proposal** |
 
 ```
 >>> fq.Circuit(2).h(0).control(1, ctrl_qubits=(0,))
 AttributeError: 'Circuit' object has no attribute 'control'
 >>> fq.Circuit(2).h(0).power(2)
-AttributeError: 'Circuit' object has no attribute 'power'
+Circuit(n_qubits=2, instructions=2)
 ```
 
 The two shipped methods are re-examined here rather than merely cited, because
@@ -179,11 +186,11 @@ additive stable API. Recorded honestly, with the owner of each:
 |---|---|---|
 | 1 | a concrete user journey | Section 5, four journeys |
 | 2 | a reason it belongs in Stable Core rather than a namespace or experimental | Section 5.1 |
-| 3 | typing and documentation | owned by `N1-4`/`N1-5` |
-| 4 | executable behavior contracts | `[scope]`, `[placement]`, `[adjoint]`, and the 17 `[[refusals]]` rows of the composition contract; extended in the same change as each method |
+| 3 | typing and documentation | owned by `N1-4`/`N1-5`; `N1-5` landed `docs/reference/API.md`'s `Circuit.power` section and the guide's "Repeating a program" section |
+| 4 | executable behavior contracts | `[scope]`, `[placement]`, `[adjoint]`, `[power]`, and the `[[refusals]]` rows of the composition contract (17 before `power`, 19 after); extended in the same change as each method |
 | 5 | API-owner approval | **not given by this document** — see Section 8 |
-| 6 | release-note entry | owned by `N1-5`, landed with `power` |
-| 7 | updated machine-readable contract after approval | the same change that implements each method |
+| 6 | release-note entry | owned by `N1-5`, landed with `power` in `docs/reference/RELEASE_NOTES.md` under `## Unreleased` |
+| 7 | updated machine-readable contract after approval | the same change that implements each method; `power`'s is `docs/api-changes/FQ-CIRCUIT-POWER-20261021.md` |
 
 Rule 8 also forbids the inverse: never update a contract or snapshot merely to
 make tests pass. The composition contract's `not_provided_reason` is **not**
@@ -191,7 +198,10 @@ edited by this proposal. It is edited by the slice that actually implements each
 method, and that edit is legitimate precisely because an approved proposal will
 exist at that point — which is what the current text says is missing. Changing it
 now, before either method exists, would be deleting an accurate statement to make
-a plan look further along.
+a plan look further along. `N1-5` did exactly that: `[scope] not_provided` went
+from `["Circuit.control", "Circuit.power"]` to `["Circuit.control"]`, `provided`
+gained `"Circuit.power"`, and the reason was rewritten to say that `control` is
+unplanned rather than partial.
 
 ### 3.3 Rule 9 (names state their domain meaning)
 
@@ -287,6 +297,17 @@ anywhere but on the type that owns the instruction list.
    same shape of defect that `adjoint` closed for three private copies of the
    inverse rule, and it is the replacement evidence principle 10 asks for: the
    boundary is demonstrated by replacing implementations, not by declaring one.
+
+   **`N1-5` landed the Core half and not the replacement.** What shipped is
+   `Circuit.power`, whose repeating path emits exactly the instruction sequence
+   those three `for _ in range(power)` loops emit. The three call sites are in
+   `flagquantum/algorithms/**`, which `team-ownership.toml` assigns to a different
+   team, so they were not rewritten in the same change; `power` is also the floor
+   rather than the whole operation those loops perform, because each one is
+   *controlled* as well, which is `Circuit.control`'s half of the family. This is
+   the honest state: the capability that makes the replacement possible now exists
+   and is contracted, and the replacement itself is still owed. It is recorded as
+   an open item rather than presented as closed, per rule 5 of `AGENTS.md`.
 
 ### 5.1 Why Stable Core rather than a namespace or experimental
 
@@ -386,6 +407,11 @@ Semantics the plan already fixed, and which this proposal adopts:
   and the acceptance test is numerical: the powered program's action equals the
   receiver's action applied `k` times, to within machine precision.
 
+As shipped, the parameter is named `exponent` rather than `k`, and the signature is
+`Circuit.power(self, exponent: int) -> "Circuit"`. `k` is a bound variable in this
+document's prose, not a user-facing name; `exponent` is the domain noun, per rule 9.
+The method adds no keyword that names a qubit at all.
+
 The measured census that this has to be honest about: of the 35 registered
 opcodes, **14 declare parameters** (`rx ry rz phase u1 u2 u3 crx cry crz cphase
 rxx ryy rzz`, the same 14 the adjoint record identifies as the differentiable
@@ -395,15 +421,68 @@ angle-parameterised case, fail-closed otherwise — is therefore a real restrict
 and not a formality, and it is the decision this proposal is least able to
 justify from measurement alone.
 
-That is recorded as an open question rather than settled here. Two readings are
+That is recorded here as a choice rather than settled here. Two readings are
 defensible and they differ observably: `power` is "the single-instruction form
 with a scaled angle", which refuses `h.power(2)` even though `h; h` is exact, or
 `power` is "the program applied `k` times", which accepts every unitary and
 refuses only the non-integer case. The first is the plan's reading; the second is
 a larger operation than the plan scoped. **`N1-5` must choose one and measure it**;
-this proposal records that the choice is open, because a proposal that picked the
+this proposal records the choice as open, because a proposal that picked the
 narrower reading silently would make the wider one look like a missing feature
-rather than a deferred decision.
+rather than a deferred decision. Section 6.2.1 is the answer `N1-5` gave.
+
+#### 6.2.1 The choice `N1-5` made, recorded here
+
+`N1-5` chose the **wider** reading and measured it. `Circuit.power(k)` is "the
+program applied `k` times", for every instruction, and the single-gate scaling is
+an internal rewrite rather than the definition. In full:
+
+- `k == 0` is the empty program with the receiver's `n_qubits`, `bsz`, `device`,
+  and `dtype`;
+- `k == 1` is a copy, and it deliberately does **not** scale the angles by one,
+  because `theta * 1` is a different expression from `theta` for a symbolic
+  parameter and a different tensor for a trainable one;
+- `k < 0` is `adjoint().power(-k)`;
+- `k >= 2` appends the receiver's program `k` times in the receiver's own order;
+- the single rewrite fires only when the receiver is exactly one instruction that
+  carries no matrix and whose opcode declares exactly one parameter. Then, and
+  only then, the emitted program is that one instruction with the parameter
+  multiplied by `k`.
+
+The decision is declared rather than special-cased: `flagquantum/core/operator_schema.py`
+gives every opcode a `power_rule`, either `scale_single_parameter` ("a unitary that
+declares exactly one parameter", which is exactly `U(theta)^k == U(k*theta)`) or
+`repeat_instruction` ("everything else"). Measured, that split is **12 opcodes in
+closed form and 23 repetitions**, and the contract gate
+`tools/check_circuit_composition_contract.py` compares the two dense operators for
+every one of the 12, so a gate whose angle does not in fact scale is refused by
+the gate rather than mis-announced by the field.
+
+The narrower reading was rejected for a measured reason, not a preference: it
+would refuse `hadamard.power(2)` even though two Hadamards are exactly the
+identity, and it would refuse a custom operation carrying its own matrix even
+though that matrix squares exactly. The wider reading is exact for every
+instruction, so there is nothing to be fail-closed about at a positive exponent;
+the only remaining refusals are the non-integer exponent (the IR has no way to
+express a matrix square root) and a negative exponent on a channel (which is
+`adjoint`'s existing refusal, reached rather than duplicated).
+
+The census in Section 6.2 above counts 14 parameter-declaring opcodes; the
+closed-form set is the 12 of those that declare **exactly one** parameter.
+`u2` and `u3` declare several, and scaling all of them is a measurably different
+operator. Measured as `max |U^2 - U(2 * params)|` on the dense operator, at
+`u2(phi=0.9, lbd=1.3)` the residual is `4.135343356e-01` and at
+`u3(theta=0.4, phi=0.9, lbd=1.3)` it is `2.191289381e-01`; both are asserted as the
+same number, to a `1e-9` tolerance, in `tests/unit/test_circuit_power.py`, so the
+counterexample is maintained rather than quoted. That is why those two repeat.
+
+Fractional exponents are the gap this leaves open, and it is an owned gap rather
+than a silence: `Circuit.power(0.5)` raises `TypeError`, and PennyLane 0.45.1
+constructs `qml.Hadamard(0) ** 0.5` and runs it. Closing that gap needs an
+`Instruction` form that can express a matrix square root, which is an IR question
+and not a composition question. It is recorded in
+[`docs/reference/KNOWN_LIMITATIONS.md`](../reference/KNOWN_LIMITATIONS.md) with
+the same framing.
 
 ### 6.3 Both
 
@@ -425,12 +504,15 @@ stays 36 names and `IR_VERSION` stays `"1.0"`.
   promotion.
 - **Do not repurpose the contract's `not_provided` text ahead of the
   implementation.** It is accurate until `N1-4`/`N1-5` land, and it is the
-  document that predicted this one.
+  document that predicted this one. `N1-5` moved `Circuit.power` from
+  `not_provided` to `provided` in the change that implemented it, which is the
+  order this rule asks for; `Circuit.control` stays where it is until `N1-4`.
 - **Do not add a fourth spelling for a control qubit.** `ctrl_qubits` is the name
   fixed by the alignment plan's `N1-4` row and by its `wires=` → `qubits=` naming
   map (`ctrl_wires=` → `ctrl_qubits=`, `wire_map=` → `qubit_map=`, `work_wire=` →
   `work_qubit=`). `work_wires` is not an admissible spelling, and `N1-5`'s release
-  note is not a place to introduce one.
+  note introduced no such spelling: `power` adds one method whose single parameter
+  is `exponent`, and no keyword naming a qubit at all.
 
 ## 8. Owner and approvals
 
@@ -444,9 +526,18 @@ Section 5, and it records the acceptance criteria and refusal classes in Section
 6 as the basis for review. It does not itself grant API-owner approval: under
 `PUBLIC_API_PROTECTION.md` item 5 that is a review act, and `N1-4`/`N1-5` may not
 treat this document as a substitute for it. The composition contract's
-`not_provided_reason` says "no approved API change proposal", and it becomes false
+`not_provided_reason` said "no approved API change proposal", and it becomes false
 only when this proposal is approved, at which point the implementing slice is the
 one that edits it.
+
+`N1-5` did edit it, and the approval it edited it against is not this document but
+[`FQ-CIRCUIT-POWER-20261021.md`](../api-changes/FQ-CIRCUIT-POWER-20261021.md),
+which is the slice's own dated record of what it was authorized to add, in the same
+series as the composition and adjoint records. This document therefore remains the
+*family* argument — why the four members are one mechanism, what their shared
+evidence requirement is, and what `control` still has to satisfy — while the
+per-member authority lives in the dated records. That division is deliberate: it
+keeps this proposal from reading as an approval it never received.
 
 Not approved here: any change to `IR_VERSION`, to a root export, to the 35-opcode
 registry, or to the compiler passes named by `N4-2`.
@@ -470,21 +561,22 @@ for i in block.to_ir().instructions:
 assert composed.to_ir().to_dict() == hand.to_ir().to_dict()
 assert semantic_fingerprint(composed) == semantic_fingerprint(hand)
 assert IR_VERSION == '1.0' and len(fq.__all__) == 36
-assert len(_SCHEMAS) == 35 and not ({'compose','adjoint'} & {s.opcode for s in _SCHEMAS})
-for m in ('control', 'power'):
-    assert not hasattr(fq.Circuit(2), m)
-print('composition is not a second IR; control and power are absent')
+assert len(_SCHEMAS) == 35 and not ({'compose','adjoint','power'} & {s.opcode for s in _SCHEMAS})
+assert not hasattr(fq.Circuit(2), 'control')
+assert hasattr(fq.Circuit(2), 'power')
+print('composition is not a second IR; control is absent and power is present')
 "
+# composition is not a second IR; control is absent and power is present
 
 python -m pytest tests/unit/test_circuit_compose.py tests/unit/test_circuit_adjoint.py \
-    tests/unit/test_circuit_composition_contract.py -q
-# 155 passed
+    tests/unit/test_circuit_composition_contract.py tests/unit/test_circuit_power.py -q
+# 459 passed
 
 python tools/check_circuit_composition_contract.py
 # Circuit composition contract passed
 
 python tools/check_docs_links.py
-# Checked 546 markdown files; all local links and anchors resolve.
+# Checked 551 markdown files; all local links and anchors resolve.
 ```
 
 The composition contract's own verifier is the reason the two shipped members
@@ -494,12 +586,19 @@ not a test, and it refuses an operation that has no expansion test named.
 ## 10. Open questions
 
 1. **Is the `power` restriction the plan describes the right one?** Section 6.2
-   records the two readings. `N1-5` chooses.
+   records the two readings, and `N1-5` chose the wider one — see Section 6.2.1,
+   which is the record of that decision and of the measurements behind it. What
+   survives as open is the narrower question underneath: whether a *fractional*
+   exponent should be expressible, which needs an `Instruction` form for a matrix
+   root and is therefore an IR decision rather than a composition one.
 2. **Does `control` mutate or copy?** Section 6.1 proposes a new `Circuit` and
    explains why that differs from `compose`, whose contract records
    `mutates_receiver = true`. The two members disagreeing is defensible only
    because widening in place is a different hazard from rewriting labels in place,
-   and `N1-4` should confirm that reading rather than inherit it.
+   and `N1-4` should confirm that reading rather than inherit it. `power` settled
+   the same question for itself the other way — it returns a new circuit and leaves
+   the receiver byte-identical — so `control` is now the only member whose answer
+   is still open.
 3. **Does `control` need an ancilla argument?** The ladder precedent in
    `algorithms/primitives/oracle.py:72` consumes `len(controls) - 2` ancillas for
    three or more controls and requires each to enter in `|0>`. Whether that

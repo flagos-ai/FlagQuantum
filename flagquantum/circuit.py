@@ -16,11 +16,13 @@ import torch
 
 from .core.ir import CircuitIR, Instruction
 from .core.operator_schema import (
+    MAX_POWER_REPEATS,
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,
     inverse_operator,
+    power_operator,
 )
 from .core.parameters import (
     bind_parameter_value,
@@ -40,7 +42,7 @@ if TYPE_CHECKING:
     from .runtime.result import ExecutionResult
 
 
-def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
+def _count_argument(name: str, value: Any, *, minimum: int | None = 1) -> int:
     """Read an integer count without quietly rewriting the caller's value.
 
     ``int(value)`` accepted ``2.7`` as ``2`` and ``"3"`` as ``3``, so a mistyped
@@ -49,6 +51,10 @@ def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
     admits NumPy integers and zero-dimensional torch integer tensors while refusing
     floats and strings. ``bool`` is refused because ``True`` is a flag rather than a
     count, which is the rule ``ExecutionOptions`` already applies to ``batch_size``.
+
+    ``minimum=None`` accepts a negative count as well, for the arguments where a
+    negative value is a defined request rather than a mistyped size: an exponent of
+    ``-k`` asks for the inverse applied ``k`` times.
     """
 
     if isinstance(value, bool):
@@ -57,7 +63,7 @@ def _count_argument(name: str, value: Any, *, minimum: int = 1) -> int:
         count = operator.index(value)
     except TypeError:
         raise TypeError(f"Circuit {name} must be an integer, got {value!r}") from None
-    if count < minimum:
+    if minimum is not None and count < minimum:
         raise ValidationError(f"Circuit {name} must be >= {minimum}, got {count}")
     return count
 
@@ -121,6 +127,64 @@ def _inverted_instruction(instruction: Instruction) -> Instruction:
     raise CapabilityError(
         f"Cannot invert instruction {instruction.name!r} on qubits "
         f"{instruction.wires}: {reason}."
+    )
+
+
+def _powered_instructions(instruction: Instruction, *, count: int) -> list[Instruction]:
+    """Return how the power of a one-instruction program is written.
+
+    The only rewrite a power performs is the angle scaling declared by the opcode: a
+    gate whose declaration is the exponential of one parameter has a one-instruction
+    ``count``-fold action. Everything else is written out as ``count`` copies, which is
+    exact for every instruction and needs no property of the gate.
+
+    A carried matrix suppresses the rewrite, exactly as it decides the inverse in
+    :func:`_inverted_instruction`: a user-supplied unitary is repeated, because
+    scaling its angles would apply the opcode's declaration rather than the matrix that
+    actually executes.
+
+    The caller must only reach this for a program of exactly one instruction. For a
+    longer program the copies of this gate are separated by the other gates and do not
+    compose into one instruction, so :meth:`Circuit.power` repeats the program instead.
+    """
+
+    matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
+    schema = get_operator_schema(instruction.name)
+    if matrix is None and schema is not None:
+        rewritten = power_operator(schema, instruction.params, count)
+        if rewritten is not None:
+            opcode, params = rewritten
+            return [
+                Instruction(
+                    name=opcode,
+                    wires=instruction.wires,
+                    params=dict(params),
+                    metadata=dict(instruction.metadata),
+                )
+            ]
+
+    # A fresh instruction per copy, so the powered program holds distinct records
+    # rather than one object repeated: a later edit or an identity comparison must see
+    # the copies the program is actually made of.
+    return [_copy_instruction(instruction) for _ in range(count)]
+
+
+def _copy_instruction(instruction: Instruction) -> Instruction:
+    """Return an independent record of one instruction.
+
+    A power writes the same operation more than once, and appending the same
+    :class:`Instruction` object twice would make the program's length a claim about a
+    list rather than about a program. ``Instruction`` is frozen, so a copy differs from
+    its source only in identity -- which is exactly what is wanted here, and what keeps
+    a later in-place edit of one copy from reaching the others.
+    """
+
+    return Instruction(
+        name=instruction.name,
+        wires=instruction.wires,
+        params=dict(instruction.params),
+        matrix=instruction.matrix,
+        metadata=dict(instruction.metadata),
     )
 
 
@@ -489,6 +553,109 @@ class Circuit:
         if self._instructions:
             inverse._invalidate_execution_cache(instructions_changed=True)
         return inverse
+
+    def power(self, exponent: int) -> "Circuit":
+        """Return the program applied ``exponent`` times.
+
+        ``power(2)`` is this program followed by itself, ``power(1)`` is a copy of it,
+        ``power(0)`` is the empty program of the same width -- the identity, which is
+        also the answer for an empty receiver at any exponent -- and a negative
+        ``exponent`` is the inverse applied that many times, so ``power(-1)`` is
+        :meth:`adjoint`. The four cases share one implementation rather than four:
+        ``k < 0`` delegates to :meth:`adjoint`, so the rule for what an inverse is stays
+        written once, in :data:`flagquantum.core.OPERATOR_SCHEMAS`.
+
+        The power of a program is the program repeated, in order: ``(g1 g2)**2`` is
+        ``g1 g2 g1 g2``. The one exception is a receiver that holds a single
+        instruction whose declaration is the exponential of one parameter, because
+        then ``g**k`` is the same gate with that parameter multiplied by ``k`` -- the
+        shortest exact form of the same unitary, and one that stays differentiable. That
+        is a rewrite of the same program, never a rewrite of a longer one: in
+        ``(g1 g2)**2`` the two copies of ``g1`` are separated by ``g2`` and do not
+        compose into one instruction, so the program is repeated instead. A
+        single-instruction receiver whose gate declares no such form -- a
+        parameter-free gate, a gate with several angles, a custom operation carrying
+        its own matrix, a noise channel -- is repeated too. ``power(1)`` is a copy in
+        every case, because multiplying every angle by one would leave the numbers alone
+        and change the expressions.
+
+        The exponent must already be an integer, which is what keeps this operation
+        exact. A fractional exponent is the matrix power of a gate, which the IR cannot
+        express, so it is refused here rather than decomposed to within some tolerance.
+
+        This is a construction-time operation: it emits instructions the IR already
+        describes, so ``IR_VERSION`` does not change. The result is a new circuit, so
+        the program being raised stays usable.
+
+        Args:
+            exponent: The number of times to apply the program. ``0`` is the empty
+                program, a positive value applies it that many times, and a negative
+                value applies its inverse ``abs(exponent)`` times.
+
+        Returns:
+            A new circuit with the same qubit count, batch size, device, and dtype.
+
+        Raises:
+            TypeError: If ``exponent`` is not an integer, including a float, a string,
+                or a ``bool``.
+            CapabilityError: If ``exponent`` is negative and an instruction has no
+                inverse.
+            ValueError: If the power would emit more than
+                :data:`flagquantum.core.MAX_POWER_REPEATS` instructions.
+
+        Examples:
+            >>> import flagquantum as fq
+            >>> fq.Circuit(1).rx(0, 0.3).power(2).to_ir().instructions[0].params["theta"]
+            0.6
+
+            A two-instruction program is repeated rather than rescaled, because the
+            copies of one gate are separated by the other:
+
+            >>> block = fq.Circuit(2).rx(0, 0.3).cnot(0, 1)
+            >>> [(item.name, item.params) for item in block.power(2).to_ir().instructions]
+            [('rx', {'theta': 0.3}), ('cx', {}), ('rx', {'theta': 0.3}), ('cx', {})]
+        """
+
+        requested = _count_argument("power", exponent, minimum=None)
+        if requested < 0:
+            return self.adjoint().power(-requested)
+
+        powered = type(self)(
+            n_qubits=self.n_qubits,
+            bsz=self.bsz,
+            device=self.device,
+            dtype=self.dtype,
+            inputs=self._inputs,
+            config=self.runtime_config,
+        )
+        if requested == 0 or not self._instructions:
+            return powered
+
+        emitted = len(self._instructions) * requested
+        if emitted > MAX_POWER_REPEATS:
+            raise ValueError(
+                f"Circuit power {requested} on a {len(self._instructions)}-instruction "
+                f"program would emit {emitted} instructions; the supported limit is "
+                f"{MAX_POWER_REPEATS}"
+            )
+
+        if len(self._instructions) == 1 and requested != 1:
+            body = _powered_instructions(self._instructions[0], count=requested)
+        else:
+            # ``requested == 1`` is handled here rather than by the rewrite, because a
+            # power of one is the same program: the rewrite would multiply every angle
+            # by one, which is numerically the same circuit but a different expression
+            # -- a symbolic parameter would come back as ``t * 1``, and a trainable
+            # angle as a new tensor behind a multiplication. The identity power should
+            # not rewrite what it was given.
+            body = [
+                _copy_instruction(instruction)
+                for _ in range(requested)
+                for instruction in self._instructions
+            ]
+        powered._instructions.extend(body)
+        powered._invalidate_execution_cache(instructions_changed=True)
+        return powered
 
     def compose(
         self,

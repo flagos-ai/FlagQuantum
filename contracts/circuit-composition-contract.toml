@@ -2,33 +2,36 @@
 #
 # Construction-time composition: the operations that build a larger program out of
 # smaller ones without introducing a second IR. `Circuit.compose` places a program
-# onto chosen qubits; `Circuit.adjoint` returns the program that undoes one. Both
-# emit instructions the IR already describes, so neither changes `IR_VERSION`, and
-# both are methods on an existing stable export rather than new root exports.
+# onto chosen qubits; `Circuit.adjoint` returns the program that undoes one;
+# `Circuit.power` returns the program applied a whole number of times. All three emit
+# instructions the IR already describes, so none changes `IR_VERSION`, and all three
+# are methods on an existing stable export rather than new root exports.
 #
-# This contract is the authoritative list of what those two operations guarantee and
-# of every way they refuse. `control` and `power` are recorded as absent on purpose:
-# a capability that is missing appears here as an owned gap rather than as silence.
+# This contract is the authoritative list of what those three operations guarantee and
+# of every way they refuse. `control` is recorded as absent on purpose: a capability
+# that is missing appears here as an owned gap rather than as silence.
 schema = "flagquantum_circuit_composition_contract_v1"
 maturity = "development_evidence"
 surface = "construction_time_program_composition"
 implementation = "flagquantum/circuit.py"
 placement_implementation = "flagquantum/core/qubit_mapping.py"
 adjoint_rule_source = "flagquantum/core/operator_schema.py"
+power_rule_source = "flagquantum/core/operator_schema.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 authorization = [
     "docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md",
     "docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md",
+    "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md",
 ]
 
 [scope]
-provided = ["Circuit.compose", "Circuit.adjoint"]
-# `control` and `power` belong to the same construction-time family and are named
-# here so that their absence is contracted instead of discovered. Neither has an
-# approved proposal, so neither may be added under this contract's authority.
-not_provided = ["Circuit.control", "Circuit.power"]
-not_provided_reason = "no approved API change proposal; control and power are unplanned, not partial"
+provided = ["Circuit.compose", "Circuit.adjoint", "Circuit.power"]
+# `control` belongs to the same construction-time family and is named here so that its
+# absence is contracted instead of discovered. It has no approved proposal, so it may
+# not be added under this contract's authority.
+not_provided = ["Circuit.control"]
+not_provided_reason = "no approved API change proposal; control is unplanned, not partial"
 
 [placement]
 # `Circuit.compose(other, *, qubits=None, qubit_map=None)`
@@ -88,6 +91,75 @@ partner_opcode_rule = "a value outside declared_opcode_rules names the inverse o
 matrix_route_precedes_opcode_rule = true
 matrix_route = "conjugate_transpose"
 
+[power]
+# `Circuit.power(exponent)`
+# This surface has its own authorizing record, and it must also appear in the list at the
+# top of this file: a table whose proposal is not among the file's authorizations is an
+# unapproved surface that happens to be written down.
+authorization = "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md"
+receiver_role = "a program, not a program entry point"
+returns = "new_circuit"
+receiver_is_mutated = false
+instruction_order = "forward"
+instruction_qubits = "unchanged"
+instruction_order_within_gate = "unchanged"
+# The current attribute names, not the deprecated `n_wires` alias for `n_qubits`.
+preserves = ["n_qubits", "bsz", "device", "dtype"]
+empty_circuit_result = "empty_circuit"
+# The power is a whole number of applications, which is what keeps it exact. A
+# fractional exponent is a matrix power, which no instruction describes, so it is
+# refused rather than decomposed to within a tolerance. `bool` is refused with the
+# other non-integers because `True` is a flag rather than a count.
+exponent_type = "integer"
+exponent_argument = "exponent"
+negative_exponent_route = "Circuit.adjoint"
+# The rule vocabulary is owned by `flagquantum/core/operator_schema.py` and is read
+# from there rather than restated: this list must equal `POWER_RULES`.
+declared_opcode_rules = [
+    "scale_single_parameter",
+    "repeat_instruction",
+]
+# `scale_single_parameter` is a claim about the gate matrices, not about the field that
+# predicts it, so it is measured: `tools/check_circuit_composition_contract.py`
+# compares the repeated dense operator with the angle-scaled one for every opcode this
+# rule names, and refuses a gate whose angle turns out not to scale. The opcodes are
+# listed so that adding or removing one is a contract change rather than a silent
+# widening of what the rewrite may touch.
+closed_form_opcodes = [
+    "rx",
+    "ry",
+    "rz",
+    "phase",
+    "u1",
+    "crx",
+    "cry",
+    "crz",
+    "cphase",
+    "rxx",
+    "ryy",
+    "rzz",
+]
+# Any other instruction is written out as further copies of the program, which is
+# exact for every instruction and needs no property of the gate beyond being
+# executable. That includes a noise channel, which has no inverse and so is refused
+# only when the exponent is negative -- the sign of the exponent is what decides.
+repeat_fallback_reason = "exact for every instruction; no gate property is needed"
+# The matrix recorded on an instruction is what the simulator executes, so it
+# suppresses the single-gate rewrite whenever it is present, exactly as it decides the
+# inverse above: scaling the opcode's declared angle would apply the declaration rather
+# than the matrix.
+matrix_route_precedes_opcode_rule = true
+matrix_route = "repeat"
+# One scaled gate stands in for the whole repetition only when the repetition is of a
+# single instruction. In a longer program the copies of one gate are separated by the
+# other gates and do not compose into one instruction.
+single_instruction_rewrite_only = true
+# A power emits instructions the IR already describes, so the only bound is
+# readability: past this many emitted instructions the program stops being something a
+# user can inspect, and a product is the better way to ask.
+max_emitted_instructions = 4096
+max_emitted_instructions_source = "flagquantum/core/operator_schema.py"
+
 [issue_codes]
 # Refusal reasons exist in the implementation as prose today. The vocabulary below is
 # the contract for them: a caller may rely on the exception class and on the phrase,
@@ -115,10 +187,18 @@ contract = "tests/unit/test_circuit_composition_contract.py"
 # requirement is what `tools/check_circuit_composition_contract.py` enforces: it refuses
 # a contract that names a test which is not a test in the file above, and it refuses an
 # operation that has no test named. An operation is not contracted until both hold.
-expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse" }
+expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse", "Circuit.power" = "test_power_expands_to_the_hand_built_repetition" }
 # Registering an opcode changes this census. It is the measurement behind the
 # `reachable = false` row below, so it is recorded as evidence rather than assumed.
 opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
+# The same shape of measurement for `power`: the census is the rule split, and it is
+# the declaration the rewrite reads. Counted from `OPERATOR_SCHEMAS`, not assumed.
+power_census = "12 of 35 registered opcodes take the closed form; the other 23 repeat"
+# A closed-form rewrite is only valid where the exponent is in fact an integer, so the
+# contract names both. The refusal is a `TypeError` rather than a `ValueError` because the
+# argument is the wrong kind of value, which is the same class the circuit's own count
+# arguments raise.
+exponent_type_refusal = "TypeError"
 
 [[refusals]]
 entry_point = "compose"
@@ -287,3 +367,25 @@ message_source = "flagquantum/circuit.py"
 reachable = false
 reachability_note = "Instruction.__post_init__ refuses an unknown opcode with no matrix; one with a matrix takes the matrix route"
 trigger = "unreachable through Circuit.adjoint on a well-formed circuit"
+
+[[refusals]]
+entry_point = "power"
+code = "exponent_not_an_integer"
+exception = "TypeError"
+message_phrase = "must be an integer, got"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "power(2.5), power('2'), or power(True)"
+
+[[refusals]]
+entry_point = "power"
+code = "power_exceeds_instruction_limit"
+exception = "ValueError"
+message_phrase = "the supported limit is"
+message_source = "flagquantum/circuit.py"
+# Measured, not assumed: the same 4096 bound is read from
+# `flagquantum/core/operator_schema.py::MAX_POWER_REPEATS`, and the contract's
+# `max_emitted_instructions` is compared against it, so a message that drifts from the
+# constant it reports is a failure here.
+reachable = true
+trigger = "a program and exponent whose product is more than 4096 instructions"
