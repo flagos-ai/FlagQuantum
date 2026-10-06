@@ -226,9 +226,9 @@ nothing measured here moves with it.
 
 | Claim | Command | Result |
 | --- | --- | --- |
-| The emitted program is the reference ladder, instruction by instruction | `PYTHONPATH=. python /tmp/n19/n14_verify_core.py` | 124 probes (31 unitaries at `k=1..4`), `failures=0` |
-| The emitted program computes the right operator | same run, matrices against the gate definitions | `worst_maxdiff = 1.355e-13` |
-| End to end through `Circuit.control` and `Circuit.state()` | `PYTHONPATH=. python /tmp/n19/n14_e2e.py` | 124 probes, `failures=0`, `worst_maxdiff = 1.409e-13` |
+| The emitted program is the reference ladder, instruction by instruction | `python /tmp/n19/n14_verify_core.py` (the scratch reference; the same comparison is now a test, next row) | 124 probes (31 unitaries at `k=1..4`), `failures=0` |
+| The emitted program computes the right operator | `pytest tests/unit/test_circuit_control.py -k runs_only_when_every_control_is_set` | 31 opcodes x 4 control counts, operator against the definition, `atol=1e-12`; the scratch route's residual was `worst_maxdiff = 1.355e-13` |
+| End to end through `Circuit.control` and `Circuit.state()` | `python /tmp/n19/n14_e2e.py`; the in-repo half is `pytest tests/unit/test_circuit_control.py -k multi_controlled_rotation_inside_a_wider_program` | `failures=0`, `worst_maxdiff = 1.409e-13` |
 | The receiver is not mutated | `pytest tests/unit/test_circuit_composition_contract.py -k control_flags` | the receiver's instruction list is identical before and after |
 | The result width is one past the greatest control | same test | `fq.Circuit(3).h(0).control(2, ctrl_qubits=(7, 9)).n_qubits == 10` |
 | The receiver's input state is carried | same test | `[0.6, 0.8]` on one qubit becomes `[0.6, 0, 0.8, 0]` on two, at `1e-14` |
@@ -240,6 +240,14 @@ nothing measured here moves with it.
 | The census is load-bearing | `python tools/check_circuit_composition_contract.py` | 31 of 35 opcodes declare a form; the 4 refusals are exactly the channels |
 | The ceiling is enforced | same run | level 11 refuses with the level it needs and `MAX_LADDER_LEVEL` |
 | The serialized field changed consistently | `python tools/operator_manifest.py --check` after regeneration | 35 added lines, one `control` key per operator |
+
+The two `/tmp/n19/` instruments are **scratch probes, not repository files**, and they
+were written before the emitter existed so that the recursion could be checked against a
+torch-free `float64` reference rather than against itself. Both were re-run unchanged at
+the committed head; the durable half of what they measured was ported into
+`tests/unit/test_circuit_control.py`, which is why the first three rows name a selector as
+well. A reader who has only the repository can reproduce every claim in the table from the
+tests; a reader who also has the probes can reproduce the residuals to the digit shown.
 
 ## Decision Candidates
 
