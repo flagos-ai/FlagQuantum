@@ -25,6 +25,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_precision_evidence,
     _validate_provider_resource_gate_binding,
     _validate_provider_result_schema,
+    _validate_provider_smoke_component,
     _validate_sampling_receipt,
     _validate_system_record,
     validate_acceptance,
@@ -123,6 +124,104 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
     assert errors == [
         "system: remote receipt 0 follows resource snapshot expiry"
     ]
+
+
+def test_provider_smoke_tasks_cannot_predate_the_resource_snapshot() -> None:
+    config = _config()
+    snapshot = {
+        "schema": "flagquantum.qboson_provider_resources",
+        "version": "1.0",
+        "source": "authenticated_resource_bill",
+        "captured_at": "2026-10-05T12:00:00+00:00",
+        "valid_until": "2026-10-06T12:00:00+00:00",
+        "resources": [
+            {
+                "target": target,
+                "mode": mode,
+                "available": 1,
+                "used": 0,
+            }
+            for target in ("SPQC-1", "SPQC-550", "SPQC-1000")
+            for mode in ("optimization", "sampling")
+        ],
+        "claim_boundary": (
+            "Account-resource observation only; it is not spend approval, project "
+            "assignment, provider evidence, execution evidence, or acceptance evidence."
+        ),
+    }
+    task_template = {
+        "receipt_schema": "flagquantum.kaiwu-task.v1",
+        "matrix_sha256": (
+            "0352923b6964d8a65fc742c5a5b251ab967d43e8c4db9e3ee3a0f2f2fa5b0487"
+        ),
+        "matrix_size": 2,
+        "requested_samples": config["requested_samples"],
+        "project_no": "CPQC-test",
+        "submitted_at": "2026-10-05T11:59:59+00:00",
+        "returned_samples": config["requested_samples"],
+        "samples": [[1, -1] for _ in range(config["requested_samples"])],
+        "energies": [2.0 for _ in range(config["requested_samples"])],
+        "provider_target": "SPQC-provider",
+        "raw_status": "completed",
+        "fallback_occurred": False,
+        "minimum_energy": 2.0,
+        "maximum_energy": 2.0,
+        "provider_task_id_available": True,
+        "provider_target_available": True,
+        "provider_result_schema": {
+            "available": False,
+            "reason": "test_fixture",
+        },
+    }
+    tasks = []
+    for mode in ("optimization", "sampling"):
+        task = dict(task_template)
+        task.update(
+            {
+                "task_name": f"smoke-{mode}",
+                "task_mode": mode,
+                "provider_task_id": f"task-{mode}",
+            }
+        )
+        tasks.append(task)
+    record = {
+        "schema": "flagquantum.qboson_kaiwu_live_smoke",
+        "version": "1.0",
+        "recorded_at": "2026-10-06T00:00:00+00:00",
+        "transport": "kaiwu_cim",
+        "real_provider_evidence": True,
+        "qboson_hardware_used": True,
+        "qboson_target": "SPQC-provider",
+        "project_no": "CPQC-test",
+        "environment_lock_sha256": config["software"]["environment_lock_sha256"],
+        "sdk_approval_sha256": "d" * 64,
+        "provider_resources_sha256": "c" * 64,
+        "tasks": tasks,
+        "run_completed": True,
+        "failure": None,
+        "live_provider_smoke_passed": True,
+        "provider_identity_complete": True,
+        "hardware_acceptance": True,
+        "fallback_occurred": False,
+        "secrets_redacted": True,
+        "limitations": [
+            "This smoke test does not execute QDiffusion or A800 tensor work.",
+            "Hardware acceptance remains false without provider-reported task and target identities.",
+            "This record does not establish performance, quantum advantage, or production maturity.",
+        ],
+    }
+    errors: list[str] = []
+
+    _validate_provider_smoke_component(
+        record,
+        config=config,
+        sdk_approval_sha256="d" * 64,
+        provider_resources=(snapshot, "c" * 64),
+        errors=errors,
+    )
+
+    assert "provider smoke: task 0 submission predates its resource snapshot" in errors
+    assert "provider smoke: task 1 submission predates its resource snapshot" in errors
 
 
 @pytest.mark.parametrize(

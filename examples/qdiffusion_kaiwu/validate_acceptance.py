@@ -2681,6 +2681,12 @@ def _validate_provider_smoke_component(
         validate_provider_resources(provider_resource_record)
     except ValueError as exc:
         errors.append(f"{label}: provider resource snapshot is invalid: {exc}")
+    snapshot_captured_at = _parse_timestamp(
+        provider_resource_record.get("captured_at")
+    )
+    snapshot_valid_until = _parse_timestamp(
+        provider_resource_record.get("valid_until")
+    )
     required_true = (
         "real_provider_evidence",
         "qboson_hardware_used",
@@ -2813,6 +2819,20 @@ def _validate_provider_smoke_component(
                 raise ValueError
             if smoke_time is not None and submitted_at > smoke_time:
                 errors.append(f"{label}: task {index} submission follows its record")
+            if (
+                snapshot_captured_at is not None
+                and submitted_at < snapshot_captured_at
+            ):
+                errors.append(
+                    f"{label}: task {index} submission predates its resource snapshot"
+                )
+            if (
+                snapshot_valid_until is not None
+                and submitted_at > snapshot_valid_until
+            ):
+                errors.append(
+                    f"{label}: task {index} submission follows resource snapshot expiry"
+                )
         except (TypeError, ValueError):
             errors.append(
                 f"{label}: task {index} submitted_at must be an aware UTC timestamp"

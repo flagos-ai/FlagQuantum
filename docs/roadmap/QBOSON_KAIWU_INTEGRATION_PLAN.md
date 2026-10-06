@@ -889,8 +889,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   smoke record. Final assembly copies the exact snapshot into the immutable
   component bundle, and offline validation independently binds its digest,
   closed schema, validity interval, and same-target optimization-plus-sampling
-  balance to the smoke timestamp. Directly invoking the quota-consuming smoke
-  can therefore no longer bypass the readiness-only resource check.
+  balance to the smoke timestamp. It also rejects either smoke receipt if its
+  submission predates snapshot capture or follows snapshot expiry, so a
+  hand-built record cannot attach earlier provider work to a later account
+  observation. Directly invoking the quota-consuming smoke can therefore no
+  longer bypass the readiness-only resource check.
 - The three larger quota-consuming entrypoints now also require a current
   private Resource Bill snapshot before credential discovery or SDK client
   initialization. System and portability runs require one Sampling target to
