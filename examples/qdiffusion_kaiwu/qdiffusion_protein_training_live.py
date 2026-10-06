@@ -55,6 +55,11 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    capture_regular_file,
+    revalidate_regular_file,
+)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )
@@ -161,7 +166,9 @@ def _run_workflow(
     output_root: Path,
 ) -> Path:
     output_root.mkdir(parents=True, exist_ok=True)
-    before = {item.resolve() for item in output_root.iterdir()}
+    if output_root.is_symlink() or not output_root.is_dir():
+        raise ValueError("protein workflow output root must be a real directory")
+    before = {item.name for item in output_root.iterdir()}
     original_config_factory = workflow.build_default_workflow_config
     original_outputs_factory = workflow.default_outputs_root
     workflow.build_default_workflow_config = lambda: workflow_config
@@ -172,17 +179,17 @@ def _run_workflow(
     finally:
         workflow.build_default_workflow_config = original_config_factory
         workflow.default_outputs_root = original_outputs_factory
-    created = [
-        item.resolve()
-        for item in output_root.iterdir()
-        if item.resolve() not in before and item.is_dir()
-    ]
-    if len(created) != 1:
+    created = [item for item in output_root.iterdir() if item.name not in before]
+    if (
+        len(created) != 1
+        or created[0].is_symlink()
+        or not created[0].is_dir()
+    ):
         raise RuntimeError("protein workflow did not create exactly one run directory")
     return created[0]
 
 
-def _checkpoint_identity(run_directory: Path) -> tuple[str, str]:
+def _checkpoint_snapshot(run_directory: Path) -> RegularFileSnapshot:
     checkpoints = list((run_directory / "checkpoints").glob("best_epoch_*.pt"))
     if not checkpoints:
         raise RuntimeError("protein workflow did not produce a best checkpoint")
@@ -191,10 +198,17 @@ def _checkpoint_identity(run_directory: Path) -> tuple[str, str]:
         return int(path.stem.removeprefix("best_epoch_"))
 
     selected = max(checkpoints, key=epoch)
-    return selected.name, hashlib.sha256(selected.read_bytes()).hexdigest()
+    return capture_regular_file(selected, label="trained energy checkpoint")
 
 
-def _workflow_artifact_identities(run_directory: Path) -> dict[str, dict[str, str]]:
+def _checkpoint_identity(run_directory: Path) -> tuple[str, str]:
+    snapshot = _checkpoint_snapshot(run_directory)
+    return snapshot.path.name, snapshot.sha256
+
+
+def _workflow_artifact_snapshots(
+    run_directory: Path,
+) -> tuple[dict[str, dict[str, str]], dict[str, RegularFileSnapshot]]:
     relative_paths = {
         "test_fasta": Path("data_splits/test.fasta"),
         "baseline_fasta": Path("baseline/proposal_only_generated_sequences.fasta"),
@@ -205,15 +219,43 @@ def _workflow_artifact_identities(run_directory: Path) -> dict[str, dict[str, st
         "guided_quality": Path("guided_eval/quality_summary.json"),
     }
     identities: dict[str, dict[str, str]] = {}
+    snapshots: dict[str, RegularFileSnapshot] = {}
     for name, relative_path in relative_paths.items():
         path = run_directory / relative_path
-        if not path.is_file():
-            raise RuntimeError(f"protein workflow did not produce {relative_path}")
+        try:
+            snapshot = capture_regular_file(
+                path, label=f"protein workflow artifact {name}"
+            )
+        except ValueError:
+            raise RuntimeError(
+                f"protein workflow did not produce a stable {relative_path}"
+            ) from None
         identities[name] = {
             "relative_path": relative_path.as_posix(),
-            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "sha256": snapshot.sha256,
         }
+        snapshots[name] = snapshot
+    return identities, snapshots
+
+
+def _workflow_artifact_identities(run_directory: Path) -> dict[str, dict[str, str]]:
+    identities, _ = _workflow_artifact_snapshots(run_directory)
     return identities
+
+
+def _capture_training_outputs(
+    run_directory: Path,
+) -> tuple[str, str, dict[str, dict[str, str]]]:
+    """Capture one internally consistent set of stable training outputs."""
+
+    checkpoint = _checkpoint_snapshot(run_directory)
+    artifacts, snapshots = _workflow_artifact_snapshots(run_directory)
+    revalidate_regular_file(checkpoint, label="trained energy checkpoint")
+    for name, snapshot in snapshots.items():
+        revalidate_regular_file(
+            snapshot, label=f"protein workflow artifact {name}"
+        )
+    return checkpoint.path.name, checkpoint.sha256, artifacts
 
 
 def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
@@ -276,8 +318,11 @@ def run_training_seed(
         )
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
-        checkpoint_name, checkpoint_sha256 = _checkpoint_identity(run_directory)
-        workflow_artifacts = _workflow_artifact_identities(run_directory)
+        (
+            checkpoint_name,
+            checkpoint_sha256,
+            workflow_artifacts,
+        ) = _capture_training_outputs(run_directory)
     except (Exception, KeyboardInterrupt) as exc:
         failure = redacted_failure_record(exc)
 

@@ -16,6 +16,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
+    _capture_training_outputs,
     _checkpoint_identity,
     _run_workflow,
     _workflow_artifact_identities,
@@ -167,6 +168,29 @@ def test_run_workflow_binds_sampler_and_restores_factories(tmp_path: Path) -> No
     assert workflow.default_outputs_root is original_outputs
 
 
+def test_run_workflow_rejects_symlinked_run_directory(tmp_path: Path) -> None:
+    sampler = cast(KaiwuSampler, object())
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    workflow = SimpleNamespace(
+        build_qdiffusion=lambda **kwargs: SimpleNamespace(
+            energy_model=SimpleNamespace(sampler=kwargs["bm_sampler"])
+        ),
+        build_default_workflow_config=lambda: "original-config",
+        default_outputs_root=lambda: tmp_path / "original",
+    )
+
+    def main() -> None:
+        (workflow.default_outputs_root() / "linked-run").symlink_to(
+            outside, target_is_directory=True
+        )
+
+    workflow.main = main
+
+    with pytest.raises(RuntimeError, match="exactly one run directory"):
+        _run_workflow(workflow, "frozen-config", sampler, tmp_path / "runs")
+
+
 def test_training_seed_rejects_frozen_asset_change_during_workflow(
     tmp_path: Path,
 ) -> None:
@@ -256,6 +280,17 @@ def test_checkpoint_identity_selects_latest_best_epoch(tmp_path: Path) -> None:
     assert digest == "804f51f71254c4081e37e7c887073560f4a6fa6cdad202e9ac67e032c43ed1e1"
 
 
+def test_checkpoint_identity_rejects_symlink(tmp_path: Path) -> None:
+    checkpoint_dir = tmp_path / "checkpoints"
+    checkpoint_dir.mkdir()
+    outside = tmp_path / "outside.pt"
+    outside.write_bytes(b"outside")
+    (checkpoint_dir / "best_epoch_2.pt").symlink_to(outside)
+
+    with pytest.raises(ValueError, match="non-symlink file"):
+        _checkpoint_identity(tmp_path)
+
+
 def test_workflow_artifact_identities_freeze_evaluation_inputs(
     tmp_path: Path,
 ) -> None:
@@ -286,6 +321,63 @@ def test_workflow_artifact_identities_freeze_evaluation_inputs(
     }
     assert identities["test_fasta"]["relative_path"] == "data_splits/test.fasta"
     assert len(identities["guided_fasta"]["sha256"]) == 64
+
+
+def test_workflow_artifact_identities_reject_symlink(tmp_path: Path) -> None:
+    paths = (
+        "data_splits/test.fasta",
+        "baseline/proposal_only_generated_sequences.fasta",
+        "guided/energy_guided_generated_sequences.fasta",
+        "history.json",
+        "baseline_vs_guided.json",
+        "baseline_eval/quality_summary.json",
+        "guided_eval/quality_summary.json",
+    )
+    outside = tmp_path / "outside.json"
+    outside.write_text("outside", encoding="utf-8")
+    for relative in paths:
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if relative == "history.json":
+            path.symlink_to(outside)
+        else:
+            path.write_text(relative, encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="stable history.json"):
+        _workflow_artifact_identities(tmp_path)
+
+
+def test_training_output_capture_rechecks_checkpoint_after_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    for relative in (
+        "data_splits/test.fasta",
+        "baseline/proposal_only_generated_sequences.fasta",
+        "guided/energy_guided_generated_sequences.fasta",
+        "history.json",
+        "baseline_vs_guided.json",
+        "baseline_eval/quality_summary.json",
+        "guided_eval/quality_summary.json",
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(relative, encoding="utf-8")
+    real_capture = training_module._workflow_artifact_snapshots
+
+    def capture_then_replace(run_directory: Path):
+        result = real_capture(run_directory)
+        checkpoint.write_bytes(b"trained")
+        return result
+
+    monkeypatch.setattr(
+        training_module, "_workflow_artifact_snapshots", capture_then_replace
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        _capture_training_outputs(tmp_path)
 
 
 def test_live_training_source_guards_cost_and_preflights_before_credentials() -> None:

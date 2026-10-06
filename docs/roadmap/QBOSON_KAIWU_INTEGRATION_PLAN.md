@@ -517,6 +517,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   that chain, loads one frozen checkpoint file without implicit download, checks
   aligned sequence identities, and computes candidate cosine/L2 evidence on the
   primary A800 without spending further QBoson quota.
+- The training producer now requires its newly created run directory to be a
+  real direct child of the seed output root. It captures the selected energy
+  checkpoint and all seven workflow artifacts through stable no-follow file
+  snapshots, then cross-revalidates the complete set before recording their
+  identities; symlinked or concurrently replaced outputs cannot enter a
+  completed training component.
 - The shared training-record loader used by both ESM2 evaluation and replay-host
   execution now revalidates real SDK transport, QBoson-use and identity flags,
   sampling receipts, call budget, no-fallback state, and precision completeness.
