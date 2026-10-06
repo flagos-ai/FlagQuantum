@@ -826,6 +826,30 @@ def _execute_statevector_program(
                 output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            if name in {"crx", "cry", "crz"}:
+                parameters = _gate_parameters(
+                    circuit,
+                    instruction,
+                    output,
+                    parameter_bindings,
+                )
+                if parameters is not None:
+                    from .controlled_matrix_dispatch import (
+                        _try_apply_cataloged_controlled_rotation,
+                    )
+
+                    control, target = instruction.wires
+                    dispatched = _try_apply_cataloged_controlled_rotation(
+                        output,
+                        parameters[:, 0],
+                        control_qubit=control,
+                        target_qubit=target,
+                        n_qubits=circuit.n_qubits,
+                        opcode=name,
+                    )
+                    if dispatched is not None:
+                        output = dispatched
+                        continue
             if name in {"rxx", "ryy", "rzz"}:
                 parameters = _gate_parameters(
                     circuit,
