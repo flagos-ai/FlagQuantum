@@ -11,19 +11,14 @@ import shlex
 import socket
 import statistics
 import sys
-from collections.abc import Mapping, Sequence
+import time
+from collections.abc import Callable, Mapping, Sequence
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import torch
 
-from benchmarks.internal.evidence.statevector_local_2q_probe import (
-    COMPILER_LANES,
-    HOSTS,
-    SHAPE_MATRIX,
-    _measure_pair,
-)
 from flagquantum.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_local_2q_dispatch.v1"
@@ -34,9 +29,64 @@ RUNNER = "benchmarks/statevector_local_2q_dispatch.py"
 DISPATCH_VARIABLE = "FQ_TRITON_TWO_QUBIT_MATRIX"
 RESULT_NAMES = ("public_catalog_dispatch", "public_pytorch_reference")
 PERFORMANCE_FLOOR = 1.0
+HOSTS = ("jp-a800-171", "jp-a800-172")
+COMPILER_LANES = ("stock_triton", "flagtree")
+SHAPE_MATRIX = (
+    (1, 1 << 16, 0, 1),
+    (1, 1 << 20, 0, 19),
+    (1, 1 << 24, 23, 22),
+    (1, 1 << 24, 23, 0),
+    (4, 1 << 20, 10, 3),
+)
 _FULL_REVISION = re.compile(r"^[0-9a-f]{40}$")
 _MAXIMUM_ABSOLUTE_ERROR = 2.0e-5
 _MAXIMUM_RELATIVE_L2_ERROR = 1.0e-6
+
+
+class TimingResult(TypedDict):
+    samples_seconds_per_invocation: list[float]
+    median_seconds_per_invocation: float
+
+
+def _measure_group(operation: Callable[[], Any], group_size: int) -> float:
+    started = time.perf_counter()
+    for _ in range(group_size):
+        operation()
+    torch.cuda.synchronize()
+    return (time.perf_counter() - started) / group_size
+
+
+def _measure_pair(
+    first: Callable[[], Any],
+    second: Callable[[], Any],
+    *,
+    warmup: int,
+    repeats: int,
+    group_size: int,
+) -> tuple[TimingResult, TimingResult]:
+    for _ in range(warmup):
+        first()
+        second()
+    torch.cuda.synchronize()
+    first_samples = []
+    second_samples = []
+    for repeat in range(repeats):
+        if repeat % 2 == 0:
+            first_samples.append(_measure_group(first, group_size))
+            second_samples.append(_measure_group(second, group_size))
+        else:
+            second_samples.append(_measure_group(second, group_size))
+            first_samples.append(_measure_group(first, group_size))
+    return (
+        {
+            "samples_seconds_per_invocation": first_samples,
+            "median_seconds_per_invocation": statistics.median(first_samples),
+        },
+        {
+            "samples_seconds_per_invocation": second_samples,
+            "median_seconds_per_invocation": statistics.median(second_samples),
+        },
+    )
 
 
 def _public_dispatch(
