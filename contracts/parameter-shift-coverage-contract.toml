@@ -1,0 +1,385 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# `batched_parameter_shift_gradient` evaluates a gradient through one remote
+# batch request: it sends one positively shifted and one negatively shifted
+# circuit per input parameter and combines the returned losses. Two circuits per
+# parameter is a two-term rule, so the operation can differentiate exactly those
+# gate parameters whose declared frequencies produce a two-term rule -- and no
+# others. Whether a gate qualifies is a property of the opcode's declaration in
+# `flagquantum/core/operator_schema.py`, not a property of this protocol, so the
+# protocol must read that declaration instead of restating it as a gate list.
+# This contract is the measured record of that reading for every registered
+# opcode, and the gate proves the reading is still the one the code performs.
+#
+# The profile also carries gates that declare no parameter at all. Nothing about
+# such a gate can be differentiated, so the declaration has no opinion on it:
+# admitting it is a scope decision about which circuits the remote-safe profile
+# has been exercised on, not a derivative rule. That is why the constant half is
+# written down explicitly here and nowhere else -- it is the single exemption the
+# gate grants, and widening it is an edit to this contract rather than an edit to
+# the gate.
+#
+# This contract does not cover `fq.gradient`, whose four routes and reported
+# method are owned by `contracts/gradient-api-v1-candidate.json`. The
+# `parameter_shift` route there dispatches to the occurrence-wise kernel this
+# contract's sibling `docs/api-changes/FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md`
+# derived; the batch profile below is a second caller of the same declaration and
+# not a second source of truth for it.
+schema = "flagquantum_parameter_shift_coverage_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+declaration_source = "flagquantum/core/operator_schema.py"
+authorization = [
+    "docs/api-changes/FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md",
+]
+
+# The declaration this profile reads, so the gate can prove it read the same one.
+declaration_vocabulary = [
+    "OPERATOR_SCHEMAS",
+    "OperatorSchema.parameters",
+    "OperatorSchema.parameter_frequencies",
+    "OperatorSchema.differentiable",
+    "OperatorSchema.shift_rule",
+]
+
+[protocol]
+# One positive and one negative circuit per input parameter.
+evaluations_per_parameter = 2
+evaluation_order = "positive_then_negative"
+# The displacement each differentiated parameter must be moved by is the
+# declared rule's own shift, so `shift` is validated against the rule.
+shift_source = "declared_rule"
+# Gates that declare no parameter and are admitted by scope rather than by rule.
+constant_gates = ["cx", "h", "x"]
+# An opcode whose declared rule needs more than this many pairs is refused
+# instead of being answered with a truncated rule.
+max_evaluation_pairs = 1
+
+[rules]
+profile_is_derived_from_the_declaration = true
+implementation_declares_no_opcode_outside_the_constant_gates = true
+shift_is_checked_against_the_declared_rule = true
+refusal_names_the_opcode_and_the_required_pair_count = true
+all_shifts_are_sent_in_one_batch_request = true
+gradient_is_detached = true
+no_truncated_rule_is_used_as_an_approximation = true
+no_silent_fallback = true
+
+[exactness]
+# Every admitted parameter is measured against PyTorch autograd on a loss that is
+# non-degenerate for it: each qubit is prepared with H then RZ(0.3 + 0.1*qubit),
+# the differentiated gate follows, and the measurement basis is turned by RY(0.4)
+# then RZ(0.13) on qubit 0. A reference that came out at zero would make the
+# comparison vacuous, so the floor below is measured as well as asserted.
+tolerance = 1e-12
+reference_minimum_magnitude = 1e-3
+value = 0.37
+fixed_parameter_value = 0.23
+
+# Every way the profile refuses, with the fragment its message must contain. The
+# gate builds each program and requires the refusal, so a refusal that stops
+# firing is a failure rather than a silent acceptance.
+[[refusal]]
+case = "multi_pair_opcode"
+program = "crz_theta"
+message = "crz declares frequencies (0.5, 1.0) and needs 2 evaluation pairs"
+
+[[refusal]]
+case = "one_input_controls_two_occurrences"
+program = "rx_twice"
+message = "must control exactly one gate occurrence; found 2"
+
+[[refusal]]
+case = "scaled_angle"
+program = "rx_scaled"
+message = "must enter its gate angle directly"
+
+[[refusal]]
+case = "channel"
+program = "bit_flip"
+message = "bit_flip is a channel"
+
+[[refusal]]
+case = "constant_outside_scope"
+program = "sdg_then_rx"
+message = "sdg carries no declared parameter and is not one of the profile's constant gates H, X, and CX"
+
+[[refusal]]
+case = "wrong_shift"
+program = "rx_theta"
+shift_source = "caller_supplied_half"
+message = "must be shifted by 1.5707963267948966 to differentiate rx.theta, got 0.5"
+
+[[refusal]]
+case = "custom_matrix"
+program = "custom_matrix_gate"
+message = "batched parameter shift does not support custom matrices"
+
+[[refusal]]
+case = "structure_changes_with_the_parameter"
+program = "structure_follows_parameter"
+message = "changes circuit structure; batched parameter shift requires a static circuit"
+
+[[opcode]]
+name = "amplitude_damping"
+declared_parameters = ["gamma"]
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "channel"
+
+[[opcode]]
+name = "bit_flip"
+declared_parameters = ["probability"]
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "channel"
+
+[[opcode]]
+name = "ccx"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "cphase"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "crx"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+evaluation_pairs = 2
+admitted = false
+
+[[opcode]]
+name = "cry"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+evaluation_pairs = 2
+admitted = false
+
+[[opcode]]
+name = "crz"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+evaluation_pairs = 2
+admitted = false
+
+[[opcode]]
+name = "cswap"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "cx"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = true
+
+[[opcode]]
+name = "cy"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "cz"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "depolarizing"
+declared_parameters = ["probability"]
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "channel"
+
+[[opcode]]
+name = "h"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = true
+
+[[opcode]]
+name = "i"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "phase"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "phase_flip"
+declared_parameters = ["probability"]
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "channel"
+
+[[opcode]]
+name = "rx"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "rxx"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "ry"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "ryy"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "rz"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "rzz"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "s"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "sdg"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "swap"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "sx"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "sxdg"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "t"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "tdg"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "u1"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "u2"
+declared_parameters = ["phi", "lbd"]
+declared_frequencies = [[1.0], [1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "u3"
+declared_parameters = ["theta", "phi", "lbd"]
+declared_frequencies = [[1.0], [1.0], [1.0]]
+evaluation_pairs = 1
+admitted = true
+
+[[opcode]]
+name = "x"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = true
+
+[[opcode]]
+name = "y"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+
+[[opcode]]
+name = "z"
+declared_parameters = []
+declared_frequencies = []
+evaluation_pairs = 0
+admitted = false
+refusal_reason = "constant_outside_protocol_scope"
+

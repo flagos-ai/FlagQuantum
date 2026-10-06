@@ -116,6 +116,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_circuit_composition_contract.py"),
         ),
         Check(
+            "batch parameter-shift coverage contract",
+            (python_executable, "tools/check_parameter_shift_coverage_contract.py"),
+        ),
+        Check(
             "OpenQASM import contract",
             (python_executable, "tools/check_openqasm_import_contract.py"),
         ),

@@ -3,22 +3,59 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 import torch
 
 from .core.ir import ensure_circuit_ir
-from .core.operator_schema import OPERATOR_SCHEMAS
+from .core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema
 from .errors import CapabilityError, ValidationError
 
 CircuitBuilder = Callable[[torch.Tensor], Any]
 LossFunction = Callable[[Any], torch.Tensor]
 BatchLossFunction = Callable[[tuple[Any, ...]], Sequence[torch.Tensor] | torch.Tensor]
 
-_BATCH_PARAMETER_SHIFT_GATES = frozenset({"h", "x", "rx", "ry", "rz", "cx"})
-_PARAMETER_SHIFT_GATES = frozenset({"rx", "ry", "rz"})
+# The batch profile admits these constant operations plus every gate whose
+# declared parameters differentiate with one evaluation pair. The constant half
+# carries no parameter, so it states a protocol scope rather than a derivative
+# rule; the parameterized half is derived below.
+_BATCH_PROFILE_CONSTANT_GATES = frozenset({"h", "x", "cx"})
+
+
+def _single_pair_shift_opcodes(
+    schemas: Mapping[str, OperatorSchema],
+) -> frozenset[str]:
+    """Opcodes that differentiate with one positive and one negative evaluation.
+
+    A gate whose generator has one frequency has a two-term shift rule, which is
+    what the batched protocol sends for each input parameter. This answers that
+    question from the declaration rather than from a gate list, so registering a
+    frequency set with more terms removes an opcode from the profile without
+    editing this module.
+
+    Args:
+        schemas: Opcode-to-schema mapping, normally
+            ``flagquantum.core.OPERATOR_SCHEMAS``.
+
+    Returns:
+        Every opcode that declares a frequency set and whose every declared
+        parameter has a two-term shift rule.
+    """
+
+    admitted = set()
+    for opcode, schema in schemas.items():
+        if not schema.differentiable:
+            continue
+        if all(len(schema.shift_rule(name)) == 2 for name in schema.parameters):
+            admitted.add(opcode)
+    return frozenset(admitted)
+
+
+_BATCH_PROFILE_GATES = _BATCH_PROFILE_CONSTANT_GATES | _single_pair_shift_opcodes(
+    OPERATOR_SCHEMAS
+)
 _PROBE_DISPLACEMENT = 1.0
 _GRADIENT_METHODS = (
     "auto",
@@ -487,16 +524,22 @@ def batched_parameter_shift_gradient(
 ) -> torch.Tensor:
     """Evaluate a parameter-shift gradient through one batch request.
 
-    This first remote-safe profile accepts H, X, RX, RY, RZ, and CX circuits.
-    Each input parameter must control exactly one RX, RY, or RZ occurrence.
-    ``batch_loss_fn`` receives all positive and negative shifts in parameter
-    order and must return one scalar tensor per circuit.
+    The profile sends one positive and one negative evaluation per input
+    parameter, so it differentiates exactly the gate parameters whose declared
+    frequencies produce a two-term rule: every one-frequency gate, including
+    ``U1``, ``U2``, ``U3``, ``PHASE``, ``CPHASE``, ``RXX``, ``RYY``, and
+    ``RZZ``. A gate whose declared frequencies need more evaluations -- ``CRX``,
+    ``CRY``, and ``CRZ`` -- is refused instead of being answered with a two-term
+    number. The circuits may also carry the profile's constant gates ``H``,
+    ``X``, and ``CX``.
 
     Args:
         circuit_builder: Builds a circuit from a parameter tensor.
         parameters: Real, non-empty parameter tensor.
         batch_loss_fn: Evaluates every shifted circuit in one batch operation.
-        shift: Parameter displacement. The current profile requires pi/2.
+        shift: Parameter displacement. It must equal the shift the differentiated
+            gate's declared rule prescribes, which is ``pi/2`` for every opcode
+            that declares one frequency.
 
     Returns:
         A detached gradient with the same shape, dtype, and device as
@@ -512,6 +555,7 @@ def batched_parameter_shift_gradient(
     base_structure, base_values = _circuit_profile(circuit_builder(base))
 
     programs: list[Any] = []
+    coefficients: list[float] = []
     for index in range(flat.numel()):
         plus = flat.clone()
         minus = flat.clone()
@@ -519,20 +563,29 @@ def batched_parameter_shift_gradient(
         minus[index] -= shift
         plus_program = circuit_builder(plus.reshape_as(base))
         minus_program = circuit_builder(minus.reshape_as(base))
-        _validate_shift_pair(
-            (base_structure, base_values),
-            _circuit_profile(plus_program),
-            _circuit_profile(minus_program),
-            shift=shift,
-            parameter_index=index,
+        coefficients.append(
+            _batch_occurrence_coefficient(
+                (base_structure, base_values),
+                _circuit_profile(plus_program),
+                _circuit_profile(minus_program),
+                shift=shift,
+                parameter_index=index,
+            )
         )
         programs.extend((plus_program, minus_program))
 
     losses = _batch_losses(batch_loss_fn(tuple(programs)), expected=len(programs))
-    gradient = 0.5 * (losses[0::2] - losses[1::2])
-    return gradient.reshape_as(base).to(
-        device=parameters.device,
-        dtype=parameters.dtype,
+    terms = [
+        coefficient * (losses[2 * index] - losses[2 * index + 1])
+        for index, coefficient in enumerate(coefficients)
+    ]
+    return (
+        torch.stack(terms)
+        .reshape_as(base)
+        .to(
+            device=parameters.device,
+            dtype=parameters.dtype,
+        )
     )
 
 
@@ -543,8 +596,14 @@ def _validated_parameters(parameters: torch.Tensor, *, shift: float) -> torch.Te
         raise ValueError("parameters must not be empty")
     if not (parameters.is_floating_point() and torch.isfinite(parameters).all()):
         raise ValueError("parameters must contain finite real floating-point values")
-    if not math.isclose(float(shift), math.pi / 2, rel_tol=0.0, abs_tol=1e-12):
-        raise ValueError("batched parameter shift currently requires shift=pi/2")
+    try:
+        displacement = float(shift)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            f"shift must be a positive finite displacement, got {shift!r}"
+        ) from error
+    if not (math.isfinite(displacement) and displacement > 0):
+        raise ValueError(f"shift must be a positive finite displacement, got {shift!r}")
     return parameters.detach()
 
 
@@ -568,27 +627,54 @@ def _circuit_profile_of(program: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]
 
 def _circuit_profile(program: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
     ir = ensure_circuit_ir(program)
-    unsupported = sorted(
-        {item.name for item in ir.instructions} - _BATCH_PARAMETER_SHIFT_GATES
-    )
-    if unsupported:
+    rejected = sorted({item.name for item in ir.instructions} - _BATCH_PROFILE_GATES)
+    if rejected:
         raise ValueError(
-            "batched parameter shift supports only H, X, RX, RY, RZ, and CX; "
-            f"unsupported gates: {', '.join(unsupported)}"
+            "batched parameter shift sends one evaluation pair per parameter, so "
+            f"it differentiates one-frequency gates: {_profile_rejection(rejected)}"
         )
     if any(item.matrix is not None for item in ir.instructions):
         raise ValueError("batched parameter shift does not support custom matrices")
     return _circuit_profile_of(ir)
 
 
-def _validate_shift_pair(
+def _profile_rejection(opcodes: Sequence[str]) -> str:
+    """Why the batched profile cannot evaluate each rejected gate."""
+
+    reasons = []
+    for opcode in opcodes:
+        schema = OPERATOR_SCHEMAS.get(opcode)
+        if schema is None:
+            reasons.append(f"{opcode} declares no shift rule")
+        elif schema.channel:
+            reasons.append(f"{opcode} is a channel")
+        elif not schema.parameters:
+            reasons.append(
+                f"{opcode} carries no declared parameter and is not one of the "
+                "profile's constant gates H, X, and CX"
+            )
+        else:
+            declared = ", ".join(
+                str(frequencies) for frequencies in schema.parameter_frequencies
+            )
+            pairs = max(len(schema.shift_rule(name)) for name in schema.parameters) // 2
+            reasons.append(
+                f"{opcode} declares frequencies {declared} and needs {pairs} "
+                "evaluation pairs"
+            )
+    return "; ".join(reasons)
+
+
+def _batch_occurrence_coefficient(
     base: tuple[tuple[Any, ...], tuple[Any, ...]],
     plus: tuple[tuple[Any, ...], tuple[Any, ...]],
     minus: tuple[tuple[Any, ...], tuple[Any, ...]],
     *,
     shift: float,
     parameter_index: int,
-) -> None:
+) -> float:
+    """The declared coefficient for the one gate angle a parameter moves."""
+
     base_structure, base_values = base
     plus_structure, plus_values = plus
     minus_structure, minus_values = minus
@@ -616,9 +702,31 @@ def _validate_shift_pair(
             f"found {len(changed)}"
         )
     opcode, name, base_value, plus_value, minus_value = changed[0]
-    if opcode not in _PARAMETER_SHIFT_GATES or name != "theta":
+    schema = OPERATOR_SCHEMAS.get(opcode)
+    if schema is None:
         raise ValueError(
-            f"parameter {parameter_index} must control one RX, RY, or RZ angle"
+            f"parameter {parameter_index} controls unknown opcode {opcode!r}, "
+            "which declares no derivative rule"
+        )
+    try:
+        rule = schema.shift_rule(name)
+    except ValueError as error:
+        raise ValueError(
+            f"parameter {parameter_index} controls {opcode}.{name}, which cannot be "
+            f"differentiated: {error}"
+        ) from error
+    if len(rule) != 2:
+        declared = schema.parameter_frequencies[schema.parameters.index(name)]
+        raise ValueError(
+            f"parameter {parameter_index} controls {opcode}.{name}, which declares "
+            f"frequencies {declared} and needs {len(rule) // 2} evaluation pairs; "
+            "batched parameter shift sends one pair per parameter"
+        )
+    coefficient, rule_shift = rule[0]
+    if not math.isclose(abs(rule_shift), shift, rel_tol=0.0, abs_tol=1e-9):
+        raise ValueError(
+            f"parameter {parameter_index} must be shifted by {abs(rule_shift)} to "
+            f"differentiate {opcode}.{name}, got {shift}"
         )
     if not (
         math.isclose(plus_value - base_value, shift, rel_tol=0.0, abs_tol=1e-6)
@@ -627,6 +735,7 @@ def _validate_shift_pair(
         raise ValueError(
             f"parameter {parameter_index} must enter its gate angle directly"
         )
+    return coefficient
 
 
 def _scalar_parameter(value: Any) -> float:

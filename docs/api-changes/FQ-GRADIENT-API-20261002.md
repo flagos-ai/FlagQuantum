@@ -140,9 +140,9 @@ fields; a caller who needs to name the type imports it from `flagquantum.gradien
 
 The diff of `flagquantum/gradients.py` against the base is 332 added lines and
 one changed line: the pre-existing `parameter_shift_gradient` and
-`batched_parameter_shift_gradient` kernels are **not modified**. Every existing
-route keeps working exactly as before, and `fq.gradient` reuses them rather than
-reimplementing them:
+`batched_parameter_shift_gradient` kernels are **not modified** by this change.
+Every existing route keeps working exactly as before, and `fq.gradient` reuses
+them rather than reimplementing them:
 
 | Route | Kernel `fq.gradient` dispatches to | Kernel status |
 | --- | --- | --- |
@@ -293,3 +293,15 @@ value; that remains an owned gap until a standalone adjoint entry point exists
 that reports whether the sweep was replayed. It does not change
 `parameter_shift_gradient`, `batched_parameter_shift_gradient`, or the
 `OperatorSchema.parameter_frequencies` declarations that the shift rule reads.
+
+**Delivered:** two later changes revised the kernels this section describes, each
+under its own proposal. [_Gradient parameter
+frequencies_](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md) made
+`parameter_shift_gradient` read `OperatorSchema.shift_rule` and refuse what it
+cannot answer. [_The batch parameter-shift profile reads the opcode
+declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) did the same for
+`batched_parameter_shift_gradient`, which no longer states a gate list and admits
+`U1`, `U2`, `U3`, `PHASE`, `CPHASE`, `RXX`, `RYY`, and `RZZ`. The
+`parameter_frequencies` declarations are unchanged and are now the single source
+both kernels read; `fq.gradient`'s four routes and its `GradientResult` are
+unaffected.
