@@ -261,6 +261,20 @@ class CouplingMap:
         return right in self._adjacency[left]
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
+        """Return the canonical shortest path between two physical qubits.
+
+        The path is a function of the pair, not of how the pair was asked for.
+        :meth:`distance` reports a hop count, which is unique, but a pair can have
+        two shortest routes of equal length: on a ring the two arcs around it have
+        the same hop count, and a path graph resolves a pair through the only route
+        it has. Breadth-first search returns whichever route its adjacency order
+        reaches first, so expanding from the endpoint that was asked would choose
+        between equal routes by direction, and the mirrored entry cached below
+        would then hand the next caller a route that caller's own search would not
+        have produced. Expanding from the lower-indexed endpoint keeps the two
+        directions exact reverses of each other and makes a reused device inert.
+        """
+
         start = self._validate_qubit(start)
         goal = self._validate_qubit(goal)
         cache_key = (start, goal)
@@ -279,24 +293,27 @@ class CouplingMap:
             identity_path = (start,)
             self._cache_paths((cache_key, identity_path))
             return identity_path
-        parents = {start: -1}
-        queue: deque[int] = deque([start])
+        first, second = (start, goal) if start < goal else (goal, start)
+        parents = {first: -1}
+        queue: deque[int] = deque([first])
         while queue:
             qubit = queue.popleft()
             for neighbor in self.neighbors(qubit):
                 if neighbor in parents:
                     continue
                 parents[neighbor] = qubit
-                if neighbor == goal:
-                    path_nodes = [goal]
-                    while path_nodes[-1] != start:
+                if neighbor == second:
+                    path_nodes = [second]
+                    while path_nodes[-1] != first:
                         path_nodes.append(parents[path_nodes[-1]])
                     resolved = tuple(reversed(path_nodes))
-                    self._cache_paths(
-                        (cache_key, resolved),
-                        ((goal, start), tuple(reversed(resolved))),
+                    forward, backward = (
+                        (resolved, tuple(reversed(resolved)))
+                        if start < goal
+                        else (tuple(reversed(resolved)), resolved)
                     )
-                    return resolved
+                    self._cache_paths((cache_key, forward), ((goal, start), backward))
+                    return forward
                 queue.append(neighbor)
         raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 
@@ -652,9 +669,19 @@ def _require_multi_qubit_device_local(
     interact on consecutive operands; an instruction with no entry is refused
     instead of assumed local. Two-qubit instructions keep their existing
     SWAP-based handling.
+
+    A barrier is the one multi-qubit instruction this rule does not apply to: it
+    carries no unitary and constrains only the order of the operations around it,
+    so it needs no coupling and cannot be decomposed onto one. The optimizer, the
+    commutation rules, and the schedule legalizer already read it that way, and
+    the router is where a directive was being turned into a device operation. An
+    instruction that names the barrier while carrying a matrix is a gate wearing
+    the name, so it keeps the connectivity requirement below.
     """
 
     if len(qubits) < 3:
+        return
+    if instruction.name == "barrier" and instruction.matrix is None:
         return
     required = _MULTI_QUBIT_OPERAND_PAIRS.get(instruction.name)
     if required is None:

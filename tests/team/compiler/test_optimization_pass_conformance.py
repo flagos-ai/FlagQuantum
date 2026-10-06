@@ -89,6 +89,10 @@ from flagquantum.compiler.diagonal_before_measure import (
 )
 from flagquantum.compiler.inverse_cancellation import inverse_pairs, merge_inverse_pairs
 from flagquantum.compiler.one_qubit_optimization import collapse_one_qubit_runs
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.compiler.two_qubit_optimization import collapse_two_qubit_blocks
 from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -122,22 +126,15 @@ _DYNAMIC_PASSES: tuple[tuple[str, _Pass], ...] = (
 )
 
 #: The passes `_optimize_to_fixed_point` calls, once per fixed-point round, in the
-#: order it calls them. `remove_identity_gates` appears twice on purpose: it runs
-#: immediately after the inversion passes and again after the commutation passes,
-#: for the reason the loop's own comments give.
-_ROUND_BODY: tuple[str, ...] = (
-    "remove_zero_state_resets",
-    "remove_diagonal_gates_before_measure",
-    "remove_identity_gates",
-    "merge_self_inverse",
-    "merge_inverse_pairs",
-    "merge_adjacent_rotations",
-    "merge_commuting_rotations",
-    "cancel_commuting_self_inverse",
-    "remove_identity_gates",
-    "collapse_one_qubit_runs",
-    "collapse_two_qubit_blocks",
-)
+#: order it calls them, at the level `optimize` runs when a caller names none.
+#: `remove_identity_gates` appears twice on purpose: it runs immediately after the
+#: inversion passes and again after the commutation passes, for the reason the
+#: declaration in `optimization_levels` gives -- the loop now runs a declared
+#: sequence rather than carrying one, so the order and its reasons live beside each
+#: other in that module and this tuple reads the declaration instead of restating
+#: it. `test_the_roster_is_the_round_body_the_pipeline_runs` asserts that the
+#: declaration is the roster this file is driven over.
+_ROUND_BODY: tuple[str, ...] = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
 
 #: Every pass named once, which is the roster the shared checks are driven over.
 #: `test_the_roster_is_the_round_body_the_pipeline_runs` is what ties the two tuples
@@ -943,11 +940,13 @@ def test_the_outcome_instrument_can_see_a_removal_that_is_wrong() -> None:
 class _Recorder:
     """Record the passes `_optimize_to_fixed_point` actually calls, in order.
 
-    The roster exists in one place -- the loop body -- and the loop imports its passes
-    inside the function, so there is nothing a test can read to learn the composition.
-    This context manager patches each call site where the name is actually resolved and
-    records what ran, which lets the composition be checked as code against code instead
-    of prose against code.
+    The loop imports its passes inside the function and now runs a sequence it
+    reads from `optimization_levels`, so the declaration is what a test can read
+    and this recorder is what checks that the loop *runs* it. Patching each call
+    site is what makes the two comparable as code against execution rather than
+    prose against code: a name in the table that the loop never resolves, or one
+    the loop resolves in a different order, is invisible to a test that only reads
+    the table.
 
     `remove_zero_state_resets` is patched on `compiler_pipeline`, not on its own module,
     because the loop's module imports that name at module scope: patching the definition
@@ -998,18 +997,26 @@ class _Recorder:
 def test_the_roster_is_the_round_body_the_pipeline_runs() -> None:
     """Tie the two enumerations together.
 
-    `_ROUND_BODY` is what the pipeline does, `_ROSTER` is what the shared checks are
-    driven over, and the only difference allowed between them is the repeated
-    `remove_identity_gates`. A pass added to the loop and not to this file fails here.
+    `_ROUND_BODY` is the declaration the pipeline runs at the default level,
+    `_ROSTER` is what the shared checks are driven over, and the only difference
+    allowed between them is the repeated `remove_identity_gates`. A pass added to
+    the declaration and not to this file fails here.
+
+    The declaration is compared with level 2 as well as read from it, because
+    `_ROUND_BODY` reads whichever level the default names: if the default were
+    changed to a level that runs fewer passes, every shared check below would be
+    driven over the smaller roster without anything in this file noticing.
     """
 
+    assert OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL] == _ROUND_BODY
+    assert set(OPTIMIZATION_LEVEL_STAGES[2]) == set(_ROUND_BODY)
     assert set(_ROSTER) == {name for name, _ in _ALL_PASSES}
     assert len(_ROSTER) == len(_ALL_PASSES)
     assert set(_ROUND_BODY) == set(_ROSTER)
     assert len(_ROUND_BODY) == len(_ROSTER) + 1
 
-    # Exactly one pass runs twice, and it is the one the loop's comments say runs
-    # twice. Any other repetition would mean the loop body has a shape this file does
+    # Exactly one pass runs twice, and it is the one the declaration says runs
+    # twice. Any other repetition would mean the round body has a shape this file does
     # not describe.
     repeated = sorted({name for name in _ROUND_BODY if _ROUND_BODY.count(name) > 1})
     assert repeated == ["remove_identity_gates"]

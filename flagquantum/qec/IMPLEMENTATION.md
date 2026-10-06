@@ -66,9 +66,11 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qub
 indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` are the three
+layout. `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` are the declared
 records that implement it, and the last is the one that declares a logical
-observable in each readout basis.
+observable in each readout basis; `CssCode` implements the same protocol from the
+parity-check and logical matrices a caller already holds rather than from a
+class.
 
 Detector semantics are fixed, and they are stated relative to the experiment's
 readout basis. A detector is a measurement parity that is deterministic in the
@@ -161,6 +163,49 @@ reaches a model without a circuit being written for it. The bridge reads every
 block the record declares; a logical observable that is neither pure X nor pure Z
 is refused with its index named rather than read as one of the two, so the fault
 family a half-read code would have lost cannot be lost silently.
+
+`css_code.py` is the same seam read the other way. `CssCode` takes the
+`CssCodeMatrices` record `css_code_matrices` produces and answers the same
+fourteen members a declared record answers -- the data qubits, the ancilla total
+with its two X-type and Z-type bands and the two matching stabilizer counts, the
+checks with their CNOT direction, the stabilizers, the logical observables and the
+distance -- so a caller holding the four blocks reaches a memory circuit, a
+detector and observable layout, a detector error model and `css_code_matrices`
+itself without writing a class for them. The Shor code is the demonstration that
+this is not a second way to write down a declared record: nine data qubits, six
+Z-type checks, two X-type checks and a weight-three logical Z reach a full
+experiment from four blocks alone.
+
+The distance is stated by the caller rather than derived, which is the baseline's
+own division -- its code record declares no distance accessor, its factories read
+one out of the options they were built with and throw when it is absent, and its
+matrix record carries no distance to read -- and deriving it here would be worse
+than copying that shape, because a minimum-weight-codeword search is exponential
+in general and would refuse exactly the large matrices the route exists for. What
+is enforced is the one direction a stated logical operator can prove: an operator
+of weight `w` bounds the distance above by `w`, so a record claiming more than the
+lightest operator it states is refused with both numbers named, and a record that
+understates its distance is accepted because the bound only holds one way.
+
+The record is also where the four blocks are held to the code algebra a matrix
+record normally leaves unchecked. `CssCodeMatrices` establishes that the blocks
+are well formed -- one common width, binary entries -- and says nothing about
+whether they describe a code, while the baseline's own construction validates a
+common column count, the per-element rate-vector lengths and the probability range
+and never commutation, orthogonality, logical non-triviality or independence. Here
+`hz` and `hx` must commute, each stated logical operator must meet the opposite
+basis' checks on an even number of qubits, neither logical block may put a row
+inside its own basis' check span, each block's rows must be independent because
+each row becomes one observable, and no check or logical row may be empty because
+an empty row states the identity operator. Every refusal names the row and the
+reason. That set is a deliberate strengthening of the baseline and not a
+conformance claim.
+
+Two limits of the route are deliberate. A matrix-built record is not registered by
+name, because its identity is the matrix rather than a string, so `get_code` still
+reaches the three declared records. And the route is CSS-shaped by construction, so
+an arbitrary non-CSS stabilizer list still has no way in, for the same reason a
+mixed X-and-Z stabilizer is refused.
 
 The two routes describe different experiments and the difference is stated rather
 than glossed. The matrix route is the code-capacity one: a fault in round `r`

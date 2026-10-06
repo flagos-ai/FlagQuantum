@@ -251,6 +251,61 @@ the other. The rates are read against these matrices: the per-qubit vectors are
 indexed by column, in the code's own `data_wires` order, and the per-check vector
 by row, with the Z-type checks first.
 
+## Build a code record from matrices
+
+The records above are declared: a class states its layout and builds its checks
+from it. A caller who already holds the four CSS blocks does not need a class for
+them. `CssCode` takes a `CssCodeMatrices` and a distance, and answers the same
+members `StabilizerCode` declares, so everything downstream -- the ancilla bands,
+the memory-circuit source, the detector and observable layouts, `css_code_matrices`
+itself -- takes a matrix-built record on the same terms as a declared one:
+
+```python
+import torch
+from flagquantum.qec import CssCode, CssCodeMatrices, build_memory_circuit
+
+matrices = CssCodeMatrices(
+    hz=torch.tensor([[1, 1, 0], [0, 1, 1]]),
+    lz=torch.tensor([[1, 1, 1]]),
+)
+code = CssCode(matrices=matrices, distance=3)
+memory = build_memory_circuit(code, rounds=3)
+print(len(code.checks), code.num_ancilla_z_qubits, len(memory.detectors))  # 2 2 8
+```
+
+Column `q` of every block is data qubit `q`, the Z-type checks take the ancillas
+in `hz`'s row order and the X-type checks the ones after them, and the CNOT
+direction of each check is the one its type fixes, exactly as a declared check
+states it. The Shor code is the case that shows this is not a second way to write
+the three declared families: it is nine data qubits with six Z-type checks, two
+X-type checks and a weight-three logical Z, no class here declares it, and it
+reaches a memory circuit and a detector error model from four blocks alone.
+
+The distance is stated rather than derived, which is CUDA-Q QEC's own division:
+its code record declares no distance accessor, its own factories read one out of
+the options they are built with and throw when it is absent, and its matrix record
+carries no distance to read. A minimum-weight-codeword search is exponential in
+general, so deriving the distance here would refuse exactly the large matrices
+this route exists for. Instead the matrices are held to the distance they are
+given in the one direction a stated logical operator can prove: an operator of
+weight *w* bounds the distance above by *w*, so a record claiming a distance
+larger than the lightest operator it states is refused and one that understates
+its distance is accepted.
+
+The four blocks are also held to the code algebra a matrix record normally leaves
+unchecked. Two check blocks that do not commute, a logical operator meeting the
+opposite basis' checks on an odd number of qubits, a logical operator that is a
+product of its own type's checks, two dependent rows in one logical block, and a
+check or logical row with no support are each refused with the row and the reason
+named. CUDA-Q QEC validates a common column count, the rate-vector lengths and the
+probability range, and none of this, so the checks here are a deliberate
+strengthening rather than a match.
+
+Two things the route does not carry. It is not registered by name -- the identity
+of a matrix-built record is the matrix, so `get_code` still reaches the three
+declared records -- and it is CSS-shaped, so an arbitrary non-CSS stabilizer list
+still has no route in.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
@@ -286,15 +341,53 @@ free to declare its checks in any order, so the declaration order and the vector
 order are related by one named translation rather than by a convention each route
 re-states.
 
-This is a description of noise locations, not a `NoiseModel`, and every family it
-states is a location on **both** routes. The sampler executes one channel — the
-engine's single-wire bit flip — so a Z or Y location is that channel conjugated by
-the Clifford that turns a bit flip into the Pauli the family names: `h` around it
-for `phase_flip`, `sdg`/`s` around it for `both_flip`. That is one draw at that
-family's rate, not a pair of independent bit flips, and the noiseless circuit is
-untouched because the pair cancels when the channel does not fire. A measurement
-flip is the bit flip itself, since a readout is flipped in the basis it is read
-in.
+This is a description of noise locations stated at round boundaries and check
+readouts, and every family it states is a location on **both** routes. The
+sampler executes one channel — the engine's single-wire bit flip — so a Z or Y
+location is that channel conjugated by the Clifford that turns a bit flip into
+the Pauli the family names: `h` around it for `phase_flip`, `sdg`/`s` around it
+for `both_flip`. That is one draw at that family's rate, not a pair of
+independent bit flips, and the noiseless circuit is untouched because the pair
+cancels when the channel does not fire. A measurement flip is the bit flip
+itself, since a readout is flipped in the basis it is read in.
+
+## Bind a channel to a gate
+
+`flagquantum.noise.NoiseModel` is the second record the three entry points accept,
+and which record you state is what selects the grammar. It names gates rather than
+round boundaries, and its fault follows the gate its rule matched, once per round
+that gate appears in. That is where upstream CUDA-Q places a channel bound to a
+named gate: the channel acts on the state the gate leaves behind.
+
+```python
+from flagquantum.noise import NoiseModel, bit_flip_channel
+from flagquantum.qec import DetectorErrorModel, RotatedSurfaceCode, build_memory_circuit
+
+circuit = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+noise = NoiseModel().add("h", bit_flip_channel(0.01)).add("cx", bit_flip_channel(0.01))
+model = DetectorErrorModel.from_memory_circuit(circuit, noise=noise)
+print(model.num_detectors, model.num_errors)
+```
+
+`sample_memory_circuit(circuit, noise=noise, shots=..., seed=...)` samples the
+same record, and the model and the sample read one mechanism list and one
+lowering, so they cannot disagree about which instruction a fault sits at. A rule
+whose gate the circuit does not execute contributes no location: a noise model is
+stated over a gate set, and a gate outside it is not part of the experiment. A
+rule that names a gate the circuit executes many times contributes one location
+per occurrence, so the round is read off the lowered program rather than stated in
+the record.
+
+This grammar places a single-qubit Pauli fault and nothing else, so four things
+are refused by name rather than approximated, on the model route and the sampling
+route alike. A channel that is not one Pauli fault — a depolarizing or damping
+channel, whose Kraus set is a mixture rather than an identity and a flip. A rule
+naming `measure` or `reset`, because a fault is attached to the gate a rule names
+and a readout fault's position is the check it corrupts, which is the
+`measurement_flip` field of a `PhenomenologicalNoise`. A one-qubit channel bound
+to two wires, which is a correlated fault rather than two independent ones. And a
+fault that would follow the program's last instruction, which is stated rather
+than dropped so the model cannot be silently thinner than the record.
 
 ## Say that two mechanisms are alternatives
 
@@ -521,8 +614,9 @@ and [matching.py](matching.py) for the detector-error-model decoder,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
-code records, [circuit.py](circuit.py) for detector and observable layouts, and
-[types.py](types.py) for records. Run from the repository root:
+code records, [css_code.py](css_code.py) for a code record built from
+parity-check matrices, [circuit.py](circuit.py) for detector and observable
+layouts, and [types.py](types.py) for records. Run from the repository root:
 
 ```bash
 python -m pytest tests/qec -q

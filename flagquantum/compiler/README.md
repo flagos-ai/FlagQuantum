@@ -18,13 +18,17 @@ python -m examples.target_aware_compilation
 python -m examples.compiler_synthesis
 ```
 
-The first example checks optimization against the original circuit. The second
-checks routing legality and numerical equivalence on a concrete topology. The
-third spells gates a target cannot run in the gates that target publishes, and
-checks each rewrite against the original on the shipped statevector engine; run
-it before changing an Euler form, an entangler cost, or a ladder. Use
+The first example checks optimization against the original circuit, prints the
+gate count at every implemented optimization level, and shows a reserved level
+failing closed. The second checks routing legality and numerical equivalence on a
+concrete topology. The third spells gates a target cannot run in the gates that
+target publishes, and checks each rewrite against the original on the shipped
+statevector engine; run it before changing an Euler form, an entangler cost, or a
+ladder. Use
 `optimize(program)` for target-independent optimization and
-`compile(program, coupling_map=...)` for target-aware compilation. Use
+`compile(program, coupling_map=...)` for target-aware compilation. Both take
+`optimization_level=`, which selects how much of the pass library runs and
+defaults to `2`, the level that runs all of it. Use
 `synthesize_one_qubit`, `synthesize_two_qubit`, and
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
@@ -34,6 +38,7 @@ it before changing an Euler form, an entangler cost, or a ladder. Use
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
+| Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization_levels.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
@@ -542,6 +547,53 @@ The roster the suite checks is the loop's own composition, not a copy of it:
 `optimize` runs its passes to a fixed point and imports them inside the function,
 so the suite records the calls the loop actually makes and compares the recording
 with its enumeration. A pass added to the loop and not to this file fails there.
+Since the composition is named rather than written inline, the enumeration is the
+declaration in [optimization_levels.py](optimization_levels.py) and the recording
+is still what proves the loop runs it.
+
+## How much optimization runs
+
+`optimize` and `compile` take `optimization_level`, an integer naming how much of
+the pass library runs. The levels are Qiskit's, because the two libraries' pass
+sets correspond closely enough that a user moving between them should not have to
+learn a second scale, and `optimization_levels.py` records the correspondence per
+pass rather than only the numbers:
+
+| Level | Stages |
+| --- | --- |
+| `0` | None. The program is returned unchanged. |
+| `1` | Reset and identity removal, self-inverse and inverse-pair cancellation, adjacent-rotation merging, one-qubit run folding. |
+| `2` | Everything `1` runs, plus diagonal-gate removal before measurement and rotation merging across a proven commuting gap. |
+| `3` | Declared and reserved. `CompilationError`, because the unitary-synthesis stage Qiskit's level 3 moves into the optimization loop has no counterpart here yet. |
+
+`2` is the default and the level every earlier release effectively ran, so a
+caller that names no level receives the program it used to receive; level `0`
+returns the submitted program instruction for instruction, which is what
+supporting "do not optimize" as a level rather than a flag has to mean. The level
+that ran is recorded on the result under `metadata["optimization"]`, so a level-0
+program that had nothing to optimize is still distinguishable from one that was
+never offered to the optimizer at all.
+
+Level 3 is refused rather than approximated. Qiskit's level 3 differs from its
+level 2 by moving `UnitarySynthesis` into the fixed-point loop, and this package's
+synthesis entry points are not passes over a `CircuitIR`: they answer about one
+gate or one amplitude vector and are reached by module path. Answering a request
+for level 3 with a level-2 program would be a silent downgrade of exactly the kind
+this repository forbids, and narrowing the ladder later is a breaking change while
+widening it is not, so the refusal is the version that can be corrected cheaply.
+A value that is not an integer is refused for the same reason: `True` and `2.0`
+both compare equal to an implemented level, so accepting them would let an
+unvalidated value select a pass set.
+
+The declaration is checked against execution rather than against itself.
+[test_optimization_levels.py](../../tests/team/compiler/test_optimization_levels.py)
+resolves every declared name through the loop's own roster, asserts level 2 is the
+whole library and level 1 a subsequence of it, and asserts the reach of each level
+over a seeded family: level 1 is strictly shorter than level 0 on all forty seeds
+and level 2 strictly shorter than level 1 on twelve, because level 1 already folds
+a single-qubit run into one Euler form and level 2's extra reach is what survives
+that. Each level is also checked for preserving the state and for never growing
+the program, so the levels form a ladder rather than four independent settings.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
@@ -572,6 +624,46 @@ shortfall is the algorithm rather than the port. [benchmarks/compiler_stochastic
 holds the measurement and the commands that reproduce it. The checked-in port is
 also the only runnable form of the algorithm left to this repository, because
 Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
+
+What those strategies cost is a checked-in number rather than an impression.
+[benchmarks/compiler_routing_quality.py](../../benchmarks/compiler_routing_quality.py)
+compiles the same 140 programs through `flagquantum.compiler.compile` -- the entry
+point a caller uses, so the programs are optimized before they are routed, as a
+caller's are -- and reports the SWAPs each of the five entry points retains after
+post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
+automatic selection 4310, `restore_after_each_gate` 4660 and
+`persistent_layout` 4716, with every entry point routing all 140 programs, no
+two-wire operation off the device, and every compiled program equal to its source
+to `2.8e-16`. These are the counts at the default optimization level, `2`: a
+caller who names a lower level runs fewer of the optimization passes that remove
+inserted SWAPs afterwards, so the level is part of what a retained count means.
+Two numbers there are worth carrying forward. The automatic
+selection never resolves to a SABRE strategy, because its cost estimate can rank
+only `restore_after_each_gate` and `persistent_layout`, and that scope costs
+`2.14` times what the best available strategy costs -- so the price of the
+restriction is measured rather than merely stated. And the estimate is good inside
+that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
+and lands within `1.005` of always picking the better one. The eight misses are
+not a bias in the estimate. It minimizes the SWAPs a plan *inserts*, as its
+objective field states: its planned count equals the router's planned count on all
+140 programs for both candidates, and its objective with its declared tie-break
+reproduces the selection on all 140. The misses are the gap between two questions.
+This benchmark scores the SWAPs *retained*, and the post-routing optimization
+removes 5.25% of one candidate's planned SWAPs and 5.49% of the other's, so a
+program where `persistent_layout` plans fewer and retains no fewer is scored as a
+miss. Those counts are a reading of the shipped router, and
+they are only reproducible because that router resolves a physical pair to one
+route: `CouplingMap.shortest_path` expands from the lower-indexed endpoint rather
+than from whichever endpoint the caller passed, so the two operand orders are
+exact reverses of each other and a device that has already answered other queries
+routes exactly as a cold one does. A pair on an even ring has two routes of equal
+length, so the route is a tie-break, and a tie-break that reads the device's
+history would make the count depend on which pass asked first.
+`DirectedCouplingMap.shortest_path` breaks the same tie the same way, because SWAP
+placement travels the same undirected graph whichever device describes it.
+[test_compiler_routing_quality.py](../../tests/benchmark_contract/test_compiler_routing_quality.py)
+holds those readings, including a test that fails if the automatic selection
+becomes an alias of one candidate or quietly widens its scope.
 
 Routing moves two-qubit operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more qubits, so such

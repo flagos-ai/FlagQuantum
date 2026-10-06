@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
+| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, all three feeding the matrix route, and a record now also buildable the other way, out of the parity-check and logical matrices a caller holds; what is left is the arbitrary non-CSS stabilizer list and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -59,7 +59,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
-| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; the noise grammar has no location for a channel bound to a named gate, so arbitrary annotated circuits are still declined. |
+| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; a second grammar now places a channel bound to a named gate after the gate it matched, so what remains at the input end is the arbitrary annotated circuit rather than the placement. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a composite-fault decomposition that widens the matcher past the one hyperedge a memory circuit states all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
@@ -154,10 +154,9 @@ direction on the caller's behalf, and a local `CodeCheck` states one ancilla and
 one CNOT direction fixed by the check's type — so a mixed X-and-Z stabilizer is
 refused rather than given a second ancilla, and the qLDPC, Reichardt and Floquet
 families upstream serves with that overload have no route in. A caller holding a
-parity-check matrix is already served by `DetectorErrorModel.from_code_matrices`,
-which reads the matrix rather than inventing a gadget for it, and that is the
-reason the omission is a gap in the code record and not a gap in the matrix
-route.
+parity-check matrix is served by a route of its own, described below, which reads the
+matrix rather than inventing a gadget for it, so the omission is a gap in the declared
+record and not a gap in the matrices route.
 
 The colour code is withdrawn from this row rather than kept as its gap, and
 reading upstream's headers is what settled it. There is no concrete code type
@@ -186,6 +185,64 @@ second shape; `symbol:flagquantum.qec.operation_encodings` states that absence.
 Note that this one is a decision about this repository's circuit model rather
 than a small addition, which is why the row stays `partial` with the gap named
 rather than being closed by widening the record.
+
+**The matrices route into a code record.** The other half of this row was the
+one its own `next_action` had been recording as missing: a caller holding the four
+CSS blocks — `hz`, `hx`, `lz`, `lx` — could reach a detector error model but could
+not reach a *code*, so no memory circuit and no detector or observable layout
+could be derived from matrices at all. `flagquantum.qec.CssCode` is that route.
+It takes a `CssCodeMatrices` and a distance, and it answers the same fourteen
+members `StabilizerCode` declares, so every consumer of a code record — the
+memory-circuit builder, the ancilla bands, `css_code_matrices` — takes a
+matrix-built record on the same terms as a declared one, with no branch for it
+anywhere. The Shor code is the demonstration that this is not a second way to
+write down the same three families: it is nine data qubits with six Z-type and
+two X-type checks and a weight-three transversal logical Z, no class here declares
+it, and it reaches a memory circuit, a detector error model and sampled detection
+events from four blocks alone.
+
+The distance is stated by the caller, and that is upstream's own division rather
+than a shortcut. `cudaq::qec::code` declares no distance accessor at all —
+`code.h` takes one out of the options a record is built with, and
+`repetition.cpp` and `surface_code.cpp` each throw when it is absent — and
+`css_code_matrices` carries no distance for a matrix holder to read either. A
+record built from matrices therefore has no distance to copy and nothing to read
+it from, and deriving it here would be worse than copying that shape: the
+distance of a quantum code is a minimum-weight-codeword problem, which is
+exponential in general and would refuse exactly the large matrices this route
+exists for. What the
+record does instead is prove the one direction a stated logical operator can. An
+operator of weight *w* bounds the distance above by *w*, because that operator is
+a logical operator, so a record claiming a distance larger than the lightest
+operator it states is refused with both numbers named, and a record that
+understates its distance is accepted, because the bound is real in that
+direction only. That is deliberately a one-sided check: it catches the mistake a
+caller actually makes, copying a distance from a paper that belongs to a
+different matrix, and it does not pretend to derive what it cannot.
+
+The algebra is where this route goes past the upstream one rather than matching
+it, and the difference is recorded as a difference. `dem_construction_utils.cpp`
+validates a common column count, the length of each per-element rate vector, and
+that each probability lies in `[0, 1]`; it never checks commutation,
+orthogonality, logical non-triviality or independence, so a pair of blocks that
+do not commute reaches a detector error model there. A record built here is held
+to all of it: two check blocks whose product is not the identity are refused, a
+logical operator meeting the opposite basis' checks on an odd number of qubits is
+refused with the check named, a logical operator that is a product of its own
+type's checks is refused as a stabilizer rather than a logical operator, two
+dependent rows in one logical block are refused because each row becomes one
+observable, and a check or logical row with no support is refused because an
+empty row states the identity operator. A reader comparing this against upstream
+should read the paragraph above as a strengthening, not as parity: upstream does
+not have this check, so passing it here is not evidence of upstream conformance.
+
+Two things the route deliberately does not carry are worth stating so they are
+not mistaken for omissions. It is not registered by name: the identity of a
+matrix-built record is the matrix, not a string, so `get_code` still reaches the
+declared three and a caller does not have to invent a name to use their own
+blocks. And it is CSS-shaped by construction, so an arbitrary non-CSS stabilizer
+list still has no route in — the same limit the paragraph above describes, for the
+same reason, and not a limit this round removed.
 
 **What `qec_decoder_family` closed, and what it did not.** The row's order was
 "decoding graph with `log((1-p)/p)` edge weights and observable labels, a
@@ -354,16 +411,44 @@ which is why the noiseless circuit is untouched. The construction route states
 the same identity in the language it injects into, which carries `h` and `x` and
 no other parameter-free single-qubit gate, by composing `H X H` and `H X H X`
 instead of emitting a conjugation. What has no location here is therefore not a
-Pauli family but a *placement*: a depolarizing or damping channel, and any
-channel bound to a named gate rather than to a round boundary. The baseline's
-`x_` and `z_` variants are no longer one of them: the record states its readout
-basis, the sampler reads it, and the rotation that basis adds to the lowered
-program is a stated offset beside the round block rather than a round of its
-own, so an X-basis experiment's faults land where its own model puts them. The
-entry points themselves stay absent on purpose, because a basis is a field of
-the record here rather than a second way to ask for one thing. The row stays
-`partial` on that scope, not on the connection or on which families reach a
-sampled record.
+Pauli family but a *placement*: a depolarizing or damping channel, which is
+still absent, and a channel bound to a named gate, which is now placed. The
+baseline's `x_` and `z_` variants are no longer one of them either, and the
+reason is a field of the record rather than a placement: the record states its
+readout basis, the sampler reads it, and the rotation that basis adds to the
+lowered program is a stated offset beside the round block rather than a round of
+its own, so an X-basis experiment's faults land where its own model puts them,
+and the section below states that half. The entry points themselves stay absent
+on purpose, because a basis is a field of the record here rather than a second
+way to ask for one thing. The row stays `partial` on that scope, not on the
+connection or on which families reach a sampled record.
+
+The placement grammar is now two grammars rather than one, and the record the
+caller states is what selects one, so neither route gained a second entry point.
+A `PhenomenologicalNoise` states round boundaries, as before. A
+`flagquantum.noise.NoiseModel` states gates, and a rule's fault follows the gate
+its rule matched — upstream CUDA-Q's placement for a channel bound to a named
+gate, which acts on the state that gate leaves behind — once per round the gate
+appears in, so the round structure comes from the lowered program's block rather
+than from the record. A rule whose gate the program does not execute places
+nothing, because a record stated over a gate set says nothing about a gate
+outside it, and a matched rule contributes one location per round while a
+round-boundary field contributes one per experiment. On both grammars the engine
+still executes one channel, so a phase fault after a named gate is that channel
+conjugated by `h` on each side — `H X H = Z`, the same identity the
+round-boundary route states as a pair of `h` gates around the flip, and the same
+one the construction route states by composing `H X H`. The measurement channel
+of a gate-bound record is not placed at all: a readout fault's position is the
+check it corrupts, which is what the phenomenological record's measurement
+family states, so a rule naming `measure` or `reset` is refused by name rather
+than placed after every readout including the terminal data readouts. The
+remaining refusals are the grammar's own: a channel that is not a single-qubit
+Pauli fault, a one-qubit channel bound to two wires, and a fault that would
+follow the program's last instruction. The model and the sampler share the
+mechanism list and the lowering, so a record one route can place and the other
+cannot is unreachable, and the refusals are asserted on both routes.
+
+
 
 **What this round closed instead: the readout basis.** The remaining gap the
 row named first was the basis, and it is closed on both routes at once because
@@ -412,6 +497,7 @@ family to move nothing, and
 `test_the_readout_basis_swaps_which_round_zero_handles_are_pinned` requires the
 pinned and free round-zero handles to swap, so an implementation that ignored
 the field and always prepared in Z would fail all three.
+
 One placement is worth recording because it is invisible to any parity
 comparison: the code gadgets prepare their ancilla with the CNOTs immediately
 preceding the readout, so moving a measurement channel one instruction earlier

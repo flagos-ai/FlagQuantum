@@ -2,24 +2,28 @@
 
 A detector error model states what the noise does; a sampler states what a run
 of the experiment reads out. This module supplies the second: it lowers the
-memory circuit once, places each noise location the configured
-`~flagquantum.qec.PhenomenologicalNoise` names at the instruction it belongs to,
-executes the resulting circuit on the stabilizer engine, and reads the
-detection-event and observable layouts off the recorded bits.
+memory circuit once, places each noise location the caller's record configures
+at the instruction it belongs to, executes the resulting circuit on the
+stabilizer engine, and reads the detection-event and observable layouts off the
+recorded bits.
 
-Where a location belongs is the whole content of the join. A data error is a
-round-boundary error and is placed *before* the round's first gate, so it opens
-the frame that round's detectors compare against; a measurement error is placed
-immediately *before* the readout of the check it corrupts. Neither position
-exists in the source program, whose bounded hybrid capture refuses a channel
-call outright, so the placement is derived here from the lowered program rather
-than written into the experiment.
+Where a location belongs is the whole content of the join, and the record the
+caller states is what decides it. A
+`~flagquantum.qec.PhenomenologicalNoise` names round boundaries and check
+readouts: a data error is placed *before* the round's first gate, so it opens
+the frame that round's detectors compare against, and a measurement error is
+placed immediately *before* the readout of the check it corrupts. A
+`~flagquantum.noise.NoiseModel` names gates: an error is placed immediately
+*after* the gate its rule matched, which is upstream's placement and one error
+per round per matching gate. Neither position exists in the source program, whose
+bounded hybrid capture refuses a channel call outright, so the placement is
+derived here from the lowered program rather than written into the experiment.
 
-Which Pauli a data error is is the other half of the join, and it is the part
-the engine constrains. The engine executes one channel -- a single-qubit bit
-flip -- so the record's Z and Y families are placed as that channel conjugated
-by the Clifford that turns the flip into the Pauli they name, which is one draw
-at that family's rate rather than a pair of independent bit flips. A family the
+Which Pauli an error is is the other half of the join, and it is the part the
+engine constrains. The engine executes one channel -- a single-qubit bit flip --
+so the record's Z and Y families are placed as that channel conjugated by the
+Clifford that turns the flip into the Pauli they name, which is one draw at that
+family's rate rather than a pair of independent bit flips. A family the
 conjugation cannot express has no route here and is refused rather than sampled
 as a nearby Pauli.
 
@@ -45,15 +49,16 @@ from types import MappingProxyType
 
 import torch
 
-from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ..core.ir import CircuitIR, Instruction
-from ..noise import bit_flip_channel
+from ..noise import NoiseModel, bit_flip_channel
 from ..simulation.stabilizer import sample_noisy_measurements
 from .circuit import MeasurementRef, MemoryCircuit
 from .dem import DemSample
 from .dem_construction import (
     _check_rate_order,
     _data_family_rates,
+    _gate_bound_mechanisms,
+    _lowered_program,
     _MechanismKind,
 )
 from .noise import PhenomenologicalNoise
@@ -259,17 +264,6 @@ def _checked_seed(seed: int | None) -> int | None:
     return None if seed is None else int(seed)
 
 
-def _lowered_program(memory: MemoryCircuit) -> CircuitIR:
-    """Return the memory program lowered the way the model lowers it."""
-
-    program = capture_source(memory.source, (INDEX,))
-    return lower_dynamic_program(
-        program,
-        (memory.rounds,),
-        max_dynamic_measurements=memory.rounds * len(memory.code.checks),
-    ).circuit
-
-
 def _rotation_template(
     memory: MemoryCircuit,
 ) -> tuple[tuple[str, tuple[int, ...]], ...]:
@@ -380,9 +374,69 @@ def _measurement_plan(memory: MemoryCircuit) -> _MeasurementPlan:
 
 
 def _noise_locations(
+    memory: MemoryCircuit,
+    plan: _MeasurementPlan,
+    noise: PhenomenologicalNoise | NoiseModel,
+) -> tuple[_NoiseLocation, ...]:
+    """Return every location the stated record configures, in placement order.
+
+    Which record the caller states is what selects the placement grammar, and the
+    two are one union rather than two entry points: a caller changing the record
+    changes the experiment's description and nothing else. A round-boundary
+    record is placed by :func:`_round_boundary_locations` and a gate-bound one by
+    :func:`_gate_bound_locations`, which read the same lowered program this plan
+    was built from.
+
+    Raises:
+        TypeError: ``noise`` is neither record.
+    """
+
+    if isinstance(noise, NoiseModel):
+        return _gate_bound_locations(plan, noise)
+    if not isinstance(noise, PhenomenologicalNoise):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
+    return _round_boundary_locations(memory, plan, noise)
+
+
+def _gate_bound_locations(
+    plan: _MeasurementPlan, noise: NoiseModel
+) -> tuple[_NoiseLocation, ...]:
+    """Return every location a gate-bound record places, in placement order.
+
+    The faults and the instruction each one follows come from
+    :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`, the walk the
+    model's own route splices with, so a fault cannot be placed at one position
+    here and read at another there. The position a location is placed at is the
+    instruction *after* the gate the rule matched, because a channel bound to a
+    named gate acts on the state that gate leaves behind; the round the fault is
+    reported in is the round that gate is in, which is what ``plan``'s block
+    length converts an instruction index into.
+
+    Every channel :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`
+    accepts is a single-qubit Pauli fault, so :data:`_FAMILY_CONJUGATION` can
+    express all of them and no location reaches the engine as a channel it would
+    refuse.
+    """
+
+    return tuple(
+        _NoiseLocation(
+            kind=mechanism.kind,
+            round_index=mechanism.after_instruction // plan.block,
+            wire=mechanism.wire,
+            instruction_index=mechanism.after_instruction + 1,
+            probability=mechanism.probability,
+        )
+        for mechanism in _gate_bound_mechanisms(noise, plan.program)
+    )
+
+
+def _round_boundary_locations(
     memory: MemoryCircuit, plan: _MeasurementPlan, noise: PhenomenologicalNoise
 ) -> tuple[_NoiseLocation, ...]:
-    """Return every location the noise record configures, in placement order.
+    """Return every location the round-boundary record configures, in order.
 
     The three data families come first, one pass per family and each pass one
     round per data qubit, with a location before the round's first instruction;
@@ -529,7 +583,7 @@ def _recorded_bits(
 def _sample_record(
     circuit: MemoryCircuit,
     *,
-    noise: PhenomenologicalNoise,
+    noise: PhenomenologicalNoise | NoiseModel,
     shots: int,
     seed: int | None,
 ) -> tuple[_MeasurementPlan, torch.Tensor]:
@@ -576,7 +630,7 @@ def _measurement_samples(
 def sample_memory_measurements(
     circuit: MemoryCircuit,
     *,
-    noise: PhenomenologicalNoise,
+    noise: PhenomenologicalNoise | NoiseModel,
     shots: int,
     seed: int | None = None,
 ) -> MeasurementSamples:
@@ -591,7 +645,9 @@ def sample_memory_measurements(
 
     Args:
         circuit: The configured memory experiment to sample.
-        noise: The phenomenological noise the experiment runs under.
+        noise: The noise the experiment runs under, stated either as the
+            round-boundary phenomenological record or as a gate-bound
+            `~flagquantum.noise.NoiseModel`.
         shots: Positive number of sampled shots.
         seed: Seed for the sampling stream, under the engine's own reproducibility
             caveat.
@@ -601,19 +657,23 @@ def sample_memory_measurements(
         tensor of shape ``(shots, len(circuit.measurement_refs))``.
 
     Raises:
-        TypeError: ``circuit`` is not a memory circuit, ``noise`` is not a
-            phenomenological noise record, or ``shots`` or ``seed`` is not an
-            integer.
+        TypeError: ``circuit`` is not a memory circuit, ``noise`` is neither noise
+            record, or ``shots`` or ``seed`` is not an integer.
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
+        CapabilityError: The noise record names a fault this grammar cannot
+            place, or states a channel that is not a single-qubit Pauli fault.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
 
     if not isinstance(circuit, MemoryCircuit):
         raise TypeError("circuit must be a MemoryCircuit")
-    if not isinstance(noise, PhenomenologicalNoise):
-        raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
     shots = _checked_shots(shots)
     seed = _checked_seed(seed)
     plan, record = _sample_record(circuit, noise=noise, shots=shots, seed=seed)
@@ -623,7 +683,7 @@ def sample_memory_measurements(
 def sample_memory_circuit(
     circuit: MemoryCircuit,
     *,
-    noise: PhenomenologicalNoise,
+    noise: PhenomenologicalNoise | NoiseModel,
     shots: int,
     seed: int | None = None,
 ) -> DemSample:
@@ -636,6 +696,14 @@ def sample_memory_circuit(
     readouts; an observable flip is the parity of its support's terminal
     readouts.
 
+    Where a location belongs is the record's own statement. A
+    `~flagquantum.qec.PhenomenologicalNoise` names round boundaries and check
+    readouts, so a data fault opens the frame its round's detectors compare
+    against and a readout fault sits before the readout it corrupts. A
+    `~flagquantum.noise.NoiseModel` names gates, so a fault sits immediately after
+    the gate its rule matched, which is upstream's placement and one fault per
+    round per matching gate.
+
     The result is a sample of the experiment, not of
     `~flagquantum.qec.DetectorErrorModel`: the model is this sampler's
     statistical reference in the tests, and no mechanism signature is reused
@@ -643,7 +711,9 @@ def sample_memory_circuit(
 
     Args:
         circuit: The configured memory experiment to sample.
-        noise: The phenomenological noise the experiment runs under.
+        noise: The noise the experiment runs under, stated either as the
+            round-boundary phenomenological record or as a gate-bound
+            `~flagquantum.noise.NoiseModel`.
         shots: Positive number of sampled shots.
         seed: Seed for the sampling stream. The stabilizer engine documents
             identical samples for an identical seed only on one engine version
@@ -655,19 +725,23 @@ def sample_memory_circuit(
         ``(shots, num_observables)``.
 
     Raises:
-        TypeError: ``circuit`` is not a memory circuit, ``noise`` is not a
-            phenomenological noise record, or ``shots`` or ``seed`` is not an
-            integer.
+        TypeError: ``circuit`` is not a memory circuit, ``noise`` is neither noise
+            record, or ``shots`` or ``seed`` is not an integer.
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
+        CapabilityError: The noise record names a fault this grammar cannot
+            place, or states a channel that is not a single-qubit Pauli fault.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
 
     if not isinstance(circuit, MemoryCircuit):
         raise TypeError("circuit must be a MemoryCircuit")
-    if not isinstance(noise, PhenomenologicalNoise):
-        raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
     shots = _checked_shots(shots)
     seed = _checked_seed(seed)
     plan, record = _sample_record(circuit, noise=noise, shots=shots, seed=seed)
