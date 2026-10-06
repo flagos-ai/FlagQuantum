@@ -2811,6 +2811,7 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: exactly two task results are required")
         return
     expected_modes = ("optimization", "sampling")
+    task_names: list[str] = []
     task_ids: list[str] = []
     targets: set[str] = set()
     matrix_digests: set[str] = set()
@@ -2829,8 +2830,13 @@ def _validate_provider_smoke_component(
         for field in ("task_name", "provider_task_id", "provider_target"):
             if not _canonical_printable_identifier(task_record.get(field)):
                 errors.append(f"{label}: task {index} {field} is invalid")
+        task_name = task_record.get("task_name")
         task_id = task_record.get("provider_task_id")
         target = task_record.get("provider_target")
+        if isinstance(task_name, str) and _canonical_printable_identifier(
+            task_name
+        ):
+            task_names.append(task_name)
         if isinstance(task_id, str):
             task_ids.append(task_id)
         if isinstance(target, str):
@@ -2968,6 +2974,8 @@ def _validate_provider_smoke_component(
             "succeeded",
         }:
             errors.append(f"{label}: task {index} did not reach success")
+    if len(task_names) != len(set(task_names)):
+        errors.append(f"{label}: SDK task names are not unique")
     if len(task_ids) != len(set(task_ids)):
         errors.append(f"{label}: provider task IDs are not unique")
     if len(targets) != 1:

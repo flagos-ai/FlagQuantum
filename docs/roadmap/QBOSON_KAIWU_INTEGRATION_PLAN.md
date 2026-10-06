@@ -1006,9 +1006,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   limitations, so an unvalidated extension cannot carry hidden evidence or
   sensitive values while still passing.
 - Provider identity completeness is now computed rather than self-asserted: the
-  two smoke tasks must have distinct provider task IDs and one common printable
-  provider target. That target is retained at smoke-record level and is checked
-  against both task results before hardware acceptance can be true.
+  two smoke tasks must have distinct SDK task names, distinct provider task IDs,
+  and one common printable provider target. The task-name rule is required
+  because the pinned 1.3.1 recovery identity is `task_name + ising_matrix` and
+  both smoke modes use the same matrix. The target is retained at smoke-record
+  level and is checked against both task results before hardware acceptance can
+  be true.
 - Provider use is now recorded independently from whole-workflow acceptance.
   A completed, identity-bearing result through the exact SDK transport remains
   `qboson_hardware_used=true` when a later smoke task, local QDiffusion step, or

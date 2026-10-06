@@ -245,6 +245,20 @@ def test_provider_smoke_tasks_cannot_predate_the_resource_snapshot() -> None:
     assert "provider smoke: task 0 submission predates the SDK rights review" in errors
     assert "provider smoke: task 1 submission predates the SDK rights review" in errors
 
+    for task in record["tasks"]:
+        task["submitted_at"] = "2026-10-06T00:00:00+00:00"
+    record["tasks"][1]["task_name"] = record["tasks"][0]["task_name"]
+    errors = []
+    _validate_provider_smoke_component(
+        record,
+        config=config,
+        sdk_approval_sha256="d" * 64,
+        provider_resources=(snapshot, "c" * 64),
+        errors=errors,
+    )
+
+    assert "provider smoke: SDK task names are not unique" in errors
+
 
 @pytest.mark.parametrize(
     ("filename", "schema", "postflight_fields"),
