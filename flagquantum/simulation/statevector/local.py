@@ -859,6 +859,18 @@ def _execute_statevector_program(
             continue
         instruction = step.instruction
         name = canonical_opcode(instruction.name)
+        if name in {"ccx", "cswap"}:
+            from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
+
+            dispatched = _try_apply_cataloged_reversible_3q(
+                output,
+                qubits=instruction.wires,
+                n_qubits=circuit.n_qubits,
+                opcode=name,
+            )
+            if dispatched is not None:
+                output = dispatched
+                continue
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
