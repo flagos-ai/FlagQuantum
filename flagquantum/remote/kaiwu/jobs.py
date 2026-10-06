@@ -467,8 +467,8 @@ class KaiwuRemoteJob:
                 )
             if status in {"failed", "cancelled"}:
                 raise RuntimeError(
-                    f"Kaiwu task {self._receipt.task_name!r} is {status} "
-                    f"({self._raw_status})"
+                    f"Kaiwu task {self._receipt.task_name!r} is {status}; "
+                    "provider status details were redacted"
                 )
             remaining = deadline - time.monotonic()
             if remaining <= 0:

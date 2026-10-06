@@ -217,6 +217,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - The decoder inspects element types before integer normalization. A boolean
   solution array containing `True` can no longer pass the numerical `+1`
   comparison and be converted into apparently valid integer spin evidence.
+- Terminal `wait()` failures now expose only the normalized failed or cancelled
+  category. The raw provider status remains available through the explicit job
+  property for controlled evidence handling, but is no longer interpolated
+  into exception text where a future provider vocabulary could leak dynamic
+  service details into logs.
 - Before its first SDK operation, that client now atomically persists a
   mode-0600, credential-free recovery bundle in the Kaiwu checkpoint directory.
   This closes the ambiguous-submission window: a process restart reuses the

@@ -120,6 +120,21 @@ def test_timeout_preserves_recoverable_identity_without_fetch_or_resubmit() -> N
     assert client.result_calls == 0
 
 
+def test_terminal_wait_failure_does_not_echo_raw_provider_status() -> None:
+    client = _FakeClient(["FAILURE"])
+    job = submit_kaiwu_task(_MATRIX, client=client, task_name="failed-wait")
+
+    with pytest.raises(
+        RuntimeError, match="provider status details were redacted"
+    ) as caught:
+        job.wait(timeout=1.0)
+
+    assert "FAILURE" not in str(caught.value)
+    assert job.raw_status == "FAILURE"
+    assert client.submit_calls == 1
+    assert client.result_calls == 0
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     (
