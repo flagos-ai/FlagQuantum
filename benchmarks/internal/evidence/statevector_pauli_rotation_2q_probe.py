@@ -298,9 +298,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         for case in cases
         if not bool(_mapping(case["shape"], "shape")["default_dispatch_eligible"])
     ]
-    default_speedups = [
-        float(case["speedup_over_product"]) for case in default_cases
-    ]
+    default_speedups = [float(case["speedup_over_product"]) for case in default_cases]
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
     all_default_cases_win = all(speedup > 1.0 for speedup in default_speedups)
     return {
@@ -329,9 +327,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
             "maximum_speedup_over_product": max(speedups),
             "default_dispatch_case_count": len(default_cases),
             "excluded_small_state_case_count": len(excluded_cases),
-            "minimum_default_dispatch_speedup_over_product": min(
-                default_speedups
-            ),
+            "minimum_default_dispatch_speedup_over_product": min(default_speedups),
             "maximum_absolute_error": max(
                 float(case["maximum_absolute_error"]) for case in cases
             ),

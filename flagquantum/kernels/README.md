@@ -430,7 +430,7 @@ qubits; shared and batch-resolved parameters; and state sizes from `2**16`
 through `2**24`. Maximum absolute and relative L2 errors are below `3.4e-7`
 and `4.1e-8`. The four `2**16` measurements remain in the artifact as an
 explicit excluded boundary: wrapper and launch overhead make that case reach
-only about `0.69x` to `1.01x` the current product reference. The default
+only about `0.68x` to `1.01x` the current product reference. The default
 dispatch candidate window therefore begins at 20 qubits, where all 16
 host/compiler/shape cases reach at least `1.62x` and as much as `7.13x` the
 product reference. The aggregate decision is
