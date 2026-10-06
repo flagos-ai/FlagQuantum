@@ -18,12 +18,18 @@ from dataclasses import fields
 
 import pytest
 
+from benchmarks.compiler_lookahead_swap import case_basis
 from benchmarks.compiler_routing_quality import (
     AUTOMATIC_SELECTION,
     MEASURED_STRATEGIES,
     run_benchmark,
 )
-from flagquantum.compiler.routing import ROUTING_STRATEGIES, RoutingStrategySelection
+from flagquantum.compiler import optimize
+from flagquantum.compiler.routing import (
+    ROUTING_STRATEGIES,
+    RoutingStrategySelection,
+    select_routing_strategy,
+)
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -200,3 +206,46 @@ def test_the_scope_of_the_cost_estimate_costs_twice_the_best_available_strategy(
         selection["best_available_retained_inserted_swap_count"]
         <= _row(payload, "sabre_layout")["retained_inserted_swap_count"]
     ), "the best available strategy cannot retain more than sabre_layout does"
+
+
+def test_the_measured_automatic_selection_is_the_one_compile_actually_makes(
+    payload: dict,
+) -> None:
+    """The published ``auto`` cost must be the cost of the selection ``compile`` makes.
+
+    ``compile`` optimizes a program and then selects a strategy for the optimized
+    program, so the estimate never sees the caller's source program. A measurement
+    that selected on the source program instead would publish the cost of a route
+    no caller receives -- and this basis is chosen to contain that difference
+    rather than to assume it away.
+    """
+
+    cases = case_basis(topologies=_BASIS_TOPOLOGIES, seeds=_BASIS_SEEDS)
+    recorded = {
+        record["case"]: record["resolved_strategy"]
+        for record in payload["case_records"]
+        if record["strategy"] == AUTOMATIC_SELECTION
+    }
+    assert len(recorded) == _BASIS_CASE_COUNT == len(cases)
+
+    differs_on_the_source_program = 0
+    for case in cases:
+        program = case.program()
+        device = case.device()
+        selected = select_routing_strategy(optimize(program), device).selected_strategy
+        assert selected == recorded[case.label], (
+            f"{case.label}: the benchmark recorded {recorded[case.label]} but "
+            f"compile selects {selected} for the program it routes"
+        )
+        if (
+            select_routing_strategy(program, case.device()).selected_strategy
+            != selected
+        ):
+            differs_on_the_source_program += 1
+
+    # Non-vacuity: the two places the estimate could be run apart on this basis, so
+    # the assertion above is not trivially satisfied by them always agreeing.
+    assert differs_on_the_source_program > 0, (
+        "this basis cannot distinguish selecting on the optimized program from "
+        "selecting on the source program, so it cannot hold the recorded choice"
+    )

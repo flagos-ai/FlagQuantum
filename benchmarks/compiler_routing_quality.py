@@ -17,8 +17,7 @@ are *not* comparable with the W7-04/W7-06 baselines, which route a raw program:
 ``compile`` optimizes before it routes, as a caller's program is optimized before
 it is routed, and that is part of what a caller pays.
 
-On that basis, with the published catalog of gate counts each program factor
-declares:
+On that basis:
 
 * All five entries route all 140 programs and emit no two-wire operation off the
   device. Every compiled program is compared with its source state, so a strategy
@@ -27,6 +26,13 @@ declares:
   ``sabre`` the next fewest, and the two estimate-driven strategies retain more
   than twice that; ``auto`` lands between ``sabre`` and the two it may choose
   from.
+* Asking ``compile`` for ``auto`` selects on the program ``compile`` is about to
+  route, which is the optimized one -- not on the program the caller passed in.
+  Those differ: on four of the 140 programs the estimate makes the opposite call
+  before and after optimization, so a caller who predicts ``compile``'s choice by
+  running ``select_routing_strategy`` on their own source program is predicting a
+  choice the product never makes. Measuring ``auto`` anywhere other than where the
+  product selects would publish the cost of a route no caller receives.
 * ``auto`` is a real selection and not an alias. It never resolves to a SABRE
   strategy, which is the documented scope of the cost estimate it ranks by, and
   on most programs it beats *both* of the strategies it may choose from, so the
