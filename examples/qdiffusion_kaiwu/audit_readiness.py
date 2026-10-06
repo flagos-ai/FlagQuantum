@@ -9,8 +9,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+import torch
+
 from examples.qdiffusion_kaiwu.plan_quota import build_quota_plan
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import _inspect_artifacts
+from examples.qdiffusion_kaiwu.private_io import validate_private_directory
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
@@ -41,6 +44,16 @@ def _valid_private_value(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip()) and value.strip().isprintable()
 
 
+def _inspect_a800_cuda_zero() -> str:
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is unavailable")
+    device = torch.device("cuda:0")
+    observed_gpu = torch.cuda.get_device_name(device)
+    if "A800" not in observed_gpu:
+        raise RuntimeError("cuda:0 is not an NVIDIA A800")
+    return observed_gpu
+
+
 def audit_readiness(
     *,
     config_path: Path | None,
@@ -50,6 +63,7 @@ def audit_readiness(
     primary_source_preflight: Path | None,
     replay_source_preflight: Path | None,
     artifact_paths: dict[str, Path | None],
+    checkpoint_dir: Path | None = None,
     environ: Mapping[str, str] | None = None,
     source_root: Path | None = None,
     required_stage: str = "protein-experiment",
@@ -77,6 +91,31 @@ def audit_readiness(
         checks["project"] = _check("pass", "project_present")
     else:
         checks["project"] = _check("fail", "project_invalid")
+
+    if checkpoint_dir is None:
+        checks["checkpoint_directory"] = _check(
+            "missing", "checkpoint_directory_absent"
+        )
+    else:
+        try:
+            validate_private_directory(
+                checkpoint_dir, label="Kaiwu checkpoint directory"
+            )
+        except (OSError, ValueError):
+            checks["checkpoint_directory"] = _check(
+                "fail", "checkpoint_directory_invalid"
+            )
+        else:
+            checks["checkpoint_directory"] = _check(
+                "pass", "checkpoint_directory_valid"
+            )
+
+    try:
+        _inspect_a800_cuda_zero()
+    except RuntimeError:
+        checks["a800_device"] = _check("fail", "a800_cuda_zero_unavailable")
+    else:
+        checks["a800_device"] = _check("pass", "a800_cuda_zero_available")
 
     config: dict[str, Any] | None = None
     config_sha256: str | None = None
@@ -233,7 +272,13 @@ def audit_readiness(
 
     provider_smoke_ready = all(
         checks[name]["status"] == "pass"
-        for name in ("environment", "sdk_approval", "credentials", "project")
+        for name in (
+            "environment",
+            "sdk_approval",
+            "credentials",
+            "project",
+            "checkpoint_directory",
+        )
     )
     system_probe_ready = provider_smoke_ready and all(
         checks[name]["status"] == "pass"
@@ -243,6 +288,7 @@ def audit_readiness(
             "frozen_environment",
             "approval_alignment",
             "source_preflights",
+            "a800_device",
         )
     )
     protein_experiment_ready = system_probe_ready and (
@@ -273,6 +319,7 @@ def main() -> None:
     parser.add_argument("--config", type=Path)
     parser.add_argument("--environment-lock", type=Path)
     parser.add_argument("--sdk-approval", type=Path)
+    parser.add_argument("--checkpoint-dir", type=Path)
     parser.add_argument("--plugin-root", type=Path)
     parser.add_argument("--primary-source-preflight", type=Path)
     parser.add_argument("--replay-source-preflight", type=Path)
@@ -299,6 +346,7 @@ def main() -> None:
             "tokenizer": args.tokenizer,
             "evaluation_model": args.evaluation_model,
         },
+        checkpoint_dir=args.checkpoint_dir,
         required_stage=args.require_stage,
     )
     print(json.dumps(report, indent=2, sort_keys=True))

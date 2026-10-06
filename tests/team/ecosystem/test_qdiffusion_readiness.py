@@ -38,6 +38,10 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
         "reason": "credential_pair_absent",
     }
     assert report["checks"]["quota"]["status"] == "blocked"
+    assert report["checks"]["checkpoint_directory"] == {
+        "status": "missing",
+        "reason": "checkpoint_directory_absent",
+    }
     assert report["ready_to_start_provider_smoke"] is False
     assert report["ready_to_start_system_probe"] is False
     assert report["ready_to_start_protein_experiment"] is False
@@ -93,6 +97,8 @@ def test_readiness_never_serializes_credential_values(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
+    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
 
     report = audit_readiness(
         config_path=Path("/private/config.json"),
@@ -102,6 +108,7 @@ def test_readiness_never_serializes_credential_values(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "sensitive-user",
             "QBOSON_SDK_CODE": "sensitive-code",
@@ -176,6 +183,59 @@ def test_readiness_rejects_invalid_private_values_without_echoing_them(
     assert all(value not in encoded for value in environ.values() if value.strip())
 
 
+def test_readiness_rejects_invalid_checkpoint_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _reject(*args: object, **kwargs: object) -> None:
+        raise ValueError("not private")
+
+    monkeypatch.setattr(readiness_module, "validate_private_directory", _reject)
+    report = audit_readiness(
+        config_path=None,
+        environment_lock_path=None,
+        sdk_approval_path=None,
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={},
+    )
+
+    assert report["checks"]["checkpoint_directory"] == {
+        "status": "fail",
+        "reason": "checkpoint_directory_invalid",
+    }
+
+
+@pytest.mark.parametrize(
+    ("cuda_available", "gpu_name", "passes"),
+    (
+        (False, "", False),
+        (True, "NVIDIA H100 80GB HBM3", False),
+        (True, "NVIDIA A800-SXM4-80GB", True),
+    ),
+)
+def test_a800_cuda_zero_inspection(
+    monkeypatch: pytest.MonkeyPatch,
+    cuda_available: bool,
+    gpu_name: str,
+    passes: bool,
+) -> None:
+    monkeypatch.setattr(
+        readiness_module.torch.cuda, "is_available", lambda: cuda_available
+    )
+    monkeypatch.setattr(
+        readiness_module.torch.cuda, "get_device_name", lambda device: gpu_name
+    )
+
+    if passes:
+        assert readiness_module._inspect_a800_cuda_zero() == gpu_name
+    else:
+        with pytest.raises(RuntimeError):
+            readiness_module._inspect_a800_cuda_zero()
+
+
 def test_readiness_rejects_preflights_from_different_transfer_manifests(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -225,6 +285,8 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
+    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
 
     report = audit_readiness(
         config_path=Path("/private/config.json"),
@@ -234,6 +296,7 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
             "QBOSON_SDK_CODE": "present",
@@ -268,6 +331,7 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
         "verify_approved_kaiwu_distribution",
         lambda environment, approval: None,
     )
+    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
 
     report = audit_readiness(
         config_path=None,
@@ -277,6 +341,7 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
         primary_source_preflight=None,
         replay_source_preflight=None,
         artifact_paths=dict.fromkeys(_paths()),
+        checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
             "QBOSON_SDK_CODE": "present",
@@ -389,6 +454,8 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         "_inspect_artifacts",
         lambda config_path, artifact_paths: ("d" * 64, {}, {}),
     )
+    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+    monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", lambda: "A800")
 
     report = audit_readiness(
         config_path=Path("/private/config.json"),
@@ -398,6 +465,7 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
             "QBOSON_SDK_CODE": "present",
@@ -412,3 +480,82 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         "reason": "sdk_approvals_differ",
     }
     assert report["ready_to_start_system_probe"] is False
+
+
+def test_system_readiness_requires_a800_cuda_zero(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk_approval = {"approved": True}
+    config = {
+        "software": {
+            "source_revision": "a" * 40,
+            "kaiwu_pytorch_plugin_revision": "b" * 40,
+            "environment_lock_sha256": "c" * 64,
+        },
+        "kaiwu_sdk": sdk_approval,
+    }
+    monkeypatch.setattr(
+        readiness_module, "_load_frozen_config", lambda path: (config, "d" * 64)
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "build_quota_plan",
+        lambda config, digest: {"totals": {"budget_complete": True}},
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_approved_kaiwu_distribution",
+        lambda environment, approval: None,
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_source_preflight",
+        lambda *args, **kwargs: ({"manifest_sha256": "e" * 64}, "f" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "_inspect_artifacts",
+        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+    )
+    monkeypatch.setattr(readiness_module, "validate_private_directory", lambda *a, **k: None)
+
+    def _no_a800() -> str:
+        raise RuntimeError("not an A800")
+
+    monkeypatch.setattr(readiness_module, "_inspect_a800_cuda_zero", _no_a800)
+
+    report = audit_readiness(
+        config_path=Path("/private/config.json"),
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=Path("/private/plugin"),
+        primary_source_preflight=Path("/private/171.json"),
+        replay_source_preflight=Path("/private/172.json"),
+        artifact_paths=_paths(),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "present",
+        },
+        source_root=Path("/private/source"),
+        required_stage="system-probe",
+    )
+
+    assert report["ready_to_start_provider_smoke"] is True
+    assert report["checks"]["a800_device"] == {
+        "status": "fail",
+        "reason": "a800_cuda_zero_unavailable",
+    }
+    assert report["ready_to_start_system_probe"] is False
+    assert report["required_stage_ready"] is False

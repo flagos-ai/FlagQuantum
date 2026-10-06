@@ -81,6 +81,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
   --sdk-approval /private/sdk-approval.json \
+  --checkpoint-dir /private/kaiwu-checkpoints \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
@@ -94,7 +95,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 Arguments may be omitted on an inventory run; missing prerequisites are reported
 with stable reason codes. The command checks credential and project-variable
 presence and basic format, never records their values, and performs no network
-or provider operation. A
+or provider operation. It also validates the private checkpoint directory. A
 zero exit means all locally inspectable prerequisites for the protein experiment
 are present and valid. It is not evidence that QBoson, either A800 host, or the
 acceptance workload has run.
@@ -102,7 +103,8 @@ acceptance workload has run.
 The report separates provider-smoke readiness from system and protein readiness.
 The first requires the standalone SDK approval but not the unfinished protein
 configuration. Later stages additionally require that the approval embedded in
-the frozen configuration exactly matches that standalone record. Select
+the frozen configuration exactly matches that standalone record and that the
+current process observes an NVIDIA A800 at `cuda:0`. Select
 `--require-stage provider-smoke` before section 5, `system-probe` before section
 6, or the default `protein-experiment` before section 9. The process exit status
 tracks the selected stage while the JSON always reports all three gates.

@@ -38,6 +38,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
   --sdk-approval /private/sdk-approval.json \
+  --checkpoint-dir /private/kaiwu-checkpoints \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
@@ -49,13 +50,16 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 ```
 
 The audit validates credential and project-variable presence and basic format
-without recording their values, then checks the frozen quota ceiling and SDK environment,
+without recording their values, then checks the private Kaiwu checkpoint
+directory, frozen quota ceiling, SDK environment,
 standalone/frozen approval alignment, common transfer manifest, and protein
 artifacts, and performs no network or provider operation. Provider-smoke
 readiness is reported independently of the unfinished protein configuration;
 use `--require-stage provider-smoke` for that earlier gate and omit the config,
 source-preflight, and protein arguments. `system-probe` selects the intermediate
-gate. The default `protein-experiment` gate exits zero only when the complete
+gate and additionally requires an observed NVIDIA A800 at `cuda:0`. Run that
+gate inside the intended validation host environment. The default
+`protein-experiment` gate exits zero only when the complete
 experiment is ready. A passing report is readiness information, not provider,
 execution, hardware, or acceptance evidence.
 
