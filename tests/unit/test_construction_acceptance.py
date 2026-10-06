@@ -109,6 +109,32 @@ def _contracted_placements() -> list[tuple[int, tuple[int, ...], dict[str, Any]]
     return rows
 
 
+def _contracted_controls() -> list[dict[str, Any]]:
+    """The contracted control rows, read as written so a flag cannot be lost in a tuple."""
+
+    return list(_load_contract().get("control_placement", ()))
+
+
+def _control_routes(
+    row: dict[str, Any],
+) -> tuple[fq.Circuit, fq.Circuit, tuple[int, ...]]:
+    """Build both routes for one contracted row and return them with its control qubits."""
+
+    receiver_n_qubits = int(row["n_qubits"])
+    targets = tuple(int(q) for q in row["qubits"])
+    controls = tuple(int(q) for q in row["ctrl_qubits"])
+
+    composed = fq.Circuit(receiver_n_qubits)
+    composed.compose(_block(len(targets)), qubits=targets)
+    composed_route = composed.control(
+        int(row["n_controls"]), ctrl_qubits=list(controls)
+    )
+    hand_route = _hand_built(receiver_n_qubits, targets).control(
+        int(row["n_controls"]), ctrl_qubits=list(controls)
+    )
+    return composed_route, hand_route, controls
+
+
 def _served_modes() -> list[str]:
     return list(_load_contract().get("modes", {}).get("serving", ()))
 
@@ -195,6 +221,97 @@ def test_the_adjoint_of_a_composed_program_is_the_adjoint_of_the_hand_built_prog
     composed.compose(_block(2), qubits=(0, 1))
     hand = _hand_built(3, (0, 1))
     assert composed.adjoint().to_ir().to_dict() == hand.adjoint().to_ir().to_dict()
+
+
+# --------------------------------------------------------------------------- control
+# The third construction member, measured on the same claim and not on its semantics.
+# What `control` means and every way it refuses belong to the composition contract; the
+# question here is narrower -- whether the construction layer produces one program.
+
+
+def test_a_controlled_program_has_the_hand_built_ir():
+    """`compose` then `control`, against the hand-built placement then `control`.
+
+    The two routes would differ if `control` read anything about its receiver other than
+    the receiver's instructions, so this is the measurement that says `compose` leaves no
+    trace `control` can see and a user cannot reproduce by hand.
+    """
+
+    rows = _contracted_controls()
+    assert rows, "the contract lists no control placement to measure"
+    for row in rows:
+        composed_route, hand_route, ctrl_qubits = _control_routes(row)
+        label = (row["qubits"], row["n_controls"], row["ctrl_qubits"])
+
+        composed_ir, hand_ir = composed_route.to_ir(), hand_route.to_ir()
+        assert composed_ir.to_dict() == hand_ir.to_dict(), label
+        assert composed_ir.content_hash == hand_ir.content_hash, label
+        assert hand_ir.n_wires == composed_ir.n_wires, label
+        assert _signature(composed_route) == _signature(hand_route), label
+
+        # The width comes from the controls, which are added rather than taken from the
+        # receiver, so it is one past the highest control qubit.
+        assert composed_ir.n_wires == max(ctrl_qubits) + 1, label
+        # And something was actually controlled: a route that returned its receiver would
+        # still agree with a twin that also returned its receiver.
+        receiver = _hand_built(int(row["n_qubits"]), tuple(row["qubits"])).to_ir()
+        assert len(composed_ir.instructions) > len(receiver.instructions), label
+
+
+def test_the_control_placements_in_the_contract_are_well_formed():
+    """Controls must add qubits, so every one of them lies outside the receiver."""
+
+    for row in _contracted_controls():
+        receiver_n_qubits = int(row["n_qubits"])
+        targets = tuple(int(q) for q in row["qubits"])
+        controls = tuple(int(q) for q in row["ctrl_qubits"])
+        assert len(set(targets)) == len(targets), row
+        assert all(0 <= target < receiver_n_qubits for target in targets), row
+        assert len(controls) == int(row["n_controls"]), row
+        assert len(set(controls)) == len(controls), row
+        assert all(qubit >= receiver_n_qubits for qubit in controls), row
+
+
+def test_the_controlled_program_is_one_program_in_every_serving_mode():
+    """The same claim once a mode serves it, on the row the contract pins it to.
+
+    The contract does not use the widest row here, and says why: the two-control ladder
+    is 57 instructions and reaches 8.941e-07 of spread, which is close enough to the
+    declared 10 * eps(complex64) bound that asserting on it would make this test a
+    statement about the platform's BLAS rather than about the construction layer.
+    """
+
+    flagged = [row for row in _contracted_controls() if row.get("mode_agreement")]
+    assert flagged, "the contract marks no row for the mode half"
+    # The contract's own reason for marking the rows it marks: a multi-control expansion
+    # is the one whose spread approaches the declared bound, so the half that asserts
+    # against that bound must not be measured on it.
+    assert all(int(row["n_controls"]) == 1 for row in flagged)
+
+    for row in flagged:
+        composed_route, hand_route, ctrl_qubits = _control_routes(row)
+        baseline = _probability_vector(composed_route, "statevector")
+        for mode in _served_modes():
+            left = _probability_vector(composed_route, mode)
+            right = _probability_vector(hand_route, mode)
+            # The two routes are the same program, so they agree exactly in every mode,
+            # not merely within the mode tolerance.
+            assert torch.equal(left, right), (mode, ctrl_qubits)
+            spread = float((left - baseline).abs().max())
+            assert spread <= MODE_TOLERANCE, (mode, ctrl_qubits, spread)
+
+
+def test_a_controlled_program_is_refused_by_the_refused_mode_the_same_way():
+    """The refusal is about the requested output, not about the gates in the program."""
+
+    contract = _load_contract()["modes"]
+    error = REFUSAL_CLASSES[contract["refusal_class"]]
+    composed = fq.Circuit(3)
+    composed.compose(_block(2), qubits=(2, 0))
+    controlled = composed.control(1, ctrl_qubits=3)
+    for mode in contract["refused"]:
+        with pytest.raises(error, match=contract["refusal_phrase"]):
+            _probability_vector(controlled, mode)
 
 
 # ----------------------------------------------------------------------------- modes

@@ -156,6 +156,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         maturity="provisional",
     ),
     _triton(
+        "FQKI-TRITON-SV-013-A",
+        "statevector.apply.reversible_permutation_3q.local",
+        "statevector_reversible_3q",
+        "apply_complex64_local_reversible_3q",
+        layouts=("flat_statevector",),
+        maturity="provisional",
+    ),
+    _triton(
         "FQKI-TRITON-GR-001-A",
         "gradient.vjp.adjoint_1q.local",
         "statevector_adjoint",
@@ -276,6 +284,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "fused_mps_qubit_probabilities",
         layouts=("mps_site_tensor",),
         maturity="provisional",
+        internal_fallback=True,
+    ),
+    _triton(
+        "FQKI-TRITON-MPS-008-A",
+        "mps.sampling.collapse_wire.local",
+        "mps_sampling_collapse",
+        "fused_mps_sampling_collapse",
+        layouts=("mps_sampling_step",),
         internal_fallback=True,
     ),
     _triton(

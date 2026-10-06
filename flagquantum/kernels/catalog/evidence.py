@@ -132,6 +132,16 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-013-A",
+        "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_rejects_unsupported_contracts",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_reversible_3q_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-GR-001-A",
         "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         gradient_tests=(
@@ -313,6 +323,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_wire_probability_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-MPS-008-A",
+        "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cuda_matches_reference",
+        capability_tests=(
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cpu_fallback_matches_reference",
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_unsupported_input_uses_fallback",
+            "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_validates_input",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_sampling_collapse_a800.json",
         ),
     ),
     _evidence(

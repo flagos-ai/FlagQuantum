@@ -30,6 +30,8 @@ must validate the resulting behavior directly.
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
 | `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose` and `Circuit.adjoint` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
+| `density-matrix-output-contract.toml` | The density-matrix output kind: the recorded matrices, the execution modes that must agree on them, the caller-ordered basis permutation, the statevector cost bound, and every refusal sentence. |
+| `parameter-shift-coverage-contract.toml` | Which opcodes `batched_parameter_shift_gradient` can differentiate from one evaluation pair per parameter, measured against the opcode declaration for every registered opcode. |
 | `primitives-admission-contract.toml` | The admission rule of `flagquantum/algorithms/primitives`: every export with the admission basis it was admitted on, the consumer that grounds it, its distribution semantics, and its differentiability shape. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
@@ -76,6 +78,20 @@ the refusal vocabulary that callers may rely on, and the fact that `control` and
 `tests/unit/test_circuit_composition_contract.py` checks the contract against the
 implementation, so a change to a refusal message or to an operation's presence in
 that family is a contract change rather than a private detail.
+
+`parameter-shift-coverage-contract.toml` records a measurement rather than a
+decision: `batched_parameter_shift_gradient` sends one evaluation pair per input
+parameter, so it can differentiate exactly the gate parameters whose declared
+rule has two terms. Which opcodes those are is owned by
+`flagquantum/core/operator_schema.py`, so the contract records what the
+declaration says for every registered opcode and
+`tools/check_parameter_shift_coverage_contract.py` re-derives it, censuses the
+implementation for opcode names written in code, drives the profile for every
+opcode, and builds every refusal row. The decision and the authorization are in
+`docs/api-changes/FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md`; this contract
+owns the measured coverage table. Its conformance test in
+`tests/unit/test_parameter_shift_coverage_contract.py` mutates the contract's
+clauses and requires the gate to name each one.
 
 Three contracts describe CUDA-Q. `cudaq-export-contract.toml` owns the adapter
 surface, `interop-capability-gap-matrix.toml` owns the adapter's per-format

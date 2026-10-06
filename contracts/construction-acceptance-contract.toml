@@ -22,20 +22,27 @@ ir_source = "flagquantum/core/ir.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 measured_ir_version = "1.0"
-measured_root_export_count = 36
+measured_root_export_count = 37
 authorization_required = false
 authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
 
 [subject]
 # The construction-layer members this acceptance covers. Each must be present in the
 # tree and must have a requirement row under [verification.requirements].
-covered = ["Circuit.compose", "Circuit.adjoint"]
-# The rest of the construction family, named so that its absence is contracted rather
-# than discovered. Each is delivered by its own slice and is not this slice's to claim.
-not_covered = ["Circuit.control", "Circuit.power"]
-not_covered_reason = "each is an upstream slice of its own and is not present in this tree"
+#
+# `Circuit.control` was listed as absent when this contract was written: the census below
+# is fail-closed, so the moment `N1-4` landed the census failed and named the member the
+# acceptance had to grow to cover. That is the mechanism working, not a plan that was
+# wrong -- the row that said "absent" was true of the tree this contract measured, and it
+# stopped being true, and the gate said so rather than staying green. `control` is now
+# measured, and what is measured is the claim this contract exists for: see
+# [control_acceptance].
+covered = ["Circuit.compose", "Circuit.adjoint", "Circuit.control"]
+# What is left of the construction family, named so that its absence is contracted rather
+# than discovered. `power` is delivered by its own slice, which is open and not merged.
+not_covered = ["Circuit.power"]
+not_covered_reason = "the upstream slice is open and not merged into the tree this acceptance measured"
 not_covered_evidence = [
-    "https://github.com/flagos-ai/FlagQuantum/pull/552",
     "https://github.com/flagos-ai/FlagQuantum/pull/542",
 ]
 
@@ -104,6 +111,70 @@ mapping = { "0" = 3, "1" = 1 }
 n_qubits = 5
 mapping = { "0" = 4, "1" = 0, "2" = 2 }
 
+[control_acceptance]
+# The third construction member, measured by the same claim and not by a restatement of
+# what it means. `control`'s semantics -- the expansion, the ladder bound, the partner
+# table, every refusal -- belong to `contracts/circuit-composition-contract.toml` and are
+# not repeated here. The claim this contract exists for is narrower: the construction
+# layer produces one program, not one program per route.
+#
+# The two routes for `control` are `compose` then `control`, against the hand-built
+# placement then `control`. If `control` read the receiver's provenance rather than its
+# instructions, or if `compose` left anything in the receiver that `control` could see and
+# a hand-written receiver does not have, the two programs would differ and this fails.
+# The receiver block is the same ladder the placements place, so one measurement covers
+# the interaction of all three members rather than a fourth block nothing else shares.
+receiver_block = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+routes = ["compose then control", "hand-built placement then control"]
+# The same four observable facts the placement claim is measured on, so the two claims
+# cannot drift into measuring different things while both calling it "the same program".
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+route_identity = "exact"
+# Both routes must also stay the same program once a mode serves them, which is the other
+# half of the same claim. Measured on the one-control row below rather than on the widest
+# row: see mode_agreement_measured_on.
+mode_agreement = "tolerance"
+mode_agreement_measured_on = "every control placement row carrying mode_agreement = true"
+# TOML has one-line strings and `"""` blocks; it has no parenthesized continuation, so
+# this is written out long rather than folded.
+mode_agreement_reason = "the two-control ladder is 57 instructions and the mode spread it reaches is 8.941e-07, which is 75 percent of the 10 * eps(complex64) bound this contract declares; the bound is a property of the arithmetic and is not slackened for a program this acceptance chose to add, so the mode half is pinned to a program the bound clearly covers and the wider measurement is recorded rather than asserted"
+widest_measured_mode_spread = "recorded in docs/api-changes/FQ-CONSTRUCTION-ACCEPTANCE-20261024.md"
+# The result is always wider than its receiver, because a control qubit is added rather
+# than taken. Recording the rule lets the gate check the width instead of trusting it.
+result_width = "max(ctrl_qubits) + 1"
+
+# One row per measured control placement. `n_qubits` is the receiver's width, `qubits` is
+# where the block sits inside it, and `ctrl_qubits` are the added controls. The gate builds
+# both routes for every row and compares them, so a row added without both routes fails.
+#
+# `mode_agreement` marks the rows the mode half of the claim is measured on. It is set on
+# every one-control row rather than on one hand-picked program, so the half is measured
+# across the range of one-control expansions the contract lists. The two-control row is
+# not marked, and the reason is recorded under mode_agreement_reason above.
+[[control_placement]]
+n_qubits = 2
+qubits = [0, 1]
+n_controls = 1
+ctrl_qubits = [2]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 3
+qubits = [2, 0]
+n_controls = 1
+ctrl_qubits = [3]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 5
+qubits = [4, 0, 2]
+n_controls = 1
+ctrl_qubits = [5]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 4
+qubits = [3, 1]
+n_controls = 2
+ctrl_qubits = [5, 4]
+
 [result_identity]
 # The plan's second claim is that the modes agree. It is measured on probabilities
 # because that is the one output every full-state mode serves; `state` is `None` for the
@@ -120,7 +191,7 @@ between_construction_routes = "exact"
 between_modes = "tolerance"
 reference_mode = "statevector"
 between_modes_tolerance = 1e-06
-between_modes_tolerance_rationale = "the non-reference full-state modes land within complex64 resolution of the reference on the measured program; the widest measured spread is 2.980e-08 across density_matrix, mps, and tensor_network, and 8.429e-08 for the distributed member, against a complex64 epsilon of 1.192e-07"
+between_modes_tolerance_rationale = "the non-reference full-state modes land within complex64 resolution of the reference on the measured programs; the widest measured spread is 5.960e-08 across density_matrix, mps, and tensor_network once the controlled program in [control_acceptance] is included, and 8.429e-08 for the distributed member, against a complex64 epsilon of 1.192e-07"
 measured_max_spread = "recorded in docs/api-changes/FQ-CONSTRUCTION-ACCEPTANCE-20261024.md"
 
 [modes]
@@ -192,4 +263,4 @@ gate = "tools/check_construction_acceptance_contract.py"
 # because those are cheap and they are what goes stale when someone adds a member or a
 # mode. The conformance test owns the numerical claims, which need pytest's tolerance
 # reporting to be readable when they fail.
-requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse" }
+requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse", "Circuit.control" = "test_a_controlled_program_has_the_hand_built_ir" }

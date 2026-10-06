@@ -249,3 +249,49 @@ def test_a_repeated_output_wire_is_still_refused_as_before() -> None:
         fq.counts([0, 0])
     with pytest.raises(ValueError, match="output qubits must be unique"):
         fq.samples([1, 1, 1])
+
+
+def test_density_matrix_output_traces_out_unnamed_qubits() -> None:
+    """A density-matrix request keeps the named qubits and traces out the rest.
+
+    The state is deliberately not symmetric between the two qubits, so a result
+    built in ascending order rather than in the order the caller named would
+    differ here instead of passing by coincidence.
+    """
+
+    circuit = (
+        fq.Circuit(2, dtype=torch.complex128).ry(0, theta=0.7).ry(1, theta=1.1).cx(0, 1)
+    )
+
+    full = fq.run(circuit, outputs=fq.density_matrix())
+    first = fq.run(circuit, outputs=fq.density_matrix(qubits=0))
+    second = fq.run(circuit, outputs=fq.density_matrix(qubits=1))
+    reversed_order = fq.run(circuit, outputs=fq.density_matrix(qubits=(1, 0)))
+
+    assert full.density_matrix.shape == (1, 4, 4)
+    assert full.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
+
+    # Each single-qubit reduction is the 2x2 block structure of the full matrix
+    # with the other qubit contracted, and its own trace is one.
+    torch.testing.assert_close(
+        first.density_matrix,
+        torch.tensor([[[0.8824, 0.2871], [0.2871, 0.1176]]], dtype=torch.complex128),
+        atol=1e-4,
+        rtol=0,
+    )
+    torch.testing.assert_close(
+        second.density_matrix,
+        torch.tensor([[[0.6735, 0.4456], [0.4456, 0.3265]]], dtype=torch.complex128),
+        atol=1e-4,
+        rtol=0,
+    )
+    assert first.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
+    assert second.density_matrix[0].diagonal().sum().real.item() == pytest.approx(1.0)
+
+    # Naming the qubits in the other order is a different basis order, not the
+    # same matrix: the entry the caller reads at [0, 1] is a different amplitude.
+    assert reversed_order.density_matrix.shape == (1, 4, 4)
+    assert not torch.allclose(
+        reversed_order.density_matrix, full.density_matrix, atol=1e-6
+    )
+    assert reversed_order.measurement(0).qubits == (1, 0)

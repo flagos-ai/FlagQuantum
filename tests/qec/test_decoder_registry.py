@@ -235,6 +235,9 @@ def test_a_registration_can_be_replaced_when_the_caller_says_so() -> None:
         def from_detector_error_model(cls, model: object) -> Replacement:
             return cls()
 
+    Replacement.from_decoding_graph = classmethod(  # type: ignore[attr-defined]
+        lambda cls, graph: cls()
+    )
     try:
         register_decoder(AUTHORITY_NAME, replace=True)(Replacement)  # type: ignore[arg-type]
         assert get_decoder(AUTHORITY_NAME, _model()).__class__ is Replacement
@@ -247,7 +250,7 @@ def test_a_registration_can_be_replaced_when_the_caller_says_so() -> None:
 
 def test_the_registry_keeps_the_input_family_and_not_the_repetition_decoders() -> None:
     registered = set(decoder_names())
-    assert {"minimum_weight_matching", "pymatching"} == registered
+    assert {"minimum_weight_matching", "pymatching", "belief_propagation"} == registered
     assert RepetitionLookupDecoder is not None
     assert not hasattr(RepetitionLookupDecoder, "from_detector_error_model")
     assert isinstance(get_decoder(AUTHORITY_NAME, _model()), DetectorErrorModelDecoder)

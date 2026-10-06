@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import math
-import sys
 from dataclasses import asdict, dataclass
 from importlib import resources
 from typing import Any
@@ -18,10 +17,13 @@ from .double_single import (
     double_single_sum,
 )
 
-if sys.version_info >= (3, 11):
+try:
     import tomllib
-else:  # pragma: no cover - Python 3.10
-    import tomli as tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    # The strict package check targets 3.12, where `tomllib` resolves and the
+    # fallback is unreachable, so it reports the alias as a redefinition. This
+    # is the same suppression `tools/check_evidence_revisions.py` carries.
+    import tomli as tomllib  # type: ignore[no-redef]
 
 CONFORMANCE_VERSION = "1.0"
 _CONTRACT_RESOURCE = "double-single-contract.toml"

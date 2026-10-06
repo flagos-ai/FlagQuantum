@@ -218,6 +218,26 @@ class PyMatchingDecoder:
             raise TypeError("model must be a DetectorErrorModel")
         return cls(DecodingGraph.from_detector_error_model(model))
 
+    @classmethod
+    def from_decoding_graph(cls, graph: DecodingGraph) -> PyMatchingDecoder:
+        """Derive the cross-check decoder of a graph a caller already holds.
+
+        The translation is the same one the model route performs after deriving
+        the graph, and it is performed here rather than in the registry so that the
+        narrowness of the translation's domain -- a detector pair carrying two
+        mechanisms and a detector no mechanism flips are both refused -- stays a
+        property of this class.
+
+        Raises:
+            CapabilityError: The graph is outside the domain a faithful translation
+                covers.
+            MatchingDependencyError: PyMatching is not installed.
+        """
+
+        if not isinstance(graph, DecodingGraph):
+            raise TypeError("graph must be a DecodingGraph")
+        return cls(graph)
+
     def _pair(self, first: int, second: int) -> tuple[int, int]:
         """Read one PyMatching edge as the node pair this graph records."""
 

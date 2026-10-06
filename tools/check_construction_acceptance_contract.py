@@ -216,6 +216,115 @@ def _compare(
         errors.append(f"placement {label}: to_ir() did not return a CircuitIR")
 
 
+def _control_errors(contract: dict[str, Any]) -> list[str]:
+    """Re-measure the third construction member on the same claim as the first two.
+
+    `control`'s semantics are contracted in `circuit-composition-contract.toml` and are
+    not restated here. What is measured here is the claim this contract exists for: the
+    two routes that build a controlled program -- `compose` then `control`, and the
+    hand-built placement then `control` -- are one program.
+    """
+
+    errors: list[str] = []
+    section = contract.get("control_acceptance", {})
+    if section.get("route_identity") != "exact":
+        errors.append("control_acceptance.route_identity must be exact")
+    if not section.get("measures"):
+        errors.append(
+            "control_acceptance.measures is empty, so this gate would compare nothing"
+        )
+    rows = list(contract.get("control_placement", ()))
+    if not rows:
+        errors.append("the contract lists no control placement to measure")
+    flagged = [row for row in rows if row.get("mode_agreement")]
+    if not flagged:
+        errors.append(
+            "no control placement carries mode_agreement, so the mode half of the claim "
+            "would be measured on nothing"
+        )
+    for row in flagged:
+        if int(row["n_controls"]) != 1:
+            errors.append(
+                f"control_placement with mode_agreement names n_controls="
+                f"{row['n_controls']}; the mode half is contracted on one-control "
+                "expansions only"
+            )
+    for row in rows:
+        receiver_n_qubits = int(row["n_qubits"])
+        targets = tuple(int(q) for q in row["qubits"])
+        n_controls = int(row["n_controls"])
+        ctrl_qubits = tuple(int(q) for q in row["ctrl_qubits"])
+        label = (
+            f"control n_controls={n_controls} ctrl_qubits={ctrl_qubits} on q={targets}"
+        )
+
+        if len(set(targets)) != len(targets):
+            errors.append(f"{label}: the receiver repeats a qubit")
+            continue
+        if len(ctrl_qubits) != n_controls:
+            errors.append(
+                f"{label}: the row names {len(ctrl_qubits)} control qubits for "
+                f"n_controls={n_controls}"
+            )
+            continue
+        if not ctrl_qubits:
+            errors.append(f"{label}: the row names no control qubit")
+            continue
+        # A control qubit must lie outside the receiver's own range. A row that violates
+        # this would be refused by the implementation rather than measured, so it is
+        # reported here as a malformed row instead of as a crash below.
+        inside = sorted(q for q in ctrl_qubits if q < receiver_n_qubits)
+        if inside:
+            errors.append(f"{label}: control qubits {inside} are inside the receiver")
+            continue
+        if len(set(ctrl_qubits)) != len(ctrl_qubits):
+            errors.append(f"{label}: the row repeats a control qubit")
+            continue
+
+        composed = fq.Circuit(receiver_n_qubits)
+        composed.compose(_block_program(len(targets)), qubits=targets)
+        composed_route = composed.control(n_controls, ctrl_qubits=list(ctrl_qubits))
+        hand_route = _hand_built(receiver_n_qubits, targets).control(
+            n_controls, ctrl_qubits=list(ctrl_qubits)
+        )
+
+        composed_ir, hand_ir = composed_route.to_ir(), hand_route.to_ir()
+        checks = {
+            "to_dict": composed_ir.to_dict() == hand_ir.to_dict(),
+            "content_hash": composed_ir.content_hash == hand_ir.content_hash,
+            "n_wires": hand_ir.n_wires == composed_ir.n_wires,
+            "instruction_signature": _instruction_signature(composed_route)
+            == _instruction_signature(hand_route),
+        }
+        for name in section.get("measures", ()):
+            if name not in checks:
+                errors.append(
+                    f"control_acceptance measures {name!r}, which this gate cannot read"
+                )
+                continue
+            if not checks[name]:
+                errors.append(
+                    f"{label}: the composed route's {name} differs from the hand-built "
+                    "route's"
+                )
+        expected_width = max(ctrl_qubits) + 1
+        if composed_ir.n_wires != expected_width:
+            errors.append(
+                f"{label}: the result is {composed_ir.n_wires} qubits wide, the contracted "
+                f"width is max(ctrl_qubits) + 1 = {expected_width}"
+            )
+        # A route that returned its receiver would satisfy an equality of two routes only
+        # if both were equally wrong, so the expansion is required to have happened.
+        if len(composed_ir.instructions) <= len(
+            _hand_built(receiver_n_qubits, targets).to_ir().instructions
+        ):
+            errors.append(
+                f"{label}: the controlled program is no larger than its receiver, so "
+                "nothing was controlled"
+            )
+    return errors
+
+
 def _mode_partition_errors(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     modes = contract.get("modes", {})
@@ -324,6 +433,7 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
 def contract_errors(contract: dict[str, Any]) -> list[str]:
     errors = _census_errors(contract)
     errors += _ir_identity_errors(contract)
+    errors += _control_errors(contract)
     errors += _mode_partition_errors(contract)
     errors += _correction_errors(contract)
     errors += _verification_errors(contract)
