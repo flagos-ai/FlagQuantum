@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import verify_transfer_bundle as transfer_module
 from examples.qdiffusion_kaiwu.verify_extracted_bundle import verify_extracted_bundle
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
     MAX_TRANSFER_MANIFEST_BYTES,
@@ -24,6 +25,7 @@ def _archive(path: Path, *, root: str, unsafe_name: str | None = None) -> str:
         member = tarfile.TarInfo(unsafe_name or f"{root}/src/package.py")
         member.size = len(payload)
         archive.addfile(member, io.BytesIO(payload))
+    path.chmod(0o600)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -128,7 +130,29 @@ def test_transfer_bundle_rejects_symlinked_archive(tmp_path: Path) -> None:
     archive.rename(moved)
     archive.symlink_to(moved.name)
 
-    with pytest.raises(ValueError, match="regular, colocated file"):
+    with pytest.raises(ValueError, match="regular, non-symlink"):
+        verify_transfer_bundle(manifest, target_host="jp-a800-171")
+
+
+def test_transfer_bundle_rejects_archive_replacement_between_hash_and_scan(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _bundle(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    archive = tmp_path / payload["artifacts"][0]["filename"]
+    moved = tmp_path / "opened-archive.tar.gz"
+    real_summary = transfer_module._safe_archive_summary
+
+    def replace_after_scan(*args, **kwargs):
+        summary = real_summary(*args, **kwargs)
+        archive.rename(moved)
+        archive.write_bytes(b"replacement")
+        archive.chmod(0o600)
+        return summary
+
+    monkeypatch.setattr(transfer_module, "_safe_archive_summary", replace_after_scan)
+
+    with pytest.raises(ValueError, match="changed during validation|binding changed"):
         verify_transfer_bundle(manifest, target_host="jp-a800-171")
 
 

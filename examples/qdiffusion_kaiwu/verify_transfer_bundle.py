@@ -5,21 +5,27 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import socket
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, BinaryIO
 
 if __package__:
     from examples.qdiffusion_kaiwu.private_io import (
+        open_private_binary,
         read_private_bytes,
         write_private_json_exclusive,
     )
     from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 else:  # Direct execution through a sibling file entry point.
-    from private_io import read_private_bytes, write_private_json_exclusive
+    from private_io import (
+        open_private_binary,
+        read_private_bytes,
+        write_private_json_exclusive,
+    )
     from strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
@@ -42,20 +48,25 @@ MAX_MEMBERS = 250_000
 MAX_TRANSFER_MANIFEST_BYTES = 4 * 1024 * 1024
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _stream_sha256(stream: BinaryIO) -> str:
+    digest = hashlib.sha256()
+    while chunk := stream.read(1024 * 1024):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
-def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
+def _safe_archive_summary(
+    stream: BinaryIO, *, filename: str, expected_root: str
+) -> dict[str, int]:
     names: set[str] = set()
     file_count = 0
     directory_count = 0
     unpacked_bytes = 0
     try:
-        with tarfile.open(path, mode="r:gz") as archive:
+        with tarfile.open(fileobj=stream, mode="r:gz") as archive:
             for member in archive:
                 if len(names) >= MAX_MEMBERS:
-                    raise ValueError(f"archive has too many members: {path.name}")
+                    raise ValueError(f"archive has too many members: {filename}")
                 if "\\" in member.name:
                     raise ValueError(
                         f"archive member uses a non-POSIX separator: {member.name!r}"
@@ -94,7 +105,7 @@ def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
                     unpacked_bytes += member.size
                     if unpacked_bytes > MAX_UNPACKED_BYTES:
                         raise ValueError(
-                            f"archive exceeds the unpacked-size limit: {path.name}"
+                            f"archive exceeds the unpacked-size limit: {filename}"
                         )
                 elif member.isdir():
                     directory_count += 1
@@ -103,9 +114,9 @@ def _safe_archive_summary(path: Path, *, expected_root: str) -> dict[str, int]:
                         f"archive contains a link or special member: {member.name!r}"
                     )
             if not names:
-                raise ValueError(f"archive is empty: {path.name}")
+                raise ValueError(f"archive is empty: {filename}")
     except tarfile.TarError as exc:
-        raise ValueError(f"invalid gzip tar archive: {path.name}") from exc
+        raise ValueError(f"invalid gzip tar archive: {filename}") from exc
     return {
         "member_count": len(names),
         "file_count": file_count,
@@ -183,34 +194,38 @@ def verify_transfer_bundle(manifest_path: Path, *, target_host: str) -> dict[str
         ):
             raise ValueError(f"artifact filename does not match revision: {filename}")
 
-        artifact_candidate = root / filename
-        artifact_path = artifact_candidate.resolve()
-        if (
-            not artifact_path.is_relative_to(root)
-            or artifact_candidate.is_symlink()
-            or not artifact_path.is_file()
-        ):
-            raise ValueError(f"artifact must be a regular, colocated file: {filename}")
-        if artifact_path.stat().st_size > MAX_COMPRESSED_BYTES:
-            raise ValueError(f"artifact exceeds the compressed-size limit: {filename}")
-        observed_digest = _sha256(artifact_path)
-        if observed_digest != digest:
-            raise ValueError(f"artifact SHA-256 mismatch: {filename}")
+        artifact_path = root / filename
+        with open_private_binary(
+            artifact_path,
+            label=f"transfer artifact {filename}",
+            max_bytes=MAX_COMPRESSED_BYTES,
+        ) as stream:
+            compressed_bytes = os.fstat(stream.fileno()).st_size
+            observed_digest = _stream_sha256(stream)
+            if observed_digest != digest:
+                raise ValueError(f"artifact SHA-256 mismatch: {filename}")
+            stream.seek(0)
+            archive_summary = _safe_archive_summary(
+                stream,
+                filename=filename,
+                expected_root=(f"{ARCHIVE_ROOT_PREFIXES[prefix]}{revision[:10]}"),
+            )
         verified_artifacts.append(
             {
                 "filename": filename,
                 "revision": revision,
                 "sha256": observed_digest,
-                "compressed_bytes": artifact_path.stat().st_size,
-                **_safe_archive_summary(
-                    artifact_path,
-                    expected_root=(f"{ARCHIVE_ROOT_PREFIXES[prefix]}{revision[:10]}"),
-                ),
+                "compressed_bytes": compressed_bytes,
+                **archive_summary,
             }
         )
 
     if observed_prefixes != set(ARTIFACT_PREFIXES):
         raise ValueError("transfer manifest does not contain every required artifact")
+    if {path.name for path in root.glob("*.tar.gz")} != listed_filenames:
+        raise ValueError(
+            "transfer directory archives changed during bundle verification"
+        )
     return {
         "schema": "flagquantum.qboson_a800_transfer_verification",
         "version": "1.0",

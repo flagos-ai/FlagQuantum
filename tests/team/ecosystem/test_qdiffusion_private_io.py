@@ -8,6 +8,7 @@ import pytest
 
 from examples.qdiffusion_kaiwu import private_io as private_io_module
 from examples.qdiffusion_kaiwu.private_io import (
+    open_private_binary,
     validate_private_directory,
     validate_private_json_output_path,
     write_private_json_exclusive,
@@ -20,6 +21,24 @@ def test_validate_private_directory_accepts_absolute_private_directory(
     tmp_path: Path,
 ) -> None:
     validate_private_directory(tmp_path, label="checkpoint directory")
+
+
+def test_open_private_binary_rechecks_leaf_binding_after_consumption(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "artifact.bin"
+    path.write_bytes(b"reviewed")
+    path.chmod(0o600)
+    moved = tmp_path / "opened-artifact.bin"
+
+    with (
+        pytest.raises(ValueError, match="changed during validation|binding changed"),
+        open_private_binary(path, label="artifact", max_bytes=64) as stream,
+    ):
+        assert stream.read() == b"reviewed"
+        path.rename(moved)
+        path.write_bytes(b"replacement")
+        path.chmod(0o600)
 
 
 def test_validate_private_directory_rejects_unsafe_directory(

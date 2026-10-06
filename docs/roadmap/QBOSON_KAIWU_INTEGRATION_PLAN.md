@@ -367,6 +367,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   pass, and streamed development-record capture obtains its source-preflight
   digest from the full private semantic validator rather than an ordinary path
   hash.
+- Each reviewed source archive is now opened once through an owner-only parent
+  descriptor. Its digest and tar-member safety scan consume that same file
+  description, after which leaf metadata, visible path binding, parent binding,
+  and the exact colocated archive-name set are rechecked. Replacement can no
+  longer splice independently valid bytes into the hash and archive passes.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat

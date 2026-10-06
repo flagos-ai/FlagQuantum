@@ -6,8 +6,10 @@ import json
 import os
 import secrets
 import stat
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 
 def validate_private_directory(path: Path, *, label: str) -> None:
@@ -64,8 +66,11 @@ def _verify_open_directory_binding(
         raise ValueError("evidence parent changed during publication")
 
 
-def read_private_bytes(path: Path, *, label: str, max_bytes: int) -> bytes:
-    """Read one bounded private file through an anchored parent descriptor."""
+@contextmanager
+def open_private_binary(
+    path: Path, *, label: str, max_bytes: int
+) -> Iterator[BinaryIO]:
+    """Open one bounded private file and recheck its binding after consumption."""
 
     if not path.is_absolute():
         raise ValueError(f"{label} path must be absolute")
@@ -85,6 +90,8 @@ def read_private_bytes(path: Path, *, label: str, max_bytes: int) -> bytes:
     except OSError:
         raise ValueError(f"{label} parent changed during validation") from None
     descriptor: int | None = None
+    body_started = False
+    body_completed = False
     try:
         directory_metadata = os.fstat(directory_descriptor)
         if (
@@ -111,35 +118,58 @@ def read_private_bytes(path: Path, *, label: str, max_bytes: int) -> bytes:
         if opened.st_size > max_bytes:
             raise ValueError(f"{label} exceeds the bounded size")
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
-            encoded = stream.read(max_bytes + 1)
-        if len(encoded) > max_bytes:
-            raise ValueError(f"{label} exceeds the bounded size")
-        after = os.fstat(descriptor)
-        stable_fields = (
-            "st_dev",
-            "st_ino",
-            "st_mode",
-            "st_size",
-            "st_mtime_ns",
-            "st_ctime_ns",
-        )
-        if any(getattr(after, field) != getattr(opened, field) for field in stable_fields):
-            raise ValueError(f"{label} changed during validation")
-        visible = path.lstat()
-        if (
-            not stat.S_ISREG(visible.st_mode)
-            or visible.st_mode & 0o077
-            or (visible.st_dev, visible.st_ino) != (opened.st_dev, opened.st_ino)
-        ):
-            raise ValueError(f"{label} binding changed during validation")
-        _verify_open_directory_binding(parent, directory_metadata)
-        return encoded
+            body_started = True
+            yield stream
+        body_completed = True
     except OSError:
+        if body_started:
+            raise
         raise ValueError(f"{label} binding changed during validation") from None
     finally:
-        if descriptor is not None:
-            os.close(descriptor)
-        os.close(directory_descriptor)
+        try:
+            if body_completed and descriptor is not None:
+                try:
+                    after = os.fstat(descriptor)
+                    stable_fields = (
+                        "st_dev",
+                        "st_ino",
+                        "st_mode",
+                        "st_size",
+                        "st_mtime_ns",
+                        "st_ctime_ns",
+                    )
+                    if any(
+                        getattr(after, field) != getattr(opened, field)
+                        for field in stable_fields
+                    ):
+                        raise ValueError(f"{label} changed during validation")
+                    visible = path.lstat()
+                    if (
+                        not stat.S_ISREG(visible.st_mode)
+                        or visible.st_mode & 0o077
+                        or (visible.st_dev, visible.st_ino)
+                        != (opened.st_dev, opened.st_ino)
+                    ):
+                        raise ValueError(f"{label} binding changed during validation")
+                    _verify_open_directory_binding(parent, directory_metadata)
+                except OSError:
+                    raise ValueError(
+                        f"{label} binding changed during validation"
+                    ) from None
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+            os.close(directory_descriptor)
+
+
+def read_private_bytes(path: Path, *, label: str, max_bytes: int) -> bytes:
+    """Read one bounded private file through an anchored parent descriptor."""
+
+    with open_private_binary(path, label=label, max_bytes=max_bytes) as stream:
+        encoded = stream.read(max_bytes + 1)
+        if len(encoded) > max_bytes:
+            raise ValueError(f"{label} exceeds the bounded size")
+        return encoded
 
 
 def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
@@ -212,6 +242,7 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
 
 
 __all__ = (
+    "open_private_binary",
     "read_private_bytes",
     "validate_private_directory",
     "validate_private_json_output_path",

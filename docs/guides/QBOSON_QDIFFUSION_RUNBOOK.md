@@ -207,6 +207,10 @@ The manifest must be a mode-0600 regular file in an owner-only real directory
 and is read through that directory descriptor with a 4 MiB bound. Extracted-tree
 verification captures it again through the same gate and requires the digest to
 remain identical to the bundle-verification pass before parsing it.
+Each mode-0600 source archive is likewise opened once relative to that private
+directory: SHA-256 and tar-member inspection consume the same descriptor, whose
+metadata and visible path binding are rechecked afterwards. The exact colocated
+archive-name set is also rechecked at the end of the bundle pass.
 Its mode-0600 output records the machine hostname and target alias but is only
 transfer-preflight evidence; it proves neither A800 execution nor QBoson use.
 
