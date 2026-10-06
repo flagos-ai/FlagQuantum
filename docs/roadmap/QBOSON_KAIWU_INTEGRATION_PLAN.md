@@ -106,6 +106,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   wait, budget-accounting, and evidence transaction. Concurrent identical
   plugin calls therefore share one registered Remote job and cannot race past
   a one-call quota ceiling before either call records its receipt.
+- The SDK client now also serializes the complete authoritative-receipt check,
+  solution-cache lookup, provider operation, and cache publication for one task
+  identity. Concurrent direct Remote status or result consumers therefore
+  share the completed SDK operation instead of both entering `solve()` before
+  the first thread publishes its result. Result-schema inspection uses the same
+  process-wide SDK boundary.
 - The sampler now reserves that quota slot before calling the Remote client and
   never returns it after an exception. A response failure after the provider
   may have observed the task can no longer leave the counter at zero and permit

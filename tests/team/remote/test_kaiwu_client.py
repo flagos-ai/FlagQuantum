@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event, Lock
 from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import Mock
@@ -297,6 +299,55 @@ def test_submit_and_poll_reuse_documented_task_identity(
     recovery_path = client.recovery_receipt_path(job.receipt)
     assert recovery_path.is_file()
     assert recovery_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_concurrent_status_queries_share_one_serialized_sdk_operation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    call_lock = Lock()
+    first_query_entered = Event()
+    second_query_entered = Event()
+    release_first_query = Event()
+    call_count = 0
+
+    def controlled_solve(
+        optimizer: _FakeOptimizer, matrix: np.ndarray
+    ) -> object:
+        del optimizer
+        nonlocal call_count
+        assert matrix.tolist() == [[0.0, 1.0], [1.0, 0.0]]
+        with call_lock:
+            call_count += 1
+            current_call = call_count
+        if current_call == 1:
+            return None
+        if current_call == 2:
+            first_query_entered.set()
+            assert release_first_query.wait(timeout=2.0)
+        else:
+            second_query_entered.set()
+        return np.array([[1, -1]] * 10, dtype=np.int8)
+
+    monkeypatch.setattr(_FakeOptimizer, "solve", controlled_solve)
+    client, _ = _client(monkeypatch, tmp_path)
+    job = submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="concurrent-status",
+        mode="sampling",
+        requested_samples=10,
+    )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(job.status)
+        assert first_query_entered.wait(timeout=2.0)
+        second = executor.submit(job.status)
+        assert not second_query_entered.wait(timeout=0.1)
+        release_first_query.set()
+        assert first.result(timeout=2.0) == "succeeded"
+        assert second.result(timeout=2.0) == "succeeded"
+
+    assert call_count == 2
 
 
 def test_client_maps_optimization_to_pinned_1_3_1_quota_mode(

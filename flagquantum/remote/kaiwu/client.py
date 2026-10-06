@@ -284,6 +284,14 @@ class KaiwuSDKClient:
     def _solve_identity(
         self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
     ) -> tuple[tuple[int, ...], ...] | None:
+        with self._checkpoint_lock:
+            return self._solve_identity_serialized(receipt, matrix)
+
+    def _solve_identity_serialized(
+        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> tuple[tuple[int, ...], ...] | None:
+        """Run one identity operation while the process-wide SDK lock is held."""
+
         self._validate_checkpoint_binding()
         stored = self._load_recovery_receipt(
             self.recovery_receipt_path(receipt), receipt, matrix
@@ -391,6 +399,14 @@ class KaiwuSDKClient:
         self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
     ) -> dict[str, Any]:
         """Describe documented result fields without retaining provider values."""
+
+        with self._checkpoint_lock:
+            return self._inspect_result_schema_serialized(receipt, matrix)
+
+    def _inspect_result_schema_serialized(
+        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
+    ) -> dict[str, Any]:
+        """Inspect one result schema while the process-wide SDK lock is held."""
 
         key = self._identity_key(receipt)
         cached = self._result_schemas.get(key)
