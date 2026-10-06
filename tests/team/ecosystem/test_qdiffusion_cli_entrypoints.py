@@ -45,6 +45,19 @@ LIVE_HOST_ENTRYPOINTS = (
 )
 
 
+def _runbook_command(entrypoint: str) -> str:
+    runbook = (
+        Path(__file__).parents[3]
+        / "docs"
+        / "guides"
+        / "QBOSON_QDIFFUSION_RUNBOOK.md"
+    ).read_text(encoding="utf-8")
+    marker = f"-m examples.qdiffusion_kaiwu.{entrypoint}"
+    start = runbook.index(marker)
+    end = runbook.index("```", start)
+    return runbook[start:end]
+
+
 @pytest.mark.parametrize("entrypoint", ENTRYPOINTS)
 def test_documented_module_entrypoint_binds_current_checkout(
     tmp_path: Path, entrypoint: str
@@ -104,6 +117,30 @@ def test_live_entrypoint_rejects_unpinned_sdk_version_before_other_inputs(
 
     assert completed.returncode == 2
     assert "invalid choice: '1.4.1'" in completed.stderr
+
+
+@pytest.mark.parametrize("entrypoint", PINNED_SDK_ENTRYPOINTS)
+def test_runbook_pins_sdk_version_for_every_sdk_entrypoint(entrypoint: str) -> None:
+    command = _runbook_command(entrypoint)
+
+    assert "--expected-sdk-version 1.3.1" in command
+
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    (
+        "qboson_live_smoke",
+        "qdiffusion_system_live",
+        "qdiffusion_protein_training_live",
+        "qdiffusion_portability_replay_live",
+    ),
+)
+def test_runbook_never_relies_on_default_provider_sample_count(
+    entrypoint: str,
+) -> None:
+    command = _runbook_command(entrypoint)
+
+    assert '--requested-samples "$FROZEN_REQUESTED_SAMPLES"' in command
 
 
 @pytest.mark.parametrize("entrypoint", LIVE_HOST_ENTRYPOINTS)

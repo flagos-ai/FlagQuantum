@@ -141,6 +141,19 @@ Review the completed JSON and record its digest:
 sha256sum /absolute/private-evidence/acceptance_config.json
 ```
 
+Set `FROZEN_REQUESTED_SAMPLES` from the reviewed JSON value before invoking any
+provider command; do not rely on a CLI default. For the illustrative template:
+
+```bash
+export FROZEN_REQUESTED_SAMPLES=10
+```
+
+Review the exported value against the frozen file in the same shell session.
+Changing it does not change the experiment: every QDiffusion live entrypoint
+and final validation require it to equal
+`acceptance_config.json.requested_samples`; the earlier smoke record is also
+cross-checked against that value during final validation.
+
 The config must designate one primary host and the other portability-replay
 host. It must contain at least three fixed seeds and a positive remote-call
 budget. It must also retain the approved Kaiwu rights decision described above;
@@ -322,6 +335,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-smoke-${RUN_ID}" \
   --expected-sdk-version 1.3.1 \
+  --requested-samples "$FROZEN_REQUESTED_SAMPLES" \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
 
@@ -381,6 +395,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --task-prefix "flagquantum-qdiffusion-${RUN_ID}" \
   --device cuda:0 \
   --expected-sdk-version 1.3.1 \
+  --requested-samples "$FROZEN_REQUESTED_SAMPLES" \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
 
@@ -558,6 +573,8 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-protein \
   --seed 1701 \
+  --expected-sdk-version 1.3.1 \
+  --requested-samples "$FROZEN_REQUESTED_SAMPLES" \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
 
@@ -627,7 +644,8 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --source-revision FULL_FLAGQUANTUM_REVISION \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
   --source-preflight /absolute/evidence/extraction-preflight.json \
-  --environment-lock /absolute/evidence/environment-lock.json
+  --environment-lock /absolute/evidence/environment-lock.json \
+  --expected-sdk-version 1.3.1
 ```
 
 This stage uses the A800 but consumes no additional QBoson quota. Preserve one
@@ -667,6 +685,8 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --environment-lock /absolute/evidence/environment-lock.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-portability \
+  --expected-sdk-version 1.3.1 \
+  --requested-samples "$FROZEN_REQUESTED_SAMPLES" \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
 
@@ -728,6 +748,12 @@ rather than following it. Member paths must be unique normalized relative POSIX
 paths, and the on-disk file tree must exactly equal the manifest's declared set;
 unlisted files are rejected.
 Missing, extra, replaced, or selectively omitted source or seed records fail.
+The two final host records also retain the frozen FlagQuantum package version
+and an exact limitations list. Both must explicitly require the complete source
+component bundle. Do not delete that flag or edit the limitations: validation
+must reject a record that drops its development-only classification, conflates
+the independent A800 runs with distributed or domestic-accelerator support, or
+adds performance, production, quantum-advantage, or scalability claims.
 
 ## 11. Independently revalidate final evidence
 
@@ -747,8 +773,9 @@ python3 -B -s -m examples.qdiffusion_kaiwu.validate_acceptance \
 The validator recomputes the decision. It rejects changed software or config,
 missing host coverage, shared provider tasks, fake transport, CPU execution,
 missing target identity, fallback, retrieval resubmission, invalid training or
-generation values, incomplete precision evidence, altered thresholds, and a
-guided result that misses the preregistered application criteria.
+generation values, incomplete precision evidence, altered thresholds, disabled
+component-bundle validation, changed claim limitations, and a guided result
+that misses the preregistered application criteria.
 
 ## Failure classification
 
