@@ -81,6 +81,7 @@ def validate_sdk_approval_record(
     if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
         errors.append(f"{label}.sha256: expected a SHA-256 digest")
     reviewed_at = record.get("rights_reviewed_at")
+    reviewed_timestamp: datetime | None = None
     try:
         reviewed_timestamp = datetime.fromisoformat(
             str(reviewed_at).replace("Z", "+00:00")
@@ -89,6 +90,16 @@ def validate_sdk_approval_record(
             raise ValueError
     except ValueError:
         errors.append(f"{label}.rights_reviewed_at: expected a timezone-aware timestamp")
+    service_terms_date = datetime.fromisoformat(
+        EXPECTED_IDENTITY["service_terms_effective_date"]
+    ).date()
+    if (
+        reviewed_timestamp is not None
+        and reviewed_timestamp.date() < service_terms_date
+    ):
+        errors.append(
+            f"{label}.rights_reviewed_at: predates the reviewed service terms"
+        )
     approval_reference = record.get("approval_reference")
     if (
         not _canonical_printable_identifier(approval_reference)

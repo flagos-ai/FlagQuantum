@@ -76,6 +76,11 @@ def test_private_sdk_approval_loads_with_stable_identity(tmp_path: Path) -> None
         ("wheel_filename", "other.whl", "reviewed 1.3.1 lane"),
         ("sha256", "invalid", "SHA-256 digest"),
         ("rights_reviewed_at", "2026-10-06", "timezone-aware timestamp"),
+        (
+            "rights_reviewed_at",
+            "2026-07-08T23:59:59Z",
+            "predates the reviewed service terms",
+        ),
         ("approval_reference", "<required>", "frozen value is required"),
         ("project_no", "<required>", "assigned project is required"),
         (
