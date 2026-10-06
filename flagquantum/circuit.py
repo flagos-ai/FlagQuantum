@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import torch
 
+from .core.controlled import controlled_instructions
 from .core.ir import CircuitIR, Instruction
 from .core.operator_schema import (
     OPERATOR_ALIASES,
@@ -122,6 +123,99 @@ def _inverted_instruction(instruction: Instruction) -> Instruction:
         f"Cannot invert instruction {instruction.name!r} on qubits "
         f"{instruction.wires}: {reason}."
     )
+
+
+def _controlled_instruction(
+    instruction: Instruction, controls: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    """Return the gates that replace one instruction once ``controls`` are added.
+
+    The receiver is expanded one instruction at a time, because a control on one qubit
+    commutes with conjugating that same qubit by another single-qubit gate: turning each
+    gate into its controlled form and appending those forms in the receiver's own order
+    is the controlled program. One rule per opcode stays in
+    :mod:`flagquantum.core.controlled`, which is where the expansion itself belongs.
+
+    An instruction carrying its own matrix, a noise channel, and a dynamic or
+    classically conditioned operation are all refused rather than expanded, because none
+    of them has an opcode whose controlled form the IR describes: the matrix is what
+    executes, and controlling a recorded matrix would need a second matrix the IR has no
+    field for. The three named reasons are the ones :func:`_inverted_instruction`
+    reports for the same instructions, and any remaining execution metadata is refused
+    too, so that nothing an instruction carries is quietly dropped.
+
+    Raises:
+        CapabilityError: If the instruction has no controlled form, with the reason the
+            refusal met.
+    """
+
+    reason: str | None = None
+    if instruction.metadata.get("is_channel"):
+        reason = "it is a noise channel, which has no controlled form"
+    elif instruction.metadata.get("is_dynamic"):
+        reason = "it is a dynamic operation, which has no controlled form"
+    elif instruction.metadata.get("conditions"):
+        reason = "it is classically conditioned, which has no controlled form"
+    elif getattr(instruction.matrix, "tensor", instruction.matrix) is not None:
+        reason = "it carries its own matrix, which no opcode describes controlling"
+
+    if reason is None:
+        schema = get_operator_schema(instruction.name)
+        # An opcode the registry does not know and an opcode whose declaration names no
+        # controlled form are the same absence reported the same way: in both cases no
+        # rule exists to build the controlled program from. The two are also unreachable
+        # from a well-formed program for the same reason -- the first must carry a matrix
+        # to exist at all, which the branch above already refused, and the second is
+        # excluded by the opcode census this contract records.
+        expansion = (
+            controlled_instructions(
+                schema, instruction.params, instruction.wires, controls
+            )
+            if schema is not None
+            else None
+        )
+        if expansion is None:
+            reason = "no controlled form is declared for it"
+        elif instruction.metadata:
+            reason = "it carries execution metadata a controlled form would drop"
+        else:
+            return expansion
+
+    raise CapabilityError(
+        f"Cannot control instruction {instruction.name!r} on qubits "
+        f"{instruction.wires}: {reason}."
+    )
+
+
+def _embedded_input_state(
+    inputs: torch.Tensor | None,
+    n_qubits: int,
+    width: int,
+    dtype: torch.dtype,
+    device: torch.device | str,
+) -> torch.Tensor | None:
+    """Place a receiver's explicit input state in the wider controlled register.
+
+    Every qubit the receiver did not have starts in ``|0>``, and qubit ``0`` is the most
+    significant amplitude bit, so the added qubits become zero low-order bits:
+    ``(state_1, ..., state_n)`` maps to ``sum_i state_i * 2 ** i * 2 ** (width - n)``.
+    Dropping the receiver's input instead would silently execute a different program from
+    the one the receiver describes.
+    """
+
+    if inputs is None:
+        return None
+    resolved = inputs.to(device=device, dtype=dtype)
+    if resolved.ndim == 1:
+        resolved = resolved.reshape(1, -1)
+    trailing = 2 ** (width - n_qubits)
+    embedded = torch.zeros(
+        (*resolved.shape[:-1], resolved.shape[-1] * trailing),
+        dtype=dtype,
+        device=device,
+    )
+    embedded.view(*resolved.shape[:-1], resolved.shape[-1], trailing)[..., 0] = resolved
+    return embedded
 
 
 def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
@@ -570,6 +664,109 @@ class Circuit:
         if instructions:
             self._invalidate_execution_cache(instructions_changed=True)
         return self
+
+    def control(
+        self,
+        n_controls: int,
+        ctrl_qubits: Iterable[int] | int,
+    ) -> "Circuit":
+        """Return this circuit with every gate turned into a controlled gate.
+
+        The result is a new circuit, so a reusable block can be controlled and then used
+        again unconditionally. Every gate in the receiver is replaced by its controlled
+        form, and each control qubit is added to the circuit rather than borrowed from
+        it: a control qubit must be outside the receiver's own range, which is what makes
+        the result's width ``max(ctrl_qubits) + 1`` and what keeps the receiver's gates
+        acting on the qubits they were written for.
+
+        The expansion belongs to the opcode and is declared once in
+        :data:`flagquantum.core.OPERATOR_SCHEMAS`, next to the rules that say how a gate
+        inverts and how an angle shifts. A gate the registry already has in controlled
+        form is used directly -- ``x`` under one control is ``cx`` -- and every further
+        control is built from ``cphase``, ``phase``, ``ry``, ``h``, ``s``, and ``sdg`` by
+        an ancilla-free ladder. No ancilla is requested, because a program builder cannot
+        know which qubit of the caller's circuit starts in ``|0>`` and a construction that
+        depends on that precondition would return a wrong answer rather than a refusal.
+        The price is depth: the ladder for ``k`` controls on a one-qubit gate emits
+        ``4 * 3 ** (k - 1) - 3`` instructions, which is exponential in ``k``, and
+        :data:`flagquantum.core.MAX_LADDER_LEVEL` publishes the deepest ladder this build
+        will emit. Every expansion is exact, including at a zero angle, and an angle that
+        is still a parameter, or a per-batch sequence of angles, is scaled in place so the
+        result stays inside the autograd graph. An input state set on the receiver is
+        carried into the wider register with every added qubit in ``|0>``.
+
+        This is a construction-time operation: it emits instructions the IR already
+        describes, so ``IR_VERSION`` does not change, and no root export is added.
+
+        Args:
+            n_controls: How many control qubits to add. Must be at least one.
+            ctrl_qubits: One control qubit, or one label per control qubit. A label may
+                be given as a single integer when exactly one control is added.
+
+        Returns:
+            A new circuit whose width covers every control qubit named.
+
+        Raises:
+            CapabilityError: If a gate in the receiver has no controlled form, such as a
+                noise channel, a classically conditioned operation, or a gate recorded
+                through :meth:`any` that carries its own matrix.
+            TypeError: If ``n_controls`` is not an integer or a control label is not an
+                integer.
+            ValidationError: If ``n_controls`` is not at least one, if the number of
+                control qubits does not match it, if a control qubit is repeated, or if a
+                control qubit lies inside the receiver's own range.
+
+        Examples:
+            >>> import flagquantum as fq
+            >>> block = fq.Circuit(1).x(0).control(1, ctrl_qubits=(1,))
+            >>> [item.name for item in block.to_ir().instructions]
+            ['cx']
+            >>> wide = fq.Circuit(1).rx(0, theta=0.3).control(2, ctrl_qubits=(1, 2))
+            >>> len(wide.to_ir().instructions)
+            12
+        """
+
+        count = _count_argument("n_controls", n_controls)
+        controls = normalize_qubits(ctrl_qubits, owner="Circuit.control ctrl_qubits")
+        if len(controls) != count:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must name {count} control qubit(s), got "
+                f"{len(controls)}"
+            )
+        if len(set(controls)) != len(controls):
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must be distinct, got {controls}"
+            )
+        negative = tuple(qubit for qubit in controls if qubit < 0)
+        if negative:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must be non-negative, got {negative}."
+            )
+        inside = tuple(qubit for qubit in controls if qubit < self.n_qubits)
+        if inside:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits {inside} must be outside the receiver's "
+                f"own range [0, {self.n_qubits - 1}]; a control qubit is added to the "
+                "circuit rather than taken from it."
+            )
+
+        controlled = type(self)(
+            n_qubits=max(controls) + 1,
+            bsz=self.bsz,
+            device=self.device,
+            dtype=self.dtype,
+            inputs=_embedded_input_state(
+                self._inputs, self.n_qubits, max(controls) + 1, self.dtype, self.device
+            ),
+            config=self.runtime_config,
+        )
+        for instruction in self._instructions:
+            controlled._instructions.extend(
+                _controlled_instruction(instruction, controls)
+            )
+        if controlled._instructions:
+            controlled._invalidate_execution_cache(instructions_changed=True)
+        return controlled
 
     def to_ir(self) -> CircuitIR:
         if self._ir_cache is None:
