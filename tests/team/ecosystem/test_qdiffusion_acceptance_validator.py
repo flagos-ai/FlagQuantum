@@ -706,12 +706,18 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
                     "project_no": "CPQC-test",
                     "submitted_at": "2026-10-06T00:00:00+00:00",
                     "returned_samples": config["requested_samples"],
+                    "samples": [
+                        [1, -1] for _ in range(config["requested_samples"])
+                    ],
+                    "energies": [
+                        2.0 for _ in range(config["requested_samples"])
+                    ],
                     "provider_task_id": f"task-{mode}",
                     "provider_target": "SPQC-provider",
                     "raw_status": "completed",
                     "fallback_occurred": False,
-                    "minimum_energy": -1.0,
-                    "maximum_energy": 1.0,
+                    "minimum_energy": 2.0,
+                    "maximum_energy": 2.0,
                     "provider_task_id_available": True,
                     "provider_target_available": True,
                 }

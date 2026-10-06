@@ -115,6 +115,10 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
         task["provider_result_schema"] == {"available": False, "reason": "test_client"}
         for task in record["tasks"]
     )
+    assert all(
+        task["samples"] == [[1, -1]] * 10 and task["energies"] == [2.0] * 10
+        for task in record["tasks"]
+    )
 
 
 def test_injected_live_smoke_cannot_claim_hardware_with_complete_identity() -> None:

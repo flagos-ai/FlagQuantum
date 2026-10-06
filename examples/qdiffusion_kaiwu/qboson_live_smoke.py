@@ -39,8 +39,8 @@ from .verify_environment_lock import SHA256, verify_environment_lock
 
 SCHEMA = "flagquantum.qboson_kaiwu_live_smoke"
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
-_MATRIX = ((0.0, 1.0), (1.0, 0.0))
-SMOKE_MATRIX_SHA256 = _matrix_sha256(_freeze_matrix(_MATRIX))
+SMOKE_MATRIX = ((0.0, 1.0), (1.0, 0.0))
+SMOKE_MATRIX_SHA256 = _matrix_sha256(_freeze_matrix(SMOKE_MATRIX))
 
 
 def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
@@ -55,6 +55,8 @@ def _result_record(result: KaiwuTaskResult) -> dict[str, Any]:
         "project_no": receipt.project_no,
         "submitted_at": receipt.submitted_at,
         "returned_samples": len(result.samples),
+        "samples": [list(sample) for sample in result.samples],
+        "energies": [float(energy) for energy in result.energies],
         "provider_task_id": receipt.provider_task_id,
         "provider_target": receipt.provider_target,
         "raw_status": result.raw_status,
@@ -85,6 +87,8 @@ def _attempt_record(job: KaiwuRemoteJob) -> dict[str, Any]:
         "project_no": receipt.project_no,
         "submitted_at": receipt.submitted_at,
         "returned_samples": None,
+        "samples": None,
+        "energies": None,
         "provider_task_id": receipt.provider_task_id,
         "provider_target": receipt.provider_target,
         "raw_status": job.raw_status,
@@ -125,7 +129,7 @@ def run_live_smoke(
         job: KaiwuRemoteJob | None = None
         try:
             job = submit_kaiwu_task(
-                _MATRIX,
+                SMOKE_MATRIX,
                 client=client,
                 task_name=f"{task_prefix.strip()}-{mode}",
                 mode=mode,

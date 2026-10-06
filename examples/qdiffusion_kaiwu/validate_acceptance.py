@@ -27,7 +27,10 @@ from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     SCHEMA as PROVIDER_SMOKE_COMPONENT_SCHEMA,
 )
-from examples.qdiffusion_kaiwu.qboson_live_smoke import SMOKE_MATRIX_SHA256
+from examples.qdiffusion_kaiwu.qboson_live_smoke import (
+    SMOKE_MATRIX,
+    SMOKE_MATRIX_SHA256,
+)
 from examples.qdiffusion_kaiwu.sdk_approval import (
     SCHEMA as SDK_APPROVAL_COMPONENT_SCHEMA,
 )
@@ -1641,8 +1644,70 @@ def _validate_provider_smoke_component(
                 f"{label}: task {index} submitted_at must be an aware UTC timestamp"
             )
         returned = task_record.get("returned_samples")
-        if returned != task_record.get("requested_samples"):
+        if (
+            expected_mode == "sampling"
+            and returned != task_record.get("requested_samples")
+        ) or (expected_mode == "optimization" and (type(returned) is not int or returned <= 0)):
             errors.append(f"{label}: task {index} returned sample count is invalid")
+        samples = task_record.get("samples")
+        energies = task_record.get("energies")
+        if (
+            not isinstance(samples, list)
+            or not isinstance(energies, list)
+            or len(samples) != returned
+            or len(energies) != returned
+        ):
+            errors.append(f"{label}: task {index} result vectors are incomplete")
+        else:
+            observed_energies: list[float] = []
+            for sample_index, (sample, energy) in enumerate(
+                zip(samples, energies, strict=True)
+            ):
+                if (
+                    not isinstance(sample, list)
+                    or len(sample) != len(SMOKE_MATRIX)
+                    or any(type(spin) is not int or spin not in {-1, 1} for spin in sample)
+                ):
+                    errors.append(
+                        f"{label}: task {index} sample {sample_index} is invalid"
+                    )
+                    continue
+                observed_energy = _finite_number(
+                    energy,
+                    f"{label}.tasks[{index}].energies[{sample_index}]",
+                    errors,
+                )
+                if observed_energy is not None:
+                    observed_energies.append(observed_energy)
+                expected_energy = -sum(
+                    sample[row] * SMOKE_MATRIX[row][column] * sample[column]
+                    for row in range(len(SMOKE_MATRIX))
+                    for column in range(len(SMOKE_MATRIX))
+                )
+                if observed_energy is not None and not math.isclose(
+                    observed_energy,
+                    expected_energy,
+                    rel_tol=1e-12,
+                    abs_tol=1e-12,
+                ):
+                    errors.append(
+                        f"{label}: task {index} sample {sample_index} energy differs"
+                    )
+            minimum = _finite_number(
+                task_record.get("minimum_energy"),
+                f"{label}.tasks[{index}].minimum_energy",
+                errors,
+            )
+            maximum = _finite_number(
+                task_record.get("maximum_energy"),
+                f"{label}.tasks[{index}].maximum_energy",
+                errors,
+            )
+            if observed_energies and len(observed_energies) == len(energies):
+                if minimum != min(observed_energies):
+                    errors.append(f"{label}: task {index} minimum energy differs")
+                if maximum != max(observed_energies):
+                    errors.append(f"{label}: task {index} maximum energy differs")
         raw_status = task_record.get("raw_status")
         if not isinstance(raw_status, str) or raw_status.strip().lower() not in {
             "finished",
@@ -1653,10 +1718,6 @@ def _validate_provider_smoke_component(
             "succeeded",
         }:
             errors.append(f"{label}: task {index} did not reach success")
-        for field in ("minimum_energy", "maximum_energy"):
-            _finite_number(
-                task_record.get(field), f"{label}.tasks[{index}].{field}", errors
-            )
     if len(task_ids) != len(set(task_ids)):
         errors.append(f"{label}: provider task IDs are not unique")
     if len(targets) != 1:

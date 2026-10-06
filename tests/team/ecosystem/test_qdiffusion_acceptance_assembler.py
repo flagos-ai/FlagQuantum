@@ -81,12 +81,14 @@ def _provider_smoke(
                 "project_no": "CPQC-test",
                 "submitted_at": "2026-10-06T00:00:00+00:00",
                 "returned_samples": 10,
+                "samples": [[1, -1] for _ in range(10)],
+                "energies": [2.0 for _ in range(10)],
                 "provider_task_id": f"smoke-{mode}-task",
                 "provider_target": "SPQC-provider",
                 "raw_status": "completed",
                 "fallback_occurred": False,
-                "minimum_energy": -1.0,
-                "maximum_energy": 1.0,
+                "minimum_energy": 2.0,
+                "maximum_energy": 2.0,
                 "provider_task_id_available": True,
                 "provider_target_available": True,
                 "provider_result_schema": {"type": "dict"},
@@ -1099,6 +1101,17 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "provider smoke: task 0 matrix identity differs" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    tampered_smoke = json.loads(json.dumps(provider_smoke_record))
+    tampered_smoke["tasks"][0]["energies"][0] = 99.0
+    tampered_smoke["tasks"][0]["maximum_energy"] = 99.0
+    tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
+    manifest["component_records"][14]["sha256"] = tampered_smoke_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "provider smoke: task 0 sample 0 energy differs" in error
         for error in validate_acceptance(manifest_path)
     )
 
