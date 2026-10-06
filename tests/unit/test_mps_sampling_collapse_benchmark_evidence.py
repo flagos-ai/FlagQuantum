@@ -42,6 +42,11 @@ def test_checked_in_mps008_evidence_has_canonical_scope_and_matrix() -> None:
     assert payload["implementation_id"] == IMPLEMENTATION_ID
     assert payload["runner"] == RUNNER
     assert payload["execution_semantics"] == "single_device_fast_path"
+    assert payload["distribution_semantics"] == "single_device_fast_path"
+    assert payload["claim_evidence_type"] == "development_smoke"
+    assert payload["non_release_evidence"] is True
+    assert payload["benchmark_evidence_class"] == "local_non_release"
+    assert payload["scalability_blockers"]
     assert payload["release_gate_allowed"] is False
     assert payload["scalability_claim_allowed"] is False
     assert payload["shape_matrix"] == [

@@ -244,6 +244,13 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         "source_revision": revisions.pop(),
         "runner": RUNNER,
         "execution_semantics": "single_device_fast_path",
+        "distribution_semantics": "single_device_fast_path",
+        "claim_evidence_type": "development_smoke",
+        "non_release_evidence": True,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+            "single-device kernel benchmark is not distributed scalability evidence"
+        ],
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
         "measurement": runs[0]["measurement"],
