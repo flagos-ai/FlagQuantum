@@ -151,7 +151,7 @@ def apply_complex64_local_pauli_rotation_2q(
         bit_positions[1],
         PAULI_KIND={"XX": 0, "YY": 1, "ZZ": 2}[normalized_pauli],
         BLOCK=block,
-        num_warps=8,
+        num_warps=4,
         num_stages=2,
     )
     return output
