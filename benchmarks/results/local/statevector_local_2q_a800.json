@@ -1,4 +1,5 @@
 {
+  "benchmark": "statevector_local_2q",
   "schema": "flagquantum.kernel_benchmark.statevector_local_2q.v1",
   "semantic_id": "statevector.apply.matrix_2q.local",
   "implementation_id": "FQKI-TRITON-SV-009-A",

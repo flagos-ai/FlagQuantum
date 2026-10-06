@@ -112,6 +112,7 @@ def test_aggregate_requires_full_host_compiler_matrix(tmp_path: Path) -> None:
             path.write_text(json.dumps(_run(host, lane)))
             paths.append(path)
     payload = aggregate_runs(paths)
+    assert payload["benchmark"] == "statevector_local_2q"
     assert payload["schema"] == EVIDENCE_SCHEMA
     assert payload["aggregate"]["all_cases_win"]
     assert payload["aggregate"]["decision"] == "eligible_for_dispatch_evaluation"
@@ -122,6 +123,7 @@ def test_aggregate_requires_full_host_compiler_matrix(tmp_path: Path) -> None:
 
 def test_checked_in_a800_evidence_is_canonical_and_profitable() -> None:
     payload = json.loads(_ARTIFACT.read_text(encoding="utf-8"))
+    assert payload["benchmark"] == "statevector_local_2q"
     assert payload["schema"] == EVIDENCE_SCHEMA
     assert payload["source_revision"] == _EVIDENCE_REVISION
     assert payload["semantic_id"] == SEMANTIC_ID
