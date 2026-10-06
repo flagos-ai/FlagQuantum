@@ -596,24 +596,42 @@ run's buckets must not move between ranks mid-layer. The reverse leg of this
 same lane uses exactly that configuration, which is why the number and the
 compiled path were easy to conflate. The forward leg does not.
 
-A census of the current code therefore finds more reads in the profiled
-configuration than the nine: five of them are the per-two-site-gate footprint
-collective alone, which contributes nothing at all on the compiled path. The
-recorded artifact, whose profiled workload is `sharded_mps_forward`, is
-consistent with reading the floor as configuration-dependent rather than
-absolute. The disposition of the seven configuration-independent reads is
-unchanged, and each has to become a Python number before it can be reported: a
-canonicalization residual, a norm vector, an exchange length, a per-rank byte
-count. The extra reads are the price of the default rebalancing policy and are
-removable only by changing that policy, which is a configuration decision this
-lane does not get to make on the reader's behalf.
+That census was a reading of the code, and it was superseded by a measurement of
+the running region. Wrapping the host-read paths of `torch.Tensor` so that each
+one records its caller attributes every explicit transfer in the profiled
+region to the call site that issued it, and the region carries thirty-six of
+them: twenty-eight device-to-host and eight host-to-device. The reads are
 
-Neither number is zero, so this is still staging inside the measured region and
-`host_staging_in_measured_region` stands for MPS. The claim is therefore a
-latency claim over a workload whose measured region contains some host
-accounting, and the honest reading of the number is the one the artifact already
-gives: the record is reproducible and the accounting is bounded and disclosed,
-not that the measured region is pure device work.
+| Count | Call site | What it reads |
+| --- | --- | --- |
+| 14 | `distribution.global_mps_tensor_bytes` | the load-balancing cost vector, once per two-site gate |
+| 5 | `transport._recv_tensor_p2p` | the point-to-point control descriptor that sizes a receive buffer |
+| 4 | `metadata_transport.all_gather_json` | the truncation records the global error budget policy reads |
+| 3 | `canonicalization.canonicalize_rank_owned_mps` | the metric table, the centre norms, and the residual |
+| 1 | `distribution.global_mps_bond_dimensions` | the global bond dimensions |
+| 1 | `forward.execute_torch_distributed_mps_forward` | the per-rank tensor byte vector |
+
+The host-to-device copies are the receive buffers those descriptors size, the
+device scalars the counters are scaled onto, and the metadata the collective
+encodes. None of the thirty-six stages a rank payload. The one site that did --
+the per-site host-to-device lift in `_device_footprint` -- was repaired before
+this measurement was taken, which is why it appears in the table only as the
+fourteen reads of the vector it now assembles on the device.
+
+That makes the blocker narrower than its text, and the blocker text is what was
+corrected rather than the blocker. `classify_explicit_host_transfer` classifies
+by event name and count, so a one-scalar readback is one event exactly as a
+staged tensor is, and no arrangement of a dynamic-ownership forward can bring
+the count to zero. It can be brought to twenty by running with
+`rebalance_threshold=inf`, which removes all fourteen of the load-balancing
+reads and one host-to-device copy -- and that measurement is the reason not to:
+the frozen run issues four boundary gates and eight boundary messages where the
+dynamic run issues three and six, so the cost probe pays for itself in
+inter-node traffic and trading it away would report a cleaner profile while
+moving more bytes over the fabric. `host_staging_in_measured_region` therefore
+stands for MPS, and it stands for a control-plane readback profile rather than
+for staging. The claim remains a latency claim over a workload whose measured
+region contains bounded, disclosed host accounting.
 
 The cut width was swept rather than declared, and the sweep is a leg of its own
 rather than part of the declared workload. The declared circuit could not carry
@@ -841,6 +859,49 @@ each: unbounded it completes, bounded it raises. The budget therefore does not
 monotonically help, which is the strongest form of the finding -- neither the
 label choice nor the budget is a knob the manifest can leave implicit and still
 claim to have frozen a capacity premise.
+
+#### Reading the MPS gate's default output
+
+Promoting the five statevector envelopes into `benchmarks/results/scalability`
+changed what the MPS gate prints when it is run with no arguments, because that
+directory is the gate's own `RESULTS` and the gate reads every `*.json` in it.
+The statevector payloads are not MPS evidence, and the MPS gate has an explicit
+check for that, so the default invocation now reports one blocker more than the
+scoped one:
+
+```console
+$ python benchmarks/internal/evidence/mps_release_gate.py
+{"capability": "distributed_matrix_product_state", "artifact_count": 6, ...,
+ "passed": false, "blockers": ["production_artifact_is_not_mps_evidence",
+   "missing_release_world_sizes", "missing_multinode_correctness_artifact",
+   "missing_sharded_training_ownership",
+   "missing_statistically_significant_speedup_artifact",
+   "capacity_premise_not_established",
+   "capacity_premise_evidence_not_verifiable"]}
+```
+
+The refusal is correct -- the envelopes were sealed for another capability --
+but it is a statement about the directory rather than about the MPS lane, and
+the MPS lane's own reading is the scoped one:
+
+```console
+$ python benchmarks/internal/evidence/mps_release_gate.py \
+    --candidate benchmarks/results/smoke/release_candidates/mps_matched_speed_4x2
+{"capability": "distributed_matrix_product_state", "artifact_count": 2, ...,
+ "passed": false, "blockers": ["missing_release_world_sizes",
+   "missing_multinode_correctness_artifact",
+   "missing_sharded_training_ownership",
+   "missing_statistically_significant_speedup_artifact",
+   "capacity_premise_not_established",
+   "capacity_premise_evidence_not_verifiable"]}
+```
+
+Both invocations need `FQ_EVIDENCE_SIGNING_KEY` in the environment; without it
+the gate cannot verify a sealed payload and adds
+`invalid_or_unsigned_production_artifact` to either set. The two invocations
+differ only by `production_artifact_is_not_mps_evidence`, and neither is one
+blocker away from passing: `missing_release_world_sizes` wants a world size of
+sixteen carried by a signed envelope, which this pair cannot produce.
 
 #### Reading the tensor-network gate's default output
 
