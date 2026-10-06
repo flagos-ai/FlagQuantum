@@ -692,8 +692,12 @@ def test_the_package_export_list_names_every_entry_point() -> None:
 
     assert set(package.__all__) == {
         "CLIFFORD_GATE_NAMES",
+        "PauliReadout",
+        "STABILIZER_MEASUREMENT_KINDS",
+        "STABILIZER_SAMPLING_KINDS",
         "StabilizerDependencyError",
         "StabilizerSurvey",
+        "pauli_readout",
         "require_clifford_program",
         "sample_noisy_measurements",
         "sample_stabilizer",

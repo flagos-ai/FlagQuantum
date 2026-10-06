@@ -48,6 +48,39 @@ def test_pauli_observables_and_hamiltonian_expectation() -> None:
     assert len(result.expectations) == 3
 
 
+def test_the_exact_expectation_does_not_depend_on_the_representation() -> None:
+    """One observable answers the same through the tableau as through the state.
+
+    The stabilizer mode is an execution choice, not a different output contract,
+    so a caller that asks for an expectation gets the same three results in the
+    same order whichever representation ran. The values are asserted against the
+    observable rather than against the other mode alone: two routes agreeing on a
+    zero would say nothing, so the signed term carries a `-1`, the parity term a
+    `0`, and the weighted sum a coefficient that has to be applied.
+    """
+
+    circuit = fq.Circuit(3).h(0).cx(0, 1).cx(1, 2).z(1)
+    outputs = (
+        fq.expectation(fq.X(0) @ fq.X(1) @ fq.X(2), name="xxx"),
+        fq.expectation(fq.Z(0) @ fq.Z(1) @ fq.Z(2), name="zzz"),
+        fq.expectation(0.5 * (fq.X(0) @ fq.X(1) @ fq.X(2)) - fq.Z(0) + 2 * fq.I()),
+    )
+
+    state = fq.run(
+        circuit, options=fq.ExecutionOptions(mode="statevector"), outputs=outputs
+    )
+    tableau = fq.run(
+        circuit, options=fq.ExecutionOptions(mode="stabilizer"), outputs=outputs
+    )
+
+    assert tableau.runtime["execution_path"] == "local_stabilizer"
+    assert len(state.expectations) == len(tableau.expectations) == 3
+    for result in (state, tableau):
+        torch.testing.assert_close(result.expectation("xxx"), torch.tensor([-1.0]))
+        torch.testing.assert_close(result.expectation("zzz"), torch.tensor([0.0]))
+        torch.testing.assert_close(result.expectation(2), torch.tensor([1.5]))
+
+
 def test_hamiltonian_expectation_preserves_autograd() -> None:
     theta = torch.tensor(0.3, requires_grad=True)
     result = fq.run(

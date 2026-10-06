@@ -76,6 +76,7 @@ from flagquantum.runtime.executors.statevector import gather_distributed_stateve
 from flagquantum.simulation.lindblad import evolve_density_matrix
 from flagquantum.simulation.lindblad_adjoint import adjoint_gradient
 from flagquantum.simulation.pauli import exponential_pauli_operator
+from flagquantum.simulation.stabilizer import pauli_readout
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit
@@ -167,6 +168,7 @@ ENTRIES = (
     maxcut_hamiltonian,
     molecular_integrals,
     pauli_exponential_circuit,
+    pauli_readout,
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,

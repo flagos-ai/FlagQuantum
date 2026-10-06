@@ -9,24 +9,28 @@ asks -- what do the measurements read out.
 
 What this module owns
 ---------------------
-One conversion and three entry points:
+One conversion and four entry points:
 
 - translating validated FlagQuantum IR into the engine's circuit form, refusing
   every instruction this engine cannot represent,
 - sampling measurement outcomes for a requested wire list,
+- expanding a Pauli string through the circuit and reading it against the zero
+  state, which is the stabilizer-basis readout a planned expectation request is
+  served with,
 - sampling every measurement a Clifford program records when that program
   carries positioned noise channels, and
-- surveying what that second sampling route makes of a program, without running
-  it, so a caller can decide between the stabilizer regime and a dense one before
+- surveying what that sampling route makes of a program, without running it, so
+  a caller can decide between the stabilizer regime and a dense one before
   spending a dense state on the question.
 
-The second entry point exists because a detector error model is defined between
-syndrome rounds rather than at a named gate: quantum error correction places its
-data error at a round boundary and its measurement error immediately before one
-check's readout, and the program is the only place that says where those
-positions are. It is deliberately not reachable from the planned stabilizer
-mode, which refuses a channel outright -- a routed `mode="stabilizer"` run still
-executes noiseless Clifford circuits.
+The positioned-noise entry point exists because a detector error model is defined
+between syndrome rounds rather than at a named gate: quantum error correction
+places its data error at a round boundary and its measurement error immediately
+before one check's readout, and the program is the only place that says where
+those positions are. It is deliberately not reachable from the planned stabilizer
+mode, which refuses a channel outright. The readout is reachable from it, and is
+the one entry point here that needs no external engine at all: expanding a Pauli
+through a Clifford circuit is Pauli algebra, not tableau simulation.
 
 It owns no device selection, no shot policy, no seed stream, no dispatch, and no
 public result assembly. A caller that needs those goes through Runtime, which
@@ -57,7 +61,10 @@ replacement interface, and an exit plan. For this module those are:
   `sample_noisy_measurements` without changing a caller, and the Clifford gate
   set below is the contract a replacement has to satisfy. That work is scheduled
   separately rather than scaffolded here, so this module holds exactly one
-  implementation of each.
+  implementation of each. The readout entry point is already native for the same
+  reason it can be: the Clifford phase bookkeeping this module would otherwise
+  owe the engine is what it performs there, and it performs it without importing
+  one.
 
 Fail-closed contract
 --------------------
@@ -83,6 +90,7 @@ two apart from the samples.
 from __future__ import annotations
 
 import math
+import operator
 from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
@@ -128,6 +136,25 @@ CLIFFORD_GATE_NAMES = frozenset(_GATE_NAMES)
 
 _CLIFFORD_SET_TEXT = ", ".join(sorted(CLIFFORD_GATE_NAMES))
 
+# The Core measurement kinds this representation answers, and the subset it
+# answers by drawing outcomes. A tableau holds a state and a frame, so it answers
+# a sampling request from the frame and a Pauli expectation by expansion; it holds
+# no amplitudes and no marginals, so a distribution or a Pauli-basis sampling
+# request is refused rather than approximated. Runtime reads both sets from here,
+# because a list kept in the planner or the executor would be a second answer to a
+# question the representation already answers.
+STABILIZER_SAMPLING_KINDS = frozenset({"sample", "counts"})
+STABILIZER_MEASUREMENT_KINDS = (
+    frozenset(
+        {
+            "expectation_identity",
+            "expectation_ps",
+            "expectation_z",
+        }
+    )
+    | STABILIZER_SAMPLING_KINDS
+)
+
 # `stim` documents a seed as an integer in `range(2**64)`.
 _SEED_LIMIT = 2**64
 
@@ -172,6 +199,63 @@ _PAULI_MATRICES: dict[str, torch.Tensor] = {
 # A branch matrix comes from a channel the caller built, so it is compared against
 # a Pauli at the tolerance the channel class itself uses.
 _PAULI_TOLERANCE = 1e-6
+
+# The Pauli algebra the readout entry point works in. A tracked Pauli is one
+# letter per wire plus a single `i`-power, so `i**phase * letters` is the
+# operator; the letters alone would lose every sign, because `X Z = -i Y`. The
+# product table is written out rather than generated from a closed form so a
+# reader can check each row against `X Z = -i Y` and `Z X = i Y`.
+_PAULI_PRODUCTS: dict[tuple[str, str], tuple[str, int]] = {
+    ("I", "I"): ("I", 0),
+    ("I", "X"): ("X", 0),
+    ("I", "Y"): ("Y", 0),
+    ("I", "Z"): ("Z", 0),
+    ("X", "I"): ("X", 0),
+    ("X", "X"): ("I", 0),
+    ("X", "Y"): ("Z", 1),
+    ("X", "Z"): ("Y", 3),
+    ("Y", "I"): ("Y", 0),
+    ("Y", "X"): ("Z", 3),
+    ("Y", "Y"): ("I", 0),
+    ("Y", "Z"): ("X", 1),
+    ("Z", "I"): ("Z", 0),
+    ("Z", "X"): ("Y", 1),
+    ("Z", "Y"): ("X", 3),
+    ("Z", "Z"): ("I", 0),
+}
+
+# A Clifford gate conjugates each single-wire generator into a Pauli, so four
+# images describe it completely: `X` and `Z` on each wire of its support, in
+# support order, each as `(letters, i-power)`. A one-wire gate uses the first two
+# images and its support is one wire long, so the last two are never read. A
+# two-letter image is read onto the support in order. `CX` sends `X_a` to
+# `X_a X_b` and `Z_b` to `Z_a Z_b`, which is why the control's `Z` is the one that
+# is left alone.
+_CLIFFORD_IMAGES: dict[str, tuple[tuple[str, int], ...]] = {
+    "I": (("X", 0), ("Z", 0), ("X", 0), ("Z", 0)),
+    "X": (("X", 0), ("Z", 2), ("X", 0), ("Z", 2)),
+    "Y": (("X", 2), ("Z", 2), ("X", 2), ("Z", 2)),
+    "Z": (("X", 2), ("Z", 0), ("X", 2), ("Z", 0)),
+    "H": (("Z", 0), ("X", 0), ("Z", 0), ("X", 0)),
+    "S": (("Y", 0), ("Z", 0), ("Y", 0), ("Z", 0)),
+    "S_DAG": (("Y", 2), ("Z", 0), ("Y", 2), ("Z", 0)),
+    "SQRT_X": (("X", 0), ("Y", 2), ("X", 0), ("Y", 2)),
+    "SQRT_X_DAG": (("X", 0), ("Y", 0), ("X", 0), ("Y", 0)),
+    "CX": (("XX", 0), ("ZI", 0), ("IX", 0), ("ZZ", 0)),
+    "CZ": (("XZ", 0), ("ZI", 0), ("ZX", 0), ("IZ", 0)),
+    "CY": (("XY", 0), ("ZI", 0), ("ZX", 0), ("ZZ", 0)),
+    "SWAP": (("IX", 0), ("IZ", 0), ("XI", 0), ("ZI", 0)),
+}
+
+# The four gates whose inverse is a different gate. Every other gate in
+# `_GATE_NAMES` is its own inverse, which is why this table is not a mirror of
+# the image table.
+_ADJOINT_GATES: dict[str, str] = {
+    "S": "S_DAG",
+    "S_DAG": "S",
+    "SQRT_X": "SQRT_X_DAG",
+    "SQRT_X_DAG": "SQRT_X",
+}
 
 # One engine instruction: its name, its target list, and its arguments. A gate, a
 # reset, a measurement, and a channel instruction name wire indices as targets; a
@@ -356,6 +440,202 @@ def sample_stabilizer(
     sampler = circuit.compile_sampler(seed=validated_seed)
     samples = sampler.sample(shots=request.shots)
     return torch.as_tensor(samples, dtype=torch.int64)
+
+
+@dataclass(frozen=True, slots=True)
+class PauliReadout:
+    """A Pauli string pushed through a Clifford circuit and read out.
+
+    Expanding a measurement in a stabilizer basis is conjugation. Pushing the
+    circuit's adjoint across the measured string turns `P` into `U^dagger P U`,
+    which for a Clifford circuit is one Pauli again up to a power of `i`. That
+    single Pauli is the observable a table of measurements would have flipped,
+    and its value on the all-zero state is the expectation the caller asked for.
+
+    ``letters`` and ``phase`` are that conjugation, `i**phase * letters`, and
+    ``expectation`` is what the zero state reads from it. The value is exact and
+    is one of `-1`, `0`, and `1`: a Pauli string whose expansion still carries an
+    `X` or a `Y` is traceless against a computational-basis product state, and a
+    diagonal one is `+-1` because `Z|0>` is `|0>`. No sampling, no tolerance, and
+    no external engine take part in it, so two callers holding the same program
+    read the same value.
+    """
+
+    letters: str
+    phase: int
+    expectation: int
+
+
+def _multiply_paulis(
+    letters: str,
+    phase: int,
+    image: str,
+    image_phase: int,
+) -> tuple[str, int]:
+    """Return the product of two tensor-product Paulis as letters and `i`-power."""
+
+    product: list[str] = []
+    total = phase + image_phase
+    for one, two in zip(letters, image, strict=True):
+        letter, power = _PAULI_PRODUCTS[(one, two)]
+        product.append(letter)
+        total += power
+    return "".join(product), total % 4
+
+
+def _conjugate_step(
+    gate: str,
+    support: tuple[int, ...],
+    letters: str,
+    phase: int,
+) -> tuple[str, int]:
+    """Return the tracked Pauli after one Clifford gate is pushed across it.
+
+    Only the gate's own support changes. `G P G^dagger` is the product of the
+    images of the tracked letters on that support, because `G^dagger G` is the
+    identity and a letter outside the support is conjugated to itself. `Y` is
+    `i * X * Z`, so a tracked `Y` contributes a factor of `i` of its own on top
+    of both of its images. Reading the tracked letters directly is what makes the
+    walk cost one step per instruction rather than one per wire.
+    """
+
+    images = _CLIFFORD_IMAGES[gate]
+    tracked = "".join(letters[wire] for wire in support)
+    conjugated = "I" * len(support)
+    conjugated_phase = 0
+    for position, letter in enumerate(tracked):
+        if letter in "XY":
+            conjugated, conjugated_phase = _multiply_paulis(
+                conjugated, conjugated_phase, *images[2 * position]
+            )
+        if letter in "ZY":
+            conjugated, conjugated_phase = _multiply_paulis(
+                conjugated, conjugated_phase, *images[2 * position + 1]
+            )
+        if letter == "Y":
+            conjugated_phase += 1
+    updated = list(letters)
+    for offset, wire in enumerate(support):
+        updated[wire] = conjugated[offset]
+    return "".join(updated), (phase + conjugated_phase) % 4
+
+
+def _pauli_letters(
+    n_wires: int,
+    x: Sequence[int],
+    y: Sequence[int],
+    z: Sequence[int],
+) -> str:
+    """Return the tracked Pauli, refusing a wire named twice or off the program.
+
+    A wire the string does not name carries the identity, and the three axes are
+    disjoint by construction, so a wire appearing twice is a malformed string
+    rather than a string two spellings agree about. `bool` is refused for the
+    reason the seed check gives: it is a flag, not a wire index.
+    """
+
+    letters = ["I"] * n_wires
+    for axis, wires in (("x", x), ("y", y), ("z", z)):
+        for wire in wires:
+            if isinstance(wire, bool):
+                raise ValidationError(
+                    f"Pauli readout {axis} wires must be integers, got {wire!r}"
+                )
+            # `operator.index` is the protocol for "I am exactly an integer", so
+            # `0.0` and `'1'` are refused while a NumPy or Torch scalar is not.
+            # `int(...)` would also have accepted them, and `0.5` would have
+            # truncated to wire 0 rather than being refused.
+            try:
+                index = operator.index(wire)
+            except TypeError as error:
+                raise ValidationError(
+                    f"Pauli readout {axis} wires must be integers, got {wire!r}"
+                ) from error
+            if not 0 <= index < n_wires:
+                raise ValidationError(
+                    f"Pauli readout {axis} wire {index} is outside a "
+                    f"{n_wires}-wire program"
+                )
+            if letters[index] != "I":
+                raise ValidationError(
+                    f"Pauli readout names wire {index} on more than one axis; a "
+                    "Pauli string carries one letter per wire"
+                )
+            letters[index] = axis.upper()
+    return "".join(letters)
+
+
+def pauli_readout(
+    program: Any,
+    *,
+    x: Sequence[int] = (),
+    y: Sequence[int] = (),
+    z: Sequence[int] = (),
+) -> PauliReadout:
+    """Expand a Pauli string through a Clifford program and read the zero state.
+
+    This is the readout half of Pauli tracking. The sampling entry points answer
+    what a circuit's measurements recorded; this one answers what a measured
+    Pauli is worth, which is the other question a stabilizer run is asked and the
+    one a table of circuit outcomes is answered against. The string is conjugated
+    by the whole program, which names the observable that a run of that program
+    would have flipped, and that observable is read against the all-zero state,
+    the state a Clifford circuit starts from. The program's own measurement nodes
+    are not read, because the question is about the circuit: reconciling a
+    lowered request with a representation is Runtime's, and Runtime strips them
+    before it reaches here.
+
+    Args:
+        program: A `~flagquantum.Circuit` or a validated
+            `~flagquantum.CircuitIR` whose instructions are all Clifford.
+        x: Wires the string carries an `X` on.
+        y: Wires the string carries a `Y` on.
+        z: Wires the string carries a `Z` on. A wire appears in at most one of
+            the three, and every wire the string does not name is the identity,
+            so an empty string is the identity operator and reads `1`.
+
+    Returns:
+        A `PauliReadout` holding the conjugated Pauli, its `i`-power, and the
+        exact value the zero state gives it.
+
+    Raises:
+        CapabilityError: An instruction is a noise channel or a gate outside the
+            Clifford set. The message names the offending instruction and gate.
+        ValidationError: The program is not a valid circuit IR, or an axis names
+            a wire twice or outside the program.
+
+    Examples:
+        A parity on a Bell pair is a single-wire observable after the circuit
+        moves it, and being a stabilizer it is certain:
+
+        >>> import flagquantum as fq
+        >>> from flagquantum.simulation.stabilizer import pauli_readout
+        >>> readout = pauli_readout(fq.Circuit(2).h(0).cx(0, 1), z=(0, 1))
+        >>> readout.letters, readout.expectation
+        ('IZ', 1)
+    """
+
+    ir = ensure_circuit_ir(program)
+    letters = _pauli_letters(ir.n_wires, x, y, z)
+    phase = 0
+    # Walking the instructions backwards while pushing each gate's adjoint is
+    # `U^dagger P U` for the whole program: `U^dagger = G_1^dagger ... G_n^dagger`
+    # acts on `P` from the left as `G_n^dagger` down to `G_1^dagger`.
+    for gate, support in reversed(_clifford_instructions(ir)):
+        letters, phase = _conjugate_step(
+            _ADJOINT_GATES.get(gate, gate), support, letters, phase
+        )
+    if any(letter in "XY" for letter in letters):
+        return PauliReadout(letters=letters, phase=phase, expectation=0)
+    # `U^dagger P U` is Hermitian because `P` is, so `i**phase` is real here and
+    # the power is even. An odd power would mean the conjugation left the Pauli
+    # group, which a Clifford gate cannot do.
+    assert phase % 2 == 0, (letters, phase)
+    return PauliReadout(
+        letters=letters,
+        phase=phase,
+        expectation=1 if phase == 0 else -1,
+    )
 
 
 def _validate_shots(shots: Any) -> int:

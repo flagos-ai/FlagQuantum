@@ -1,19 +1,32 @@
-# Stabilizer sampling
+# Stabilizer sampling and Pauli readout
 
-This package owns Clifford stabilizer sampling: circuits whose gates all
-normalize the Pauli group have a tableau representation whose storage grows
-quadratically with the wire count, so the wire counts this package reaches are
-the ones no amplitude store can hold.
+This package owns Clifford stabilizer work: circuits whose gates all normalize
+the Pauli group have a tableau representation whose storage grows quadratically
+with the wire count, so the wire counts this package reaches are the ones no
+amplitude store can hold.
 
-- Start in `engine.py`. It owns the four things this package does: translating
+- Start in `engine.py`. It owns the five things this package does: translating
   validated Circuit IR into the engine's circuit form, sampling measurement
-  outcomes for a requested wire list, sampling measurement outcomes from a
-  circuit that already carries noise channels at explicit positions, and
+  outcomes for a requested wire list, expanding a Pauli string through the
+  circuit and reading it against the zero state, sampling measurement outcomes
+  from a circuit that already carries noise channels at explicit positions, and
   reporting what that second sampling route would make of a program without
   executing it.
 - Call `sample_stabilizer(program, shots=..., wires=..., seed=...)`. It accepts
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
   `(shots, len(wires))`.
+- Call `pauli_readout(program, x=..., y=..., z=...)` to read a measured Pauli
+  instead of drawing outcomes. It conjugates the string through the whole circuit
+  and reads the result against the all-zero state, which is exact and is one of
+  `-1`, `0`, and `1`; the returned `PauliReadout` also names the conjugated string
+  and its `i`-power, which is the observable a run of that circuit would have
+  flipped. This entry point imports no external engine, because expending a Pauli
+  through a Clifford circuit is Pauli algebra rather than tableau simulation.
+- The Core measurement kinds this representation answers are
+  `STABILIZER_MEASUREMENT_KINDS`, split into `STABILIZER_SAMPLING_KINDS` (drawn
+  outcomes) and the expectation kinds (exact values). Runtime reads both sets
+  from here rather than keeping its own list, so a request the representation
+  cannot answer is refused by the same answer the executor reads.
 - Call `sample_noisy_measurements(program, shots=..., terminal_wires=..., seed=...)`
   when the caller has placed noise itself. It executes a channel at the position
   it finds it, which means the *caller* owns the Pauli-frame attribution and this
@@ -87,7 +100,10 @@ replacement interface, and an exit plan. Here they are:
   channel placement, which a replacement kernel would inherit unchanged. A future
   first-party or FlagOS Clifford kernel replaces the body without changing a
   caller, and the extra can then be dropped. That work is scheduled separately
-  rather than scaffolded here.
+  rather than scaffolded here. `pauli_readout` is not part of that seam, because
+  it is already first-party: the Clifford phase bookkeeping this module would
+  otherwise owe the engine is what it performs, and it performs it without
+  importing the engine.
 
 ## Determinism
 

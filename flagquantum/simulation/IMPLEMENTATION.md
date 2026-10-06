@@ -45,15 +45,17 @@ collectives, communication, and backward evidence.
 density-matrix measurements. Compiler owns noise lowering; Runtime owns
 execution-plan dispatch through `runtime/noise_registry.py`.
 
-`stabilizer/engine.py` owns Clifford stabilizer sampling: it translates validated
+`stabilizer/engine.py` owns Clifford stabilizer work: it translates validated
 Circuit IR into the engine's circuit form and samples measurement outcomes for a
 requested wire list, refusing every non-Clifford opcode, every noise channel, and
 every already-lowered measurement node rather than approximating any of them. It
-is the only module in the repository that imports `stim`, which is the single
-seam a replacement Clifford kernel replaces. Runtime owns device selection, shot
-policy, seed streams, result assembly, and the execution route, which does not
-exist yet. `stabilizer/README.md` records the dependency's need, ownership
-boundary, licence review, replacement interface, and exit plan.
+also owns the exact Pauli readout, which conjugates a Pauli string through the
+circuit and reads it against the zero state without sampling and without an
+external engine. It is the only module in the repository that imports `stim`,
+which is the single seam a replacement Clifford kernel replaces. Runtime owns
+device selection, shot policy, seed streams, result assembly, and the execution
+route. `stabilizer/README.md` records the dependency's need, ownership boundary,
+licence review, replacement interface, and exit plan.
 
 `statevector/noisy.py` owns batched gate application, Pauli fast-path matrix
 construction, Kraus sampling, amplitude-damping evolution, normalization, and

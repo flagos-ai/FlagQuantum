@@ -648,25 +648,36 @@ def _require_stabilizer_request(
     the device. The representation's own structural limits -- one circuit per
     tableau, no gradient, one device -- are checked in ``plan_advanced``, which
     owns those fields for every caller.
+
+    The measurement kinds this route serves are read from the engine rather than
+    restated here. The engine owns the representation, so it owns which requests
+    a request against that representation is; a list kept in the planner would be
+    a second answer to a question the engine already answers, and the executor
+    reads the same one.
     """
 
-    if resolved.target not in {"auto", "samples"}:
+    from ...simulation.stabilizer import STABILIZER_MEASUREMENT_KINDS
+
+    if resolved.target in {"state", "amplitudes"}:
         raise CapabilityError(
-            f"mode='stabilizer' samples measurement outcomes; target="
-            f"{resolved.target!r} has no stabilizer route"
+            "mode='stabilizer' returns measurement outcomes and exact Pauli "
+            f"expectations rather than a state; target={resolved.target!r} has no "
+            "stabilizer route"
         )
     unsupported = sorted(
-        {node.kind for node in source_ir.measurements} - {"sample", "counts"}
+        {node.kind for node in source_ir.measurements} - STABILIZER_MEASUREMENT_KINDS
     )
     if unsupported:
         raise CapabilityError(
-            "mode='stabilizer' samples measurement outcomes; it cannot serve "
-            f"measurement kind(s) {', '.join(unsupported)}"
+            "mode='stabilizer' samples measurement outcomes and reads exact Pauli "
+            f"expectations; it cannot serve measurement kind(s) "
+            f"{', '.join(unsupported)}"
         )
     if not source_ir.measurements and resolved.shots is None:
         raise ValidationError(
-            "mode='stabilizer' requires shots or a sampling measurement in the "
-            "program; it returns measurement outcomes rather than a state"
+            "mode='stabilizer' requires an expectation or sampling measurement in "
+            "the program, or a shot count; it returns measurement outcomes and "
+            "exact Pauli expectations rather than a state"
         )
     requested_device = str(resolved.device)
     if requested_device not in {"auto", "cpu"}:

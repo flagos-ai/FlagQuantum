@@ -10,8 +10,10 @@ is tested in `tests/team/simulation/`.
 from __future__ import annotations
 
 import pytest
+import torch
 
 import flagquantum as fq
+from flagquantum.core.ir import MeasurementNode
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime.execution_plan_contract import (
     plan_from_dict,
@@ -30,7 +32,9 @@ pytestmark = pytest.mark.unit
 
 
 def _ghz(n_wires: int) -> fq.Circuit:
-    circuit = fq.Circuit(n_wires)
+    """Return an `n_wires`-wire GHZ circuit; a plan reads its width, not its law."""
+
+    circuit = fq.Circuit(n_wires).h(0)
     for wire in range(n_wires - 1):
         circuit.cx(wire, wire + 1)
     return circuit
@@ -140,7 +144,8 @@ def test_a_noisy_program_is_refused_by_the_stable_noise_rule() -> None:
     [
         ({"device": "cuda"}, "runs on cpu only"),
         ({"require_gradients": True}, "has no gradient route"),
-        ({"target": "expectation"}, "has no stabilizer route"),
+        ({"target": "state"}, "has no stabilizer route"),
+        ({"target": "amplitudes"}, "has no stabilizer route"),
     ],
 )
 def test_a_request_the_tableau_cannot_serve_fails_closed(
@@ -166,9 +171,33 @@ def test_a_batched_program_is_refused() -> None:
         fq.plan(circuit, options=_options())
 
 
-def test_a_run_without_shots_is_refused() -> None:
-    with pytest.raises((CapabilityError, ValidationError), match="requires shots"):
+def test_a_run_without_shots_or_a_measurement_is_refused() -> None:
+    """The route states what it returns rather than guessing a shot count.
+
+    A shot count is one way to ask this representation a question and a lowered
+    expectation request is the other, so a run that carries neither is refused by
+    name instead of being given a default that would invent an output.
+    """
+
+    with pytest.raises(
+        (CapabilityError, ValidationError),
+        match="requires an expectation or sampling measurement",
+    ):
         fq.run(_ghz(2), options=fq.ExecutionOptions(mode="stabilizer"))
+
+
+def test_a_run_with_an_expectation_and_no_shots_is_planned() -> None:
+    """The refusal above is about the request, not about the shot count."""
+
+    from dataclasses import replace
+
+    program = replace(
+        _ghz(2).to_ir(),
+        measurements=(MeasurementNode("expectation_z", (0,)),),
+    )
+    plan = fq.plan(program, options=fq.ExecutionOptions(mode="stabilizer"))
+
+    assert plan.state_mode == "stabilizer"
 
 
 def test_a_sharded_world_size_is_refused(
@@ -287,7 +316,7 @@ def test_the_executor_refuses_the_requests_planning_cannot_see() -> None:
         run_native(unanswerable, mode="stabilizer")
 
 
-def test_the_sampling_target_refuses_an_encoding_it_does_not_produce() -> None:
+def test_the_measurement_target_refuses_an_encoding_it_does_not_produce() -> None:
     """The sampler protocol allows `index`; this route only has bit strings.
 
     Returning bits under the `index` name would be a wrong answer rather than a
@@ -301,10 +330,141 @@ def test_the_sampling_target_refuses_an_encoding_it_does_not_produce() -> None:
 
     pytest.importorskip("stim")
 
-    from flagquantum.runtime.executors.stabilizer import StabilizerSamplingTarget
+    from flagquantum.runtime.executors.stabilizer import StabilizerTarget
 
-    target = StabilizerSamplingTarget(_ghz(2).to_ir(), seed=3)
+    target = StabilizerTarget(_ghz(2).to_ir(), seed=3)
 
     assert target.sample(4, format="bits").shape == (1, 4, 2)
-    with pytest.raises(CapabilityError, match="no stabilizer route"):
+    with pytest.raises(CapabilityError, match="has no stabilizer route"):
         target.sample(4, format="index")
+
+
+def test_the_target_reads_one_pauli_as_one_number() -> None:
+    """The contract's `expectation_ps` is one value per run, not one per wire."""
+
+    pytest.importorskip("stim")
+
+    from flagquantum.runtime.executors.stabilizer import StabilizerTarget
+
+    target = StabilizerTarget(fq.Circuit(2).h(0).cx(0, 1).to_ir())
+
+    value = target.expectation_ps(x=(0, 1))
+    assert value.shape == (1,)
+    assert float(value[0]) == 1.0
+
+    # An empty string is the identity, which is what `expectation_identity`
+    # reads the engine for; it must not be confused with "no argument given".
+    assert float(target.expectation_ps()[0]) == 1.0
+
+
+def test_the_target_reads_one_z_expectation_per_requested_wire_in_order() -> None:
+    """Wire order is the caller's, which is what makes the columns line up."""
+
+    pytest.importorskip("stim")
+
+    from flagquantum.runtime.executors.stabilizer import StabilizerTarget
+
+    # `X` on wire 0 leaves wire 1 in `|0>`, so the two columns differ and a
+    # reversal or a broadcast would be visible.
+    program = fq.Circuit(2).x(0).to_ir()
+    target = StabilizerTarget(program)
+
+    value = target.expectation_z((1, 0))
+    assert value.shape == (1, 2)
+    assert value.tolist() == [[1.0, -1.0]]
+
+    assert target.expectation_z(None).tolist() == [[-1.0, 1.0]]
+    assert target.expectation_z(0).tolist() == [[-1.0]]
+
+
+def test_the_readout_reports_the_precision_the_circuit_declared() -> None:
+    """One circuit answers in one dtype whichever representation served it."""
+
+    pytest.importorskip("stim")
+
+    from flagquantum.runtime.executors.stabilizer import StabilizerTarget
+
+    single = StabilizerTarget(fq.Circuit(2).to_ir())
+    double = StabilizerTarget(fq.Circuit(2, dtype="complex128").to_ir())
+
+    assert single.expectation_z((0,)).dtype == torch.float32
+    assert double.expectation_z((0,)).dtype == torch.float64
+
+
+def test_the_kinds_the_planner_accepts_are_the_engines_own_answer() -> None:
+    """One source of truth, checked as an identity rather than as a copy.
+
+    The planner refuses a request by asking the representation which requests
+    exist, so the two sets cannot drift: a kind the engine adds is accepted by
+    the planner on the same commit, and a kind it drops is refused.
+    """
+
+    import inspect
+
+    from flagquantum.runtime.planner import _require_stabilizer_request
+    from flagquantum.simulation.stabilizer import (
+        STABILIZER_MEASUREMENT_KINDS,
+        STABILIZER_SAMPLING_KINDS,
+    )
+
+    source = inspect.getsource(_require_stabilizer_request)
+    assert "STABILIZER_MEASUREMENT_KINDS" in source
+    assert STABILIZER_SAMPLING_KINDS < STABILIZER_MEASUREMENT_KINDS
+    assert "probabilities" not in STABILIZER_MEASUREMENT_KINDS
+    assert "sample_ps" not in STABILIZER_MEASUREMENT_KINDS
+    assert {"sample", "counts", "expectation_z"} <= STABILIZER_MEASUREMENT_KINDS
+
+
+def test_the_route_plans_the_tableau_it_actually_uses() -> None:
+    """A bare run reaches the executor without a plan, so the executor plans.
+
+    `fq.run` plans first and hands the plan down, which is why the estimate the
+    executor builds for itself is easy to leave untested: on the high-level path
+    it is never reached at all. `run_native` is the entry point that reaches it,
+    and the estimate it produces there is the number the executor's own memory
+    check compares against. A limit placed between the tableau's cost and an
+    amplitude store's is therefore accepted exactly when the executor planned the
+    representation it goes on to hold, which is a strict inequality rather than
+    the engine's second copy of its own answer.
+    """
+
+    pytest.importorskip("stim")
+
+    from dataclasses import replace
+
+    from flagquantum.runtime import run_native
+
+    tableau_bytes = estimate_stabilizer_bytes(24)
+    amplitude_bytes = estimate_state_bytes(24)
+    assert tableau_bytes < amplitude_bytes
+
+    program = replace(
+        _ghz(24).to_ir(),
+        measurements=(MeasurementNode("sample", tuple(range(24)), shots=8),),
+    )
+
+    run_native(program, mode="stabilizer", memory_limit_bytes=tableau_bytes + 1)
+
+    with pytest.raises(CapabilityError, match="above the declared memory_limit_bytes"):
+        run_native(program, mode="stabilizer", memory_limit_bytes=tableau_bytes - 1)
+
+
+def test_a_second_sampling_request_is_refused() -> None:
+    """One stream per run: two sampling requests would be the same stream twice."""
+
+    pytest.importorskip("stim")
+
+    from dataclasses import replace
+
+    from flagquantum.runtime import run_native
+
+    program = replace(
+        _ghz(2).to_ir(),
+        measurements=(
+            MeasurementNode("sample", (0, 1), shots=8),
+            MeasurementNode("counts", (0, 1), shots=8),
+        ),
+    )
+
+    with pytest.raises(CapabilityError, match="exactly one sampling request"):
+        run_native(program, mode="stabilizer", shots=8)
