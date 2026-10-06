@@ -344,6 +344,44 @@ returns a nonzero exit status whenever hardware acceptance remains closed.
 It also records a value-free schema of the documented SDK result dictionary so
 the missing mapping can be reviewed without persisting raw provider values.
 
+## Resume an interrupted provider task
+
+After a timeout, provider failure, or keyboard interruption, keep both the
+private checkpoint directory and the failed smoke record. The pinned client
+publishes a mode-0600 `flagquantum-kaiwu-*.json` recovery bundle in that
+checkpoint directory before its first SDK task operation. Select the bundle
+whose receipt `task_name` and `matrix_sha256` match the attempted task in the
+failed record; do not edit, rename, or copy fields between bundles.
+
+Run the dedicated recovery command in the same approved environment and with
+the same approved project. It restores the bundle, verifies its mode and
+project before the first status query, and never calls the FlagQuantum submit
+API:
+
+```bash
+python -B -s -m examples.qdiffusion_kaiwu.qboson_resume \
+  --checkpoint-dir /absolute/private-kaiwu-checkpoints \
+  --recovery-receipt /absolute/private-kaiwu-checkpoints/flagquantum-kaiwu-<digest>.json \
+  --environment-lock /absolute/private-evidence/environment-lock.json \
+  --sdk-approval /absolute/private-evidence/sdk-approval.json \
+  --output /absolute/private-evidence/qboson-resume.json \
+  --project-no CPQC-your-project \
+  --mode sampling \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
+```
+
+Recovery deliberately does not require a fresh provider-resource snapshot: an
+expired snapshot must not make an already retained identity unrecoverable.
+However, the SDK's documented `solve` operation is also its identity query, and
+an earlier ambiguous failure may have occurred before QBoson accepted the task.
+The command therefore retains the exact cost acknowledgement because the query
+can still contact the provider and may consume quota. It writes a new exclusive
+mode-0600 diagnostic record for either a validated result or another redacted
+failure, removes both credential variables before SDK construction, and never
+records credential values. A successful recovery is not system or application
+acceptance, and the pinned SDK's missing provider task/target mapping continues
+to keep real-provider acceptance closed.
+
 ## Live QDiffusion system probe
 
 `qdiffusion_system_live.py` joins the same bounded QDiffusion slice to

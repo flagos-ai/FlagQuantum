@@ -96,5 +96,6 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/remote/test_kaiwu_credentials.py \
   tests/team/remote/test_kaiwu_jobs.py \
   tests/team/remote/test_kaiwu_live_smoke.py \
+  tests/team/remote/test_kaiwu_resume.py \
   tests/team/remote/test_kaiwu_client.py \
   tests/team/remote/test_kaiwu_sdk.py

@@ -1054,6 +1054,18 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   boundary refuses a new submit after that UTC instant before it creates a
   recovery bundle or invokes the SDK, while explicit restore, status, and
   result retrieval for an existing identity remain available.
+- The Phase 2/5 runbook now includes a separately invoked recovery CLI for an
+  interrupted or timed-out Kaiwu task. It accepts only an existing private
+  recovery bundle, verifies the retained mode and approved project before its
+  first status query, never calls the FlagQuantum submission API, removes both
+  credential variables before constructing the pinned SDK client, and writes
+  a new exclusive mode-0600 result-or-failure record. The command retains the
+  explicit provider-cost acknowledgement because Kaiwu 1.3.1 uses `solve` to
+  query the documented `task_name + ising_matrix` identity and an earlier
+  ambiguous failure may have occurred before provider acceptance. Recovery is
+  intentionally not disabled by an expired Resource Bill snapshot, and its
+  diagnostic record does not establish provider, system, or application
+  acceptance.
 - The isolated development rehearsal was refreshed on both validation hosts at
   source revision `10e4b2345c5e18219ae369e7a7821848bf8ad46c`, after the
   provider-resource budget, submission-deadline, and reviewed-project gates
