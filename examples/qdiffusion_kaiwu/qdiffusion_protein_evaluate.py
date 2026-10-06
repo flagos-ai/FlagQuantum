@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
+import os
 import platform
 import re
 import socket
@@ -60,6 +61,13 @@ from flagquantum.version import __version__ as flagquantum_version
 SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
 _MAX_TRAINING_RECORD_BYTES = 64 * 1024 * 1024
+
+
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate evaluation input ownership")
+    return int(getter())
 
 
 class _VerifiedTrainingPaths(dict[str, Path]):
@@ -169,8 +177,14 @@ def _verified_training_paths(
             ) from None
         if snapshot.sha256 != expected:
             raise ValueError(f"training artifact digest mismatch: {name}")
-        if stat.S_IMODE(candidate.lstat().st_mode) & 0o077:
+        candidate_metadata = candidate.lstat()
+        if stat.S_IMODE(candidate_metadata.st_mode) & 0o077:
             raise ValueError(f"training artifact must be owner-only: {name}")
+        if candidate_metadata.st_uid != _effective_uid():
+            raise ValueError(
+                "training artifact must be owned by the current effective user: "
+                f"{name}"
+            )
         revalidate_regular_file(snapshot, label=f"training artifact {name}")
         paths[name] = candidate
         snapshots[name] = snapshot

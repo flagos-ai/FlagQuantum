@@ -175,6 +175,28 @@ def test_verified_checkpoint_rejects_public_file(tmp_path: Path) -> None:
         _verified_checkpoint(tmp_path, checkpoint, record)
 
 
+def test_verified_checkpoint_rejects_foreign_owned_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_3.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o600)
+    record = {
+        "trained_energy_checkpoint_name": checkpoint.name,
+        "trained_energy_checkpoint_sha256": hashlib.sha256(b"trained").hexdigest(),
+    }
+    monkeypatch.setattr(
+        portability_module,
+        "_effective_uid",
+        lambda: checkpoint.stat().st_uid + 1,
+    )
+
+    with pytest.raises(ValueError, match="owned by the current effective user"):
+        _verified_checkpoint(tmp_path, checkpoint, record)
+
+
 def test_portability_replay_runs_bounded_slice_without_false_acceptance(
     tmp_path: Path,
 ) -> None:

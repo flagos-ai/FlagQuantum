@@ -150,6 +150,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   retained workflow artifacts must be owned by the current effective UID.
   Stable source and artifact snapshots now include UID in their metadata
   identity, so an ownership change after capture invalidates the evidence.
+- Evaluation and portability replay independently enforce current-effective-UID
+  ownership on the retained training artifacts and selected checkpoint before
+  they consume those files; digest equality and owner-only mode are not enough.
 - The streamed A800 runner extracts the outer input and all three reviewed
   archives with `--no-same-owner`. This normalizes tmpfs content to the
   container's effective UID instead of weakening the ownership gate for files

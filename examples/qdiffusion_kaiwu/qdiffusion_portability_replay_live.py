@@ -91,6 +91,13 @@ SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay"
 _MAX_ARTIFACT_PREFLIGHT_BYTES = 4 * 1024 * 1024
 
 
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate portability input ownership")
+    return int(getter())
+
+
 def _load_pinned_modules(
     plugin_root: Path,
 ) -> tuple[ModuleType, ModuleType, ModuleType]:
@@ -151,8 +158,13 @@ def _verified_checkpoint_snapshot(
         raise ValueError("trained checkpoint is absent or symbolic") from None
     if snapshot.sha256 != training_record.get("trained_energy_checkpoint_sha256"):
         raise ValueError("trained checkpoint digest differs from the training record")
-    if stat.S_IMODE(checkpoint_path.lstat().st_mode) & 0o077:
+    checkpoint_metadata = checkpoint_path.lstat()
+    if stat.S_IMODE(checkpoint_metadata.st_mode) & 0o077:
         raise ValueError("trained checkpoint must be owner-only")
+    if checkpoint_metadata.st_uid != _effective_uid():
+        raise ValueError(
+            "trained checkpoint must be owned by the current effective user"
+        )
     revalidate_regular_file(snapshot, label="trained energy checkpoint")
     return snapshot
 

@@ -215,6 +215,9 @@ parent throughout validation and the atomic directory rename.
 Protein training applies it to the workflow output root, generated run
 directory, checkpoint, and retained evaluation artifacts; stable snapshots
 also bind UID so ownership changes invalidate the run.
+The independent evaluation and portability replay gates require those retained
+artifacts and the selected trained checkpoint to be owned by their current
+effective UID before consuming them.
 The SDK client repeats that private-directory check before it initializes the
 license. Recovery receipts are synced to a private temporary file and atomically
 published without replacement; resume rejects public, non-regular, or symlinked

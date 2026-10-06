@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 import torch
 
+from examples.qdiffusion_kaiwu import qdiffusion_protein_evaluate as evaluation_module
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
     _load_training_record,
@@ -304,6 +305,21 @@ def test_verified_training_paths_rejects_public_artifact(tmp_path: Path) -> None
     paths["guided_fasta"].chmod(0o644)
 
     with pytest.raises(ValueError, match="must be owner-only: guided_fasta"):
+        _verified_training_paths(tmp_path, record)
+
+
+def test_verified_training_paths_rejects_foreign_owned_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record, paths = _training_artifacts(tmp_path)
+    monkeypatch.setattr(
+        evaluation_module,
+        "_effective_uid",
+        lambda: paths["guided_fasta"].stat().st_uid + 1,
+    )
+
+    with pytest.raises(ValueError, match="owned by the current effective user"):
         _verified_training_paths(tmp_path, record)
 
 
