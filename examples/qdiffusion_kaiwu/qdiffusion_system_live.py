@@ -33,6 +33,7 @@ from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
     build_provider_resource_gate,
     load_provider_resources,
+    provider_resource_valid_until,
     validate_provider_resource_gate,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
@@ -604,6 +605,21 @@ def main() -> None:
     )
     verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
 
+    provider_resources_checked_at = datetime.now(timezone.utc)
+    resources_ready, resource_reason = assess_provider_budget(
+        provider_resources,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+        now=provider_resources_checked_at,
+    )
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
+    provider_resource_gate = build_provider_resource_gate(
+        snapshot_sha256=provider_resources_sha256,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+        checked_at=provider_resources_checked_at,
+    )
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
     os.environ.pop("QBOSON_USER_ID", None)
@@ -612,6 +628,7 @@ def main() -> None:
         checkpoint_dir=arguments.checkpoint_dir,
         credentials=credentials,
         expected_version=arguments.expected_sdk_version,
+        submission_deadline=provider_resource_valid_until(provider_resources),
     )
     payload = run_live_system_probe(
         client=client,

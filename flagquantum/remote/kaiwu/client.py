@@ -12,6 +12,7 @@ import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -75,6 +76,7 @@ class KaiwuSDKClient:
         credentials: KaiwuCredentials | None = None,
         expected_version: str = _PINNED_SDK_VERSION,
         interval_minutes: int = 1,
+        submission_deadline: datetime | None = None,
     ) -> None:
         candidate = Path(checkpoint_dir).expanduser()
         if candidate.is_symlink() or not candidate.is_dir():
@@ -106,6 +108,12 @@ class KaiwuSDKClient:
             os.close(descriptor)
         if type(interval_minutes) is not int or interval_minutes < 1:
             raise ValueError("interval_minutes must be an integer of at least one")
+        if submission_deadline is not None and (
+            not isinstance(submission_deadline, datetime)
+            or submission_deadline.tzinfo is None
+            or submission_deadline.utcoffset() != timedelta(0)
+        ):
+            raise ValueError("submission_deadline must be an aware UTC datetime")
         if expected_version != _PINNED_SDK_VERSION:
             raise ValueError(
                 "KaiwuSDKClient supports only the pinned Kaiwu 1.3.1 contract"
@@ -145,6 +153,7 @@ class KaiwuSDKClient:
             checkpoint_metadata.st_ino,
         )
         self._interval_minutes = interval_minutes
+        self._submission_deadline = submission_deadline
         self._environment = environment
         self._optimizers: dict[str, Any] = {}
         self._solutions: dict[str, tuple[tuple[int, ...], ...]] = {}
@@ -354,6 +363,13 @@ class KaiwuSDKClient:
         requested_samples: int,
         project_no: str | None,
     ) -> KaiwuTaskReceipt:
+        if (
+            self._submission_deadline is not None
+            and datetime.now(timezone.utc) > self._submission_deadline
+        ):
+            raise KaiwuSDKError(
+                "Kaiwu submission deadline expired before provider use"
+            )
         receipt = new_receipt(
             task_name=task_name,
             matrix=matrix,

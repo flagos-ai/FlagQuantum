@@ -46,6 +46,7 @@ from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
     build_provider_resource_gate,
     load_provider_resources,
+    provider_resource_valid_until,
     validate_provider_resource_gate,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
@@ -722,6 +723,21 @@ def main() -> None:
     os.environ["HF_DATASETS_OFFLINE"] = "1"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     workflow = _load_pinned_workflow(args.plugin_root)
+    provider_resources_checked_at = datetime.now(timezone.utc)
+    resources_ready, resource_reason = assess_provider_budget(
+        provider_resources,
+        mode="sampling",
+        required_calls=config["training"]["remote_call_budget_per_seed"],
+        now=provider_resources_checked_at,
+    )
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
+    provider_resource_gate = build_provider_resource_gate(
+        snapshot_sha256=provider_resources_sha256,
+        mode="sampling",
+        required_calls=config["training"]["remote_call_budget_per_seed"],
+        checked_at=provider_resources_checked_at,
+    )
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
     os.environ.pop("QBOSON_USER_ID", None)
@@ -730,6 +746,7 @@ def main() -> None:
         checkpoint_dir=args.sdk_checkpoint_dir,
         credentials=credentials,
         expected_version=args.expected_sdk_version,
+        submission_deadline=provider_resource_valid_until(provider_resources),
     )
     sampler = KaiwuSampler(
         client=client,

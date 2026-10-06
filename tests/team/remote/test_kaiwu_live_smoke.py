@@ -4,6 +4,7 @@ import json
 import os
 import sys
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -680,6 +681,11 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
         smoke_module,
         "assess_provider_resources",
         lambda record: (True, "provider_smoke_resources_available"),
+    )
+    monkeypatch.setattr(
+        smoke_module,
+        "provider_resource_valid_until",
+        lambda record: datetime(2026, 10, 7, tzinfo=timezone.utc),
     )
     monkeypatch.setattr(
         sys,

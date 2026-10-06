@@ -897,6 +897,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   executable records. Offline validation recomputes each budget decision at its
   retained check time and rejects remote receipts that predate the check or
   follow the snapshot's validity window.
+- All four quota-consuming launchers now bind the validated snapshot's
+  `valid_until` timestamp to `KaiwuSDKClient.submission_deadline`. The Remote
+  boundary refuses a new submit after that UTC instant before it creates a
+  recovery bundle or invokes the SDK, while explicit restore, status, and
+  result retrieval for an existing identity remain available.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

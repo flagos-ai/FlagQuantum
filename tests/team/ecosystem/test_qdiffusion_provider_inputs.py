@@ -68,7 +68,45 @@ def test_budgeted_live_cli_requires_fresh_resources_before_credentials(
     assert main_source.index("load_provider_resources(") < main_source.index(
         "resolve_kaiwu_credentials()"
     )
-    assert main_source.index("assess_provider_budget(") < main_source.index(
+    assert main_source.count("assess_provider_budget(") == 2
+    assert main_source.rindex("assess_provider_budget(") < main_source.index(
         "resolve_kaiwu_credentials()"
     )
     assert 'mode="sampling"' in main_source
+
+
+def test_smoke_rechecks_resources_before_credentials() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "qboson_live_smoke.py"
+    ).read_text(encoding="utf-8")
+    main_source = source[source.index("def main() -> None:") :]
+
+    assert main_source.count("assess_provider_resources(") == 2
+    assert main_source.rindex("assess_provider_resources(") < main_source.index(
+        "resolve_kaiwu_credentials()"
+    )
+
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    (
+        "qboson_live_smoke",
+        "qdiffusion_system_live",
+        "qdiffusion_protein_training_live",
+        "qdiffusion_portability_replay_live",
+    ),
+)
+def test_live_cli_enforces_snapshot_expiry_at_the_sdk_submission_boundary(
+    entrypoint: str,
+) -> None:
+    source = (
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / f"{entrypoint}.py"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        "submission_deadline=provider_resource_valid_until(provider_resources)"
+        in source
+    )

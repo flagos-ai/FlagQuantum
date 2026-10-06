@@ -356,7 +356,9 @@ guards; the snapshots remain observations rather than provider reservations.
 Each record retains a closed gate containing the snapshot digest, UTC check
 time, Sampling mode, and declared ceiling. Final validation replays that check
 against the copied snapshot and rejects a receipt that predates its gate or
-follows the snapshot's validity window.
+follows the snapshot's validity window. The live launchers also bind that
+window's `valid_until` value to the SDK client's submission deadline, so a late
+new task fails before provider use while recovery and retrieval remain usable.
 
 After training returns, the command rehashes the frozen config, FASTA, base
 checkpoint/tokenizer tree, and ESM2 checkpoint before publishing its record.

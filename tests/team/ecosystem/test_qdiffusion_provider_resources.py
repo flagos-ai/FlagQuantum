@@ -13,6 +13,7 @@ from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_resources,
     build_provider_resource_gate,
     load_provider_resources,
+    provider_resource_valid_until,
     validate_provider_resource_gate,
     validate_provider_resources,
 )
@@ -56,6 +57,12 @@ def test_resource_snapshot_passes_only_with_both_smoke_modes() -> None:
 
     assert ready is True
     assert reason == "provider_smoke_resources_available"
+
+
+def test_resource_snapshot_exposes_its_validated_submission_deadline() -> None:
+    assert provider_resource_valid_until(validate_provider_resources(_record())) == (
+        datetime(2026, 10, 7, tzinfo=timezone.utc)
+    )
 
 
 def test_resource_snapshot_blocks_the_observed_zero_sampling_state() -> None:

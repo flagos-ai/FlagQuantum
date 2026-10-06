@@ -70,6 +70,12 @@ the client with the same task name, matrix, mode, sample count, and project
 reuses the original receipt timestamp and recovery path; it must not create a
 second local task identity.
 
+Callers may bind an aware UTC `submission_deadline` to the pinned client. A new
+`submit` fails through a stable owned error after that instant, before a
+recovery bundle or SDK optimizer is created. The deadline does not block
+status, result retrieval, or explicit restoration of an already retained task
+identity, so resource-snapshot expiry cannot turn recovery into resubmission.
+
 The generic lifecycle independently validates every restored receipt before
 calling a client: runtime field types, exact matrix identity, task mode,
 mode-specific sample limits, project identity, provider identity strings, and

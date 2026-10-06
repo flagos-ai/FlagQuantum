@@ -107,6 +107,13 @@ def load_provider_resources(path: Path) -> tuple[dict[str, Any], str]:
     return record, hashlib.sha256(raw).hexdigest()
 
 
+def provider_resource_valid_until(record: dict[str, Any]) -> datetime:
+    """Return the validated UTC expiry bound for submission enforcement."""
+
+    validate_provider_resources(record)
+    return _parse_utc_timestamp(record["valid_until"], label="valid_until")
+
+
 def assess_provider_resources(
     record: dict[str, Any], *, now: datetime | None = None
 ) -> tuple[bool, str]:
@@ -222,6 +229,7 @@ __all__ = (
     "assess_provider_resources",
     "build_provider_resource_gate",
     "load_provider_resources",
+    "provider_resource_valid_until",
     "validate_provider_resource_gate",
     "validate_provider_resources",
 )

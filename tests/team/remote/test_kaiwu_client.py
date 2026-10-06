@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Event, Lock
 from types import SimpleNamespace
@@ -63,7 +64,9 @@ def _reset_fake() -> None:
 
 
 def _client(
-    monkeypatch: pytest.MonkeyPatch, checkpoint_dir: Path
+    monkeypatch: pytest.MonkeyPatch,
+    checkpoint_dir: Path,
+    **client_options: object,
 ) -> tuple[KaiwuSDKClient, object]:
     manager = SimpleNamespace(save_dir="original")
     module = SimpleNamespace(
@@ -78,7 +81,10 @@ def _client(
     monkeypatch.setattr(
         client_module, "_preflight_kaiwu_sdk", Mock(return_value=module)
     )
-    return KaiwuSDKClient(checkpoint_dir=checkpoint_dir), manager
+    return KaiwuSDKClient(
+        checkpoint_dir=checkpoint_dir,
+        **client_options,
+    ), manager
 
 
 def test_client_rejects_unsafe_checkpoint_directory_before_license(
@@ -117,6 +123,45 @@ def test_client_rejects_an_unpinned_sdk_lane_before_license(
         KaiwuSDKClient(checkpoint_dir=tmp_path, expected_version="1.4.1")
 
     initializer.assert_not_called()
+
+
+def test_client_rejects_a_non_utc_submission_deadline_before_license(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    initializer = Mock()
+    monkeypatch.setattr(
+        client_module, "_initialize_preflighted_kaiwu_license", initializer
+    )
+
+    with pytest.raises(ValueError, match="aware UTC"):
+        KaiwuSDKClient(
+            checkpoint_dir=tmp_path,
+            submission_deadline=datetime(2026, 10, 6),
+        )
+
+    initializer.assert_not_called()
+
+
+def test_expired_submission_deadline_blocks_before_recovery_or_sdk_use(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client, _ = _client(
+        monkeypatch,
+        tmp_path,
+        submission_deadline=datetime.now(timezone.utc) - timedelta(seconds=1),
+    )
+
+    with pytest.raises(KaiwuSDKError, match="deadline expired"):
+        submit_kaiwu_task(
+            _MATRIX,
+            client=client,
+            task_name="expired-resource-snapshot",
+            mode="sampling",
+            requested_samples=10,
+        )
+
+    assert _FakeOptimizer.solve_calls == 0
+    assert not any(tmp_path.iterdir())
 
 
 @pytest.mark.parametrize("missing", ("checkpoint_manager", "optimizer"))
@@ -366,7 +411,7 @@ def test_client_maps_optimization_to_pinned_1_3_1_quota_mode(
     assert _FakeOptimizer.created_options[0]["task_mode"] == "quota"
 
 
-def test_restore_queries_same_identity_without_client_submit(
+def test_restore_queries_same_identity_after_submission_deadline(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     first_client, _ = _client(monkeypatch, tmp_path)
@@ -382,7 +427,11 @@ def test_restore_queries_same_identity_without_client_submit(
     original_options = dict(_FakeOptimizer.created_options[0])
 
     _FakeOptimizer.created_options = []
-    restored_client, _ = _client(monkeypatch, tmp_path)
+    restored_client, _ = _client(
+        monkeypatch,
+        tmp_path,
+        submission_deadline=datetime.now(timezone.utc) - timedelta(seconds=1),
+    )
     restored = restore_kaiwu_job(receipt_path, client=restored_client)
     result = restored.result()
 

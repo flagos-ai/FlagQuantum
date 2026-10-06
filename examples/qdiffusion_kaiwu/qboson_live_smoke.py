@@ -24,6 +24,7 @@ from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identif
 from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_resources,
     load_provider_resources,
+    provider_resource_valid_until,
 )
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
@@ -358,6 +359,9 @@ def main() -> None:
         arguments.environment_lock
     )
     verify_approved_kaiwu_distribution(environment_record, sdk_approval)
+    resources_ready, resource_reason = assess_provider_resources(provider_resources)
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
     os.environ.pop("QBOSON_USER_ID", None)
@@ -366,6 +370,7 @@ def main() -> None:
         checkpoint_dir=arguments.checkpoint_dir,
         credentials=credentials,
         expected_version=arguments.expected_sdk_version,
+        submission_deadline=provider_resource_valid_until(provider_resources),
     )
     payload = run_live_smoke(
         client=client,
