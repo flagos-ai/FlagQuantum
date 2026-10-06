@@ -8,7 +8,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.algorithms.spsa import SPSAOptimizer
-from flagquantum.compiler import Layout
+from flagquantum.compiler import Layout, optimize
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
     import_openqasm_to_ir,
@@ -41,6 +41,7 @@ ENTRIES = (
     gather_distributed_statevector,
     import_openqasm,
     import_openqasm_to_ir,
+    optimize,
     planner.plan,
     recommend_simulator,
     run_cirq,

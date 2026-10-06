@@ -20,6 +20,7 @@ from benchmarks.compiler_lookahead_swap import (
     Configuration,
     run_benchmark,
 )
+from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -62,6 +63,10 @@ def test_measurement_is_classified_as_a_local_microbenchmark(payload: dict) -> N
     assert payload["distribution_semantics"] == "single_device_fast_path"
     assert payload["scalability_claim_allowed"] is False
     assert payload["reference_algorithm"] == "qiskit_lookahead_swap_beam_search"
+    # The retained counts are read after post-routing optimization, so the
+    # level that ran is part of the reading rather than a default that
+    # happened to be in force when the number was taken.
+    assert payload["optimization_level"] == DEFAULT_OPTIMIZATION_LEVEL
 
 
 def test_measurement_covers_the_declared_basis(payload: dict) -> None:

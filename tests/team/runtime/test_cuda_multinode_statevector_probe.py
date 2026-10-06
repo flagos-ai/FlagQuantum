@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+from tools.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
@@ -19,6 +22,12 @@ _SPEC = importlib.util.spec_from_file_location("cuda_multinode_probe", _SCRIPT)
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
+
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement check, so a probe constant that drifted from the committed
+#: manifest fails at import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
 
 
 def test_the_launched_shape_is_the_only_one_the_probe_runs(
@@ -72,7 +81,9 @@ def test_network_observation_rejects_a_missing_interface(
         _MODULE._network_observation(log)
 
 
-def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> None:
+def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent(
+    manifest_digest_at: Callable[[str, str], str],
+) -> None:
     payload = json.loads(_A800_ARTIFACT.read_text(encoding="utf-8"))
     evidence = payload["evidence"]
     encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
@@ -82,16 +93,63 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
     assert evidence["status"] == "passed"
     assert evidence["scope"] == {
+        "cross_shard_gate_fraction": _MODULE.CROSS_SHARD_GATE_FRACTION,
+        "depth": _MODULE.DEPTH,
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
-        "execution": "forward_backward_optimizer_and_checkpoint_resume",
+        "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+        "exported_product": "full_amplitude_vector",
         "local_world_size": 1,
-        "n_wires": 5,
+        "n_wires": _MODULE.N_WIRES,
         "node_count": 2,
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         "world_size": 2,
     }
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The forward leg runs the release contract's own narrowest matched-speed
+    # configuration rather than a hand-written circuit, and the artifact says so
+    # by naming the frozen file and the digest of the bytes it read. The declared
+    # and bound leaf counts have to agree, because the point of the observation
+    # is that the parameterization is a measured fact rather than a declaration
+    # beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert (
+        frozen["manifest"] == "benchmarks/manifests/statevector_speed_workload_v2.json"
+    )
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 22
+    assert frozen["depth"] == _MODULE.DEPTH == 8
+    assert frozen["cross_shard_gate_fraction"] == _MODULE.CROSS_SHARD_GATE_FRACTION
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 176
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    # Every field but the digest, which is scoped to the revision the probe
+    # ran at and is resolved below, still has to be what the probe observes
+    # from the contract checked out here.
+    assert {
+        key: value for key, value in frozen.items() if key != "manifest_sha256"
+    } == {
+        key: value
+        for key, value in _ARTIFACT_FROZEN_CIRCUIT.items()
+        if key != "manifest_sha256"
+    }
+    # The recorded digest is the contract as of the revision the probe ran at,
+    # which is the file it actually read, rather than whatever happens to be
+    # checked out beside it now. The current contract is checked separately:
+    # loading this module runs the probe's own observation of it, which
+    # cross-checks the frozen ladder against the ladder file it names. Answering
+    # it needs that commit, so a lane whose clone never fetched the revision
+    # skips this one assertion instead of reading the clone as a mismatch; the
+    # full-history quality job is where it reaches a verdict.
+    try:
+        recorded_digest = manifest_digest_at(
+            evidence["environment"]["source_revision"], frozen["manifest"]
+        )
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the recorded contract digest needs full history: {error}")
+    assert frozen["manifest_sha256"] == recorded_digest
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -133,7 +191,14 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert {item["rank"] for item in ranks} == {0, 1}
     assert len({item["hostname_sha256"] for item in ranks}) == 2
     assert len({item["device_uuid"] for item in ranks}) == 2
-    assert all(item["rank_ownership"]["local_amplitudes"] == 16 for item in ranks)
+    # Half of the amplitude vector each, which at 22 wires is 2**21 rather than
+    # the handful of entries the five-wire circuit held. The ownership is
+    # recomputed from the width the scope declares, so a re-recorded artifact at
+    # another width fails here instead of agreeing by coincidence.
+    expected_local = 2 ** (_MODULE.N_WIRES - 1)
+    assert all(
+        item["rank_ownership"]["local_amplitudes"] == expected_local for item in ranks
+    )
     assert all(item["inter_node_communication_count"] > 0 for item in ranks)
     assert all(item["inter_node_communication_bytes"] > 0 for item in ranks)
     # One node per rank is the placement the whole artifact is about. If the
@@ -163,15 +228,15 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     # A checkpoint per rank, on a filesystem both nodes mounted.
     assert len(training["checkpoint_files"]) >= 2
 
-    # The boundary is exactly these blockers. Each of the three the pair used
-    # to carry -- an untested fabric, an unmeasured workload, an unaudited
-    # staging path -- is now retired by the observation that justifies it, so a
-    # reader cannot find it here and cannot find it silently missing either.
+    # The boundary is exactly this blocker. Each of the five the pair used to
+    # carry -- an untested fabric, an unmeasured workload, an unaudited staging
+    # path, a full-state readout taken only to check an answer, and a toy
+    # parameterization -- is now retired by the observation that justifies it,
+    # so a reader cannot find it here and cannot find it silently missing
+    # either. What is left is the pair's own scope, which no measurement on this
+    # hardware can retract.
     assert sorted(evidence["claim_blockers"]) == [
-        "host_staging_in_measured_region",
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_state_gather",
     ]
 
     # The measured leg, and the two properties that make it a measurement: the
@@ -192,15 +257,18 @@ def test_checked_in_a800_multinode_evidence_is_narrow_and_self_consistent() -> N
     assert performance["minimum_seconds"] <= performance["median_seconds"]
     assert performance["median_seconds"] <= performance["maximum_seconds"]
 
-    # The staging audit ran, and it found transfers inside the region it
-    # profiled. That is a finding about the workload, so it keeps a blocker --
-    # but not the one that says nobody looked.
+    # The staging audit ran, and on this workload it found no explicit host
+    # transfer inside the region it profiled, so the blocker that said part of
+    # each sample was host staging is retired by that audit rather than by
+    # relabelling the region. The audit still has to have happened: an
+    # unprofiled or silently empty region would leave `hidden_host_staging_not_audited`
+    # in place, which the next test drives directly.
     staging = observations["host_staging"]
     assert staging["profiled"] is True
     assert staging["profiled_workload"] == _MODULE.MEASUREMENT
-    assert staging["host_transfer_observed"] is True
-    assert staging["host_transfer_events"]
-    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+    assert staging["profiler_event_count"] > 0
+    assert staging["host_transfer_observed"] is False
+    assert staging["host_transfer_events"] == []
     # The two blockers this probe exists to remove must be gone: a forward-only
     # artifact that still carried them would not support a training claim.
     assert "distributed_gradient_not_tested" not in evidence["claim_blockers"]
@@ -239,6 +307,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
         "export": {
             "measurement": _MODULE.EXPORT_MEASUREMENT,
             "product": "full_amplitude_vector",
@@ -275,20 +344,30 @@ def test_every_retracted_blocker_needs_its_own_observation(
         return set(payload["evidence"]["claim_blockers"])
 
     complete = blockers()
-    # The pair and the circuit are declared boundaries, so nothing this run does
-    # can retract them.
-    assert {
-        "two_node_pair_only_no_wider_topology",
-        "toy_circuit_parameters_only",
-    } <= complete
-    assert (
-        complete
-        - {
-            "two_node_pair_only_no_wider_topology",
-            "toy_circuit_parameters_only",
-        }
-        == set()
-    )
+    # The pair of hosts is a declared boundary, so nothing this run does can
+    # retract it. The circuit used to be declared the same way; it is now a
+    # measured fact, because the run records the configuration it bound and the
+    # leaf count the built circuit reported.
+    assert "two_node_pair_only_no_wider_topology" in complete
+    assert complete - {"two_node_pair_only_no_wider_topology"} == set()
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 175},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 176.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in complete
 
     # The full-state gather blocker turns on whether a materialization the
     # workload needs was recorded. A validation gather is not one, so an absent

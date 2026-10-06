@@ -129,11 +129,21 @@ def canonicalize_rank_owned_mps(
     local_bytes += state.bsz * torch.empty((), dtype=torch.float64).element_size()
     local_bytes += torch.empty((), dtype=torch.float64).element_size()
     device = _reference(state).device
-    counters = torch.tensor(
-        [local_messages, local_bytes, local_temporary], dtype=torch.int64, device=device
+    # The three counters are host-known integers, so they are scaled onto the
+    # device rather than written into a device vector field by field. The
+    # gathered table is then read back once instead of three times per rank, so
+    # the reporting this function does costs one device-to-host copy rather
+    # than one per field per rank.
+    counters = torch.stack(
+        [
+            torch.ones((), dtype=torch.int64, device=device) * local_messages,
+            torch.ones((), dtype=torch.int64, device=device) * local_bytes,
+            torch.ones((), dtype=torch.int64, device=device) * local_temporary,
+        ]
     )
     gathered = [torch.zeros_like(counters) for _ in range(state.world_size)]
     dist.all_gather(gathered, counters)
+    table = torch.stack(gathered).tolist()
     center_owner = _owner(state, target)
     if state.rank == center_owner:
         norms = mps_center_norms(state.local_tensors[target])
@@ -145,9 +155,9 @@ def canonicalize_rank_owned_mps(
         center=target,
         residual=_local_mixed_residual(state, target),
         state_norms=tuple(float(value) for value in norms.cpu()),
-        messages_by_rank=tuple(int(value[0]) for value in gathered),
-        bytes_by_rank=tuple(int(value[1]) for value in gathered),
-        temporary_bytes_by_rank=tuple(int(value[2]) for value in gathered),
+        messages_by_rank=tuple(int(row[0]) for row in table),
+        bytes_by_rank=tuple(int(row[1]) for row in table),
+        temporary_bytes_by_rank=tuple(int(row[2]) for row in table),
     )
 
 

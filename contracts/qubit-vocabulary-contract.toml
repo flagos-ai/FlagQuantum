@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 226
+measured_private = 225
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
