@@ -17,6 +17,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.qboson_live_smoke import SCHEMA as PROVIDER_SMOKE_SCHEMA
 from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
     SCHEMA as PORTABILITY_SCHEMA,
 )
@@ -30,6 +31,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     SCHEMA as SYSTEM_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
+from examples.qdiffusion_kaiwu.sdk_approval import SCHEMA as SDK_APPROVAL_SCHEMA
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_SCHEMA,
 )
@@ -602,6 +604,8 @@ def main() -> None:
     parser.add_argument("--primary-source-preflight", required=True, type=Path)
     parser.add_argument("--replay-source-preflight", required=True, type=Path)
     parser.add_argument("--transfer-manifest", required=True, type=Path)
+    parser.add_argument("--sdk-approval", required=True, type=Path)
+    parser.add_argument("--provider-smoke", required=True, type=Path)
     parser.add_argument("--artifact-preflight", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
     parser.add_argument("--training-record", action="append", required=True, type=Path)
@@ -618,6 +622,8 @@ def main() -> None:
         args.primary_source_preflight,
         args.replay_source_preflight,
         args.transfer_manifest,
+        args.sdk_approval,
+        args.provider_smoke,
         args.artifact_preflight,
         args.portability,
         *args.training_record,
@@ -645,6 +651,8 @@ def main() -> None:
     transfer_manifest = _load_component(
         args.transfer_manifest, TRANSFER_MANIFEST_SCHEMA
     )
+    sdk_approval = _load_component(args.sdk_approval, SDK_APPROVAL_SCHEMA)
+    provider_smoke = _load_component(args.provider_smoke, PROVIDER_SMOKE_SCHEMA)
     artifact_preflight = _load_component(
         args.artifact_preflight, ARTIFACT_PREFLIGHT_SCHEMA
     )
@@ -672,6 +680,8 @@ def main() -> None:
         "primary-source-preflight.json": args.primary_source_preflight,
         "replay-source-preflight.json": args.replay_source_preflight,
         "transfer-manifest.json": args.transfer_manifest,
+        "sdk-approval.json": args.sdk_approval,
+        "provider-smoke.json": args.provider_smoke,
         "artifact-preflight.json": args.artifact_preflight,
         "portability.json": args.portability,
     }
@@ -685,6 +695,8 @@ def main() -> None:
         "primary-source-preflight.json": primary_source_preflight[1],
         "replay-source-preflight.json": replay_source_preflight[1],
         "transfer-manifest.json": transfer_manifest[1],
+        "sdk-approval.json": sdk_approval[1],
+        "provider-smoke.json": provider_smoke[1],
         "artifact-preflight.json": artifact_preflight[1],
         "portability.json": portability[1],
     }

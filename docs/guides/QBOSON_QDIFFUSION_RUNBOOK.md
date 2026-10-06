@@ -694,6 +694,8 @@ python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --primary-source-preflight /absolute/evidence/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /absolute/evidence/jp-a800-172-extraction-preflight.json \
   --transfer-manifest /absolute/evidence/flagquantum-qboson-a800-bundle.manifest.json \
+  --sdk-approval /absolute/private-evidence/sdk-approval.json \
+  --provider-smoke /absolute/private-evidence/qboson-smoke-attempt-001.json \
   --artifact-preflight /absolute/evidence/artifact-preflight.json \
   --portability /absolute/evidence/jp-a800-172-portability.json \
   --training-record /absolute/evidence/seed-1701-training.json \

@@ -680,6 +680,46 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
         "1" * 64: _source_preflight("jp-a800-171", "a" * 64),
         "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
         "a" * 64: _transfer_manifest(),
+        "d" * 64: config["kaiwu_sdk"],
+        "e" * 64: {
+            "schema": "flagquantum.qboson_kaiwu_live_smoke",
+            "version": "1.0",
+            "recorded_at": "2026-10-06T00:00:00+00:00",
+            "transport": "kaiwu_cim",
+            "real_provider_evidence": True,
+            "qboson_hardware_used": True,
+            "project_no": "CPQC-test",
+            "environment_lock_sha256": config["software"][
+                "environment_lock_sha256"
+            ],
+            "sdk_approval_sha256": "d" * 64,
+            "tasks": [
+                {
+                    "task_name": f"smoke-{mode}",
+                    "task_mode": mode,
+                    "matrix_sha256": "7" * 64,
+                    "matrix_size": 2,
+                    "requested_samples": config["requested_samples"],
+                    "returned_samples": config["requested_samples"],
+                    "provider_task_id": f"task-{mode}",
+                    "provider_target": "SPQC-provider",
+                    "raw_status": "completed",
+                    "fallback_occurred": False,
+                    "minimum_energy": -1.0,
+                    "maximum_energy": 1.0,
+                    "provider_task_id_available": True,
+                    "provider_target_available": True,
+                }
+                for mode in ("optimization", "sampling")
+            ],
+            "run_completed": True,
+            "failure": None,
+            "live_provider_smoke_passed": True,
+            "provider_identity_complete": True,
+            "hardware_acceptance": True,
+            "fallback_occurred": False,
+            "secrets_redacted": True,
+        },
     }
     schemas = (
         "flagquantum.qboson_qdiffusion_system_live_probe",

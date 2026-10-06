@@ -24,6 +24,12 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.qboson_live_smoke import (
+    SCHEMA as PROVIDER_SMOKE_COMPONENT_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    SCHEMA as SDK_APPROVAL_COMPONENT_SCHEMA,
+)
 from examples.qdiffusion_kaiwu.sdk_approval import (
     validate_sdk_approval_record,
     verify_approved_kaiwu_distribution,
@@ -1514,6 +1520,137 @@ def _validate_evaluation_component(
                 errors.append(f"{label}.{field}: invalid sequences were observed")
 
 
+def _validate_provider_smoke_component(
+    record: dict[str, Any],
+    *,
+    config: dict[str, Any],
+    sdk_approval_sha256: str,
+    errors: list[str],
+) -> None:
+    """Prove the retained Phase 2 optimization and sampling smoke passed."""
+
+    label = "provider smoke"
+    software = _mapping(config.get("software"), "config.software", errors)
+    if record.get("environment_lock_sha256") != software.get(
+        "environment_lock_sha256"
+    ):
+        errors.append(f"{label}: environment lock identity mismatch")
+    if record.get("sdk_approval_sha256") != sdk_approval_sha256:
+        errors.append(f"{label}: SDK approval identity mismatch")
+    required_true = (
+        "real_provider_evidence",
+        "qboson_hardware_used",
+        "run_completed",
+        "live_provider_smoke_passed",
+        "provider_identity_complete",
+        "hardware_acceptance",
+        "secrets_redacted",
+    )
+    for field in required_true:
+        if record.get(field) is not True:
+            errors.append(f"{label}: {field} is not proven")
+    if record.get("transport") != "kaiwu_cim":
+        errors.append(f"{label}: transport is not kaiwu_cim")
+    if record.get("fallback_occurred") is not False:
+        errors.append(f"{label}: fallback must be explicitly false")
+    if record.get("failure") is not None:
+        errors.append(f"{label}: retained failure is not empty")
+    if not _canonical_printable_identifier(record.get("project_no")):
+        errors.append(f"{label}: project number is invalid")
+    smoke_time: datetime | None = None
+    try:
+        smoke_time = datetime.fromisoformat(
+            str(record.get("recorded_at")).replace("Z", "+00:00")
+        )
+        if smoke_time.utcoffset() != timedelta(0):
+            raise ValueError
+    except (TypeError, ValueError):
+        errors.append(f"{label}: recorded_at must be an aware UTC timestamp")
+    if smoke_time is not None:
+        for timestamp, timestamp_label in (
+            (config.get("preregistered_at"), "frozen config"),
+            (
+                _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors).get(
+                    "rights_reviewed_at"
+                ),
+                "SDK rights review",
+            ),
+        ):
+            try:
+                prerequisite = datetime.fromisoformat(
+                    str(timestamp).replace("Z", "+00:00")
+                )
+            except (TypeError, ValueError):
+                continue
+            if prerequisite.utcoffset() == timedelta(0) and smoke_time < prerequisite:
+                errors.append(f"{label}: predates the {timestamp_label}")
+
+    tasks = record.get("tasks")
+    if not isinstance(tasks, list) or len(tasks) != 2:
+        errors.append(f"{label}: exactly two task results are required")
+        return
+    expected_modes = ("optimization", "sampling")
+    task_ids: list[str] = []
+    targets: set[str] = set()
+    matrix_digests: set[str] = set()
+    for index, (task, expected_mode) in enumerate(
+        zip(tasks, expected_modes, strict=True)
+    ):
+        task_record = _mapping(task, f"{label}.tasks[{index}]", errors)
+        if task_record.get("task_mode") != expected_mode:
+            errors.append(f"{label}: task {index} mode differs")
+        for field in ("task_name", "provider_task_id", "provider_target"):
+            if not _canonical_printable_identifier(task_record.get(field)):
+                errors.append(f"{label}: task {index} {field} is invalid")
+        task_id = task_record.get("provider_task_id")
+        target = task_record.get("provider_target")
+        if isinstance(task_id, str):
+            task_ids.append(task_id)
+        if isinstance(target, str):
+            targets.add(target)
+        if task_record.get("provider_task_id_available") is not True:
+            errors.append(f"{label}: task {index} provider task ID is unavailable")
+        if task_record.get("provider_target_available") is not True:
+            errors.append(f"{label}: task {index} provider target is unavailable")
+        if task_record.get("fallback_occurred") is not False:
+            errors.append(f"{label}: task {index} fallback is not false")
+        matrix_digest = task_record.get("matrix_sha256")
+        if (
+            not isinstance(matrix_digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", matrix_digest) is None
+        ):
+            errors.append(f"{label}: task {index} matrix digest is invalid")
+        else:
+            matrix_digests.add(matrix_digest)
+        if task_record.get("matrix_size") != 2:
+            errors.append(f"{label}: task {index} matrix size differs")
+        if task_record.get("requested_samples") != config.get("requested_samples"):
+            errors.append(f"{label}: task {index} sample count differs from config")
+        returned = task_record.get("returned_samples")
+        if returned != task_record.get("requested_samples"):
+            errors.append(f"{label}: task {index} returned sample count is invalid")
+        raw_status = task_record.get("raw_status")
+        if not isinstance(raw_status, str) or raw_status.strip().lower() not in {
+            "finished",
+            "completed",
+            "done",
+            "success",
+            "succeed",
+            "succeeded",
+        }:
+            errors.append(f"{label}: task {index} did not reach success")
+        for field in ("minimum_energy", "maximum_energy"):
+            _finite_number(
+                task_record.get(field), f"{label}.tasks[{index}].{field}", errors
+            )
+    if len(task_ids) != len(set(task_ids)):
+        errors.append(f"{label}: provider task IDs are not unique")
+    if len(targets) != 1:
+        errors.append(f"{label}: provider targets are inconsistent")
+    if len(matrix_digests) != 1:
+        errors.append(f"{label}: task matrix identities are inconsistent")
+
+
 def _validate_component_bundle(
     component_payloads: dict[str, dict[str, Any]],
     *,
@@ -1528,6 +1665,8 @@ def _validate_component_bundle(
     seeds = config.get("seeds", [])
     expected_schema_counts = {
         ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA: 1,
+        SDK_APPROVAL_COMPONENT_SCHEMA: 1,
+        PROVIDER_SMOKE_COMPONENT_SCHEMA: 1,
         SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
         TRANSFER_MANIFEST_SCHEMA: 1,
         SYSTEM_COMPONENT_SCHEMA: 2,
@@ -1552,6 +1691,8 @@ def _validate_component_bundle(
             payload.get("schema")
             not in (
                 ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
+                SDK_APPROVAL_COMPONENT_SCHEMA,
+                PROVIDER_SMOKE_COMPONENT_SCHEMA,
                 SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
                 TRANSFER_MANIFEST_SCHEMA,
             )
@@ -1560,6 +1701,31 @@ def _validate_component_bundle(
             errors.append(
                 f"component {digest}: frozen experiment config identity mismatch"
             )
+
+    sdk_approvals = [
+        (digest, payload)
+        for digest, payload in component_payloads.items()
+        if payload.get("schema") == SDK_APPROVAL_COMPONENT_SCHEMA
+    ]
+    sdk_approval_digest, sdk_approval = sdk_approvals[0]
+    approval_errors = validate_sdk_approval_record(
+        sdk_approval, label="retained sdk approval"
+    )
+    errors.extend(approval_errors)
+    if sdk_approval != config.get("kaiwu_sdk"):
+        errors.append("retained sdk approval differs from frozen configuration")
+
+    provider_smokes = [
+        payload
+        for payload in component_payloads.values()
+        if payload.get("schema") == PROVIDER_SMOKE_COMPONENT_SCHEMA
+    ]
+    _validate_provider_smoke_component(
+        provider_smokes[0],
+        config=config,
+        sdk_approval_sha256=sdk_approval_digest,
+        errors=errors,
+    )
 
     artifact_preflights = [
         (digest, payload)
@@ -1660,6 +1826,8 @@ def _validate_component_bundle(
     for digest, payload in component_payloads.items():
         if payload.get("schema") in (
             ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
+            SDK_APPROVAL_COMPONENT_SCHEMA,
+            PROVIDER_SMOKE_COMPONENT_SCHEMA,
             SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
             TRANSFER_MANIFEST_SCHEMA,
         ):
@@ -2168,7 +2336,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     primary = by_host[primary_host]
     replay = by_host[replay_host]
     if primary.get("component_bundle_required") is True:
-        expected_component_count = 7 + 2 * len(config.get("seeds", []))
+        expected_component_count = 9 + 2 * len(config.get("seeds", []))
         if len(component_payloads) != expected_component_count:
             errors.append(
                 "manifest: component bundle does not contain every source record"
@@ -2273,6 +2441,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             referenced_component_hashes.add(
                 portability_component.get("artifact_preflight_sha256")
             )
+        referenced_component_hashes.update(
+            digest
+            for digest, component in component_payloads.items()
+            if component.get("schema")
+            in (SDK_APPROVAL_COMPONENT_SCHEMA, PROVIDER_SMOKE_COMPONENT_SCHEMA)
+        )
         if referenced_component_hashes != set(component_payloads):
             errors.append(
                 "manifest: final records do not reference the exact component bundle"

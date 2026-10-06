@@ -601,6 +601,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   record and the replay-host portability record must reference that one copied
   preflight, whose config and four artifact identities are independently
   checked during offline final validation.
+- The standalone SDK approval and Phase 2 provider smoke are now required final
+  components. Offline validation requires the approval object to equal the
+  frozen config, binds its exact file digest into the smoke, and independently
+  proves one successful optimization plus one successful sampling task with
+  real provider task/target identities, no fallback, and the frozen environment
+  lock before Phase 4 evidence can pass.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

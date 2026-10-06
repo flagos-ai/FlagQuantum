@@ -356,6 +356,11 @@ directories are unavailable. The frozen protein-artifact preflight is also a
 required copied component: every training record and the portability replay
 must reference its exact digest, allowing offline revalidation of the dataset,
 checkpoint, tokenizer, and evaluation-model identities. The
+standalone SDK approval and successful Phase 2 provider smoke are required
+copied components as well. Final validation requires the approval to equal the
+frozen config decision, binds its byte digest to the smoke, and independently
+checks that the smoke retained one successful optimization task and one
+successful sampling task with real provider identities and no fallback. The
 inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed

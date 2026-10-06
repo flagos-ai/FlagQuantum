@@ -173,6 +173,7 @@ def run_live_smoke(
         "provider_identity_complete": provider_identity_complete,
         "hardware_acceptance": hardware_acceptance,
         "fallback_occurred": False,
+        "secrets_redacted": True,
         "limitations": [
             "This smoke test does not execute QDiffusion or A800 tensor work.",
             "Hardware acceptance remains false without provider-reported task and target identities.",
