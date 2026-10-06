@@ -19,7 +19,7 @@ import torch
 
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
-    _artifact_identity,
+    _artifact_identity_snapshot,
 )
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
@@ -263,12 +263,20 @@ def _local_esm2_model(
     helpers: Any,
     checkpoint_path: Path,
     device: torch.device,
+    snapshot: RegularFileSnapshot | None = None,
 ) -> tuple[Any, Any]:
     pretrained = getattr(getattr(helpers, "esm", None), "pretrained", None)
     loader = getattr(pretrained, "load_model_and_alphabet_local", None)
     if not callable(loader):
         raise RuntimeError("ESM does not expose load_model_and_alphabet_local")
+    checkpoint_snapshot = snapshot or capture_regular_file(
+        checkpoint_path, label="ESM2 checkpoint"
+    )
+    if checkpoint_snapshot.path != checkpoint_path:
+        raise ValueError("ESM2 checkpoint snapshot differs from loader path")
+    revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
     model, alphabet = loader(str(checkpoint_path))
+    revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
     return model.eval().to(device), alphabet
 
 
@@ -295,6 +303,7 @@ def evaluate_outputs(
     evaluation_checkpoint: Path,
     config: dict[str, Any],
     device: torch.device,
+    evaluation_checkpoint_snapshot: RegularFileSnapshot | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     paths = _bind_training_paths(paths)
     reference, baseline, guided = _read_aligned_records(
@@ -302,7 +311,15 @@ def evaluate_outputs(
         paths,
         expected_count=config["generation"]["sequence_count"],
     )
-    model, alphabet = _local_esm2_model(helpers, evaluation_checkpoint, device)
+    checkpoint_snapshot = evaluation_checkpoint_snapshot or capture_regular_file(
+        evaluation_checkpoint, label="ESM2 checkpoint"
+    )
+    model, alphabet = _local_esm2_model(
+        helpers,
+        evaluation_checkpoint,
+        device,
+        checkpoint_snapshot,
+    )
     evaluation = config["evaluation"]
     reference_embeddings = workflow.embed_sequences(
         reference,
@@ -354,6 +371,7 @@ def evaluate_outputs(
         metrics["invalid_sequence_count"] = _invalid_sequence_count(records)
         results.append(metrics)
     _revalidate_training_paths(paths)
+    revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
     return results[0], results[1]
 
 
@@ -438,8 +456,15 @@ def main() -> None:
     if "A800" not in gpu:
         parser.error("ESM2 evaluation requires an NVIDIA A800")
 
-    evaluation_digest, algorithm, file_count = _artifact_identity(args.evaluation_model)
+    (
+        evaluation_digest,
+        algorithm,
+        file_count,
+        evaluation_snapshot,
+    ) = _artifact_identity_snapshot(args.evaluation_model)
     if algorithm != "file-sha256-v1" or file_count != 1:
+        parser.error("ESM2 evaluation model must be one local checkpoint file")
+    if not isinstance(evaluation_snapshot, RegularFileSnapshot):
         parser.error("ESM2 evaluation model must be one local checkpoint file")
     if evaluation_digest != config["evaluation_model"]["sha256"]:
         parser.error("ESM2 checkpoint digest differs from frozen configuration")
@@ -452,16 +477,9 @@ def main() -> None:
         evaluation_checkpoint=args.evaluation_model,
         config=config,
         device=device,
+        evaluation_checkpoint_snapshot=evaluation_snapshot,
     )
-    postflight_digest, postflight_algorithm, postflight_file_count = _artifact_identity(
-        args.evaluation_model
-    )
-    if (
-        postflight_digest != evaluation_digest
-        or postflight_algorithm != algorithm
-        or postflight_file_count != file_count
-    ):
-        raise RuntimeError("ESM2 checkpoint changed during protein evaluation")
+    revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")
     _revalidate_training_paths(paths)
     payload = {
         "schema": SCHEMA,

@@ -407,3 +407,47 @@ def test_evaluate_outputs_uses_local_model_and_merges_sequence_metrics(
     assert guided["mean_cosine_distance"] == 0.4
     assert guided["identity_to_reference_mean"] == 0.8
     assert baseline["invalid_sequence_count"] == 0
+
+
+def test_evaluate_outputs_rejects_esm2_change_during_local_load(
+    tmp_path: Path,
+) -> None:
+    _, paths = _training_artifacts(tmp_path)
+    checkpoint = tmp_path / "esm2.pt"
+    checkpoint.write_bytes(b"esm2")
+
+    def load_then_mutate(path: str) -> tuple[_Model, object]:
+        assert path == str(checkpoint)
+        checkpoint.write_bytes(b"changed")
+        return _Model(), object()
+
+    helpers = SimpleNamespace(
+        esm=SimpleNamespace(
+            pretrained=SimpleNamespace(
+                load_model_and_alphabet_local=load_then_mutate
+            )
+        )
+    )
+
+    def read_fasta(path: Path) -> list[tuple[str, str]]:
+        lines = path.read_text(encoding="utf-8").strip().splitlines()
+        return [(lines[0][1:], lines[1])]
+
+    workflow = SimpleNamespace(
+        read_fasta_records=read_fasta,
+        normalize_sequence=lambda sequence: sequence,
+    )
+    config = {
+        "generation": {"sequence_count": 1},
+        "evaluation": {"batch_size": 1, "pooling": "mean", "pair_mode": "order"},
+    }
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        evaluate_outputs(
+            workflow=workflow,
+            helpers=helpers,
+            paths=paths,
+            evaluation_checkpoint=checkpoint,
+            config=config,
+            device=torch.device("cpu"),
+        )

@@ -674,6 +674,10 @@ consumption. Its trained energy checkpoint is likewise captured after matching
 the training record, checked immediately before and after the plugin weight
 loader, and rechecked after generation. Rehashing later is not used as a
 substitute for this in-run identity binding.
+The ESM2 checkpoint follows the same rule: the snapshot whose digest matches
+the frozen config is passed into the evaluator, brackets
+`load_model_and_alphabet_local`, and remains unchanged through metric
+calculation.
 
 Training rehashes the frozen config and all four input roles after the workflow
 returns. Replay repeats that check and also revalidates the transferred test

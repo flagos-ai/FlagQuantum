@@ -790,6 +790,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   record. The plugin weight loader is bracketed by identity checks, generation
   rechecks it again, and final postflight validates the original snapshot; a
   checkpoint swap cannot separate recorded identity from loaded weights.
+- ESM2 evaluation now passes the exact file snapshot whose digest matched the
+  frozen config into the local loader, revalidates it immediately before and
+  after `load_model_and_alphabet_local`, and checks it again after metrics. The
+  recorded evaluation-model identity and the weights actually loaded can no
+  longer come from different path instances.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
