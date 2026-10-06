@@ -125,6 +125,25 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
         "system: remote receipt 0 follows resource snapshot expiry"
     ]
 
+    record["provider_resource_gate"]["checked_at"] = (
+        "2026-10-04T23:59:00+00:00"
+    )
+    record["task_receipts"] = [
+        {"submitted_at": "2026-10-04T23:59:30+00:00"}
+    ]
+    errors = []
+    _validate_provider_resource_gate_binding(
+        record,
+        label="system",
+        provider_resources={"a" * 64: snapshot},
+        recorded_at=datetime(2026, 10, 5, 1, tzinfo=timezone.utc),
+        errors=errors,
+    )
+
+    assert (
+        "system: remote receipt 0 predates resource snapshot capture" in errors
+    )
+
 
 def test_provider_smoke_tasks_cannot_predate_the_resource_snapshot() -> None:
     config = _config()

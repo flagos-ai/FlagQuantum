@@ -783,6 +783,7 @@ def _validate_provider_resource_gate_binding(
         return
     if not ready:
         errors.append(f"{label}: provider resource gate failed: {reason}")
+    snapshot_captured_at = _parse_timestamp(snapshot.get("captured_at"))
     snapshot_valid_until = _parse_timestamp(snapshot.get("valid_until"))
     receipts = record.get("task_receipts")
     if isinstance(receipts, list):
@@ -797,6 +798,15 @@ def _validate_provider_resource_gate_binding(
             ):
                 errors.append(
                     f"{label}: remote receipt {index} predates its resource check"
+                )
+            if (
+                submitted_at is not None
+                and submitted_at.utcoffset() == timedelta(0)
+                and snapshot_captured_at is not None
+                and submitted_at < snapshot_captured_at
+            ):
+                errors.append(
+                    f"{label}: remote receipt {index} predates resource snapshot capture"
                 )
             if (
                 submitted_at is not None

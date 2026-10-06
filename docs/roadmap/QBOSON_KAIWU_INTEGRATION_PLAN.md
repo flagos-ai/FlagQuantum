@@ -906,8 +906,8 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   repeated `--provider-resources` inputs, deduplicates them by content digest,
   and requires the copied snapshot set to equal the set referenced by smoke and
   executable records. Offline validation recomputes each budget decision at its
-  retained check time and rejects remote receipts that predate the check or
-  follow the snapshot's validity window.
+  retained check time and rejects remote receipts that predate either the check
+  or snapshot capture, or that follow the snapshot's validity window.
 - All four quota-consuming launchers now bind the validated snapshot's
   `valid_until` timestamp to `KaiwuSDKClient.submission_deadline`. The Remote
   boundary refuses a new submit after that UTC instant before it creates a
