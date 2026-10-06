@@ -27,6 +27,7 @@ from .context import (
     MeasurementMap,
     decoder_context_from_memory_circuit,
 )
+from .css_code import CssCode
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -75,6 +76,7 @@ __all__ = (
     "AUTHORITY_NAME",
     "CROSS_CHECK_NAME",
     "CodeCheck",
+    "CssCode",
     "CssCodeMatrices",
     "Correction",
     "DecodeResult",

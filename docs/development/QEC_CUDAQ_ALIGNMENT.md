@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, and all three feed the matrix route; what is left is the arbitrary-stabilizer route and the per-operation kernel map. |
+| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, all three feeding the matrix route, and a record now also buildable the other way, out of the parity-check and logical matrices a caller holds; what is left is the arbitrary non-CSS stabilizer list and the per-operation kernel map. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -154,10 +154,9 @@ direction on the caller's behalf, and a local `CodeCheck` states one ancilla and
 one CNOT direction fixed by the check's type — so a mixed X-and-Z stabilizer is
 refused rather than given a second ancilla, and the qLDPC, Reichardt and Floquet
 families upstream serves with that overload have no route in. A caller holding a
-parity-check matrix is already served by `DetectorErrorModel.from_code_matrices`,
-which reads the matrix rather than inventing a gadget for it, and that is the
-reason the omission is a gap in the code record and not a gap in the matrix
-route.
+parity-check matrix is served by a route of its own, described below, which reads the
+matrix rather than inventing a gadget for it, so the omission is a gap in the declared
+record and not a gap in the matrices route.
 
 The colour code is withdrawn from this row rather than kept as its gap, and
 reading upstream's headers is what settled it. There is no concrete code type
@@ -186,6 +185,64 @@ second shape; `symbol:flagquantum.qec.operation_encodings` states that absence.
 Note that this one is a decision about this repository's circuit model rather
 than a small addition, which is why the row stays `partial` with the gap named
 rather than being closed by widening the record.
+
+**The matrices route into a code record.** The other half of this row was the
+one its own `next_action` had been recording as missing: a caller holding the four
+CSS blocks — `hz`, `hx`, `lz`, `lx` — could reach a detector error model but could
+not reach a *code*, so no memory circuit and no detector or observable layout
+could be derived from matrices at all. `flagquantum.qec.CssCode` is that route.
+It takes a `CssCodeMatrices` and a distance, and it answers the same fourteen
+members `StabilizerCode` declares, so every consumer of a code record — the
+memory-circuit builder, the ancilla bands, `css_code_matrices` — takes a
+matrix-built record on the same terms as a declared one, with no branch for it
+anywhere. The Shor code is the demonstration that this is not a second way to
+write down the same three families: it is nine data qubits with six Z-type and
+two X-type checks and a weight-three transversal logical Z, no class here declares
+it, and it reaches a memory circuit, a detector error model and sampled detection
+events from four blocks alone.
+
+The distance is stated by the caller, and that is upstream's own division rather
+than a shortcut. `cudaq::qec::code` declares no distance accessor at all —
+`code.h` takes one out of the options a record is built with, and
+`repetition.cpp` and `surface_code.cpp` each throw when it is absent — and
+`css_code_matrices` carries no distance for a matrix holder to read either. A
+record built from matrices therefore has no distance to copy and nothing to read
+it from, and deriving it here would be worse than copying that shape: the
+distance of a quantum code is a minimum-weight-codeword problem, which is
+exponential in general and would refuse exactly the large matrices this route
+exists for. What the
+record does instead is prove the one direction a stated logical operator can. An
+operator of weight *w* bounds the distance above by *w*, because that operator is
+a logical operator, so a record claiming a distance larger than the lightest
+operator it states is refused with both numbers named, and a record that
+understates its distance is accepted, because the bound is real in that
+direction only. That is deliberately a one-sided check: it catches the mistake a
+caller actually makes, copying a distance from a paper that belongs to a
+different matrix, and it does not pretend to derive what it cannot.
+
+The algebra is where this route goes past the upstream one rather than matching
+it, and the difference is recorded as a difference. `dem_construction_utils.cpp`
+validates a common column count, the length of each per-element rate vector, and
+that each probability lies in `[0, 1]`; it never checks commutation,
+orthogonality, logical non-triviality or independence, so a pair of blocks that
+do not commute reaches a detector error model there. A record built here is held
+to all of it: two check blocks whose product is not the identity are refused, a
+logical operator meeting the opposite basis' checks on an odd number of qubits is
+refused with the check named, a logical operator that is a product of its own
+type's checks is refused as a stabilizer rather than a logical operator, two
+dependent rows in one logical block are refused because each row becomes one
+observable, and a check or logical row with no support is refused because an
+empty row states the identity operator. A reader comparing this against upstream
+should read the paragraph above as a strengthening, not as parity: upstream does
+not have this check, so passing it here is not evidence of upstream conformance.
+
+Two things the route deliberately does not carry are worth stating so they are
+not mistaken for omissions. It is not registered by name: the identity of a
+matrix-built record is the matrix, not a string, so `get_code` still reaches the
+declared three and a caller does not have to invent a name to use their own
+blocks. And it is CSS-shaped by construction, so an arbitrary non-CSS stabilizer
+list still has no route in — the same limit the paragraph above describes, for the
+same reason, and not a limit this round removed.
 
 **What `qec_decoder_family` closed, and what it did not.** The row's order was
 "decoding graph with `log((1-p)/p)` edge weights and observable labels, a
