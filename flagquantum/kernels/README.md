@@ -76,6 +76,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
+| FQK-SV-013 | `statevector.apply.reversible_permutation_3q.local` | `apply_complex64_local_reversible_3q` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -378,6 +379,34 @@ within this measured CUDA `complex64` window. This is bounded single-device
 development evidence, not a framework-wide, distributed, or release claim.
 Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_2q_probe.py`](../../benchmarks/internal/evidence/statevector_local_2q_probe.py).
+
+`FQKI-TRITON-SV-013-A` applies CCX and controlled-SWAP as fixed
+three-qubit permutations without materializing an eight-by-eight matrix,
+permuting the complete state, or launching a batched matrix multiplication.
+Each Triton program owns a disjoint eight-amplitude group and loads it in full
+before storing, so exact input/output aliasing is safe. The wrapper accepts
+three distinct ordered local qubits and contiguous CUDA `complex64`
+statevectors. It is forward-only and fails closed for gradient-bearing inputs.
+
+The checked-in
+[`statevector_reversible_3q_a800.json`](../../benchmarks/results/local/statevector_reversible_3q_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed cases on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1
+and FlagTree 0.7.0. It covers CCX and controlled-SWAP, adjacent, reversed, and
+distant qubits, batches one and four, and state sizes from `2**16` through
+`2**24`. Every output is bitwise identical to the exact layout/BMM reference.
+The four `2**16` measurements remain as an explicit excluded boundary because
+one FlagTree lane reaches only `0.770x`; the bounded default candidate window
+therefore begins at 20 qubits. All 16 cases inside that window win by at least
+`1.142x` and as much as `4.918x`. The aggregate decision is
+`eligible_for_bounded_dispatch_evaluation`; runtime dispatch remains a
+separate review step. This is bounded single-device development evidence, not
+a release or distributed scalability claim. Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_reversible_3q_probe.py`](../../benchmarks/internal/evidence/statevector_reversible_3q_probe.py).
+
+This semantic serves reversible arithmetic, Grover and amplitude-amplification
+oracles, multi-controlled logic, Shor-style arithmetic blocks, and circuit
+interoperability involving Toffoli or Fredkin gates.
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -1070,8 +1099,8 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 28 semantics and 35 implementations are implemented. The 25 direct
-Triton `-A` implementations from SV-001 through SV-009, GR-001 through GR-006,
+The current 29 semantics and 36 implementations are implemented. The 26 direct
+Triton `-A` implementations from SV-001 through SV-009, SV-013, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
 reason above, while the other listed routes have evidenced default-dispatch
