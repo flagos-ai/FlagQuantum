@@ -442,6 +442,27 @@ window. This is bounded single-device development evidence, not a distributed
 or release claim. Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_pauli_rotation_2q_probe.py`](../../benchmarks/internal/evidence/statevector_pauli_rotation_2q_probe.py).
 
+The public local-statevector executor now selects SV-011-A for isolated RXX,
+RYY, and RZZ gates inside the exact measured CUDA `complex64` window:
+`(batch, amplitudes)` equal to `(1, 2**20)`, `(1, 2**24)`, or
+`(4, 2**20)`, with shared or batch-resolved `float32` angles. Unsupported
+devices, dtypes, shapes, gradient inputs, and fused multi-gate steps preserve
+the existing dense-matrix route. Set `FQ_TRITON_PAULI_ROTATION_2Q=0` to
+disable the route without changing circuit semantics.
+
+The checked-in
+[`statevector_pauli_rotation_2q_dispatch_a800.json`](../../benchmarks/results/local/statevector_pauli_rotation_2q_dispatch_a800.json)
+artifact records the public catalog dispatch against the product path starting
+from the same angle inputs. It contains 30 counterbalanced, synchronized groups
+of 10 invocations for four fixed cases on both A800 hosts under stock Triton
+3.7.1 and FlagTree 0.7.0. All 16 host/compiler/shape cases meet the `1.0x`
+performance floor: observed speedups range from `1.433x` through `7.334x`,
+maximum absolute error is below `3.4e-7`, and maximum relative L2 error is below
+`4.1e-8`. The aggregate decision is `default_dispatch_enabled`. This remains
+bounded single-device development evidence, not a release or distributed
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_pauli_rotation_2q_dispatch.py`](../../benchmarks/statevector_pauli_rotation_2q_dispatch.py).
+
 This semantic is used by Ising interactions, Trotter and qDrift Hamiltonian
 simulation, VQE and QAOA ansatz layers, quantum machine-learning circuits, and
 spin-model or many-body dynamics.
@@ -1169,11 +1190,12 @@ The current 31 semantics and 38 implementations are implemented. The 28 direct
 Triton `-A` implementations from SV-001 through SV-011, SV-013, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, SV-010 and SV-011 await separate dispatch reviews, and the other listed
-routes have evidenced default-dispatch promotions. MPS-008, the two
-generic-autograd Triton `-B` implementations, the
-two NUM implementations, and the five explicit FlagTree implementations remain
-experimental, for ten experimental implementations in total.
+reason above, SV-010 and SV-013 await separate dispatch reviews, SV-011 has an
+evidenced bounded default route, and the other listed routes have evidenced
+default-dispatch promotions. MPS-008, the two generic-autograd Triton `-B`
+implementations, the two NUM implementations, and the five explicit FlagTree
+implementations remain experimental, for ten
+experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
