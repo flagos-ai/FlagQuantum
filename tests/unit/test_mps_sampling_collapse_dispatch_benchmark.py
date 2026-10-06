@@ -146,9 +146,9 @@ def test_run_validator_accepts_complete_raw_measurements() -> None:
 
 def test_run_validator_recomputes_each_median() -> None:
     payload = _run(HOSTS[0], COMPILER_LANES[0])
-    payload["cases"][0]["public_catalog_dispatch"]["median_seconds_per_invocation"] = (
-        9.0
-    )
+    payload["cases"][0]["public_catalog_dispatch"][
+        "median_seconds_per_invocation"
+    ] = 9.0
 
     with pytest.raises(ValueError, match="median is not canonical"):
         validate_run(payload)
