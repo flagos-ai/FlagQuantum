@@ -85,8 +85,19 @@ def test_closed_component_fields_match_producer_payloads(
     source = Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / filename
     tree = ast.parse(source.read_text(encoding="utf-8"))
     candidates: list[set[str]] = []
+    assigned_payload_fields: set[str] = set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Dict):
+            targets = node.targets if isinstance(node, ast.Assign) else ()
+            for target in targets:
+                if (
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "payload"
+                    and isinstance(target.slice, ast.Constant)
+                    and isinstance(target.slice.value, str)
+                ):
+                    assigned_payload_fields.add(target.slice.value)
             continue
         fields = {
             key.value
@@ -96,7 +107,9 @@ def test_closed_component_fields_match_producer_payloads(
         if "schema" in fields:
             candidates.append(fields)
 
-    producer_fields = max(candidates, key=len) | postflight_fields
+    producer_fields = (
+        max(candidates, key=len) | postflight_fields | assigned_payload_fields
+    )
 
     assert producer_fields == COMPONENT_FIELDS_BY_SCHEMA[schema]
 

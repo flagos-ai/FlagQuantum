@@ -22,7 +22,10 @@ from typing import Any
 
 import torch
 
-from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
+from examples.qdiffusion_kaiwu.failure_evidence import (
+    apply_artifact_postflight,
+    redacted_failure_record,
+)
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
     assert_artifacts_unchanged,
@@ -549,7 +552,7 @@ def main() -> None:
         device=device,
         real_provider_transport=True,
     )
-    artifact_postflight_failure: dict[str, str] | None = None
+    artifact_postflight_error: BaseException | None = None
     try:
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
         _verified_training_paths(args.training_run_directory, training_record)
@@ -557,11 +560,9 @@ def main() -> None:
             args.training_run_directory, args.trained_checkpoint, training_record
         )
     except (OSError, ValueError) as exc:
-        artifact_postflight_failure = redacted_failure_record(exc)
-        payload["run_completed"] = False
+        artifact_postflight_error = exc
         payload["acceptance"]["portability"] = "fail"
-    payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None
-    payload["artifact_postflight_failure"] = artifact_postflight_failure
+    apply_artifact_postflight(payload, artifact_postflight_error)
     _write_private_redacted_json(
         args.output,
         payload,

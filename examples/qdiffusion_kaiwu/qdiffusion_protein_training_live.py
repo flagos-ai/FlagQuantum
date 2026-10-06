@@ -21,7 +21,10 @@ from typing import Any
 
 import torch
 
-from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
+from examples.qdiffusion_kaiwu.failure_evidence import (
+    apply_artifact_postflight,
+    redacted_failure_record,
+)
 from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
@@ -547,14 +550,12 @@ def main() -> None:
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
     )
-    artifact_postflight_failure: dict[str, str] | None = None
+    artifact_postflight_error: BaseException | None = None
     try:
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
     except (OSError, ValueError) as exc:
-        artifact_postflight_failure = redacted_failure_record(exc)
-        payload["run_completed"] = False
-    payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None
-    payload["artifact_postflight_failure"] = artifact_postflight_failure
+        artifact_postflight_error = exc
+    apply_artifact_postflight(payload, artifact_postflight_error)
     _write_private_redacted_json(
         args.run_record,
         payload,

@@ -291,7 +291,10 @@ The portability replay repeats that postflight and also rechecks the transferred
 test FASTA and trained energy checkpoint. Local ESM2 evaluation rechecks both
 its model checkpoint and every consumed training output after metric
 calculation. Final validation requires `artifact_inputs_unchanged=true` in all
-three component types.
+three component types. A postflight failure is represented through the existing
+closed `run_completed`, `failure`, and `artifact_inputs_unchanged` fields; the
+producer does not append a diagnostic-only field that final assembly would
+reject, and exception messages remain absent from evidence.
 
 The command requires absolute paths and the exact provider-cost
 acknowledgement. It creates a mode-0600 preflight record plus a separate private

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from flagquantum.remote.kaiwu import KaiwuSDKError
 
 
@@ -25,4 +27,17 @@ def redacted_failure_record(error: BaseException) -> dict[str, str]:
     return {"type": category, "message": ""}
 
 
-__all__ = ("redacted_failure_record",)
+def apply_artifact_postflight(
+    record: dict[str, Any], error: BaseException | None
+) -> None:
+    """Close a component through its existing failure fields after rehashing."""
+
+    record["artifact_inputs_unchanged"] = error is None
+    if error is None:
+        return
+    record["run_completed"] = False
+    if record.get("failure") is None:
+        record["failure"] = redacted_failure_record(error)
+
+
+__all__ = ("apply_artifact_postflight", "redacted_failure_record")

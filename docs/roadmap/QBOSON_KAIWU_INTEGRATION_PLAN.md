@@ -638,7 +638,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   to the pinned client's value-free type/shape grammar, preventing raw provider
   values from hiding inside schema metadata. A source contract test compares
   top-level schemas with the actual payload constructors so producer/validator
-  drift cannot be hidden by hand-written acceptance fixtures.
+  drift cannot be hidden by hand-written acceptance fixtures. That contract now
+  also scans post-construction `payload[...]` assignments. Training and replay
+  artifact-postflight failures reuse the closed `run_completed`, `failure`, and
+  `artifact_inputs_unchanged` fields instead of appending an undeclared
+  diagnostic field that would make every real producer record unassemblable.
 - Portability replay validation now independently binds its dataset, base
   checkpoint, tokenizer, evaluation model, and trained checkpoint identities to
   the frozen config and selected training record. Its training seed, fixture
