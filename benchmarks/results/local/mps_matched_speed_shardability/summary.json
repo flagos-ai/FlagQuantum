@@ -749,105 +749,105 @@
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w1.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w1.json",
       "rung": "matched_speed_512sites_chi64",
-      "sha256": "a53e5eab5d7302a1acce0972c38b879b43215aa907bc036c4e0adbaded79296b",
+      "sha256": "ff5ec7d049b506bf9c5640a0ee37681c5ed76f19a9bfd3fa9f3834dfa8d4c678",
       "world": 1
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w1.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w1.json",
       "rung": "matched_speed_1024sites_chi64",
-      "sha256": "55fb68e00956a2deec18eeb3ad6af8fbdfbc0531dfe0747ab06c9daeed1d9f98",
+      "sha256": "4bc5d1e93a26dda1bc6700318f96b821226c092a5bfb2df08c421f039eb4e98e",
       "world": 1
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w1.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w1.json",
       "rung": "matched_speed_2048sites_chi64",
-      "sha256": "4befe06385f31046fef98cad3e37e94fe4893e80c723f6101966d4049e86729a",
+      "sha256": "652506512608dd516d3476626839301fd66cc4390478b856a809ec9d399d101b",
       "world": 1
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w1.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w1.json",
       "rung": "matched_speed_4096sites_chi64",
-      "sha256": "c6260a544ce25b70c12973c2455d38ee9ac3b60c22eb676e7fd6a4924b66960a",
+      "sha256": "901c58ed424a25555ee23a55b50640c3e6215495d1829d58257ecc2bae4f56ff",
       "world": 1
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w1.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w1.json",
       "rung": "matched_speed_8192sites_chi64",
-      "sha256": "3a7871e442f137fd71b46146b31b9cdf73be5024a72a0b33e99196823466ca08",
+      "sha256": "c08dffcc045ce6b2156f56204ddd5e84f7fa30b00ab509a58f40f499709058eb",
       "world": 1
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w8.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w8.json",
       "rung": "matched_speed_512sites_chi64",
-      "sha256": "bfa5c314fdaae8ad081c4cb6407f28ccc2e899f04d7283e34c48613d64057fe2",
+      "sha256": "cf72df264e4c25b76ad01a2eda563dd2b78d6dc755e876f4febd970b00447abf",
       "world": 8
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w8.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w8.json",
       "rung": "matched_speed_1024sites_chi64",
-      "sha256": "395bb3402a98803a6a07e5029f8a0887860a75986b48f96f59e75a24b2a9b287",
+      "sha256": "5e96061d5dc7936575b1cf30ebd8815b51bc429eddbc28893a90910c57df94f9",
       "world": 8
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w8.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w8.json",
       "rung": "matched_speed_2048sites_chi64",
-      "sha256": "f54d4962b80dc073b0f8c482c62fa0e42d760195112677ad5b8847e5eb42f678",
+      "sha256": "6ac4444beb22c961867256da4a3ccec60dc24117c46eecf1fe28858a39f4780f",
       "world": 8
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w8.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w8.json",
       "rung": "matched_speed_4096sites_chi64",
-      "sha256": "22e42ddaa1c1aed15b2162fca25e7ea867d549762af8ac42368d7eaf310c7d0e",
+      "sha256": "e4c36883224f2c0bf4bd92d0b6f9f6e898cfe45d2b47e96b4b45fb73fb3c4de1",
       "world": 8
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w8.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w8.json",
       "rung": "matched_speed_8192sites_chi64",
-      "sha256": "dc585966144fb31fb13a5a2d131f555a4a90b60c0ae55c7a425b90e0025bf05e",
+      "sha256": "4baf4c4b7d6fb55f2a0c5bc3a0c805ad049f003efc1f5dad80c3dc0e88cfe467",
       "world": 8
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w16.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w16.json",
       "rung": "matched_speed_512sites_chi64",
-      "sha256": "83dd680476b024ec82d88792c579c937a6f8ae303648c5ee27923a1fc803f996",
+      "sha256": "26d0bc68aee024466955bc9cee9865032d94ab9e1494e18dc4c83e696a29057c",
       "world": 16
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w16.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w16.json",
       "rung": "matched_speed_1024sites_chi64",
-      "sha256": "9a635ecc99d3d1a52f1f7b74725e9c8d017d192364c0ad430dbcf5f7e76ddee4",
+      "sha256": "2b086c26cd82fe40e1e873421817245d73dbd7c19ae0f417b2c895326c8daa6d",
       "world": 16
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w16.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w16.json",
       "rung": "matched_speed_2048sites_chi64",
-      "sha256": "b8f4651b6a76990b4a325154e0c8669f19cf33f189d90cdcad72d9d2cd4a3385",
+      "sha256": "ab32cf488e38b0a8f2d293f5b35eadb5c368e49ab36f639b4d9cfe42cc44801d",
       "world": 16
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w16.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w16.json",
       "rung": "matched_speed_4096sites_chi64",
-      "sha256": "0bea99f260f168034371335b4944e4200c078f6a6e6af05f894eb678dd987581",
+      "sha256": "523060f9988ef9c100fe9a78eecbf5413d22c16242d10c452853ca4cbe6b77ff",
       "world": 16
     },
     {
       "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w16.json",
       "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w16.json",
       "rung": "matched_speed_8192sites_chi64",
-      "sha256": "54b75e252378b2fc2e3c387f4093022da4fdfaf1b2b58adff9ae7067c4b1a6be",
+      "sha256": "3b08bcb7c1f5c60f9749bd72f5d08dd02d5430d7c33299e0037303b4acb0266e",
       "world": 16
     }
   ],

@@ -37,13 +37,34 @@ import os
 import socket
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(
-    os.environ.get("FQ_REPOSITORY_ROOT", str(Path(__file__).resolve().parents[1]))
+    os.environ.get("FQ_REPOSITORY_ROOT", str(Path(__file__).resolve().parents[3]))
 )
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from tools.sanitize_public_evidence import sanitize_text  # noqa: E402
+
+
+def public_ranks(gathered: Sequence[object]) -> list[object]:
+    """Return the per-rank records as this repository may publish them.
+
+    The records land under ``benchmarks/results``, which the repository publishes
+    without infrastructure identity, and ``tools.sanitize_public_evidence`` is the
+    check that enforces that over the committed bytes. Applying the same redaction
+    here means a run of this probe is publishable as written rather than needing a
+    rewrite before it can be committed, and it keeps the definition of what may be
+    published in the one module that owns it.
+
+    The probe records the host it ran on, because that is a fact about the
+    measurement; what this function decides is which of those facts is public. A
+    reader who needs the hardware finds it in ``device_name``.
+    """
+
+    return json.loads(sanitize_text(json.dumps(list(gathered))))
 
 
 def _env_int(name: str, default: int) -> int:
@@ -242,7 +263,10 @@ def main() -> int:
                     "world_size": world,
                     "acceptance_configuration": acceptance,
                     "rung": str(rung["name"]),
-                    "ranks": gathered,
+                    # Redacted rather than copied, because this file is committed
+                    # under `benchmarks/results`, where the repository publishes no
+                    # infrastructure identity.
+                    "ranks": public_ranks(gathered),
                 },
                 indent=2,
             )

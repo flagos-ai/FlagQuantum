@@ -727,6 +727,35 @@ def _describe_boundaries(
     return described
 
 
+def _site_span(sites: Sequence[int]) -> dict[str, Any]:
+    """Return one rank's measured sites in the smallest form that states them.
+
+    A rank owns a contiguous run of the chain, so the run's two ends and its
+    length state the whole set, and enumerating it writes that same fact once per
+    site. At the frozen capacity shape -- 131072 sites over sixteen ranks -- the
+    enumeration is what made the assembled payload 4.5 MB of index lists against
+    a repository that caps a tracked file at two million bytes, so each run is
+    stated by its ends.
+
+    A set that is not the contiguous run those ends name is reported in full
+    instead. Every reader of this map asks whether it is present rather than what
+    it contains, so a shorter spelling cannot weaken a check; what it could do is
+    round over a gap, and that would be a smaller file that says something
+    untrue. The length is carried beside the ends for the same reason: it makes
+    the run checkable without expanding it.
+    """
+
+    ordered = sorted(int(site) for site in sites)
+    span: dict[str, Any] = {
+        "first_site": ordered[0],
+        "last_site": ordered[-1],
+        "site_count": len(ordered),
+    }
+    if ordered != list(range(ordered[0], ordered[-1] + 1)):
+        span["sites"] = ordered
+    return span
+
+
 def _mps_backward_memory_plan(
     step_metrics: Sequence[Mapping[str, Any]],
     *,
@@ -782,7 +811,7 @@ def _mps_backward_memory_plan(
     rank_memory = [
         {
             "rank": rank,
-            "site_range": list(site_ownership[rank]),
+            "site_range": _site_span(site_ownership[rank]),
             "forward_tensor_bytes": vectors["forward_tensor_bytes_by_rank"][rank],
             "backward_adjoint_bytes": vectors["backward_adjoint_bytes_by_rank"][rank],
             "boundary_gradient_buffer_bytes": (
@@ -1032,7 +1061,8 @@ def _sharded_contract(
         "truncation_error_budget": float(frozen["truncation_error_budget"]),
         "site_ownership_policy": str(summaries[0]["site_ownership_policy"]),
         "site_shard_ownership": {
-            f"rank:{rank}": list(sites) for rank, sites in enumerate(site_ownership)
+            f"rank:{rank}": _site_span(sites)
+            for rank, sites in enumerate(site_ownership)
         },
         "bond_shard_ownership": _bond_shard_ownership(site_ownership, edges),
         "bond_shard_ownership_source": (

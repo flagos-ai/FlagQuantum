@@ -455,6 +455,51 @@ def test_bond_ownership_names_the_pair_that_measured_each_cut() -> None:
     assert ownership["bond:12"] == "rank:0+rank:1"
 
 
+def test_a_rank_site_run_is_stated_by_its_ends() -> None:
+    """The run is the fact; the enumeration is the same fact written per site."""
+
+    span = producer._site_span(range(8192, 16384))
+
+    assert span == {"first_site": 8192, "last_site": 16383, "site_count": 8192}
+    # A single site is a run of one rather than a special case.
+    assert producer._site_span([7]) == {
+        "first_site": 7,
+        "last_site": 7,
+        "site_count": 1,
+    }
+
+
+def test_a_rank_site_set_with_a_gap_is_reported_in_full() -> None:
+    """Ends that rounded over a gap would be a smaller file saying something false."""
+
+    span = producer._site_span([0, 1, 4])
+
+    assert span["first_site"] == 0
+    assert span["last_site"] == 4
+    assert span["sites"] == [0, 1, 4]
+
+
+def test_the_frozen_capacity_payload_states_every_rank_inside_the_hygiene_cap() -> None:
+    """The map is present for every rank, and small enough to be committed.
+
+    The gate requires a non-empty map, so the compact spelling has to keep every
+    rank in it. The size is asserted rather than assumed because the enumeration
+    this replaces is what took the assembled payload past the repository's
+    two-million-byte per-file limit.
+    """
+
+    world = 16
+    ownership = [list(range(rank * 8192, (rank + 1) * 8192)) for rank in range(world)]
+    emitted = {
+        f"rank:{rank}": producer._site_span(sites)
+        for rank, sites in enumerate(ownership)
+    }
+
+    assert len(emitted) == world
+    assert all(emitted.values())
+    assert len(json.dumps(emitted)) < 4096
+
+
 def test_the_capacity_baseline_states_single_device_semantics() -> None:
     """One device has nothing to shard, and the payload says so."""
 

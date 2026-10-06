@@ -13,7 +13,7 @@
       "rank": 0,
       "world_size": 1,
       "local_world_size": 1,
-      "hostname": "bm-baai-dx-zone1-lc-a800-80g-15-172",
+      "hostname": "redacted",
       "device_name": "NVIDIA A800-SXM4-80GB",
       "rung": "matched_speed_2048sites_chi64",
       "n_sites": 2048,
