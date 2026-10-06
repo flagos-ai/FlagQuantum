@@ -11,20 +11,13 @@ import shlex
 import socket
 import statistics
 import sys
-from collections.abc import Mapping
+import time
+from collections.abc import Callable, Mapping
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import torch
-
-from benchmarks.internal.evidence.statevector_swap_probe import (
-    COMPILER_LANES,
-    HOSTS,
-    SHAPE_MATRIX,
-    _measure_pair,
-    _reference,
-)
 
 BENCHMARK = "statevector_swap_sequence_dispatch"
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_swap_sequence_dispatch.v1"
@@ -34,8 +27,81 @@ IMPLEMENTATION_ID = "FQKI-TRITON-SV-014-A"
 RUNNER = "benchmarks/statevector_swap_sequence_dispatch.py"
 DISPATCH_VARIABLE = "FQ_TRITON_SWAP_SEQUENCE"
 PERFORMANCE_FLOOR = 1.0
+HOSTS = ("jp-a800-171", "jp-a800-172")
+COMPILER_LANES = ("stock_triton", "flagtree")
+SHAPE_MATRIX = (
+    (1, 1 << 16, ((0, 15), (1, 14), (2, 13), (3, 12))),
+    (1, 1 << 20, ((0, 19), (1, 18), (2, 17), (3, 16))),
+    (1, 1 << 20, tuple((index, 19 - index) for index in range(6))),
+    (1, 1 << 24, tuple((index, 23 - index) for index in range(8))),
+    (4, 1 << 20, tuple((index, 19 - index) for index in range(5))),
+)
 _FULL_REVISION = re.compile(r"^[0-9a-f]{40}$")
 _RESULT_NAMES = ("public_catalog_dispatch", "public_pytorch_reference")
+
+
+class TimingResult(TypedDict):
+    samples_seconds_per_invocation: list[float]
+    median_seconds_per_invocation: float
+
+
+def _reference(
+    state: torch.Tensor,
+    swaps: tuple[tuple[int, int], ...],
+) -> torch.Tensor:
+    from flagquantum.simulation.statevector.operations import _apply_fixed_permutation
+
+    output = state
+    n_qubits = state.shape[1].bit_length() - 1
+    for qubits in swaps:
+        output = _apply_fixed_permutation(output, "swap", qubits, n_qubits)
+    return output
+
+
+def _measure_group(operation: Callable[[], Any], group_size: int) -> float:
+    torch.cuda.synchronize()
+    started = time.perf_counter()
+    for _ in range(group_size):
+        operation()
+    torch.cuda.synchronize()
+    return (time.perf_counter() - started) / group_size
+
+
+def _measure_pair(
+    dispatch: Callable[[], Any],
+    reference: Callable[[], Any],
+    *,
+    warmup: int,
+    repeats: int,
+    group_size: int,
+) -> tuple[TimingResult, TimingResult]:
+    for index in range(warmup):
+        if index % 2:
+            reference()
+            dispatch()
+        else:
+            dispatch()
+            reference()
+    torch.cuda.synchronize()
+    dispatch_samples = []
+    reference_samples = []
+    for index in range(repeats):
+        if index % 2:
+            reference_samples.append(_measure_group(reference, group_size))
+            dispatch_samples.append(_measure_group(dispatch, group_size))
+        else:
+            dispatch_samples.append(_measure_group(dispatch, group_size))
+            reference_samples.append(_measure_group(reference, group_size))
+    return (
+        {
+            "samples_seconds_per_invocation": dispatch_samples,
+            "median_seconds_per_invocation": statistics.median(dispatch_samples),
+        },
+        {
+            "samples_seconds_per_invocation": reference_samples,
+            "median_seconds_per_invocation": statistics.median(reference_samples),
+        },
+    )
 
 
 def _shape_record(
