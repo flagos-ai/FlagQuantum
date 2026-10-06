@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import build_environment_lock as build_module
+from examples.qdiffusion_kaiwu import verify_environment_lock as verify_module
+from examples.qdiffusion_kaiwu.build_environment_lock import (
+    build_environment_lock,
+)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     _distribution_content_sha256,
     load_environment_lock,
@@ -204,3 +210,67 @@ def test_distribution_content_digest_binds_record_file_set(tmp_path: Path) -> No
     second.symlink_to(first)
     with pytest.raises(ValueError, match="missing or unsafe"):
         _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]
+
+
+def test_distribution_content_digest_rechecks_complete_file_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = tmp_path / "package" / "first.py"
+    first.parent.mkdir()
+    first.write_text("value = 1\n", encoding="utf-8")
+    second = tmp_path / "package" / "second.py"
+    second.write_text("value = 2\n", encoding="utf-8")
+
+    class Distribution:
+        def __init__(self) -> None:
+            self.files = [Path("package/first.py"), Path("package/second.py")]
+
+        @staticmethod
+        def locate_file(entry: Path) -> Path:
+            return tmp_path / entry
+
+    real_capture = verify_module.capture_regular_file
+    calls = 0
+
+    def capture_then_replace(path: Path, *, label: str):
+        nonlocal calls
+        snapshot = real_capture(path, label=label)
+        calls += 1
+        if calls == 2:
+            first.write_bytes(first.read_bytes())
+        return snapshot
+
+    monkeypatch.setattr(
+        verify_module, "capture_regular_file", capture_then_replace
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]
+
+
+def test_environment_lock_binds_wheel_metadata_and_digest_to_one_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheel = tmp_path / "example-1.0-py3-none-any.whl"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr(
+            "example-1.0.dist-info/METADATA",
+            "Metadata-Version: 2.1\nName: example\nVersion: 1.0\n",
+        )
+    original = wheel.read_bytes()
+
+    def inventory_after_replacement() -> dict[str, tuple[str, str]]:
+        wheel.write_bytes(original)
+        return {"example": ("1.0", "a" * 64)}
+
+    monkeypatch.setattr(
+        build_module,
+        "_installed_distribution_inventory",
+        inventory_after_replacement,
+    )
+    output = tmp_path / "environment-lock.json"
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        build_environment_lock(artifacts=[wheel], output=output)
+
+    assert not output.exists()

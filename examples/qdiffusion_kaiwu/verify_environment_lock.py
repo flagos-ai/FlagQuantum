@@ -12,6 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    capture_regular_file,
+    revalidate_regular_file,
+)
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_qdiffusion_environment_lock"
@@ -30,14 +35,6 @@ def _canonical_distribution_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def _stream_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        while chunk := stream.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _distribution_content_sha256(
     distribution: importlib.metadata.Distribution, *, name: str
 ) -> str:
@@ -45,6 +42,7 @@ def _distribution_content_sha256(
     if not files:
         raise ValueError(f"installed distribution lacks a RECORD file set: {name}")
     records: list[dict[str, Any]] = []
+    snapshots: list[tuple[str, RegularFileSnapshot]] = []
     labels: set[str] = set()
     for entry in sorted(files, key=str):
         label = str(entry).replace("\\", "/")
@@ -58,12 +56,25 @@ def _distribution_content_sha256(
             raise ValueError(
                 f"installed distribution file is missing or unsafe: {name}:{label}"
             )
+        try:
+            snapshot = capture_regular_file(
+                path, label=f"installed distribution file {name}:{label}"
+            )
+        except ValueError:
+            raise ValueError(
+                f"installed distribution file is missing or unsafe: {name}:{label}"
+            ) from None
         records.append(
             {
                 "path": label,
-                "bytes": path.stat().st_size,
-                "sha256": _stream_sha256(path),
+                "bytes": snapshot.size,
+                "sha256": snapshot.sha256,
             }
+        )
+        snapshots.append((label, snapshot))
+    for label, snapshot in snapshots:
+        revalidate_regular_file(
+            snapshot, label=f"installed distribution file {name}:{label}"
         )
     return hashlib.sha256(
         json.dumps(records, sort_keys=True, separators=(",", ":")).encode()

@@ -318,11 +318,14 @@ python3 -B -s -m examples.qdiffusion_kaiwu.build_environment_lock \
   --output /absolute/private-evidence/environment-lock.json
 ```
 
-The builder reads bounded wheel METADATA, hashes the wheel bytes, and hashes
-every file in each installed distribution's RECORD set without installing or
-executing the wheel. `environment_lock.example.json` documents the schema only;
-its three illustrative rows are not a complete lock. Independently verify the
-generated lock offline before credentials are present:
+The builder reads bounded wheel METADATA and obtains the wheel digest from the
+same stable no-follow snapshot, retaining every reviewed wheel snapshot through
+lock publication. It also hashes every file in each installed distribution's
+RECORD set and cross-revalidates the complete captured set, without installing
+or executing the wheel. A replacement during metadata parsing, inventory
+collection, or record publication fails closed. `environment_lock.example.json`
+documents the schema only; its three illustrative rows are not a complete lock.
+Independently verify the generated lock offline before credentials are present:
 
 ```bash
 python3 -B -s -m examples.qdiffusion_kaiwu.verify_environment_lock \

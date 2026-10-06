@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import platform
 import zipfile
 from email.parser import BytesParser
@@ -11,6 +10,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    capture_regular_file,
+    open_captured_regular_file,
+    revalidate_regular_file,
+)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     SCHEMA,
     _canonical_distribution_name,
@@ -21,15 +26,23 @@ from examples.qdiffusion_kaiwu.verify_environment_lock import (
 _MAX_METADATA_BYTES = 1024 * 1024
 
 
-def _wheel_identity(path: Path) -> tuple[str, str]:
+def _wheel_identity_snapshot(
+    path: Path,
+) -> tuple[str, str, RegularFileSnapshot]:
     if not path.is_absolute():
         raise ValueError("wheel artifact paths must be absolute")
     if path.is_symlink() or not path.is_file():
         raise ValueError("wheel artifacts must be regular, non-symlink files")
     if path.suffix != ".whl":
         raise ValueError("environment lock artifacts must be wheel files")
+    snapshot = capture_regular_file(path, label="reviewed wheel artifact")
     try:
-        with zipfile.ZipFile(path) as wheel:
+        with (
+            open_captured_regular_file(
+                snapshot, label="reviewed wheel artifact"
+            ) as stream,
+            zipfile.ZipFile(stream) as wheel,
+        ):
             metadata_members = [
                 member
                 for member in wheel.infolist()
@@ -63,7 +76,13 @@ def _wheel_identity(path: Path) -> tuple[str, str]:
     dist_info_distribution = dist_info_name.rsplit("-", 1)[0]
     if _canonical_distribution_name(dist_info_distribution) != name:
         raise ValueError("wheel dist-info identity differs from METADATA Name")
-    return name, version.strip()
+    revalidate_regular_file(snapshot, label="reviewed wheel artifact")
+    return name, version.strip(), snapshot
+
+
+def _wheel_identity(path: Path) -> tuple[str, str]:
+    name, version, _ = _wheel_identity_snapshot(path)
+    return name, version
 
 
 def _write_private_json(path: Path, payload: dict[str, Any]) -> None:
@@ -78,17 +97,17 @@ def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:
     if not artifacts:
         raise ValueError("at least one reviewed wheel artifact is required")
     reviewed: dict[str, dict[str, str]] = {}
+    snapshots: dict[str, RegularFileSnapshot] = {}
     for artifact in artifacts:
-        name, version = _wheel_identity(artifact)
+        name, version, snapshot = _wheel_identity_snapshot(artifact)
         if name in reviewed:
             raise ValueError(f"duplicate reviewed wheel identity: {name}")
         reviewed[name] = {
             "name": name,
             "version": version,
-            "approved_artifact_sha256": hashlib.sha256(
-                artifact.read_bytes()
-            ).hexdigest(),
+            "approved_artifact_sha256": snapshot.sha256,
         }
+        snapshots[name] = snapshot
     installed = _installed_distribution_inventory()
     missing = sorted(installed.keys() - reviewed.keys())
     extra = sorted(reviewed.keys() - installed.keys())
@@ -112,8 +131,12 @@ def build_environment_lock(*, artifacts: list[Path], output: Path) -> str:
         "python_version": platform.python_version(),
         "distributions": [reviewed[name] for name in sorted(reviewed)],
     }
+    for name, snapshot in snapshots.items():
+        revalidate_regular_file(snapshot, label=f"reviewed wheel artifact {name}")
     _write_private_json(output, record)
     _, digest = load_environment_lock(output)
+    for name, snapshot in snapshots.items():
+        revalidate_regular_file(snapshot, label=f"reviewed wheel artifact {name}")
     return digest
 
 

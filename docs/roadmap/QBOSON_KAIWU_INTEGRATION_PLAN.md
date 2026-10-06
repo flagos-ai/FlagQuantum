@@ -749,7 +749,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   identity/version/artifact/content digests are accepted; arbitrary metadata
   or credential-like extensions fail before runtime comparison and before the
   lock is copied into final evidence. Builder tests assert that produced locks
-  match these same field sets.
+  match these same field sets. Wheel METADATA and artifact digests now come
+  from the same stable no-follow snapshots, which remain bound through lock
+  publication; the installed distribution inventory likewise cross-revalidates
+  every captured RECORD file after hashing the complete set.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed
