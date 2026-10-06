@@ -162,6 +162,11 @@ def test_the_qiskit_anchor_agrees_on_length_for_every_opcode(payload: dict) -> N
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    # Which lane took this reading. These counts were measured as stable across the
+    # certified lanes, so this is the one anchor here whose numbers do not move with
+    # the installed library; the field is asserted anyway, because "stable as far as
+    # we measured" is still a reading of a lane rather than a property of the anchor.
+    assert anchor["qiskit_version"], anchor
     assert anchor["decomposer"] == "OneQubitEulerDecomposer('ZSX')"
     assert anchor["compared_gate_count"] == len(SINGLE_QUBIT_OPCODES) - 1
     assert anchor["same_length_count"] == anchor["compared_gate_count"]

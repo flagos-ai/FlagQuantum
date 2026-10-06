@@ -375,6 +375,10 @@ def test_the_qiskit_anchor_reports_the_global_phase_split(payload: dict) -> None
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    # The lane, not the pinned revision string: the mean counts below are read off
+    # whichever Qiskit is installed, and a reading that does not name its lane
+    # cannot be told apart from one taken on a lane that no longer exists.
+    assert anchor["qiskit_version"], anchor
     assert anchor["pass"] == "Optimize1qGates(basis=['u3','u1'])"
     assert anchor["agrees_up_to_global_phase"] is True
     assert anchor["worst_overlap_gap"] < 1e-12

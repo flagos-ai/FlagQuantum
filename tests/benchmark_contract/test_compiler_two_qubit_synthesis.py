@@ -380,6 +380,11 @@ def test_the_qiskit_anchor_agrees_on_the_entangler_count(payload: dict) -> None:
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    # Which lane took this reading. The entangler counts asserted below are the
+    # stable half of the anchor; the per-row `reference_gate_count` beside them
+    # moves with the installed library, so the field that separates the two has to
+    # be present for the stable half to be read as stable.
+    assert anchor["qiskit_version"], anchor
     expected = len(TWO_QUBIT_OPCODES) * len(SUPERCONTROLLED_ENTANGLERS)
     assert anchor["compared_case_count"] == expected
     assert anchor["mismatches"] == []
