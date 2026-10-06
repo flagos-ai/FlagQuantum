@@ -192,6 +192,14 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "measurement",
     ),
     _semantic(
+        "FQK-MPS-008",
+        "mps.sampling.collapse_wire.local",
+        "mps",
+        "Collapse one sampled MPS wire and propagate its normalized boundary.",
+        "mps_sampling",
+        "measurement",
+    ),
+    _semantic(
         "FQK-MEAS-001",
         "measurement.probabilities.statevector",
         "measurement",
