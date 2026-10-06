@@ -29,6 +29,14 @@ ENTRYPOINTS = (
     "verify_transfer_bundle",
 )
 
+PINNED_SDK_ENTRYPOINTS = (
+    "qboson_live_smoke",
+    "qdiffusion_portability_replay_live",
+    "qdiffusion_protein_evaluate",
+    "qdiffusion_protein_training_live",
+    "qdiffusion_system_live",
+)
+
 
 @pytest.mark.parametrize("entrypoint", ENTRYPOINTS)
 def test_documented_module_entrypoint_binds_current_checkout(
@@ -58,3 +66,34 @@ def test_documented_module_entrypoint_binds_current_checkout(
 
     assert completed.returncode == 0, completed.stderr
     assert "usage:" in completed.stdout.lower()
+
+
+@pytest.mark.parametrize("entrypoint", PINNED_SDK_ENTRYPOINTS)
+def test_live_entrypoint_rejects_unpinned_sdk_version_before_other_inputs(
+    tmp_path: Path, entrypoint: str
+) -> None:
+    repository = Path(__file__).parents[3]
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(repository),
+        "PYTHONNOUSERSITE": "1",
+    }
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-s",
+            "-m",
+            f"examples.qdiffusion_kaiwu.{entrypoint}",
+            "--expected-sdk-version",
+            "1.4.1",
+        ],
+        cwd=tmp_path,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    assert "invalid choice: '1.4.1'" in completed.stderr

@@ -97,6 +97,18 @@ def test_client_rejects_unsafe_checkpoint_directory_before_license(
     initializer.assert_not_called()
 
 
+def test_client_rejects_an_unpinned_sdk_lane_before_license(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    initializer = Mock()
+    monkeypatch.setattr(client_module, "initialize_kaiwu_license", initializer)
+
+    with pytest.raises(ValueError, match="only the pinned Kaiwu 1.3.1"):
+        KaiwuSDKClient(checkpoint_dir=tmp_path, expected_version="1.4.1")
+
+    initializer.assert_not_called()
+
+
 def test_submit_and_poll_reuse_documented_task_identity(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

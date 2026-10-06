@@ -167,6 +167,9 @@ provider values or infer a mapping from field names alone.
   conformance lane. The reviewed contract is the official
   [Kaiwu 1.3.1 CIM API](https://kaiwu-sdk-docs.qboson.com/zh/v1.3.1/source/modules/kaiwu.cim.html),
   not the moving `latest` documentation.
+- The pinned client and every live launcher reject any SDK version other than
+  1.3.1 before license initialization or credential resolution. A caller cannot
+  select 1.4.1 while retaining 1.3.1 task-mode semantics.
 - No dependency declaration or extra is proposed until wheel source, license,
   hashes, supported platform, and redistribution constraints are reviewed.
 

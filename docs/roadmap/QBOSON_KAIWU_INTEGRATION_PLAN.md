@@ -119,6 +119,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   It no longer probes a newer `TaskMode` vocabulary or forwards 1.4.1 mode
   names into the 1.3.1 lane. Supporting 1.4.1 requires a separately pinned and
   tested adapter instead of runtime version guessing.
+- `KaiwuSDKClient` and every live QDiffusion/smoke entrypoint now reject an SDK
+  version other than 1.3.1 before license initialization or credential
+  resolution. This prevents a nominal 1.4.1 run from silently using the pinned
+  1.3.1 task-mode contract.
 - The 1.3.1 documentation declares `get_task_result(ising_matrix) -> dict` but
   does not document that dictionary's fields; the current 1.4.1 documentation
   still does not define provider task-ID or target keys. The pinned client now

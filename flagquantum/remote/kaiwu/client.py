@@ -34,6 +34,7 @@ _SAFE_SCHEMA_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}")
 _MAX_SCHEMA_FIELDS = 64
 _MAX_SCHEMA_SEQUENCE_TYPES = 64
 _MAX_SCHEMA_DIMENSIONS = 16
+_PINNED_SDK_VERSION = "1.3.1"
 _PINNED_1_3_1_TASK_MODES: dict[KaiwuTaskMode, str] = {
     "optimization": "quota",
     "sampling": "sample",
@@ -62,7 +63,7 @@ class KaiwuSDKClient:
         *,
         checkpoint_dir: str | Path,
         credentials: KaiwuCredentials | None = None,
-        expected_version: str = "1.3.1",
+        expected_version: str = _PINNED_SDK_VERSION,
         interval_minutes: int = 1,
     ) -> None:
         candidate = Path(checkpoint_dir).expanduser()
@@ -75,6 +76,10 @@ class KaiwuSDKClient:
         path = candidate.resolve()
         if type(interval_minutes) is not int or interval_minutes < 1:
             raise ValueError("interval_minutes must be an integer of at least one")
+        if expected_version != _PINNED_SDK_VERSION:
+            raise ValueError(
+                "KaiwuSDKClient supports only the pinned Kaiwu 1.3.1 contract"
+            )
         environment = initialize_kaiwu_license(
             credentials,
             expected_version=expected_version,

@@ -439,7 +439,7 @@ def main() -> None:
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--expected-sdk-version", default="1.3.1")
+    parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
     parser.add_argument("--requested-samples", type=int, default=10)
     parser.add_argument("--timeout", type=float, default=3600.0)
     parser.add_argument("--poll-interval", type=float, default=60.0)

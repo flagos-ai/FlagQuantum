@@ -307,7 +307,7 @@ def main() -> None:
     parser.add_argument("--plugin-revision", required=True)
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
-    parser.add_argument("--expected-sdk-version", default="1.3.1")
+    parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
     args = parser.parse_args()
     for label, path in {
         "config": args.config,
