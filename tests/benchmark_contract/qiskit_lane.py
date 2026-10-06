@@ -20,14 +20,13 @@ and the caller fails rather than passing.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 
-if sys.version_info >= (3, 11):
+try:
     import tomllib
-else:  # pragma: no cover - Python 3.10
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
