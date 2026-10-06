@@ -36,6 +36,41 @@ adapter must not import its external framework. The Braket SDK requires Python
 3.11 or newer, so its optional and aggregate requirements carry an environment
 marker while core FlagQuantum retains Python 3.10 support.
 
+A collected module must not name an optional root outside a guard. `cpu-core`
+installs `.[dev]` and PyTorch only, then collects `tests` and runs `tools`, so a
+module-level `import numpy` — or `import stim`, `import qiskit`, `import jax` —
+is a collection error on that lane and a passing suite on every developer
+machine that happens to have the extra installed. That asymmetry is the defect
+two suites shipped once each. `tools/check_dependency_policy.py` now reads the
+`tests` and `tools` sources and reports any reference to a
+`core_forbidden_imports` root that is not inside a `try` that absorbs the import
+error, a `pytest.importorskip` of that root, or a skip on a `find_spec` of that
+root; a `find_spec` that only inspects the result is not a guard. A guard on a
+root that *requires* the referenced root also counts — `pytest.importorskip
+("stim")` makes numpy importable, because stim requires it — and those
+implications are declared in `[import_policy.guard_implications]` with the
+distribution's own requirements as the citation, rather than exempted per file.
+`benchmarks` is out of scope deliberately: it holds standalone comparison
+scripts whose module-level imports are entry points, not modules any marker
+selects.
+
+`numpy` is itself on `core_forbidden_imports`. It appears in no extra, `torch`
+declares no numpy requirement, and `import flagquantum` loads it nowhere, so
+every `cpu-core` leg reports `Failed to initialize NumPy` while the suite still
+passes. Recording that as policy makes the existing absence proofs — the
+`cpu-core` assertion, `tests/unit/test_dependency_policy.py`, and the
+`check_import_time.py` probe — cover numpy without a second scanner.
+
+A standard-library module added in a later supported Python needs the
+`try`/`except ModuleNotFoundError` fallback, not a `sys.version_info` test.
+`tomllib` arrived in 3.11, so the 3.10 leg has no such module; the version test
+is a statement about the interpreter rather than a fallback, it cannot be
+simulated on a supported interpreter the way a missing import can, and it does
+not survive a stripped standard library. Every `tomllib` reference in
+`flagquantum`, `tests`, `tools`, and `benchmarks` is held to the `try` form, and
+the `cpu-core` job asserts that `tomllib` is present exactly where the
+interpreter provides it and that `tomli` is installed where it does not.
+
 Torch-FL is different from an interop SDK: it owns the FlagOS platform and
 vendor-runtime boundary. It is deliberately recorded as
 `managed_outside_flagquantum`, may not appear in core dependencies or a

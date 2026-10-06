@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
 from flagquantum.simulation.complex_bmm_dispatch import (
     _layout_complex_bmm_kernel_match,
     _require_layout_complex_bmm_kernel,
@@ -22,6 +23,35 @@ def test_layout_complex_bmm_dispatch_binds_exact_catalog_implementation() -> Non
     assert implementation.implementation_id == "FQKI-TRITON-NUM-002-A"
     assert implementation.symbol == "fused_complex_layout_bmm"
     assert implementation.directions == ("forward", "backward")
+
+
+def test_layout_complex_bmm_catalog_authorization_is_cached(monkeypatch) -> None:
+    calls = 0
+    original = complex_bmm_dispatch._layout_complex_bmm_kernel_match
+
+    def counted(*, device_type: str, dtype: str):
+        nonlocal calls
+        calls += 1
+        return original(device_type=device_type, dtype=dtype)
+
+    complex_bmm_dispatch._require_layout_complex_bmm_kernel.cache_clear()
+    monkeypatch.setattr(
+        complex_bmm_dispatch,
+        "_layout_complex_bmm_kernel_match",
+        counted,
+    )
+    try:
+        first = complex_bmm_dispatch._require_layout_complex_bmm_kernel(
+            device_type="cuda", dtype="complex64"
+        )
+        second = complex_bmm_dispatch._require_layout_complex_bmm_kernel(
+            device_type="cuda", dtype="complex64"
+        )
+    finally:
+        complex_bmm_dispatch._require_layout_complex_bmm_kernel.cache_clear()
+
+    assert first is second
+    assert calls == 1
 
 
 @pytest.mark.parametrize(

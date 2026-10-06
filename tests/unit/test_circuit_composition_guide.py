@@ -9,7 +9,7 @@ this test reuses it rather than restating it, so the two guides are checked by o
 convention instead of two that can drift apart.
 
 What this adds is not a second convention but a second file. The composition guide
-quotes the output of thirteen blocks, and a quoted transcript that nothing executes is
+quotes the output of eighteen blocks, and a quoted transcript that nothing executes is
 a transcript that can silently stop being true; ``docs/guides/ALGORITHMS.md`` is
 checked by the module above for exactly that reason, and this guide is held to the same
 rule.
