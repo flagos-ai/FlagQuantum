@@ -15,18 +15,17 @@ from __future__ import annotations
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+#: Largest amplitude count the flat local-gate kernels have been shown to address.
+#:
+#: The statevector gate kernels turn amplitude indices into one linear element
+#: offset and add it to a ``float32`` view of the state. Measured on an
+#: A800-SXM4-80GB, ``apply_complex64_local_cx_inplace`` returns the correct
+#: permutation at 2**31 and 2**32 amplitudes and dies with an illegal memory
+#: access at 2**33, which leaves the CUDA context unusable for the rest of the
+#: process. Launch wrappers refuse a larger state, and runtime dispatch keeps that
+#: shape on the index-based eager path, where the same run reports an ordinary
+#: out-of-memory error instead of an unrecoverable fault.
 FLAT_LOCAL_MAX_AMPLITUDES = 1 << 32
-"""Largest amplitude count the flat local-gate kernels have been shown to address.
-
-The statevector gate kernels turn amplitude indices into one linear element
-offset and add it to a ``float32`` view of the state. Measured on an
-A800-SXM4-80GB, ``apply_complex64_local_cx_inplace`` returns the correct
-permutation at 2**31 and 2**32 amplitudes and dies with an illegal memory
-access at 2**33, which leaves the CUDA context unusable for the rest of the
-process. Launch wrappers refuse a larger state, and runtime dispatch keeps that
-shape on the index-based eager path, where the same run reports an ordinary
-out-of-memory error instead of an unrecoverable fault.
-"""
 
 _EXPORT_MODULES = {
     "fused_complex_bmm": "complex_bmm",
