@@ -132,6 +132,14 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-010-A",
+        "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_matches_reference_and_exact_alias",
+        capability_tests=(
+            "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_non_cuda_state",
+            "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_unsupported_contracts",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-SV-013-A",
         "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
         capability_tests=(
