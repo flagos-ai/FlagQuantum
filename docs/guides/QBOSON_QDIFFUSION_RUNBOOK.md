@@ -42,10 +42,10 @@ or evidence JSON.
 
 Every quota-consuming evidence writer recursively scans all nested JSON keys
 and string values for both resolved credentials before serialization and
-refuses to create the record on a match. This includes credential strings that
-contain quotes, backslashes, or newlines and would otherwise be escaped in the
-serialized JSON. A refusal is a security failure to investigate, not a reason
-to edit and republish the attempted record.
+refuses to create the record on a match. Quotes and backslashes cannot bypass
+that scan after JSON escaping; embedded control or format characters are
+rejected earlier during credential resolution. A refusal is a security failure
+to investigate, not a reason to edit and republish the attempted record.
 
 Before provisioning either host, run the credential-free local golden path
 against clean checkouts at the pinned upstream revisions:

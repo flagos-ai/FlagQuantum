@@ -91,6 +91,9 @@ sampler.last_job.save("/absolute/private-evidence/qboson-receipt.json")
 The example is illustrative and does not approve these names as stable. In
 particular, the SDK client cannot be promoted until a real pinned response
 establishes provider task-ID, target, and terminal-state mappings.
+Explicit or dedicated-environment credentials are trimmed, must form one
+complete pair, and must contain only printable characters. Empty, partial, or
+control/format-bearing pairs fail without echoing either value.
 The prototype may persist a value-free schema of the documented
 `get_task_result` dictionary—bounded safe field names, types, lengths, dtypes,
 and shapes—to support that review. Unsafe or oversized names are omitted, the

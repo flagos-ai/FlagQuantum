@@ -42,7 +42,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `flagquantum/remote/kaiwu`: credentials are explicit, redacted, and
   non-serializable, and environment discovery requires the complete dedicated
   `QBOSON_USER_ID` plus `QBOSON_SDK_CODE` pair. No vendor SDK import or network
-  operation occurs during credential resolution.
+  operation occurs during credential resolution. Explicit and environment
+  values are trimmed and must remain nonempty and printable; embedded control
+  or format characters fail without echoing either credential.
 - A Kaiwu-specific experimental task lifecycle now covers single submission,
   normalized status, fail-closed result validation, bounded waiting, private
   receipt persistence, and restore without resubmission. Its in-memory fake

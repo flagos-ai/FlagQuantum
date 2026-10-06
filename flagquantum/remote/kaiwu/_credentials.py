@@ -6,6 +6,23 @@ import os
 from typing import NoReturn
 
 
+def _normalize_pair(
+    user_id: str,
+    sdk_code: str,
+    *,
+    error_type: type[ValueError] | type[RuntimeError],
+    source: str,
+) -> tuple[str, str]:
+    normalized = (user_id.strip(), sdk_code.strip())
+    if not all(normalized):
+        raise error_type(f"Kaiwu {source} credentials must not be empty")
+    if not all(value.isprintable() for value in normalized):
+        raise error_type(
+            f"Kaiwu {source} credentials must contain only printable characters"
+        )
+    return normalized
+
+
 class KaiwuCredentials:
     """One in-memory QBoson user ID and SDK authorization-code pair.
 
@@ -20,9 +37,12 @@ class KaiwuCredentials:
     def __init__(self, *, user_id: str, sdk_code: str) -> None:
         if not isinstance(user_id, str) or not isinstance(sdk_code, str):
             raise TypeError("Kaiwu user_id and sdk_code must be strings")
-        user_id, sdk_code = user_id.strip(), sdk_code.strip()
-        if not user_id or not sdk_code:
-            raise ValueError("Kaiwu user_id and sdk_code must not be empty")
+        user_id, sdk_code = _normalize_pair(
+            user_id,
+            sdk_code,
+            error_type=ValueError,
+            source="explicit",
+        )
         self._user_id = user_id
         self._sdk_code = sdk_code
 
@@ -63,7 +83,9 @@ def resolve_kaiwu_credentials(
             "Set both QBOSON_USER_ID and QBOSON_SDK_CODE; partial Kaiwu "
             "credentials are not allowed"
         )
-    user_id, sdk_code = user_id.strip(), sdk_code.strip()
-    if not user_id or not sdk_code:
-        raise RuntimeError("Kaiwu environment credentials must not be empty")
-    return user_id, sdk_code
+    return _normalize_pair(
+        user_id,
+        sdk_code,
+        error_type=RuntimeError,
+        source="environment",
+    )

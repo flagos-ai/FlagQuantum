@@ -29,6 +29,9 @@ def test_explicit_credentials_are_validated_redacted_and_not_serializable() -> N
         ("user", 1, TypeError),
         ("", "code", ValueError),
         ("user", " ", ValueError),
+        ("user\nname", "code", ValueError),
+        ("user", "code\tvalue", ValueError),
+        ("user\u200bname", "code", ValueError),
     ),
 )
 def test_explicit_credentials_reject_invalid_values(
@@ -93,3 +96,22 @@ def test_empty_environment_values_fail_without_echoing_values(
         resolve_kaiwu_credentials()
 
     assert "secret-value" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    ("user_id", "sdk_code"),
+    (("user\nname", "secret-value"), ("user", "secret\tvalue")),
+)
+def test_environment_credentials_reject_control_characters_without_echoing(
+    monkeypatch: pytest.MonkeyPatch,
+    user_id: str,
+    sdk_code: str,
+) -> None:
+    monkeypatch.setenv("QBOSON_USER_ID", user_id)
+    monkeypatch.setenv("QBOSON_SDK_CODE", sdk_code)
+
+    with pytest.raises(RuntimeError, match="printable characters") as error:
+        resolve_kaiwu_credentials()
+
+    assert user_id not in str(error.value)
+    assert sdk_code not in str(error.value)
