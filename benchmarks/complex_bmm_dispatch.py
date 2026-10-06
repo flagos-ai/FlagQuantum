@@ -450,10 +450,17 @@ def merge_runs(
         "implementation_id": IMPLEMENTATION_ID,
         "source_revision": next(iter(revisions)),
         "runner": RUNNER,
+        "execution_semantics": "single_device_fast_path",
+        "distribution_semantics": "single_device_fast_path",
+        "evidence_scope": "development_hardware_evidence",
+        "claim_evidence_type": "development_smoke",
         "benchmark_evidence_class": "local_non_release",
         "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "scalability_blockers": [
+            "single-device kernel benchmark is not distributed scalability evidence"
+        ],
         "required_hosts": sorted(required_hosts),
         "required_compiler_lanes": list(COMPILER_LANES),
         "triton_forward_win_on_all_cases": forward_wins,

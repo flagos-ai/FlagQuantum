@@ -220,3 +220,6 @@ def test_checked_in_a800_evidence_is_canonical_and_rejects_dispatch() -> None:
     assert payload["triton_forward_win_on_all_cases"] is False
     assert payload["triton_training_win_on_all_cases"] is False
     assert payload["runtime_dispatch_authorized"] is False
+    assert payload["distribution_semantics"] == "single_device_fast_path"
+    assert payload["claim_evidence_type"] == "development_smoke"
+    assert payload["scalability_blockers"]
