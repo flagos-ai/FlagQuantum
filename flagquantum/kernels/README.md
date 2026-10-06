@@ -75,6 +75,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-006 | `statevector.distributed.transpose_apply_1q` | `apply_complex64_transpose_1q_inplace`, `apply_complex64_transpose_1q_tle_inplace` (FlagTree TLE) |
 | FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
+| FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -351,6 +352,31 @@ surface, but does not authorize default dispatch. This is single-device
 development evidence only, not a distributed scalability or release claim.
 Reproduce or validate it with
 [`benchmarks/flagtree_tle_control_transport.py`](../../benchmarks/flagtree_tle_control_transport.py).
+
+`FQKI-TRITON-SV-009-A` applies an arbitrary dense 4-by-4 matrix directly to
+the four amplitudes addressed by two ordered local state bits. It avoids the
+general PyTorch path's full-state permutation, contiguous materialization,
+batched matrix multiplication, and inverse permutation. The wrapper accepts
+contiguous CUDA `complex64` statevectors, a constant 4-by-4 matrix, two
+distinct local bit positions, and an optional matching output buffer. Exact
+input/output aliasing is supported because each Triton program loads its
+complete disjoint four-amplitude group before storing any result. Public
+statevector dispatch remains a separate review step.
+
+The checked-in
+[`statevector_local_2q_a800.json`](../../benchmarks/results/local/statevector_local_2q_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed shapes spanning 65,536 through 16,777,216 amplitudes, adjacent and
+distant ordered bit pairs, and batch sizes one and four. It covers
+`jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0.
+Maximum absolute and relative L2 errors are `1.92e-6` and `7.45e-8`. Across
+all 20 host/compiler/shape cases the direct wrapper reaches `1.374x` to
+`6.099x` the speed of the exact PyTorch layout/BMM reference. The aggregate
+decision is `eligible_for_dispatch_evaluation`, so SV-009-A is provisional
+within this measured CUDA `complex64` window. This is bounded single-device
+development evidence, not a framework-wide, distributed, or release claim.
+Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_local_2q_probe.py`](../../benchmarks/internal/evidence/statevector_local_2q_probe.py).
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -988,8 +1014,8 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 26 semantics and 33 implementations are implemented. The 24 direct
-Triton `-A` implementations from SV-001 through SV-008, GR-001 through GR-006,
+The current 27 semantics and 34 implementations are implemented. The 25 direct
+Triton `-A` implementations from SV-001 through SV-009, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
 reason above, while the other listed routes have evidenced default-dispatch

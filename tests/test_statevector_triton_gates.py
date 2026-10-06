@@ -81,6 +81,39 @@ def test_generic_local_2q_matches_layout_reference_and_exact_alias() -> None:
         torch.testing.assert_close(aliased, expected, atol=2e-6, rtol=2e-6)
 
 
+def test_generic_local_2q_rejects_unsupported_contracts() -> None:
+    _require_cuda()
+    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+
+    state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+    with pytest.raises(ValueError, match="two distinct local bit positions"):
+        apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=2,
+            second_bit_position=2,
+        )
+    with pytest.raises(ValueError, match="4x4 matrix"):
+        apply_complex64_local_2q(
+            state,
+            matrix[:2, :2],
+            first_bit_position=1,
+            second_bit_position=4,
+        )
+    noncontiguous_output = torch.empty(
+        64, 2, dtype=torch.complex64, device="cuda"
+    ).transpose(0, 1)
+    with pytest.raises(ValueError, match="contiguous and match"):
+        apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=1,
+            second_bit_position=4,
+            output=noncontiguous_output,
+        )
+
+
 def test_control_one_pack_unpack_matches_index_reference() -> None:
     _require_cuda()
     from flagquantum.kernels.triton.statevector_gates import (

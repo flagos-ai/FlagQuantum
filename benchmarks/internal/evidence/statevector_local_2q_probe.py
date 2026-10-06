@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import re
 import shlex
 import socket
 import statistics
@@ -31,6 +32,10 @@ SHAPE_MATRIX = (
     (1, 1 << 24, 23, 0),
     (4, 1 << 20, 10, 3),
 )
+RESULT_NAMES = ("direct_kernel_wrapper", "pytorch_layout_bmm_reference")
+_FULL_REVISION = re.compile(r"^[0-9a-f]{40}$")
+_MAXIMUM_ABSOLUTE_ERROR = 2.0e-5
+_MAXIMUM_RELATIVE_L2_ERROR = 1.0e-6
 
 
 class TimingResult(TypedDict):
@@ -242,14 +247,104 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
     }
 
 
+def _validate_run(run: dict[str, Any]) -> None:
+    expected_fields = {
+        "schema": RUN_SCHEMA,
+        "semantic_id": SEMANTIC_ID,
+        "implementation_id": IMPLEMENTATION_ID,
+        "runner": RUNNER,
+        "execution_semantics": "single_device_fast_path",
+        "release_gate_allowed": False,
+        "scalability_claim_allowed": False,
+    }
+    for field, expected in expected_fields.items():
+        if run.get(field) != expected:
+            raise ValueError(f"SV-009 run field {field!r} is invalid")
+    if _FULL_REVISION.fullmatch(str(run.get("source_revision"))) is None:
+        raise ValueError("SV-009 source revision must be a full Git hash")
+    host = run.get("host_label")
+    lane = run.get("compiler_lane")
+    if host not in HOSTS or lane not in COMPILER_LANES:
+        raise ValueError("SV-009 run host or compiler lane is invalid")
+    compiler = run.get("compiler")
+    if not isinstance(compiler, dict):
+        raise ValueError("SV-009 compiler identity is missing")
+    expected_compiler = {
+        "stock_triton": ("triton", "direct"),
+        "flagtree": ("flagtree", "flagtree"),
+    }[lane]
+    if (
+        compiler.get("distribution"),
+        compiler.get("integration_path"),
+    ) != expected_compiler or compiler.get("identity_status") != "resolved":
+        raise ValueError("SV-009 compiler identity does not match its lane")
+    measurement = run.get("measurement")
+    if not isinstance(measurement, dict):
+        raise ValueError("SV-009 measurement policy is missing")
+    repeats = measurement.get("repeats")
+    if not isinstance(repeats, int) or repeats <= 0:
+        raise ValueError("SV-009 repeats must be positive")
+    expected_shapes = [
+        {
+            "batch": batch,
+            "amplitudes_per_batch": amplitudes,
+            "first_bit_position": first_bit_position,
+            "second_bit_position": second_bit_position,
+        }
+        for batch, amplitudes, first_bit_position, second_bit_position in SHAPE_MATRIX
+    ]
+    cases = run.get("cases")
+    if (
+        not isinstance(cases, list)
+        or [case.get("shape") for case in cases] != expected_shapes
+    ):
+        raise ValueError("SV-009 evidence shape matrix mismatch")
+    for index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            raise ValueError(f"SV-009 case {index} must be an object")
+        medians = {}
+        for result_name in RESULT_NAMES:
+            result = case.get(result_name)
+            if not isinstance(result, dict):
+                raise ValueError(f"SV-009 case {index} result is missing")
+            samples = result.get("samples_seconds_per_invocation")
+            if (
+                not isinstance(samples, list)
+                or len(samples) != repeats
+                or any(
+                    not isinstance(value, (int, float)) or value <= 0
+                    for value in samples
+                )
+            ):
+                raise ValueError(f"SV-009 case {index} samples are invalid")
+            median = statistics.median(samples)
+            if result.get("median_seconds_per_invocation") != median:
+                raise ValueError(f"SV-009 case {index} median is invalid")
+            medians[result_name] = median
+        speedup = (
+            medians["pytorch_layout_bmm_reference"] / medians["direct_kernel_wrapper"]
+        )
+        if case.get("speedup_over_pytorch") != speedup:
+            raise ValueError(f"SV-009 case {index} speedup is invalid")
+        absolute_error = case.get("maximum_absolute_error")
+        relative_error = case.get("relative_l2_error")
+        if (
+            not isinstance(absolute_error, (int, float))
+            or absolute_error > _MAXIMUM_ABSOLUTE_ERROR
+            or not isinstance(relative_error, (int, float))
+            or relative_error > _MAXIMUM_RELATIVE_L2_ERROR
+        ):
+            raise ValueError(f"SV-009 case {index} exceeds its error tolerance")
+
+
 def aggregate_runs(paths: list[Path]) -> dict[str, object]:
     """Validate and combine the canonical dual-host/compiler evidence matrix."""
 
     runs = [json.loads(path.read_text()) for path in paths]
     if len(runs) != len(HOSTS) * len(COMPILER_LANES):
         raise ValueError("SV-009 evidence requires exactly four raw runs")
-    if any(run.get("schema") != RUN_SCHEMA for run in runs):
-        raise ValueError("SV-009 raw-run schema mismatch")
+    for run in runs:
+        _validate_run(run)
     identities = {(run["host_label"], run["compiler_lane"]) for run in runs}
     expected_identities = {
         (host, compiler_lane) for host in HOSTS for compiler_lane in COMPILER_LANES

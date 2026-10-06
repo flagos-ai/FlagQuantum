@@ -1103,6 +1103,7 @@ def cx_sequence(
 
 __all__ = [
     "apply_complex64_local_1q",
+    "apply_complex64_local_2q",
     "apply_complex64_local_cx_inplace",
     "apply_complex64_local_cx_segment",
     "apply_complex64_transpose_1q_inplace",
