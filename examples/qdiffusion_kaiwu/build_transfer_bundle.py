@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -11,8 +10,18 @@ import subprocess
 from pathlib import Path
 
 if __package__:
+    from examples.qdiffusion_kaiwu.stable_source_tree import (
+        RegularFileSnapshot,
+        capture_regular_file,
+        revalidate_regular_file,
+    )
     from examples.qdiffusion_kaiwu.verify_transfer_bundle import verify_transfer_bundle
 else:  # Direct execution through the documented file path.
+    from stable_source_tree import (
+        RegularFileSnapshot,
+        capture_regular_file,
+        revalidate_regular_file,
+    )
     from verify_transfer_bundle import verify_transfer_bundle
 
 PLUGIN_REVISION = "f047bce7b1077449967bbe9e9fab5741542b48d4"
@@ -48,10 +57,6 @@ def _checkout_revision(root: Path, *, expected_revision: str | None) -> str:
     return revision
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def _write_exclusive(path: Path, payload: object) -> None:
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
@@ -63,7 +68,7 @@ def _write_exclusive(path: Path, payload: object) -> None:
 
 def _archive(
     checkout: Path, *, output: Path, prefix: str, revision: str
-) -> dict[str, str]:
+) -> tuple[dict[str, str], RegularFileSnapshot]:
     _git(
         checkout,
         "archive",
@@ -73,11 +78,15 @@ def _archive(
         revision,
     )
     output.chmod(0o600)
-    return {
-        "filename": output.name,
-        "revision": revision,
-        "sha256": _sha256(output),
-    }
+    snapshot = capture_regular_file(output, label="source transfer archive")
+    return (
+        {
+            "filename": output.name,
+            "revision": revision,
+            "sha256": snapshot.sha256,
+        },
+        snapshot,
+    )
 
 
 def build_transfer_bundle(
@@ -105,7 +114,7 @@ def build_transfer_bundle(
     )
 
     output_dir.mkdir(mode=0o700, parents=True)
-    artifacts = [
+    captured_archives = [
         _archive(
             flagquantum_root,
             output=output_dir / f"flagquantum-qboson-{source_revision[:10]}.tar.gz",
@@ -125,6 +134,10 @@ def build_transfer_bundle(
             revision=community_revision,
         ),
     ]
+    artifacts = [artifact for artifact, _ in captured_archives]
+    archive_snapshots = [snapshot for _, snapshot in captured_archives]
+    for snapshot in archive_snapshots:
+        revalidate_regular_file(snapshot, label="source transfer archive")
     manifest = {
         "schema": "flagquantum.qboson_a800_transfer_bundle",
         "version": "1.0",
@@ -143,10 +156,16 @@ def build_transfer_bundle(
         / f"flagquantum-qboson-a800-bundle-{source_revision[:10]}.manifest.json"
     )
     _write_exclusive(manifest_path, manifest)
+    manifest_snapshot = capture_regular_file(
+        manifest_path, label="source transfer manifest"
+    )
     for host in ("jp-a800-171", "jp-a800-172"):
         verified = verify_transfer_bundle(manifest_path, target_host=host)
         if verified.get("safe_to_extract") is not True:
             raise RuntimeError(f"built transfer bundle failed verification for {host}")
+    for snapshot in archive_snapshots:
+        revalidate_regular_file(snapshot, label="source transfer archive")
+    revalidate_regular_file(manifest_snapshot, label="source transfer manifest")
     return manifest_path
 
 

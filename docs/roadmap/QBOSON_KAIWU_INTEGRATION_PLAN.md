@@ -372,6 +372,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   description, after which leaf metadata, visible path binding, parent binding,
   and the exact colocated archive-name set are rechecked. Replacement can no
   longer splice independently valid bytes into the hash and archive passes.
+- The bundle builder now captures each freshly generated archive as a stable
+  no-follow snapshot and derives the manifest digest from it. All three archive
+  snapshots plus the exclusive manifest snapshot remain bound until both host
+  verification passes finish; a replacement during self-verification makes the
+  build fail instead of returning a reviewed manifest.
 - Post-extraction verification independently reopens each archive through the
   same private descriptor boundary, rehashes it against the captured manifest,
   and compares extracted content using that identical open description. An

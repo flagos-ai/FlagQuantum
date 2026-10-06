@@ -174,7 +174,10 @@ previous run.
 Build the reviewed source bundle from clean checkouts before transfer. The
 builder requires the pinned plugin and Community revisions, creates a new mode
 0700 directory, writes mode-0600 archives and manifest, and self-verifies for
-both target aliases:
+both target aliases. Manifest digests come from stable no-follow snapshots of
+the freshly generated archives; the builder retains those three snapshots and
+the manifest snapshot until both self-verification passes complete, so a
+same-content replacement during review fails the build:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.build_transfer_bundle \

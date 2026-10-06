@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from examples.qdiffusion_kaiwu import build_transfer_bundle as build_module
 from examples.qdiffusion_kaiwu import stable_source_tree as source_tree_module
 from examples.qdiffusion_kaiwu import verify_extracted_bundle as extracted_module
 from examples.qdiffusion_kaiwu import verify_transfer_bundle as transfer_module
@@ -19,6 +20,53 @@ from examples.qdiffusion_kaiwu.verify_transfer_bundle import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_bundle_builder_retains_archive_snapshots_through_host_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    roots = [tmp_path / name for name in ("flagquantum", "plugin", "community")]
+    for root in roots:
+        root.mkdir()
+    revisions = iter(("a" * 40, "b" * 40, "c" * 40))
+    monkeypatch.setattr(
+        build_module,
+        "_checkout_revision",
+        lambda *args, **kwargs: next(revisions),
+    )
+
+    def fake_git(root: Path, *arguments: str) -> str:
+        del root
+        output_argument = next(
+            argument for argument in arguments if argument.startswith("--output=")
+        )
+        Path(output_argument.removeprefix("--output=")).write_bytes(b"archive")
+        return ""
+
+    monkeypatch.setattr(build_module, "_git", fake_git)
+    calls = 0
+
+    def verify_then_replace(manifest_path: Path, *, target_host: str):
+        nonlocal calls
+        del target_host
+        calls += 1
+        if calls == 1:
+            archive = next(manifest_path.parent.glob("*.tar.gz"))
+            archive.write_bytes(archive.read_bytes())
+            archive.chmod(0o600)
+        return {"safe_to_extract": True}
+
+    monkeypatch.setattr(
+        build_module, "verify_transfer_bundle", verify_then_replace
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        build_module.build_transfer_bundle(
+            flagquantum_root=roots[0],
+            plugin_root=roots[1],
+            community_root=roots[2],
+            output_dir=tmp_path / "bundle",
+        )
 
 
 def _archive(path: Path, *, root: str, unsafe_name: str | None = None) -> str:
