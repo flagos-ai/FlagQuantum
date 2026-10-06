@@ -862,9 +862,10 @@ def _execute_statevector_program(
         if name in {"ccx", "cswap"}:
             from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
 
+            first_qubit, second_qubit, third_qubit = instruction.wires
             dispatched = _try_apply_cataloged_reversible_3q(
                 output,
-                qubits=instruction.wires,
+                qubits=(first_qubit, second_qubit, third_qubit),
                 n_qubits=circuit.n_qubits,
                 opcode=name,
             )
