@@ -34,7 +34,7 @@ _ARTIFACT = (
     / "local"
     / "statevector_pauli_rotation_2q_a800.json"
 )
-_EVIDENCE_REVISION = "9580aefd001af4a3f1f54862d01ff9a16a527ac9"
+_EVIDENCE_REVISION = "1e2483f832b2547bcf92c1d5697a2734a11de205"
 
 
 def _run(host: str, compiler_lane: str, *, revision: str = "a" * 40) -> dict[str, Any]:
