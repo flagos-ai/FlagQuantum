@@ -32,6 +32,7 @@ from flagquantum.qec import (
     PhenomenologicalNoise,
     RepetitionCode,
     RotatedSurfaceCode,
+    SteaneCode,
     build_memory_circuit,
     sample_memory_circuit,
     sample_memory_measurements,
@@ -335,6 +336,50 @@ def test_a_noiseless_run_pins_parities_rather_than_bits() -> None:
     )
     assert int(events.detectors.sum()) == 0
     assert int(events.observables.sum()) == 0
+
+
+def test_the_readout_basis_swaps_which_round_zero_handles_are_pinned() -> None:
+    """The preparation is the basis, so it is the basis that pins a handle.
+
+    The test above pins which handles are deterministic in the default Z-basis
+    experiment. The same statement read over the other basis is the evidence that
+    the basis is a property of the experiment rather than a relabelling of it: an
+    X-basis preparation stabilizes the check class it is prepared in, so round
+    zero of those checks reads 0 and round zero of the other class reads unbiased,
+    which is the reverse of the Z-basis reading. Asserting only one basis would
+    also pass for an implementation that ignored the field and always prepared in
+    Z, so both are read and they are required to differ.
+    """
+
+    code = SteaneCode()
+    x_type = {check.ancilla_qubit for check in code.checks if check.stabilizer.x_qubits}
+    z_type = {check.ancilla_qubit for check in code.checks if check.stabilizer.z_qubits}
+    assert x_type and z_type
+
+    rates: dict[str, dict[str, float]] = {}
+    for basis in ("z", "x"):
+        memory = build_memory_circuit(code, rounds=3, readout_basis=basis)
+        samples = sample_memory_measurements(
+            memory, noise=PhenomenologicalNoise(), shots=512, seed=47
+        )
+        rates[basis] = {
+            "own": max(
+                float(
+                    samples.outcome(MeasurementRef(0, ancilla)).to(torch.float64).mean()
+                )
+                for ancilla in (z_type if basis == "z" else x_type)
+            ),
+            "other": min(
+                float(
+                    samples.outcome(MeasurementRef(0, ancilla)).to(torch.float64).mean()
+                )
+                for ancilla in (x_type if basis == "z" else z_type)
+            ),
+        }
+
+    for basis in ("z", "x"):
+        assert rates[basis]["own"] == 0.0, (basis, rates[basis])
+        assert 0.4 < rates[basis]["other"] < 0.6, (basis, rates[basis])
 
 
 def test_a_measurement_flip_fires_a_deterministic_handle_at_its_stated_rate() -> None:

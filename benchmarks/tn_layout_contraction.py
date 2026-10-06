@@ -16,10 +16,13 @@ from typing import Any, TypeAlias, TypedDict
 import torch
 
 from flagquantum.kernels.provenance import triton_compiler_provenance
-from flagquantum.simulation.real_imag_kernels import _FUSED_LAYOUT_BMM_SHAPES
+from flagquantum.simulation.real_imag_kernels import (
+    _FUSED_LAYOUT_BMM_SHAPES,
+    complex_einsum_pair,
+)
 
-RUN_SCHEMA = "flagquantum.kernel_benchmark_run.tn_layout_contraction.v2"
-EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.tn_layout_contraction.v2"
+RUN_SCHEMA = "flagquantum.kernel_benchmark_run.tn_layout_contraction.v3"
+EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.tn_layout_contraction.v3"
 SEMANTIC_ID = "numerics.matmul.complex_batched_layout"
 IMPLEMENTATION_ID = "FQKI-TRITON-NUM-002-A"
 RUNNER = "benchmarks/tn_layout_contraction.py"
@@ -42,6 +45,8 @@ RESULT_NAMES = (
     "direct_layout_forward_backward",
     "native_einsum_forward_backward",
 )
+MEASUREMENT_ORDERING = "balanced Latin square across all measured operations"
+FALLBACK_OVERHEAD_ESTIMATOR = "median paired per-repeat public-minus-native seconds"
 
 LayoutShapes: TypeAlias = tuple[
     tuple[int, ...],
@@ -119,8 +124,6 @@ def _materialized(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
 
 
 def _public(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
-    from flagquantum.simulation.real_imag_kernels import complex_einsum_pair
-
     return complex_einsum_pair(EQUATION, left, right)
 
 
@@ -138,32 +141,72 @@ def _public_route(left: torch.Tensor, right: torch.Tensor) -> str:
     return "native_einsum"
 
 
-def _measure(
-    function: Callable[[], object],
+def _counterbalanced_orders(
+    names: Sequence[str], repeats: int
+) -> tuple[tuple[str, ...], ...]:
+    """Return a balanced Latin-square order for every measurement repeat."""
+
+    if not names:
+        raise ValueError("at least one measured operation is required")
+    if len(set(names)) != len(names):
+        raise ValueError("measured operation names must be unique")
+    if repeats <= 0 or repeats % len(names) != 0:
+        raise ValueError("repeats must be a positive multiple of operation count")
+    count = len(names)
+    if count % 2:
+        raise ValueError(
+            "balanced measurement ordering requires an even operation count"
+        )
+    first_row = tuple(
+        0 if index == 0 else (index + 1) // 2 if index % 2 else count - index // 2
+        for index in range(count)
+    )
+    return tuple(
+        tuple(names[(item + repeat) % count] for item in first_row)
+        for repeat in range(repeats)
+    )
+
+
+def _measure_group(function: Callable[[], object], group_size: int) -> float:
+    started = time.perf_counter()
+    for _ in range(group_size):
+        function()
+    torch.cuda.synchronize()
+    return (time.perf_counter() - started) / group_size
+
+
+def _measure_operations(
+    operations: Mapping[str, Callable[[], object]],
     *,
     warmup: int,
     repeats: int,
     group_size: int,
-) -> Measurement:
+) -> dict[str, Measurement]:
+    if tuple(operations) != RESULT_NAMES:
+        raise ValueError("measurement operations must follow RESULT_NAMES")
     for _ in range(warmup):
-        function()
-    torch.cuda.synchronize()
-    allocated_before = torch.cuda.memory_allocated()
-    torch.cuda.reset_peak_memory_stats()
-    samples: list[float] = []
-    for _ in range(repeats):
-        started = time.perf_counter()
-        for _ in range(group_size):
+        for function in operations.values():
             function()
-        torch.cuda.synchronize()
-        samples.append((time.perf_counter() - started) / group_size)
+    torch.cuda.synchronize()
+    samples: dict[str, list[float]] = {name: [] for name in operations}
+    peak_memory: dict[str, list[int]] = {name: [] for name in operations}
+    peak_deltas: dict[str, list[int]] = {name: [] for name in operations}
+    for order in _counterbalanced_orders(tuple(operations), repeats):
+        for name in order:
+            torch.cuda.reset_peak_memory_stats()
+            allocated_before = torch.cuda.memory_allocated()
+            samples[name].append(_measure_group(operations[name], group_size))
+            peak = torch.cuda.max_memory_allocated()
+            peak_memory[name].append(peak)
+            peak_deltas[name].append(max(0, peak - allocated_before))
     return {
-        "samples_seconds_per_invocation": samples,
-        "median_seconds_per_invocation": statistics.median(samples),
-        "peak_memory_bytes": torch.cuda.max_memory_allocated(),
-        "peak_memory_delta_bytes": max(
-            0, torch.cuda.max_memory_allocated() - allocated_before
-        ),
+        name: {
+            "samples_seconds_per_invocation": samples[name],
+            "median_seconds_per_invocation": statistics.median(samples[name]),
+            "peak_memory_bytes": max(peak_memory[name]),
+            "peak_memory_delta_bytes": max(peak_deltas[name]),
+        }
+        for name in operations
     }
 
 
@@ -241,44 +284,20 @@ def _case(
             output_gradient,
         )
 
-    results = {
-        "direct_layout_forward": _measure(
-            lambda: _direct(left, right, shapes),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "materialized_torch_bmm_forward": _measure(
-            lambda: _materialized(left, right),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "native_einsum_forward": _measure(
-            lambda: torch.einsum(EQUATION, left, right),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "public_catalog_dispatch": _measure(
-            lambda: _public(left, right),
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "direct_layout_forward_backward": _measure(
-            direct_forward_backward,
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
-        "native_einsum_forward_backward": _measure(
-            native_forward_backward,
-            warmup=warmup,
-            repeats=repeats,
-            group_size=group_size,
-        ),
+    operations = {
+        "direct_layout_forward": lambda: _direct(left, right, shapes),
+        "materialized_torch_bmm_forward": lambda: _materialized(left, right),
+        "native_einsum_forward": lambda: torch.einsum(EQUATION, left, right),
+        "public_catalog_dispatch": lambda: complex_einsum_pair(EQUATION, left, right),
+        "direct_layout_forward_backward": direct_forward_backward,
+        "native_einsum_forward_backward": native_forward_backward,
     }
+    results = _measure_operations(
+        operations,
+        warmup=warmup,
+        repeats=repeats,
+        group_size=group_size,
+    )
     output_errors = [direct - native, materialized - native, public - native]
     gradient_errors = [
         actual - reference
@@ -409,6 +428,8 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         "measurement": {
             "clock": "time.perf_counter",
             "synchronization": "torch.cuda.synchronize after each invocation group",
+            "ordering": MEASUREMENT_ORDERING,
+            "order_cycle_length": len(RESULT_NAMES),
             "warmup": args.warmup,
             "repeats": args.repeats,
             "group_size": args.group_size,
@@ -434,6 +455,12 @@ def _positive_number(value: object, name: str) -> float:
     if not isinstance(value, (int, float)) or value <= 0:
         raise ValueError(f"{name} must be a positive number")
     return float(value)
+
+
+def _positive_integer(value: object, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
 
 
 def validate_run(payload: Mapping[str, Any]) -> None:
@@ -467,8 +494,14 @@ def validate_run(payload: Mapping[str, Any]) -> None:
         raise ValueError(f"unresolved compiler identity for lane {lane!r}")
     measurement = _mapping(payload.get("measurement"), "measurement")
     repeats = measurement.get("repeats")
-    if not isinstance(repeats, int) or repeats <= 0:
-        raise ValueError("measurement repeats must be a positive integer")
+    if not isinstance(repeats, int) or repeats <= 0 or repeats % len(RESULT_NAMES) != 0:
+        raise ValueError(
+            "measurement repeats must be a positive multiple of operation count"
+        )
+    if measurement.get("ordering") != MEASUREMENT_ORDERING:
+        raise ValueError("measurement ordering must be the balanced Latin square")
+    if measurement.get("order_cycle_length") != len(RESULT_NAMES):
+        raise ValueError("measurement order_cycle_length is invalid")
     if not isinstance(measurement.get("warmup"), int) or measurement["warmup"] < 0:
         raise ValueError("measurement warmup must be a non-negative integer")
     if (
@@ -482,23 +515,24 @@ def validate_run(payload: Mapping[str, Any]) -> None:
     for index, case_value in enumerate(cases):
         case = _mapping(case_value, f"cases[{index}]")
         shape = _mapping(case.get("shape"), f"cases[{index}].shape")
-        observed_shapes.append(
-            tuple(
-                shape.get(field)
-                for field in (
-                    "batch",
-                    "rows",
-                    "reduction_left",
-                    "reduction_right",
-                    "columns",
-                )
-            )
+        shape_fields = (
+            "batch",
+            "rows",
+            "reduction_left",
+            "reduction_right",
+            "columns",
         )
+        shape_values = tuple(
+            _positive_integer(shape.get(field), f"cases[{index}].shape.{field}")
+            for field in shape_fields
+        )
+        observed_shapes.append(shape_values)
+        batch, rows, reduction_left, reduction_right, columns = shape_values
         expected_logical_shape = (
-            shape.get("batch"),
-            shape.get("rows"),
-            shape.get("reduction_left") * shape.get("reduction_right"),
-            shape.get("columns"),
+            batch,
+            rows,
+            reduction_left * reduction_right,
+            columns,
         )
         if tuple(case.get("logical_bmm_shape", ())) != expected_logical_shape:
             raise ValueError(f"cases[{index}] records the wrong logical BMM shape")
@@ -582,11 +616,33 @@ def validate_run(payload: Mapping[str, Any]) -> None:
 
 
 def _fallback_within_overhead_budget(case: Mapping[str, Any]) -> bool:
-    public_seconds = case["public_catalog_dispatch"]["median_seconds_per_invocation"]
-    native_seconds = case["native_einsum_forward"]["median_seconds_per_invocation"]
+    public_result = _mapping(
+        case.get("public_catalog_dispatch"), "public_catalog_dispatch"
+    )
+    native_result = _mapping(case.get("native_einsum_forward"), "native_einsum_forward")
+    public_samples = _sequence(
+        public_result.get("samples_seconds_per_invocation"),
+        "public dispatch samples",
+    )
+    native_samples = _sequence(
+        native_result.get("samples_seconds_per_invocation"),
+        "native einsum samples",
+    )
+    if len(public_samples) != len(native_samples) or not public_samples:
+        raise ValueError("fallback measurements require paired non-empty samples")
+    paired_overheads = [
+        _positive_number(public_sample, f"public sample {index}")
+        - _positive_number(native_sample, f"native sample {index}")
+        for index, (public_sample, native_sample) in enumerate(
+            zip(public_samples, native_samples, strict=True)
+        )
+    ]
+    public_speedup = _positive_number(
+        case["public_dispatch_speedup_over_native"], "public dispatch speedup"
+    )
     return (
-        case["public_dispatch_speedup_over_native"] >= FALLBACK_MINIMUM_SPEEDUP
-        or public_seconds - native_seconds <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
+        public_speedup >= FALLBACK_MINIMUM_SPEEDUP
+        or statistics.median(paired_overheads) <= FALLBACK_MAXIMUM_OVERHEAD_SECONDS
     )
 
 
@@ -664,6 +720,7 @@ def merge_runs(
         "fallback_within_overhead_budget_on_all_cases": fallback_within_budget,
         "fallback_minimum_speedup": FALLBACK_MINIMUM_SPEEDUP,
         "fallback_maximum_overhead_seconds": FALLBACK_MAXIMUM_OVERHEAD_SECONDS,
+        "fallback_overhead_estimator": FALLBACK_OVERHEAD_ESTIMATOR,
         "direct_training_win_on_all_cases": direct_training_wins,
         "dispatch_evidence_decision": (
             "retain_current_policy"
@@ -691,6 +748,7 @@ def validate_evidence(payload: Mapping[str, Any]) -> None:
         "non_release_evidence": True,
         "release_gate_allowed": False,
         "scalability_claim_allowed": False,
+        "fallback_overhead_estimator": FALLBACK_OVERHEAD_ESTIMATOR,
         "scalability_blockers": [
             "single-device kernel benchmark is not distributed scalability evidence"
         ],
@@ -741,9 +799,15 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.action == "run":
-        if args.warmup < 0 or args.repeats <= 0 or args.group_size <= 0:
+        if (
+            args.warmup < 0
+            or args.repeats <= 0
+            or args.repeats % len(RESULT_NAMES) != 0
+            or args.group_size <= 0
+        ):
             raise ValueError(
-                "warmup must be non-negative; repeats and group_size must be positive"
+                "warmup must be non-negative; repeats must be a positive multiple "
+                "of operation count; group_size must be positive"
             )
         payload = collect_run(args)
         validate_run(payload)

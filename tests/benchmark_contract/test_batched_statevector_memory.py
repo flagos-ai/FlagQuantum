@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum.benchmarking as runners
+import flagquantum.benchmarking.batched_statevector_memory as memory_runner
 from flagquantum.benchmarking.batched_statevector_memory import (
     SCHEMA,
     render_markdown,
@@ -20,6 +21,60 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 def test_memory_runner_is_registered_and_lazy() -> None:
     assert "batched_statevector_memory" in runners.names()
     assert callable(runners.resolve("batched_statevector_memory"))
+
+
+def test_all_rss_probes_run_before_parent_timing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[tuple[str, str]] = []
+
+    def fake_probe_engine(**kwargs: object) -> dict[str, object]:
+        engine = str(kwargs["engine"])
+        events.append(("probe", engine))
+        return {
+            "engine": engine,
+            "peak_rss_bytes": 20,
+            "pre_execution_peak_rss_bytes": 10,
+            "execution_peak_rss_growth_bytes": 10,
+            "cold_execution_seconds": 0.01,
+            "output_shape": (1, 16),
+            "maximum_norm_error": 0.0,
+            "measurement": "fresh_process_ru_maxrss",
+        }
+
+    def fake_run_case(**kwargs: object) -> dict[str, object]:
+        workload = str(kwargs["workload"])
+        events.append(("timing", workload))
+        engines = tuple(str(item) for item in kwargs["engines"])  # type: ignore[union-attr]
+        return {
+            "engines": {engine: {} for engine in engines},
+            "correctness": {"passed": True},
+            "stability": {"passed": True},
+        }
+
+    monkeypatch.setattr(memory_runner, "_probe_engine", fake_probe_engine)
+    monkeypatch.setattr(memory_runner, "run_case", fake_run_case)
+    monkeypatch.setattr(memory_runner, "_configure_threads", lambda _threads: {})
+
+    run_benchmark(
+        workloads=(
+            "hardware_efficient_statevector",
+            "truncated_qft_statevector",
+        ),
+        n_qubits=(4,),
+        batch_sizes=(1,),
+        engines=("flagquantum_native_batch", "flagquantum_native_serial"),
+        threads=1,
+        warmup=0,
+        iterations=1,
+        memory_probes=1,
+    )
+
+    first_timing = next(
+        index for index, event in enumerate(events) if event[0] == "timing"
+    )
+    assert all(event[0] == "probe" for event in events[:first_timing])
+    assert sum(event[0] == "probe" for event in events) == 4
 
 
 @pytest.mark.skipif(not Path("/usr").exists(), reason="requires a Unix process model")

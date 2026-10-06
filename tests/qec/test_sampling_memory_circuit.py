@@ -41,6 +41,7 @@ from flagquantum.qec import (
     PhenomenologicalNoise,
     RepetitionCode,
     RotatedSurfaceCode,
+    SteaneCode,
     build_memory_circuit,
     sample_memory_circuit,
 )
@@ -83,9 +84,18 @@ _NOISES = (
     pytest.param(PhenomenologicalNoise(data_flip=1.0, measurement_flip=1.0), id="both"),
 )
 
+# One record read out both ways. The Steane code declares a logical observable in
+# each basis, so the two experiments differ only in the basis their data qubits
+# are prepared and read in, and the sampler has to follow the record rather than
+# the circuit shape, which is the same for both.
+_BASES = (
+    pytest.param(SteaneCode(), 3, "z", id="steane-d3-z"),
+    pytest.param(SteaneCode(), 3, "x", id="steane-d3-x"),
+)
 
-def _memory(code, rounds: int):
-    return build_memory_circuit(code, rounds=rounds)
+
+def _memory(code, rounds: int, basis: str = "z"):
+    return build_memory_circuit(code, rounds=rounds, readout_basis=basis)
 
 
 def _tolerance(rates: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -216,6 +226,90 @@ def test_the_sampled_observable_rates_match_the_model(code, rounds: int) -> None
         f"widest observable deviation is {float(deviation.max()):.2f} standard "
         f"errors at observable {int(deviation.argmax())}"
     )
+
+
+@pytest.mark.parametrize(("code", "rounds", "basis"), _BASES)
+def test_the_model_and_the_sampler_agree_in_either_readout_basis(
+    code, rounds: int, basis: str
+) -> None:
+    """The join holds in both bases, and the model is what proves it.
+
+    The model is derived from the same record through the construction route,
+    which reads the source's basis rotation for itself, so agreement here is two
+    independent readings of one basis rather than one reading compared with
+    itself. The exact half runs at probability one, where a location on the wrong
+    side of the rotation would change a parity; the statistical half adds the
+    detector pair rates, which a marginal comparison cannot see.
+    """
+
+    memory = _memory(code, rounds, basis)
+    exact = PhenomenologicalNoise(data_flip=1.0, measurement_flip=1.0)
+    sample = sample_memory_circuit(memory, noise=exact, shots=4, seed=_SEED)
+    expected = DetectorErrorModel.from_memory_circuit(memory, noise=exact).dem_sampling(
+        shots=1, seed=0
+    )
+
+    for shot in range(sample.shots):
+        assert sample.detectors[shot].tolist() == expected.detectors[0].tolist()
+        assert sample.observables[shot].tolist() == expected.observables[0].tolist()
+
+    physical = PhenomenologicalNoise(
+        data_flip=_PROBABILITY, measurement_flip=_PROBABILITY
+    )
+    model = DetectorErrorModel.from_memory_circuit(memory, noise=physical)
+    sampled = sample_memory_circuit(memory, noise=physical, shots=_SHOTS, seed=_SEED)
+
+    observed = np.asarray(sampled.detectors.numpy(), dtype=np.float64).mean(axis=0)
+    expected_rates = model.detector_rates().numpy()
+    assert (
+        float((np.abs(observed - expected_rates) / _tolerance(expected_rates)).max())
+        <= _SIGMA
+    )
+    pair = np.asarray(sampled.detectors.numpy(), dtype=np.float64)
+    observed_pair = (pair[:, :, None] * pair[:, None, :]).mean(axis=0)
+    expected_pair = _exact_pair_rates(model)
+    assert (
+        float((np.abs(observed_pair - expected_pair) / _tolerance(expected_pair)).max())
+        <= _SIGMA
+    )
+
+
+@pytest.mark.parametrize(("code", "rounds", "basis"), _BASES)
+def test_the_rotation_offsets_every_round_without_becoming_a_round(
+    code, rounds: int, basis: str
+) -> None:
+    """The rotation is the experiment's, so it moves the rounds and is not one.
+
+    A Z-basis experiment lowers to the round loop alone; an X-basis one lowers to
+    one rotation instruction per data qubit and then the same loop. Every round
+    boundary is therefore shifted by the rotation's length, which is what the
+    sampler places its locations against, while the rotation itself must not be
+    read as a round: it is one location per qubit rather than a block measuring
+    every check, and a plan that counted it as a round would either refuse the
+    program or attribute a data fault to round one round too early.
+    """
+
+    memory = _memory(code, rounds, basis)
+    plan = _measurement_plan(memory)
+    noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.02)
+    located = {
+        (item.kind, item.round_index, item.wire): item.instruction_index
+        for item in _noise_locations(memory, plan, noise)
+    }
+
+    assert plan.offset == (len(code.data_qubits) if basis == "x" else 0)
+    assert located[("data", 0, 0)] == plan.offset
+    assert located[("data", 1, 1)] == plan.offset + plan.block
+    assert located[("data", 2, 2)] == plan.offset + 2 * plan.block
+    assert (
+        located[("measurement", 0, memory.code.checks[0].ancilla_qubit)]
+        == plan.offset + plan.measure_offsets[0]
+    )
+    assert (
+        located[("measurement", 2, memory.code.checks[-1].ancilla_qubit)]
+        == plan.offset + 2 * plan.block + plan.measure_offsets[-1]
+    )
+    assert plan.offset < plan.block
 
 
 @pytest.mark.parametrize(("code", "rounds"), _CODES)

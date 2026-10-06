@@ -23,9 +23,9 @@ them published with the mechanism that produces it; that on seven seeded populat
 the rule removes **832** instructions alone and a net **+23** once the other passes
 have run, with the worst outcome-distribution movement **2.78e-16** against a
 control that moves **3.95e-02**; and that the Qiskit anchor -- which does not exist
-in 1.2.4 and is measured on 2.0.3 -- disagrees with the rule on **17** rows, every
-one of them a row where the matrix is minus the identity, and agrees with the
-phase-blind column on all **155**.
+in 1.2.4 and is measured on a certified lane that has it -- disagrees with the rule
+on **17** rows, every one of them a row where the matrix is minus the identity, and
+agrees with the phase-blind column on all **155**.
 
 These tests hold that evidence in place. They fail if the rule stops being read from
 the declaration, if the fold is narrowed back to ``2*pi``, if a row the matrix makes
@@ -46,6 +46,7 @@ from benchmarks.compiler_identity_elimination import (
     _TWO_PI,
     run_benchmark,
 )
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -393,15 +394,18 @@ _DELTA = {
 }
 
 #: The anchor. ``RemoveIdentityEquivalent`` does not exist in Qiskit 1.2.4 at all, so
-#: the comparison is against 2.0.3, and 2.0.3 is a *band*: it removes any gate whose
-#: average gate fidelity with the identity clears a cutoff, where this rule removes
-#: only an exact identity. The two therefore cannot agree, and every row where they
-#: differ is one where the runtime matrix is *minus* the identity -- a sign this rule
-#: cannot drop. The anchor's own fidelity test is sign-blind, so it is compared with
-#: the phase-blind column and not with the exact one.
+#: the comparison is against a certified lane that has it, and that pass is a *band*:
+#: it removes any gate whose average gate fidelity with the identity clears a cutoff,
+#: where this rule removes only an exact identity. The two therefore cannot agree, and
+#: every row where they differ is one where the runtime matrix is *minus* the identity
+#: -- a sign this rule cannot drop. The anchor's own fidelity test is sign-blind, so it
+#: is compared with the phase-blind column and not with the exact one.
+#:
+#: The Qiskit release is deliberately not in here, for the reason given in
+#: ``qiskit_lane``: it is the instrument rather than a reading, and a patch release
+#: does not move any of these numbers. The instrument is checked separately below.
 _ANCHOR = {
     "pass_name": "RemoveIdentityEquivalent",
-    "qiskit_version": "2.0.3",
     "present_in_qiskit_1_2_4": False,
     "row_count": 155,
     "removed_count": 53,
@@ -855,17 +859,23 @@ def test_the_anchor_is_compared_on_the_column_its_own_instrument_can_see(
     """The Qiskit anchor is a fidelity band with a sign-blind test, and it is cited as one.
 
     `RemoveIdentityEquivalent` is absent from Qiskit 1.2.4, so the comparison is against
-    2.0.3. It removes any gate whose average gate fidelity with the identity clears a
-    cutoff rather than only an exact identity, and its fidelity test cannot see the sign,
-    so it is compared with the phase-blind column. Every one of the 17 rows where it
-    differs from this rule is a row where the runtime matrix is minus the identity, and
-    the benchmark raises rather than reporting an unclassified disagreement.
+    a certified lane that has it. It removes any gate whose average gate fidelity with
+    the identity clears a cutoff rather than only an exact identity, and its fidelity
+    test cannot see the sign, so it is compared with the phase-blind column. Every one
+    of the 17 rows where it differs from this rule is a row where the runtime matrix is
+    minus the identity, and the benchmark raises rather than reporting an unclassified
+    disagreement.
+
+    The lane is checked before the readings, and it fails rather than skips, because no
+    lane that collects this file ever installs Qiskit: a skip here would never be
+    reported anywhere it matters.
     """
 
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip(f"the Qiskit anchor is not importable here: {anchor['reason']}")
 
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     for key, expected in _ANCHOR.items():
         assert anchor[key] == expected, key
     assert (

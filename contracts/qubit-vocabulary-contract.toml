@@ -36,8 +36,8 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 225
-private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
+measured_private = 224
+private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous. It was 226 until two independent changes each removed one site, neither able to see the other: `flagquantum/twin/region_model.py::_remap_wires::wires` left when the Twin region composer began relabelling through `flagquantum.core.qubit_mapping.remap_qubits`, and `flagquantum/runtime/executors/statevector/reverse_adjoint_sweep.py::_local_expectation_z_hamiltonian_adjoint::n_wires` left when that adjoint seed moved into `reverse_observable.py` as `hamiltonian_adjoint_seed`, which reads `n_qubits` and returned the sweep module to the architecture ceiling. Each branch re-measured 226 to 225 on its own, and this merge is the first tree to hold both, so 224 is the measurement of the merge rather than of either parent. Only the private bucket moved -- `measured_canonical` and `measured_deprecated_aliases` did not -- which is what makes this a re-measurement rather than a relaxed threshold"
 
 [naming]
 # One rule, applied by root substitution. A hand-written list per slice would

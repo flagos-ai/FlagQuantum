@@ -387,12 +387,13 @@ class DecoderContext:
     a detector is carried by the check whose ancilla it reads, so the X
     component is the detectors of the code's X-type checks and the Z component
     the detectors of its Z-type checks. The terminal detectors -- the ones
-    comparing the last syndrome round with the data readout -- are carried by
-    Z-type checks and are therefore part of the Z component rather than a third
-    category. Upstream needs a separate boundary-aware variant because its D
-    matrix is laid out in uniform per-round blocks; here the layout states the
-    boundary detectors themselves, so the union needs no separate bookkeeping,
-    and ``full_component`` is the model as built.
+    comparing the last syndrome round with the data readout -- are carried by the
+    checks of the experiment's own readout basis, so they belong to that basis'
+    component rather than to a third category. Upstream needs a separate
+    boundary-aware variant because its D matrix is laid out in uniform per-round
+    blocks; here the layout states the boundary detectors themselves, so the
+    union needs no separate bookkeeping, and ``full_component`` is the model as
+    built.
     """
 
     circuit: MemoryCircuit
@@ -445,9 +446,11 @@ class DecoderContext:
     def z_component(self) -> DecoderInputs:
         """Return the model read over the detectors of the code's Z-type checks.
 
-        The terminal detectors are included: they are carried by Z-type checks,
-        because a terminal detector compares a Z-type check's readout with the
-        Z-basis data readout.
+        A Z-basis experiment's terminal detectors are included here, because they
+        are carried by its Z-type checks: a terminal detector compares such a
+        check's readout with the data readout taken in the same basis. In an
+        X-basis experiment the same role is played by the X-type checks, so the
+        terminal detectors are in the X component instead.
         """
 
         return self._basis(x_type=False)

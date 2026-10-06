@@ -68,17 +68,36 @@ those two accessors read the bands rather than deriving the same number a second
 time.
 
 A detector is a measurement parity that is deterministic in the noiseless
-circuit. Because both the initial state and the terminal data readout are in the
-Z basis, a Z-type check declares a detector in every round plus one terminal
-detector, while an X-type check declares one for every round after the first. A
-code whose declared logical observable is not Z-type is refused rather than
-measured under premises that do not hold for it.
+circuit, and which parity that is is stated relative to the experiment's readout
+basis. Under the default Z basis a Z-type check declares a detector in every round
+plus one terminal detector, while an X-type check declares one for every round
+after the first; under an X basis the two classes swap, because the preparation
+and the terminal readout are then in that basis:
+
+```python
+from flagquantum.qec import SteaneCode, build_memory_circuit
+
+z_memory = build_memory_circuit(SteaneCode(), rounds=3)
+x_memory = build_memory_circuit(SteaneCode(), rounds=3, readout_basis="x")
+print(z_memory.readout_basis, x_memory.readout_basis)
+print(x_memory.observables.observables[0].pauli)
+```
+
+The basis is a field of the record rather than a second entry point, and it is
+checked against the observables the code declares rather than assumed from them: a
+code that declares no logical observable in the requested basis is refused, rather
+than measured under premises that do not hold for it. CUDA-Q QEC derives the same
+basis from the preparation kernel it is handed and offers `x_` and `z_` model
+entry points beside the full one; here one record states it and one builder reads
+it.
 
 ## Decode a detection-event syndrome
 
 `decoding_graph.py` turns a detector error model into a weighted graph and
 `matching.py` decodes a syndrome on it. This is the code-independent decoder: it
 reads the model's mechanisms and nothing about the code that produced them.
+`belief_propagation.py` is the second decoder over the same model, for the
+mechanisms a matcher has no edge for.
 
 ```python
 from flagquantum.qec import (
@@ -136,6 +155,39 @@ the mechanisms that touch it, so the combined prior of a group is the single `p`
 whose factor is that group's product and every rate is unchanged.
 `mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
 the refusal.
+
+## Decode a model the matcher refuses
+
+A matcher needs one edge per mechanism, so a mechanism that flips three or more
+detectors is a hyperedge and `matching.py` refuses it. `belief_propagation.py`
+reads exactly that model: a mechanism is one variable, a detector is one check,
+and a mechanism touching three detectors joins three checks, so the graph is the
+model as written rather than a projection of it.
+
+```python
+from flagquantum.qec import BeliefPropagationDecoder, DetectorErrorModel
+
+model = DetectorErrorModel.from_stim_text(
+    "error(0.01) D0 D1 D2\n"
+    "error(0.01) D0 D1\n"
+    "error(0.01) D1 D2\n"
+    "detector D0\n"
+    "detector D1\n"
+    "detector D2\n"
+)
+result = BeliefPropagationDecoder.from_detector_error_model(model).decode((0, 1, 2))
+print(result.converged, result.mechanisms, result.observables, result.weight)
+```
+
+`converged` is false exactly when the exchange did not settle and an
+ordered-statistics solve over a greedily chosen information set answered instead,
+so the flag is a fact about the path taken rather than a quality score. Belief
+propagation is exact on a factor graph that is a tree and approximate off one, so
+a loopy model can settle on an explanation that is heavier than the cheapest; a
+caller who needs the cheapest explanation on a graphlike model wants the matcher.
+The decoder refuses a model that states its mechanisms are alternatives, a
+mechanism of rate zero, and a syndrome that no set of mechanisms can produce,
+rather than approximating any of the three.
 
 ## Cross-check the matcher against PyMatching
 
@@ -228,11 +280,66 @@ This route is the code-capacity experiment, so its detector geometry is not the
 memory circuit's. A fault in round `r` reaches the detector band of round `r` and
 the band of round `r + 1`, and the final round has no band after it, so the
 detector count is `num_rounds * num_checks` with no terminal readout — where a
-memory circuit gains a terminal detector per Z-type check because it measures its
-data qubits. Both geometries are pinned to their own route and neither stands for
+memory circuit gains a terminal detector per check of the readout basis it is
+built in, because it measures its data qubits. Both geometries are pinned to their own route and neither stands for
 the other. The rates are read against these matrices: the per-qubit vectors are
 indexed by column, in the code's own `data_wires` order, and the per-check vector
 by row, with the Z-type checks first.
+
+## Build a code record from matrices
+
+The records above are declared: a class states its layout and builds its checks
+from it. A caller who already holds the four CSS blocks does not need a class for
+them. `CssCode` takes a `CssCodeMatrices` and a distance, and answers the same
+members `StabilizerCode` declares, so everything downstream -- the ancilla bands,
+the memory-circuit source, the detector and observable layouts, `css_code_matrices`
+itself -- takes a matrix-built record on the same terms as a declared one:
+
+```python
+import torch
+from flagquantum.qec import CssCode, CssCodeMatrices, build_memory_circuit
+
+matrices = CssCodeMatrices(
+    hz=torch.tensor([[1, 1, 0], [0, 1, 1]]),
+    lz=torch.tensor([[1, 1, 1]]),
+)
+code = CssCode(matrices=matrices, distance=3)
+memory = build_memory_circuit(code, rounds=3)
+print(len(code.checks), code.num_ancilla_z_qubits, len(memory.detectors))  # 2 2 8
+```
+
+Column `q` of every block is data qubit `q`, the Z-type checks take the ancillas
+in `hz`'s row order and the X-type checks the ones after them, and the CNOT
+direction of each check is the one its type fixes, exactly as a declared check
+states it. The Shor code is the case that shows this is not a second way to write
+the three declared families: it is nine data qubits with six Z-type checks, two
+X-type checks and a weight-three logical Z, no class here declares it, and it
+reaches a memory circuit and a detector error model from four blocks alone.
+
+The distance is stated rather than derived, which is CUDA-Q QEC's own division:
+its code record declares no distance accessor, its own factories read one out of
+the options they are built with and throw when it is absent, and its matrix record
+carries no distance to read. A minimum-weight-codeword search is exponential in
+general, so deriving the distance here would refuse exactly the large matrices
+this route exists for. Instead the matrices are held to the distance they are
+given in the one direction a stated logical operator can prove: an operator of
+weight *w* bounds the distance above by *w*, so a record claiming a distance
+larger than the lightest operator it states is refused and one that understates
+its distance is accepted.
+
+The four blocks are also held to the code algebra a matrix record normally leaves
+unchecked. Two check blocks that do not commute, a logical operator meeting the
+opposite basis' checks on an odd number of qubits, a logical operator that is a
+product of its own type's checks, two dependent rows in one logical block, and a
+check or logical row with no support are each refused with the row and the reason
+named. CUDA-Q QEC validates a common column count, the rate-vector lengths and the
+probability range, and none of this, so the checks here are a deliberate
+strengthening rather than a match.
+
+Two things the route does not carry. It is not registered by name -- the identity
+of a matrix-built record is the matrix, so `get_code` still reaches the three
+declared records -- and it is CSS-shaped, so an arbitrary non-CSS stabilizer list
+still has no route in.
 
 ## Give one location its own rate
 
@@ -402,11 +509,32 @@ placed immediately *before* the readout of the check it corrupts. A Z or Y data
 fault is placed at that same boundary, as the one channel the engine has wrapped
 in the conjugation that names the Pauli. Neither position exists in the source
 program, whose bounded hybrid capture refuses a channel call outright, so both are
-derived from the lowered program — and the program must lower to `rounds` identical
-blocks measuring each check once in the code's declared order. A program that
-lowers to anything else, a channel that is not the bit-flip pair, and a lowered
-measurement node are each refused with a stated reason rather than sampled under an
-attribution that may be wrong.
+derived from the lowered program — and the program must lower to the experiment's
+readout rotation around `rounds` identical blocks measuring each check once in the
+code's declared order. The rotation belongs to the experiment rather than to a
+round, so the plan states its length as one offset beside the round block instead
+of folding the two together; it is one gate per data qubit at each end, not a
+block measuring every check. A program that lowers to anything else, a channel
+that is not the bit-flip pair, and a lowered measurement node are each refused
+with a stated reason rather than sampled under an attribution that may be wrong.
+
+The same sampler reads either basis of a code that declares a logical observable
+of each type, because the basis is a field of the record rather than a second
+entry point:
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    SteaneCode,
+    build_memory_circuit,
+    sample_memory_circuit,
+)
+
+defect = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, measurement_flip=0.03)
+x_memory = build_memory_circuit(SteaneCode(), rounds=3, readout_basis="x")
+x_sample = sample_memory_circuit(x_memory, noise=defect, shots=1000, seed=0)
+print(x_memory.readout_basis, x_sample.detectors.shape)
+```
 
 Because the two samplers are separate code paths, a rate from this one is
 circuit-sampled and a rate from `dem_sampling` is model-sampled; the tests pin the
@@ -416,9 +544,10 @@ two to each other rather than letting either stand for the other.
 
 A detection event is a parity of recorded bits. Sometimes the bit itself is what a
 caller wants, and there is exactly one kind of bit that no layout names: round zero
-of a patch measures an X-type check whose outcome is not deterministic under the
-all-zero preparation, so no detector may name it, and it is still measured and
-still recorded. `measurement_refs` names every recorded bit and
+of a patch measures the check class its preparation does not stabilize — an X-type
+check under the all-zero preparation, a Z-type check under the `|+>` one — whose
+outcome is not deterministic, so no detector may name it, and it is still measured
+and still recorded. `measurement_refs` names every recorded bit and
 `sample_memory_measurements` returns them:
 
 ```python
@@ -512,16 +641,80 @@ whichever of the two a caller came from. A decoder fed a sampled syndrome has to
 matching detectors against the measurements that actually compose them, and that is
 now something a test can recompute from handles rather than only assume.
 
+## Cut a model into rounds
+
+A long experiment's model is one object, but a decoder that reads it a few rounds
+at a time needs those rounds to be nameable. `ChunkLayout` states how a model's
+detectors divide into layers, `DemChunksSpec` asks for windows over them, and the
+windows close back into the model they were cut from:
+
+```python
+from flagquantum.qec import (
+    ChunkLayout,
+    DemChunksSpec,
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    dem_chunks_from_spec,
+    dem_close_all,
+)
+
+noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+layout = ChunkLayout.from_memory_circuit(model, memory)
+chunks = dem_chunks_from_spec(DemChunksSpec(layout=layout, window=2))
+
+for chunk in chunks:
+    print(chunk.first_layer, chunk.last_layer, len(chunk.model.errors))
+print(dem_close_all(chunks) == model)
+```
+
+A *layer* is the set of detectors with one round index, so `layout.widths` is the
+round size in detector order and sums to the model's detector count. A *window*
+spans a run of layers and shares exactly one layer with each neighbour: the
+window's own bands are its leading boundary layer, its interior, and its trailing
+boundary layer, and the stride is the window width minus one, which is what makes
+the windows tile rather than overlap. `SeamId.prev_round` and `SeamId.next_round`
+name the two boundaries a window carries, and a window carries only the ones it
+has a neighbour for — the first window has no `prev_round`, the last no
+`next_round`.
+
+Ownership is what makes the windows a partition rather than a cover. A mechanism
+spans two adjacent layers, so the first window holding it whole owns it, every
+mechanism is owned once, and `dem_close_all(chunks) == model` is the invariant a
+test asserts rather than assumes. Three things are refused instead of
+approximated: a window of one layer, a window wider than the layout, and a layer
+count that does not tile at the stride. A mechanism that no window holds whole is
+refused rather than split — splitting it would state two weaker faults where the
+model stated one — and a mechanism flipping no detector is refused because an
+observable-only fault has no round to be placed in.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so a stitched pair spans one layer fewer than the
+sum of its parts; `dem_stitch_all` folds that over a sequence and
+`dem_stitch_merged` follows the stitch with `merge_duplicate_mechanisms` under a
+stated rule. `dem_close` puts one window back at its own place in the model's own
+numbering without renumbering from zero, so a window's detectors are the model's
+detectors. A seam's rows carry the global detector index rather than a position
+within the seam, which is why a stitch refuses two boundary bands that merely
+have the same width.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
-and [matching.py](matching.py) for the detector-error-model decoder,
+and [matching.py](matching.py) for the detector-error-model matcher,
+[belief_propagation.py](belief_propagation.py) for the decoder that reads the
+hyperedges the matcher refuses, [chunks.py](chunks.py) for the round-window
+decomposition, [registry.py](registry.py) for reaching either by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
-code records, [circuit.py](circuit.py) for detector and observable layouts, and
-[types.py](types.py) for records. Run from the repository root:
+code records, [css_code.py](css_code.py) for a code record built from
+parity-check matrices, [circuit.py](circuit.py) for detector and observable
+layouts, and [types.py](types.py) for records. Run from the repository root:
 
 ```bash
 python -m pytest tests/qec -q

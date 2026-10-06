@@ -110,9 +110,9 @@ def main() -> None:
     # the dtype the fits below run at, through run_zne itself. Both points of an
     # empty model read the same value, so the scale-factor-1.0 measurement is the
     # noiseless read and the comparison never leaves the path the estimate took.
-    # Circuit.density_matrix() takes no dtype and returns the runtime's default
-    # precision, so a distance taken from it would report the complex64 rounding
-    # floor as the extrapolation's error.
+    # Circuit.density_matrix() takes no dtype and reads the circuit's own, and
+    # bell_pair() is built at the default complex64, so a distance taken from it
+    # would report the complex64 rounding floor as the extrapolation's error.
     noiseless = float(
         run_zne(
             circuit,

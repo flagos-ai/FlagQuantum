@@ -39,10 +39,12 @@ from .permutation import (
 )
 from .rotation import (
     fused_hadamard_block_adjoint_,
+    fused_hadamard_controlled_phase_graph_,
     fused_rotation_block_adjoint_,
     fused_rotation_block_forward_,
     fused_static_clifford_layer_,
     native_cpu_hadamard_block_adjoint_available,
+    native_cpu_hadamard_controlled_phase_available,
     native_cpu_one_qubit_layer_available,
     native_cpu_rotation_available,
     native_cpu_shared_rzz_forward_fusion_available,
@@ -70,6 +72,7 @@ __all__ = [
     "native_cpu_shared_rotation_gradient_available",
     "native_cpu_terminal_adjoint_no_restore_available",
     "fused_rotation_block_forward_",
+    "fused_hadamard_controlled_phase_graph_",
     "fused_static_clifford_layer_",
     "fused_hadamard_block_adjoint_",
     "fused_rotation_block_adjoint_",
@@ -79,6 +82,7 @@ __all__ = [
     "native_cpu_specialized_forward_rotations_available",
     "native_cpu_one_qubit_layer_available",
     "native_cpu_hadamard_block_adjoint_available",
+    "native_cpu_hadamard_controlled_phase_available",
     "fused_cx_adjoint_gather",
     "fused_cx_adjoint_inplace_",
     "compact_cpu_cx_adjoint_auxiliary_bytes",

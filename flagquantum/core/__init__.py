@@ -20,6 +20,7 @@ from .contracts import (
     RuntimePlanContract,
     UnknownContractFieldError,
 )
+from .controlled import controlled_instructions
 from .ir import (
     IR_VERSION,
     OPCODE_SCHEMAS,
@@ -43,11 +44,15 @@ from .numerics import (
 )
 from .operator_schema import (
     ADJOINT_RULES,
+    CONTROL_PARTNERS,
+    CONTROL_RULES,
+    MAX_LADDER_LEVEL,
     OPERATOR_ALIASES,
     OPERATOR_SCHEMAS,
     GateInfo,
     OperatorSchema,
     canonical_opcode,
+    control_ladder_level,
     gate_info,
     get_operator_schema,
     inverse_operator,
@@ -102,7 +107,12 @@ __all__ = [
     "OperatorSchema",
     "GateInfo",
     "ADJOINT_RULES",
+    "CONTROL_PARTNERS",
+    "CONTROL_RULES",
+    "MAX_LADDER_LEVEL",
     "canonical_opcode",
+    "control_ladder_level",
+    "controlled_instructions",
     "get_operator_schema",
     "gate_info",
     "inverse_operator",

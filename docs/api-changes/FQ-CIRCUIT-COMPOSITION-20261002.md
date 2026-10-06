@@ -175,6 +175,14 @@ Sharing the label reader with `twin/` is planned as its own change (`N1-2`), bec
 --team core` refuses `flagquantum/twin/region_model.py` in this branch, and the
 replacement belongs to the team that owns the consumer.
 
+**Delivered:** `N1-2` landed as [the Twin region relabelling
+change](FQ-QUBIT-VOCABULARY-TWIN-REGION-20261018.md), authored by the team that owns
+the consumer. The boundary this paragraph describes held: Core exports the rule from
+`flagquantum/core/qubit_mapping.py`, `flagquantum/twin/region_model.py` imports
+`remap_qubits` instead of carrying a copy, and `_remap_wires` no longer exists
+anywhere under `flagquantum/`. The other two copies named in this document are still
+recorded rather than consolidated, for the reasons given below them.
+
 One third copy of the label rule is deliberately left in place:
 `flagquantum/observables/__init__.py:123 _wire` and `:145 _wires`. They are owned by
 `core`, so they could be consolidated here, but they carry two rules of their own --
@@ -184,6 +192,20 @@ them is part of the qubit-naming track (`Q3`/`Q6`), where the public keyword and
 message are renamed together; doing it here would rename half of that surface and
 leave the other half inconsistent. This proposal records the copy rather than
 silently leaving a second source of truth unremarked.
+
+**Amended:** the paragraph above is the state on the day it was written; three of its
+four specifics have since moved, and the copy itself has not. Re-measured on this
+branch: the helpers are `flagquantum/observables/__init__.py:130 _qubit` and `:152
+_qubits` (not `:123 _wire` / `:145 _wires`), their messages now name the qubit
+(`TypeError: Measurement qubit must be an integer, got 1.0`; `ValueError: Measurement
+qubit must be a non-negative integer`), and `OutputRequest`'s signature is
+`(kind, qubits, observable, name)`, so the public keyword it needed to wait for has
+landed and `wires=` survives only as a deprecated alias. What has **not** changed is
+the reason the copy was recorded: `flagquantum/observables/` still reads labels with
+its own `operator.index` call, its own `bool` refusal and its own two messages, and it
+does not import `flagquantum.core.qubit_mapping`. The copy is therefore still a copy
+-- only its name and its stated blocker moved -- and it is still recorded here rather
+than consolidated.
 
 ## Acceptance Tests
 

@@ -15,9 +15,10 @@ _FUSED_LAYOUT_BMM_SHAPES = frozenset({(16, 64, 1024, 64)})
 _FUSED_LAYOUT_BMM_SIGNATURES = frozenset(
     {("azcb,czdb->zad", (64, 16, 64, 16), (64, 16, 64, 16))}
 )
-_FUSED_LAYOUT_BMM_EQUATIONS = frozenset(
-    signature[0] for signature in _FUSED_LAYOUT_BMM_SIGNATURES
-)
+_FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION = {
+    equation: (left_shape, right_shape)
+    for equation, left_shape, right_shape in _FUSED_LAYOUT_BMM_SIGNATURES
+}
 _NATIVE_EINSUM_RANK_CEILING = 25
 _CanonicalBMMLayout: TypeAlias = tuple[
     tuple[int, ...],
@@ -30,6 +31,7 @@ _CanonicalBMMLayout: TypeAlias = tuple[
 _CANONICAL_LAYOUT_CACHE: dict[
     tuple[str, tuple[int, ...], tuple[int, ...]], _CanonicalBMMLayout | None
 ] = {}
+_LAYOUT_MATERIALIZATION_CACHE: dict[tuple[Any, ...], bool] = {}
 
 
 def _bmm_real_imag_eager(
@@ -173,12 +175,30 @@ def _canonical_layout_requires_materialization(
 ) -> bool:
     left_permutation, right_permutation, (b, m, n), _, _, _ = layout
     k = left.numel() // (b * m)
+    cache_key = (
+        tuple(left.shape),
+        tuple(left.stride()),
+        tuple(right.shape),
+        tuple(right.stride()),
+        left_permutation,
+        right_permutation,
+        b,
+        m,
+        k,
+        n,
+    )
+    cached = _LAYOUT_MATERIALIZATION_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     try:
         left.permute(left_permutation).view(b, m, k)
         right.permute(right_permutation).view(b, k, n)
     except RuntimeError:
-        return True
-    return False
+        requires_materialization = True
+    else:
+        requires_materialization = False
+    _LAYOUT_MATERIALIZATION_CACHE[cache_key] = requires_materialization
+    return requires_materialization
 
 
 def _canonical_layout_pair(
@@ -253,10 +273,12 @@ def _layout_bmm_signature_supported(
     left: torch.Tensor,
     right: torch.Tensor,
 ) -> bool:
-    return (
-        not (left.requires_grad or right.requires_grad)
-        and (equation, tuple(left.shape), tuple(right.shape))
-        in _FUSED_LAYOUT_BMM_SIGNATURES
+    supported_shapes = _FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION.get(equation)
+    return bool(
+        supported_shapes is not None
+        and not (left.requires_grad or right.requires_grad)
+        and left.shape == supported_shapes[0]
+        and right.shape == supported_shapes[1]
     )
 
 
@@ -395,8 +417,12 @@ def complex_einsum_pair(
 ) -> torch.Tensor:
     """Contract two tensors without placing complex operators in the compiled graph."""
 
-    if equation in _FUSED_LAYOUT_BMM_EQUATIONS and not (
-        _layout_bmm_signature_supported(equation, left, right)
+    supported_shapes = _FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION.get(equation)
+    if supported_shapes is not None and (
+        left.requires_grad
+        or right.requires_grad
+        or left.shape != supported_shapes[0]
+        or right.shape != supported_shapes[1]
     ):
         return _pair_contraction(equation, left, right)
     if not (left.is_complex() and right.is_complex()):
@@ -445,6 +471,7 @@ def kernel_cache_summary() -> dict[str, int]:
         "noncanonical_layouts": sum(
             layout is None for layout in _CANONICAL_LAYOUT_CACHE.values()
         ),
+        "materialization_decisions": len(_LAYOUT_MATERIALIZATION_CACHE),
     }
 
 
@@ -454,6 +481,7 @@ def clear_kernel_caches() -> None:
     _COMPILED_PAIR_CACHE.clear()
     _COMPILE_FAILURES.clear()
     _CANONICAL_LAYOUT_CACHE.clear()
+    _LAYOUT_MATERIALIZATION_CACHE.clear()
 
 
 __all__ = ["clear_kernel_caches", "complex_einsum_pair", "kernel_cache_summary"]
