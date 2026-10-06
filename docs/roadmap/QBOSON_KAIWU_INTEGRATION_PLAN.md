@@ -1291,6 +1291,19 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   before and after plugin consumption and once more during postflight; a
   same-content path replacement cannot separate preflight identity from the
   assets used by either run.
+- The isolated development probe was refreshed on both validation hosts at
+  source revision `4f19b770264a0f4e558625fc622b51a1328f914a`. Both runs used
+  `cuda:0`, observed an NVIDIA A800-SXM4-80GB, completed ten bounded sampler
+  calls, produced the finite objective `1.3875621557235718`, a nonzero finite
+  gradient and parameter update, and passed token constraints with no fallback.
+  The locally retained mode-0600 records validate to SHA-256
+  `0662fd2424bd2d124d99d2cb9c91bc1abffc99ee20ba8b746087dded40d39ac9`
+  for `jp-a800-171` and
+  `92bcc9a0ce61c13f01cdf3a468e85368886db6cf80f9ac8c7a12d88955174004`
+  for `jp-a800-172`. The transport remained `in_memory_fake`; networking,
+  host writes, QBoson credentials, provider service, and quota were not used,
+  and all live-provider, system, protein, domestic-accelerator, multi-node, and
+  distributed acceptance gates remain closed.
 - ESM2 evaluation now retains those stable snapshots for every training FASTA
   and quality JSON after matching the training record. Plugin FASTA reads are
   bracketed by identity checks, quality JSON is parsed from its captured
