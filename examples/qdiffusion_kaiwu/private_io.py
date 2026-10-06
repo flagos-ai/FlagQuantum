@@ -64,6 +64,84 @@ def _verify_open_directory_binding(
         raise ValueError("evidence parent changed during publication")
 
 
+def read_private_bytes(path: Path, *, label: str, max_bytes: int) -> bytes:
+    """Read one bounded private file through an anchored parent descriptor."""
+
+    if not path.is_absolute():
+        raise ValueError(f"{label} path must be absolute")
+    if type(max_bytes) is not int or max_bytes <= 0:
+        raise ValueError("max_bytes must be a positive integer")
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    if no_follow is None or directory_flag is None:
+        raise ValueError(f"platform cannot safely read {label}")
+    parent = path.parent
+    validate_private_directory(parent, label=f"{label} parent")
+    try:
+        directory_descriptor = os.open(
+            parent,
+            os.O_RDONLY | directory_flag | no_follow | getattr(os, "O_CLOEXEC", 0),
+        )
+    except OSError:
+        raise ValueError(f"{label} parent changed during validation") from None
+    descriptor: int | None = None
+    try:
+        directory_metadata = os.fstat(directory_descriptor)
+        if (
+            not stat.S_ISDIR(directory_metadata.st_mode)
+            or directory_metadata.st_mode & 0o077
+        ):
+            raise ValueError(f"{label} parent changed during validation")
+        _verify_open_directory_binding(parent, directory_metadata)
+        try:
+            descriptor = os.open(
+                path.name,
+                os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
+                dir_fd=directory_descriptor,
+            )
+        except OSError:
+            raise ValueError(
+                f"{label} must be a regular, non-symlink file"
+            ) from None
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise ValueError(f"{label} must be a regular, non-symlink file")
+        if opened.st_mode & 0o077:
+            raise ValueError(f"{label} must not be accessible by group or others")
+        if opened.st_size > max_bytes:
+            raise ValueError(f"{label} exceeds the bounded size")
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            encoded = stream.read(max_bytes + 1)
+        if len(encoded) > max_bytes:
+            raise ValueError(f"{label} exceeds the bounded size")
+        after = os.fstat(descriptor)
+        stable_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+        if any(getattr(after, field) != getattr(opened, field) for field in stable_fields):
+            raise ValueError(f"{label} changed during validation")
+        visible = path.lstat()
+        if (
+            not stat.S_ISREG(visible.st_mode)
+            or visible.st_mode & 0o077
+            or (visible.st_dev, visible.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            raise ValueError(f"{label} binding changed during validation")
+        _verify_open_directory_binding(parent, directory_metadata)
+        return encoded
+    except OSError:
+        raise ValueError(f"{label} binding changed during validation") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_descriptor)
+
+
 def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
     """Publish one JSON record without following or replacing unsafe paths."""
 
@@ -134,6 +212,7 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
 
 
 __all__ = (
+    "read_private_bytes",
     "validate_private_directory",
     "validate_private_json_output_path",
     "write_private_json_exclusive",

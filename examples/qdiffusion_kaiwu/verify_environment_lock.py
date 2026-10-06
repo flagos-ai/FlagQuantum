@@ -11,11 +11,13 @@ import re
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_qdiffusion_environment_lock"
 SHA256 = re.compile(r"[0-9a-f]{64}")
 PLACEHOLDER = re.compile(r"<[^>]+>")
+_MAX_ENVIRONMENT_LOCK_BYTES = 4 * 1024 * 1024
 
 
 def _canonical_distribution_name(name: str) -> str:
@@ -80,13 +82,11 @@ def _installed_distribution_inventory() -> dict[str, tuple[str, str]]:
 
 
 def load_environment_lock(path: Path) -> tuple[dict[str, Any], str]:
-    if not path.is_absolute():
-        raise ValueError("environment lock path must be absolute")
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("environment lock must be a regular, non-symlink file")
-    if path.stat().st_mode & 0o077:
-        raise ValueError("environment lock must not be accessible by group or others")
-    encoded = path.read_bytes()
+    encoded = read_private_bytes(
+        path,
+        label="environment lock",
+        max_bytes=_MAX_ENVIRONMENT_LOCK_BYTES,
+    )
     try:
         record = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:

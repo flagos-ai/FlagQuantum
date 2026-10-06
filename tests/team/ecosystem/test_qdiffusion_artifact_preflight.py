@@ -55,7 +55,22 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
     }
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+    config_path.chmod(0o600)
     return config_path, paths
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public_file", "public_parent"))
+def test_preflight_rejects_unsafe_config_control_file(
+    tmp_path: Path, unsafe_kind: str
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    if unsafe_kind == "public_file":
+        config_path.chmod(0o644)
+    else:
+        tmp_path.chmod(0o755)
+
+    with pytest.raises(ValueError):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
 
 
 def test_preflight_verifies_files_and_trees_without_recording_paths(

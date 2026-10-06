@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
-import stat
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_kaiwu_sdk_approval"
@@ -109,36 +108,9 @@ def load_sdk_approval(path: Path) -> tuple[dict[str, Any], str]:
 
     if not path.is_absolute():
         raise ValueError("SDK approval path must be absolute")
-    no_follow = getattr(os, "O_NOFOLLOW", None)
-    if no_follow is None:
-        raise ValueError("platform cannot safely open the SDK approval")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | no_follow
-    try:
-        descriptor = os.open(path, flags)
-    except OSError:
-        raise ValueError("SDK approval must be a regular, non-symlink file") from None
-    try:
-        opened = os.fstat(descriptor)
-        if not stat.S_ISREG(opened.st_mode):
-            raise ValueError("SDK approval must be a regular, non-symlink file")
-        if opened.st_mode & 0o077:
-            raise ValueError("SDK approval must not be accessible by group or others")
-        if opened.st_size > _MAX_APPROVAL_BYTES:
-            raise ValueError("SDK approval exceeds the bounded size")
-        with os.fdopen(descriptor, "rb", closefd=False) as stream:
-            encoded = stream.read(_MAX_APPROVAL_BYTES + 1)
-        if len(encoded) > _MAX_APPROVAL_BYTES:
-            raise ValueError("SDK approval exceeds the bounded size")
-        visible = path.lstat()
-        if (
-            not stat.S_ISREG(visible.st_mode)
-            or (visible.st_dev, visible.st_ino) != (opened.st_dev, opened.st_ino)
-        ):
-            raise ValueError("SDK approval binding changed during validation")
-    except OSError:
-        raise ValueError("SDK approval binding changed during validation") from None
-    finally:
-        os.close(descriptor)
+    encoded = read_private_bytes(
+        path, label="SDK approval", max_bytes=_MAX_APPROVAL_BYTES
+    )
     try:
         raw = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:

@@ -75,6 +75,26 @@ def test_environment_lock_rejects_placeholder_and_public_file(tmp_path: Path) ->
         load_environment_lock(path)
 
 
+@pytest.mark.parametrize("unsafe_parent", ("public", "symlink"))
+def test_environment_lock_rejects_unsafe_parent(
+    tmp_path: Path, unsafe_parent: str
+) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    path = private_parent / "environment-lock.json"
+    _write(path, _record())
+    if unsafe_parent == "public":
+        private_parent.chmod(0o755)
+        candidate = path
+    else:
+        linked_parent = tmp_path / "linked"
+        linked_parent.symlink_to(private_parent, target_is_directory=True)
+        candidate = linked_parent / path.name
+
+    with pytest.raises(ValueError, match="parent"):
+        load_environment_lock(candidate)
+
+
 def test_environment_lock_matches_exact_runtime_inventory(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

@@ -23,6 +23,7 @@ import torch
 
 from examples.qdiffusion_kaiwu.failure_evidence import redacted_failure_record
 from examples.qdiffusion_kaiwu.private_io import (
+    read_private_bytes,
     validate_private_directory,
     validate_private_json_output_path,
     write_private_json_exclusive,
@@ -52,10 +53,13 @@ from flagquantum.remote.kaiwu import (
 
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
 SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
+_MAX_CONFIG_BYTES = 1024 * 1024
 
 
 def _load_frozen_config(path: Path) -> tuple[dict[str, Any], str]:
-    encoded = path.read_bytes()
+    encoded = read_private_bytes(
+        path, label="frozen configuration", max_bytes=_MAX_CONFIG_BYTES
+    )
     raw = loads_json_strict(encoded)
     if not isinstance(raw, dict):
         raise ValueError("frozen configuration must be a JSON object")

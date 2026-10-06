@@ -8,10 +8,14 @@ import stat
 from pathlib import Path
 from typing import Any
 
-from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+from examples.qdiffusion_kaiwu.private_io import (
+    read_private_bytes,
+    write_private_json_exclusive,
+)
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 CONFIG_SCHEMA = "flagquantum.qboson_qdiffusion_config"
+_MAX_CONFIG_BYTES = 1024 * 1024
 PREFLIGHT_SCHEMA = "flagquantum.qboson_qdiffusion_artifact_preflight"
 ARTIFACT_FIELDS = {
     "dataset": "dataset",
@@ -65,7 +69,9 @@ def _artifact_identity(path: Path) -> tuple[str, str, int]:
 
 
 def _read_config(path: Path) -> tuple[dict[str, Any], str]:
-    raw = path.read_bytes()
+    raw = read_private_bytes(
+        path, label="frozen configuration", max_bytes=_MAX_CONFIG_BYTES
+    )
     value = loads_json_strict(raw)
     if not isinstance(value, dict):
         raise ValueError("config must be a JSON object")

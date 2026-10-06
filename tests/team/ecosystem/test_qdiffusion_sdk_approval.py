@@ -97,7 +97,10 @@ def test_sdk_approval_rejects_schema_extension() -> None:
     )
 
 
-@pytest.mark.parametrize("unsafe_kind", ("relative", "public", "symlink"))
+@pytest.mark.parametrize(
+    "unsafe_kind",
+    ("relative", "public", "symlink", "public_parent", "symlink_parent"),
+)
 def test_sdk_approval_loader_rejects_unsafe_file(
     tmp_path: Path, unsafe_kind: str
 ) -> None:
@@ -108,9 +111,20 @@ def test_sdk_approval_loader_rejects_unsafe_file(
     elif unsafe_kind == "public":
         private.chmod(0o644)
         candidate = private
-    else:
+    elif unsafe_kind == "symlink":
         candidate = (tmp_path / "approval-link.json").resolve()
         candidate.symlink_to(private)
+    elif unsafe_kind == "public_parent":
+        tmp_path.chmod(0o755)
+        candidate = private
+    else:
+        real_parent = tmp_path / "real-parent"
+        real_parent.mkdir(mode=0o700)
+        real_file = real_parent / "approval.json"
+        _write_private(real_file, _approval())
+        linked_parent = tmp_path / "linked-parent"
+        linked_parent.symlink_to(real_parent, target_is_directory=True)
+        candidate = linked_parent / "approval.json"
 
     with pytest.raises(ValueError):
         load_sdk_approval(candidate)

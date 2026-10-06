@@ -487,6 +487,8 @@ def main() -> None:
     artifact_preflight = preflight_artifacts(
         args.config, artifact_paths, args.artifact_preflight_output
     )
+    if artifact_preflight.get("config_sha256") != config_sha256:
+        raise RuntimeError("frozen experiment config changed before training")
     preflight_sha256 = hashlib.sha256(
         args.artifact_preflight_output.read_bytes()
     ).hexdigest()

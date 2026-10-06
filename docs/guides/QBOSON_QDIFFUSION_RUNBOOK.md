@@ -117,7 +117,9 @@ cp examples/qdiffusion_kaiwu/acceptance_config.example.json \
   /absolute/private-evidence/acceptance_config.json
 cp examples/qdiffusion_kaiwu/sdk_approval.example.json \
   /absolute/private-evidence/sdk-approval.json
-chmod 600 /absolute/private-evidence/sdk-approval.json
+chmod 600 \
+  /absolute/private-evidence/acceptance_config.json \
+  /absolute/private-evidence/sdk-approval.json
 ```
 
 Every quota-consuming CLI rejects a relative, missing, symlinked, or
@@ -143,6 +145,11 @@ The config must designate one primary host and the other portability-replay
 host. It must contain at least three fixed seeds and a positive remote-call
 budget. It must also retain the approved Kaiwu rights decision described above;
 public wheel availability or a checked agreement URL cannot satisfy that gate.
+The config, SDK approval, and environment lock readers anchor each file name to
+an opened owner-only parent descriptor, refuse parent or leaf symlinks and
+group/other permissions, bound input size, and recheck the visible path binding
+after reading. Keep all three files in the private evidence directory; copying
+a template without correcting its mode fails closed.
 
 ## 2. Verify transferred inputs
 

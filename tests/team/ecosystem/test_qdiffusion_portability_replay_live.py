@@ -217,6 +217,9 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     assert source.index("preflight_artifacts(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index('artifact_preflight.get("config_sha256")') < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index("load_source_preflight(") < source.index(
         "resolve_kaiwu_credentials()"
     )

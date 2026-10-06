@@ -94,7 +94,8 @@ The acceptance lane uses a frozen configuration and two independent host
 records:
 
 1. Copy `acceptance_config.example.json` to an evidence directory and replace
-   every placeholder before any baseline or guided experiment runs.
+   every placeholder before any baseline or guided experiment runs. Its parent
+   must be a real mode-0700 directory and the config itself must be mode `0600`.
 2. Record the file's SHA-256 digest in each host record and in a manifest based
    on `acceptance_manifest.example.json`.
 3. Run the bounded system path independently on `jp-a800-171` and
@@ -140,6 +141,13 @@ The smoke records its SHA-256 and cross-checks the approved Kaiwu version and
 wheel digest against the verified environment lock before credential discovery.
 Later QDiffusion entrypoints repeat the cross-check using the identical object
 embedded under `acceptance_config.json.kaiwu_sdk`.
+
+The frozen-config, standalone-approval, and environment-lock readers share one
+bounded private-input primitive. It opens each leaf relative to an anchored
+owner-only parent descriptor with `O_NOFOLLOW`, rejects public or symlinked
+parents and leaves, and rechecks the path and metadata after the read. This
+prevents a nominally mode-0600 file in an unsafe or replaced directory from
+authorizing provider use.
 
 Each frozen protein input also records an HTTPS acquisition source, an approved
 license identifier, an HTTPS license-evidence source, and the timezone-aware

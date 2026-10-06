@@ -146,6 +146,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   initialization, or quota submission; training, evaluation, and replay also
   do so before loading their executable plugin workflows. Final validation
   independently repeats the binding.
+- The SDK approval, environment lock, and live frozen-config readers now share
+  a bounded descriptor-relative private-input path. They require an owner-only
+  non-symlink parent and owner-only regular leaf, open the leaf with
+  `O_NOFOLLOW`, and recheck parent/leaf identity and metadata after reading.
+  Public directories, parent or leaf symlinks, oversized inputs, and path
+  replacement therefore fail before credentials rather than becoming trusted
+  control state.
 - The QDiffusion acceptance decision is now executable rather than narrative:
   a frozen experiment-config template, two-host manifest template, and
   fail-closed validator recompute system and application gates. Fake transport,
