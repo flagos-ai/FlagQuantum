@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import cache
+
 import torch
 
 from ..kernels.catalog import (
@@ -33,6 +35,7 @@ def _layout_complex_bmm_kernel_match(
     )
 
 
+@cache
 def _require_layout_complex_bmm_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:

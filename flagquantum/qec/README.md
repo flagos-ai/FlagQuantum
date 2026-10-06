@@ -641,14 +641,75 @@ whichever of the two a caller came from. A decoder fed a sampled syndrome has to
 matching detectors against the measurements that actually compose them, and that is
 now something a test can recompute from handles rather than only assume.
 
+## Cut a model into rounds
+
+A long experiment's model is one object, but a decoder that reads it a few rounds
+at a time needs those rounds to be nameable. `ChunkLayout` states how a model's
+detectors divide into layers, `DemChunksSpec` asks for windows over them, and the
+windows close back into the model they were cut from:
+
+```python
+from flagquantum.qec import (
+    ChunkLayout,
+    DemChunksSpec,
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    dem_chunks_from_spec,
+    dem_close_all,
+)
+
+noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+layout = ChunkLayout.from_memory_circuit(model, memory)
+chunks = dem_chunks_from_spec(DemChunksSpec(layout=layout, window=2))
+
+for chunk in chunks:
+    print(chunk.first_layer, chunk.last_layer, len(chunk.model.errors))
+print(dem_close_all(chunks) == model)
+```
+
+A *layer* is the set of detectors with one round index, so `layout.widths` is the
+round size in detector order and sums to the model's detector count. A *window*
+spans a run of layers and shares exactly one layer with each neighbour: the
+window's own bands are its leading boundary layer, its interior, and its trailing
+boundary layer, and the stride is the window width minus one, which is what makes
+the windows tile rather than overlap. `SeamId.prev_round` and `SeamId.next_round`
+name the two boundaries a window carries, and a window carries only the ones it
+has a neighbour for — the first window has no `prev_round`, the last no
+`next_round`.
+
+Ownership is what makes the windows a partition rather than a cover. A mechanism
+spans two adjacent layers, so the first window holding it whole owns it, every
+mechanism is owned once, and `dem_close_all(chunks) == model` is the invariant a
+test asserts rather than assumes. Three things are refused instead of
+approximated: a window of one layer, a window wider than the layout, and a layer
+count that does not tile at the stride. A mechanism that no window holds whole is
+refused rather than split — splitting it would state two weaker faults where the
+model stated one — and a mechanism flipping no detector is refused because an
+observable-only fault has no round to be placed in.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so a stitched pair spans one layer fewer than the
+sum of its parts; `dem_stitch_all` folds that over a sequence and
+`dem_stitch_merged` follows the stitch with `merge_duplicate_mechanisms` under a
+stated rule. `dem_close` puts one window back at its own place in the model's own
+numbering without renumbering from zero, so a window's detectors are the model's
+detectors. A seam's rows carry the global detector index rather than a position
+within the seam, which is why a stitch refuses two boundary bands that merely
+have the same width.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model matcher,
 [belief_propagation.py](belief_propagation.py) for the decoder that reads the
-hyperedges the matcher refuses, [registry.py](registry.py) for reaching either by
-name, [adapters.py](adapters.py) for the PyMatching cross-check,
+hyperedges the matcher refuses, [chunks.py](chunks.py) for the round-window
+decomposition, [registry.py](registry.py) for reaching either by name,
+[adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [css_code.py](css_code.py) for a code record built from

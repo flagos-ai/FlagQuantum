@@ -988,26 +988,27 @@ input shapes `(64, 16, 64, 16)` by `(64, 16, 64, 16)`, and logical BMM shape
 gradient-bearing calls, return directly to native `torch.einsum` before layout
 analysis.
 
-Across the four selected host/compiler cases, public dispatch is `0.866x` to
-`1.059x` relative to native einsum: it does not win on either FlagTree host and
-does not establish a stable stock-Triton win. Across the 12 fallback cases it is
-`0.904x` to `1.013x`, with at most `8.31 us` positive wrapper overhead. The evidence
-contract accepts a fallback only when it retains at least `0.95x` relative
-performance or adds no more than `5 us` absolute overhead. Direct forward plus
-backward ranges from `0.424x` to `0.944x` and does not win across the matrix, so
-training remains on the native path. Direct forward reaches `1.347x` to `1.350x`
-for the selected shape under stock Triton, but only `0.845x` to `0.849x` under
-FlagTree; compiler-specific optimization is required before promotion. Maximum
-forward absolute and relative L2
+The public path caches its immutable catalog authorization and the
+shape/stride-specific materialization decision. Across the four selected
+host/compiler cases, public dispatch is `1.040x` to `1.537x` faster than native
+einsum. Across the 12 fallback cases its independent-median ratio is `0.919x`
+to `1.064x`. Because the v3 design counterbalances the operations within each
+repeat, the absolute-overhead gate uses the median paired per-repeat
+public-minus-native difference; the maximum is `4.55 us`. The evidence contract
+accepts a fallback only when it retains at least `0.95x` relative performance
+or adds no more than `5 us` paired absolute overhead. Direct forward plus
+backward ranges from `0.294x` to `0.935x` and does not win across the matrix, so
+training remains on the native path. Direct forward reaches `1.347x` to `1.348x`
+for the selected shape under stock Triton, but only `0.845x` to `0.850x` under
+FlagTree; the authorized public-path result is therefore bounded to the exact
+measured inference signature. Maximum forward absolute and relative L2
 error are `2.22e-4` and `8.31e-7`; maximum gradient absolute and relative L2
 error are `6.10e-5` and `4.27e-7`.
 
-The canonical aggregate records `revisit_current_policy`: the current narrow
-dispatch signature must not be expanded, and its default selection should be
-removed or re-authorized only after the selected path and fallback overhead
-meet the evidence thresholds on both compiler lanes. NUM-002 remains
-`experimental`; the result does not authorize shape extrapolation, maturity
-promotion, a release gate, or a scalability claim.
+The canonical aggregate records `retain_current_policy` for the exact narrow
+window. It does not authorize shape extrapolation or training dispatch. NUM-002
+remains `experimental`; the result does not authorize maturity promotion, a
+release gate, or a scalability claim.
 Reproduce or validate it with
 [`benchmarks/tn_layout_contraction.py`](../../benchmarks/tn_layout_contraction.py).
 
