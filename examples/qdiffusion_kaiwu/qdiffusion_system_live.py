@@ -50,6 +50,7 @@ from flagquantum.remote.kaiwu import (
     KaiwuTaskClient,
     resolve_kaiwu_credentials,
 )
+from flagquantum.version import __version__ as flagquantum_version
 
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"
 SCHEMA = "flagquantum.qboson_qdiffusion_system_live_probe"
@@ -87,6 +88,7 @@ def _validate_lane(
     software = config["software"]
     observed = {
         "source_revision": source_revision,
+        "flagquantum_version": flagquantum_version,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
@@ -319,6 +321,7 @@ def run_live_system_probe(
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "experiment_config_sha256": config_sha256,
         "source_revision": source_revision,
+        "flagquantum_version": flagquantum_version,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,

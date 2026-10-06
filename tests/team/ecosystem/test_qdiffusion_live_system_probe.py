@@ -14,6 +14,7 @@ import torch
 from examples.qdiffusion_kaiwu import qdiffusion_system_live as system_module
 from examples.qdiffusion_kaiwu.plan_quota import SYSTEM_MAX_CALLS_PER_HOST
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
+    _validate_lane,
     _write_private_redacted_json,
     run_live_system_probe,
 )
@@ -92,6 +93,7 @@ def _config() -> dict[str, object]:
         },
         "software": {
             "source_revision": "a" * 40,
+            "flagquantum_version": "0.2.0",
             "kaiwu_pytorch_plugin_revision": "b" * 40,
             "python_version": platform.python_version(),
             "torch_version": str(torch.__version__),
@@ -105,6 +107,20 @@ def _config() -> dict[str, object]:
             "target_max": 127,
         },
     }
+
+
+def test_lane_rejects_flagquantum_version_drift() -> None:
+    config = _config()
+    config["software"]["flagquantum_version"] = "999.0.0"  # type: ignore[index]
+
+    with pytest.raises(ValueError, match="observed flagquantum_version differs"):
+        _validate_lane(
+            config,
+            execution_host="jp-a800-171",
+            source_revision="a" * 40,
+            plugin_revision="b" * 40,
+            sdk_version="1.3.1",
+        )
 
 
 def test_injected_transport_cannot_pass_live_system_acceptance() -> None:

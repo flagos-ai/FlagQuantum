@@ -580,6 +580,7 @@ def _config() -> dict[str, Any]:
         },
         "software": {
             "source_revision": _REVISION,
+            "flagquantum_version": "0.2.0",
             "kaiwu_pytorch_plugin_revision": _PLUGIN_REVISION,
             "python_version": "3.10.18",
             "torch_version": "2.7.0",
@@ -735,6 +736,7 @@ def _record(
         "schema": "flagquantum.qboson_qdiffusion_acceptance",
         "version": "1.0",
         "source_revision": _REVISION,
+        "flagquantum_version": "0.2.0",
         "kaiwu_pytorch_plugin_revision": _PLUGIN_REVISION,
         "source_preflight_sha256": ("8" * 64 if host == "jp-a800-171" else "9" * 64),
         "transfer_manifest_sha256": "7" * 64,
@@ -1419,6 +1421,17 @@ def test_closed_config_fields_match_documented_template() -> None:
     assert set(template) == CONFIG_FIELDS
     for section, expected_fields in CONFIG_SECTION_FIELDS.items():
         assert set(template[section]) == expected_fields
+
+
+@pytest.mark.parametrize("value", ("<required>", None, ["0.2.0"]))
+def test_config_requires_frozen_flagquantum_version(value: object) -> None:
+    config = _config()
+    config["software"]["flagquantum_version"] = value
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert "config.software.flagquantum_version: frozen value is required" in errors
 
 
 @pytest.mark.parametrize(

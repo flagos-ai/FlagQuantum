@@ -334,6 +334,8 @@ preflight and requires its file and transfer-manifest digests to match the
 training record rather than inheriting those claims. System, training,
 evaluation, and replay recompute the executing FlagQuantum tree and actual
 plugin-root file count and content-set digests before importing the workflow.
+They also bind the executing `flagquantum.version.__version__` to the frozen
+software lane and retain it in every component and final host record.
 System, training, and replay additionally reject the core QDiffusion modules
 when their resolved files are outside that plugin root. All loaded
 `kaiwu.torch_plugin.*` and `dplm.*` transitive modules are checked as well. The

@@ -175,6 +175,7 @@ def _final_host_record(
         "schema": RECORD_SCHEMA,
         "version": "1.0",
         "source_revision": system.get("source_revision"),
+        "flagquantum_version": system.get("flagquantum_version"),
         "kaiwu_pytorch_plugin_revision": system.get("kaiwu_pytorch_plugin_revision"),
         "source_preflight_sha256": system.get("source_preflight_sha256"),
         "transfer_manifest_sha256": system.get("transfer_manifest_sha256"),

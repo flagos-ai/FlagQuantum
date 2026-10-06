@@ -63,6 +63,7 @@ from flagquantum.remote.kaiwu import (
     KaiwuTaskClient,
     resolve_kaiwu_credentials,
 )
+from flagquantum.version import __version__ as flagquantum_version
 
 SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay"
 _MAX_ARTIFACT_PREFLIGHT_BYTES = 4 * 1024 * 1024
@@ -282,6 +283,7 @@ def run_portability_replay(
         "artifact_preflight_sha256": artifact_preflight_sha256,
         "training_record_sha256": training_record_sha256,
         "source_revision": source_revision,
+        "flagquantum_version": flagquantum_version,
         "kaiwu_pytorch_plugin_revision": plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,

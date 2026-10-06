@@ -44,6 +44,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )
+from flagquantum.version import __version__ as flagquantum_version
 
 SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
@@ -414,12 +415,14 @@ def main() -> None:
         "experiment_config_sha256": config_sha256,
         "training_record_sha256": record_sha256,
         "source_revision": args.source_revision,
+        "flagquantum_version": flagquantum_version,
         "kaiwu_pytorch_plugin_revision": args.plugin_revision,
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": environment_lock_sha256,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
+        "kaiwu_sdk_version": args.expected_sdk_version,
         "execution_host": args.execution_host,
         "observed_hostname": hostname,
         "observed_gpu_model": gpu,

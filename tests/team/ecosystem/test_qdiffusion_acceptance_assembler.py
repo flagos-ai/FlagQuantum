@@ -129,6 +129,7 @@ def _system(
         "version": "1.0",
         "recorded_at": "2026-10-06T00:00:00+00:00",
         "source_revision": "a" * 40,
+        "flagquantum_version": "0.2.0",
         "kaiwu_pytorch_plugin_revision": "b" * 40,
         "source_preflight_sha256": (
             PRIMARY_SOURCE_PREFLIGHT_SHA
@@ -345,6 +346,7 @@ def _components(
                     "version": "1.0",
                     "recorded_at": "2026-10-06T00:00:00+00:00",
                     "source_revision": "a" * 40,
+                    "flagquantum_version": "0.2.0",
                     "kaiwu_pytorch_plugin_revision": "b" * 40,
                     "python_version": "3.10.18",
                     "torch_version": "2.7.0",
@@ -478,9 +480,11 @@ def _components(
                     "training_record_sha256": training_sha,
                     "experiment_config_sha256": config_sha256,
                     "source_revision": "a" * 40,
+                    "flagquantum_version": "0.2.0",
                     "kaiwu_pytorch_plugin_revision": "b" * 40,
                     "python_version": "3.10.18",
                     "torch_version": "2.7.0",
+                    "kaiwu_sdk_version": "1.3.1",
                     "execution_host": "jp-a800-171",
                     "observed_hostname": OBSERVED_HOSTNAMES["jp-a800-171"],
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
@@ -524,6 +528,7 @@ def _portability(
         "observed_tensor_device": "cuda:0",
         "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
         "source_revision": "a" * 40,
+        "flagquantum_version": "0.2.0",
         "kaiwu_pytorch_plugin_revision": "b" * 40,
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
@@ -844,6 +849,8 @@ def test_assembler_links_all_seeds_and_recomputes_metric_means() -> None:
     )
 
     assert primary["attempted_seeds"] == [1701, 1702, 1703]
+    assert primary["flagquantum_version"] == "0.2.0"
+    assert replay["flagquantum_version"] == "0.2.0"
     assert primary["baseline_metrics"]["mean_cosine_distance"] == pytest.approx(0.62)
     assert primary["guided_metrics"]["mean_cosine_distance"] == pytest.approx(0.42)
     assert len(primary["application_evidence"]["records"]) == 3
@@ -1433,6 +1440,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     _write_json(manifest_path, manifest)
     assert any(
         "remote component task receipts are missing" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    portability_sha = _write_json(component_paths[11], portability_record)
+    replay["portability_evidence"]["record_sha256"] = portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
+    tampered_portability["flagquantum_version"] = "999.0.0"
+    tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
+    replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = tampered_portability_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "portability flagquantum_version differs from config" in error
         for error in validate_acceptance(manifest_path)
     )
 

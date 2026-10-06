@@ -79,6 +79,7 @@ SYSTEM_COMPONENT_FIELDS = frozenset(
         "recorded_at",
         "experiment_config_sha256",
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "source_preflight_sha256",
         "transfer_manifest_sha256",
@@ -131,6 +132,7 @@ TRAINING_COMPONENT_FIELDS = frozenset(
         "artifact_preflight_sha256",
         "artifact_inputs_unchanged",
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "source_preflight_sha256",
         "transfer_manifest_sha256",
@@ -182,12 +184,14 @@ EVALUATION_COMPONENT_FIELDS = frozenset(
         "experiment_config_sha256",
         "training_record_sha256",
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
         "python_version",
         "torch_version",
+        "kaiwu_sdk_version",
         "execution_host",
         "observed_hostname",
         "observed_gpu_model",
@@ -212,6 +216,7 @@ PORTABILITY_COMPONENT_FIELDS = frozenset(
         "artifact_inputs_unchanged",
         "training_record_sha256",
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "source_preflight_sha256",
         "transfer_manifest_sha256",
@@ -411,6 +416,7 @@ FINAL_RECORD_COMMON_FIELDS = frozenset(
         "schema",
         "version",
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "source_preflight_sha256",
         "transfer_manifest_sha256",
@@ -517,6 +523,7 @@ CONFIG_FIELDS = frozenset(
 CONFIG_SOFTWARE_FIELDS = frozenset(
     {
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "python_version",
         "torch_version",
@@ -1555,13 +1562,15 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
         "environment_lock_sha256",
     ):
-        if software.get(field) in {None, "", "<required>"}:
+        value = software.get(field)
+        if not isinstance(value, str) or value in ("", "<required>"):
             errors.append(f"config.software.{field}: frozen value is required")
     for field in ("source_revision", "kaiwu_pytorch_plugin_revision"):
         revision = software.get(field)
@@ -1652,6 +1661,7 @@ def _validate_system_record(
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "python_version",
         "torch_version",
@@ -2170,6 +2180,19 @@ def _validate_portability_component_evidence(
     if config is None:
         return
 
+    software = _mapping(config.get("software"), "config.software", errors)
+    for field in (
+        "source_revision",
+        "flagquantum_version",
+        "kaiwu_pytorch_plugin_revision",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "environment_lock_sha256",
+    ):
+        if record.get(field) != software.get(field):
+            errors.append(f"{label}: portability {field} differs from config")
+
     artifacts = _mapping(record.get("artifacts"), f"{label}.artifacts", errors)
     expected_artifacts = {
         "dataset_sha256": _mapping(
@@ -2326,6 +2349,7 @@ def _validate_training_component(
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "python_version",
         "torch_version",
@@ -2461,9 +2485,11 @@ def _validate_evaluation_component(
     software = _mapping(config.get("software"), "config.software", errors)
     for field in (
         "source_revision",
+        "flagquantum_version",
         "kaiwu_pytorch_plugin_revision",
         "python_version",
         "torch_version",
+        "kaiwu_sdk_version",
         "environment_lock_sha256",
     ):
         if record.get(field) != software.get(field):

@@ -663,6 +663,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   undeclared fields; the documented template is tested against the validator's
   field sets. An extra credential-like value can no longer hide in a config
   extension and be copied into the final self-contained evidence bundle.
+- The frozen software lane now includes the FlagQuantum package version in
+  addition to the exact source revision. System, training, evaluation, and
+  portability producers record the executing version; preflight rejects a
+  runtime mismatch, component validation rechecks it, and final host records
+  retain it. A source checkout with the expected commit but altered package
+  version metadata can no longer pass unnoticed.
 - The retained environment lock is now closed at both record and distribution
   levels. Only the exact inventory policy, Python version, and sorted package
   identity/version/artifact/content digests are accepted; arbitrary metadata
@@ -1166,7 +1172,7 @@ host record should contain at least:
   "execution_host": "jp-a800-171|jp-a800-172",
   "run_role": "primary|portability_replay",
   "requested_cuda_device": "<device>",
-  "observed_cuda_device": "<device>",
+  "observed_tensor_device": "<device>",
   "observed_gpu_model": "NVIDIA A800",
   "qboson_target": "<provider-reported target>",
   "qboson_task_ids": ["<redacted-safe task id>"],
