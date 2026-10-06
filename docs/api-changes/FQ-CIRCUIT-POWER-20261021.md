@@ -41,6 +41,8 @@ being retired, which is why the contract change is listed below rather than assu
 
 Scope of the affected surface: `flagquantum/core/operator_schema.py` (owned by team
 `core`), `flagquantum/core/__init__.py`, `flagquantum/circuit.py` (owned by team `core`),
+`flagquantum/core/_composition.py`, which is where this method's per-instruction rewrite
+landed when the merged tree crossed the module line ceiling,
 `contracts/circuit-composition-contract.toml` and its gate,
 `docs/operator_manifest.json` (generated), `docs/reference/API.md`, and tests.
 

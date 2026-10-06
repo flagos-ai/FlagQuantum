@@ -294,6 +294,7 @@
         "id"
       ],
       "arity": 1,
+      "control": "identity",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -313,6 +314,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -332,6 +334,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "y_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -351,6 +354,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -372,6 +376,7 @@
         "hadamard"
       ],
       "arity": 1,
+      "control": "ry_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -391,6 +396,7 @@
       "adjoint": "sdg",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -412,6 +418,7 @@
         "sd"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -431,6 +438,7 @@
       "adjoint": "tdg",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -452,6 +460,7 @@
         "td"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -471,6 +480,7 @@
       "adjoint": "sxdg",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -490,6 +500,7 @@
       "adjoint": "sx",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -509,6 +520,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "rx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -534,6 +546,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "ry_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -559,6 +572,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "rz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -586,6 +600,7 @@
         "p"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -611,6 +626,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -636,6 +652,7 @@
       "adjoint": "adjoint_u2_angles",
       "aliases": [],
       "arity": 1,
+      "control": "u_angle_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -667,6 +684,7 @@
         "u"
       ],
       "arity": 1,
+      "control": "u_angle_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -702,6 +720,7 @@
         "cnot"
       ],
       "arity": 2,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -722,6 +741,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "y_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -742,6 +762,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -762,6 +783,7 @@
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "swap_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -782,6 +804,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -809,6 +832,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "ry_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -836,6 +860,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -863,6 +888,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -889,6 +915,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rxx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -915,6 +942,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "ryy_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -941,6 +969,7 @@
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rzz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -970,6 +999,7 @@
         "toffoli"
       ],
       "arity": 3,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -993,6 +1023,7 @@
         "fredkin"
       ],
       "arity": 3,
+      "control": "cswap_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1014,6 +1045,7 @@
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1035,6 +1067,7 @@
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1056,6 +1089,7 @@
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1077,6 +1111,7 @@
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [

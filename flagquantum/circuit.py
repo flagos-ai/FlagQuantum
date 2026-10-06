@@ -14,6 +14,12 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import torch
 
+from .core._composition import (
+    controlled_instruction,
+    copy_instruction,
+    inverted_instruction,
+    powered_instructions,
+)
 from .core.ir import CircuitIR, Instruction
 from .core.operator_schema import (
     MAX_POWER_REPEATS,
@@ -21,8 +27,6 @@ from .core.operator_schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,
-    inverse_operator,
-    power_operator,
 )
 from .core.parameters import (
     bind_parameter_value,
@@ -30,7 +34,7 @@ from .core.parameters import (
 )
 from .core.qubit_mapping import normalize_qubits, qubit_map_from, remap_qubits
 from .core.runtime_config import RuntimeConfig, get_runtime_config
-from .errors import CapabilityError, ValidationError
+from .errors import ValidationError
 
 if TYPE_CHECKING:
     from .noise import NoiseModel
@@ -42,7 +46,13 @@ if TYPE_CHECKING:
     from .runtime.result import ExecutionResult
 
 
-def _count_argument(name: str, value: Any, *, minimum: int | None = 1) -> int:
+def _count_argument(
+    name: str,
+    value: Any,
+    *,
+    minimum: int | None = 1,
+    message: str | None = None,
+) -> int:
     """Read an integer count without quietly rewriting the caller's value.
 
     ``int(value)`` accepted ``2.7`` as ``2`` and ``"3"`` as ``3``, so a mistyped
@@ -55,137 +65,54 @@ def _count_argument(name: str, value: Any, *, minimum: int | None = 1) -> int:
     ``minimum=None`` accepts a negative count as well, for the arguments where a
     negative value is a defined request rather than a mistyped size: an exponent of
     ``-k`` asks for the inverse applied ``k`` times.
+
+    ``message`` replaces the assembled opening of the refusal for an argument whose
+    refusal the composition contract freezes as a phrase of its own. A frozen phrase
+    is checked against this file, so it is written out at the call site instead of
+    being assembled from ``name`` where it is raised.
     """
 
+    opening = message or f"Circuit {name} must be an integer, got"
     if isinstance(value, bool):
-        raise TypeError(f"Circuit {name} must be an integer, got {value!r}")
+        raise TypeError(f"{opening} {value!r}")
     try:
         count = operator.index(value)
     except TypeError:
-        raise TypeError(f"Circuit {name} must be an integer, got {value!r}") from None
+        raise TypeError(f"{opening} {value!r}") from None
     if minimum is not None and count < minimum:
         raise ValidationError(f"Circuit {name} must be >= {minimum}, got {count}")
     return count
 
 
-def _inverted_instruction(instruction: Instruction) -> Instruction:
-    """Return the single gate that undoes one recorded instruction.
+def _embedded_input_state(
+    inputs: torch.Tensor | None,
+    n_qubits: int,
+    width: int,
+    dtype: torch.dtype,
+    device: torch.device | str,
+) -> torch.Tensor | None:
+    """Place a receiver's explicit input state in the wider controlled register.
 
-    The matrix recorded on an instruction is what the simulator executes, so it decides
-    the inverse whenever it is present: an operation with an explicit matrix is inverted
-    by conjugate transpose, which is the only rule that inverts a user-supplied unitary.
-    Opcode rules apply to the remaining instructions, and an instruction that neither
-    route can invert is refused instead of being copied forward unchanged.
-
-    ``CapabilityError`` is the class the errors-module boundary reserves for a capability
-    that is absent rather than a value that is wrong, which is the case here: the program
-    is well formed, and undoing it is the part that is not available.
+    Every qubit the receiver did not have starts in ``|0>``, and qubit ``0`` is the most
+    significant amplitude bit, so the added qubits become zero low-order bits:
+    ``(state_1, ..., state_n)`` maps to ``sum_i state_i * 2 ** i * 2 ** (width - n)``.
+    Dropping the receiver's input instead would silently execute a different program from
+    the one the receiver describes.
     """
 
-    reason: str | None = None
-    if instruction.metadata.get("is_channel"):
-        reason = "it is a noise channel, which has no unitary inverse"
-    elif instruction.metadata.get("is_dynamic"):
-        reason = "it is a dynamic operation, which has no fixed inverse"
-    elif instruction.metadata.get("conditions"):
-        reason = "it is classically conditioned, which has no fixed inverse"
-
-    if reason is None:
-        matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
-        if matrix is not None:
-            inverted_matrix = getattr(matrix, "mH", None)
-            if inverted_matrix is None:
-                reason = "its matrix does not expose a conjugate transpose"
-            else:
-                return Instruction(
-                    name=instruction.name,
-                    wires=instruction.wires,
-                    params=dict(instruction.params),
-                    matrix=inverted_matrix,
-                    metadata=dict(instruction.metadata),
-                )
-
-    if reason is None:
-        schema = get_operator_schema(instruction.name)
-        if schema is None:
-            reason = "it is an unknown opcode with no matrix"
-        else:
-            inverted = inverse_operator(schema, instruction.params)
-            if inverted is None:
-                reason = (
-                    f"its adjoint declaration {schema.adjoint!r} names no inverse gate"
-                )
-            else:
-                opcode, params = inverted
-                return Instruction(
-                    name=opcode,
-                    wires=instruction.wires,
-                    params=params,
-                    metadata=dict(instruction.metadata),
-                )
-
-    raise CapabilityError(
-        f"Cannot invert instruction {instruction.name!r} on qubits "
-        f"{instruction.wires}: {reason}."
+    if inputs is None:
+        return None
+    resolved = inputs.to(device=device, dtype=dtype)
+    if resolved.ndim == 1:
+        resolved = resolved.reshape(1, -1)
+    trailing = 2 ** (width - n_qubits)
+    embedded = torch.zeros(
+        (*resolved.shape[:-1], resolved.shape[-1] * trailing),
+        dtype=dtype,
+        device=device,
     )
-
-
-def _powered_instructions(instruction: Instruction, *, count: int) -> list[Instruction]:
-    """Return how the power of a one-instruction program is written.
-
-    The only rewrite a power performs is the angle scaling declared by the opcode: a
-    gate whose declaration is the exponential of one parameter has a one-instruction
-    ``count``-fold action. Everything else is written out as ``count`` copies, which is
-    exact for every instruction and needs no property of the gate.
-
-    A carried matrix suppresses the rewrite, exactly as it decides the inverse in
-    :func:`_inverted_instruction`: a user-supplied unitary is repeated, because
-    scaling its angles would apply the opcode's declaration rather than the matrix that
-    actually executes.
-
-    The caller must only reach this for a program of exactly one instruction. For a
-    longer program the copies of this gate are separated by the other gates and do not
-    compose into one instruction, so :meth:`Circuit.power` repeats the program instead.
-    """
-
-    matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
-    schema = get_operator_schema(instruction.name)
-    if matrix is None and schema is not None:
-        rewritten = power_operator(schema, instruction.params, count)
-        if rewritten is not None:
-            opcode, params = rewritten
-            return [
-                Instruction(
-                    name=opcode,
-                    wires=instruction.wires,
-                    params=dict(params),
-                    metadata=dict(instruction.metadata),
-                )
-            ]
-
-    # A fresh instruction per copy, so the powered program holds distinct records
-    # rather than one object repeated: a later edit or an identity comparison must see
-    # the copies the program is actually made of.
-    return [_copy_instruction(instruction) for _ in range(count)]
-
-
-def _copy_instruction(instruction: Instruction) -> Instruction:
-    """Return an independent record of one instruction.
-
-    A power writes the same operation more than once, and appending the same
-    :class:`Instruction` object twice would make the program's length a claim about a
-    list rather than about a program. ``Instruction`` is frozen, so a copy differs from
-    its source only in identity -- which is exactly what is wanted here, and what keeps
-    a later in-place edit of one copy from reaching the others.
-    """
-
-    return Instruction(
-        name=instruction.name,
-        wires=instruction.wires,
-        params=dict(instruction.params),
-        matrix=instruction.matrix,
-        metadata=dict(instruction.metadata),
-    )
+    embedded.view(*resolved.shape[:-1], resolved.shape[-1], trailing)[..., 0] = resolved
+    return embedded
 
 
 def _composition_source(other: Any) -> tuple[int, Any, tuple[Instruction, ...]]:
@@ -547,7 +474,7 @@ class Circuit:
             config=self.runtime_config,
         )
         inverse._instructions.extend(
-            _inverted_instruction(instruction)
+            inverted_instruction(instruction)
             for instruction in reversed(self._instructions)
         )
         if self._instructions:
@@ -616,7 +543,12 @@ class Circuit:
             [('rx', {'theta': 0.3}), ('cx', {}), ('rx', {'theta': 0.3}), ('cx', {})]
         """
 
-        requested = _count_argument("power", exponent, minimum=None)
+        requested = _count_argument(
+            "power",
+            exponent,
+            minimum=None,
+            message="Circuit power must be an integer, got",
+        )
         if requested < 0:
             return self.adjoint().power(-requested)
 
@@ -640,7 +572,7 @@ class Circuit:
             )
 
         if len(self._instructions) == 1 and requested != 1:
-            body = _powered_instructions(self._instructions[0], count=requested)
+            body = powered_instructions(self._instructions[0], count=requested)
         else:
             # ``requested == 1`` is handled here rather than by the rewrite, because a
             # power of one is the same program: the rewrite would multiply every angle
@@ -649,7 +581,7 @@ class Circuit:
             # angle as a new tensor behind a multiplication. The identity power should
             # not rewrite what it was given.
             body = [
-                _copy_instruction(instruction)
+                copy_instruction(instruction)
                 for _ in range(requested)
                 for instruction in self._instructions
             ]
@@ -737,6 +669,109 @@ class Circuit:
         if instructions:
             self._invalidate_execution_cache(instructions_changed=True)
         return self
+
+    def control(
+        self,
+        n_controls: int,
+        ctrl_qubits: Iterable[int] | int,
+    ) -> "Circuit":
+        """Return this circuit with every gate turned into a controlled gate.
+
+        The result is a new circuit, so a reusable block can be controlled and then used
+        again unconditionally. Every gate in the receiver is replaced by its controlled
+        form, and each control qubit is added to the circuit rather than borrowed from
+        it: a control qubit must be outside the receiver's own range, which is what makes
+        the result's width ``max(ctrl_qubits) + 1`` and what keeps the receiver's gates
+        acting on the qubits they were written for.
+
+        The expansion belongs to the opcode and is declared once in
+        :data:`flagquantum.core.OPERATOR_SCHEMAS`, next to the rules that say how a gate
+        inverts and how an angle shifts. A gate the registry already has in controlled
+        form is used directly -- ``x`` under one control is ``cx`` -- and every further
+        control is built from ``cphase``, ``phase``, ``ry``, ``h``, ``s``, and ``sdg`` by
+        an ancilla-free ladder. No ancilla is requested, because a program builder cannot
+        know which qubit of the caller's circuit starts in ``|0>`` and a construction that
+        depends on that precondition would return a wrong answer rather than a refusal.
+        The price is depth: the ladder for ``k`` controls on a one-qubit gate emits
+        ``4 * 3 ** (k - 1) - 3`` instructions, which is exponential in ``k``, and
+        :data:`flagquantum.core.MAX_LADDER_LEVEL` publishes the deepest ladder this build
+        will emit. Every expansion is exact, including at a zero angle, and an angle that
+        is still a parameter, or a per-batch sequence of angles, is scaled in place so the
+        result stays inside the autograd graph. An input state set on the receiver is
+        carried into the wider register with every added qubit in ``|0>``.
+
+        This is a construction-time operation: it emits instructions the IR already
+        describes, so ``IR_VERSION`` does not change, and no root export is added.
+
+        Args:
+            n_controls: How many control qubits to add. Must be at least one.
+            ctrl_qubits: One control qubit, or one label per control qubit. A label may
+                be given as a single integer when exactly one control is added.
+
+        Returns:
+            A new circuit whose width covers every control qubit named.
+
+        Raises:
+            CapabilityError: If a gate in the receiver has no controlled form, such as a
+                noise channel, a classically conditioned operation, or a gate recorded
+                through :meth:`any` that carries its own matrix.
+            TypeError: If ``n_controls`` is not an integer or a control label is not an
+                integer.
+            ValidationError: If ``n_controls`` is not at least one, if the number of
+                control qubits does not match it, if a control qubit is repeated, or if a
+                control qubit lies inside the receiver's own range.
+
+        Examples:
+            >>> import flagquantum as fq
+            >>> block = fq.Circuit(1).x(0).control(1, ctrl_qubits=(1,))
+            >>> [item.name for item in block.to_ir().instructions]
+            ['cx']
+            >>> wide = fq.Circuit(1).rx(0, theta=0.3).control(2, ctrl_qubits=(1, 2))
+            >>> len(wide.to_ir().instructions)
+            12
+        """
+
+        count = _count_argument("n_controls", n_controls)
+        controls = normalize_qubits(ctrl_qubits, owner="Circuit.control ctrl_qubits")
+        if len(controls) != count:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must name {count} control qubit(s), got "
+                f"{len(controls)}"
+            )
+        if len(set(controls)) != len(controls):
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must be distinct, got {controls}"
+            )
+        negative = tuple(qubit for qubit in controls if qubit < 0)
+        if negative:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits must be non-negative, got {negative}."
+            )
+        inside = tuple(qubit for qubit in controls if qubit < self.n_qubits)
+        if inside:
+            raise ValidationError(
+                f"Circuit.control ctrl_qubits {inside} must be outside the receiver's "
+                f"own range [0, {self.n_qubits - 1}]; a control qubit is added to the "
+                "circuit rather than taken from it."
+            )
+
+        controlled = type(self)(
+            n_qubits=max(controls) + 1,
+            bsz=self.bsz,
+            device=self.device,
+            dtype=self.dtype,
+            inputs=_embedded_input_state(
+                self._inputs, self.n_qubits, max(controls) + 1, self.dtype, self.device
+            ),
+            config=self.runtime_config,
+        )
+        for instruction in self._instructions:
+            controlled._instructions.extend(
+                controlled_instruction(instruction, controls)
+            )
+        if controlled._instructions:
+            controlled._invalidate_execution_cache(instructions_changed=True)
+        return controlled
 
     def to_ir(self) -> CircuitIR:
         if self._ir_cache is None:

@@ -3,35 +3,55 @@
 # Construction-time composition: the operations that build a larger program out of
 # smaller ones without introducing a second IR. `Circuit.compose` places a program
 # onto chosen qubits; `Circuit.adjoint` returns the program that undoes one;
-# `Circuit.power` returns the program applied a whole number of times. All three emit
-# instructions the IR already describes, so none changes `IR_VERSION`, and all three
-# are methods on an existing stable export rather than new root exports.
+# `Circuit.control` returns the program that runs only when its control qubits are
+# set; `Circuit.power` returns the program applied a whole number of times. All four
+# emit instructions the IR already describes, so none changes `IR_VERSION`, and all
+# four are methods on an existing stable export rather than new root exports.
 #
-# This contract is the authoritative list of what those three operations guarantee and
-# of every way they refuse. `control` is recorded as absent on purpose: a capability
-# that is missing appears here as an owned gap rather than as silence.
+# This contract is the authoritative list of what those four operations guarantee
+# and of every way they refuse. The family is complete -- every operation its plan
+# names has an approved proposal -- so `not_provided` is empty rather than holding a
+# member whose absence would be an owned gap.
 schema = "flagquantum_circuit_composition_contract_v1"
 maturity = "development_evidence"
 surface = "construction_time_program_composition"
 implementation = "flagquantum/circuit.py"
+# The per-instruction rewrites the three instruction-at-a-time members apply -- invert
+# one instruction, scale or repeat one instruction, expand one instruction under added
+# controls -- live beside the rule vocabulary they read rather than in the 1200-line
+# circuit type. The type keeps the operation; this module keeps the adapter and the
+# refusal reason for one instruction. Splitting it there is also what keeps
+# `flagquantum/circuit.py` inside the module line ceiling in `architecture.toml`, which
+# is the arithmetic the last section of this header records.
+instruction_rewrite_implementation = "flagquantum/core/_composition.py"
 placement_implementation = "flagquantum/core/qubit_mapping.py"
 adjoint_rule_source = "flagquantum/core/operator_schema.py"
 power_rule_source = "flagquantum/core/operator_schema.py"
+control_rule_source = "flagquantum/core/operator_schema.py"
+control_expansion_implementation = "flagquantum/core/controlled.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 authorization = [
     "docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md",
     "docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md",
     "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md",
+    "docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md",
 ]
 
 [scope]
-provided = ["Circuit.compose", "Circuit.adjoint", "Circuit.power"]
-# `control` belongs to the same construction-time family and is named here so that its
-# absence is contracted instead of discovered. It has no approved proposal, so it may
-# not be added under this contract's authority.
-not_provided = ["Circuit.control"]
-not_provided_reason = "no approved API change proposal; control is unplanned, not partial"
+provided = [
+    "Circuit.compose",
+    "Circuit.adjoint",
+    "Circuit.power",
+    "Circuit.control",
+]
+# Empty on purpose, and asserted as empty rather than left out: the four operations
+# above are the whole plan for this surface, so an entry here would be a member whose
+# absence is contracted. A later operation of this family starts as a new entry here
+# with a reason, the way `power` and `control` each did before their proposals were
+# approved.
+not_provided = []
+not_provided_reason = "the construction-time composition family is complete; every member has an approved API change proposal"
 
 [placement]
 # `Circuit.compose(other, *, qubits=None, qubit_map=None)`
@@ -160,6 +180,80 @@ single_instruction_rewrite_only = true
 max_emitted_instructions = 4096
 max_emitted_instructions_source = "flagquantum/core/operator_schema.py"
 
+[control]
+# `Circuit.control(n_controls, ctrl_qubits)`
+# This surface has its own authorizing record, and it must also appear in the list at the
+# top of this file: a table whose proposal is not among the file's authorizations is an
+# unapproved surface that happens to be written down.
+authorization = "docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md"
+receiver_role = "an instruction sequence, not a program entry point"
+returns = "new_circuit"
+receiver_is_mutated = false
+instruction_order = "forward"
+instruction_qubits = "unchanged"
+instruction_order_within_gate = "unchanged"
+# The current attribute names, not the deprecated `n_wires` alias for `n_qubits`.
+preserves = ["bsz", "device", "dtype"]
+# `n_qubits` is deliberately not preserved: a control qubit is added to the circuit
+# rather than taken from it, so every control qubit lies outside the receiver's range and
+# the result is always wider. The receiver's own gates keep acting on the qubits they
+# were written for.
+control_count_argument = "n_controls"
+control_qubits_argument = "ctrl_qubits"
+control_qubits_are_added = true
+control_qubits_must_be_distinct = true
+control_qubits_must_be_outside_the_receiver = true
+result_width = "max(ctrl_qubits) + 1"
+# An input state set on the receiver is a state of the receiver's qubits; the added
+# qubits are not in it, so they enter the wider register in `|0>`.
+receiver_input_state = "carried into the wider register with every added qubit at |0>"
+# The rule vocabulary is owned by `flagquantum/core/operator_schema.py`. This list must
+# equal `CONTROL_RULES`, and every member must be the declared rule of at least one
+# registered opcode or be the absence value.
+declared_opcode_rules = [
+    "identity",
+    "diagonal_ladder",
+    "x_conjugated_ladder",
+    "y_conjugated_ladder",
+    "ry_conjugated_ladder",
+    "rz_ladder",
+    "rx_ladder",
+    "ry_ladder",
+    "u_angle_ladder",
+    "swap_ladder",
+    "cswap_ladder",
+    "rzz_ladder",
+    "rxx_ladder",
+    "ryy_ladder",
+    "not_available",
+]
+absence_rule = "not_available"
+# The many-to-one shortcut table read when exactly one control is added. Its pairs are
+# verified against the registry by the operator schema's own consistency check, so a pair
+# that stops being parameter-compatible is a failure there rather than here.
+single_control_partner_source = "flagquantum/core/operator_schema.py"
+# No ancilla is requested. The expansion is ancilla-free, which is what makes it exact
+# for every state of the receiver's qubits; the price is depth, and the bound is declared
+# here rather than discovered from a build. `ladder_level` counts the qubits the phase
+# ladder has to thread, which is the control qubits plus every qubit of the gate but its
+# last, so a two-qubit gate under one control needs a level-2 ladder.
+ancilla_qubits = 0
+ladder_control_count = "n_controls"
+ladder_level = "n_controls + arity - 1"
+ladder_instruction_bound = "4 * 3 ** (ladder_level - 1) - 3"
+ladder_depth_growth = "exponential"
+max_ladder_level = 10
+max_ladder_level_source = "flagquantum/core/operator_schema.py"
+# Every instruction the expansion emits names an opcode the registry already declares, so
+# the result is a program the IR describes rather than a matrix the IR cannot express.
+emitted_opcodes_are_registered = true
+# A zero angle is emitted rather than elided. A parameter, a per-batch sequence of angles,
+# and a bound tensor cannot all be compared with a float, and a tolerance that dropped a
+# small non-zero angle would change the program by more than round-off, so the emitted
+# count is a function of shape alone.
+zero_angles_are_emitted = true
+angle_handling = "scaled in place, so a parameter and a per-batch angle stay differentiable"
+
 [issue_codes]
 # Refusal reasons exist in the implementation as prose today. The vocabulary below is
 # the contract for them: a caller may rely on the exception class and on the phrase,
@@ -197,7 +291,7 @@ contract = "tests/unit/test_circuit_composition_contract.py"
 # requirement is what `tools/check_circuit_composition_contract.py` enforces: it refuses
 # a contract that names a test which is not a test in the file above, and it refuses an
 # operation that has no test named. An operation is not contracted until both hold.
-expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse", "Circuit.power" = "test_power_expands_to_the_hand_built_repetition" }
+expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse", "Circuit.power" = "test_power_expands_to_the_hand_built_repetition", "Circuit.control" = "test_control_expands_to_the_hand_built_ladder" }
 # Registering an opcode changes this census. It is the measurement behind the
 # `reachable = false` row below, so it is recorded as evidence rather than assumed.
 opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
@@ -209,6 +303,11 @@ power_census = "12 of 35 registered opcodes take the closed form; the other 23 r
 # argument is the wrong kind of value, which is the same class the circuit's own count
 # arguments raise.
 exponent_type_refusal = "TypeError"
+# The same census read through the control rules: every unitary opcode declares a rule,
+# and the four opcodes that declare none are exactly the noise channels, which the
+# channel refusal reaches first. That is what makes the "no controlled form" row below
+# unreachable from a well-formed program.
+control_census = "31 of 35 registered opcodes declare a controlled form; the 4 refusals are the noise channels"
 
 [[refusals]]
 entry_point = "compose"
@@ -314,7 +413,7 @@ entry_point = "adjoint"
 code = "inverse_of_channel"
 exception = "CapabilityError"
 message_phrase = "it is a noise channel, which has no unitary inverse"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 reachable = true
 trigger = "an instruction carrying is_channel metadata"
 
@@ -323,7 +422,7 @@ entry_point = "adjoint"
 code = "inverse_of_dynamic_operation"
 exception = "CapabilityError"
 message_phrase = "it is a dynamic operation, which has no fixed inverse"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 reachable = true
 trigger = "an instruction carrying is_dynamic metadata, such as a measurement"
 
@@ -332,7 +431,7 @@ entry_point = "adjoint"
 code = "inverse_of_conditioned_gate"
 exception = "CapabilityError"
 message_phrase = "it is classically conditioned, which has no fixed inverse"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 reachable = true
 trigger = "an instruction carrying conditions metadata"
 
@@ -341,7 +440,7 @@ entry_point = "adjoint"
 code = "inverse_of_matrix_without_conjugate_transpose"
 exception = "CapabilityError"
 message_phrase = "its matrix does not expose a conjugate transpose"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 reachable = true
 trigger = "an explicit matrix that is not a tensor and so exposes no mH"
 
@@ -350,7 +449,7 @@ entry_point = "adjoint"
 code = "inverse_of_undeclared_rule"
 exception = "CapabilityError"
 message_phrase = "names no inverse gate"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 # `inverse_operator` returns None when the declaration alone determines no single
 # inverse gate, which is what `not_applicable` and `matrix_adjoint` both do. The route
 # a user reaches is `not_applicable` reached without channel metadata: the noise
@@ -367,7 +466,7 @@ entry_point = "adjoint"
 code = "inverse_of_unknown_opcode"
 exception = "CapabilityError"
 message_phrase = "it is an unknown opcode with no matrix"
-message_source = "flagquantum/circuit.py"
+message_source = "flagquantum/core/_composition.py"
 # Measured, not assumed: `Instruction.__post_init__` refuses an unknown opcode that
 # carries no matrix, so no program can hold one, and an unknown opcode that does carry
 # a matrix is inverted by the matrix route above. Both routes were probed, and the
@@ -379,10 +478,156 @@ reachability_note = "Instruction.__post_init__ refuses an unknown opcode with no
 trigger = "unreachable through Circuit.adjoint on a well-formed circuit"
 
 [[refusals]]
+entry_point = "control"
+code = "control_count_not_an_integer"
+exception = "TypeError"
+message_phrase = "must be an integer, got"
+message_source = "flagquantum/circuit.py"
+# The count reader is shared with `bsz` and the other integer constructor arguments, so
+# the message names the argument rather than the method. `bool` is refused with the same
+# phrase although it satisfies `__index__`, because `True` is a flag rather than a count.
+reachable = true
+trigger = "control(2.5, ctrl_qubits=(1, 2)) or control(True, ctrl_qubits=(1,))"
+
+[[refusals]]
+entry_point = "control"
+code = "control_count_not_positive"
+exception = "ValidationError"
+message_phrase = "must be >= "
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "control(0, ctrl_qubits=()) or control(-1, ctrl_qubits=())"
+
+[[refusals]]
+entry_point = "control"
+code = "control_label_not_an_integer"
+exception = "TypeError"
+message_phrase = "Circuit.control ctrl_qubits"
+message_source = "flagquantum/circuit.py"
+# The label reader prefixes every refusal with the owner its caller supplies, so the
+# spelling is fixed at this call site and the two files are both load-bearing: the
+# variable half in `flagquantum/core/qubit_mapping.py` and the owner half here. Naming
+# the call site is what keeps this row distinct from the `compose` row above, which reads
+# the same reader with the owner `Circuit.compose`.
+reachable = true
+trigger = "a control label that is a float, a str, or a bool"
+
+[[refusals]]
+entry_point = "control"
+code = "control_count_mismatch"
+exception = "ValidationError"
+message_phrase = "ctrl_qubits must name"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "a control qubit count that does not match n_controls"
+
+[[refusals]]
+entry_point = "control"
+code = "control_qubit_repeated"
+exception = "ValidationError"
+message_phrase = "ctrl_qubits must be distinct, got"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "the same control qubit named twice"
+
+[[refusals]]
+entry_point = "control"
+code = "control_qubit_negative"
+exception = "ValidationError"
+message_phrase = "Circuit.control ctrl_qubits must be non-negative, got"
+message_source = "flagquantum/circuit.py"
+reachable = true
+trigger = "control(1, ctrl_qubits=(-1,))"
+
+[[refusals]]
+entry_point = "control"
+code = "control_qubit_inside_receiver"
+exception = "ValidationError"
+message_phrase = "must be outside the receiver's"
+message_source = "flagquantum/circuit.py"
+# The rule this refusal enforces is what makes the result always wider than the receiver
+# and the receiver's own gates unchanged: a control is added to the circuit, not borrowed
+# from it. Refusing here is the fail-closed reading of "the receiver is not mutated".
+reachable = true
+trigger = "a control qubit at or below the receiver's last qubit"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_channel"
+exception = "CapabilityError"
+message_phrase = "it is a noise channel, which has no controlled form"
+message_source = "flagquantum/core/_composition.py"
+reachable = true
+trigger = "an instruction carrying is_channel metadata"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_dynamic_operation"
+exception = "CapabilityError"
+message_phrase = "it is a dynamic operation, which has no controlled form"
+message_source = "flagquantum/core/_composition.py"
+reachable = true
+trigger = "an instruction carrying is_dynamic metadata, such as a measurement"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_conditioned_gate"
+exception = "CapabilityError"
+message_phrase = "it is classically conditioned, which has no controlled form"
+message_source = "flagquantum/core/_composition.py"
+reachable = true
+trigger = "an instruction carrying conditions metadata"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_matrix"
+exception = "CapabilityError"
+message_phrase = "it carries its own matrix, which no opcode describes controlling"
+message_source = "flagquantum/core/_composition.py"
+# Controlling a recorded matrix would need a matrix the IR has no field for, and the
+# controlled form of an arbitrary matrix is not a registered opcode. This is the route a
+# custom operation written through `Circuit.any` takes.
+reachable = true
+trigger = "an instruction built through Circuit.any, which carries its own matrix"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_execution_metadata"
+exception = "CapabilityError"
+message_phrase = "it carries execution metadata a controlled form would drop"
+message_source = "flagquantum/core/_composition.py"
+# A controlled form is a different program from the instruction it replaces, so metadata
+# that records how that instruction was placed, routed, or optimized does not describe
+# the replacement. Dropping it silently would leave a program claiming provenance it does
+# not have, so the refusal is the fail-closed reading rather than a copy-forward.
+reachable = true
+trigger = "an instruction carrying metadata other than is_channel, is_dynamic, or conditions"
+
+[[refusals]]
+entry_point = "control"
+code = "control_of_opcode_without_a_controlled_form"
+exception = "CapabilityError"
+message_phrase = "no controlled form is declared for it"
+message_source = "flagquantum/core/_composition.py"
+# Two spellings reach this one refusal, and they are the same absence: an opcode the
+# registry does not know, and an opcode whose declaration names no controlled form. The
+# first cannot be built at all -- `Instruction.__post_init__` refuses an unknown opcode
+# with no matrix, and one with a matrix takes the refusal above -- so the reachable
+# spelling is the second, through an opcode that declares `not_available` while carrying
+# no `is_channel` metadata. `from_ir` and a hand-built instruction both produce one; the
+# noise channels are the only opcodes that declare `not_available`, which is why the
+# census above is the measurement behind this row.
+reachable = true
+trigger = "a noise-channel opcode recorded without its is_channel metadata"
+
+[[refusals]]
 entry_point = "power"
 code = "exponent_not_an_integer"
 exception = "TypeError"
-message_phrase = "must be an integer, got"
+# The whole opening of the refusal, argument name included, rather than the fragment the
+# count arguments of `Circuit(...)` and `Circuit.control` share: two refusals may not be
+# frozen to one phrase, and this is the phrase a caller of `power` matches on.
+message_phrase = "Circuit power must be an integer, got"
 message_source = "flagquantum/circuit.py"
 reachable = true
 trigger = "power(2.5), power('2'), or power(True)"
