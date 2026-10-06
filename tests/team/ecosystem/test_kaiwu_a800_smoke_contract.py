@@ -10,12 +10,14 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.a800_sampler_smoke import _write_private_json
+from examples.qdiffusion_kaiwu import private_io as private_io_module
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _write_private_json as _write_development_json,
 )
 from examples.qdiffusion_kaiwu.stream_development_evidence import (
     validate_development_record,
     validate_retained_development_record,
+    validate_stream_inputs,
 )
 
 pytestmark = pytest.mark.unit
@@ -92,6 +94,29 @@ def test_a800_container_runner_keeps_execution_bounded() -> None:
     assert '"$validation_image_id"' in source
     assert "PYTHONNOUSERSITE=1" in source
     assert "-m examples.qdiffusion_kaiwu.qdiffusion_system_development_probe" in source
+
+
+def test_stream_inputs_reject_foreign_owned_output_parent_before_bundle_checks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    transfer = tmp_path / "transfer"
+    transfer.mkdir(mode=0o700)
+    effective_uid = os.geteuid()
+    monkeypatch.setattr(
+        private_io_module.os, "geteuid", lambda: effective_uid + 1
+    )
+
+    with pytest.raises(ValueError, match="output parent must"):
+        validate_stream_inputs(
+            execution_host="jp-a800-171",
+            expected_hostname="bm-baai-dx-zone1-lc-a800-80g-15-171",
+            transfer_dir=transfer,
+            source_preflight=tmp_path / "missing-preflight.json",
+            output=tmp_path / "development.json",
+            source_revision="a" * 40,
+            plugin_revision="b" * 40,
+        )
 
 
 def _streamed_record() -> dict[str, object]:

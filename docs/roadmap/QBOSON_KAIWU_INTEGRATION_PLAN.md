@@ -157,6 +157,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   archives with `--no-same-owner`. This normalizes tmpfs content to the
   container's effective UID instead of weakening the ownership gate for files
   whose workstation UID differs from the container UID.
+- Before opening SSH, the stream gate now applies the shared effective-UID
+  validation to both the local transfer directory and evidence-output parent;
+  an unsafe local capture destination fails before an A800 run is consumed.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a

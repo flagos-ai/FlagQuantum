@@ -366,6 +366,9 @@ validation. No source or evidence file is written to the validation host.
 Container-side extraction uses `--no-same-owner`, so every streamed input is
 owned by the container's effective UID rather than retaining a workstation UID;
 the private-evidence ownership gate remains strict.
+The local stream gate applies that same ownership rule to the transfer and
+output parents before opening SSH, so a late capture failure cannot waste an
+A800 run.
 Pass the host's full reviewed `sha256:...` image ID as the final argument. Do
 not use the mutable `flagquantum/flagtree:0.7.0-validation` tag directly: the
 tag currently resolves to different image IDs on `jp-a800-171` and

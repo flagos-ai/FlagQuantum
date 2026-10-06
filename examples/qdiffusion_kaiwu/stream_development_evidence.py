@@ -5,13 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import re
-import stat
 import sys
 from pathlib import Path
 from typing import Any
 
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
+    validate_private_directory,
     write_private_json_exclusive,
 )
 from examples.qdiffusion_kaiwu.source_preflight import (
@@ -48,27 +48,11 @@ def validate_stream_inputs(
         raise ValueError("source revision must be a full lowercase Git revision")
     if FULL_REVISION.fullmatch(plugin_revision) is None:
         raise ValueError("plugin revision must be a full lowercase Git revision")
-    if not output.is_absolute():
-        raise ValueError("output path must be absolute")
     output_parent = output.parent
-    parent_metadata = output_parent.lstat()
-    if (
-        output_parent.is_symlink()
-        or not stat.S_ISDIR(parent_metadata.st_mode)
-        or parent_metadata.st_mode & 0o077
-    ):
-        raise ValueError("output parent must be an existing private directory")
+    validate_private_directory(output_parent, label="output parent")
     if output.exists() or output.is_symlink():
         raise ValueError("refusing to overwrite existing development evidence")
-    if not transfer_dir.is_absolute():
-        raise ValueError("transfer directory must be absolute")
-    metadata = transfer_dir.lstat()
-    if (
-        transfer_dir.is_symlink()
-        or not transfer_dir.is_dir()
-        or metadata.st_mode & 0o077
-    ):
-        raise ValueError("transfer directory must be an existing private directory")
+    validate_private_directory(transfer_dir, label="transfer directory")
 
     manifest = (
         transfer_dir
