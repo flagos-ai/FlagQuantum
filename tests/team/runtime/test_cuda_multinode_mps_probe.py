@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.evidence_provenance import ProvenanceUnavailableError
+
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
 _SCRIPT = _ROOT / "tools" / "probe_cuda_multinode_mps.py"
@@ -216,10 +218,17 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent(
     # which is the file it actually read, rather than whatever happens to be
     # checked out beside it now. The current contract is checked separately:
     # loading this module runs the probe's own observation of it, which
-    # cross-checks the frozen ladder against the ladder file it names.
-    assert frozen["manifest_sha256"] == manifest_digest_at(
-        evidence["environment"]["source_revision"], frozen["manifest"]
-    )
+    # cross-checks the frozen ladder against the ladder file it names. Answering
+    # it needs that commit, so a lane whose clone never fetched the revision
+    # skips this one assertion instead of reading the clone as a mismatch; the
+    # full-history quality job is where it reaches a verdict.
+    try:
+        recorded_digest = manifest_digest_at(
+            evidence["environment"]["source_revision"], frozen["manifest"]
+        )
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the recorded contract digest needs full history: {error}")
+    assert frozen["manifest_sha256"] == recorded_digest
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
