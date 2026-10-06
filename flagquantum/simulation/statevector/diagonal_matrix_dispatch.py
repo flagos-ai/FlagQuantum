@@ -15,11 +15,79 @@ from ...kernels.catalog import (
     match_kernel_implementations,
 )
 from ..kernel_dispatch import _require_cataloged_kernel
+from ..numerics.complex_arithmetic import complex_mul
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-010-A"
 _MIN_AMPLITUDES_PER_STATE = 1 << 16
 _MAX_AMPLITUDES_PER_STATE = 1 << 24
 _EVIDENCED_BATCHES = frozenset((1, 4))
+
+
+@lru_cache(maxsize=None)
+def _diagonal_layout(
+    n_wires: int, wires: tuple[int, ...]
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return the statevector permutation used by the reference route."""
+
+    rest_wires = tuple(wire for wire in range(n_wires) if wire not in wires)
+    permutation = (
+        (0,)
+        + tuple(wire + 1 for wire in wires)
+        + tuple(wire + 1 for wire in rest_wires)
+    )
+    inverse = [0] * len(permutation)
+    for index, axis in enumerate(permutation):
+        inverse[axis] = index
+    return permutation, tuple(inverse)
+
+
+def _apply_diagonal_matrix_reference(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply a diagonal matrix through the established PyTorch reference path."""
+
+    wires = tuple(wires)
+    batch = state.shape[0]
+    dimension = 2 ** len(wires)
+    if state.device.type == "cpu" and state.is_contiguous():
+        matrix = matrix.to(device=state.device, dtype=state.dtype)
+        diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
+        if diagonal.ndim == 1:
+            diagonal = diagonal.unsqueeze(0).expand(batch, -1)
+        elif diagonal.shape[0] == 1 and batch != 1:
+            diagonal = diagonal.expand(batch, -1)
+        if diagonal.shape != (batch, dimension):
+            raise ValueError(
+                "diagonal matrix must have shape [dim, dim] or [batch, dim, dim]"
+            )
+        ordered_wires = tuple(sorted(wires))
+        wire_order = tuple(wires.index(wire) for wire in ordered_wires)
+        factors = diagonal.reshape((batch,) + (2,) * len(wires)).permute(
+            (0,) + tuple(index + 1 for index in wire_order)
+        )
+        factor_shape = [batch] + [1] * n_wires
+        for wire in ordered_wires:
+            factor_shape[wire + 1] = 2
+        tensor = state.reshape((batch,) + (2,) * n_wires)
+        return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
+    if layout is None:
+        layout = _diagonal_layout(n_wires, wires)
+    permutation, inverse_permutation = layout
+    tensor = state.reshape((batch,) + (2,) * n_wires).permute(permutation)
+    flat = tensor.reshape(batch, dimension, -1)
+    diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
+    if diagonal.ndim == 1:
+        diagonal = diagonal.expand(batch, -1)
+    output = complex_mul(flat, diagonal.unsqueeze(-1))
+    return (
+        output.reshape((batch,) + (2,) * n_wires)
+        .permute(inverse_permutation)
+        .reshape(batch, -1)
+    )
 
 
 def _diagonal_matrix_dispatch_enabled() -> bool:
@@ -167,7 +235,36 @@ def _try_apply_cataloged_diagonal_matrix(
     return _apply_cataloged_diagonal_matrix(state, matrix, qubits=qubits)
 
 
+def _apply_diagonal_matrix(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    wires: Sequence[int],
+    n_wires: int,
+    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
+) -> torch.Tensor:
+    """Apply a diagonal matrix through catalog dispatch or the reference path."""
+
+    wires = tuple(wires)
+    dispatched = _try_apply_cataloged_diagonal_matrix(
+        state,
+        matrix,
+        qubits=wires,
+        n_qubits=n_wires,
+    )
+    if dispatched is not None:
+        return dispatched
+    return _apply_diagonal_matrix_reference(
+        state,
+        matrix,
+        wires,
+        n_wires,
+        layout=layout,
+    )
+
+
 __all__ = (
+    "_apply_diagonal_matrix",
+    "_apply_diagonal_matrix_reference",
     "_apply_cataloged_diagonal_matrix",
     "_diagonal_matrix_dispatch_enabled",
     "_diagonal_matrix_kernel_enabled",

@@ -41,7 +41,12 @@ from .diagonal_cpu import (
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
 )
-from .diagonal_matrix_dispatch import _try_apply_cataloged_diagonal_matrix
+from .diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix as _apply_diagonal_matrix,
+)
+from .diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix_reference as _apply_diagonal_matrix_reference,
+)
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
     fuse_native_parameterized_one_qubit_layers,
@@ -806,79 +811,6 @@ def _apply_single_wire_matrix(
         d = entries[:, 1, 1].reshape(bsz, 1, 1)
     combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
     return combined.reshape(bsz, -1)
-
-
-def _apply_diagonal_matrix(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    wires: Sequence[int],
-    n_wires: int,
-    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
-) -> torch.Tensor:
-    """Apply a known diagonal gate without launching a dense batched matmul."""
-
-    wires = tuple(wires)
-    if (
-        dispatched := _try_apply_cataloged_diagonal_matrix(
-            state,
-            matrix,
-            qubits=wires,
-            n_qubits=n_wires,
-        )
-    ) is not None:
-        return dispatched
-    return _apply_diagonal_matrix_reference(
-        state,
-        matrix,
-        wires,
-        n_wires,
-        layout=layout,
-    )
-
-
-def _apply_diagonal_matrix_reference(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    wires: Sequence[int],
-    n_wires: int,
-    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
-) -> torch.Tensor:
-    """Apply a diagonal matrix through the established PyTorch reference path."""
-
-    wires = tuple(wires)
-    bsz = state.shape[0]
-    dim = 2 ** len(wires)
-    if state.device.type == "cpu" and state.is_contiguous():
-        matrix = matrix.to(device=state.device, dtype=state.dtype)
-        diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
-        if diagonal.ndim == 1:
-            diagonal = diagonal.unsqueeze(0).expand(bsz, -1)
-        elif diagonal.shape[0] == 1 and bsz != 1:
-            diagonal = diagonal.expand(bsz, -1)
-        if diagonal.shape != (bsz, dim):
-            raise ValueError(
-                "diagonal matrix must have shape [dim, dim] or [batch, dim, dim]"
-            )
-        ordered_wires = tuple(sorted(wires))
-        wire_order = tuple(wires.index(wire) for wire in ordered_wires)
-        factors = diagonal.reshape((bsz,) + (2,) * len(wires)).permute(
-            (0,) + tuple(index + 1 for index in wire_order)
-        )
-        factor_shape = [bsz] + [1] * n_wires
-        for wire in ordered_wires:
-            factor_shape[wire + 1] = 2
-        tensor = state.reshape((bsz,) + (2,) * n_wires)
-        return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
-    if layout is None:
-        layout = _statevector_layout(n_wires, wires)
-    perm, inv_perm = layout
-    tensor = state.reshape((bsz,) + (2,) * n_wires).permute(perm)
-    flat = tensor.reshape(bsz, dim, -1)
-    diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
-    if diagonal.ndim == 1:
-        diagonal = diagonal.expand(bsz, -1)
-    out = complex_mul(flat, diagonal.unsqueeze(-1))
-    return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
 
 
 def _apply_cx_permutation(
