@@ -1053,9 +1053,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   receipt must itself follow those prerequisites and be submitted no later than
   its enclosing record. The two smoke receipts must likewise follow
   preregistration, rights review, and project-assignment review. Training cannot
-  predate the primary system probe, evaluation cannot predate its linked
-  training record, and portability cannot predate either the replay-host system
-  probe or its selected training record.
+  predate the primary system probe, and each training receipt must follow that
+  probe. Evaluation cannot predate its linked training record. Portability and
+  each of its receipts cannot predate either the replay-host system probe or its
+  selected training record.
 - The frozen config now records a distinct machine-reported hostname for each
   validation alias. All four live QDiffusion entrypoints require
   `--expected-hostname` to equal that frozen mapping before observing the local

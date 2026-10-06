@@ -26,6 +26,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_provider_resource_gate_binding,
     _validate_provider_result_schema,
     _validate_provider_smoke_component,
+    _validate_receipt_submission_floor,
     _validate_sampling_receipt,
     _validate_system_record,
     validate_acceptance,
@@ -634,6 +635,28 @@ def test_execution_component_time_is_bound_to_prerequisites_and_receipts() -> No
             errors=errors,
         )
         assert any(message in error for error in errors)
+
+
+def test_receipt_submission_floor_binds_cross_component_dependencies() -> None:
+    record = {
+        "task_receipts": [
+            {"submitted_at": "2026-10-06T00:00:00+00:00"},
+            {"submitted_at": "2026-10-06T00:00:02+00:00"},
+        ]
+    }
+    errors: list[str] = []
+
+    _validate_receipt_submission_floor(
+        record,
+        earliest=datetime(2026, 10, 6, 0, 0, 1, tzinfo=timezone.utc),
+        label="seed 1701",
+        prerequisite_label="primary system evidence",
+        errors=errors,
+    )
+
+    assert errors == [
+        "seed 1701: remote receipt 0 predates the primary system evidence"
+    ]
 
 
 def _complete_task_receipt() -> dict[str, Any]:

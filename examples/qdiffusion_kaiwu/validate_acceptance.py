@@ -683,6 +683,33 @@ def _parse_timestamp(value: Any) -> datetime | None:
     return timestamp if timestamp.tzinfo is not None else None
 
 
+def _validate_receipt_submission_floor(
+    record: dict[str, Any],
+    *,
+    earliest: datetime | None,
+    label: str,
+    prerequisite_label: str,
+    errors: list[str],
+) -> None:
+    """Require every valid UTC receipt to follow one prerequisite boundary."""
+
+    if earliest is None:
+        return
+    receipts = record.get("task_receipts")
+    if not isinstance(receipts, list):
+        return
+    for index, receipt in enumerate(receipts):
+        if not isinstance(receipt, dict):
+            continue
+        submitted_at = _parse_timestamp(receipt.get("submitted_at"))
+        if submitted_at is None or submitted_at.utcoffset() != timedelta(0):
+            continue
+        if submitted_at < earliest:
+            errors.append(
+                f"{label}: remote receipt {index} predates the {prerequisite_label}"
+            )
+
+
 def _validate_execution_component_time(
     record: dict[str, Any],
     *,
@@ -733,15 +760,14 @@ def _validate_execution_component_time(
                 errors.append(
                     f"{label}: remote receipt {index} submission follows its record"
                 )
-            for prerequisite_label, prerequisite_time in prerequisites:
-                if (
-                    prerequisite_time is not None
-                    and submitted_at < prerequisite_time
-                ):
-                    errors.append(
-                        f"{label}: remote receipt {index} predates the "
-                        f"{prerequisite_label}"
-                    )
+    for prerequisite_label, prerequisite_time in prerequisites:
+        _validate_receipt_submission_floor(
+            record,
+            earliest=prerequisite_time,
+            label=label,
+            prerequisite_label=prerequisite_label,
+            errors=errors,
+        )
     return recorded_at
 
 
@@ -3424,6 +3450,13 @@ def _validate_component_bundle(
             and training_time < primary_system_time
         ):
             errors.append(f"seed {seed}: training predates primary system evidence")
+        _validate_receipt_submission_floor(
+            training,
+            earliest=primary_system_time,
+            label=f"seed {seed}",
+            prerequisite_label="primary system evidence",
+            errors=errors,
+        )
     for seed, (_, evaluation) in evaluation_by_seed.items():
         _validate_evaluation_component(
             evaluation,
@@ -3556,6 +3589,20 @@ def _validate_component_bundle(
         and portability_time < training_time
     ):
         errors.append("replay: portability predates its selected training component")
+    _validate_receipt_submission_floor(
+        portability,
+        earliest=replay_system_time,
+        label="replay",
+        prerequisite_label="replay system evidence",
+        errors=errors,
+    )
+    _validate_receipt_submission_floor(
+        portability,
+        earliest=training_time,
+        label="replay",
+        prerequisite_label="selected training component",
+        errors=errors,
+    )
 
 
 def validate_acceptance(manifest_path: Path) -> list[str]:
