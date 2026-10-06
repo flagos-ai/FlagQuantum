@@ -6,8 +6,8 @@ import hashlib
 import json
 import math
 import os
+import secrets
 import stat
-import tempfile
 import time
 from collections.abc import Mapping
 from dataclasses import asdict
@@ -45,6 +45,46 @@ def _validate_private_directory(path: Path, *, description: str) -> None:
         )
 
 
+def _verify_open_directory_binding(
+    path: Path,
+    descriptor_metadata: os.stat_result,
+    *,
+    description: str,
+) -> None:
+    try:
+        visible = path.lstat()
+    except OSError:
+        raise ValueError(f"{description} changed during receipt access") from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(visible.st_mode)
+        or visible.st_mode & 0o077
+        or (visible.st_dev, visible.st_ino)
+        != (descriptor_metadata.st_dev, descriptor_metadata.st_ino)
+    ):
+        raise ValueError(f"{description} changed during receipt access")
+
+
+def _open_private_directory(
+    path: Path, *, description: str
+) -> tuple[int, os.stat_result]:
+    _validate_private_directory(path, description=description)
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError:
+        raise ValueError(f"{description} changed during receipt access") from None
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o077:
+            raise ValueError(f"{description} changed during receipt access")
+        _verify_open_directory_binding(path, metadata, description=description)
+        return descriptor, metadata
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     """Build one JSON object while rejecting ambiguous duplicate fields."""
 
@@ -59,54 +99,101 @@ def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
     destination = Path(path)
     parent = destination.parent
-    _validate_private_directory(parent, description="Kaiwu receipt parent")
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode()
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.", suffix=".tmp", dir=parent
+    directory_descriptor, directory_metadata = _open_private_directory(
+        parent, description="Kaiwu receipt parent"
     )
-    temporary = Path(temporary_name)
+    temporary_name = f".{destination.name}.{secrets.token_hex(16)}.tmp"
+    temporary_descriptor: int | None = None
+    published = False
     try:
-        with os.fdopen(descriptor, "wb") as stream:
+        temporary_descriptor = os.open(
+            temporary_name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        with os.fdopen(temporary_descriptor, "wb") as stream:
+            temporary_descriptor = None
             stream.write(encoded)
             stream.flush()
             os.fsync(stream.fileno())
-        os.link(temporary, destination, follow_symlinks=False)
-        directory_descriptor = os.open(
+        _verify_open_directory_binding(
             parent,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+            directory_metadata,
+            description="Kaiwu receipt parent",
         )
+        os.link(
+            temporary_name,
+            destination.name,
+            src_dir_fd=directory_descriptor,
+            dst_dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        published = True
+        _verify_open_directory_binding(
+            parent,
+            directory_metadata,
+            description="Kaiwu receipt parent",
+        )
+        if os.fstat(directory_descriptor).st_mode & 0o077:
+            raise ValueError("Kaiwu receipt parent changed during receipt access")
+        os.fsync(directory_descriptor)
+        published = False
+    finally:
+        if temporary_descriptor is not None:
+            os.close(temporary_descriptor)
+        if published:
+            try:
+                os.unlink(destination.name, dir_fd=directory_descriptor)
+                os.fsync(directory_descriptor)
+            except OSError:
+                pass
         try:
-            os.fsync(directory_descriptor)
+            os.unlink(temporary_name, dir_fd=directory_descriptor)
+        except FileNotFoundError:
+            pass
         finally:
             os.close(directory_descriptor)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def _read_private_json(path: str | Path) -> Any:
     source = Path(path)
-    _validate_private_directory(source.parent, description="Kaiwu receipt parent")
+    directory_descriptor, directory_metadata = _open_private_directory(
+        source.parent, description="Kaiwu receipt parent"
+    )
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(source, flags)
-    except OSError:
-        raise ValueError(
-            "Kaiwu receipt must be a private, regular, non-symlink file"
-        ) from None
-    try:
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+        try:
+            descriptor = os.open(source.name, flags, dir_fd=directory_descriptor)
+        except OSError:
             raise ValueError(
                 "Kaiwu receipt must be a private, regular, non-symlink file"
+            ) from None
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077:
+                raise ValueError(
+                    "Kaiwu receipt must be a private, regular, non-symlink file"
+                )
+            with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
+                descriptor = -1
+                result = json.load(
+                    stream, object_pairs_hook=_reject_duplicate_json_keys
+                )
+            _verify_open_directory_binding(
+                source.parent,
+                directory_metadata,
+                description="Kaiwu receipt parent",
             )
-        with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
-            descriptor = -1
-            return json.load(stream, object_pairs_hook=_reject_duplicate_json_keys)
+            return result
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
     finally:
-        if descriptor >= 0:
-            os.close(descriptor)
+        os.close(directory_descriptor)
 
 
 def _freeze_matrix(matrix: MatrixInput) -> FrozenIsingMatrix:

@@ -85,7 +85,7 @@ sampler = KaiwuSampler(
     integer_target_range=(-127, 127),
 )
 samples = sampler.solve(ising_matrix)
-sampler.last_job.save("private-receipt.json")
+sampler.last_job.save("/absolute/private-evidence/qboson-receipt.json")
 ```
 
 The example is illustrative and does not approve these names as stable. In
@@ -122,7 +122,10 @@ provider values or infer a mapping from field names alone.
   project, schema, and original submission timestamp.
 - The checkpoint directory must be private and non-symlinked before license
   initialization. A complete temporary recovery bundle is synced and atomically
-  published without replacement before the first task operation.
+  published without replacement before the first task operation. Receipt reads,
+  temporary creation, exclusive publication, rollback, and directory sync are
+  anchored to an opened non-symlink parent descriptor and reject a changed
+  visible parent binding.
 - Existing recovery content is immutable and opened without following
   symlinks. Its schema and UTC timestamp are validated, provider task/target
   identities must remain absent until an approved mapping exists, and every SDK

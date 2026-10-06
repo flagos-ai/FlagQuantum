@@ -92,7 +92,9 @@ group/other-accessible checkpoint directory before it resolves credentials.
 The SDK client repeats that private-directory check before it initializes the
 license. Recovery receipts are synced to a private temporary file and atomically
 published without replacement; resume rejects public, non-regular, or symlinked
-receipt files before any SDK task operation.
+receipt files before any SDK task operation. Receipt reads and writes remain
+anchored to the opened private checkpoint directory and reject a replaced
+parent binding rather than following it.
 
 Review the completed JSON and record its digest:
 

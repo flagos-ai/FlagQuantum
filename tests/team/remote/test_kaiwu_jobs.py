@@ -16,6 +16,7 @@ from flagquantum.remote.kaiwu import (
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
+from flagquantum.remote.kaiwu import jobs as jobs_module
 from flagquantum.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
@@ -225,6 +226,45 @@ def test_save_rejects_unsafe_parent_directory(tmp_path: Path, unsafe_kind: str) 
     assert not receipt_path.exists()
 
 
+@pytest.mark.parametrize("replacement_check", (2, 3))
+def test_save_rejects_parent_replacement_without_leaving_receipt(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    replacement_check: int,
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="parent-race")
+    parent = tmp_path / "private"
+    parent.mkdir(mode=0o700)
+    moved = tmp_path / "moved-private"
+    replacement = tmp_path / "replacement"
+    replacement.mkdir(mode=0o700)
+    real_verify = jobs_module._verify_open_directory_binding
+    checks = 0
+
+    def replace_then_verify(
+        path: Path,
+        metadata: os.stat_result,
+        *,
+        description: str,
+    ) -> None:
+        nonlocal checks
+        checks += 1
+        if checks == replacement_check:
+            parent.rename(moved)
+            parent.symlink_to(replacement, target_is_directory=True)
+        real_verify(path, metadata, description=description)
+
+    monkeypatch.setattr(
+        jobs_module, "_verify_open_directory_binding", replace_then_verify
+    )
+
+    with pytest.raises(ValueError, match="changed during receipt access"):
+        job.save(parent / "receipt.json")
+
+    assert not any(moved.iterdir())
+    assert not any(replacement.iterdir())
+
+
 def test_restore_rejects_public_parent_directory(tmp_path: Path) -> None:
     job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="public-parent")
     private_parent = tmp_path / "private-parent"
@@ -234,6 +274,42 @@ def test_restore_rejects_public_parent_directory(tmp_path: Path) -> None:
     private_parent.chmod(0o755)
 
     with pytest.raises(ValueError, match="private, non-symlink directory"):
+        restore_kaiwu_job(receipt_path, client=_FakeClient())
+
+
+def test_restore_rejects_parent_replacement_during_read(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="read-race")
+    parent = tmp_path / "private"
+    parent.mkdir(mode=0o700)
+    receipt_path = parent / "receipt.json"
+    job.save(receipt_path)
+    moved = tmp_path / "moved-private"
+    replacement = tmp_path / "replacement"
+    replacement.mkdir(mode=0o700)
+    real_verify = jobs_module._verify_open_directory_binding
+    checks = 0
+
+    def replace_then_verify(
+        path: Path,
+        metadata: os.stat_result,
+        *,
+        description: str,
+    ) -> None:
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            parent.rename(moved)
+            parent.symlink_to(replacement, target_is_directory=True)
+        real_verify(path, metadata, description=description)
+
+    monkeypatch.setattr(
+        jobs_module, "_verify_open_directory_binding", replace_then_verify
+    )
+
+    with pytest.raises(ValueError, match="changed during receipt access"):
         restore_kaiwu_job(receipt_path, client=_FakeClient())
 
 

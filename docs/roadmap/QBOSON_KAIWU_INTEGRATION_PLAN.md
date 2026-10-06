@@ -70,9 +70,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   non-directory, or symlinked parent before opening or publishing a file. A
   mode-0600 receipt inside a replaceable directory is no longer treated as
   authoritative recovery state. Receipt publication synchronizes both file
-  contents and parent-directory metadata, and recovery rejects duplicate JSON
-  object keys at any nesting level rather than accepting an ambiguous last
-  value.
+  contents and parent-directory metadata. Both publication and restore remain
+  anchored to one `O_NOFOLLOW` parent descriptor and reject a changed visible
+  directory binding; publication removes a candidate receipt if the parent is
+  replaced before synchronization. Recovery also rejects duplicate JSON object
+  keys at any nesting level rather than accepting an ambiguous last value.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
@@ -142,8 +144,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - Checkpoint directories now fail before license initialization unless they are
   private, regular directories. Recovery and explicit job receipts are synced
   before atomic no-overwrite publication and reopened without following
-  symlinks; public, non-regular, partial, or replaced files fail before an SDK
-  task operation.
+  symlinks. Parent-directory access is descriptor-relative and binding-checked,
+  so public, non-regular, partial, replaced, or redirected files fail before an
+  SDK task operation.
 - Pinned 1.3.1 recovery also enforces an exact top-level schema, an aware UTC
   submission timestamp, and absent provider task/target identities. Local
   receipt editing therefore cannot fabricate the provider evidence that the
