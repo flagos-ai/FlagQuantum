@@ -30,6 +30,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
     _write_private_redacted_json,
 )
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    verify_approved_kaiwu_distribution,
+)
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
@@ -344,10 +347,11 @@ def main() -> None:
         )
     except ValueError as exc:
         parser.error(str(exc))
-    _, environment_lock_sha256 = verify_frozen_environment_lock(
+    environment_record, environment_lock_sha256 = verify_frozen_environment_lock(
         args.environment_lock,
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
+    verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
     hostname = socket.gethostname()
     if hostname != args.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")

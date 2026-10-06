@@ -192,6 +192,12 @@ provider values or infer a mapping from field names alone.
 - The pinned client and every live launcher reject any SDK version other than
   1.3.1 before license initialization or credential resolution. A caller cannot
   select 1.4.1 while retaining 1.3.1 task-mode semantics.
+- Provider launchers also require a strict SDK-rights approval object before
+  credential resolution. It fixes the reviewed wheel source, digest, public
+  service-terms identity, permitted organizational/container/host-staging/
+  adapter-distribution uses, and `no-sdk-redistribution` boundary. The approval
+  is independently bound to the exact Kaiwu distribution in the verified
+  environment lock; recording public availability alone cannot authorize use.
 - No dependency declaration or extra is proposed until wheel source, license,
   hashes, supported platform, and redistribution constraints are reviewed.
 

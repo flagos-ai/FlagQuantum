@@ -44,6 +44,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
     _write_private_redacted_json,
 )
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    verify_approved_kaiwu_distribution,
+)
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
@@ -469,10 +472,11 @@ def main() -> None:
         source_root=Path(__file__).resolve().parents[2],
         plugin_root=args.plugin_root,
     )
-    _, environment_lock_sha256 = verify_frozen_environment_lock(
+    environment_record, environment_lock_sha256 = verify_frozen_environment_lock(
         args.environment_lock,
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
+    verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
 
     artifact_paths = {
         "dataset": args.dataset,

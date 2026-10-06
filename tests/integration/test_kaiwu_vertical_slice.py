@@ -50,11 +50,11 @@ def test_sampler_sdk_client_vertical_slice(
     )
     monkeypatch.setattr(
         client_module,
-        "initialize_kaiwu_license",
+        "_initialize_preflighted_kaiwu_license",
         Mock(return_value=KaiwuSDKEnvironment("1.3.1", "3.10.18")),
     )
     monkeypatch.setattr(
-        client_module, "_load_kaiwu_module", Mock(return_value=fake_sdk)
+        client_module, "_preflight_kaiwu_sdk", Mock(return_value=fake_sdk)
     )
 
     client = KaiwuSDKClient(checkpoint_dir=tmp_path)

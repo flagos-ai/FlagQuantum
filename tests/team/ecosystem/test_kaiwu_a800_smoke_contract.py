@@ -214,4 +214,6 @@ def test_local_golden_path_is_pinned_and_credential_free() -> None:
     assert "test_kaiwu_community_conformance.py" in source
     assert "test_kaiwu_pytorch_plugin_conformance.py" in source
     assert "test_qdiffusion_environment_lock.py" in source
+    assert "test_qdiffusion_sdk_approval.py" in source
+    assert "test_kaiwu_vertical_slice.py" in source
     assert "qboson_live_smoke.py" not in source

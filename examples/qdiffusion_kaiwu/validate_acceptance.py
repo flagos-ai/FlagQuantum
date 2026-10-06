@@ -19,6 +19,10 @@ from examples.qdiffusion_kaiwu.plan_quota import (
 from examples.qdiffusion_kaiwu.plan_quota import (
     estimate_protein_remote_calls as _estimate_protein_remote_calls,
 )
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    validate_sdk_approval_record,
+    verify_approved_kaiwu_distribution,
+)
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
 )
@@ -611,57 +615,14 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
         errors.append(
             "config.software.environment_lock_sha256: expected a SHA-256 digest"
         )
-    kaiwu_sdk = _mapping(config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors)
-    expected_kaiwu_identity = {
-        "distribution": "kaiwu",
-        "version": "1.3.1",
-        "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
-        "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
-        "service_terms_url": (
-            "https://platform.qboson.com/agreement?"
-            "type=QBoson-SPQC-Platform-Users-Agreement"
-        ),
-        "service_terms_effective_date": "2026-07-09",
-        "sdk_redistribution_policy": "no-sdk-redistribution",
-    }
-    for field, expected in expected_kaiwu_identity.items():
-        if kaiwu_sdk.get(field) != expected:
-            errors.append(
-                f"config.kaiwu_sdk.{field}: differs from the reviewed 1.3.1 lane"
-            )
-    if kaiwu_sdk.get("version") != software.get("kaiwu_sdk_version"):
-        errors.append("config.kaiwu_sdk.version: differs from the frozen software lane")
-    kaiwu_digest = kaiwu_sdk.get("sha256")
-    if (
-        not isinstance(kaiwu_digest, str)
-        or re.fullmatch(r"[0-9a-f]{64}", kaiwu_digest) is None
-    ):
-        errors.append("config.kaiwu_sdk.sha256: expected a SHA-256 digest")
-    reviewed_at = kaiwu_sdk.get("rights_reviewed_at")
-    try:
-        rights_reviewed_at = datetime.fromisoformat(
-            str(reviewed_at).replace("Z", "+00:00")
-        )
-        if rights_reviewed_at.tzinfo is None:
-            raise ValueError
-    except ValueError:
+    kaiwu_sdk = config.get("kaiwu_sdk")
+    errors.extend(validate_sdk_approval_record(kaiwu_sdk, label="config.kaiwu_sdk"))
+    if isinstance(kaiwu_sdk, dict) and kaiwu_sdk.get(
+        "sdk_version"
+    ) != software.get("kaiwu_sdk_version"):
         errors.append(
-            "config.kaiwu_sdk.rights_reviewed_at: expected a timezone-aware timestamp"
+            "config.kaiwu_sdk.sdk_version: differs from the frozen software lane"
         )
-    approval_reference = kaiwu_sdk.get("approval_reference")
-    if (
-        not _canonical_printable_identifier(approval_reference)
-        or approval_reference == "<required>"
-    ):
-        errors.append("config.kaiwu_sdk.approval_reference: frozen value is required")
-    for field in (
-        "organizational_use_approved",
-        "isolated_container_use_approved",
-        "host_staging_approved",
-        "adapter_distribution_approved",
-    ):
-        if kaiwu_sdk.get(field) is not True:
-            errors.append(f"config.kaiwu_sdk.{field}: explicit approval is required")
     precision = _mapping(
         config.get("precision_policy"), "config.precision_policy", errors
     )
@@ -1988,30 +1949,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     if software.get("environment_lock_sha256") != environment_hash:
         errors.append("manifest.environment_lock: differs from frozen configuration")
     if environment_record is not None:
-        kaiwu_distributions = [
-            distribution
-            for distribution in environment_record["distributions"]
-            if distribution.get("name") == "kaiwu"
-        ]
-        if len(kaiwu_distributions) != 1:
-            errors.append(
-                "manifest.environment_lock: expected exactly one Kaiwu distribution"
-            )
-        else:
-            locked_kaiwu = kaiwu_distributions[0]
-            frozen_kaiwu = _mapping(
-                config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors
-            )
-            if locked_kaiwu.get("version") != frozen_kaiwu.get("version"):
-                errors.append(
-                    "manifest.environment_lock: Kaiwu version differs from frozen configuration"
-                )
-            if locked_kaiwu.get("approved_artifact_sha256") != frozen_kaiwu.get(
-                "sha256"
-            ):
-                errors.append(
-                    "manifest.environment_lock: Kaiwu artifact differs from approved SDK"
-                )
+        frozen_kaiwu = config.get("kaiwu_sdk")
+        if isinstance(frozen_kaiwu, dict):
+            try:
+                verify_approved_kaiwu_distribution(environment_record, frozen_kaiwu)
+            except ValueError as exc:
+                errors.append(f"manifest.environment_lock: {exc}")
 
     component_payloads: dict[str, dict[str, Any]] = {}
     raw_components = manifest.get("component_records")

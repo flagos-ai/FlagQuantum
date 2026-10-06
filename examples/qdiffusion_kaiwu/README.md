@@ -132,6 +132,15 @@ be `true`; placeholders and inferred approval fail before credential
 resolution. Final validation also requires the exact Kaiwu wheel digest and
 version in the environment lock to match this reviewed SDK record.
 
+`sdk_approval.example.json` defines the same strict approval object as a
+standalone private record. It exists so the Phase 2 provider smoke can enforce
+the SDK rights gate before the later protein configuration is complete. Its
+path must be absolute; the file must be regular, non-symlinked, and mode `0600`.
+The smoke records its SHA-256 and cross-checks the approved Kaiwu version and
+wheel digest against the verified environment lock before credential discovery.
+Later QDiffusion entrypoints repeat the cross-check using the identical object
+embedded under `acceptance_config.json.kaiwu_sdk`.
+
 Each frozen protein input also records an HTTPS acquisition source, an approved
 license identifier, an HTTPS license-evidence source, and the timezone-aware
 time of that review. `NOASSERTION`, `UNKNOWN`, `UNLICENSED`, missing evidence,
@@ -197,6 +206,7 @@ whitespace.
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
+  --sdk-approval /absolute/private-evidence/sdk-approval.json \
   --output /absolute/private-evidence/qboson-smoke.json \
   --project-no CPQC-your-project \
   --task-prefix flagquantum-smoke-20261005 \

@@ -137,6 +137,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   distribution in the environment lock and cross-checks both its version and
   reviewed artifact digest; a version-only lock or prose-only approval can no
   longer pass acceptance.
+- That gate now also executes before provider use rather than only during final
+  assembly. A strict, private standalone SDK-approval record supports the
+  earlier live smoke without depending on unfinished protein inputs; its digest
+  is retained in smoke evidence. Smoke and all four system/training/evaluation/
+  replay entrypoints verify the approved Kaiwu version and wheel digest against
+  the exact environment-lock distribution before credential discovery, license
+  initialization, or quota submission; training, evaluation, and replay also
+  do so before loading their executable plugin workflows. Final validation
+  independently repeats the binding.
 - The QDiffusion acceptance decision is now executable rather than narrative:
   a frozen experiment-config template, two-host manifest template, and
   fail-closed validator recompute system and application gates. Fake transport,

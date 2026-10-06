@@ -246,6 +246,9 @@ def test_evaluation_revalidates_local_source_preflight() -> None:
     assert source.index("verify_frozen_environment_lock(") < source.index(
         "workflow, helpers = _load_pinned_eval_workflow("
     )
+    assert source.index("verify_approved_kaiwu_distribution(") < source.index(
+        "workflow, helpers = _load_pinned_eval_workflow("
+    )
     assert "evaluation source preflight differs from training record" in source
     assert "evaluation transfer manifest differs from training record" in source
 

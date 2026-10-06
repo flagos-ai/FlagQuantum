@@ -44,6 +44,10 @@ or CI/container usage rights required by this integration.
 
 1. Obtain explicit approval for the exact source, license or service terms, and
    storage location before downloading any large or proprietary artifact.
+   Record the Kaiwu decision in a private copy of
+   `sdk_approval.example.json`; placeholders or public file permissions cannot
+   authorize a provider smoke run. Embed the identical object under
+   `acceptance_config.json.kaiwu_sdk` for the later QDiffusion lane.
 2. Record the upstream release or full commit, exact HTTPS source URL, license
    identifier, license-evidence URL, and a timezone-aware review timestamp in a
    private copy of `acceptance_config.example.json`.

@@ -202,8 +202,10 @@ def _config() -> dict[str, Any]:
             "environment_lock_sha256": "6" * 64,
         },
         "kaiwu_sdk": {
+            "schema": "flagquantum.qboson_kaiwu_sdk_approval",
+            "version": "1.0",
             "distribution": "kaiwu",
-            "version": "1.3.1",
+            "sdk_version": "1.3.1",
             "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
             "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
             "sha256": "a" * 64,
@@ -818,7 +820,7 @@ def test_environment_lock_kaiwu_artifact_is_bound_to_approval(tmp_path: Path) ->
 
     errors = validate_acceptance(manifest_path)
 
-    assert any("Kaiwu artifact differs from approved SDK" in error for error in errors)
+    assert any("Kaiwu artifact differs from SDK approval" in error for error in errors)
 
 
 @pytest.mark.parametrize(

@@ -349,6 +349,9 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     assert source.index("verify_frozen_environment_lock(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("verify_approved_kaiwu_distribution(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index("validate_private_json_output_path(arguments.output)") < (
         source.index("resolve_kaiwu_credentials()")
     )

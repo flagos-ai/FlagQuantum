@@ -92,6 +92,14 @@ evidence directory. Replace every placeholder, including full revisions and
 dataset/checkpoint SHA-256 digests, before running a baseline or guided sample.
 Do not change thresholds after seeing results.
 
+Separately copy `examples/qdiffusion_kaiwu/sdk_approval.example.json` to
+`/absolute/private-evidence/sdk-approval.json`. Populate it only from the
+retained organizational review decision, keep it mode `0600`, and copy the
+same approval object into `acceptance_config.json` under `kaiwu_sdk`. The
+standalone record lets the earlier live smoke enforce the rights decision
+without prematurely requiring the protein artifacts; the frozen config carries
+the same decision into every later QDiffusion stage and final evidence.
+
 The `kaiwu_sdk` section is an executable rights gate, not a self-approval form.
 Populate its review timestamp and approval reference only from the retained
 organizational decision. Set each use-approval field to JSON `true` only when
@@ -107,6 +115,9 @@ Use mode `0700` for evidence and checkpoint directories:
 install -d -m 700 /absolute/private-evidence /absolute/private-kaiwu-checkpoints
 cp examples/qdiffusion_kaiwu/acceptance_config.example.json \
   /absolute/private-evidence/acceptance_config.json
+cp examples/qdiffusion_kaiwu/sdk_approval.example.json \
+  /absolute/private-evidence/sdk-approval.json
+chmod 600 /absolute/private-evidence/sdk-approval.json
 ```
 
 Every quota-consuming CLI rejects a relative, missing, symlinked, or
@@ -299,12 +310,20 @@ whitespace in task, project, provider-task, and provider-target identities.
 python3 -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --checkpoint-dir /absolute/private-kaiwu-checkpoints \
   --environment-lock /absolute/private-evidence/environment-lock.json \
+  --sdk-approval /absolute/private-evidence/sdk-approval.json \
   --output /absolute/private-evidence/qboson-smoke-attempt-001.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-smoke-${RUN_ID}" \
   --expected-sdk-version 1.3.1 \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
+
+Before credential discovery, the smoke command requires the private approval
+record, validates its exact field set and four explicit approvals, and binds
+its Kaiwu version and wheel SHA-256 to the exact environment-lock distribution.
+The record digest is retained in smoke evidence. A missing, public, symlinked,
+placeholder, mismatched, or unapproved record fails without initializing the
+SDK license or consuming quota.
 
 `QBOSON_PROJECT_NO` is not a credential, but it should still be managed in the
 private run environment. The command has no simulator fallback. It writes the

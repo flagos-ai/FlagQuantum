@@ -83,9 +83,11 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_protein_training_live.py \
   tests/team/ecosystem/test_qdiffusion_quota_plan.py \
   tests/team/ecosystem/test_qdiffusion_source_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_sdk_approval.py \
   tests/team/ecosystem/test_qdiffusion_strict_json.py \
   tests/team/ecosystem/test_qdiffusion_transfer_builder.py \
   tests/team/ecosystem/test_qdiffusion_transfer_bundle.py \
+  tests/integration/test_kaiwu_vertical_slice.py \
   tests/team/remote/test_kaiwu_credentials.py \
   tests/team/remote/test_kaiwu_jobs.py \
   tests/team/remote/test_kaiwu_live_smoke.py \

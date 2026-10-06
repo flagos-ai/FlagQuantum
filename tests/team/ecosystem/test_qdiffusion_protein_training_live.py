@@ -222,6 +222,9 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index("verify_frozen_environment_lock(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("verify_approved_kaiwu_distribution(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index(
         "validate_private_json_output_path(args.artifact_preflight_output)"
     ) < source.index("resolve_kaiwu_credentials()")

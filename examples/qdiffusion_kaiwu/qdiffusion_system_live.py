@@ -33,6 +33,9 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _execute_qdiffusion_slice,
     _load_pinned_qdiffusion_api,
 )
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    verify_approved_kaiwu_distribution,
+)
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
@@ -493,10 +496,11 @@ def main() -> None:
         plugin_root=arguments.plugin_root,
     )
     _load_pinned_qdiffusion_api(arguments.plugin_root)
-    _, environment_lock_sha256 = verify_frozen_environment_lock(
+    environment_record, environment_lock_sha256 = verify_frozen_environment_lock(
         arguments.environment_lock,
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
+    verify_approved_kaiwu_distribution(environment_record, config["kaiwu_sdk"])
 
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)

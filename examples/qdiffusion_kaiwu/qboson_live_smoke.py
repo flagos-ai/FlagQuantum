@@ -20,6 +20,10 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
+from examples.qdiffusion_kaiwu.sdk_approval import (
+    load_sdk_approval,
+    verify_approved_kaiwu_distribution,
+)
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuRemoteJob,
@@ -93,6 +97,7 @@ def run_live_smoke(
     timeout: float,
     poll_interval: float,
     environment_lock_sha256: str,
+    sdk_approval_sha256: str,
     requested_samples: int = 10,
 ) -> dict[str, Any]:
     """Run one optimization and one sampling task without fallback."""
@@ -103,6 +108,8 @@ def run_live_smoke(
         raise ValueError("project_no must be non-empty")
     if SHA256.fullmatch(environment_lock_sha256) is None:
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
+    if SHA256.fullmatch(sdk_approval_sha256) is None:
+        raise ValueError("sdk_approval_sha256 must be a lowercase SHA-256 digest")
     real_provider_transport = type(client) is KaiwuSDKClient
     records: list[dict[str, Any]] = []
     failure: dict[str, str] | None = None
@@ -158,6 +165,7 @@ def run_live_smoke(
         "qboson_hardware_used": real_provider_transport and smoke_passed,
         "project_no": project_no.strip(),
         "environment_lock_sha256": environment_lock_sha256,
+        "sdk_approval_sha256": sdk_approval_sha256,
         "tasks": records,
         "run_completed": failure is None,
         "failure": failure,
@@ -202,6 +210,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint-dir", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
+    parser.add_argument("--sdk-approval", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
@@ -223,7 +232,11 @@ def main() -> None:
         arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
     )
 
-    _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
+    sdk_approval, sdk_approval_sha256 = load_sdk_approval(arguments.sdk_approval)
+    environment_record, environment_lock_sha256 = verify_environment_lock(
+        arguments.environment_lock
+    )
+    verify_approved_kaiwu_distribution(environment_record, sdk_approval)
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
     os.environ.pop("QBOSON_USER_ID", None)
@@ -240,6 +253,7 @@ def main() -> None:
         timeout=arguments.timeout,
         poll_interval=arguments.poll_interval,
         environment_lock_sha256=environment_lock_sha256,
+        sdk_approval_sha256=sdk_approval_sha256,
         requested_samples=arguments.requested_samples,
     )
     _write_private_json(
