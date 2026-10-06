@@ -396,13 +396,25 @@ and FlagTree 0.7.0. It covers CCX and controlled-SWAP, adjacent, reversed, and
 distant qubits, batches one and four, and state sizes from `2**16` through
 `2**24`. Every output is bitwise identical to the exact layout/BMM reference.
 The four `2**16` measurements remain as an explicit excluded boundary because
-one FlagTree lane reaches only `0.770x`; the bounded default candidate window
-therefore begins at 20 qubits. All 16 cases inside that window win by at least
-`1.142x` and as much as `4.918x`. The aggregate decision is
-`eligible_for_bounded_dispatch_evaluation`; runtime dispatch remains a
-separate review step. This is bounded single-device development evidence, not
-a release or distributed scalability claim. Reproduce or validate it with
+one FlagTree lane reaches only `0.770x`; the bounded default window therefore
+begins at 20 qubits. All 16 direct-wrapper cases inside that window win by at
+least `1.142x` and as much as `4.918x`.
+
+The public statevector route is enabled by default only for the evidenced
+`[1, 2**20]`, `[1, 2**24]`, and `[4, 2**20]` CUDA `complex64` shapes, with
+distinct in-range qubits, no gradient-bearing state, and opcode `ccx` or
+`cswap`. `FQ_TRITON_REVERSIBLE_3Q=0` restores the dense reference path. The
+checked-in
+[`statevector_reversible_3q_dispatch_a800.json`](../../benchmarks/results/local/statevector_reversible_3q_dispatch_a800.json)
+artifact applies the same 30-by-10 counterbalanced protocol to four public
+dispatch cases on both hosts and compiler lanes. All 16 comparisons are
+bitwise exact and win by `1.539x` through `10.825x`; its aggregate decision is
+`default_dispatch_enabled`. This is bounded single-device development
+evidence, not a release or distributed scalability claim. Reproduce or
+validate the direct wrapper with
 [`benchmarks/internal/evidence/statevector_reversible_3q_probe.py`](../../benchmarks/internal/evidence/statevector_reversible_3q_probe.py).
+Reproduce the public route with
+[`benchmarks/statevector_reversible_3q_dispatch.py`](../../benchmarks/statevector_reversible_3q_dispatch.py).
 
 This semantic serves reversible arithmetic, Grover and amplitude-amplification
 oracles, multi-controlled logic, Shor-style arithmetic blocks, and circuit
