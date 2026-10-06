@@ -537,6 +537,13 @@ also verify the resolved `kaiwu.torch_plugin` and QDiffusion module files are
 inside that root. Every loaded `kaiwu.torch_plugin.*` and `dplm.*` transitive
 module must resolve inside the corresponding reviewed plugin subtree:
 
+Training rehashes the frozen config and all four input roles after the workflow
+returns. Replay repeats that check and also revalidates the transferred test
+FASTA and trained checkpoint. Evaluation revalidates its ESM2 checkpoint and
+all consumed training outputs after metrics are computed. Preserve the original
+inputs unchanged until each command exits; a component without
+`artifact_inputs_unchanged=true` cannot enter the final acceptance bundle.
+
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --config /absolute/evidence/acceptance-config.json \

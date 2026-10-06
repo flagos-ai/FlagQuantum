@@ -168,12 +168,11 @@ def _dataset_profile(path: Path, config: dict[str, Any]) -> dict[str, int]:
     }
 
 
-def preflight_artifacts(
-    config_path: Path,
-    artifact_paths: dict[str, Path],
-    output_path: Path,
-) -> dict[str, Any]:
-    """Hash all required local artifacts and fail if config identities differ."""
+def _inspect_artifacts(
+    config_path: Path, artifact_paths: dict[str, Path]
+) -> tuple[str, dict[str, dict[str, Any]]]:
+    """Recompute the complete frozen input set without publishing evidence."""
+
     config, config_sha256 = _read_config(config_path)
     if set(artifact_paths) != set(ARTIFACT_FIELDS):
         raise ValueError("all four named artifact paths are required")
@@ -207,6 +206,31 @@ def preflight_artifacts(
             )
     if errors:
         raise ValueError("artifact preflight failed:\n- " + "\n- ".join(errors))
+    return config_sha256, artifacts
+
+
+def assert_artifacts_unchanged(
+    config_path: Path,
+    artifact_paths: dict[str, Path],
+    preflight_record: dict[str, Any],
+) -> None:
+    """Fail if any frozen input or the config changed after preflight."""
+
+    config_sha256, artifacts = _inspect_artifacts(config_path, artifact_paths)
+    if preflight_record.get("config_sha256") != config_sha256:
+        raise ValueError("frozen experiment config changed after artifact preflight")
+    if preflight_record.get("artifacts") != artifacts:
+        raise ValueError("frozen protein artifacts changed after artifact preflight")
+
+
+def preflight_artifacts(
+    config_path: Path,
+    artifact_paths: dict[str, Path],
+    output_path: Path,
+) -> dict[str, Any]:
+    """Hash all required local artifacts and fail if config identities differ."""
+
+    config_sha256, artifacts = _inspect_artifacts(config_path, artifact_paths)
 
     record: dict[str, Any] = {
         "schema": PREFLIGHT_SCHEMA,

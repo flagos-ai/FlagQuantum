@@ -248,6 +248,7 @@ def _components(
                     "kaiwu_sdk_version": "1.3.1",
                     "seed": seed,
                     "run_completed": True,
+                    "artifact_inputs_unchanged": True,
                     "execution_host": "jp-a800-171",
                     "requested_cuda_device": "cuda:0",
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
@@ -373,6 +374,7 @@ def _components(
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "observed_tensor_device": "cuda:0",
                     "evaluation_model_sha256": "f" * 64,
+                    "artifact_inputs_unchanged": True,
                     "provider_quota_consumed": False,
                     "secrets_redacted": True,
                     "acceptance": "candidate_evidence_only",
@@ -402,6 +404,7 @@ def _portability(
         "experiment_config_sha256": config_sha256,
         "execution_host": "jp-a800-172",
         "run_completed": True,
+        "artifact_inputs_unchanged": True,
         "requested_cuda_device": "cuda:0",
         "observed_tensor_device": "cuda:0",
         "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
@@ -1016,6 +1019,19 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][0]["sha256"] = primary_system_sha
 
     tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
+    tampered_training["artifact_inputs_unchanged"] = False
+    tampered_training_sha = _write_json(component_paths[5], tampered_training)
+    manifest["component_records"][5]["sha256"] = tampered_training_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "training frozen inputs changed" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_training_sha = _write_json(component_paths[5], training_entries[0][0])
+    manifest["component_records"][5]["sha256"] = restored_training_sha
+
+    tampered_training = json.loads(component_paths[5].read_text(encoding="utf-8"))
     tampered_training["real_provider_evidence"] = False
     tampered_training_sha = _write_json(component_paths[5], tampered_training)
     manifest["component_records"][5]["sha256"] = tampered_training_sha
@@ -1068,6 +1084,25 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][5]["sha256"] = restored_training_sha
 
     tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
+    tampered_portability["artifact_inputs_unchanged"] = False
+    tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
+    replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = tampered_portability_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "portability frozen inputs changed" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    portability_sha = _write_json(component_paths[11], portability_record)
+    replay["portability_evidence"]["record_sha256"] = portability_sha
+    replay_sha = _write_json(replay_path, replay)
+    manifest["records"][1]["sha256"] = replay_sha
+    manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_portability = json.loads(component_paths[11].read_text(encoding="utf-8"))
     tampered_portability["task_receipts"] = []
     tampered_portability_sha = _write_json(component_paths[11], tampered_portability)
     replay["portability_evidence"]["record_sha256"] = tampered_portability_sha
@@ -1085,6 +1120,29 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     replay_sha = _write_json(replay_path, replay)
     manifest["records"][1]["sha256"] = replay_sha
     manifest["component_records"][11]["sha256"] = portability_sha
+
+    tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
+    tampered_evaluation["artifact_inputs_unchanged"] = False
+    tampered_evaluation_sha = _write_json(component_paths[8], tampered_evaluation)
+    primary["application_evidence"]["records"][0][
+        "evaluation_record_sha256"
+    ] = tampered_evaluation_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][8]["sha256"] = tampered_evaluation_sha
+    _write_json(manifest_path, manifest)
+    assert any(
+        "evaluation frozen inputs changed" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    restored_evaluation_sha = _write_json(component_paths[8], evaluation_entries[0][0])
+    primary["application_evidence"]["records"][0][
+        "evaluation_record_sha256"
+    ] = restored_evaluation_sha
+    primary_sha = _write_json(primary_path, primary)
+    manifest["records"][0]["sha256"] = primary_sha
+    manifest["component_records"][8]["sha256"] = restored_evaluation_sha
 
     tampered_evaluation = json.loads(component_paths[8].read_text(encoding="utf-8"))
     tampered_evaluation["observed_gpu_model"] = "NVIDIA H100"

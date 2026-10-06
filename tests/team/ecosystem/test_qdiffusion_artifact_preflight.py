@@ -8,6 +8,7 @@ import pytest
 
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     _artifact_identity,
+    assert_artifacts_unchanged,
     preflight_artifacts,
 )
 
@@ -165,3 +166,23 @@ def test_preflight_rejects_test_split_count_drift(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="differs from computed test split"):
         preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_postflight_rejects_artifact_drift(tmp_path: Path) -> None:
+    config_path, paths = _fixture(tmp_path)
+    preflight = preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+    paths["base_checkpoint"].write_bytes(b"changed weights")
+
+    with pytest.raises(ValueError, match="artifact preflight failed|changed after"):
+        assert_artifacts_unchanged(config_path, paths, preflight)
+
+
+def test_postflight_rejects_config_drift(tmp_path: Path) -> None:
+    config_path, paths = _fixture(tmp_path)
+    preflight = preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["dataset"]["name"] = "changed-after-preflight"
+    config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="config changed after"):
+        assert_artifacts_unchanged(config_path, paths, preflight)

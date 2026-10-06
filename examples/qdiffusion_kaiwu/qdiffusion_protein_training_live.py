@@ -22,6 +22,7 @@ from typing import Any
 import torch
 
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    assert_artifacts_unchanged,
     preflight_artifacts,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
@@ -463,15 +464,14 @@ def main() -> None:
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
 
-    preflight_artifacts(
-        args.config,
-        {
-            "dataset": args.dataset,
-            "base_checkpoint": args.base_checkpoint,
-            "tokenizer": args.tokenizer,
-            "evaluation_model": args.evaluation_model,
-        },
-        args.artifact_preflight_output,
+    artifact_paths = {
+        "dataset": args.dataset,
+        "base_checkpoint": args.base_checkpoint,
+        "tokenizer": args.tokenizer,
+        "evaluation_model": args.evaluation_model,
+    }
+    artifact_preflight = preflight_artifacts(
+        args.config, artifact_paths, args.artifact_preflight_output
     )
     preflight_sha256 = hashlib.sha256(
         args.artifact_preflight_output.read_bytes()
@@ -519,6 +519,17 @@ def main() -> None:
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
     )
+    artifact_postflight_failure: dict[str, str] | None = None
+    try:
+        assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
+    except (OSError, ValueError) as exc:
+        artifact_postflight_failure = {
+            "type": type(exc).__name__,
+            "message": str(exc),
+        }
+        payload["run_completed"] = False
+    payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None
+    payload["artifact_postflight_failure"] = artifact_postflight_failure
     _write_private_redacted_json(
         args.run_record,
         payload,

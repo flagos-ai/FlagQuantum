@@ -28,6 +28,7 @@ def _provider_training_record() -> dict[str, Any]:
         "schema": "flagquantum.qboson_qdiffusion_protein_training",
         "version": "1.0",
         "run_completed": True,
+        "artifact_inputs_unchanged": True,
         "transport": "kaiwu_cim",
         "pinned_sdk_client": True,
         "real_provider_evidence": True,

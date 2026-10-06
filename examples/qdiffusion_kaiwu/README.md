@@ -213,6 +213,15 @@ frozen acceptance config, and binds all workflow-created generators to one
 budgeted FlagQuantum `KaiwuSampler`. The base checkpoint directory must also
 contain the tokenizer files required by the pinned plugin.
 
+After training returns, the command rehashes the frozen config, FASTA, base
+checkpoint/tokenizer tree, and ESM2 checkpoint before publishing its record.
+Any drift marks the attempted run incomplete even if provider work succeeded.
+The portability replay repeats that postflight and also rechecks the transferred
+test FASTA and trained energy checkpoint. Local ESM2 evaluation rechecks both
+its model checkpoint and every consumed training output after metric
+calculation. Final validation requires `artifact_inputs_unchanged=true` in all
+three component types.
+
 The command requires absolute paths and the exact provider-cost
 acknowledgement. It creates a mode-0600 preflight record plus a separate private
 training record. A successful record contains the best trained energy

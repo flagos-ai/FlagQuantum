@@ -1177,6 +1177,8 @@ def _validate_portability_component_evidence(
     expected_requested_samples: int | None = None,
 ) -> None:
     _validate_remote_sampling_component_evidence(record, label, errors)
+    if record.get("artifact_inputs_unchanged") is not True:
+        errors.append(f"{label}: portability frozen inputs changed during execution")
     if (
         expected_requested_samples is not None
         and record.get("requested_samples") != expected_requested_samples
@@ -1298,6 +1300,8 @@ def _validate_training_component(
     errors: list[str],
 ) -> None:
     _validate_training_provider_evidence(record, label, errors)
+    if record.get("artifact_inputs_unchanged") is not True:
+        errors.append(f"{label}: training frozen inputs changed during execution")
     if record.get("experiment_config_sha256") != config_sha256:
         errors.append(f"{label}: training uses another frozen config")
     software = _mapping(config.get("software"), "config.software", errors)
@@ -1431,6 +1435,8 @@ def _validate_evaluation_component(
     label: str,
     errors: list[str],
 ) -> None:
+    if record.get("artifact_inputs_unchanged") is not True:
+        errors.append(f"{label}: evaluation frozen inputs changed during execution")
     if record.get("experiment_config_sha256") != config_sha256:
         errors.append(f"{label}: evaluation uses another frozen config")
     software = _mapping(config.get("software"), "config.software", errors)

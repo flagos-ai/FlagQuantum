@@ -381,6 +381,16 @@ def main() -> None:
         config=config,
         device=device,
     )
+    postflight_digest, postflight_algorithm, postflight_file_count = _artifact_identity(
+        args.evaluation_model
+    )
+    if (
+        postflight_digest != evaluation_digest
+        or postflight_algorithm != algorithm
+        or postflight_file_count != file_count
+    ):
+        raise RuntimeError("ESM2 checkpoint changed during protein evaluation")
+    _verified_training_paths(args.run_directory, record)
     payload = {
         "schema": SCHEMA,
         "version": "1.0",
@@ -400,6 +410,7 @@ def main() -> None:
         "observed_tensor_device": str(device),
         "seed": record.get("seed"),
         "evaluation_model_sha256": evaluation_digest,
+        "artifact_inputs_unchanged": True,
         "baseline_metrics": baseline,
         "guided_metrics": guided,
         "secrets_redacted": True,

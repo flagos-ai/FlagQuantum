@@ -290,6 +290,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   weights are not in the Git tree. The acceptance config now freezes tokenizer
   and ESM2 content hashes plus training settings, and both host records must
   share the trained primary-host energy-checkpoint digest.
+- Protein training now rehashes the frozen config, dataset, shared base
+  checkpoint/tokenizer tree, and ESM2 checkpoint after the workflow returns.
+  Portability replay repeats that check and revalidates the transferred test
+  FASTA and trained energy checkpoint; ESM2 evaluation revalidates its local
+  checkpoint and every consumed training output after metric calculation. Any
+  mid-run input drift prevents passing candidate evidence, and final assembly
+  independently requires `artifact_inputs_unchanged=true` for training,
+  evaluation, and replay components.
 - An offline protein-artifact preflight now verifies exact file/tree identities,
   rejects symlinks and implicit path ambiguity, and emits a private record that
   cannot be mistaken for acceptance evidence.

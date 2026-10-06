@@ -24,6 +24,7 @@ import torch
 
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
+    assert_artifacts_unchanged,
     preflight_artifacts,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
@@ -458,15 +459,14 @@ def main() -> None:
         args.environment_lock,
         expected_sha256=config["software"]["environment_lock_sha256"],
     )
-    preflight_artifacts(
-        args.config,
-        {
-            "dataset": args.dataset,
-            "base_checkpoint": args.base_checkpoint,
-            "tokenizer": args.tokenizer,
-            "evaluation_model": args.evaluation_model,
-        },
-        args.artifact_preflight_output,
+    artifact_paths = {
+        "dataset": args.dataset,
+        "base_checkpoint": args.base_checkpoint,
+        "tokenizer": args.tokenizer,
+        "evaluation_model": args.evaluation_model,
+    }
+    artifact_preflight = preflight_artifacts(
+        args.config, artifact_paths, args.artifact_preflight_output
     )
     artifact_preflight_sha256 = hashlib.sha256(
         args.artifact_preflight_output.read_bytes()
@@ -521,6 +521,22 @@ def main() -> None:
         device=device,
         real_provider_transport=True,
     )
+    artifact_postflight_failure: dict[str, str] | None = None
+    try:
+        assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
+        _verified_training_paths(args.training_run_directory, training_record)
+        _verified_checkpoint(
+            args.training_run_directory, args.trained_checkpoint, training_record
+        )
+    except (OSError, ValueError) as exc:
+        artifact_postflight_failure = {
+            "type": type(exc).__name__,
+            "message": str(exc),
+        }
+        payload["run_completed"] = False
+        payload["acceptance"]["portability"] = "fail"
+    payload["artifact_inputs_unchanged"] = artifact_postflight_failure is None
+    payload["artifact_postflight_failure"] = artifact_postflight_failure
     _write_private_redacted_json(
         args.output,
         payload,
