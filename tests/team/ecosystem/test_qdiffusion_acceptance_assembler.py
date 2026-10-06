@@ -120,6 +120,7 @@ def _system(
     return {
         "schema": "flagquantum.qboson_qdiffusion_system_live_probe",
         "version": "1.0",
+        "recorded_at": "2026-10-06T00:00:00+00:00",
         "source_revision": "a" * 40,
         "kaiwu_pytorch_plugin_revision": "b" * 40,
         "source_preflight_sha256": (
@@ -133,6 +134,7 @@ def _system(
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
         "execution_host": host,
+        "observed_hostname": host,
         "run_role": role,
         "requested_cuda_device": "cuda:0",
         "observed_tensor_device": "cuda:0",
@@ -144,6 +146,7 @@ def _system(
         "real_provider_evidence": True,
         "provider_identity_complete": True,
         "provider_reported_target": True,
+        "provider_result_schema": {"type": "dict"},
         "qboson_target": "SPQC-provider",
         "qboson_task_ids": [task_id],
         "task_receipts": [
@@ -197,6 +200,7 @@ def _system(
             }
         ],
         "precision_evidence_complete": True,
+        "failure": None,
         "training": {
             "objective": -0.5,
             "gradient_norm": 1.0,
@@ -225,6 +229,12 @@ def _system(
             "returned_sample_target_device": "cuda:0",
         },
         "acceptance": {"system": "pass", "application": "not_run"},
+        "limitations": [
+            "This bounded system probe does not run the frozen protein effectiveness experiment.",
+            "System acceptance remains failed without provider-reported task and target identities.",
+            "Two independent passing host records are required; this is one single-device run.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
     }
 
 
@@ -320,6 +330,7 @@ def _components(
                 {
                     "schema": "flagquantum.qboson_qdiffusion_protein_training",
                     "version": "1.0",
+                    "recorded_at": "2026-10-06T00:00:00+00:00",
                     "source_revision": "a" * 40,
                     "kaiwu_pytorch_plugin_revision": "b" * 40,
                     "python_version": "3.10.18",
@@ -327,8 +338,10 @@ def _components(
                     "kaiwu_sdk_version": "1.3.1",
                     "seed": seed,
                     "run_completed": True,
+                    "failure": None,
                     "artifact_inputs_unchanged": True,
                     "execution_host": "jp-a800-171",
+                    "observed_hostname": "jp-a800-171",
                     "requested_cuda_device": "cuda:0",
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "transport": "kaiwu_cim",
@@ -433,6 +446,11 @@ def _components(
                             "sha256": "7" * 64,
                         },
                     },
+                    "limitations": [
+                        "This record covers one protein-training seed only.",
+                        "ESM2 evaluation and two-host system acceptance are separate gates.",
+                        "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+                    ],
                 },
                 training_sha,
             )
@@ -442,6 +460,7 @@ def _components(
                 {
                     "schema": "flagquantum.qboson_qdiffusion_protein_evaluation",
                     "version": "1.0",
+                    "recorded_at": "2026-10-06T00:00:00+00:00",
                     "seed": seed,
                     "training_record_sha256": training_sha,
                     "experiment_config_sha256": config_sha256,
@@ -450,6 +469,7 @@ def _components(
                     "python_version": "3.10.18",
                     "torch_version": "2.7.0",
                     "execution_host": "jp-a800-171",
+                    "observed_hostname": "jp-a800-171",
                     "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
                     "observed_tensor_device": "cuda:0",
                     "evaluation_model_sha256": "f" * 64,
@@ -480,13 +500,21 @@ def _portability(
     return {
         "schema": "flagquantum.qboson_qdiffusion_portability_replay",
         "version": "1.0",
+        "recorded_at": "2026-10-06T00:00:00+00:00",
         "experiment_config_sha256": config_sha256,
         "execution_host": "jp-a800-172",
+        "observed_hostname": "jp-a800-172",
         "run_completed": True,
+        "failure": None,
         "artifact_inputs_unchanged": True,
         "requested_cuda_device": "cuda:0",
         "observed_tensor_device": "cuda:0",
         "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+        "source_revision": "a" * 40,
+        "kaiwu_pytorch_plugin_revision": "b" * 40,
+        "python_version": "3.10.18",
+        "torch_version": "2.7.0",
+        "kaiwu_sdk_version": "1.3.1",
         "transport": "kaiwu_cim",
         "pinned_sdk_client": True,
         "qboson_hardware_used": True,
@@ -509,6 +537,7 @@ def _portability(
                 "provider_target": "SPQC-provider",
             }
         ],
+        "sampling_mode": "sampling",
         "requested_samples": 10,
         "returned_samples": 10,
         "remote_call_budget": 128,
@@ -545,7 +574,24 @@ def _portability(
         "fallback_occurred": False,
         "retrieval_resubmitted": False,
         "secrets_redacted": True,
-        "fixture": {"token_constraints_passed": True},
+        "artifacts": {
+            "dataset_sha256": "c" * 64,
+            "base_checkpoint_sha256": "d" * 64,
+            "tokenizer_sha256": "e" * 64,
+            "evaluation_model_sha256": "f" * 64,
+            "trained_energy_checkpoint_sha256": training[0][
+                "trained_energy_checkpoint_sha256"
+            ],
+        },
+        "fixture": {
+            "training_seed": 1701,
+            "index": 0,
+            "steps": 1,
+            "energy_objective": -0.5,
+            "generated_length": 8,
+            "generated_sha256": "a" * 64,
+            "token_constraints_passed": True,
+        },
         "acceptance": {"portability": "pass"},
         "training_record_sha256": training[1],
         "trained_energy_checkpoint_sha256": training[0][
@@ -554,6 +600,11 @@ def _portability(
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": environment_lock_sha256,
+        "limitations": [
+            "This is one fixed replay fixture, not a second training run.",
+            "Final acceptance also requires both system gates and all primary-host seeds.",
+            "No performance, distributed, domestic-accelerator, or quantum-advantage claim is made.",
+        ],
     }
 
 

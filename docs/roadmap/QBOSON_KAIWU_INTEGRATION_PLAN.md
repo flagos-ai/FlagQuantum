@@ -624,6 +624,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   portability replay. Reusing one provider task ID across nominally distinct
   remote components fails acceptance instead of overstating independent quota
   submissions.
+- The four executable QDiffusion component records now have closed top-level
+  schemas for system, training, evaluation, and portability evidence. Missing
+  producer fields or undeclared extensions fail final validation, and a source
+  contract test compares those schemas with the actual payload constructors so
+  a producer/validator drift cannot be hidden by hand-written acceptance
+  fixtures.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

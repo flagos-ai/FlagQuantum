@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import copy
 import hashlib
 import json
@@ -9,7 +10,9 @@ from typing import Any
 import pytest
 
 from examples.qdiffusion_kaiwu.validate_acceptance import (
+    COMPONENT_FIELDS_BY_SCHEMA,
     _validate_component_bundle,
+    _validate_component_field_set,
     _validate_config,
     _validate_precision_evidence,
     _validate_sampling_receipt,
@@ -20,6 +23,72 @@ pytestmark = pytest.mark.unit
 
 _REVISION = "a" * 40
 _PLUGIN_REVISION = "b" * 40
+
+
+@pytest.mark.parametrize("schema", tuple(COMPONENT_FIELDS_BY_SCHEMA))
+def test_executable_component_field_sets_are_closed(schema: str) -> None:
+    expected = COMPONENT_FIELDS_BY_SCHEMA[schema]
+    complete = dict.fromkeys(expected)
+    complete["schema"] = schema
+    errors: list[str] = []
+
+    _validate_component_field_set(complete, label="component", errors=errors)
+
+    assert errors == []
+    for mutation in (
+        {key: value for key, value in complete.items() if key != "recorded_at"},
+        {**complete, "unexpected_secret_field": "must-not-pass"},
+    ):
+        errors = []
+        _validate_component_field_set(mutation, label="component", errors=errors)
+        assert errors == ["component: field set differs from its closed schema"]
+
+
+@pytest.mark.parametrize(
+    ("filename", "schema", "postflight_fields"),
+    (
+        (
+            "qdiffusion_system_live.py",
+            "flagquantum.qboson_qdiffusion_system_live_probe",
+            frozenset(),
+        ),
+        (
+            "qdiffusion_protein_training_live.py",
+            "flagquantum.qboson_qdiffusion_protein_training",
+            frozenset({"artifact_inputs_unchanged"}),
+        ),
+        (
+            "qdiffusion_protein_evaluate.py",
+            "flagquantum.qboson_qdiffusion_protein_evaluation",
+            frozenset(),
+        ),
+        (
+            "qdiffusion_portability_replay_live.py",
+            "flagquantum.qboson_qdiffusion_portability_replay",
+            frozenset({"artifact_inputs_unchanged"}),
+        ),
+    ),
+)
+def test_closed_component_fields_match_producer_payloads(
+    filename: str, schema: str, postflight_fields: frozenset[str]
+) -> None:
+    source = Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / filename
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    candidates: list[set[str]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        fields = {
+            key.value
+            for key in node.keys
+            if isinstance(key, ast.Constant) and isinstance(key.value, str)
+        }
+        if "schema" in fields:
+            candidates.append(fields)
+
+    producer_fields = max(candidates, key=len) | postflight_fields
+
+    assert producer_fields == COMPONENT_FIELDS_BY_SCHEMA[schema]
 
 
 def _complete_task_receipt() -> dict[str, Any]:

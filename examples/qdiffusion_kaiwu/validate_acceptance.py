@@ -72,6 +72,193 @@ PORTABILITY_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_portability_replay
 TRAINING_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
 EVALUATION_COMPONENT_SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TASK_RECEIPT_SCHEMA = "flagquantum.kaiwu-task.v1"
+SYSTEM_COMPONENT_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "recorded_at",
+        "experiment_config_sha256",
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "execution_host",
+        "observed_hostname",
+        "run_role",
+        "requested_cuda_device",
+        "observed_tensor_device",
+        "observed_gpu_model",
+        "transport",
+        "qboson_hardware_used",
+        "real_provider_evidence",
+        "pinned_sdk_client",
+        "provider_identity_complete",
+        "provider_reported_target",
+        "provider_result_schema",
+        "qboson_target",
+        "qboson_task_ids",
+        "task_receipts",
+        "sampling_mode",
+        "requested_samples",
+        "returned_samples",
+        "remote_call_budget",
+        "remote_call_count",
+        "precision_policy",
+        "precision_evidence_complete",
+        "precision_evidence",
+        "fallback_occurred",
+        "retrieval_resubmitted",
+        "secrets_redacted",
+        "run_completed",
+        "failure",
+        "training",
+        "generation",
+        "transfer_accounting",
+        "acceptance",
+        "limitations",
+    }
+)
+TRAINING_COMPONENT_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "recorded_at",
+        "experiment_config_sha256",
+        "artifact_preflight_sha256",
+        "artifact_inputs_unchanged",
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "execution_host",
+        "observed_hostname",
+        "observed_gpu_model",
+        "requested_cuda_device",
+        "seed",
+        "transport",
+        "pinned_sdk_client",
+        "real_provider_evidence",
+        "qboson_hardware_used",
+        "provider_reported_target",
+        "qboson_target",
+        "qboson_task_ids",
+        "sampling_mode",
+        "requested_samples",
+        "fallback_occurred",
+        "secrets_redacted",
+        "run_completed",
+        "failure",
+        "remote_call_budget",
+        "protein_remote_call_budget_per_seed",
+        "estimated_worst_case_remote_calls",
+        "remote_call_count",
+        "task_receipts",
+        "provider_identity_complete",
+        "precision_report_count",
+        "precision_policy",
+        "precision_evidence_complete",
+        "precision_evidence",
+        "run_directory_name",
+        "trained_energy_checkpoint_name",
+        "trained_energy_checkpoint_sha256",
+        "workflow_artifacts",
+        "acceptance",
+        "limitations",
+    }
+)
+EVALUATION_COMPONENT_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "recorded_at",
+        "experiment_config_sha256",
+        "training_record_sha256",
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+        "python_version",
+        "torch_version",
+        "execution_host",
+        "observed_hostname",
+        "observed_gpu_model",
+        "observed_tensor_device",
+        "seed",
+        "evaluation_model_sha256",
+        "artifact_inputs_unchanged",
+        "baseline_metrics",
+        "guided_metrics",
+        "secrets_redacted",
+        "provider_quota_consumed",
+        "acceptance",
+    }
+)
+PORTABILITY_COMPONENT_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "recorded_at",
+        "experiment_config_sha256",
+        "artifact_preflight_sha256",
+        "artifact_inputs_unchanged",
+        "training_record_sha256",
+        "source_revision",
+        "kaiwu_pytorch_plugin_revision",
+        "source_preflight_sha256",
+        "transfer_manifest_sha256",
+        "environment_lock_sha256",
+        "python_version",
+        "torch_version",
+        "kaiwu_sdk_version",
+        "execution_host",
+        "observed_hostname",
+        "observed_gpu_model",
+        "requested_cuda_device",
+        "observed_tensor_device",
+        "transport",
+        "pinned_sdk_client",
+        "qboson_hardware_used",
+        "real_provider_evidence",
+        "provider_identity_complete",
+        "provider_reported_target",
+        "qboson_target",
+        "qboson_task_ids",
+        "task_receipts",
+        "sampling_mode",
+        "requested_samples",
+        "returned_samples",
+        "remote_call_budget",
+        "remote_call_count",
+        "fallback_occurred",
+        "retrieval_resubmitted",
+        "secrets_redacted",
+        "precision_policy",
+        "precision_evidence",
+        "precision_evidence_complete",
+        "trained_energy_checkpoint_sha256",
+        "artifacts",
+        "fixture",
+        "run_completed",
+        "failure",
+        "acceptance",
+        "limitations",
+    }
+)
+COMPONENT_FIELDS_BY_SCHEMA = {
+    SYSTEM_COMPONENT_SCHEMA: SYSTEM_COMPONENT_FIELDS,
+    TRAINING_COMPONENT_SCHEMA: TRAINING_COMPONENT_FIELDS,
+    EVALUATION_COMPONENT_SCHEMA: EVALUATION_COMPONENT_FIELDS,
+    PORTABILITY_COMPONENT_SCHEMA: PORTABILITY_COMPONENT_FIELDS,
+}
 TASK_RECEIPT_FIELDS = frozenset(
     {
         "schema",
@@ -159,6 +346,16 @@ def _canonical_printable_identifier(value: Any) -> bool:
         and value == value.strip()
         and value.isprintable()
     )
+
+
+def _validate_component_field_set(
+    record: dict[str, Any], *, label: str, errors: list[str]
+) -> None:
+    """Reject missing or extended fields for executable evidence components."""
+
+    expected_fields = COMPONENT_FIELDS_BY_SCHEMA.get(record.get("schema"))
+    if expected_fields is not None and set(record) != expected_fields:
+        errors.append(f"{label}: field set differs from its closed schema")
 
 
 def _validate_sampling_receipt(
@@ -1777,6 +1974,9 @@ def _validate_component_bundle(
     for digest, payload in component_payloads.items():
         if payload.get("version") != "1.0":
             errors.append(f"component {digest}: unsupported version")
+        _validate_component_field_set(
+            payload, label=f"component {digest}", errors=errors
+        )
         if (
             payload.get("schema")
             not in (

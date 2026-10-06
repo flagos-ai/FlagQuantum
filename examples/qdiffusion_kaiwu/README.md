@@ -368,8 +368,10 @@ fallback. Hardware acceptance additionally requires two distinct provider task
 IDs and one common provider target, which is retained at record level and
 cross-checked against both tasks. Provider task IDs must also be globally unique
 across the smoke, both system probes, all training seeds, and portability
-replay. The
-inputs must be absolute, private regular files rather than symlinks. Assembly
+replay. System, training, evaluation, and portability component records also
+use closed top-level field sets; missing producer fields and undeclared
+extensions are rejected, and tests bind those field sets to the actual payload
+constructors. The inputs must be absolute, private regular files rather than symlinks. Assembly
 uses a private sibling staging directory and publishes the requested output
 directory only after the final validator passes. The output includes hashed
 copies of every component record, so deleting or replacing a source record
