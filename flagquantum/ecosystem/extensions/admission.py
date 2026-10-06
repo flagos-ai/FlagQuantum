@@ -11,11 +11,20 @@ The registered route is called as ``execute(program, *, options)``. That keyword
 is what distinguishes an executable backend route from
 :class:`flagquantum.ecosystem.extensions.ExecutionBackendExtension`, which only
 states that an extension of kind ``backend`` exposes an ``execute`` member.
+
+Runtime calls a route directly rather than through the extension's own lifecycle
+handle, so the call shape is settled here: a backend that keeps the SDK's
+``execute(program, parameters=None)`` has the member, passes both
+``runtime_checkable`` protocol checks, negotiates, and is registered, yet cannot
+be called the way Runtime calls an admitted route. Such a backend is refused at
+admission, before a plan exists, rather than at execution with a plan already
+running.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
+from inspect import signature
 from typing import Any
 
 from ...errors import CapabilityError
@@ -95,12 +104,37 @@ def _declared(extension: Extension) -> Mapping[str, Any]:
     return declared
 
 
+def _route_call_shape(route: BackendExecutor, name: str) -> None:
+    """Refuse a route Runtime could only fail on once a plan is executing.
+
+    ``BackendExecutor`` is ``runtime_checkable``, so ``isinstance`` proves that
+    the ``execute`` member exists and says nothing about how it may be called.
+    Binding the declared call is what turns "has an execute member" into
+    "Runtime can call this", and it is the same check the executor would
+    otherwise perform with a plan, a device, and a shot budget already spent.
+
+    The name is passed alongside the route rather than read back off it: the
+    protocol describes the call Runtime makes and does not carry the manifest
+    that names the extension being refused.
+    """
+
+    try:
+        signature(route.execute).bind(object(), options={})
+    except (TypeError, ValueError) as exc:
+        raise BackendAdmissionError(
+            f"backend extension {name!r} cannot be called as an execution route; "
+            "Runtime calls an admitted route as execute(program, *, options) and "
+            f"this declaration does not accept that call: {type(exc).__name__}: {exc}"
+        ) from exc
+
+
 def _build(extension: Extension, declared: Mapping[str, Any]) -> BackendCapabilities:
     if not isinstance(extension, BackendExecutor):
         raise BackendAdmissionError(
             f"backend extension {extension.manifest.name!r} must implement "
             "execute(program, *, options) and close()"
         )
+    _route_call_shape(extension, extension.manifest.name)
     try:
         return BackendCapabilities(
             name=extension.manifest.name, **declared, executor=extension

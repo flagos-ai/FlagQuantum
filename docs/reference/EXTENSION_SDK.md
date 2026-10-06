@@ -71,11 +71,12 @@ capability registry, and keeps one live execution route for it. No second
 registry, entry-point group, or manifest format is created, and the namespace
 above is not exported from `flagquantum.ecosystem.extensions`.
 
-The declaration is a mapping of exactly the capability fields the backend owns.
+The declared route is a mapping of exactly the capability fields the backend owns.
 `name`, `executor`, and `accelerators` are host-owned: a backend that declares
 them is rejected rather than silently overridden. An unknown key, a missing
-required key, a non-backend manifest kind, a built-in backend name, and a refused
-negotiation all fail closed before registration.
+required key, a non-backend manifest kind, a built-in backend name, a refused
+negotiation, and a route that cannot be called as `execute(program, *, options)`
+all fail closed before registration.
 
 `fq.run` reaches an admitted backend through the ordinary planning path. A
 requested backend that is unregistered, registered without an execution route, or
@@ -92,6 +93,15 @@ semantics). The returned object is normalized by the same result adapter as any
 other output, and an admitted result is never relabelled as a built-in engine
 path. Withdrawing an admitted backend unregisters it; a later request for it
 fails closed.
+
+Runtime calls its route directly rather than through the extension's own lifecycle
+handle, so the call shape is established at admission together with the
+capabilities. The SDK member `ExecutionBackendExtension.execute(program,
+parameters=None)` and the route `BackendExecutor.execute(program, *, options)` are
+different calls, and both protocols are `runtime_checkable`, so an extension that
+implements only the SDK member satisfies both checks without being callable the
+way Runtime calls a route. Such an extension is refused at admission by name,
+before a plan exists, rather than failing inside a planned execution.
 
 See [`API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md`](../development/API_CHANGE_PROPOSAL_063_BACKEND_EXECUTION_ADMISSION.md)
 and [`contracts/backend-execution-admission-v1-candidate.json`](../../contracts/backend-execution-admission-v1-candidate.json).

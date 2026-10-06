@@ -182,6 +182,59 @@ def test_every_declared_invariant_is_enforced_by_a_test() -> None:
     assert "executor" not in summary
 
 
+def test_the_route_call_shape_invariant_is_enforced_at_admission() -> None:
+    """The contract claims admission binds the call, so the call must be bound.
+
+    The two protocol checks are ``runtime_checkable``, so the invariant is only
+    real if something calls the member: an object with the SDK's
+    ``execute(program, parameters=None)`` satisfies both checks and still cannot
+    be called as ``execute(program, *, options)``.
+    """
+
+    contract = _contract()
+    assert (
+        "a route is refused at admission unless it accepts the call "
+        "execute(program, *, options)"
+    ) in contract["invariants"]
+    assert contract["admission"]["route_call_shape_checked_at_admission"] is True
+
+    class SdkShape:
+        manifest = extension_namespace.ExtensionManifest(
+            name="contract_shape_probe",
+            version="1.0.0",
+            kind="backend",
+            capabilities=frozenset({"cpu"}),
+        )
+        backend_capabilities: typing.ClassVar[dict[str, object]] = {
+            "tensor_backend": "torch",
+            "devices": ("cpu",),
+            "dtypes": ("complex64",),
+            "supports_autograd": False,
+            "supports_distributed": False,
+            "supports_statevector": True,
+            "supports_density_matrix": False,
+            "supports_mps": False,
+        }
+
+        def negotiate(self, request):  # pragma: no cover - never reached
+            raise AssertionError("a refused route is never negotiated")
+
+        def start(self, config):  # pragma: no cover - never reached
+            raise AssertionError("a refused route is never started")
+
+        def close(self) -> None:
+            pass
+
+        def execute(self, program, parameters=None):
+            raise AssertionError("a refused route is never called")
+
+    probe = SdkShape()
+    assert isinstance(probe, backend_registry.BackendExecutor)
+    with pytest.raises(admission.BackendAdmissionError, match="contract_shape_probe"):
+        admission.check_backend_admission(probe)
+    assert backend_registry.resolve_backend_executor("contract_shape_probe") is None
+
+
 def test_the_replacement_proof_chain_names_reachable_entry_points() -> None:
     contract = _contract()
     proof = contract["replacement_proof"]
