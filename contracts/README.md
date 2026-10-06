@@ -31,6 +31,7 @@ must validate the resulting behavior directly.
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
 | `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose` and `Circuit.adjoint` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
 | `parameter-shift-coverage-contract.toml` | Which opcodes `batched_parameter_shift_gradient` can differentiate from one evaluation pair per parameter, measured against the opcode declaration for every registered opcode. |
+| `gradient-methods-contract.toml` | Which (`fq.gradient` method, execution mode) pairs serve and which refuse, measured twice -- without and with a noise model -- with the refusal vocabulary, the measured cost of each method, and one recorded exception-reframing asymmetry. |
 | `primitives-admission-contract.toml` | The admission rule of `flagquantum/algorithms/primitives`: every export with the admission basis it was admitted on, the consumer that grounds it, its distribution semantics, and its differentiability shape. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
@@ -91,6 +92,21 @@ opcode, and builds every refusal row. The decision and the authorization are in
 owns the measured coverage table. Its conformance test in
 `tests/unit/test_parameter_shift_coverage_contract.py` mutates the contract's
 clauses and requires the gate to name each one.
+
+`gradient-methods-contract.toml` is the second measurement, of the other axis.
+`fq.gradient` takes no execution mode, so availability is a property of a pair:
+the method passed to `fq.gradient` and the mode the caller's loss passes to
+`fq.run`. The contract records all thirty pairs, then re-measures the same thirty
+under a noise model, because noise is a `fq.run` argument rather than a mode and
+its measured effect is to narrow the serving modes to `auto` and
+`density_matrix`. `tools/check_gradient_methods_contract.py` rebuilds the
+reference program and runs every cell, so a cell that stops being true fails the
+gate rather than ageing quietly. Three combinations the scheduling plan predicted
+are absent by measurement rather than by omission -- `adjoint` never reaches a
+mode, the five distributed mode names are refused before any gradient code runs,
+and there is no noisy mode -- and each is recorded with its reason. The decision
+and the authorization are in
+`docs/api-changes/FQ-GRADIENT-METHODS-MATRIX-20261027.md`.
 
 Three contracts describe CUDA-Q. `cudaq-export-contract.toml` owns the adapter
 surface, `interop-capability-gap-matrix.toml` owns the adapter's per-format
