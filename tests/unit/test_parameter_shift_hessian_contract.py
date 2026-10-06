@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import dataclasses
 import importlib.util
+import json
 import math
 from pathlib import Path
 from typing import Any
@@ -350,7 +351,12 @@ def test_the_route_is_reachable_from_the_module_and_not_from_the_root() -> None:
     assert "parameter_shift_hessian" in gradient_module.__all__
     assert "parameter_shift_hessian" not in fq.__all__
     assert not hasattr(fq, "parameter_shift_hessian")
-    assert len(fq.__all__) == 36
+    # The root surface is read from its own contract rather than restated, so a
+    # later authorized export does not turn this test into a stale constant.
+    baseline = json.loads(
+        (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
+    )
+    assert len(fq.__all__) == len(baseline["stable_exports"])
 
 
 @pytest.mark.parametrize(

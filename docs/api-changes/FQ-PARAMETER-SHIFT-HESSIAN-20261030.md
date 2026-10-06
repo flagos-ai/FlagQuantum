@@ -100,7 +100,8 @@ The merged count is exact, and it is measured rather than derived:
 
 - **No root export.** `parameter_shift_hessian` is reachable as
   `fq.gradients.parameter_shift_hessian` and is **absent** from `fq.__all__` and
-  from the root namespace. `fq.__all__` stays at 36 and `docs/public_api_v1.json`
+  from the root namespace. `fq.__all__` stays at 37 (the count `origin/main`
+  reaches after the authorized `density_matrix` export) and `docs/public_api_v1.json`
   is untouched, so this change needs no rule 8 authorization.
 - **No fifth gradient method.** `hessian` is not added to `_GRADIENT_METHODS`, and
   `fq.gradient(..., method="hessian")` is still refused. A second derivative is
@@ -119,7 +120,7 @@ The merged count is exact, and it is measured rather than derived:
 | Second derivative | absent | `fq.gradients.parameter_shift_hessian` |
 | Differentiable opcodes reachable | 14 | 14 (unchanged, read from the declaration) |
 | Serving modes | 5 | 5 (unchanged) |
-| Root surface | 36 exports | 36 exports (unchanged) |
+| Root surface | 37 exports | 37 exports (unchanged) |
 | `fq.gradient` methods | 5 | 5 (unchanged) |
 
 The existing behaviour of the first order is unchanged except in one place, and
@@ -169,7 +170,7 @@ preserving.
   every opcode whose declaration admits it, including ones added later.
 - Do not add `hessian` to `_GRADIENT_METHODS`. Both gradient contracts would go
   red, and the name would claim a second derivative is a first-order method.
-- Do not export the function from `fq`. The root surface is frozen at 36 and this
+- Do not export the function from `fq`. The root surface stays at 37 exports and this
   slice deliberately needs no authorization.
 - Do not describe the matrix as symmetric "by construction" without saying what
   that means. It means equal mixed partials; it does not mean the two halves are
@@ -180,7 +181,7 @@ preserving.
 ## Compatibility
 
 - **No stable API changes.** `parameter_shift_hessian` is not in
-  `docs/public_api_v1.json`, `fq.__all__` is still 36 entries, and no signature,
+  `docs/public_api_v1.json`, `fq.__all__` is still 37 entries, and no signature,
   default, result field, or serialized schema moves. No change proposal is
   required and no API-owner approval is needed.
 - **`parameter_shift_gradient` gains refusals, not answers.** Every input it
