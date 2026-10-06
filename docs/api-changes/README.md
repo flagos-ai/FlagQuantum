@@ -33,6 +33,7 @@ process.
 - [Circuit composition](FQ-CIRCUIT-COMPOSITION-20261002.md)
 - [Circuit adjoint](FQ-CIRCUIT-ADJOINT-20261003.md)
 - [Gradient parameter frequencies](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md)
+- [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
 - [Pauli algebra and quantum_info ownership boundary](FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930.md)
