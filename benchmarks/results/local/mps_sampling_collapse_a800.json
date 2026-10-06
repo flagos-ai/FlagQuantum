@@ -1,4 +1,5 @@
 {
+  "benchmark": "mps_sampling_collapse",
   "schema": "flagquantum.kernel_benchmark.mps_sampling_collapse.v1",
   "semantic_id": "mps.sampling.collapse_wire.local",
   "implementation_id": "FQKI-TRITON-MPS-008-A",

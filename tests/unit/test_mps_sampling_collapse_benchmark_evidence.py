@@ -37,6 +37,7 @@ def _artifact() -> dict[str, Any]:
 def test_checked_in_mps008_evidence_has_canonical_scope_and_matrix() -> None:
     payload = _artifact()
 
+    assert payload["benchmark"] == "mps_sampling_collapse"
     assert payload["schema"] == EVIDENCE_SCHEMA
     assert payload["semantic_id"] == SEMANTIC_ID
     assert payload["implementation_id"] == IMPLEMENTATION_ID
@@ -102,6 +103,18 @@ def test_checked_in_mps008_aggregate_records_bounded_dispatch_candidate() -> Non
     assert aggregate["maximum_absolute_error"] <= 2e-6
     assert aggregate["maximum_relative_l2_error"] <= 3e-7
     assert aggregate["decision"] == "eligible_for_dispatch_evaluation"
+
+
+def test_mps008_aggregate_preserves_benchmark_identity(tmp_path: Path) -> None:
+    paths = []
+    for index, run in enumerate(_artifact()["runs"]):
+        path = tmp_path / f"run-{index}.json"
+        path.write_text(json.dumps(run), encoding="utf-8")
+        paths.append(path)
+
+    payload = aggregate_runs(paths)
+
+    assert payload["benchmark"] == "mps_sampling_collapse"
 
 
 def test_mps008_aggregate_rejects_an_incomplete_host_compiler_matrix(

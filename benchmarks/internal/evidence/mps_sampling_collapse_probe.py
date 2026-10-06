@@ -238,6 +238,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
     maximum_relative_l2_error = max(float(case["relative_l2_error"]) for case in cases)
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
     return {
+        "benchmark": "mps_sampling_collapse",
         "schema": EVIDENCE_SCHEMA,
         "semantic_id": SEMANTIC_ID,
         "implementation_id": IMPLEMENTATION_ID,
