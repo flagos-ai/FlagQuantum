@@ -20,6 +20,7 @@ def _complex64_local_pauli_rotation_kernel(
     rotation_parts: tl.tensor,
     output_parts: tl.tensor,
     amplitude_count: tl.tensor,
+    work_count: tl.tensor,
     batch_count: tl.tensor,
     rotation_batch_stride: tl.tensor,
     first_bit_position: tl.tensor,
@@ -28,47 +29,89 @@ def _complex64_local_pauli_rotation_kernel(
     BLOCK: tl.constexpr,  # noqa: N803
 ) -> None:
     linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
-    total = amplitude_count * batch_count
+    total = work_count * batch_count
     mask = linear < total
-    batch = linear // amplitude_count
-    amplitude = linear - batch * amplitude_count
-    first_bit = (amplitude >> first_bit_position) & 1
-    second_bit = (amplitude >> second_bit_position) & 1
-    parity = first_bit ^ second_bit
+    batch = linear // work_count
+    work = linear - batch * work_count
 
     rotation_index = batch * rotation_batch_stride
     c = tl.load(rotation_parts + 2 * rotation_index, mask=mask, other=0.0)
     s = tl.load(rotation_parts + 2 * rotation_index + 1, mask=mask, other=0.0)
     if PAULI_KIND == 2:
-        paired_amplitude = amplitude
+        amplitude = work
+        parity = ((amplitude >> first_bit_position) & 1) ^ (
+            (amplitude >> second_bit_position) & 1
+        )
         phase = 1.0 - 2.0 * parity
+        state_index = batch * amplitude_count + amplitude
+        value_real = tl.load(state_parts + 2 * state_index, mask=mask, other=0.0)
+        value_imag = tl.load(
+            state_parts + 2 * state_index + 1,
+            mask=mask,
+            other=0.0,
+        )
+        tl.store(
+            output_parts + 2 * state_index,
+            c * value_real + s * phase * value_imag,
+            mask=mask,
+        )
+        tl.store(
+            output_parts + 2 * state_index + 1,
+            c * value_imag - s * phase * value_real,
+            mask=mask,
+        )
     else:
+        # XX and YY partition the state into disjoint amplitude pairs. Insert
+        # a zero at the first target bit, then obtain the partner by flipping
+        # both target bits. Each pair is loaded once and produces both outputs.
+        low_mask = (1 << first_bit_position) - 1
+        low = work & low_mask
+        amplitude = ((work - low) << 1) | low
         paired_amplitude = amplitude ^ (1 << first_bit_position)
         paired_amplitude = paired_amplitude ^ (1 << second_bit_position)
+        parity = (amplitude >> second_bit_position) & 1
         phase = 1.0
         if PAULI_KIND == 1:
             phase = 2.0 * parity - 1.0
 
-    state_index = batch * amplitude_count + amplitude
-    paired_index = batch * amplitude_count + paired_amplitude
-    value_real = tl.load(state_parts + 2 * state_index, mask=mask, other=0.0)
-    value_imag = tl.load(state_parts + 2 * state_index + 1, mask=mask, other=0.0)
-    paired_real = tl.load(state_parts + 2 * paired_index, mask=mask, other=0.0)
-    paired_imag = tl.load(
-        state_parts + 2 * paired_index + 1,
-        mask=mask,
-        other=0.0,
-    )
-    tl.store(
-        output_parts + 2 * linear,
-        c * value_real + s * phase * paired_imag,
-        mask=mask,
-    )
-    tl.store(
-        output_parts + 2 * linear + 1,
-        c * value_imag - s * phase * paired_real,
-        mask=mask,
-    )
+        state_index = batch * amplitude_count + amplitude
+        paired_index = batch * amplitude_count + paired_amplitude
+        value_real = tl.load(state_parts + 2 * state_index, mask=mask, other=0.0)
+        value_imag = tl.load(
+            state_parts + 2 * state_index + 1,
+            mask=mask,
+            other=0.0,
+        )
+        paired_real = tl.load(
+            state_parts + 2 * paired_index,
+            mask=mask,
+            other=0.0,
+        )
+        paired_imag = tl.load(
+            state_parts + 2 * paired_index + 1,
+            mask=mask,
+            other=0.0,
+        )
+        tl.store(
+            output_parts + 2 * state_index,
+            c * value_real + s * phase * paired_imag,
+            mask=mask,
+        )
+        tl.store(
+            output_parts + 2 * state_index + 1,
+            c * value_imag - s * phase * paired_real,
+            mask=mask,
+        )
+        tl.store(
+            output_parts + 2 * paired_index,
+            c * paired_real + s * phase * value_imag,
+            mask=mask,
+        )
+        tl.store(
+            output_parts + 2 * paired_index + 1,
+            c * paired_imag - s * phase * value_real,
+            mask=mask,
+        )
 
 
 def apply_complex64_local_pauli_rotation_2q(
@@ -139,19 +182,23 @@ def apply_complex64_local_pauli_rotation_2q(
         )
 
     bit_positions = tuple(n_qubits - 1 - qubit for qubit in normalized_qubits)
+    work_count = amplitude_count if normalized_pauli == "ZZ" else amplitude_count // 2
     block = 256
-    _complex64_local_pauli_rotation_kernel[(triton.cdiv(state.numel(), block),)](
+    _complex64_local_pauli_rotation_kernel[
+        (triton.cdiv(state.shape[0] * work_count, block),)
+    ](
         torch.view_as_real(state),
         torch.view_as_real(rotation),
         torch.view_as_real(output),
         amplitude_count,
+        work_count,
         state.shape[0],
         rotation_stride,
         bit_positions[0],
         bit_positions[1],
         PAULI_KIND={"XX": 0, "YY": 1, "ZZ": 2}[normalized_pauli],
         BLOCK=block,
-        num_warps=4,
+        num_warps=8,
         num_stages=2,
     )
     return output
