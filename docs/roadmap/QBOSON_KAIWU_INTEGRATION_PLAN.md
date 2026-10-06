@@ -244,14 +244,18 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   inputs. The local capture gate rejects identity drift, non-A800 or
   non-`cuda:0` execution,
   unbounded call accounting, or any record that claims real provider use or
-  acceptance. The committed path passed again on both hosts at revision
-  `413f9435f4326598e2414a19b59d741cbb6a523d`; the two private development
-  records have SHA-256 digests
-  `b0ab6e255275ec735043fd07ff53c14f32d42aecd7480a65aa916d9e315b3ab6`
-  and
-  `2b05e56326e62531a292b6224e61e0f4407635f25d0c8c951acc20f96130cc72`.
-  These remain development-only records and are not inputs to the live
-  acceptance manifest.
+  acceptance. After suppressing host extended attributes, the committed path
+  passed without tar metadata warnings on both hosts at revision
+  `30373d3966ca1227ea73b4548d30443c3c7f131c`; the private development records
+  have SHA-256 digests
+  `4f989311863169c72ef2fd38031f54ea699d5fef8382102243ac8129ae3acbee`
+  (`jp-a800-171`) and
+  `6b755aa6e79749633e89ef4db7572ca269fd3a57995026a351acc227c311c1b7`
+  (`jp-a800-172`). Both observed A800-SXM4-80GB on `cuda:0`, made ten bounded
+  fake-transport calls, produced the same finite objective, nonzero gradient
+  and parameter update, and retained all acceptance flags as false. These
+  remain development-only records and are not inputs to the live acceptance
+  manifest.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat
@@ -449,9 +453,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   sampler, plugin, and live-probe contract tests without network access or
   provider quota. It is explicitly local conformance evidence rather than A800
   or QBoson evidence. After adding the quota planner, pinned 1.3.1 mode mapping,
-  and fail-closed SDK-lane selection to that gate, the complete path passed at
-  revision `27157be64532de18059f7724d2cfb62a1df3ffc9` on 2026-10-06 with 418
-  tests and no provider credentials present.
+  fail-closed SDK-lane selection, and xattr-free stream contract to that gate,
+  the complete path passed at revision
+  `30373d3966ca1227ea73b4548d30443c3c7f131c` on 2026-10-06 with 418 tests and
+  no provider credentials present.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor
