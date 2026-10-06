@@ -59,7 +59,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | absent | later | — | No chunks, no seams, therefore no sliding-window substrate. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
-| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; the noise grammar has no location for a channel bound to a named gate, so arbitrary annotated circuits are still declined. |
+| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; a second grammar now places a channel bound to a named gate after the gate it matched, so what remains at the input end is the arbitrary annotated circuit rather than the placement. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, its PyMatching cross-check, a name-keyed registry, and a composite-fault decomposition that widens the matcher past the one hyperedge a memory circuit states all landed; no BP+OSD, no sliding window, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
@@ -354,11 +354,37 @@ which is why the noiseless circuit is untouched. The construction route states
 the same identity in the language it injects into, which carries `h` and `x` and
 no other parameter-free single-qubit gate, by composing `H X H` and `H X H X`
 instead of emitting a conjugation. What has no location here is therefore not a
-Pauli family but a *placement*: a depolarizing or damping channel, and any
-channel bound to a named gate rather than to a round boundary. The baseline's
-`x_` and `z_` variants have no counterpart either, because the code record is a
-Z-memory record. The row stays `partial` on that scope, not on the connection or
-on which families reach a sampled record.
+Pauli family but a *placement*: a depolarizing or damping channel, which is
+still absent, and a channel bound to a named gate, which is now placed. The
+baseline's `x_` and `z_` variants have no counterpart either, because the code
+record is a Z-memory record. The row stays `partial` on that scope, not on the
+connection or on which families reach a sampled record.
+
+The placement grammar is now two grammars rather than one, and the record the
+caller states is what selects one, so neither route gained a second entry point.
+A `PhenomenologicalNoise` states round boundaries, as before. A
+`flagquantum.noise.NoiseModel` states gates, and a rule's fault follows the gate
+its rule matched — upstream CUDA-Q's placement for a channel bound to a named
+gate, which acts on the state that gate leaves behind — once per round the gate
+appears in, so the round structure comes from the lowered program's block rather
+than from the record. A rule whose gate the program does not execute places
+nothing, because a record stated over a gate set says nothing about a gate
+outside it, and a matched rule contributes one location per round while a
+round-boundary field contributes one per experiment. On both grammars the engine
+still executes one channel, so a phase fault after a named gate is that channel
+conjugated by `h` on each side — `H X H = Z`, the same identity the
+round-boundary route states as a pair of `h` gates around the flip, and the same
+one the construction route states by composing `H X H`. The measurement channel
+of a gate-bound record is not placed at all: a readout fault's position is the
+check it corrupts, which is what the phenomenological record's measurement
+family states, so a rule naming `measure` or `reset` is refused by name rather
+than placed after every readout including the terminal data readouts. The
+remaining refusals are the grammar's own: a channel that is not a single-qubit
+Pauli fault, a one-qubit channel bound to two wires, and a fault that would
+follow the program's last instruction. The model and the sampler share the
+mechanism list and the lowering, so a record one route can place and the other
+cannot is unreachable, and the refusals are asserted on both routes.
+
 One placement is worth recording because it is invisible to any parity
 comparison: the code gadgets prepare their ancilla with the CNOTs immediately
 preceding the readout, so moving a measurement channel one instruction earlier
