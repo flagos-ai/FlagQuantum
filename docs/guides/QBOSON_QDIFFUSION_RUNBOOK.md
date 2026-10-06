@@ -33,14 +33,21 @@ reconnaissance only, not as approval or as proof of an SDK project assignment.
 Do not submit a provider task until the required sampling allocation, project,
 and use approval are available and reviewed for this validation.
 
-On the same date, a credential-free platform support request asked for the
-Kaiwu 1.3.1 CPython 3.10 Linux package and its digest and terms, an SDK-capable
-project number, sampling quota, and written confirmation for isolated-container
-use and open-source adapter publication without redistributing the SDK wheel.
-The platform displayed `Submitted successfully`; no ticket identifier was
-provided. Retain the response received through the account-bound channel as a
-private review input. Do not copy account identifiers or SDK authorization
-codes into the repository while recording that response.
+On the same date, the authenticated platform feedback form was submitted
+without exposing or using the SDK credential pair. The exact request asks for
+a minimal SPQC-1000 sampling allocation (or an equivalent test resource),
+written confirmation that Kaiwu 1.3.1 SDK, remote-submission, and result use are
+permitted for FlagQuantum open-source integration and testing, and the
+applicable project number, allocation process, and technical contact. It states
+that only a minimal probe is planned and that no production task will be
+submitted. The dialog closed after submission, but the platform exposed neither
+a durable ticket identifier nor a readable message history. Treat delivery as
+unverified until an account-bound response is retained as a private review
+input. The request did not cover the CPython 3.10 Linux distribution digest or
+an explicit isolated-container/SDK-redistribution decision; obtain those
+separately before approving the frozen environment. Do not copy account
+identifiers or SDK authorization codes into the repository while recording a
+response.
 
 The authenticated SDK page currently offers Kaiwu 1.4.1 downloads and retains
 a 1.3.1 release-note entry stating that sample-mode task submission was added.

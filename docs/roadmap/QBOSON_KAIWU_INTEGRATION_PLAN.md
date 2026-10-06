@@ -34,13 +34,21 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   approval to spend any displayed optimization credit, and it does not satisfy
   the required sampling quota or establish an SDK project assignment. No
   provider task was submitted.
-- On 2026-10-06 a credential-free support request was submitted through the
-  authenticated platform. It asks QBoson for the Kaiwu 1.3.1 CPython 3.10 Linux
-  distribution and its digest and terms, an SDK-capable project number,
-  sampling quota, and written decisions covering isolated-container use and
-  open-source adapter publication without SDK-wheel redistribution. Until the
-  account-bound response is retained and reviewed, the SDK approval, project,
-  sampling-quota, and live-provider gates remain closed.
+- On 2026-10-06 the authenticated platform feedback form was submitted without
+  exposing or using the SDK credential pair. The exact request asks for a
+  minimal SPQC-1000 sampling allocation (or an equivalent test resource),
+  written confirmation that Kaiwu 1.3.1 SDK, remote-submission, and result use
+  are permitted for FlagQuantum open-source integration and testing, and the
+  applicable project number, allocation process, and technical contact. It
+  states that only a minimal probe is planned and that no production task will
+  be submitted. The dialog closed after submission, but the platform exposed
+  neither a durable ticket identifier nor a readable message history, so
+  delivery remains unverified until an account-bound response is retained.
+  The form did not request a CPython 3.10 Linux distribution digest or an
+  explicit isolated-container/SDK-redistribution decision; those remain
+  separate review inputs. Until all required decisions are retained and
+  reviewed, the SDK approval, project, sampling-quota, and live-provider gates
+  remain closed.
 - The authenticated SDK page currently offers platform downloads for Kaiwu
   1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
   submission. It also shows that an account-bound SDK authorization code exists,
