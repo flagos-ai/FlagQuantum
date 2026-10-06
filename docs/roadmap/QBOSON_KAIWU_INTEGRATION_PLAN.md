@@ -736,6 +736,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   provenance to that gate, the complete path passed at revision
   `bb4a11bc0d3d71f77ca867993590bf721aea9632` on 2026-10-06 with 477 tests and
   no provider credentials present.
+- The credential-free golden path was rerun at revision
+  `c03aed52dd5896d6494194b451fdcdb6cc7c14ad` after the current producer and
+  evidence-gate hardening. All 672 selected tests passed against Kaiwu
+  Community revision `b648b531c034bd6ae9b7a34fed994c717967cc72` and Kaiwu
+  PyTorch Plugin revision `f047bce7b1077449967bbe9e9fab5741542b48d4`, including
+  the source-conformance tests that the ordinary dependency-free suite skips.
+  The runner cleared all QBoson credential variables and its socket guard kept
+  the process offline. This run used the available local development lane
+  (Python 3.12.14 and Torch 2.14.0), so it updates Phase 1 local conformance
+  only; it does not establish the frozen Python 3.10/Torch 2.7/Kaiwu 1.3.1
+  environment, A800 execution, provider use, or acceptance.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor
