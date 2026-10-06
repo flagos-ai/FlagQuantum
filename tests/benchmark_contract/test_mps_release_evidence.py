@@ -884,6 +884,16 @@ def _summary(rank: int, world: int) -> dict:
         "reverse_peak_memory_bytes": 512,
         "forward_peak_memory_bytes": 512,
         "end_to_end_seconds": 1.0,
+        # The per-rank byte account the executor keeps while it builds the
+        # reverse tape. The frozen workload is left-canonical and asks for no
+        # canonicalization bond, so the sweep term is a measured zero rather than
+        # an omission -- which is the shape the strict audit reads as
+        # ``canonicalization_not_required``.
+        "forward_tensor_bytes": 2048,
+        "adjoint_tensor_bytes": 1024,
+        "boundary_gradient_buffer_bytes": 256,
+        "canonicalization_temporary_bytes": 0,
+        "truncation_temporary_bytes": 0,
     }
     return {
         "executor": "pytorch_native_sharded_mps_training_v1",
@@ -1069,6 +1079,64 @@ def test_the_assembled_speed_summary_states_the_whole_release_contract(
         == 0
     )
     assert json.loads(evidence.read_text(encoding="utf-8")) == measurements
+
+    # The distribution audit is a required release-tier command, so a payload the
+    # release gate accepts while the audit refuses it is not releasable. The strict
+    # audit reads the backward memory and backward communication plans through its
+    # own predicates, and it reads the optimizer step through the ownership
+    # semantics rather than through the ownership maps the gate already checks, so
+    # the three of them are checked here through those predicates. A producer
+    # change that stopped stating one of them then fails this test rather than the
+    # promotion it would otherwise have reached.
+    from flagquantum.runtime.audit.mps_readiness import (
+        _mps_communication_plan_reported,
+        _mps_memory_plan_reported,
+    )
+
+    sharded_leg = _speed_leg(world=2, seconds=2.0)
+    world = int(measurements["world_size"])
+    memory_plan = measurements["mps_backward_memory_plan"]
+    communication_plan = measurements["mps_backward_communication_plan"]
+    assert _mps_memory_plan_reported(memory_plan, world_size=world)
+    assert _mps_communication_plan_reported(communication_plan)
+    assert measurements["optimizer_update_semantics"] == "sharded_across_ranks"
+    assert measurements["optimizer_update_ownership_semantics"] == (
+        "sharded_across_ranks"
+    )
+    # Every vector in the plan is the rank's own recorded counter rather than a
+    # number restated from the workload, so the plan is a reading of the run.
+    steps = [
+        record["acceptance_summary"]["step_metrics"][-1]
+        for record in sharded_leg["ranks"]
+    ]
+    assert memory_plan["forward_tensor_bytes_by_rank"] == [
+        metric["forward_tensor_bytes"] for metric in steps
+    ]
+    assert memory_plan["backward_adjoint_bytes_by_rank"] == [
+        metric["adjoint_tensor_bytes"] for metric in steps
+    ]
+    assert memory_plan["per_rank_peak_bytes"] == [
+        metric["reverse_peak_memory_bytes"] for metric in steps
+    ]
+    # The plan states the sweep term it did not need rather than omitting it, and
+    # says so in the two places the audit reads: the plan-level flag and the
+    # per-rank flag.
+    assert memory_plan["canonicalization_required"] is False
+    assert all(
+        item["canonicalization_not_required"] is True
+        for item in memory_plan["rank_memory"]
+    )
+    # Each measured boundary is described by the ranks and bytes it was measured
+    # with, so the audit can place it on a host rather than trusting a label.
+    assert communication_plan["boundary_edge_count"] == len(
+        communication_plan["boundary_edges"]
+    )
+    assert all(
+        edge["communication_bytes"] == edge["payload_bytes"]
+        and edge["right_rank"] == edge["left_rank"] + 1
+        and edge["topology_tier"] in {"intra_node", "inter_node"}
+        for edge in communication_plan["boundary_edges"]
+    )
 
 
 def test_a_speed_summary_refuses_legs_that_are_not_one_comparison(

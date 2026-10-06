@@ -466,6 +466,15 @@ class ReverseTapeBuilder:
         self.layer_halo_intra_node_bytes: int = 0
         self.layer_halo_inter_node_bytes: int = 0
         self.layer_halo_wait_seconds: float = 0.0
+        # Byte quantities this rank's own tape entries allocated, accumulated as
+        # the tape is built. They describe the construction the rank ran rather
+        # than a model of it, and they stay at zero on a rank that allocated
+        # none of them, which is what makes an unmeasured rank distinguishable
+        # from a measured zero.
+        self.forward_tensor_bytes: int = 0
+        self.boundary_gradient_buffer_bytes: int = 0
+        self.canonicalization_temporary_bytes: int = 0
+        self.truncation_temporary_bytes: int = 0
 
     def record(self, instruction_index: int, instruction: Instruction) -> None:
         """Replay one instruction forward and append the entry it needs."""
@@ -599,6 +608,7 @@ class ReverseTapeBuilder:
             )
             if instruction_index not in self.reserved_ry:
                 self.checkpoint_budget.reserve(prospective)
+            self.forward_tensor_bytes += prospective
             if self.rank == owner:
                 if instruction_index in self.precomputed_ry:
                     before, after = self.precomputed_ry.pop(instruction_index)
@@ -696,6 +706,11 @@ class ReverseTapeBuilder:
                 and self.checkpoint_budget.reserve_factorization(optional)
             ):
                 self.selected_factorizations.add(instruction_index)
+        self.forward_tensor_bytes += prospective
+        # A boundary split is computed on its left owner, so that rank is the one
+        # that retains the two operands to rebuild the boundary adjoint later.
+        if left_owner != right_owner:
+            self.boundary_gradient_buffer_bytes += prospective
         if self.rank == left_owner:
             saved_factorization = self.precomputed_factorizations.pop(
                 instruction_index, None
@@ -822,6 +837,20 @@ class ReverseTapeBuilder:
         self.dirty_bonds.discard(left_qubit)
         if left_qubit + 1 < self.ir.n_wires - 1:
             self.dirty_bonds.add(left_qubit + 1)
+        # A truncating split holds the singular vectors it discards while it
+        # truncates, and their size follows from the input shapes and the two
+        # ranks the record already carries. An exact split keeps every
+        # direction, so its discarded set is empty and the counter stays at
+        # zero instead of carrying a modelled reserve.
+        kept_rank = int(split.get("rank", full_rank))
+        if self.rank == left_owner and kept_rank < full_rank:
+            left_shape, right_shape = metadata["input_shapes"]
+            rows = int(left_shape[1]) * int(left_shape[2])
+            columns = int(right_shape[2]) * int(right_shape[3])
+            element_bytes = self.state.local_tensors[left_qubit].element_size()
+            self.truncation_temporary_bytes += int(left_shape[0]) * (
+                (rows + columns + 1) * (full_rank - kept_rank) * element_bytes
+            )
         self.records.append(
             build_mps_reverse_tape_record(
                 index=len(self.records),
@@ -866,6 +895,9 @@ class ReverseTapeBuilder:
                 self.state.local_tensors[left_qubit]
             ) + tensor_nbytes(halo)
         self.checkpoint_budget.reserve(prospective)
+        # The QR sweep on a boundary bond is computed on its left owner and both
+        # operands live only for the duration of the sweep.
+        self.canonicalization_temporary_bytes += prospective
         if self.rank == left_owner:
             before_left = self.state.local_tensors[left_qubit].detach().clone()
             before_right = halo.detach().clone()

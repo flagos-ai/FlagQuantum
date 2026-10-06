@@ -1063,6 +1063,13 @@ def train_distributed_mps(
                 optimizer_collective_count=optimizer_collective_count,
                 optimizer_collective_bytes=optimizer_collective_bytes,
                 lbfgs_history_length=len(lbfgs_history),
+                adjoint_tensor_bytes=reverse.adjoint_tensor_bytes,
+                forward_tensor_bytes=reverse.forward_tensor_bytes,
+                boundary_gradient_buffer_bytes=(reverse.boundary_gradient_buffer_bytes),
+                canonicalization_temporary_bytes=(
+                    reverse.canonicalization_temporary_bytes
+                ),
+                truncation_temporary_bytes=reverse.truncation_temporary_bytes,
             )
         )
         if root is not None and (step + 1) % checkpoint_interval == 0:

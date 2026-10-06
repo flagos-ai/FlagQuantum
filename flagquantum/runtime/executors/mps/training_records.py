@@ -161,6 +161,11 @@ class MPSStepMetrics:
     optimizer_collective_count: int = 0
     optimizer_collective_bytes: int = 0
     lbfgs_history_length: int = 0
+    adjoint_tensor_bytes: int = 0
+    forward_tensor_bytes: int = 0
+    boundary_gradient_buffer_bytes: int = 0
+    canonicalization_temporary_bytes: int = 0
+    truncation_temporary_bytes: int = 0
 
 
 @dataclass(frozen=True)
