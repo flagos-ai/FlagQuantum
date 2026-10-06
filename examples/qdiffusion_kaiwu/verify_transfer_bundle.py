@@ -12,8 +12,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
-from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+if __package__:
+    from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
+    from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
+else:  # Direct execution through a sibling file entry point.
+    from private_io import write_private_json_exclusive
+    from strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_a800_transfer_bundle"
 CLASSIFICATION = "local_preparation_only_not_execution_evidence"

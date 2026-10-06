@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
+Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 
 - API Change Proposal 068 documents the provider-specific Ising, remote-task,
   sampler, dependency, evidence, and maturity boundaries. Its status is draft;
@@ -208,6 +208,22 @@ Status as of 2026-10-05 on branch `feat/qboson-kaiwu-integration`:
   objective, backward, optimizer update, and one-step guided generation path.
   Its transport remains an explicit in-memory fake and its schema hard-codes
   `system_acceptance=false`; this is a rehearsal for, not evidence of, Phase 4.
+- That development rehearsal has now passed independently on `jp-a800-171` and
+  `jp-a800-172` at source revision
+  `8514722643cbf8aef9eb1f0334674ec239a608a1` and plugin revision
+  `f047bce7b1077449967bbe9e9fab5741542b48d4`. Each run observed
+  `NVIDIA A800-SXM4-80GB` on `cuda:0`, completed ten bounded fake-transport
+  sampler calls, produced a finite objective and nonzero gradient and parameter
+  update, passed token constraints, and declared no fallback. The reviewed
+  archives were streamed into an auto-removed, network-disabled, read-only
+  container whose input, workspace, and evidence existed only in tmpfs; no
+  source or evidence was written to either host filesystem. The runs used the
+  pre-existing Python 3.12.3/Torch 2.13.0+cu129 validation images, contacted no
+  QBoson service, consumed no provider quota, and produced
+  `development_fake_transport` records with `qboson_hardware_used=false`,
+  `real_provider_evidence=false`, and `system_acceptance=false`. They therefore
+  establish only the two-host A800 development path, not the pinned-runtime,
+  real-provider, system, portability, or protein acceptance gates.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat
