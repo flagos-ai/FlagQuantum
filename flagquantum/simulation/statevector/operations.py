@@ -41,6 +41,7 @@ from .diagonal_cpu import (
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
 )
+from .diagonal_matrix_dispatch import _try_apply_cataloged_diagonal_matrix
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
     fuse_native_parameterized_one_qubit_layers,
@@ -819,6 +820,15 @@ def _apply_diagonal_matrix(
     wires = tuple(wires)
     bsz = state.shape[0]
     dim = 2 ** len(wires)
+    if (
+        dispatched := _try_apply_cataloged_diagonal_matrix(
+            state,
+            matrix,
+            qubits=wires,
+            n_qubits=n_wires,
+        )
+    ) is not None:
+        return dispatched
     if state.device.type == "cpu" and state.is_contiguous():
         matrix = matrix.to(device=state.device, dtype=state.dtype)
         diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
