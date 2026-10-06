@@ -137,6 +137,19 @@ STAGING_EXCLUDES = (
 DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
 UNITLESS_FORMAT = "--format=csv,noheader,nounits"
 
+# The variable each rank is given to pin the devices it may use. It is the only
+# device-selection mechanism the CUDA runtime reads, and it is per-process, so
+# it has to be written into the command rather than inferred from the host: two
+# ranks on two nodes share one host-level environment only by convention, and
+# ssh forwards none of it.
+DEVICE_ENVIRONMENT_VARIABLE = "CUDA_VISIBLE_DEVICES"
+
+# `nvidia-smi -i` addresses physical devices by index and ignores the masking
+# variable, which is what makes it usable as a witness for what a consumer of
+# that index will really get. An index the host does not have answers with a
+# non-zero exit, so absence and idleness are distinguishable answers.
+DEVICE_APPLICATION_QUERY = "--query-compute-apps=pid"
+
 
 # `ssh host a b c` is joined into one string and re-split by the peer's login
 # shell, so a token carrying whitespace would arrive as several arguments and a
@@ -261,6 +274,7 @@ def shared_environment(
     interface: str,
     transport: str = DEFAULT_TRANSPORT,
     infiniband_hcas: str | None = None,
+    visible_devices: str | None = None,
 ) -> dict[str, str]:
     """The variables both ranks need, and both ranks are given.
 
@@ -292,6 +306,13 @@ def shared_environment(
         # down, and a hard-coded rail list would be a fact about these two hosts
         # written into a tool that runs on others.
         environment["NCCL_IB_HCA"] = infiniband_hcas
+    if visible_devices is not None:
+        # Named rather than left to `local_rank`, which resolves to the host's
+        # index of that number: on a node whose index 0 belongs to something
+        # else, a lane that named nothing would contend for it. Both ranks are
+        # given the same list, so a rank resolves its device by local rank into
+        # a list that is identical on both nodes.
+        environment[DEVICE_ENVIRONMENT_VARIABLE] = visible_devices
     return environment
 
 
@@ -304,6 +325,7 @@ def rank_environment(
     source_revision: str | None = None,
     transport: str = DEFAULT_TRANSPORT,
     infiniband_hcas: str | None = None,
+    visible_devices: str | None = None,
 ) -> dict[str, str]:
     """One node's environment for every rank that node runs.
 
@@ -324,6 +346,7 @@ def rank_environment(
             interface=interface,
             transport=transport,
             infiniband_hcas=infiniband_hcas,
+            visible_devices=visible_devices,
         ),
         "NCCL_DEBUG_FILE": str(Path(output_directory) / f"nccl-node-{node_rank}.log"),
     }
@@ -358,6 +381,7 @@ def rank_command(
     local_world_size: int = LOCAL_WORLD_SIZE,
     transport: str = DEFAULT_TRANSPORT,
     infiniband_hcas: str | None = None,
+    visible_devices: str | None = None,
     measure: bool = False,
 ) -> list[str]:
     return [
@@ -370,6 +394,7 @@ def rank_command(
                 source_revision=source_revision,
                 transport=transport,
                 infiniband_hcas=infiniband_hcas,
+                visible_devices=visible_devices,
             )
         ),
         python,
@@ -452,9 +477,13 @@ def build_plan(
     local_world_size: int = LOCAL_WORLD_SIZE,
     transport: str = DEFAULT_TRANSPORT,
     infiniband_hcas: str | None = None,
+    visible_devices: str | None = None,
     measure: bool = False,
 ) -> dict[str, Any]:
     """Write the watchdog's config: two nodes, `local_world_size` ranks each."""
+    visible_devices = checked_visible_devices(
+        visible_devices, local_world_size=local_world_size
+    )
     ranks = {
         node_rank: rank_command(
             node_rank=node_rank,
@@ -470,6 +499,7 @@ def build_plan(
             local_world_size=local_world_size,
             transport=transport,
             infiniband_hcas=infiniband_hcas,
+            visible_devices=visible_devices,
             measure=measure,
         )
         for node_rank in range(NODE_COUNT)
@@ -488,6 +518,10 @@ def build_plan(
         # route evidence is allowed to say, so a report states it directly.
         "transport": transport,
         "infiniband_hcas": infiniband_hcas,
+        # Recorded because it decides which device each rank's measured memory
+        # and timings belong to, so a report can state it rather than derive it
+        # from a command line that the peer's `env` prefix repeats.
+        "visible_devices": visible_devices,
         "measure": measure,
         "probe": probe,
         "staging_directory": staging,
@@ -597,6 +631,49 @@ def requested_fabric_hcas(value: str | None) -> tuple[str, ...]:
     return names
 
 
+def checked_visible_devices(value: str | None, *, local_world_size: int) -> str | None:
+    """The device index each rank may use, refused unless it is one per rank.
+
+    A rank that is not told which device to use takes device `local_rank`, so on
+    a host whose index 0 belongs to another tenant every lane would contend for
+    a device the lane does not own. This is the value that prevents that, and it
+    is refused unless it names exactly one device per rank: one entry per rank,
+    in local-rank order, is the mapping a rank can resolve without a second
+    rule. A shorter list would leave a rank unmapped and a longer one would
+    imply a selection this tool does not perform.
+
+    Names are checked here because the value reaches both nodes as an
+    `env` assignment and a rank that was handed a non-numeric device would fail
+    after the rendezvous rather than before it.
+    """
+
+    if value is None:
+        return None
+    names = [name.strip() for name in value.split(",")]
+    if any(not name for name in names):
+        raise SystemExit(
+            f"--visible-devices {value!r} is not a comma-separated list of "
+            "device indices"
+        )
+    if len(names) != int(local_world_size):
+        raise SystemExit(
+            f"--visible-devices {value!r} names {len(names)} device(s) for "
+            f"{local_world_size} rank(s) per node; each rank is given one"
+        )
+    if len(set(names)) != len(names):
+        raise SystemExit(
+            f"--visible-devices {value!r} names a device twice; two ranks "
+            "cannot share one"
+        )
+    for name in names:
+        if not name.isdigit():
+            raise SystemExit(
+                f"--visible-devices {value!r} is not a list of numeric device "
+                "indices"
+            )
+    return ",".join(names)
+
+
 def _fabric_checks(
     *,
     peer_host: str,
@@ -673,6 +750,89 @@ def _fabric_devices(root: Path = INFINIBAND_DEVICES) -> list[str]:
     return sorted(entry.name for entry in root.iterdir())
 
 
+def _pinned_device_answer(
+    visible_devices: Sequence[str],
+    timeout: float,
+    run: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]],
+) -> tuple[bool, str]:
+    """Whether every pinned device exists and is idle, with the reading either way.
+
+    Both halves matter. A device this lane pinned and another process is using
+    is not a launch failure: it is a contaminated measurement, because the probe
+    reports peak memory and a neighbour inside that memory turns the number into
+    the sum of two workloads. A device that is absent fails at device
+    resolution, which is the one case that reads as a hardware fault rather than
+    as contention. The answer is reported per device so the finding names the
+    index rather than the host.
+    """
+
+    findings: list[str] = []
+    ok = True
+    for index in visible_devices:
+        try:
+            completed = run(
+                [
+                    "nvidia-smi",
+                    "-i",
+                    str(index),
+                    DEVICE_APPLICATION_QUERY,
+                    UNITLESS_FORMAT,
+                ],
+                timeout,
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            ok = False
+            findings.append(f"{index}: {type(error).__name__}: {error}")
+            continue
+        if completed.returncode != 0:
+            ok = False
+            findings.append(
+                f"{index}: absent ({_first_line(completed.stderr) or completed.returncode})"
+            )
+            continue
+        users = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+        if users:
+            ok = False
+            findings.append(f"{index}: {len(users)} process(es) {', '.join(users)}")
+        else:
+            findings.append(f"{index}: idle")
+    return ok, "; ".join(findings)
+
+
+def _device_pinning_checks(
+    *,
+    peer_host: str,
+    visible_devices: str | None,
+    timeout: float,
+    local: Callable[[Sequence[str], float], subprocess.CompletedProcess[str]] = _run,
+    remote: Callable[[Sequence[str]], subprocess.CompletedProcess[str]],
+) -> list[Check]:
+    """The devices a lane pinned are the ones it gets, and nothing else is on them.
+
+    Only asked when a lane pinned devices: a lane that named none takes
+    `local_rank`, which is the host's own business, and inventing a check for a
+    decision this tool did not make would report a verdict about something else.
+    """
+
+    if visible_devices is None:
+        return []
+    indices = tuple(visible_devices.split(","))
+
+    def on_peer(argv: Sequence[str], _timeout: float):
+        return remote(argv)
+
+    local_ok, local_detail = _pinned_device_answer(indices, timeout, local)
+    peer_ok, peer_detail = _pinned_device_answer(indices, timeout, on_peer)
+    return [
+        Check("launch_host_has_every_pinned_device", local_ok, local_detail),
+        Check(
+            "peer_has_every_pinned_device",
+            peer_ok,
+            f"on {peer_host}: {peer_detail}",
+        ),
+    ]
+
+
 def preflight(
     *,
     peer_host: str,
@@ -683,6 +843,7 @@ def preflight(
     launch_address: str | None = None,
     transport: str = DEFAULT_TRANSPORT,
     infiniband_hcas: str | None = None,
+    visible_devices: str | None = None,
     timeout: float = 30.0,
     interface_root: Path = Path("/sys/class/net"),
     fabric_root: Path = INFINIBAND_DEVICES,
@@ -761,6 +922,19 @@ def preflight(
 
     ok, detail = _device_answer(ssh_argv(peer_host, device_query), timeout, run)
     checks.append(Check("peer_has_a_device", ok, detail))
+
+    # A lane that pinned devices is checked against the devices it pinned, not
+    # against the host's device count: the two are the same question only when
+    # index 0 is free, which is exactly the assumption a shared host breaks.
+    checks.extend(
+        _device_pinning_checks(
+            peer_host=peer_host,
+            visible_devices=visible_devices,
+            timeout=timeout,
+            local=run,
+            remote=remote,
+        )
+    )
 
     # An interface name that exists on one node only is not an error at launch
     # time: NCCL falls back, and the debug log then disagrees with the network
@@ -1073,6 +1247,20 @@ def _parser() -> argparse.ArgumentParser:
             "checked on both nodes before anything is launched"
         ),
     )
+    parser.add_argument(
+        "--visible-devices",
+        default=None,
+        help=(
+            "comma-separated physical device indices to pin, one per rank per "
+            "node, for example 1 or 1,2,3,4. Both nodes are given the same "
+            "list and each rank takes the entry for its local rank. Left "
+            "unset, a rank takes device local_rank, which is the host's index "
+            "of that number. The pins are checked on both nodes before "
+            "anything is launched: a named device that is absent fails, and "
+            "one another process is using fails as a contaminated measurement "
+            "rather than as a launch failure"
+        ),
+    )
     parser.add_argument("--source-revision", default=None)
     parser.add_argument(
         "--local-world-size",
@@ -1211,6 +1399,14 @@ def _governed_run(args: argparse.Namespace) -> int:
     launch_address = args.launch_address or local_address_towards(peer_address)
     master_port = resolve_master_port(launch_address, args.master_port)
     print(f"rendezvous: {launch_address}:{master_port}")
+    # Resolved before the checks rather than after them: a device list this tool
+    # cannot honor is not a finding to report, it is a plan it must not build.
+    visible_devices = checked_visible_devices(
+        args.visible_devices,
+        local_world_size=checked_local_world_size(
+            args.local_world_size, probe=args.probe
+        ),
+    )
 
     checks = preflight(
         peer_host=args.peer_host,
@@ -1218,6 +1414,7 @@ def _governed_run(args: argparse.Namespace) -> int:
         interface=args.interface,
         transport=args.transport,
         infiniband_hcas=args.infiniband_hcas,
+        visible_devices=visible_devices,
         master_port=master_port,
         python=args.python,
         launch_address=launch_address,
@@ -1262,6 +1459,7 @@ def _governed_run(args: argparse.Namespace) -> int:
         interface=args.interface,
         transport=args.transport,
         infiniband_hcas=args.infiniband_hcas,
+        visible_devices=visible_devices,
         measure=args.measure,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,
@@ -1331,6 +1529,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             interface=args.interface,
             transport=args.transport,
             infiniband_hcas=args.infiniband_hcas,
+            visible_devices=checked_visible_devices(
+                args.visible_devices,
+                local_world_size=checked_local_world_size(
+                    args.local_world_size, probe=args.probe
+                ),
+            ),
             master_port=master_port,
             python=args.python,
             launch_address=launch_address,
@@ -1365,6 +1569,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         interface=args.interface,
         transport=args.transport,
         infiniband_hcas=args.infiniband_hcas,
+        visible_devices=args.visible_devices,
         measure=args.measure,
         probe=PROBES[args.probe],
         source_revision=args.source_revision,

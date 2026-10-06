@@ -62,27 +62,39 @@ class DirectedCouplingMap:
         return self.has_edge(left, right) or self.has_edge(right, left)
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
+        """Return the canonical weak-connectivity path between two physical qubits.
+
+        SWAP placement travels the undirected device, so this expands from the
+        lower-indexed endpoint for the same reason
+        :meth:`flagquantum.compiler.routing.CouplingMap.shortest_path` does: a pair
+        joined by two routes of equal length has no shortest route until one is
+        chosen, and choosing by the direction the caller asked in would make the
+        route a property of the call rather than of the pair.
+        """
+
         self._validate_qubit(start)
         self._validate_qubit(goal)
         if start == goal:
             return (start,)
+        first, second = (start, goal) if start < goal else (goal, start)
         adjacency: list[set[int]] = [set() for _ in range(self.n_qubits)]
         for left, right in self.edges:
             adjacency[left].add(right)
             adjacency[right].add(left)
-        parents = {start: -1}
-        queue: deque[int] = deque((start,))
+        parents = {first: -1}
+        queue: deque[int] = deque((first,))
         while queue:
             qubit = queue.popleft()
             for neighbor in sorted(adjacency[qubit]):
                 if neighbor in parents:
                     continue
                 parents[neighbor] = qubit
-                if neighbor == goal:
-                    path = [goal]
-                    while path[-1] != start:
+                if neighbor == second:
+                    path = [second]
+                    while path[-1] != first:
                         path.append(parents[path[-1]])
-                    return tuple(reversed(path))
+                    resolved = tuple(reversed(path))
+                    return resolved if start < goal else tuple(reversed(resolved))
                 queue.append(neighbor)
         raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 

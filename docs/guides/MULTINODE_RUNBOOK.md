@@ -482,20 +482,41 @@ the amplitude-sharded statevector workload:
 - an owner-sharded optimizer step;
 - a checkpoint written by one run and resumed by a restarted one, with the
   resumed leg reproducing exactly the steps the uninterrupted run computed
-  after the checkpoint.
+  after the checkpoint;
+- a full-state export, which reassembles the amplitude shards through the
+  runtime's own `gather_distributed_statevector` and times that gather. The
+  exported state is the product, the gather is what produces it, and the leg
+  records the canonical logical basis order plus a per-iteration comparison
+  against the single-device reference, so the vector and its duration cannot come
+  from different calls. Its durations are never read as a speedup; an all-gather
+  has none to report.
 
 Every numerical metric in it is at round-off, both ranks own half the
 amplitudes, and the communication it reports is inter-node with none
 intra-node. Its route was read from the NCCL debug log as RoCE rather than the
 socket fallback, on the interface the plan was given, and it carries five
-synchronized forward samples taken after two warmups. It carries four blockers
--- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_state_gather` and
-`host_staging_in_measured_region` -- and reports `scalability_claim_allowed`
-and `release_gate_allowed` false. The last of those four is a finding rather
-than a gap: the staging audit ran and found host transfers inside the region it
-profiled, so part of each measured sample is host staging rather than device
-work.
+synchronized forward samples taken after two warmups. It carries one blocker --
+`two_node_pair_only_no_wider_topology` -- and reports
+`scalability_claim_allowed` and `release_gate_allowed` false. The
+toy-circuit blocker it used to carry is gone, and it went the way the
+others did: the probe's forward circuit is now the narrowest rung of the
+workload manifest it names -- twenty-two wires over eight layers, one
+hundred and seventy-six bound leaves -- and the artifact records that
+count against the count the manifold declares, so the blocker's own
+premise no longer holds rather than being dropped from the list.
+
+Two blockers were retired by observation rather than by declaration. The staging
+audit now profiles the measured region and finds no explicit host transfer in
+it, so each sample is device work end to end. And the probe exports the whole
+amplitude vector as the product of a leg of its own: the amplitude shards are
+reassembled by the runtime's own gather, the leg records the canonical logical
+basis order and compares the assembled vector against the single-device
+reference as it is taken, and it times the gather so the vector and its duration
+cannot come from different calls. That is a materialization the workload needs,
+not a full-object gather taken to check an answer, so
+`validation_only_tiny_full_state_gather` is gone. The two blockers that remain
+are the pair's own scope and the circuit's own size; no measurement on this
+hardware can retract either.
 
 `artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json` covers the
 site-sharded MPS workload. Six qubits at two ranks gives three owned sites per
@@ -511,7 +532,14 @@ ordinary gate exercises the exchange:
   an uninterrupted run of the same length;
 - the optimizer's initial loss checked against the reference expectation, so
   the training objective is tied to the exact statevector rather than to
-  itself.
+  itself;
+- a full-state export, which rebuilds the whole MPS through the runtime's own
+  `gather_distributed_mps` and times that gather. It is a leg rather than a
+  check: the exported state is the product, the runtime gather is what produces
+  it, and the leg records the canonical site order and a per-iteration
+  comparison against the single-device reference so the vector and its duration
+  cannot come from different calls. Its durations are never read as a speedup;
+  an all-gather has none to report.
 
 Its numerical metrics are at round-off, the two ranks report distinct host and
 device identities, and the reverse attributes 32 bytes of layer halo to the
@@ -522,14 +550,88 @@ are separate fields because ownership is rebalanced as the circuit runs, so a
 rank can observe a boundary gate spanning two other ranks' sites without
 exchanging anything for it. The artifact is checked against that arithmetic. Its
 route was read from the NCCL debug log as RoCE, and it carries five
-synchronized forward samples taken after two warmups. It carries four blockers
--- `toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_mps_gather` and
-`host_staging_in_measured_region` -- and reports both claim flags false. The
+synchronized forward samples taken after two warmups. It carries two blockers --
+`two_node_pair_only_no_wider_topology` and `host_staging_in_measured_region`
+-- and reports both claim flags false. The toy-circuit blocker is gone: the
+measured circuit is now the contract's own accepted rung, eight thousand one
+hundred and ninety-two sites at bond sixty-four, read from the ladder file
+the manifest names, and the artifact records the thirty-one leaves it bound
+against the thirty-one that rung declares. The
 staging blocker is the audit's finding that host transfers sit inside the
-measured region. Unlike the statevector artifact it belongs to a capability
-that also claims single-host and multi-GPU support, so it is the multi-node leg
-of a broader entry rather than an entry of its own.
+measured region. The full-state gather blocker is gone, because the probe now
+exports the whole MPS as the product of a leg of its own rather than gathering
+it to check an answer. Unlike the statevector artifact it belongs to a
+capability that also claims single-host and multi-GPU support, so it is the
+multi-node leg of a broader entry rather than an entry of its own.
+
+That finding was then taken apart rather than left as a label. Most of the
+transfers were the distributed accounting: the per-rank site footprint, the
+bond dimensions and the canonicalization counters are host-known integers, and
+each was written into a device vector one element at a time, which lifts a
+fresh device scalar per element inside whatever region is being timed.
+Assembling those vectors from device scalars instead, reading each gathered
+table back once rather than once per field per rank, and initialising the
+rank-owned `|0>` from an `arange` rather than from the host integer one, takes
+the same forward workload at one rank from 57 explicit transfers to 13 -- 43
+host-to-device copies down to six. Binding the circuit's angles to the device,
+as the statevector probe already does, takes it to nine.
+`classify_explicit_host_transfer` is the classifier both audits use, so the
+rule is a measured one: a device scalar times a Python int, and a stack of
+such products, stage nothing.
+
+Nine is a floor for one configuration, and that configuration is not the one
+this lane profiles. The profiled leg is
+
+```python
+execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
+```
+
+with no `rebalance_threshold`, so it runs at the default `1.5`. Every two-site
+gate then calls `rebalance_mps_if_needed`, which calls
+`global_mps_tensor_bytes`, which ends in `sizes.tolist()` -- one device-to-host
+read per two-site gate, on top of the seven reads that remain in any
+configuration. The floor of nine is the floor of the *compiled* path, where
+`rebalance_threshold=inf` short-circuits that collective because a compiled
+run's buckets must not move between ranks mid-layer. The reverse leg of this
+same lane uses exactly that configuration, which is why the number and the
+compiled path were easy to conflate. The forward leg does not.
+
+That census was a reading of the code, and it was superseded by a measurement of
+the running region. Wrapping the host-read paths of `torch.Tensor` so that each
+one records its caller attributes every explicit transfer in the profiled
+region to the call site that issued it, and the region carries thirty-six of
+them: twenty-eight device-to-host and eight host-to-device. The reads are
+
+| Count | Call site | What it reads |
+| --- | --- | --- |
+| 14 | `distribution.global_mps_tensor_bytes` | the load-balancing cost vector, once per two-site gate |
+| 5 | `transport._recv_tensor_p2p` | the point-to-point control descriptor that sizes a receive buffer |
+| 4 | `metadata_transport.all_gather_json` | the truncation records the global error budget policy reads |
+| 3 | `canonicalization.canonicalize_rank_owned_mps` | the metric table, the centre norms, and the residual |
+| 1 | `distribution.global_mps_bond_dimensions` | the global bond dimensions |
+| 1 | `forward.execute_torch_distributed_mps_forward` | the per-rank tensor byte vector |
+
+The host-to-device copies are the receive buffers those descriptors size, the
+device scalars the counters are scaled onto, and the metadata the collective
+encodes. None of the thirty-six stages a rank payload. The one site that did --
+the per-site host-to-device lift in `_device_footprint` -- was repaired before
+this measurement was taken, which is why it appears in the table only as the
+fourteen reads of the vector it now assembles on the device.
+
+That makes the blocker narrower than its text, and the blocker text is what was
+corrected rather than the blocker. `classify_explicit_host_transfer` classifies
+by event name and count, so a one-scalar readback is one event exactly as a
+staged tensor is, and no arrangement of a dynamic-ownership forward can bring
+the count to zero. It can be brought to twenty by running with
+`rebalance_threshold=inf`, which removes all fourteen of the load-balancing
+reads and one host-to-device copy -- and that measurement is the reason not to:
+the frozen run issues four boundary gates and eight boundary messages where the
+dynamic run issues three and six, so the cost probe pays for itself in
+inter-node traffic and trading it away would report a cleaner profile while
+moving more bytes over the fabric. `host_staging_in_measured_region` therefore
+stands for MPS, and it stands for a control-plane readback profile rather than
+for staging. The claim remains a latency claim over a workload whose measured
+region contains bounded, disclosed host accounting.
 
 The cut width was swept rather than declared, and the sweep is a leg of its own
 rather than part of the declared workload. The declared circuit could not carry
@@ -583,10 +685,25 @@ evidence rather than a CPU collective. Its route was read from the NCCL debug
 log as RoCE, and it carries five synchronized amplitude samples taken after two
 warmups. The cut width was swept across both labels of the declared cut, which
 retired `inter_node_cut_width_not_swept` and
-`slice_count_fixed_at_world_size`. It carries four blockers --
-`toy_circuit_parameters_only`, `two_node_pair_only_no_wider_topology`,
-`validation_only_tiny_full_state_gather` and
-`host_staging_in_measured_region` -- and reports both claim flags false.
+`slice_count_fixed_at_world_size`. It carries one blocker --
+`two_node_pair_only_no_wider_topology` -- and reports both claim flags false.
+The toy-circuit blocker is gone: the probe's circuit is now this contract's
+own narrowest matched-speed rung, fourteen wires over six layers and
+eighty-four bound leaves, and the artifact records those counts against the
+rung it names. Two further blockers were retired by observation
+rather than by declaration. The staging audit now profiles the measured region
+and finds no explicit host transfer in it, so each sample is device work end to
+end. And the probe exports the whole distributed state as the product of a leg
+of its own: the leg runs `run_distributed_tensor_network`, which all-reduces the
+rank partials and reshapes them into the full state, and it asserts the
+placement that leg ran under -- two nodes, accelerator evidence, replicated
+after the all-reduce -- before it reports anything. It refuses a state it did
+not materialize, so the export cannot be satisfied by a summary that merely
+claims one, and it re-asserts that no scalability claim was made. That is a
+materialization the workload needs, not a full-object gather taken to check an
+answer, so `validation_only_tiny_full_state_gather` is gone. The two blockers
+that remain are the pair's own scope and the circuit's own size; no measurement
+on this hardware can retract either.
 
 The cut is declared because the automatic slicer selects by peak memory, and on
 this circuit the cheapest cut is a label carried only by state-copy nodes: a
@@ -595,6 +712,266 @@ carries a zero on such a label, so slicing it yields ranks whose partial is
 exactly zero and lets a run report sharded execution while one rank does the
 arithmetic. The slicer now excludes those labels and this workload passes its
 cut explicitly.
+
+#### Why this workload cannot reach `release_certified`
+
+The tensor-network slice contract is different from the statevector one, and the
+difference is worth stating before anyone tries to close the gap with another
+run. Its release manifest freezes a *matched-speed* protocol at six
+configurations, whose acceptance configuration is `matched_speed_18q_l10_s6` --
+180 trainable angles over eighteen wires and ten layers at six sliced labels.
+That configuration was measured on one A800 before any payload was sealed, and
+it exhausts the device. The two narrower rungs of the same frozen ladder
+complete: `matched_speed_14q_l6_s4` at 0.79 GiB peak in 15.0 s and
+`matched_speed_16q_l8_s4` at 8.53 GiB in 30.4 s. The acceptance configuration
+peaks at 66.9 GiB and then asks for a further 16 GiB, which an 80 GiB device
+does not have, and it fails in 50.7 s.
+
+Adding the second host does not change that. The pair fails the rung with the
+same 58.9 GiB resident and the same 16 GiB refused, because the reverse-mode peak
+is not slice-owned -- the same finding the capacity ladder records, where the
+per-rank peak is identical at world size 1 and world size 2 to within a few
+megabytes. So `missing_statistically_significant_speedup_artifact` cannot be
+cleared by running the frozen protocol on this pair: there is no configuration in
+the freeze that both ranks can complete, and the only way to produce one would be
+to re-freeze the ladder *after* measuring it, which is precisely what a
+`frozen_before_release_run` manifest exists to prevent. The measurement is
+therefore recorded in the manifest's own `measured_single_device_floor` rather
+than quietly corrected, in the same spirit as the capacity ladder's twelve
+recorded rungs.
+
+The same structural reason blocks the capacity route.
+`capacity_premise_not_established` requires one measured shape that exhausts a
+single device *and* that a sharded run completes at the same frozen slicing. The
+ladder shows no such shape: the rung that exhausts one device, two sliced labels
+at 80930380288 bytes, fails on the pair at the same number, and the rung that
+completes on one device at four sliced labels completes on the pair too. Slicing
+reduces the forward peak and not the reverse one, so a pair cannot train a
+tensor-network workload that one device cannot.
+
+One further blocker is also not closable by a run:
+`two_node_pair_only_no_wider_topology` is permanent because this cluster has
+two hosts. `toy_circuit_parameters_only` no longer attaches to this artifact,
+and it was retired by measurement rather than by argument: the circuit the
+probe contracts is the contract's own narrowest released rung, and the
+observation that binds it reports both the count the rung declares and the
+count the built circuit bound, which is the check whose absence produced the
+blocker. The host-staging blocker the statevector lane closed was
+never attached to this artifact, and the validation-only-gather blocker is now
+closed the same way the statevector lane closed its own: by measuring a
+production full-state readout leg. Both closures are recorded above as
+observations, not as declarations.
+
+The lane therefore holds at `production_supported` with one blocker and both
+claim flags false. That is the honest ceiling for this capability on this pair,
+and it is a measured one.
+
+#### The frozen capacity workload does not contract at its own slicing
+
+The paragraph above records the capacity route as blocked by the pair. That is
+true, and it is not the whole reason. Re-measuring the frozen grid at the
+current revision through the producer's own `capacity-failure` role shows the
+rung does not reach a memory measurement at all:
+
+```bash
+python -m benchmarks.tensor_network_release_evidence \
+  --role capacity-failure --node-count 1 --local-world-size 1 \
+  --slice-count 4 --checkpoint-budget-bytes 4294967296
+```
+
+On one A800 this raises `RuntimeError: tensor has too many (>25) dims` from
+`_canonical_layout_pair`, reached along `checkpointing.py` -> `stages.py` ->
+`complex_einsum_pair` -> `_fused_layout_bmm`. The cause is the default
+slice-label selection, not the device:
+`flagquantum/runtime/executors/tensor_network/training.py` chooses the
+*lowest-numbered* contracted internal labels, and for the frozen `[4, 6, 2]`
+grid those are the deepest labels in the network. Slicing them leaves both
+operands above the twenty-five-dimension ceiling that `torch.einsum` and
+PyTorch's copy machinery share, and because the operands must be transposed
+before they can be grouped, the copy is not available as a fallback either.
+
+The labels are the whole difference. Holding the circuit, the parameters, the
+step count, the optimizer and the tape budget fixed and varying only the
+`sliced_labels` argument, the same rung gives:
+
+| Label choice | Labels | Peak | Rematerialized |
+| --- | --- | --- | --- |
+| default (lowest) | 25, 26, 27, 28 | `RuntimeError` | -- |
+| highest | 446, 447, 448, 449 | 55820657664 B | 2512 |
+| middle | 223, 224, 250, 251 | 4433595904 B | 0 |
+| stride | 25, 125, 250, 350 | 4099927552 B | 0 |
+
+A spread choice therefore completes in 4.10 GiB where the default cannot start,
+an order of magnitude below the 51.19 GiB completion the frozen ladder records
+for this rung. Two consequences follow, and both matter more than the capacity
+verdict.
+
+First, the frozen `measured_ladder` rungs are not reproducible from the
+revision the manifest declares. The rung above is recorded as `completed` at
+51191433216 bytes, and `_default_sliced_labels` is byte-identical at that
+revision, so the recorded completions must have been measured with an explicit
+label argument that the manifest does not name. A reader cannot re-derive the ladder
+from the freeze, which is a provenance defect in the manifest rather than a
+property of the hardware.
+
+Second, the capacity premise was never a property of the workload. With a
+spread label choice the frozen grid is a small single-device problem; with the
+default choice it is unrunnable on any number of devices. Neither outcome
+describes a workload that needs a second host, so
+`capacity_premise_not_established` is the right verdict and it stays right until
+the frozen workload is replaced with one whose *best-sliced* single-device peak
+exceeds one device.
+
+The fix for the default selection is not a change of order within the candidate
+list. Choosing slice labels by plan is the correct route --
+`TensorNetworkSlicingPlan` exposes `peak_bytes`, so labels can be chosen by the
+criterion the capability actually cares about -- but that is an executor change
+that has to be measured across the workload family before it lands, and it is
+not made here. What is changed here is only the record: the default's behaviour
+is named, its consequence is measured, and the frozen manifest is left alone
+rather than edited after the measurement.
+
+#### The tape budget is a capacity lever and the ladder does not freeze one
+
+Every rung in `measured_ladder` was measured with an unbounded rematerialization
+tape, so the rungs that exhaust a device measure the budget they ran under rather
+than the shape. Bounding the reverse tape at 4 GiB and holding shape, slicing,
+parameters and steps fixed changes the same rungs:
+
+| Shape | Sliced labels | Unbounded | Bounded at 4294967296 B |
+| --- | --- | --- | --- |
+| `[4, 6, 2]` | 2 | 80930380288 B OOM | completed, 17160570368 B |
+| `[4, 6, 2]` | 4 | 51191433216 B | `RuntimeError` (>25 dims) |
+| `[4, 6, 3]` | 4 | 82023653888 B OOM | completed, 30072620032 B |
+| `[4, 6, 3]` | 8 | 82478769152 B OOM | completed, 27926225920 B |
+
+The rung the ladder records as the one shape that exhausts a single device --
+two sliced labels at 80930380288 bytes -- completes in 17.16 GiB once the tape is
+bounded. So the capacity question for this family is what the tape budget is
+before it is what the sharding is, and a capacity premise that freezes a shape
+without freezing a budget has not frozen the thing it is about. This is a sixth
+falsified candidate, recorded in the manifest's `freeze_note` rather than in
+`measured_ladder`, because a frozen ladder is a record of what was run and this
+is a record of what the record omits.
+
+The `[4, 6, 2]` four-label rung appears in both tables and fails differently in
+each: unbounded it completes, bounded it raises. The budget therefore does not
+monotonically help, which is the strongest form of the finding -- neither the
+label choice nor the budget is a knob the manifest can leave implicit and still
+claim to have frozen a capacity premise.
+
+#### Reading the MPS gate's default output
+
+Promoting the five statevector envelopes into `benchmarks/results/scalability`
+changed what the MPS gate prints when it is run with no arguments, because that
+directory is the gate's own `RESULTS` and the gate reads every `*.json` in it.
+The statevector payloads are not MPS evidence, and the MPS gate has an explicit
+check for that, so the default invocation now reports one blocker more than the
+scoped one:
+
+```console
+$ python benchmarks/internal/evidence/mps_release_gate.py
+{"capability": "distributed_matrix_product_state", "artifact_count": 6, ...,
+ "passed": false, "blockers": ["production_artifact_is_not_mps_evidence",
+   "missing_release_world_sizes", "missing_multinode_correctness_artifact",
+   "missing_sharded_training_ownership",
+   "missing_statistically_significant_speedup_artifact",
+   "capacity_premise_not_established",
+   "capacity_premise_evidence_not_verifiable"]}
+```
+
+The refusal is correct -- the envelopes were sealed for another capability --
+but it is a statement about the directory rather than about the MPS lane, and
+the MPS lane's own reading is the scoped one:
+
+```console
+$ python benchmarks/internal/evidence/mps_release_gate.py \
+    --candidate benchmarks/results/smoke/release_candidates/mps_matched_speed_4x2
+{"capability": "distributed_matrix_product_state", "artifact_count": 2, ...,
+ "passed": false, "blockers": ["missing_release_world_sizes",
+   "missing_multinode_correctness_artifact",
+   "missing_sharded_training_ownership",
+   "missing_statistically_significant_speedup_artifact",
+   "capacity_premise_not_established",
+   "capacity_premise_evidence_not_verifiable"]}
+```
+
+Both invocations need `FQ_EVIDENCE_SIGNING_KEY` in the environment; without it
+the gate cannot verify a sealed payload and adds
+`invalid_or_unsigned_production_artifact` to either set. The two invocations
+differ only by `production_artifact_is_not_mps_evidence`, and neither is one
+blocker away from passing: `missing_release_world_sizes` wants a world size of
+sixteen carried by a signed envelope, which this pair cannot produce.
+
+#### Reading the tensor-network gate's default output
+
+`benchmarks/internal/evidence/tensor_network_release_gate.py` takes repeatable
+`--candidate` directories and falls back to `(RESULTS, baseline)` when none is
+given, where `RESULTS` is `benchmarks/results/scalability`. That directory is the
+**statevector** capability's declared `release_artifact` and holds the five
+promoted statevector envelopes. The tensor-network lane has never promoted
+anything: `benchmarks/results/smoke/release_candidates/tensor_network_matched_speed`
+and `.../tensor_network_single_gpu_capacity` both exist and are both empty, and
+the sealed payloads the lane produced live outside the tree.
+
+Running the tensor-network gate with no `--candidate`, therefore, evaluates the
+statevector payloads as tensor-network production evidence and reports:
+
+```console
+$ python benchmarks/internal/evidence/tensor_network_release_gate.py
+{"capability": "distributed_tensor_network", "artifact_count": 5, ...,
+ "passed": false, "blockers": ["capacity_premise_not_established"]}
+```
+
+That output reads as "the tensor-network release is one blocker away". It is not
+tensor-network evidence. The runtime-evidence envelope has no capability field,
+so the gate cannot tell the two apart from the payload alone, and the
+statevector envelopes happen to satisfy every tensor-network check that is not
+capability-specific. The only reason it is one blocker rather than five is that
+a `measured_production_run` is a `measured_production_run` regardless of which
+capability sealed it.
+
+The correct invocation names the candidate set, and then the same gate reports
+what is actually missing:
+
+```console
+$ python benchmarks/internal/evidence/tensor_network_release_gate.py \
+    --candidate benchmarks/results/smoke/release_candidates/tensor_network_matched_speed
+{"capability": "distributed_tensor_network", "artifact_count": 0, ...,
+ "blockers": ["missing_release_world_sizes", "missing_multinode_correctness_artifact",
+              "missing_sharded_training_ownership",
+              "missing_statistically_significant_speedup_artifact",
+              "capacity_premise_not_established"]}
+```
+
+A future tensor-network promotion must therefore also pass
+`--release-directory`, because `benchmarks/results/scalability` belongs to the
+statevector capability and `tools/promote_release_candidates.py` promotes into
+the gate's own `RESULTS` unless told otherwise. Two capabilities do not share a
+release directory.
+
+#### The tensor-network lane has no sealed payload, in this tree or outside it
+
+The candidates the lane runs are sealed outside the checkout, under
+`/nfs/fq-scratch/campaign`, and the directory holds only per-rank measurement
+records rather than the release envelopes a promotion would move. A per-rank
+record's keys are `commit`, `device_name`, `hostname`, `iterations`,
+`local_rank`, `local_world_size`, `measured_peak_memory_bytes`,
+`measured_peak_memory_bytes_by_rank`, `measurements`, `node_count`, `rank`,
+`ranks`, `role`, `schema`, `software`, `timings`, `warmup`, `workload_sha256`,
+and `world_size` -- there is no `artifact_class`, no `integrity`, and no
+`provenance` block, so a file in that directory is a measurement input rather
+than a runtime-evidence envelope. The tensor-network producer's speed role runs
+the frozen ladder and writes those records; the sealing step that would turn them
+into a candidate was never reached, because the ladder's acceptance rung does not
+complete on either configuration.
+
+That is the empirically checkable form of
+`missing_statistically_significant_speedup_artifact`: it is not that the lane
+failed to satisfy the frozen protocol, it is that no run of the frozen protocol
+produced a file the gate could evaluate. `artifact_count` is `0` for that
+candidate directory, and the gate reports five blockers rather than naming a
+rejected payload, which is the right fail-closed reading.
 
 ### Repeatability of the measured leg
 

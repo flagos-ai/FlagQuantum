@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+from tools.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
@@ -16,6 +19,12 @@ _SPEC = importlib.util.spec_from_file_location("cuda_multinode_tn_probe", _SCRIP
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
+
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement check, so a probe constant that drifted from the committed
+#: manifest fails at import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
 
 _A800_ARTIFACT = (
     _ROOT / "artifacts" / "cuda_multinode_tn_a800_jp171_jp172_20260930.json"
@@ -164,7 +173,9 @@ def test_the_checked_bitstrings_are_distinct_and_non_zero() -> None:
     assert len({complex(value) for value in amplitudes}) == len(amplitudes)
 
 
-def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -> None:
+def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent(
+    manifest_digest_at: Callable[[str, str], str],
+) -> None:
     payload = _artifact()
     evidence = payload["evidence"]
     encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
@@ -174,21 +185,31 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert payload["evidence_sha256"] == hashlib.sha256(encoded).hexdigest()
     assert evidence["status"] == "passed"
     assert evidence["scope"] == {
-        "checked_bitstrings": ["00000", "10000", "00001", "10001"],
+        "checked_bitstrings": list(_MODULE.CHECKED_BITSTRINGS),
+        "depth": _MODULE.DEPTH,
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
         "execution": "amplitudes_gradient_optimizer_and_checkpoint_resume",
+        # The product the export leg materializes. It is named in the scope so a
+        # reader can see which object the leg exported rather than having to
+        # infer it from the observation block.
+        "exported_product": "full_tensor_network_state",
         "local_world_size": 1,
-        "n_wires": 5,
+        "n_wires": _MODULE.N_WIRES,
         "node_count": 2,
-        "observable_wires": [0, 4],
+        "observable_wires": list(_MODULE.OBSERVABLE_WIRES),
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         # The cut is declared rather than chosen at run time, because the
         # automatic slicer optimizes peak memory and can pick a label whose
         # partials are zero on one rank -- a partition that reports sharding
         # while one rank does the arithmetic.
-        "slice_count": 4,
-        "sliced_labels": [6, 7],
-        "sliced_label_multiplicities": {"6": 2, "7": 2},
+        "slice_count": _MODULE.EXPECTED_SLICE_COUNT,
+        "sliced_labels": list(_MODULE.SLICED_LABELS),
+        "sliced_label_multiplicities": {
+            str(label): count
+            for label, count in _MODULE._sliced_label_multiplicities().items()
+        },
         "slices_per_rank": 2,
         "world_size": 2,
     }
@@ -196,6 +217,44 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # well as in the blockers.
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The measured workload is the release contract's own narrowest matched-speed
+    # rung rather than a hand-written circuit, and the artifact says so by naming
+    # the frozen file and the digest of the bytes it read. The declared and bound
+    # leaf counts have to agree, because the point of the observation is that the
+    # parameterization is a measured fact rather than a declaration beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert frozen["manifest"] == "benchmarks/manifests/tensor_network_release_v1.json"
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 14
+    assert frozen["depth"] == _MODULE.DEPTH == 6
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 84
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    # Every field but the digest, which is scoped to the revision the probe
+    # ran at and is resolved below, still has to be what the probe observes
+    # from the contract checked out here.
+    assert {
+        key: value for key, value in frozen.items() if key != "manifest_sha256"
+    } == {
+        key: value
+        for key, value in _ARTIFACT_FROZEN_CIRCUIT.items()
+        if key != "manifest_sha256"
+    }
+    # The recorded digest is the contract as of the revision the probe ran at,
+    # which is the file it actually read, rather than whatever happens to be
+    # checked out beside it now. The current contract is checked separately:
+    # loading this module runs the probe's own observation of it, which
+    # cross-checks the frozen ladder against the ladder file it names. Answering
+    # it needs that commit, so a lane whose clone never fetched the revision
+    # skips this one assertion instead of reading the clone as a mismatch; the
+    # full-history quality job is where it reaches a verdict.
+    try:
+        recorded_digest = manifest_digest_at(
+            evidence["environment"]["source_revision"], frozen["manifest"]
+        )
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the recorded contract digest needs full history: {error}")
+    assert frozen["manifest_sha256"] == recorded_digest
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -215,9 +274,16 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # An optimizer that did not move the expectation would make every resume
     # comparison agree for the wrong reason.
     assert abs(metrics["training_loss_decrease"]) > 0
-    # A sliced contraction is not a reconstructed one: the whole point of the
-    # probe is the partition, so the full-state flag has to be false.
-    assert observations["production_full_state_materialization"] is False
+    # A sliced contraction is not a reconstructed one: the amplitude legs and
+    # the single-amplitude projection report their own summaries, and neither
+    # materializes the whole state. The full-state flag is true in this artifact
+    # because the export leg is a separate leg that does, which is exactly the
+    # distinction the gather blocker turns on.
+    for rank_record in observations["rank_records"]:
+        assert rank_record["amplitudes"]["full_state_materialized"] is False
+        assert rank_record["single_amplitude"]["full_state_materialized"] is False
+    assert observations["production_full_state_materialization"] is True
+    assert observations["export"]["product"] == _MODULE.EXPORTED_PRODUCT
     # The returned expectation is all-reduced, while the global gradient is the
     # sum of per-rank partials the probe gathered itself. An artifact that
     # confused the two would be claiming a gradient reduction the runtime did
@@ -270,15 +336,17 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     assert performance["minimum_seconds"] <= performance["median_seconds"]
     assert performance["median_seconds"] <= performance["maximum_seconds"]
 
-    # The staging audit ran, and it found transfers inside the region it
-    # profiled. That is a finding about the workload, so it keeps a blocker --
-    # but not the one that says nobody looked.
+    # The staging audit ran, and it found the profiled region clean. That is a
+    # measurement rather than an absence of measurement: the flag that says
+    # nobody looked and the blocker that says transfers were found are both
+    # keyed off this observation, so a run that stopped profiling would report
+    # the first and a run that regressed would report the second.
     staging = observations["host_staging"]
     assert staging["profiled"] is True
     assert staging["profiled_workload"] == performance["measurement"]
-    assert staging["host_transfer_observed"] is True
-    assert staging["host_transfer_events"]
-    assert all(event["count"] > 0 for event in staging["host_transfer_events"])
+    assert staging["host_transfer_observed"] is False
+    assert staging["host_transfer_events"] == []
+    assert staging["profiler_event_count"] > 0
 
     ranks = observations["rank_records"]
     assert len(ranks) == 2
@@ -310,10 +378,10 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # The partition is the sharding: four slices over the two declared labels,
     # two per rank, and no rank owning the whole contraction.
     for item in ranks:
-        assert item["slice_labels"] == [6, 7]
+        assert item["slice_labels"] == list(_MODULE.SLICED_LABELS)
         assert item["slice_tasks"] == 4
         assert item["tasks_by_rank"] == {"0": 2, "1": 2}
-        assert item["amplitudes"]["slice_labels"] == [6, 7]
+        assert item["amplitudes"]["slice_labels"] == list(_MODULE.SLICED_LABELS)
         assert item["amplitudes"]["tasks_by_rank"] == {"0": 2, "1": 2}
         assert item["single_amplitude"]["slice_tasks"] == 4
         # The single-amplitude leg takes the other output path and must reach
@@ -428,9 +496,14 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
     # step of the run and belonging to the plan the run reported.
     generation = training["checkpoint_generation"]
     assert generation["committed_step"] == 4
+    # The plan identity is a digest of the contraction plan, so it moves with the
+    # circuit: this is the digest of the released rung's plan rather than of the
+    # five-wire circuit the earlier recording carried. It is compared against the
+    # plan the interrupted leg committed, not recomputed here, because recomputing
+    # it would only check this file against itself.
     assert (
         generation["task_plan_identity"]
-        == "b91894bb4b7e4165431f11f55ea9870fe9a296ac7cc693ec838fddda160f2dd7"
+        == "52cd77094c1332f2e9f9df29b129305ca4a72d5c708ac762dc4f9ccac8142d75"
     )
     assert sorted(generation["shards"]) == ["0", "1"]
     assert generation["rank_local_files_hold_replicated_parameters"] is True
@@ -446,14 +519,11 @@ def test_checked_in_a800_multinode_tn_evidence_is_narrow_and_self_consistent() -
         assert shard["node_count"] == 2
 
     # The boundary is exactly these blockers. The fabric, the measured workload,
-    # the audited staging path and the swept cut are each retired by the
-    # observation that justifies them, so a reader cannot find one here and
-    # cannot find one silently missing either.
+    # the audited staging path, the swept cut and the full-state gather are each
+    # retired by the observation that justifies them, so a reader cannot find one
+    # here and cannot find one silently missing either.
     assert sorted(evidence["claim_blockers"]) == [
-        "host_staging_in_measured_region",
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_state_gather",
     ]
     # The blockers this probe exists to remove must be gone: an artifact that
     # still carried them would not support the training claim it makes.
@@ -476,6 +546,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
         "sliced_label_multiplicities": dict.fromkeys(_MODULE.SLICED_LABELS, 2),
         "world_size": 2,
         "local_world_size": 1,
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
         "network": {
             "evidence_level": "observed_debug_log",
             "route": "infiniband",
@@ -511,6 +582,11 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "ranks_by_width": {"1": [0, 1], "2": [0, 1]},
             "unexercised_widths": [],
         },
+        # No export leg by default, so the helper describes a run whose only
+        # whole-state read is the validation comparison and leaves the
+        # full-state-gather blocker standing. A test that wants it retracted
+        # passes an export of its own.
+        "export": None,
     }
     kwargs.update(overrides)
     return kwargs
@@ -525,16 +601,23 @@ def test_the_cut_width_sweep_derives_both_topology_blockers(
     evidence = _MODULE._artifact(**_artifact_kwargs())["evidence"]
     blockers = set(evidence["claim_blockers"])
 
-    # The pair is fixed by the lane and the circuit is a toy one, so neither can
-    # be retracted by anything this run does. They have to stay.
-    assert {"two_node_pair_only_no_wider_topology", "toy_circuit_parameters_only"} <= (
-        blockers
-    )
+    # The pair is fixed by the lane, so it cannot be retracted by anything this
+    # run does and it has to stay. The staging blocker is retracted by the same
+    # default shape, because the profiled region this helper describes is one
+    # that leaked nothing across the host boundary; the full-state-gather blocker
+    # stays because this helper describes a run whose only whole-state read is
+    # the validation comparison. The circuit is not declared: the default shape
+    # runs the release contract's own rung, so that blocker is retracted too.
+    assert sorted(blockers) == [
+        "two_node_pair_only_no_wider_topology",
+        "validation_only_tiny_full_state_gather",
+    ]
     assert "inter_node_cut_width_not_swept" not in blockers
     assert "slice_count_fixed_at_world_size" not in blockers
     assert "rdma_not_tested" not in blockers
     assert "production_performance_not_measured" not in blockers
     assert "hidden_host_staging_not_audited" not in blockers
+    assert "host_staging_in_measured_region" not in blockers
 
     # One width, or a width whose ranks exchanged nothing, is not a sweep: the
     # whole point is that the cut moved and the exchange moved with it.
@@ -596,9 +679,26 @@ def test_the_route_measurement_and_staging_are_each_derived(
     )
     assert "rdma_not_tested" in blockers(network={})
 
-    # An absent measurement is not a measurement of zero, and a measurement is
-    # not a production one: the toy-circuit blocker survives both.
+    # An absent measurement is not a measurement of zero.
     assert "production_performance_not_measured" in blockers(performance=None)
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 83},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 84.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in blockers()
 
     # A profiler that could not run has shown nothing, and a transfer it did see
     # is a finding that keeps the blocker rather than one that hides it.
@@ -623,6 +723,99 @@ def test_the_route_measurement_and_staging_are_each_derived(
     )
     assert "host_staging_in_measured_region" in found
     assert "hidden_host_staging_not_audited" not in found
+
+
+def test_the_export_leg_is_the_only_materialization_that_retracts_the_gather(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A state the workload produces, not a shard moved aside to check an answer."""
+
+    monkeypatch.setattr(_MODULE.torch.cuda.nccl, "version", lambda: (2, 29, 7))
+
+    def blockers(**overrides: object) -> set[str]:
+        return set(
+            _MODULE._artifact(**_artifact_kwargs(**overrides))["evidence"][
+                "claim_blockers"
+            ]
+        )
+
+    # The amplitude legs reduce a handful of projected outputs and never
+    # materialize the state, so a run with no export leg leaves the blocker.
+    assert "validation_only_tiny_full_state_gather" in blockers()
+    assert "validation_only_tiny_full_state_gather" in blockers(export=None)
+
+    # Three separate things have to hold, and each is a real way the leg could
+    # fail to be the product the blocker is about: the state has to have been
+    # materialized, it has to be the tensor-network state rather than another
+    # result shape, and it has to be the leg's product rather than a shard.
+    materialized = {
+        "result": {
+            "full_state_materialized": True,
+            "state_mode": "distributed_tensor_network",
+        }
+    }
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={**materialized, "product": "shard_state"}
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialized": False,
+                "state_mode": "distributed_tensor_network",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_state_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialized": True,
+                "state_mode": "distributed_tensor_network_amplitudes",
+            },
+        }
+    )
+
+    # The complete leg retracts it, and retracts nothing else: the pair is a
+    # declared boundary that no leg of this run can move, while the circuit is
+    # the release contract's own rung and is therefore not a boundary at all.
+    exported = blockers(export={**materialized, "product": _MODULE.EXPORTED_PRODUCT})
+    assert "validation_only_tiny_full_state_gather" not in exported
+    assert exported == {"two_node_pair_only_no_wider_topology"}
+
+
+def test_the_export_leg_refuses_a_state_it_did_not_materialize() -> None:
+    """The guard reads the object's own distribution, not the probe's intent."""
+
+    placed = {
+        "node_count": 2,
+        "world_size": 2,
+        "local_world_size": 1,
+        "claim_evidence_type": "production_runtime",
+        "state_distribution_semantics": _MODULE.EXPORTED_STATE_DISTRIBUTION,
+        "full_state_materialized": True,
+        "scalability_claim_allowed": False,
+    }
+    _MODULE._require_export_placement(placed, expected_world_size=2)
+
+    # Every field the guard reads is a way the leg could have run somewhere or
+    # produced something other than the whole state on the declared pair.
+    for broken in (
+        {**placed, "node_count": 1},
+        {**placed, "world_size": 4},
+        {**placed, "claim_evidence_type": "development_smoke"},
+        {**placed, "state_distribution_semantics": "sharded_across_ranks"},
+        {**placed, "full_state_materialized": False},
+        {**placed, "scalability_claim_allowed": True},
+    ):
+        with pytest.raises(RuntimeError):
+            _MODULE._require_export_placement(broken, expected_world_size=2)
+
+    # And the derivation is read from the recorded result rather than from a
+    # flag beside it, so a leg whose record disagrees with its own summary is
+    # not a materialization.
+    assert _MODULE._materializes_the_full_state(None) is False
+    assert _MODULE._materializes_the_full_state({"product": "shard_state"}) is False
 
 
 def test_the_sweep_widths_are_prefixes_of_the_declared_cut() -> None:
