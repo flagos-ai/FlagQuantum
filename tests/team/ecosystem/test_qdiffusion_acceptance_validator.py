@@ -1743,6 +1743,42 @@ def test_closed_config_fields_match_documented_template() -> None:
         assert set(template[section]) == expected_fields
 
 
+def test_documented_protein_sources_match_review_candidates() -> None:
+    template_path = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "acceptance_config.example.json"
+    )
+    template = json.loads(template_path.read_text(encoding="utf-8"))
+
+    assert template["dataset"]["source_url"] == (
+        "https://ftp.uniprot.org/pub/databases/uniprot/current_release/"
+        "knowledgebase/reference_proteomes/Eukaryota/UP000005640/"
+        "UP000005640_9606.fasta.gz"
+    )
+    assert template["dataset"]["license_id"] == "CC-BY-4.0"
+    assert template["dataset"]["license_evidence_url"] == (
+        "https://ftp.uniprot.org/pub/databases/uniprot/current_release/"
+        "knowledgebase/reference_proteomes/Eukaryota/UP000005640/"
+        "RELEASE.metalink"
+    )
+    assert template["checkpoint"]["source_url"] == (
+        "https://huggingface.co/airkingbd/dplm_150m"
+    )
+    assert template["tokenizer"]["source_url"] == template["checkpoint"][
+        "source_url"
+    ]
+    assert template["evaluation_model"]["source_url"] == (
+        "https://dl.fbaipublicfiles.com/fair-esm/models/"
+        "esm2_t33_650M_UR50D.pt"
+    )
+    assert template["evaluation_model"]["license_id"] == "MIT"
+    assert template["evaluation_model"]["license_evidence_url"] == (
+        "https://github.com/facebookresearch/esm/blob/main/LICENSE"
+    )
+
+
 @pytest.mark.parametrize("value", ("<required>", None, ["0.2.0"]))
 def test_config_requires_frozen_flagquantum_version(value: object) -> None:
     config = _config()

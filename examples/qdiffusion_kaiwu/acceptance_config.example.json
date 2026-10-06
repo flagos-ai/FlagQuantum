@@ -41,9 +41,9 @@
   "dataset": {
     "name": "<required>",
     "revision": "<required>",
-    "source_url": "https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29",
+    "source_url": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/UP000005640_9606.fasta.gz",
     "license_id": "CC-BY-4.0",
-    "license_evidence_url": "https://www.uniprot.org/help/license",
+    "license_evidence_url": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/RELEASE.metalink",
     "license_reviewed_at": "<required>",
     "split": "deterministic-shuffle-v1",
     "sha256": "<required>",
@@ -76,7 +76,7 @@
     "revision": "<required>",
     "source_url": "https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt",
     "license_id": "MIT",
-    "license_evidence_url": "https://huggingface.co/facebook/esm2_t33_650M_UR50D",
+    "license_evidence_url": "https://github.com/facebookresearch/esm/blob/main/LICENSE",
     "license_reviewed_at": "<required>",
     "sha256": "<required>"
   },

@@ -710,9 +710,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   pretrained weights, but the exact separately hosted checkpoint bytes have not
   been authoritatively linked to that notice. The checkpoint therefore remains
   blocked rather than being treated as approved merely because it is publicly
-  downloadable. A 2026-10-06 intake refresh also confirms that the candidate
-  UniProt and ESM2 sources expose license evidence, while acquisition still
-  requires explicit authorization, immutable identities, and content digests.
+  downloadable. A 2026-10-06 intake refresh also identifies UniProt release
+  `2026_03` and its canonical human reference-proteome FASTA from the official
+  `RELEASE.metalink`; that record declares CC BY 4.0, size 7,728,297, and
+  upstream MD5 `4e4f5aca22ba12eabda1e347765db069`. The canonical filename
+  matches the plugin's missing default input, while the separately published
+  `_additional` FASTA is excluded from the candidate semantics. The official
+  ESM README directly maps `esm2_t33_650M_UR50D` to the selected checkpoint URL
+  and its repository is MIT-licensed. These facts narrow source and license
+  review; they do not authorize acquisition or establish that repository
+  licenses govern separately hosted model bytes. Immutable identities, explicit
+  approval, decompression provenance, and final SHA-256 digests remain required.
   The asset intake runbook records that no model or dataset download has yet
   been authorized or performed.
 - Protein training now rehashes the frozen config, dataset, shared base

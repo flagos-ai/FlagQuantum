@@ -9,10 +9,10 @@ checkpoint bytes stay outside Git and inside the private evidence boundary.
 
 | Input | Candidate source | Candidate revision or release | License status | Intake status |
 | --- | --- | --- | --- | --- |
-| Human proteome FASTA | `https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29` | Exact UniProt release, query semantics, canonical/isoform choice, and returned bytes still to freeze | UniProt declares CC BY 4.0 for copyrightable database content; the exact release and attribution record still require review | Not downloaded; blocked on an approved frozen query and release |
-| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate upstream `main` head observed on 2026-10-06: `49b7125a5d28c6418fcc2f3c4fe799352ac1488b` | The public model metadata has no license field and its seven-file inventory has no license file. The Apache-2.0 official `bytedance/dplm` repository says it contains pretrained weights and names the `airkingbd/dplm_150m` family. This is strong candidate linkage evidence, but the separately hosted bytes still require an explicit license review and approval. | Not downloaded; source identity and linkage evidence identified, still blocked on explicit approval |
+| Human proteome FASTA | UniProt reference-proteome directory and `RELEASE.metalink` under `https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/` | Candidate release `2026_03`; canonical base file `UP000005640_9606.fasta.gz`, 7,728,297 compressed bytes, upstream MD5 `4e4f5aca22ba12eabda1e347765db069`; explicitly exclude the separate `_additional` file | The same official metalink declares CC BY 4.0. The exact release, attribution, acquisition, decompression, and final SHA-256 still require review | Not downloaded; candidate semantics are canonical-only and match the plugin's default `UP000005640_9606.fasta` name, but the `current_release` URL is mutable and cannot be frozen without approved acquisition and a content digest |
+| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate upstream `main` head observed on 2026-10-06: `49b7125a5d28c6418fcc2f3c4fe799352ac1488b` | The model card says the repository contains the 150M checkpoint and points to the official `bytedance/dplm` repository; that repository says it contains pretrained DPLM weights and loads the `airkingbd` model family under Apache-2.0. The model metadata still has no license field and its seven-file inventory has no license file, so the reciprocal linkage does not by itself prove that Apache-2.0 governs the separately hosted bytes. | Not downloaded; source identity and reciprocal linkage evidence identified, still blocked on explicit approval |
 | DPLM tokenizer | Same frozen DPLM repository and revision as the checkpoint | Must equal the checkpoint revision | The pinned Hugging Face commit adds the checkpoint and tokenizer files together, and the official repository names the same model family; applicability of Apache-2.0 to those separately hosted bytes still requires explicit review | Not downloaded; linkage evidence identified, still blocked on explicit approval |
-| ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | Exact downloaded `.pt` bytes and upstream identity still to freeze | Candidate model distribution is identified as MIT by the official model repository; applicability to the selected `.pt` bytes must be recorded during review | Not downloaded; blocked on review and exact digest |
+| ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | The archived official ESM README directly names and links this exact model file; downloaded bytes and SHA-256 still to freeze | The same official repository is MIT-licensed and its loader consumes the linked `.pt` file. Applicability of that license to the checkpoint bytes must still be explicitly recorded rather than inferred by the intake | Not downloaded; source-to-file linkage is identified, blocked on explicit review and exact digest |
 | Kaiwu SDK wheel | Qboson-owned PyPI release metadata at `https://pypi.org/pypi/kaiwu/1.3.1/json`, or the QBoson platform | Linux candidate `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`; published and independently reproduced SHA-256 `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455` | PyPI identifies owner `nixd` and author `Qboson Inc` but exposes neither a license expression nor license files. Static wheel inspection also found no `LICENSE`, `COPYING`, or `NOTICE` member. The public QBoson platform agreement effective 2026-07-09 covers Kaiwu SDK, KPP, and remote APIs, but its use, transfer, data, and risk clauses require organizational review | Downloaded only to an owner-only temporary review directory and statically inspected; not installed, imported, executed, or approved; blocked on explicit package and service-terms approval |
 
 The candidate DPLM commit above was obtained from both the public repository
@@ -31,6 +31,24 @@ file. These facts narrow the review question; they do not authorize download or
 use. Re-query and compare the upstream reference immediately before an approved
 acquisition so later mutable-branch movement cannot be mistaken for the reviewed
 candidate.
+
+The UniProt candidate was refreshed against the official release metalink. It
+identifies release `2026_03`, declares CC BY 4.0, and distinguishes the
+7,728,297-byte canonical base FASTA archive from the 41,421,368-byte
+`_additional` archive. The pinned plugin names its missing input
+`UP000005640_9606.fasta`, which matches the canonical base filename. This makes
+canonical-only the review candidate; it does not approve acquisition. The
+published MD5 is discovery evidence only, while the final configuration
+requires a SHA-256 of the exact uncompressed FASTA consumed by the workflow.
+Because the official path is under `current_release`, retain the metalink and
+release identifier and require a matching archived release or reviewed bytes
+before treating the source as reproducible.
+
+The ESM candidate was refreshed against the archived official ESM README and
+license. The README directly maps `esm2_t33_650M_UR50D` to the selected
+`dl.fbaipublicfiles.com` URL, and the repository is MIT-licensed. This is strong
+source identity evidence, but the organizational review must still state
+whether the license applies to the linked checkpoint and retain that decision.
 
 The Kaiwu 1.3.1 documentation points to a QBoson user agreement. The public
 [QBoson Quantum Cloud Platform User Service Agreement](https://platform.qboson.com/agreement?type=QBoson-SPQC-Platform-Users-Agreement),
@@ -79,7 +97,10 @@ or CI/container usage rights required by this integration.
   approval automatically. If the linkage is rejected or remains inconclusive,
   choose a separately reviewed compatible checkpoint or stop final protein
   acceptance.
-- Freeze one UniProt release and explicitly choose whether isoforms are included.
+- Approve or reject UniProt release `2026_03` canonical-only input, explicitly
+  excluding the `_additional` FASTA. Retain the official metalink, CC BY 4.0
+  attribution decision, compressed-source identity, decompression procedure,
+  and SHA-256 of the exact uncompressed FASTA.
 - Confirm that the official ESM2 model license applies to the selected `.pt`
   checkpoint and retain the evidence URL used for that decision.
 - Approve or reject the statically inspected PyPI Kaiwu 1.3.1 Linux wheel and
