@@ -12,6 +12,7 @@ import importlib
 import os
 import platform
 import socket
+import stat
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -165,28 +166,55 @@ def _run_workflow(
     sampler: KaiwuSampler,
     output_root: Path,
 ) -> Path:
-    output_root.mkdir(parents=True, exist_ok=True)
-    if output_root.is_symlink() or not output_root.is_dir():
-        raise ValueError("protein workflow output root must be a real directory")
-    before = {item.name for item in output_root.iterdir()}
-    original_config_factory = workflow.build_default_workflow_config
-    original_outputs_factory = workflow.default_outputs_root
-    workflow.build_default_workflow_config = lambda: workflow_config
-    workflow.default_outputs_root = lambda: output_root
+    original_umask = os.umask(0o077)
     try:
-        with bound_qdiffusion_workflow(workflow, sampler):
-            workflow.main()
+        output_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+        output_metadata = output_root.lstat()
+        if (
+            output_root.is_symlink()
+            or not stat.S_ISDIR(output_metadata.st_mode)
+            or stat.S_IMODE(output_metadata.st_mode) & 0o077
+        ):
+            raise ValueError(
+                "protein workflow output root must be a private real directory"
+            )
+        before = {item.name for item in output_root.iterdir()}
+        original_config_factory = workflow.build_default_workflow_config
+        original_outputs_factory = workflow.default_outputs_root
+        workflow.build_default_workflow_config = lambda: workflow_config
+        workflow.default_outputs_root = lambda: output_root
+        try:
+            with bound_qdiffusion_workflow(workflow, sampler):
+                workflow.main()
+        finally:
+            workflow.build_default_workflow_config = original_config_factory
+            workflow.default_outputs_root = original_outputs_factory
+        created = [item for item in output_root.iterdir() if item.name not in before]
+        if (
+            len(created) != 1
+            or created[0].is_symlink()
+            or not created[0].is_dir()
+            or stat.S_IMODE(created[0].lstat().st_mode) & 0o077
+        ):
+            raise RuntimeError(
+                "protein workflow did not create exactly one private run directory"
+            )
+        return created[0]
     finally:
-        workflow.build_default_workflow_config = original_config_factory
-        workflow.default_outputs_root = original_outputs_factory
-    created = [item for item in output_root.iterdir() if item.name not in before]
-    if (
-        len(created) != 1
-        or created[0].is_symlink()
-        or not created[0].is_dir()
-    ):
-        raise RuntimeError("protein workflow did not create exactly one run directory")
-    return created[0]
+        os.umask(original_umask)
+
+
+def _capture_private_training_output(
+    path: Path, *, run_directory: Path, label: str
+) -> RegularFileSnapshot:
+    try:
+        path.relative_to(run_directory)
+    except ValueError:
+        raise ValueError(f"{label} is outside the training run directory") from None
+    snapshot = capture_regular_file(path, label=label)
+    if stat.S_IMODE(path.lstat().st_mode) & 0o077:
+        raise ValueError(f"{label} must be owner-only")
+    return snapshot
 
 
 def _checkpoint_snapshot(run_directory: Path) -> RegularFileSnapshot:
@@ -198,7 +226,11 @@ def _checkpoint_snapshot(run_directory: Path) -> RegularFileSnapshot:
         return int(path.stem.removeprefix("best_epoch_"))
 
     selected = max(checkpoints, key=epoch)
-    return capture_regular_file(selected, label="trained energy checkpoint")
+    return _capture_private_training_output(
+        selected,
+        run_directory=run_directory,
+        label="trained energy checkpoint",
+    )
 
 
 def _checkpoint_identity(run_directory: Path) -> tuple[str, str]:
@@ -223,8 +255,10 @@ def _workflow_artifact_snapshots(
     for name, relative_path in relative_paths.items():
         path = run_directory / relative_path
         try:
-            snapshot = capture_regular_file(
-                path, label=f"protein workflow artifact {name}"
+            snapshot = _capture_private_training_output(
+                path,
+                run_directory=run_directory,
+                label=f"protein workflow artifact {name}",
             )
         except ValueError:
             raise RuntimeError(
@@ -495,6 +529,9 @@ def main() -> None:
     validate_private_json_output_path(args.run_record)
     validate_private_directory(
         args.sdk_checkpoint_dir, label="Kaiwu checkpoint directory"
+    )
+    validate_private_directory(
+        args.workflow_output_root, label="protein workflow output directory"
     )
 
     config, config_sha256 = _load_frozen_config(args.config)

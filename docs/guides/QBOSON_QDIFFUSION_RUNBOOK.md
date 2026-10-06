@@ -638,12 +638,16 @@ and replay-host runner apply the provider checks while loading the selected
 training record, before loading a model, allocating A800 work, resolving
 credentials, or submitting another task.
 
-The plugin must create exactly one real, non-symlink run directory directly
-under the seed output root. The launcher captures the selected best checkpoint
-and the seven declared workflow artifacts with no-follow stable snapshots and
-cross-revalidates all eight before writing their identities into the training
-record. A symlinked output, an output outside that directory, or a file replaced
-while the output set is being captured fails the component.
+Provision `--workflow-output-root` in advance as an owner-only real directory;
+the launcher validates it before resolving credentials. The plugin runs with a
+temporarily enforced `umask 077`, which is restored on every exit, and must
+create exactly one owner-only, real, non-symlink run directory directly under
+the seed output root. The launcher captures the selected best checkpoint and
+the seven declared workflow artifacts with owner-only, no-follow stable
+snapshots and cross-revalidates all eight before writing their identities into
+the training record. A public or symlinked output, an output outside that
+directory, or a file replaced while the output set is being captured fails the
+component.
 
 The exclusive preflight returns the exact stable no-follow snapshots used to
 produce its record; the launcher does not reopen the paths to create a second

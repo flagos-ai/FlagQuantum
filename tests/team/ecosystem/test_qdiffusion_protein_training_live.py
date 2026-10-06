@@ -156,7 +156,9 @@ def test_run_workflow_binds_sampler_and_restores_factories(tmp_path: Path) -> No
     def main() -> None:
         assert workflow.build_default_workflow_config() == "frozen-config"
         workflow.build_qdiffusion(bm_sampler_type="sa")
-        (workflow.default_outputs_root() / "real_full_workflow_test").mkdir()
+        run_directory = workflow.default_outputs_root() / "real_full_workflow_test"
+        run_directory.mkdir()
+        (run_directory / "artifact.txt").write_text("private", encoding="utf-8")
 
     workflow.main = main
     result = _run_workflow(workflow, "frozen-config", sampler, tmp_path / "runs")
@@ -166,6 +168,8 @@ def test_run_workflow_binds_sampler_and_restores_factories(tmp_path: Path) -> No
     assert workflow.build_qdiffusion is original_builder
     assert workflow.build_default_workflow_config is original_config
     assert workflow.default_outputs_root is original_outputs
+    assert result.stat().st_mode & 0o777 == 0o700
+    assert (result / "artifact.txt").stat().st_mode & 0o777 == 0o600
 
 
 def test_run_workflow_rejects_symlinked_run_directory(tmp_path: Path) -> None:
@@ -187,8 +191,25 @@ def test_run_workflow_rejects_symlinked_run_directory(tmp_path: Path) -> None:
 
     workflow.main = main
 
-    with pytest.raises(RuntimeError, match="exactly one run directory"):
+    with pytest.raises(RuntimeError, match="exactly one private run directory"):
         _run_workflow(workflow, "frozen-config", sampler, tmp_path / "runs")
+
+
+def test_run_workflow_rejects_public_seed_output_root(tmp_path: Path) -> None:
+    output_root = tmp_path / "runs"
+    output_root.mkdir(mode=0o755)
+    workflow = SimpleNamespace(
+        build_default_workflow_config=lambda: "original-config",
+        default_outputs_root=lambda: tmp_path / "original",
+    )
+
+    with pytest.raises(ValueError, match="private real directory"):
+        _run_workflow(
+            workflow,
+            "frozen-config",
+            cast(KaiwuSampler, object()),
+            output_root,
+        )
 
 
 def test_training_seed_rejects_frozen_asset_change_during_workflow(
@@ -273,6 +294,8 @@ def test_checkpoint_identity_selects_latest_best_epoch(tmp_path: Path) -> None:
     checkpoint_dir.mkdir()
     (checkpoint_dir / "best_epoch_2.pt").write_bytes(b"older")
     (checkpoint_dir / "best_epoch_10.pt").write_bytes(b"newer")
+    (checkpoint_dir / "best_epoch_2.pt").chmod(0o600)
+    (checkpoint_dir / "best_epoch_10.pt").chmod(0o600)
 
     name, digest = _checkpoint_identity(tmp_path)
 
@@ -288,6 +311,16 @@ def test_checkpoint_identity_rejects_symlink(tmp_path: Path) -> None:
     (checkpoint_dir / "best_epoch_2.pt").symlink_to(outside)
 
     with pytest.raises(ValueError, match="non-symlink file"):
+        _checkpoint_identity(tmp_path)
+
+
+def test_checkpoint_identity_rejects_public_file(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o644)
+
+    with pytest.raises(ValueError, match="must be owner-only"):
         _checkpoint_identity(tmp_path)
 
 
@@ -307,6 +340,7 @@ def test_workflow_artifact_identities_freeze_evaluation_inputs(
         path = tmp_path / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(relative, encoding="utf-8")
+        path.chmod(0o600)
 
     identities = _workflow_artifact_identities(tmp_path)
 
@@ -342,6 +376,7 @@ def test_workflow_artifact_identities_reject_symlink(tmp_path: Path) -> None:
             path.symlink_to(outside)
         else:
             path.write_text(relative, encoding="utf-8")
+            path.chmod(0o600)
 
     with pytest.raises(RuntimeError, match="stable history.json"):
         _workflow_artifact_identities(tmp_path)
@@ -353,6 +388,7 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
     checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
     checkpoint.parent.mkdir()
     checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o600)
     for relative in (
         "data_splits/test.fasta",
         "baseline/proposal_only_generated_sequences.fasta",
@@ -365,6 +401,7 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
         path = tmp_path / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(relative, encoding="utf-8")
+        path.chmod(0o600)
     real_capture = training_module._workflow_artifact_snapshots
 
     def capture_then_replace(run_directory: Path):
@@ -404,6 +441,9 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index("verify_approved_kaiwu_distribution(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index(
+        'args.workflow_output_root, label="protein workflow output directory"'
+    ) < source.index("resolve_kaiwu_credentials()")
     assert source.index(
         "validate_private_json_output_path(args.artifact_preflight_output)"
     ) < source.index("resolve_kaiwu_credentials()")
