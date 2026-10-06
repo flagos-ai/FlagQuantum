@@ -70,6 +70,7 @@ from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
+from .two_qubit_matrix_dispatch import _try_apply_cataloged_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
@@ -714,10 +715,6 @@ def _apply_matrix(
 ) -> torch.Tensor:
     wires = tuple(wires)
     if len(wires) == 2:
-        from .two_qubit_matrix_dispatch import (
-            _try_apply_cataloged_two_qubit_matrix,
-        )
-
         if (
             dispatched := _try_apply_cataloged_two_qubit_matrix(
                 state,
