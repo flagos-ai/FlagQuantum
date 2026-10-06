@@ -59,7 +59,9 @@ Sampler construction validates timeout, polling interval, project identity,
 and integer-range value types before a matrix can reach the Remote layer;
 booleans are not accepted as numeric configuration values.
 Exhausting the remote-call budget raises before submission; there is no local
-or classical fallback.
+or classical fallback. A sampler instance serializes its complete synchronous
+solve transaction, so concurrent callers cannot race cache registration or the
+remote-call counter and submit the same matrix more than once.
 
 For a ten-minute local check, run:
 

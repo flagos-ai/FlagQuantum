@@ -7,6 +7,7 @@ import json
 import math
 from dataclasses import dataclass
 from numbers import Real
+from threading import RLock
 from typing import TYPE_CHECKING, cast
 
 from ...remote.kaiwu import (
@@ -143,6 +144,7 @@ class KaiwuSampler:
         self._poll_interval = float(poll_interval)
         self._max_remote_calls = max_remote_calls
         self._integer_target_range = integer_target_range
+        self._solve_lock = RLock()
         self._cache: dict[str, tuple[tuple[int, ...], ...]] = {}
         self._jobs: dict[str, KaiwuRemoteJob] = {}
         self._receipts: list[KaiwuTaskReceipt] = []
@@ -199,7 +201,19 @@ class KaiwuSampler:
         return tuple(self._transfer_records)
 
     def solve(self, ising_matrix: object) -> np.ndarray:
-        """Submit one unique matrix and return an ``int8`` NumPy spin array."""
+        """Serialize one bounded solve transaction and return ``int8`` spins.
+
+        Serializing the complete transaction makes cache lookup, task
+        registration, budget accounting, waiting, and evidence publication one
+        atomic operation per sampler instance. Concurrent calls therefore
+        cannot submit the same matrix twice or race past the declared budget.
+        """
+
+        with self._solve_lock:
+            return self._solve_locked(ising_matrix)
+
+    def _solve_locked(self, ising_matrix: object) -> np.ndarray:
+        """Submit one unique matrix while ``_solve_lock`` is held."""
 
         try:
             import numpy as np

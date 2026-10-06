@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 
 import numpy as np
@@ -76,6 +79,33 @@ class _RecoveringClient(_CompletedClient):
         del receipt, matrix
         self.status_calls += 1
         return "Queued" if self.status_calls == 1 else "Completed"
+
+
+class _ConcurrentClient(_CompletedClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.submit_entries = 0
+        self._entry_lock = threading.Lock()
+
+    def submit(
+        self,
+        matrix: FrozenIsingMatrix,
+        *,
+        task_name: str,
+        mode: KaiwuTaskMode,
+        requested_samples: int,
+        project_no: str | None,
+    ) -> KaiwuTaskReceipt:
+        with self._entry_lock:
+            self.submit_entries += 1
+        time.sleep(0.05)
+        return super().submit(
+            matrix,
+            task_name=task_name,
+            mode=mode,
+            requested_samples=requested_samples,
+            project_no=project_no,
+        )
 
 
 @pytest.mark.parametrize(
@@ -168,6 +198,33 @@ def test_identical_matrix_is_deduplicated_and_returns_a_copy() -> None:
         sampler.transfer_records[1].submission_matrix_sha256
         == sampler.receipts[0].matrix_sha256
     )
+
+
+def test_concurrent_identical_solves_share_one_budgeted_remote_task() -> None:
+    client = _ConcurrentClient()
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="concurrent-dedupe",
+        max_remote_calls=1,
+    )
+    matrix = [[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]]
+    start = threading.Barrier(2)
+
+    def solve() -> np.ndarray:
+        start.wait()
+        return sampler.solve(matrix)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(solve)
+        second = executor.submit(solve)
+        results = (first.result(timeout=5), second.result(timeout=5))
+
+    assert all(result.shape == (10, 3) for result in results)
+    assert client.submit_entries == 1
+    assert len(client.submitted) == 1
+    assert sampler.remote_call_count == 1
+    assert len(sampler.receipts) == 1
+    assert [record.cache_hit for record in sampler.transfer_records] == [False, True]
 
 
 def test_remote_call_budget_fails_before_second_unique_submission() -> None:

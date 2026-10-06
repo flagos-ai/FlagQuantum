@@ -102,6 +102,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `BoltzmannMachine.condition_sample()` at plugin revision
   `f047bce7b1077449967bbe9e9fab5741542b48d4`; this is interface evidence only,
   not the pinned Python 3.10/Torch 2.7 compatibility or A800 acceptance lane.
+- Each sampler instance now serializes the complete cache lookup, submission,
+  wait, budget-accounting, and evidence transaction. Concurrent identical
+  plugin calls therefore share one registered Remote job and cannot race past
+  a one-call quota ceiling before either call records its receipt.
 - Pulling a Python 3.10 container from Docker Hub on `jp-a800-171` timed out.
   This is an environment provisioning constraint, not evidence of an SDK or
   FlagQuantum defect. A pinned Python 3.10/Kaiwu environment must be supplied
