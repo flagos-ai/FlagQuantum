@@ -116,6 +116,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_circuit_composition_contract.py"),
         ),
         Check(
+            "density-matrix output contract",
+            (python_executable, "tools/check_density_matrix_output_contract.py"),
+        ),
+        Check(
             "primitives admission contract",
             (python_executable, "tools/check_primitives_admission_contract.py"),
         ),
