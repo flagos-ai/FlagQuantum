@@ -56,6 +56,21 @@ not_covered_members_are_absent = true
 # Reading `Circuit.__pow__` as well keeps the census honest about the operator spelling:
 # `power` is absent as a method and absent as an operator, which is one fact, not two.
 also_measured_absent = ["Circuit.__pow__"]
+# The construction family is declared once, by the contract that owns the members'
+# semantics. This gate reads that declaration instead of repeating it here, so the two
+# contracts cannot drift into two lists that both claim to be the family.
+family_declaration_source = "contracts/circuit-composition-contract.toml"
+family_declaration_keys = ["scope.provided", "scope.not_provided"]
+# `covered` plus `not_covered` must equal that declaration rather than merely be
+# consistent with itself. Without this the census re-checks the rows it still has and
+# never checks that it still has a row for every member. Measured: deleting
+# `Circuit.control` from `covered` and its row from `[verification].requirements`
+# together left this gate and the whole conformance file green, because the test
+# function was still in the file -- it had just stopped being required by anything.
+family_members_must_partition_the_declared_scope = true
+# Operator spellings of contracted members. `Circuit.__pow__` is how Python spells
+# `Circuit.power`: one family member under two names, so the partition counts it once.
+operator_spellings = { "Circuit.__pow__" = "Circuit.power" }
 
 [ir_identity]
 # The plan's claim is that a composed program's IR equals the hand-built program's IR.

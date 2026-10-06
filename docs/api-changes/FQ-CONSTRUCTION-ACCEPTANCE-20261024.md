@@ -143,6 +143,70 @@ The two routes are still compared **exactly** on all four rows in every serving 
 including the two-control row. That comparison is between two runs of the same program and
 does not depend on the bound, so it costs nothing to make it on the widest row as well.
 
+### What the census could not see, measured
+
+The paragraph above ends with an agreement between two documents: `power` "is the same
+single entry on both sides". That was true, and it was checked by reading. It is now
+checked by the gate, because the reading was shown to be insufficient.
+
+Five mutations of this contract were run, each one a different way of walking a
+contracted member backwards, and the gate's verdict on each was recorded:
+
+```text
+control moved back to not_covered, dropped from covered            -> fails, names the member
+measured_root_export_count 37 -> 36                                -> fails, names both numbers
+control dropped from covered, not_covered untouched                -> fails: requirement names
+                                                                      absent member
+control dropped from covered AND its requirement row deleted       -> PASSED (gate rc=0,
+                                                                      conformance 26 passed)
+mode_agreement added to the two-control row                        -> fails: one-control only
+```
+
+The fourth row is the finding. `[verification].requirements` and `[subject].covered` are
+checked against each other -- a requirement naming a member that is not covered is an
+error -- but nothing checked that every member of the family appears in one of the two
+lists. Deleting a row from both sides is therefore consistent with itself, and the census,
+whose whole job is to re-measure the rows the contract has, never noticed that it had one
+fewer row to re-measure. The conformance file stayed green for a second reason that is
+worth writing down: `test_a_controlled_program_has_the_hand_built_ir` was still in it and
+still passing. The test had not been deleted or weakened. It had stopped being required by
+anything, which is indistinguishable from passing.
+
+This is the same class of failure the mode half of the contract already guards against:
+`serving` plus `refused` must equal the measured mode set, not merely be disjoint from
+each other. That check exists because a mode added later would otherwise go unmeasured.
+The family needed the identical check and did not have it.
+
+The repair states the family once. `[census].family_declaration_source` points at
+`contracts/circuit-composition-contract.toml` -- the contract that owns what these members
+mean -- and `family_declaration_keys` names the two fields that declare the family.
+`covered` plus `not_covered` must equal that declaration:
+
+```console
+$ python tools/check_construction_acceptance_contract.py     # control + its requirement deleted
+the construction family this acceptance covers is not the family
+'contracts/circuit-composition-contract.toml' declares:
+only here [], only there ['Circuit.control']
+```
+
+Two smaller things came out of the same measurement. `[census].operator_spellings` declares
+that `Circuit.__pow__` is how Python spells `Circuit.power`, so `power` is one family member
+under two names and the partition counts it once; the gate refuses a declared spelling that
+no row measures, because that is a member it has stopped looking at while this contract
+still claims to look at it. And the gate's own `CENSUS_ATTRIBUTES` tuple was deleted: the
+names it measures are now read from the contract, so the family exists in one place instead
+of two. A second list inside the gate would have been the list that survived a member being
+removed from the contract.
+
+The limit of this, stated rather than implied: the gate cannot know which dunder spellings
+exist without being told, so a change that deletes the `also_measured_absent` row *and* the
+`operator_spellings` entry together would stop measuring `Circuit.__pow__`. Teaching the
+gate about dunders would put a second copy of the family back inside it, which is the thing
+this repair removes. What still holds in that case is the part that matters most: `power`
+remains censused by name against the declaration, and the declaration itself cannot be
+emptied, because a source that reads no members is refused rather than treated as an empty
+family.
+
 ### Open Question 1, answered
 
 The first Open Question below asked who adjudicates
@@ -356,6 +420,9 @@ changes what `Circuit.compose` does.
 - `tests/unit/test_construction_acceptance.py::test_the_controlled_program_is_one_program_in_every_serving_mode`
 - `tests/unit/test_construction_acceptance.py::test_a_controlled_program_is_refused_by_the_refused_mode_the_same_way`
 - `tests/unit/test_construction_acceptance.py::test_the_construction_layer_covers_exactly_what_the_contract_covers`
+- `tests/unit/test_construction_acceptance.py::test_the_census_is_a_partition_of_the_declared_family`
+- `tests/unit/test_construction_acceptance.py::test_the_census_rejects_a_member_deleted_from_the_family`
+- `tests/unit/test_construction_acceptance.py::test_the_census_rejects_a_spelling_that_no_row_measures`
 
 and the gate `tools/check_construction_acceptance_contract.py`, which fails on a
 construction member that is present while contracted absent, a mode set that the
@@ -364,7 +431,10 @@ placement, a control row whose width is not `max(ctrl_qubits) + 1`, a control ro
 whose controlled program is no larger than its receiver, a control row carrying
 `mode_agreement` while adding more than one control, a `[[plan_corrections]]` row
 whose name has appeared, an identifier the contract measures that the gate does not
-read, and a requirement row naming a test that does not exist.
+read, a requirement row naming a test that does not exist, a `covered` plus `not_covered`
+that is not the family `contracts/circuit-composition-contract.toml` declares, a declared
+operator spelling that no census row measures, and a declaration source that reads no
+members at all.
 
 ## Open Questions
 
@@ -411,4 +481,8 @@ construction routes, tolerance between the modes — and on whether the census
 `not_covered` list is the right set to fail on. The addendum adds a third thing to
 look at: whether pinning the mode half to the one-control rows is the right
 response to a bound the widest row nearly reaches, or whether that is a finding
-about the bound that this contract is papering over.
+about the bound that this contract is papering over. The census addendum adds a
+fourth: whether `circuit-composition-contract.toml` is the right authority for the family,
+or whether it belongs to a declaration of its own. It is read from that contract because
+that contract already states what these members mean and already carries their proposal
+records, so a separate declaration would be a third list of the same names.

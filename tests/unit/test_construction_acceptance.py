@@ -19,6 +19,7 @@ fails the partition test instead of quietly going unmeasured.
 
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ import flagquantum as fq
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime.execution import run_native
 from flagquantum.runtime.options import _MODES, ExecutionOptions
+from tools.check_construction_acceptance_contract import contract_errors
 
 #: The exception classes the contract names. `fq` re-exports the error hierarchy
 #: selectively, so the classes are read from their owning module rather than from the
@@ -487,6 +489,46 @@ def test_the_construction_layer_covers_exactly_what_the_contract_covers():
         assert not hasattr(instance, member.rsplit(".", 1)[-1]), member
     for member in _load_contract()["census"]["also_measured_absent"]:
         assert not hasattr(instance, member.rsplit(".", 1)[-1]), member
+
+
+def test_the_census_is_a_partition_of_the_declared_family():
+    """The gate agrees with the contract as written, so the mutations below start clean."""
+
+    assert contract_errors(_load_contract()) == []
+
+
+def test_the_census_rejects_a_member_deleted_from_the_family():
+    """Deleting a row and its requirement together must not pass.
+
+    This is the route the census could not see on its own. It re-checks the rows the
+    contract still has, so removing a row and the requirement that named it left both
+    the gate and this whole file green: the test function was still here, it had just
+    stopped being required by anything. Measured on this slice before the partition
+    check existed -- gate rc=0 and `26 passed`.
+    """
+
+    contract = copy.deepcopy(_load_contract())
+    contract["subject"]["covered"] = [
+        member
+        for member in contract["subject"]["covered"]
+        if member != "Circuit.control"
+    ]
+    del contract["verification"]["requirements"]["Circuit.control"]
+
+    errors = contract_errors(contract)
+    assert any(
+        "is not the family" in error and "Circuit.control" in error for error in errors
+    ), errors
+
+
+def test_the_census_rejects_a_spelling_that_no_row_measures():
+    """A declared operator spelling must be read by some row, or it is a blind spot."""
+
+    contract = copy.deepcopy(_load_contract())
+    contract["census"]["also_measured_absent"] = []
+
+    errors = contract_errors(contract)
+    assert any("operator_spellings declares" in error for error in errors), errors
 
 
 def test_acceptance_added_no_public_surface():

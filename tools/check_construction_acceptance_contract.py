@@ -41,14 +41,101 @@ from flagquantum.runtime.options import _MODES
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "construction-acceptance-contract.toml"
 
-#: Members the census reads off `Circuit`. `__pow__` is the operator spelling of
-#: `power`; measuring both keeps the census honest about "absent as a method and absent
-#: as an operator", which is one fact and must not be counted as two.
-CENSUS_ATTRIBUTES = ("compose", "adjoint", "control", "power", "__pow__")
-
 
 def _load_toml(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def _census_attributes(contract: dict[str, Any]) -> tuple[str, ...]:
+    """The attributes the census reads.
+
+    Read from the contract rather than listed here: a second list of family members in
+    the gate is a second source of truth, and it is the list that would survive a
+    member being removed from the contract.
+    """
+
+    subject = contract.get("subject", {})
+    entries = list(subject.get("covered", ()))
+    entries += list(subject.get("not_covered", ()))
+    entries += list(contract.get("census", {}).get("also_measured_absent", ()))
+    attributes: dict[str, None] = {}
+    for entry in entries:
+        attributes.setdefault(entry.rsplit(".", 1)[-1], None)
+    return tuple(attributes)
+
+
+def _canonical(entry: str, spellings: dict[str, str]) -> str:
+    return spellings.get(entry, entry)
+
+
+def _family_partition_errors(contract: dict[str, Any]) -> list[str]:
+    """`covered` plus `not_covered` must equal the declared family, not just agree.
+
+    The census above re-measures the rows the contract still has. This check asks the
+    question it cannot: whether the contract still has a row for every member. Without
+    it, deleting a row and its requirement together passes both this gate and the
+    conformance test, because the test function stays in the file -- it has only stopped
+    being required by anything. The declaration is read from the contract that owns the
+    members' semantics, so the family is stated once.
+    """
+
+    errors: list[str] = []
+    census = contract.get("census", {})
+    source = census.get("family_declaration_source")
+    if not source:
+        return ["census.family_declaration_source is missing"]
+    path = ROOT / source
+    if not path.exists():
+        return [f"census.family_declaration_source {source!r} does not exist"]
+
+    keys = list(census.get("family_declaration_keys", ()))
+    declaration = _load_toml(path)
+    declared: list[str] = []
+    for key in keys:
+        section, _, field = key.partition(".")
+        declared.extend(declaration.get(section, {}).get(field, ()))
+    if not declared:
+        return [
+            f"census.family_declaration_keys {keys} read no members from {source!r}"
+        ]
+
+    spellings = dict(census.get("operator_spellings", {}))
+    subject = contract.get("subject", {})
+    rows = [_canonical(entry, spellings) for entry in subject.get("covered", ())]
+    rows += [_canonical(entry, spellings) for entry in subject.get("not_covered", ())]
+    contracted = set(rows)
+    if len(contracted) != len(rows):
+        errors.append(
+            "subject.covered and subject.not_covered name the same member twice: "
+            f"{sorted(rows)}"
+        )
+    family = {_canonical(entry, spellings) for entry in declared}
+    if contracted != family:
+        errors.append(
+            "the construction family this acceptance covers is not the family "
+            f"{source!r} declares: only here {sorted(contracted - family)}, "
+            f"only there {sorted(family - contracted)}"
+        )
+    for entry in census.get("also_measured_absent", ()):
+        if _canonical(entry, spellings) not in contracted:
+            errors.append(
+                f"census.also_measured_absent names {entry!r}, whose member "
+                f"{_canonical(entry, spellings)!r} is in neither covered nor not_covered"
+            )
+    # A declared spelling that no census row measures is a member the gate stopped
+    # looking at while the contract still claims to look at it.
+    also_measured = set(census.get("also_measured_absent", ()))
+    for spelling in spellings:
+        if spelling not in also_measured and spelling not in set(rows):
+            errors.append(
+                f"census.operator_spellings declares {spelling!r} but no census row "
+                "measures it"
+            )
+    if census.get("family_members_must_partition_the_declared_scope") is not True:
+        errors.append(
+            "census.family_members_must_partition_the_declared_scope must be true"
+        )
+    return errors
 
 
 def _test_names(path: Path) -> set[str]:
@@ -99,7 +186,7 @@ def _census_errors(contract: dict[str, Any]) -> list[str]:
     subject = contract.get("subject", {})
     census = contract.get("census", {})
     instance = fq.Circuit(2)
-    measured = {name: hasattr(instance, name) for name in CENSUS_ATTRIBUTES}
+    measured = {name: hasattr(instance, name) for name in _census_attributes(contract)}
 
     for entry in subject.get("covered", ()):
         attribute = entry.rsplit(".", 1)[-1]
@@ -432,6 +519,7 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
 
 def contract_errors(contract: dict[str, Any]) -> list[str]:
     errors = _census_errors(contract)
+    errors += _family_partition_errors(contract)
     errors += _ir_identity_errors(contract)
     errors += _control_errors(contract)
     errors += _mode_partition_errors(contract)
