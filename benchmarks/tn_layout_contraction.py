@@ -16,7 +16,10 @@ from typing import Any, TypeAlias, TypedDict
 import torch
 
 from flagquantum.kernels.provenance import triton_compiler_provenance
-from flagquantum.simulation.real_imag_kernels import _FUSED_LAYOUT_BMM_SHAPES
+from flagquantum.simulation.real_imag_kernels import (
+    _FUSED_LAYOUT_BMM_SHAPES,
+    complex_einsum_pair,
+)
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.tn_layout_contraction.v3"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.tn_layout_contraction.v3"
@@ -120,8 +123,6 @@ def _materialized(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
 
 
 def _public(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
-    from flagquantum.simulation.real_imag_kernels import complex_einsum_pair
-
     return complex_einsum_pair(EQUATION, left, right)
 
 
@@ -286,7 +287,7 @@ def _case(
         "direct_layout_forward": lambda: _direct(left, right, shapes),
         "materialized_torch_bmm_forward": lambda: _materialized(left, right),
         "native_einsum_forward": lambda: torch.einsum(EQUATION, left, right),
-        "public_catalog_dispatch": lambda: _public(left, right),
+        "public_catalog_dispatch": lambda: complex_einsum_pair(EQUATION, left, right),
         "direct_layout_forward_backward": direct_forward_backward,
         "native_einsum_forward_backward": native_forward_backward,
     }

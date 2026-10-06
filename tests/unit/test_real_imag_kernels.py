@@ -7,6 +7,7 @@ import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
 import flagquantum.simulation.real_imag_kernels as kernels_runtime
 from flagquantum.simulation.real_imag_kernels import (
     _CANONICAL_LAYOUT_CACHE,
+    _LAYOUT_MATERIALIZATION_CACHE,
     _bmm_real_imag_eager,
     _canonical_bmm_inputs,
     _canonical_bmm_layout,
@@ -26,6 +27,7 @@ else:
 
 
 def test_canonical_layout_detects_real_reshape_copy_without_materializing() -> None:
+    _LAYOUT_MATERIALIZATION_CACHE.clear()
     view_left = torch.randn(2, 3, 4, dtype=torch.complex64)
     view_right = torch.randn(2, 4, 5, dtype=torch.complex64)
     view_layout = _canonical_bmm_layout("zab,zbc->zac", view_left, view_right)
@@ -41,6 +43,31 @@ def test_canonical_layout_detects_real_reshape_copy_without_materializing() -> N
     assert _canonical_layout_requires_materialization(
         copied_left, copied_right, copied_layout
     )
+    assert len(_LAYOUT_MATERIALIZATION_CACHE) == 2
+    assert kernel_cache_summary()["materialization_decisions"] == 2
+
+
+def test_materialization_cache_distinguishes_tensor_strides() -> None:
+    _LAYOUT_MATERIALIZATION_CACHE.clear()
+    left = torch.randn(2, 3, 4, dtype=torch.complex64)
+    right = torch.randn(2, 4, 5, dtype=torch.complex64)
+    layout = _canonical_bmm_layout("zab,zbc->zac", left, right)
+    assert layout is not None
+
+    assert not _canonical_layout_requires_materialization(left, right, layout)
+    assert not _canonical_layout_requires_materialization(left, right, layout)
+    assert len(_LAYOUT_MATERIALIZATION_CACHE) == 1
+
+    transposed_left = left.transpose(1, 2)
+    transposed_right = torch.randn(2, 3, 5, dtype=torch.complex64)
+    transposed_layout = _canonical_bmm_layout(
+        "zab,zbc->zac", transposed_left, transposed_right
+    )
+    assert transposed_layout is not None
+    _canonical_layout_requires_materialization(
+        transposed_left, transposed_right, transposed_layout
+    )
+    assert len(_LAYOUT_MATERIALIZATION_CACHE) == 2
 
 
 def test_layout_bmm_dispatch_is_limited_to_evidenced_forward_shape() -> None:
