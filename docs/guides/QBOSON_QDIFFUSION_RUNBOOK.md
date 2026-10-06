@@ -92,6 +92,15 @@ evidence directory. Replace every placeholder, including full revisions and
 dataset/checkpoint SHA-256 digests, before running a baseline or guided sample.
 Do not change thresholds after seeing results.
 
+The `kaiwu_sdk` section is an executable rights gate, not a self-approval form.
+Populate its review timestamp and approval reference only from the retained
+organizational decision. Set each use-approval field to JSON `true` only when
+that exact use has been approved. The fixed `no-sdk-redistribution` policy
+allows distribution of the FlagQuantum adapter, not the Kaiwu wheel. The
+validator binds the frozen Kaiwu version and artifact SHA-256 to the exact
+Kaiwu distribution in the environment lock; changing either requires a new
+reviewed configuration.
+
 Use mode `0700` for evidence and checkpoint directories:
 
 ```bash
@@ -121,7 +130,8 @@ sha256sum /absolute/private-evidence/acceptance_config.json
 
 The config must designate one primary host and the other portability-replay
 host. It must contain at least three fixed seeds and a positive remote-call
-budget.
+budget. It must also retain the approved Kaiwu rights decision described above;
+public wheel availability or a checked agreement URL cannot satisfy that gate.
 
 ## 2. Verify transferred inputs
 

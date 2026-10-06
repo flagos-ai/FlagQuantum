@@ -122,6 +122,16 @@ not trusted as acceptance evidence.
 
 Credentials never belong in the frozen configuration or evidence bundle.
 
+The frozen config separately binds the reviewed Kaiwu wheel filename, source,
+SHA-256, public service-terms identity and effective date, review timestamp,
+approval reference, and the approved organizational, isolated-container, host
+staging, and adapter-distribution uses. The project policy remains
+`no-sdk-redistribution`: FlagQuantum may distribute its adapter, not the
+proprietary wheel. All approval fields must be literal booleans, and each must
+be `true`; placeholders and inferred approval fail before credential
+resolution. Final validation also requires the exact Kaiwu wheel digest and
+version in the environment lock to match this reviewed SDK record.
+
 Each frozen protein input also records an HTTPS acquisition source, an approved
 license identifier, an HTTPS license-evidence source, and the timezone-aware
 time of that review. `NOASSERTION`, `UNKNOWN`, `UNLICENSED`, missing evidence,

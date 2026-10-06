@@ -800,6 +800,12 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
             "python_version": "3.10.18",
             "distributions": [
                 {
+                    "name": "kaiwu",
+                    "version": "1.3.1",
+                    "approved_artifact_sha256": "a" * 64,
+                    "installed_content_sha256": "c" * 64,
+                },
+                {
                     "name": "torch",
                     "version": "2.7.0",
                     "approved_artifact_sha256": "a" * 64,

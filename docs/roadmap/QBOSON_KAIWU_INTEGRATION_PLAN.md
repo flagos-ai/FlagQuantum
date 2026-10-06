@@ -128,6 +128,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   is contract-source evidence, not legal approval. Organizational development,
   isolated-container execution, adapter distribution, and any separate wheel
   license still require an explicit review decision before acquisition.
+- The frozen QDiffusion config now turns that decision into a fail-closed gate.
+  It binds the exact Kaiwu 1.3.1 wheel filename, source, SHA-256, agreement
+  identity/effective date, review timestamp, approval reference, and separate
+  organizational-use, isolated-container, host-staging, and
+  adapter-distribution approvals. The SDK redistribution policy is fixed to
+  `no-sdk-redistribution`. Final validation requires exactly one Kaiwu
+  distribution in the environment lock and cross-checks both its version and
+  reviewed artifact digest; a version-only lock or prose-only approval can no
+  longer pass acceptance.
 - The QDiffusion acceptance decision is now executable rather than narrative:
   a frozen experiment-config template, two-host manifest template, and
   fail-closed validator recompute system and application gates. Fake transport,

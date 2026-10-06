@@ -201,6 +201,25 @@ def _config() -> dict[str, Any]:
             "kaiwu_sdk_version": "1.3.1",
             "environment_lock_sha256": "6" * 64,
         },
+        "kaiwu_sdk": {
+            "distribution": "kaiwu",
+            "version": "1.3.1",
+            "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
+            "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
+            "sha256": "a" * 64,
+            "service_terms_url": (
+                "https://platform.qboson.com/agreement?"
+                "type=QBoson-SPQC-Platform-Users-Agreement"
+            ),
+            "service_terms_effective_date": "2026-07-09",
+            "rights_reviewed_at": "2026-10-06T00:00:00Z",
+            "approval_reference": "LEGAL-APPROVAL-1",
+            "organizational_use_approved": True,
+            "isolated_container_use_approved": True,
+            "host_staging_approved": True,
+            "adapter_distribution_approved": True,
+            "sdk_redistribution_policy": "no-sdk-redistribution",
+        },
         "dataset": {
             "name": "frozen",
             "revision": "v1",
@@ -423,6 +442,12 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
         "inventory_policy": "exact",
         "python_version": "3.10.18",
         "distributions": [
+            {
+                "name": "kaiwu",
+                "version": "1.3.1",
+                "approved_artifact_sha256": "a" * 64,
+                "installed_content_sha256": "c" * 64,
+            },
             {
                 "name": "torch",
                 "version": "2.7.0",
@@ -747,6 +772,53 @@ def test_config_requires_environment_lock_digest() -> None:
     _validate_config(config, errors)
 
     assert any("environment_lock_sha256" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("sha256", "not-a-digest", "expected a SHA-256 digest"),
+        ("rights_reviewed_at", "2026-10-06", "timezone-aware timestamp"),
+        ("approval_reference", "<required>", "frozen value is required"),
+        ("organizational_use_approved", False, "explicit approval is required"),
+        ("isolated_container_use_approved", False, "explicit approval is required"),
+        ("host_staging_approved", False, "explicit approval is required"),
+        ("adapter_distribution_approved", False, "explicit approval is required"),
+        ("sdk_redistribution_policy", "redistribute", "reviewed 1.3.1 lane"),
+    ),
+)
+def test_config_requires_approved_kaiwu_sdk_rights(
+    field: str, value: object, message: str
+) -> None:
+    config = _config()
+    config["kaiwu_sdk"][field] = value
+    errors: list[str] = []
+
+    _validate_config(config, errors)
+
+    assert any(message in error for error in errors)
+
+
+def test_environment_lock_kaiwu_artifact_is_bound_to_approval(tmp_path: Path) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    lock_path = tmp_path / manifest["environment_lock"]["path"]
+    environment_lock = json.loads(lock_path.read_text())
+    environment_lock["distributions"][0]["approved_artifact_sha256"] = "b" * 64
+    manifest["environment_lock"]["sha256"] = _write_json(
+        lock_path, environment_lock
+    )
+    config_path = tmp_path / manifest["config"]["path"]
+    config = json.loads(config_path.read_text())
+    config["software"]["environment_lock_sha256"] = manifest["environment_lock"][
+        "sha256"
+    ]
+    manifest["config"]["sha256"] = _write_json(config_path, config)
+    _write_json(manifest_path, manifest)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("Kaiwu artifact differs from approved SDK" in error for error in errors)
 
 
 @pytest.mark.parametrize(
