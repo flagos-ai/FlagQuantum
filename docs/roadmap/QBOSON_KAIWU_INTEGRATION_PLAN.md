@@ -91,6 +91,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   acceptance validator independently enforces the same receipt identity rule,
   preventing log or JSON injection without inventing an undocumented vendor
   character alphabet or length limit.
+- All four quota-consuming CLI paths now share one project-number and
+  task-prefix normalizer. They trim once and reject empty, control, or format
+  characters before credential resolution or SDK construction, so an invalid
+  orchestration identifier cannot unnecessarily expose credentials to the
+  process or initialize the vendor lane before the owned input boundary fails.
 - Generic receipt restoration now validates runtime types, exact matrix size
   and identity, mode-specific sample limits, nonempty project and provider
   identities, and an aware UTC submission timestamp before a client operation.

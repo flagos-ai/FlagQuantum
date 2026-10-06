@@ -41,6 +41,7 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_directory,
     validate_private_json_output_path,
 )
+from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
     _validate_imported_module_tree,
@@ -591,8 +592,15 @@ def main() -> None:
     args = parser.parse_args()
     if args.acknowledge_provider_cost != ACKNOWLEDGEMENT:
         parser.error("invalid provider-cost acknowledgement; no task was submitted")
-    if not args.project_no.strip() or not args.task_prefix.strip():
-        parser.error("--project-no and --task-prefix must be non-empty")
+    try:
+        args.project_no = normalize_provider_identifier(
+            args.project_no, label="--project-no"
+        )
+        args.task_prefix = normalize_provider_identifier(
+            args.task_prefix, label="--task-prefix"
+        )
+    except (TypeError, ValueError) as exc:
+        parser.error(str(exc))
     path_arguments = {
         "config": args.config,
         "plugin-root": args.plugin_root,

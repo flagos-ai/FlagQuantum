@@ -20,6 +20,7 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
+from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.sdk_approval import (
     load_sdk_approval,
     verify_approved_kaiwu_distribution,
@@ -166,10 +167,8 @@ def run_live_smoke(
 ) -> dict[str, Any]:
     """Run one optimization and one sampling task without fallback."""
 
-    if not task_prefix.strip():
-        raise ValueError("task_prefix must be non-empty")
-    if not project_no.strip():
-        raise ValueError("project_no must be non-empty")
+    task_prefix = normalize_provider_identifier(task_prefix, label="task_prefix")
+    project_no = normalize_provider_identifier(project_no, label="project_no")
     if SHA256.fullmatch(environment_lock_sha256) is None:
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
     if SHA256.fullmatch(sdk_approval_sha256) is None:
@@ -183,10 +182,10 @@ def run_live_smoke(
             job = submit_kaiwu_task(
                 SMOKE_MATRIX,
                 client=client,
-                task_name=f"{task_prefix.strip()}-{mode}",
+                task_name=f"{task_prefix}-{mode}",
                 mode=mode,
                 requested_samples=requested_samples,
-                project_no=project_no.strip(),
+                project_no=project_no,
             )
             result = job.wait(timeout=timeout, poll_interval=poll_interval)
             records.append(_result_record(result))
@@ -264,7 +263,7 @@ def run_live_smoke(
         "qboson_target": (
             next(iter(provider_targets)) if provider_identity_complete else None
         ),
-        "project_no": project_no.strip(),
+        "project_no": project_no,
         "environment_lock_sha256": environment_lock_sha256,
         "sdk_approval_sha256": sdk_approval_sha256,
         "tasks": records,
@@ -323,8 +322,15 @@ def main() -> None:
             "--acknowledge-provider-cost must equal "
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
-    if not arguments.project_no.strip() or not arguments.task_prefix.strip():
-        parser.error("--project-no and --task-prefix must be non-empty")
+    try:
+        arguments.project_no = normalize_provider_identifier(
+            arguments.project_no, label="--project-no"
+        )
+        arguments.task_prefix = normalize_provider_identifier(
+            arguments.task_prefix, label="--task-prefix"
+        )
+    except (TypeError, ValueError) as exc:
+        parser.error(str(exc))
     validate_private_json_output_path(arguments.output)
     validate_private_directory(
         arguments.checkpoint_dir, label="Kaiwu checkpoint directory"

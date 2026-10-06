@@ -28,6 +28,7 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
+from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
     HOSTS,
@@ -520,8 +521,15 @@ def main() -> None:
             "--acknowledge-provider-cost must equal "
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
-    if not arguments.project_no.strip() or not arguments.task_prefix.strip():
-        parser.error("--project-no and --task-prefix must be non-empty")
+    try:
+        arguments.project_no = normalize_provider_identifier(
+            arguments.project_no, label="--project-no"
+        )
+        arguments.task_prefix = normalize_provider_identifier(
+            arguments.task_prefix, label="--task-prefix"
+        )
+    except (TypeError, ValueError) as exc:
+        parser.error(str(exc))
     validate_private_json_output_path(arguments.output)
     validate_private_directory(
         arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
