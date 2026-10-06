@@ -180,6 +180,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   parent-directory metadata. Invalid local destinations therefore fail before
   provider initialization, and a raced file is never overwritten after quota
   has been consumed.
+- All four quota-consuming CLIs now also validate the Kaiwu checkpoint root as
+  an existing absolute, private, non-symlink directory before credential
+  resolution. `KaiwuSDKClient` independently repeats its private-directory
+  check before license initialization, so the early check does not weaken the
+  provider boundary.
 - Offline artifact preflight, environment-lock, transfer-verification, and A800
   development records now use that same durable writer. Missing, public, or
   symlinked output parents therefore fail before publication across both the

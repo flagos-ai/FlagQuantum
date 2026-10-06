@@ -10,26 +10,32 @@ from pathlib import Path
 from typing import Any
 
 
+def validate_private_directory(path: Path, *, label: str) -> None:
+    """Validate an existing absolute private directory without following its leaf."""
+
+    if not path.is_absolute():
+        raise ValueError(f"{label} must be an absolute path")
+    try:
+        metadata = path.lstat()
+    except OSError:
+        raise ValueError(
+            f"{label} must be an existing private, non-symlink directory"
+        ) from None
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_mode & 0o077
+    ):
+        raise ValueError(f"{label} must be an existing private, non-symlink directory")
+
+
 def validate_private_json_output_path(path: Path) -> None:
     """Validate an unused private JSON destination without changing the filesystem."""
 
     if not path.is_absolute():
         raise ValueError("evidence output path must be absolute")
     parent = path.parent
-    try:
-        metadata = parent.lstat()
-    except OSError:
-        raise ValueError(
-            "evidence parent must be an existing private, non-symlink directory"
-        ) from None
-    if (
-        parent.is_symlink()
-        or not stat.S_ISDIR(metadata.st_mode)
-        or metadata.st_mode & 0o077
-    ):
-        raise ValueError(
-            "evidence parent must be an existing private, non-symlink directory"
-        )
+    validate_private_directory(parent, label="evidence parent")
     try:
         path.lstat()
     except FileNotFoundError:
@@ -70,4 +76,8 @@ def write_private_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-__all__ = ("validate_private_json_output_path", "write_private_json_exclusive")
+__all__ = (
+    "validate_private_directory",
+    "validate_private_json_output_path",
+    "write_private_json_exclusive",
+)

@@ -164,9 +164,12 @@ task receipt exists is converted into a failed attempted record; the smoke
 sequence stops without submitting its next task, and hardware acceptance stays
 closed.
 
-The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing private
-checkpoint directory, and an explicitly selected project. The acknowledgement
-must be typed exactly so an ordinary test run cannot spend provider quota:
+The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
+private checkpoint directory, and an explicitly selected project. All
+quota-consuming entrypoints reject a missing, public, relative, or symlinked
+checkpoint directory before resolving credentials; the SDK client repeats the
+check before license initialization. The acknowledgement must be typed exactly
+so an ordinary test run cannot spend provider quota:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \

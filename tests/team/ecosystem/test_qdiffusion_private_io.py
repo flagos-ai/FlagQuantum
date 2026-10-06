@@ -6,11 +6,41 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_directory,
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_validate_private_directory_accepts_absolute_private_directory(
+    tmp_path: Path,
+) -> None:
+    validate_private_directory(tmp_path, label="checkpoint directory")
+
+
+def test_validate_private_directory_rejects_unsafe_directory(
+    tmp_path: Path,
+) -> None:
+    public = tmp_path / "public"
+    public.mkdir(mode=0o755)
+    private = tmp_path / "private"
+    private.mkdir(mode=0o700)
+    linked = tmp_path / "linked"
+    linked.symlink_to(private, target_is_directory=True)
+
+    unsafe = (
+        Path("relative"),
+        tmp_path / "missing",
+        public,
+        linked,
+        tmp_path / "file",
+    )
+    (tmp_path / "file").write_text("not a directory", encoding="utf-8")
+    for path in unsafe:
+        with pytest.raises(ValueError, match="checkpoint directory must"):
+            validate_private_directory(path, label="checkpoint directory")
 
 
 def test_validate_private_json_output_path_accepts_absent_private_target(

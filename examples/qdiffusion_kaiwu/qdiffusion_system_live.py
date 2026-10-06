@@ -21,6 +21,7 @@ from typing import Any
 import torch
 
 from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_directory,
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
@@ -458,6 +459,9 @@ def main() -> None:
     if not arguments.project_no.strip() or not arguments.task_prefix.strip():
         parser.error("--project-no and --task-prefix must be non-empty")
     validate_private_json_output_path(arguments.output)
+    validate_private_directory(
+        arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
+    )
     config, config_sha256 = _load_frozen_config(arguments.config)
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")

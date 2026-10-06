@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from examples.qdiffusion_kaiwu.private_io import (
+    validate_private_directory,
     validate_private_json_output_path,
     write_private_json_exclusive,
 )
@@ -216,6 +217,9 @@ def main() -> None:
     if not arguments.project_no.strip() or not arguments.task_prefix.strip():
         parser.error("--project-no and --task-prefix must be non-empty")
     validate_private_json_output_path(arguments.output)
+    validate_private_directory(
+        arguments.checkpoint_dir, label="Kaiwu checkpoint directory"
+    )
 
     _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
     user_id, sdk_code = resolve_kaiwu_credentials()

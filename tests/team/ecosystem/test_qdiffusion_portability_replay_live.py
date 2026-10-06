@@ -229,5 +229,8 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     assert source.index("validate_private_json_output_path(args.output)") < (
         source.index("resolve_kaiwu_credentials()")
     )
+    assert source.index("validate_private_directory(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert 'role != "portability_replay"' in source
     assert "not a second training run" in source
