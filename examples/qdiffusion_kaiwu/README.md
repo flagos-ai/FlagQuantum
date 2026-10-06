@@ -44,6 +44,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
   --dataset /private/proteins.fasta \
+  --dataset-source-archive /private/UP000005640_9606.fasta.gz \
   --base-checkpoint /private/dplm_150m \
   --tokenizer /private/dplm_150m \
   --evaluation-model /private/esm2_t33_650M_UR50D.pt \
@@ -65,6 +66,13 @@ gate inside the intended validation host environment. The default
 `protein-experiment` gate exits zero only when the complete
 experiment is ready. A passing report is readiness information, not provider,
 execution, hardware, or acceptance evidence.
+
+Protein readiness and both protein launchers require the reviewed compressed
+dataset source alongside the uncompressed FASTA. The offline preflight hashes
+the archive, checks its frozen byte length and `gzip-exact-bytes-v1` policy,
+streams decompression under a 4 GiB bound, and requires the decompressed byte
+count and SHA-256 to equal the exact FASTA consumed by training. Neither path
+downloads data or accepts a mutable source URL as evidence by itself.
 
 Create the resource snapshot from an authenticated read-only Resource Bill
 view by copying `provider_resources.example.json` to a mode-0600 file in a

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -9,11 +10,17 @@ import pytest
 from examples.qdiffusion_kaiwu import preflight_protein_artifacts as preflight_module
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     _artifact_identity,
-    assert_artifacts_unchanged,
     capture_artifact_snapshots,
-    preflight_artifacts,
-    preflight_artifacts_with_snapshots,
     revalidate_artifact_snapshots,
+)
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    assert_artifacts_unchanged as _assert_artifacts_unchanged,
+)
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    preflight_artifacts as _preflight_artifacts,
+)
+from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
+    preflight_artifacts_with_snapshots as _preflight_artifacts_with_snapshots,
 )
 
 pytestmark = pytest.mark.unit
@@ -25,6 +32,45 @@ def _write(path: Path, content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def _dataset_source_archive(paths: dict[str, Path]) -> Path:
+    return paths["dataset"].with_suffix(".fasta.gz")
+
+
+def preflight_artifacts(
+    config_path: Path, artifact_paths: dict[str, Path], output_path: Path
+) -> dict[str, object]:
+    return _preflight_artifacts(
+        config_path,
+        artifact_paths,
+        output_path,
+        dataset_source_archive=_dataset_source_archive(artifact_paths),
+    )
+
+
+def preflight_artifacts_with_snapshots(
+    config_path: Path, artifact_paths: dict[str, Path], output_path: Path
+):
+    return _preflight_artifacts_with_snapshots(
+        config_path,
+        artifact_paths,
+        output_path,
+        dataset_source_archive=_dataset_source_archive(artifact_paths),
+    )
+
+
+def assert_artifacts_unchanged(
+    config_path: Path,
+    artifact_paths: dict[str, Path],
+    preflight_record: dict[str, object],
+) -> None:
+    _assert_artifacts_unchanged(
+        config_path,
+        artifact_paths,
+        preflight_record,
+        dataset_source_archive=_dataset_source_archive(artifact_paths),
+    )
+
+
 def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
     paths = {
         "dataset": tmp_path / "dataset.fasta",
@@ -32,10 +78,10 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
         "tokenizer": tmp_path / "tokenizer",
         "evaluation_model": tmp_path / "evaluation-model",
     }
-    dataset_hash = _write(
-        paths["dataset"],
-        b">p1\nACDE\n>p2\nFGHI\n>p3\nKLMN\n>p4\nPQRS\n",
-    )
+    dataset_bytes = b">p1\nACDE\n>p2\nFGHI\n>p3\nKLMN\n>p4\nPQRS\n"
+    dataset_hash = _write(paths["dataset"], dataset_bytes)
+    source_bytes = gzip.compress(dataset_bytes, mtime=0)
+    source_hash = _write(_dataset_source_archive(paths), source_bytes)
     checkpoint_hash = _write(paths["base_checkpoint"], b"weights")
     _write(paths["tokenizer"] / "tokenizer.json", b"tokens")
     _write(paths["evaluation_model"] / "weights.pt", b"esm2")
@@ -46,6 +92,10 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
         "version": "1.0",
         "dataset": {
             "sha256": dataset_hash,
+            "source_archive_sha256": source_hash,
+            "source_archive_bytes": len(source_bytes),
+            "source_archive_format": "gzip",
+            "decompression_policy": "gzip-exact-bytes-v1",
             "min_length": 4,
             "max_length": 4,
             "max_records": 4,
@@ -97,6 +147,16 @@ def test_preflight_verifies_files_and_trees_without_recording_paths(
         "test_count": 1,
     }
     assert record["artifacts"]["tokenizer"]["algorithm"] == "tree-sha256-v1"
+    assert record["dataset_source"] == {
+        "source_archive_sha256": hashlib.sha256(
+            _dataset_source_archive(paths).read_bytes()
+        ).hexdigest(),
+        "source_archive_bytes": _dataset_source_archive(paths).stat().st_size,
+        "source_archive_format": "gzip",
+        "decompression_policy": "gzip-exact-bytes-v1",
+        "decompressed_sha256": record["artifacts"]["dataset"]["sha256"],
+        "decompressed_bytes": paths["dataset"].stat().st_size,
+    }
     assert str(tmp_path) not in output.read_text(encoding="utf-8")
     assert output.stat().st_mode & 0o777 == 0o600
 
@@ -112,6 +172,24 @@ def test_preflight_rejects_digest_mismatch_without_writing_record(
         preflight_artifacts(config_path, paths, output)
 
     assert not output.exists()
+
+
+def test_preflight_rejects_dataset_source_that_does_not_produce_frozen_fasta(
+    tmp_path: Path,
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    source = _dataset_source_archive(paths)
+    replacement = gzip.compress(b">other\nAAAA\n", mtime=0)
+    source.write_bytes(replacement)
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["dataset"]["source_archive_sha256"] = hashlib.sha256(
+        replacement
+    ).hexdigest()
+    config["dataset"]["source_archive_bytes"] = len(replacement)
+    config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="decompressed dataset .* differs"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
 
 
 def test_preflight_refuses_to_overwrite_evidence(tmp_path: Path) -> None:

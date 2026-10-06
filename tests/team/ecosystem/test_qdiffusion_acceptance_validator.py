@@ -887,6 +887,10 @@ def _config() -> dict[str, Any]:
             "name": "frozen",
             "revision": "v1",
             "source_url": "https://example.test/dataset.fasta",
+            "source_archive_sha256": "1" * 64,
+            "source_archive_bytes": 123,
+            "source_archive_format": "gzip",
+            "decompression_policy": "gzip-exact-bytes-v1",
             "license_id": "CC-BY-4.0",
             "license_evidence_url": "https://example.test/dataset-license",
             "license_reviewed_at": "2026-10-05T00:00:00Z",
@@ -1401,6 +1405,20 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
             "offline_preflight_only": True,
             "acceptance_evidence": False,
             "config_sha256": "c" * 64,
+            "dataset_source": {
+                "source_archive_sha256": config["dataset"][
+                    "source_archive_sha256"
+                ],
+                "source_archive_bytes": config["dataset"]["source_archive_bytes"],
+                "source_archive_format": config["dataset"][
+                    "source_archive_format"
+                ],
+                "decompression_policy": config["dataset"][
+                    "decompression_policy"
+                ],
+                "decompressed_sha256": config["dataset"]["sha256"],
+                "decompressed_bytes": 456,
+            },
             "artifacts": {
                 artifact_name: {
                     "sha256": config[config_name]["sha256"],
@@ -1867,6 +1885,24 @@ def test_environment_lock_kaiwu_artifact_is_bound_to_approval(tmp_path: Path) ->
     (
         ("dataset", "source_url", "http://example.test/data", "expected an HTTPS URL"),
         ("dataset", "source_url", "https://[broken", "expected an HTTPS URL"),
+        (
+            "dataset",
+            "source_archive_sha256",
+            "not-a-digest",
+            "source_archive_sha256: expected a SHA-256 digest",
+        ),
+        (
+            "dataset",
+            "source_archive_bytes",
+            True,
+            "source_archive_bytes: expected a positive integer",
+        ),
+        (
+            "dataset",
+            "decompression_policy",
+            "implicit",
+            "decompression_policy: expected gzip-exact-bytes-v1",
+        ),
         ("checkpoint", "license_id", "NOASSERTION", "approved license identifier"),
         ("tokenizer", "license_evidence_url", "<required>", "expected an HTTPS URL"),
         (

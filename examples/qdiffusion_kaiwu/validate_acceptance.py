@@ -576,6 +576,10 @@ CONFIG_ARTIFACT_FIELDS = frozenset(
     }
 )
 CONFIG_DATASET_FIELDS = CONFIG_ARTIFACT_FIELDS | {
+    "source_archive_sha256",
+    "source_archive_bytes",
+    "source_archive_format",
+    "decompression_policy",
     "split",
     "min_length",
     "max_length",
@@ -583,6 +587,27 @@ CONFIG_DATASET_FIELDS = CONFIG_ARTIFACT_FIELDS | {
     "validation_ratio",
     "test_ratio",
 }
+ARTIFACT_PREFLIGHT_FIELDS = frozenset(
+    {
+        "schema",
+        "version",
+        "offline_preflight_only",
+        "acceptance_evidence",
+        "config_sha256",
+        "artifacts",
+        "dataset_source",
+    }
+)
+DATASET_SOURCE_FIELDS = frozenset(
+    {
+        "source_archive_sha256",
+        "source_archive_bytes",
+        "source_archive_format",
+        "decompression_policy",
+        "decompressed_sha256",
+        "decompressed_bytes",
+    }
+)
 CONFIG_TRAINING_FIELDS = frozenset(
     {
         "freeze_proposal",
@@ -1583,6 +1608,26 @@ def _validate_config(config: dict[str, Any], errors: list[str]) -> None:
             errors.append(
                 f"config.{name}.license_reviewed_at: expected a timezone-aware timestamp"
             )
+    dataset = _mapping(config.get("dataset"), "config.dataset", errors)
+    source_digest = dataset.get("source_archive_sha256")
+    if (
+        not isinstance(source_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", source_digest) is None
+    ):
+        errors.append(
+            "config.dataset.source_archive_sha256: expected a SHA-256 digest"
+        )
+    if (
+        type(dataset.get("source_archive_bytes")) is not int
+        or dataset.get("source_archive_bytes", 0) <= 0
+    ):
+        errors.append("config.dataset.source_archive_bytes: expected a positive integer")
+    if dataset.get("source_archive_format") != "gzip":
+        errors.append("config.dataset.source_archive_format: expected gzip")
+    if dataset.get("decompression_policy") != "gzip-exact-bytes-v1":
+        errors.append(
+            "config.dataset.decompression_policy: expected gzip-exact-bytes-v1"
+        )
     generation = _mapping(config.get("generation"), "config.generation", errors)
     for field in (
         "sequence_count",
@@ -3214,6 +3259,8 @@ def _validate_component_bundle(
         if payload.get("schema") == ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA
     ]
     artifact_preflight_digest, artifact_preflight = artifact_preflights[0]
+    if set(artifact_preflight) != ARTIFACT_PREFLIGHT_FIELDS:
+        errors.append("artifact preflight: field set differs from its closed schema")
     if artifact_preflight.get("offline_preflight_only") is not True:
         errors.append("artifact preflight: offline-only flag is not proven")
     if artifact_preflight.get("acceptance_evidence") is not False:
@@ -3250,6 +3297,29 @@ def _validate_component_bundle(
                 errors.append(
                     f"artifact preflight: {artifact_name} file count is invalid"
                 )
+    dataset_source = _mapping(
+        artifact_preflight.get("dataset_source"),
+        "artifact preflight.dataset_source",
+        errors,
+    )
+    if set(dataset_source) != DATASET_SOURCE_FIELDS:
+        errors.append("artifact preflight: dataset source schema differs")
+    frozen_dataset = _mapping(config.get("dataset"), "config.dataset", errors)
+    source_bindings = {
+        "source_archive_sha256": frozen_dataset.get("source_archive_sha256"),
+        "source_archive_bytes": frozen_dataset.get("source_archive_bytes"),
+        "source_archive_format": frozen_dataset.get("source_archive_format"),
+        "decompression_policy": frozen_dataset.get("decompression_policy"),
+        "decompressed_sha256": frozen_dataset.get("sha256"),
+    }
+    for field, expected in source_bindings.items():
+        if dataset_source.get(field) != expected:
+            errors.append(f"artifact preflight: dataset source {field} differs")
+    if (
+        type(dataset_source.get("decompressed_bytes")) is not int
+        or dataset_source.get("decompressed_bytes", 0) <= 0
+    ):
+        errors.append("artifact preflight: decompressed dataset size is invalid")
 
     software = _mapping(config.get("software"), "config.software", errors)
     source_preflights: dict[str, tuple[str, dict[str, Any]]] = {}

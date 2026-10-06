@@ -1274,6 +1274,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   inode and rechecks its leaf and parent identity after parsing, while model
   trees retain the unchanged `tree-sha256-v1` path-aware digest format. A
   dataset swap between hashing and split validation therefore fails preflight.
+- Protein preflight now also binds that staged FASTA to the reviewed gzip
+  source artifact. The frozen configuration records the archive SHA-256, byte
+  length, `gzip` format, and `gzip-exact-bytes-v1` policy; preflight streams
+  decompression under a 4 GiB bound and requires the resulting byte count and
+  digest to equal the captured FASTA exactly. The source-archive lineage is
+  retained in the preflight component and independently checked by final
+  acceptance validation.
 - Protein preflight now returns the exact stable snapshots from the pass that
   produced its record instead of reopening the paths to establish a second
   identity. Primary training and portability replay retain those snapshots and

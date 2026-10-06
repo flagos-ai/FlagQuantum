@@ -87,7 +87,10 @@ or CI/container usage rights required by this integration.
    format.
 4. Reject symlinks and special files, compute the repository's file or
    path-normalized tree SHA-256 identity, and place that digest in the frozen
-   config. The checkpoint and tokenizer must come from the same DPLM revision.
+   config. Retain the reviewed dataset `.fasta.gz`; freeze its SHA-256 and byte
+   length and use `gzip-exact-bytes-v1` to prove that its decompressed byte
+   stream is exactly the FASTA consumed by training. The checkpoint and
+   tokenizer must come from the same DPLM revision.
 5. Run `preflight_protein_artifacts.py` offline. Keep its mode-0600 record in a
    private mode-0700 directory; do not add artifact paths or bytes to Git.
 6. Build and verify the closed-world Python environment lock from separately

@@ -120,6 +120,7 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
   --dataset /private/proteins.fasta \
+  --dataset-source-archive /private/UP000005640_9606.fasta.gz \
   --base-checkpoint /private/dplm_150m \
   --tokenizer /private/dplm_150m \
   --evaluation-model /private/esm2_t33_650M_UR50D.pt \
@@ -693,6 +694,7 @@ records, and missing, public, or symlinked output parents:
 python -B -s -m examples.qdiffusion_kaiwu.preflight_protein_artifacts \
   --config /absolute/evidence/acceptance-config.json \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --dataset-source-archive /absolute/artifacts/UP000005640_9606.fasta.gz \
   --base-checkpoint /absolute/artifacts/dplm_150m \
   --tokenizer /absolute/artifacts/dplm_150m \
   --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D \
@@ -709,7 +711,11 @@ File identities and directory-tree identities use the same stable no-follow
 snapshot layer as reviewed source verification. FASTA profiling reopens the
 captured dataset inode and rechecks both the leaf and parent identity after
 parsing, so the dataset digest and corpus profile cannot come from different
-path contents.
+path contents. The preflight also verifies the frozen SHA-256 and byte length
+of the retained gzip archive, streams its decompression under a 4 GiB bound,
+and proves that the resulting bytes are exactly the staged FASTA. This binds
+the training corpus to the reviewed source artifact rather than only to a
+post-decompression file.
 
 The frozen configuration includes every plugin knob that changes the selected
 corpus or generated sequences: record-length bounds, record cap, validation and
@@ -743,6 +749,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --config /absolute/evidence/acceptance-config.json \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --dataset-source-archive /absolute/artifacts/UP000005640_9606.fasta.gz \
   --base-checkpoint /absolute/artifacts/dplm_150m \
   --tokenizer /absolute/artifacts/dplm_150m \
   --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
@@ -900,6 +907,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --config /absolute/evidence/acceptance-config.json \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --dataset /absolute/artifacts/UP000005640_9606.fasta \
+  --dataset-source-archive /absolute/artifacts/UP000005640_9606.fasta.gz \
   --base-checkpoint /absolute/artifacts/dplm_150m \
   --tokenizer /absolute/artifacts/dplm_150m \
   --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \

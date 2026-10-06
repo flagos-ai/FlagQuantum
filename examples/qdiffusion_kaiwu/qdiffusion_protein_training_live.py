@@ -589,6 +589,7 @@ def main() -> None:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--dataset", required=True, type=Path)
+    parser.add_argument("--dataset-source-archive", required=True, type=Path)
     parser.add_argument("--base-checkpoint", required=True, type=Path)
     parser.add_argument("--tokenizer", required=True, type=Path)
     parser.add_argument("--evaluation-model", required=True, type=Path)
@@ -631,6 +632,7 @@ def main() -> None:
         "config": args.config,
         "plugin-root": args.plugin_root,
         "dataset": args.dataset,
+        "dataset-source-archive": args.dataset_source_archive,
         "base-checkpoint": args.base_checkpoint,
         "tokenizer": args.tokenizer,
         "evaluation-model": args.evaluation_model,
@@ -722,7 +724,10 @@ def main() -> None:
         "evaluation_model": args.evaluation_model,
     }
     artifact_preflight, artifact_snapshots = preflight_artifacts_with_snapshots(
-        args.config, artifact_paths, args.artifact_preflight_output
+        args.config,
+        artifact_paths,
+        args.artifact_preflight_output,
+        dataset_source_archive=args.dataset_source_archive,
     )
     if artifact_preflight.get("config_sha256") != config_sha256:
         raise RuntimeError("frozen experiment config changed before training")
@@ -801,7 +806,12 @@ def main() -> None:
     artifact_postflight_error: BaseException | None = None
     try:
         revalidate_artifact_snapshots(artifact_snapshots)
-        assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
+        assert_artifacts_unchanged(
+            args.config,
+            artifact_paths,
+            artifact_preflight,
+            dataset_source_archive=args.dataset_source_archive,
+        )
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
     apply_artifact_postflight(payload, artifact_postflight_error)

@@ -112,7 +112,7 @@ def test_readiness_never_serializes_credential_values(
     monkeypatch.setattr(
         readiness_module,
         "_inspect_artifacts",
-        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+        lambda config_path, artifact_paths, **kwargs: ("d" * 64, {}, {}, {}),
     )
     monkeypatch.setattr(
         readiness_module, "validate_private_directory", lambda *a, **k: None
@@ -128,6 +128,7 @@ def test_readiness_never_serializes_credential_values(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        dataset_source_archive=Path("/private/dataset.fasta.gz"),
         provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
@@ -304,7 +305,7 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
     monkeypatch.setattr(
         readiness_module,
         "_inspect_artifacts",
-        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+        lambda config_path, artifact_paths, **kwargs: ("d" * 64, {}, {}, {}),
     )
     monkeypatch.setattr(
         readiness_module, "validate_private_directory", lambda *a, **k: None
@@ -319,6 +320,7 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        dataset_source_archive=Path("/private/dataset.fasta.gz"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
             "QBOSON_USER_ID": "present",
@@ -564,7 +566,7 @@ def test_system_readiness_rejects_different_sdk_approval_records(
     monkeypatch.setattr(
         readiness_module,
         "_inspect_artifacts",
-        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+        lambda config_path, artifact_paths, **kwargs: ("d" * 64, {}, {}, {}),
     )
     monkeypatch.setattr(
         readiness_module, "validate_private_directory", lambda *a, **k: None
@@ -580,6 +582,7 @@ def test_system_readiness_rejects_different_sdk_approval_records(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        dataset_source_archive=Path("/private/dataset.fasta.gz"),
         provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={
@@ -641,7 +644,7 @@ def test_system_readiness_requires_a800_cuda_zero(
     monkeypatch.setattr(
         readiness_module,
         "_inspect_artifacts",
-        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+        lambda config_path, artifact_paths, **kwargs: ("d" * 64, {}, {}, {}),
     )
     monkeypatch.setattr(
         readiness_module, "validate_private_directory", lambda *a, **k: None
@@ -661,6 +664,7 @@ def test_system_readiness_requires_a800_cuda_zero(
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
         artifact_paths=_paths(),
+        dataset_source_archive=Path("/private/dataset.fasta.gz"),
         provider_resources_path=Path("/private/provider-resources.json"),
         checkpoint_dir=Path("/private/checkpoints"),
         environ={

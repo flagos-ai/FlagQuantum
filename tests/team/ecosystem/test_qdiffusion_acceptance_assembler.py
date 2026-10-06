@@ -83,6 +83,14 @@ def _artifact_preflight(config: dict[str, Any], config_sha256: str) -> dict[str,
         "offline_preflight_only": True,
         "acceptance_evidence": False,
         "config_sha256": config_sha256,
+        "dataset_source": {
+            "source_archive_sha256": config["dataset"]["source_archive_sha256"],
+            "source_archive_bytes": config["dataset"]["source_archive_bytes"],
+            "source_archive_format": config["dataset"]["source_archive_format"],
+            "decompression_policy": config["dataset"]["decompression_policy"],
+            "decompressed_sha256": config["dataset"]["sha256"],
+            "decompressed_bytes": 456,
+        },
         "artifacts": {
             artifact_name: {
                 "sha256": config[config_name]["sha256"],

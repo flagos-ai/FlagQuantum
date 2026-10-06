@@ -69,6 +69,7 @@ def audit_readiness(
     primary_source_preflight: Path | None,
     replay_source_preflight: Path | None,
     artifact_paths: dict[str, Path | None],
+    dataset_source_archive: Path | None = None,
     provider_resources_path: Path | None = None,
     checkpoint_dir: Path | None = None,
     environ: Mapping[str, str] | None = None,
@@ -280,7 +281,7 @@ def audit_readiness(
         "base_checkpoint",
         "tokenizer",
         "evaluation_model",
-    } or any(path is None for path in artifact_paths.values()):
+    } or any(path is None for path in artifact_paths.values()) or dataset_source_archive is None:
         checks["protein_artifacts"] = _check("missing", "artifact_paths_absent")
     else:
         try:
@@ -291,6 +292,7 @@ def audit_readiness(
                     for name, path in artifact_paths.items()
                     if path is not None
                 },
+                dataset_source_archive=dataset_source_archive,
             )
         except (OSError, ValueError):
             checks["protein_artifacts"] = _check("fail", "protein_artifacts_invalid")
@@ -353,6 +355,7 @@ def main() -> None:
     parser.add_argument("--primary-source-preflight", type=Path)
     parser.add_argument("--replay-source-preflight", type=Path)
     parser.add_argument("--dataset", type=Path)
+    parser.add_argument("--dataset-source-archive", type=Path)
     parser.add_argument("--base-checkpoint", type=Path)
     parser.add_argument("--tokenizer", type=Path)
     parser.add_argument("--evaluation-model", type=Path)
@@ -375,6 +378,7 @@ def main() -> None:
             "tokenizer": args.tokenizer,
             "evaluation_model": args.evaluation_model,
         },
+        dataset_source_archive=args.dataset_source_archive,
         provider_resources_path=args.provider_resources,
         checkpoint_dir=args.checkpoint_dir,
         required_stage=args.require_stage,
