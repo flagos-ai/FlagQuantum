@@ -92,26 +92,33 @@ def _require_private_directory(path: Path, *, description: str) -> None:
         )
 
 
-def _capture_output_parent(path: Path) -> os.stat_result:
-    """Freeze the private output parent identity for the publication window."""
+def _open_output_parent(path: Path) -> tuple[int, os.stat_result]:
+    """Open and freeze the private output parent for the publication window."""
 
     try:
-        metadata = path.lstat()
+        descriptor = os.open(
+            path,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
     except OSError:
         raise ValueError(
             "acceptance output parent must be an existing private, "
             f"non-symlink directory: {path}"
         ) from None
-    if (
-        path.is_symlink()
-        or not stat.S_ISDIR(metadata.st_mode)
-        or metadata.st_mode & 0o077
-    ):
-        raise ValueError(
-            "acceptance output parent must be an existing private, "
-            f"non-symlink directory: {path}"
-        )
-    return metadata
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o077:
+            raise ValueError(
+                "acceptance output parent must be an existing private, "
+                f"non-symlink directory: {path}"
+            )
+        _verify_output_parent(path, metadata)
+        return descriptor, metadata
+    except BaseException:
+        os.close(descriptor)
+        raise
 
 
 def _verify_output_parent(path: Path, expected: os.stat_result) -> None:
@@ -647,34 +654,42 @@ def _publish_acceptance_bundle(
             raise ValueError(f"component record changed after assembly: {name}")
         component_bytes[name] = encoded
     destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    output_parent = _capture_output_parent(destination.parent)
-    with TemporaryDirectory(
-        prefix=f".{destination.name}.staging-",
-        dir=destination.parent,
-    ) as temporary_directory:
-        staging = Path(temporary_directory)
-        staging.chmod(0o700)
-        _verify_output_parent(destination.parent, output_parent)
-        manifest_path = _materialize_acceptance_bundle(
-            staging,
-            config_bytes=config_bytes,
-            environment_lock_bytes=environment_lock_bytes,
-            config=config,
-            primary=primary,
-            replay=replay,
-            component_bytes=component_bytes,
-        )
-        errors = validate_acceptance(manifest_path)
-        if errors:
-            raise RuntimeError(
-                "final acceptance validation failed: " + "; ".join(errors)
+    output_descriptor, output_parent = _open_output_parent(destination.parent)
+    try:
+        with TemporaryDirectory(
+            prefix=f".{destination.name}.staging-",
+            dir=destination.parent,
+        ) as temporary_directory:
+            staging = Path(temporary_directory)
+            staging.chmod(0o700)
+            _verify_output_parent(destination.parent, output_parent)
+            manifest_path = _materialize_acceptance_bundle(
+                staging,
+                config_bytes=config_bytes,
+                environment_lock_bytes=environment_lock_bytes,
+                config=config,
+                primary=primary,
+                replay=replay,
+                component_bytes=component_bytes,
             )
-        _verify_output_parent(destination.parent, output_parent)
-        _require_absent_destination(destination, final_check=True)
-        os.replace(staging, destination)
-        _verify_output_parent(destination.parent, output_parent)
-        _sync_directory(destination.parent)
-        _verify_output_parent(destination.parent, output_parent)
+            errors = validate_acceptance(manifest_path)
+            if errors:
+                raise RuntimeError(
+                    "final acceptance validation failed: " + "; ".join(errors)
+                )
+            _verify_output_parent(destination.parent, output_parent)
+            _require_absent_destination(destination, final_check=True)
+            os.replace(
+                staging.name,
+                destination.name,
+                src_dir_fd=output_descriptor,
+                dst_dir_fd=output_descriptor,
+            )
+            _verify_output_parent(destination.parent, output_parent)
+            os.fsync(output_descriptor)
+            _verify_output_parent(destination.parent, output_parent)
+    finally:
+        os.close(output_descriptor)
 
 
 def main() -> None:

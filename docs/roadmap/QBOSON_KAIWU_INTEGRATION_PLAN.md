@@ -639,6 +639,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   that publication window, then rechecks it after staging creation, final
   validation, atomic rename, and directory sync. Replacing the parent and
   planting a same-named attacker staging directory cannot redirect publication.
+- The output parent is also kept open throughout publication. Final rename and
+  directory sync are descriptor-relative, so a replacement in the interval
+  after the last visible-path check remains anchored to the originally opened
+  private directory and is then reported as a failed publication.
 - A credential-free local golden-path script now verifies clean checkouts at the
   pinned Kaiwu Community and Kaiwu PyTorch Plugin revisions, clears provider
   credential variables, explicitly gates source-only conformance without
