@@ -35,11 +35,14 @@ On that basis:
   product selects would publish the cost of a route no caller receives.
 * ``auto`` is a real selection and not an alias. It never resolves to a SABRE
   strategy, which is the documented scope of the cost estimate it ranks by, and
-  on most programs it beats *both* of the strategies it may choose from, so the
-  estimate is informative inside its scope rather than noise. The price of that
-  scope is the same whether the caller asks for ``auto`` or names one of the two
-  it covers; both are roughly twice the SWAPs of the strategy the product
-  already ships.
+  its total is below both of the strategies it may choose from, so the estimate
+  is informative inside its scope rather than noise. It cannot be *below* both on
+  any single program: ``auto`` returns the route of the candidate it named, so
+  its per-program count always equals that candidate's, and the better of the two
+  is a floor it can only reach. Reaching it on 132 of the 140 programs, and
+  missing it on 8, is what the estimate buys. The price of that scope is the same
+  whether the caller asks for ``auto`` or names one of the two it covers; both are
+  roughly twice the SWAPs of the strategy the product already ships.
 * ``restore_after_each_gate``, the default of ``compile``, is the one a caller
   gets by saying nothing. It is the worst entry in the catalog, and the number
   below is what saying nothing costs.
@@ -48,6 +51,16 @@ The conclusion is a measurement rather than a change. The scope of the automatic
 selection is already stated in ``capability-maturity.toml``; what was missing is
 its price, and this module supplies it so the next round can decide whether to
 widen the selection against a number instead of an impression.
+
+Every count below is read from the shipped router, so it is a reading of the
+router's behaviour rather than of this module. A physical pair resolves to one
+route, and that route is a function of the pair rather than of the queries the
+device answered before it, so these counts are reproducible from a cold device.
+Without that property the count would depend on which of its two operands a
+consumer happened to pass first, or on whether another pass had already used the
+same device, and this file would be publishing the cost of a route it never
+measured. ``tests/team/compiler/test_routing_conformance.py`` asserts the
+property instead of leaving this file to assume it.
 
 Classification: a local compiler microbenchmark on the single-device fast path.
 It runs no distributed work, makes no scalability claim, and is not a

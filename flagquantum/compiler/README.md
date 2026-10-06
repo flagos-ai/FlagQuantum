@@ -579,8 +579,8 @@ compiles the same 140 programs through `flagquantum.compiler.compile` -- the ent
 point a caller uses, so the programs are optimized before they are routed, as a
 caller's are -- and reports the SWAPs each of the five entry points retains after
 post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
-automatic selection 4316, `restore_after_each_gate` 4656 and
-`persistent_layout` 4722, with every entry point routing all 140 programs, no
+automatic selection 4310, `restore_after_each_gate` 4660 and
+`persistent_layout` 4716, with every entry point routing all 140 programs, no
 two-wire operation off the device, and every compiled program equal to its source
 to `2.8e-16`. Two numbers there are worth carrying forward. The automatic
 selection never resolves to a SABRE strategy, because its cost estimate can rank
@@ -590,7 +590,16 @@ restriction is measured rather than merely stated. And the estimate is good insi
 that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
 and lands within `1.005` of always picking the better one, with the eight misses
 all being programs where `persistent_layout` wins and the estimate took
-`restore_after_each_gate`.
+`restore_after_each_gate`. Those counts are a reading of the shipped router, and
+they are only reproducible because that router resolves a physical pair to one
+route: `CouplingMap.shortest_path` expands from the lower-indexed endpoint rather
+than from whichever endpoint the caller passed, so the two operand orders are
+exact reverses of each other and a device that has already answered other queries
+routes exactly as a cold one does. A pair on an even ring has two routes of equal
+length, so the route is a tie-break, and a tie-break that reads the device's
+history would make the count depend on which pass asked first.
+`DirectedCouplingMap.shortest_path` breaks the same tie the same way, because SWAP
+placement travels the same undirected graph whichever device describes it.
 [test_compiler_routing_quality.py](../../tests/benchmark_contract/test_compiler_routing_quality.py)
 holds those readings, including a test that fails if the automatic selection
 becomes an alias of one candidate or quietly widens its scope.
