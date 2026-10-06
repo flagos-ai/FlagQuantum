@@ -154,7 +154,8 @@ def apply_complex64_local_reversible_3q(
             f"{FLAT_LOCAL_MAX_AMPLITUDES} amplitudes, got {state.numel()}"
         )
     n_qubits = amplitude_count.bit_length() - 1
-    qubits = tuple(int(qubit) for qubit in qubits)
+    first_qubit, second_qubit, third_qubit = qubits
+    qubits = (int(first_qubit), int(second_qubit), int(third_qubit))
     if len(set(qubits)) != 3 or any(qubit < 0 or qubit >= n_qubits for qubit in qubits):
         raise ValueError("Triton reversible 3q requires three distinct local qubits")
     if operation not in {"ccx", "cswap"}:
