@@ -1784,6 +1784,9 @@ def test_documented_protein_sources_match_review_candidates() -> None:
     assert "49b7125a5d28c6418fcc2f3c4fe799352ac1488b" in intake
     assert "595,359,662-byte LFS object" in intake
     assert "ea4eaa99536b60ed76f945f71a1a5e604f08447ec3def5104a93ca6001a59961" in intake
+    assert "2,604,537,549 bytes" in intake
+    assert "2G4typsUSwOKQLH35sqPMJ27ZLX1AEJG" in intake
+    assert "12a18098227c0ff911354647d25d494d-311" in intake
     assert template["evaluation_model"]["license_id"] == "MIT"
     assert template["evaluation_model"]["license_evidence_url"] == (
         "https://github.com/facebookresearch/esm/blob/main/LICENSE"
