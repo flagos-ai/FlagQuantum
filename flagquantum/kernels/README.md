@@ -391,11 +391,25 @@ wrapper supports a shared diagonal or one diagonal per batch, contiguous CUDA
 aliasing is safe because every amplitude is independent. It rejects gradient
 inputs rather than silently detaching them.
 
-SV-010-A is experimental until the fixed A800 benchmark matrix establishes an
-evidenced support window. Runtime dispatch remains a separate review step. The
-semantic serves diagonal gates including Z, S, T, RZ, phase, CZ, controlled
-phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian simulation,
-and variational workloads.
+The checked-in
+[`statevector_local_diagonal_a800.json`](../../benchmarks/results/local/statevector_local_diagonal_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed shapes spanning 65,536 through 16,777,216 amplitudes, one- and
+two-qubit operators, distant ordered qubits, shared and batch-resolved
+diagonals, and batch sizes one and four. It covers `jp-a800-171` and
+`jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0. Maximum absolute and
+relative L2 errors are `5.34e-7` and `3.63e-8`. Across all 20
+host/compiler/shape cases the direct wrapper reaches `1.084x` to `7.617x` the
+speed of the current PyTorch product reference. The aggregate decision is
+`eligible_for_dispatch_evaluation`, so SV-010-A is provisional within this
+measured CUDA `complex64` window. Runtime dispatch remains a separate review
+step. This is bounded single-device development evidence, not a distributed or
+release claim. Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_local_diagonal_probe.py`](../../benchmarks/internal/evidence/statevector_local_diagonal_probe.py).
+
+The semantic serves diagonal gates including Z, S, T, RZ, phase, CZ,
+controlled phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian
+simulation, and variational workloads.
 
 `FQKI-TRITON-SV-013-A` applies CCX and controlled-SWAP as fixed
 three-qubit permutations without materializing an eight-by-eight matrix,
@@ -1116,14 +1130,15 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 30 semantics and 37 implementations are implemented. The 26 direct
-Triton `-A` implementations from SV-001 through SV-009, SV-013, GR-001 through GR-006,
+The current 30 semantics and 37 implementations are implemented. The 27 direct
+Triton `-A` implementations from SV-001 through SV-010, SV-013, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, while the other listed routes have evidenced default-dispatch
-promotions. SV-010-A, MPS-008, the two generic-autograd Triton `-B` implementations, the
+reason above, SV-010 awaits a separate dispatch review, and the other listed
+routes have evidenced default-dispatch promotions. MPS-008, the two
+generic-autograd Triton `-B` implementations, the
 two NUM implementations, and the five explicit FlagTree implementations remain
-experimental, for eleven experimental implementations in total.
+experimental, for ten experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
