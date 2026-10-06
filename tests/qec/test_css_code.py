@@ -1,14 +1,23 @@
 """Unit coverage for the code record built from a parity-check matrix.
 
-Four records in this package are written down as a family -- a repetition
-lattice, a rotated surface lattice, the Steane code, the triangular colour patch
--- and each states its own checks, its own logical operators and its own
-distance, the colour patch deriving them from a rule about its lattice rather
-than tabulating them. This record is the fifth route: the matrices are the input,
+Five records in this package are written down as a family -- a repetition
+lattice, a rotated surface lattice, the Steane code, the triangular colour patch,
+the square-lattice torus -- and each states its own checks, its own logical
+operators and its own distance, the colour patch and the torus deriving them from
+a rule about their lattice rather than tabulating them. This record is the fifth
+route: the matrices are the input,
 so a code this package never wrote down can still be a
 `~flagquantum.qec.StabilizerCode` and walk the rest of the path. The tests here
 pin the algebra that route relies on and the refusals that keep a set of matrices
 from being read as a code it is not.
+
+The torus the hand-written cases here build is deliberately this file's own. It
+is a caller's matrix set, and it is what the route exists to accept, so it is not
+swapped for `~flagquantum.qec.toric_code`: a test of the matrix route that read
+its matrices from the family route would stop telling an alternative route apart
+from a competing source of truth. The two descriptions of that lattice are held
+against each other in `examples/qec/css_code_from_matrices.py`, where a
+disagreement is the point rather than a shared helper.
 
 What this file proves
 ---------------------
