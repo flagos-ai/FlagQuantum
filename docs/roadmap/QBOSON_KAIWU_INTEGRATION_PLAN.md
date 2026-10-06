@@ -114,6 +114,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   leaking vendor failures fail closed. Because documented APIs do not expose a
   stable provider task ID or provider-reported target, the client records those
   evidence gaps and cannot yet satisfy hardware acceptance.
+- The version-pinned client now maps FlagQuantum's stable `optimization` and
+  `sampling` modes to the Kaiwu 1.3.1-documented `quota` and `sample` strings.
+  It no longer probes a newer `TaskMode` vocabulary or forwards 1.4.1 mode
+  names into the 1.3.1 lane. Supporting 1.4.1 requires a separately pinned and
+  tested adapter instead of runtime version guessing.
 - The 1.3.1 documentation declares `get_task_result(ising_matrix) -> dict` but
   does not document that dictionary's fields; the current 1.4.1 documentation
   still does not define provider task-ID or target keys. The pinned client now

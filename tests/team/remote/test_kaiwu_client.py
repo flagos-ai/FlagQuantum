@@ -64,10 +64,7 @@ def _client(
     manager = SimpleNamespace(save_dir="original")
     module = SimpleNamespace(
         common=SimpleNamespace(CheckpointManager=manager),
-        cim=SimpleNamespace(
-            CIMOptimizer=_FakeOptimizer,
-            TaskMode=SimpleNamespace(OPTIMIZATION="optimization", SAMPLING="sampling"),
-        ),
+        cim=SimpleNamespace(CIMOptimizer=_FakeOptimizer),
     )
     monkeypatch.setattr(
         client_module,
@@ -122,10 +119,27 @@ def test_submit_and_poll_reuse_documented_task_identity(
     assert len(_FakeOptimizer.created_options) == 1
     assert _FakeOptimizer.created_options[0]["task_name"] == "same-task"
     assert _FakeOptimizer.created_options[0]["wait"] is False
+    assert _FakeOptimizer.created_options[0]["task_mode"] == "sample"
     assert manager.save_dir == "original"
     recovery_path = client.recovery_receipt_path(job.receipt)
     assert recovery_path.is_file()
     assert recovery_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_client_maps_optimization_to_pinned_1_3_1_quota_mode(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client, _ = _client(monkeypatch, tmp_path)
+
+    submit_kaiwu_task(
+        _MATRIX,
+        client=client,
+        task_name="optimization-task",
+        mode="optimization",
+        requested_samples=10,
+    )
+
+    assert _FakeOptimizer.created_options[0]["task_mode"] == "quota"
 
 
 def test_restore_queries_same_identity_without_client_submit(

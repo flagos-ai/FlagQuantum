@@ -34,6 +34,10 @@ _SAFE_SCHEMA_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]{0,127}")
 _MAX_SCHEMA_FIELDS = 64
 _MAX_SCHEMA_SEQUENCE_TYPES = 64
 _MAX_SCHEMA_DIMENSIONS = 16
+_PINNED_1_3_1_TASK_MODES: dict[KaiwuTaskMode, str] = {
+    "optimization": "quota",
+    "sampling": "sample",
+}
 
 
 class KaiwuSDKClient:
@@ -173,12 +177,16 @@ class KaiwuSDKClient:
         optimizer_type = getattr(cim, "CIMOptimizer", None)
         if not callable(optimizer_type):
             raise KaiwuSDKError("Kaiwu SDK does not expose cim.CIMOptimizer")
-        task_mode_type = getattr(cim, "TaskMode", None)
-        task_mode = getattr(task_mode_type, receipt.mode.upper(), receipt.mode)
+        task_mode = _PINNED_1_3_1_TASK_MODES.get(receipt.mode)
+        if task_mode is None:
+            raise KaiwuSDKError("Kaiwu task receipt has an unsupported mode")
         options: dict[str, Any] = {
             "task_name": receipt.task_name,
             "wait": False,
             "interval": self._interval_minutes,
+            # Kaiwu 1.3.1 documents the legacy values ``quota`` and ``sample``.
+            # The 1.4.1 ``optimization``/``sampling`` vocabulary belongs in a
+            # separately pinned adapter rather than a runtime guess here.
             "task_mode": task_mode,
             "sample_number": receipt.requested_samples,
         }
