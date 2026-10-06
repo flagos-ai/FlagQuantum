@@ -79,8 +79,8 @@ exposes only GPU 0, disables networking and container logging, uses a read-only
 container filesystem, and places the transferred archives, extracted trees,
 and remote evidence only in tmpfs. It uses no bind mount and the auto-removed
 container leaves no source or evidence file on the validation host. The outer
-stream suppresses macOS copyfile metadata so unreviewed Apple extended
-attributes are not sent alongside the manifest-bound files. Before
+stream combines `COPYFILE_DISABLE=1` with `tar --no-xattrs` so unreviewed Apple
+extended attributes are not sent alongside the manifest-bound files. Before
 plugin import, the probe recomputes both extracted trees against the streamed
 post-extraction preflight. The local capture gate independently requires the
 fake-transport classification, closed acceptance fields, exact source,
