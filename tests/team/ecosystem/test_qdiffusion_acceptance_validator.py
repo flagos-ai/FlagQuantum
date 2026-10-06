@@ -627,6 +627,33 @@ def test_validator_rejects_extra_or_duplicate_declared_members(tmp_path: Path) -
     )
 
 
+def test_validator_rejects_extra_or_public_evidence_directories(
+    tmp_path: Path,
+) -> None:
+    manifest_path, _ = _bundle(tmp_path)
+    extra = tmp_path / "unlisted-empty-directory"
+    extra.mkdir(mode=0o700)
+    assert any(
+        "directories differ from the exact declared set" in error
+        for error in validate_acceptance(manifest_path)
+    )
+
+    extra.rmdir()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    component = tmp_path / "components" / "component.json"
+    component.parent.mkdir(mode=0o700)
+    component_hash = _write_json(component, {"schema": "test.component"})
+    manifest["component_records"] = [
+        {"path": "components/component.json", "sha256": component_hash}
+    ]
+    _write_json(manifest_path, manifest)
+    component.parent.chmod(0o755)
+
+    errors = validate_acceptance(manifest_path)
+
+    assert any("component record 0 parent" in error for error in errors)
+
+
 def test_component_validator_rejects_different_host_transfer_manifests() -> None:
     config = _config()
     component_payloads = {

@@ -1908,16 +1908,30 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
 
     def validate_exact_tree() -> None:
         actual_files: set[str] = set()
+        actual_directories: set[str] = set()
         for current_root, directory_names, file_names in os.walk(
             root, followlinks=False
         ):
             current = Path(current_root)
             for name in directory_names:
                 directory = current / name
+                relative_name = directory.relative_to(root).as_posix()
                 if directory.is_symlink():
                     errors.append(
                         "manifest: evidence directory contains an unlisted symlink"
                     )
+                elif not directory.is_dir():
+                    errors.append(
+                        "manifest: evidence tree contains a special directory entry: "
+                        f"{relative_name}"
+                    )
+                else:
+                    actual_directories.add(relative_name)
+                    if directory.stat().st_mode & 0o077:
+                        errors.append(
+                            "manifest: evidence directory is accessible by group or "
+                            f"others: {relative_name}"
+                        )
             for name in file_names:
                 member = current / name
                 relative_name = member.relative_to(root).as_posix()
@@ -1934,6 +1948,16 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         if actual_files != declared_member_paths:
             errors.append(
                 "manifest: evidence files differ from the exact declared member set"
+            )
+        expected_directories = {
+            parent.as_posix()
+            for member in declared_member_paths
+            for parent in PurePosixPath(member).parents
+            if parent != PurePosixPath(".")
+        }
+        if actual_directories != expected_directories:
+            errors.append(
+                "manifest: evidence directories differ from the exact declared set"
             )
 
     config_entry = _mapping(manifest.get("config"), "manifest.config", errors)

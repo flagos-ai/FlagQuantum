@@ -614,8 +614,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   requires the manifest, config, host records, and copied components to remain
   inaccessible to group and other users.
 - Final evidence validation now applies a closed-world file-tree check: member
-  paths must be unique normalized relative POSIX paths, and unlisted files are
-  rejected instead of being silently ignored beside declared evidence.
+  paths must be unique normalized relative POSIX paths; unlisted files, extra
+  empty directories, and group- or other-accessible directories are rejected
+  instead of being silently ignored beside declared evidence.
 - Every QDiffusion configuration and evidence reader now uses one strict JSON
   parser that rejects duplicate object keys at every nesting level. A source
   scan in the credential-free golden path prevents frozen config, environment
