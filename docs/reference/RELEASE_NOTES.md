@@ -44,9 +44,9 @@ are otherwise unchanged.
   program unchanged, level `1` cancels and merges what is adjacent, and level `2`
   also removes diagonal gates before a measurement and merges rotations across a
   proven commuting gap. Level `3` is declared and reserved and raises
-  `CompilationError`, because the unitary-synthesis stage it would add has no
-  pass-over-IR counterpart yet; a value that is not an integer is refused the same
-  way. The level that ran is recorded in `metadata["optimization"]`. See
+  `CompilationError`, because the unitary-synthesis stage it would add needs a
+  target basis and `optimize` is target-independent; a value that is not an integer
+  is refused the same way. The level that ran is recorded in `metadata["optimization"]`. See
   [the optimization-level API change](../api-changes/FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md).
 
 - Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
