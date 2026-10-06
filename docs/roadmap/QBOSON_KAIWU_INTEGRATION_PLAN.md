@@ -466,6 +466,26 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and `system_acceptance` remain false; these are refreshed independent
   single-host A800 development records, not multi-node, distributed, domestic-
   accelerator, live-provider, system, or protein acceptance evidence.
+- The isolated development rehearsal was refreshed again at source revision
+  `1cd19888fcd98e76520541ae5512bce072a9eada` after the platform-coordination
+  record and current local conformance evidence were committed. Both streamed
+  records passed the offline retained-record validator from a persistent local
+  mode-0700 evidence directory. Their mode-0600 SHA-256 digests are
+  `922ec83c7573746b038ed4616a4831cd90c9c864bba5efad2a7ccf522d037583`
+  (`jp-a800-171`) and
+  `14f082bc48d13b8cbbbfc04542a558454ccda4f961b6abecf8aa3801899feccd`
+  (`jp-a800-172`). Each independent run observed
+  `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten calls within the
+  64-call development budget, produced a finite objective plus nonzero gradient
+  and parameter update, passed token constraints, and reported no fallback.
+  The reviewed inputs and remote record existed on each host only inside a
+  network-disabled, read-only, auto-removed container using tmpfs and disabled
+  logging. The runs used no QBoson credential, service, or quota and retain
+  `transport=in_memory_fake`, `qboson_hardware_used=false`,
+  `real_provider_evidence=false`, and `system_acceptance=false`. They refresh
+  only the two independent single-host A800 development records and establish
+  no live-provider, system, protein, distributed, multi-node, or domestic-
+  accelerator acceptance.
 - Retained development records now have an offline `validate-record` path that
   rechecks the private record, extraction preflight, retained manifest, host,
   image, and revision hash chain without SSH or provider access. Source
