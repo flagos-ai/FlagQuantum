@@ -285,6 +285,7 @@ def _compile_statevector_program(
     enable_cpu_native_scalar_fused_rotation_layer: bool = False,
     enable_cpu_native_rotation_clifford_fusion: bool = False,
     enable_cpu_swap_sequence: bool = False,
+    enable_triton_swap_sequence: bool = False,
     enable_cpu_hadamard_controlled_phase: bool = False,
     enable_cpu_cx_rzz_swap: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
@@ -334,6 +335,14 @@ def _compile_statevector_program(
         program_with_cx = _fuse_cx_rzz_swap_sequences(program_with_cx)
     if enable_cpu_swap_sequence:
         return tuple(_fuse_swap_sequences(program_with_cx))
+    if enable_triton_swap_sequence:
+        return tuple(
+            _fuse_swap_sequences(
+                program_with_cx,
+                minimum_length=4,
+                maximum_length=8,
+            )
+        )
     return tuple(program_with_cx)
 
 

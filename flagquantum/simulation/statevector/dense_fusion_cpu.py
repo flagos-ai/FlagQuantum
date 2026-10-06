@@ -43,8 +43,16 @@ def _cpu_cx_rzz_swap_fusion_enabled() -> bool:
 
 def _fuse_swap_sequences(
     program: Sequence[_StatevectorProgramStep],
+    *,
+    minimum_length: int = 2,
+    maximum_length: int | None = None,
 ) -> list[_StatevectorProgramStep]:
     """Combine adjacent SWAPs so their axis permutation is materialized once."""
+
+    if minimum_length < 2:
+        raise ValueError("SWAP fusion requires a minimum length of at least two")
+    if maximum_length is not None and maximum_length < minimum_length:
+        raise ValueError("SWAP fusion maximum length must cover the minimum")
 
     optimized: list[_StatevectorProgramStep] = []
     index = 0
@@ -69,10 +77,12 @@ def _fuse_swap_sequences(
             left, right = candidate.instruction.wires
             swaps.append((int(left), int(right)))
             cursor += 1
-        if len(swaps) >= 2:
+        if len(swaps) >= minimum_length and (
+            maximum_length is None or len(swaps) <= maximum_length
+        ):
             optimized.append(_StatevectorSwapSequenceStep(tuple(swaps)))
         else:
-            optimized.append(step)
+            optimized.extend(program[index:cursor])
         index = cursor
     return optimized
 
