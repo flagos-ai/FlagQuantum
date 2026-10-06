@@ -35,6 +35,51 @@ def native_cpu_one_qubit_layer_available() -> bool:
     )
 
 
+def native_cpu_hadamard_controlled_phase_available() -> bool:
+    """Return whether fused Hadamard/phase graph execution is available."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_HADAMARD_CONTROLLED_PHASE", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and native_cpu_rotation_available()
+    )
+
+
+def fused_hadamard_controlled_phase_graph_(
+    state: torch.Tensor,
+    factors: torch.Tensor,
+    qubits: torch.Tensor,
+    *,
+    target: int,
+    n_qubits: int,
+) -> bool:
+    """Apply one inference-only Hadamard/phase graph pass in place."""
+
+    if (
+        not native_cpu_hadamard_controlled_phase_available()
+        or state.requires_grad
+        or factors.requires_grad
+        or state.device.type != "cpu"
+        or factors.device.type != "cpu"
+        or qubits.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or factors.dtype != state.dtype
+        or qubits.dtype != torch.int64
+        or state.ndim != 2
+        or factors.ndim != 1
+        or qubits.ndim != 1
+        or state.shape[1] != 2**n_qubits
+        or factors.numel() != 2 ** qubits.numel()
+        or not all(item.is_contiguous() for item in (state, factors, qubits))
+    ):
+        return False
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_hadamard_controlled_phase_graph_(
+            state, factors, qubits, int(target), int(n_qubits)
+        )
+    return True
+
+
 def native_cpu_product_state_initialization_available() -> bool:
     """Return whether native dense product-state initialization is enabled."""
 
