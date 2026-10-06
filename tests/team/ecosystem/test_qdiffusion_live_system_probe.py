@@ -31,6 +31,15 @@ pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"
 
 
+def _provider_resource_gate() -> dict[str, object]:
+    return {
+        "snapshot_sha256": "9" * 64,
+        "checked_at": "2026-10-05T12:00:00+00:00",
+        "mode": "sampling",
+        "required_calls": 128,
+    }
+
+
 def _require_plugin_source() -> Path:
     if os.environ.get(SOURCE_CONFORMANCE) != "1":
         pytest.skip(f"set {SOURCE_CONFORMANCE}=1 through the pinned source runner")
@@ -152,6 +161,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -172,6 +182,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert record["source_preflight_sha256"] == "d" * 64
     assert record["transfer_manifest_sha256"] == "e" * 64
     assert record["environment_lock_sha256"] == "f" * 64
+    assert record["provider_resource_gate"] == _provider_resource_gate()
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
     assert record["fallback_occurred"] is False
     assert record["retrieval_resubmitted"] is False
@@ -256,6 +267,7 @@ def test_live_system_sdk_subclass_cannot_claim_real_transport(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -312,6 +324,7 @@ def test_live_system_producer_rejects_cpu_slice_even_with_provider_identity(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="NVIDIA A800-SXM4-80GB",
@@ -350,6 +363,7 @@ def test_live_system_converts_keyboard_interrupt_to_failed_record(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -397,6 +411,7 @@ def test_live_system_preserves_proven_provider_use_after_local_failure(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -452,6 +467,7 @@ def test_live_system_receipt_only_timeout_does_not_claim_provider_use(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
@@ -534,6 +550,7 @@ def test_live_system_preserves_completed_result_when_later_receipt_times_out(
         source_preflight_sha256="d" * 64,
         transfer_manifest_sha256="e" * 64,
         environment_lock_sha256="f" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",

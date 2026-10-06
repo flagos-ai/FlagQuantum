@@ -28,7 +28,9 @@ from examples.qdiffusion_kaiwu.provider_resources import (
     SCHEMA as PROVIDER_RESOURCES_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_budget,
     assess_provider_resources,
+    validate_provider_resource_gate,
     validate_provider_resources,
 )
 from examples.qdiffusion_kaiwu.qboson_live_smoke import (
@@ -91,6 +93,7 @@ SYSTEM_COMPONENT_FIELDS = frozenset(
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
+        "provider_resource_gate",
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
@@ -144,6 +147,7 @@ TRAINING_COMPONENT_FIELDS = frozenset(
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
+        "provider_resource_gate",
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
@@ -228,6 +232,7 @@ PORTABILITY_COMPONENT_FIELDS = frozenset(
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
+        "provider_resource_gate",
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
@@ -435,6 +440,7 @@ FINAL_RECORD_COMMON_FIELDS = frozenset(
         "source_preflight_sha256",
         "transfer_manifest_sha256",
         "environment_lock_sha256",
+        "provider_resource_gate",
         "python_version",
         "torch_version",
         "kaiwu_sdk_version",
@@ -717,6 +723,79 @@ def _validate_execution_component_time(
                     f"{label}: remote receipt {index} submission follows its record"
                 )
     return recorded_at
+
+
+def _validate_provider_resource_gate_binding(
+    record: dict[str, Any],
+    *,
+    label: str,
+    provider_resources: dict[str, dict[str, Any]],
+    recorded_at: datetime | None,
+    errors: list[str],
+) -> None:
+    """Recompute one retained pre-submission resource-budget decision."""
+
+    try:
+        gate = validate_provider_resource_gate(record.get("provider_resource_gate"))
+    except ValueError as exc:
+        errors.append(f"{label}: invalid provider resource gate: {exc}")
+        return
+    snapshot_sha256 = gate["snapshot_sha256"]
+    snapshot = provider_resources.get(snapshot_sha256)
+    if snapshot is None:
+        errors.append(f"{label}: provider resource snapshot is unavailable")
+        return
+    schema = record.get("schema")
+    required_calls = (
+        record.get("protein_remote_call_budget_per_seed")
+        if schema == TRAINING_COMPONENT_SCHEMA
+        else record.get("remote_call_budget")
+    )
+    if gate["mode"] != "sampling" or gate["required_calls"] != required_calls:
+        errors.append(f"{label}: provider resource gate differs from the run budget")
+        return
+    checked_at = _parse_timestamp(gate["checked_at"])
+    if checked_at is None or checked_at.utcoffset() != timedelta(0):
+        errors.append(f"{label}: provider resource check time is invalid")
+        return
+    if recorded_at is not None and checked_at > recorded_at:
+        errors.append(f"{label}: provider resource check follows its record")
+    try:
+        ready, reason = assess_provider_budget(
+            snapshot,
+            mode="sampling",
+            required_calls=gate["required_calls"],
+            now=checked_at,
+        )
+    except ValueError as exc:
+        errors.append(f"{label}: invalid provider resource snapshot: {exc}")
+        return
+    if not ready:
+        errors.append(f"{label}: provider resource gate failed: {reason}")
+    snapshot_valid_until = _parse_timestamp(snapshot.get("valid_until"))
+    receipts = record.get("task_receipts")
+    if isinstance(receipts, list):
+        for index, receipt in enumerate(receipts):
+            if not isinstance(receipt, dict):
+                continue
+            submitted_at = _parse_timestamp(receipt.get("submitted_at"))
+            if (
+                submitted_at is not None
+                and submitted_at.utcoffset() == timedelta(0)
+                and submitted_at < checked_at
+            ):
+                errors.append(
+                    f"{label}: remote receipt {index} predates its resource check"
+                )
+            if (
+                submitted_at is not None
+                and submitted_at.utcoffset() == timedelta(0)
+                and snapshot_valid_until is not None
+                and submitted_at > snapshot_valid_until
+            ):
+                errors.append(
+                    f"{label}: remote receipt {index} follows resource snapshot expiry"
+                )
 
 
 def _validate_component_field_set(
@@ -2813,10 +2892,37 @@ def _validate_component_bundle(
     """Independently prove that final records are derived from their components."""
 
     seeds = config.get("seeds", [])
+    remote_component_schemas = {
+        SYSTEM_COMPONENT_SCHEMA,
+        PORTABILITY_COMPONENT_SCHEMA,
+        TRAINING_COMPONENT_SCHEMA,
+    }
+    referenced_provider_resources: set[str] = set()
+    for payload in component_payloads.values():
+        schema = payload.get("schema")
+        if schema == PROVIDER_SMOKE_COMPONENT_SCHEMA:
+            digest = payload.get("provider_resources_sha256")
+        elif schema in remote_component_schemas:
+            gate = payload.get("provider_resource_gate")
+            digest = gate.get("snapshot_sha256") if isinstance(gate, dict) else None
+        else:
+            continue
+        if isinstance(digest, str):
+            referenced_provider_resources.add(digest)
+    provider_resources_by_digest = {
+        digest: payload
+        for digest, payload in component_payloads.items()
+        if payload.get("schema") == PROVIDER_RESOURCES_COMPONENT_SCHEMA
+    }
+    if set(provider_resources_by_digest) != referenced_provider_resources:
+        errors.append(
+            "manifest: provider resource snapshots differ from retained gate references"
+        )
+        return
     expected_schema_counts = {
         ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA: 1,
         SDK_APPROVAL_COMPONENT_SCHEMA: 1,
-        PROVIDER_RESOURCES_COMPONENT_SCHEMA: 1,
+        PROVIDER_RESOURCES_COMPONENT_SCHEMA: len(referenced_provider_resources),
         PROVIDER_SMOKE_COMPONENT_SCHEMA: 1,
         SOURCE_PREFLIGHT_COMPONENT_SCHEMA: 2,
         TRANSFER_MANIFEST_SCHEMA: 1,
@@ -2885,22 +2991,28 @@ def _validate_component_bundle(
     if sdk_approval != config.get("kaiwu_sdk"):
         errors.append("retained sdk approval differs from frozen configuration")
 
-    provider_resources = [
-        (digest, payload)
-        for digest, payload in component_payloads.items()
-        if payload.get("schema") == PROVIDER_RESOURCES_COMPONENT_SCHEMA
-    ]
-
     provider_smokes = [
         payload
         for payload in component_payloads.values()
         if payload.get("schema") == PROVIDER_SMOKE_COMPONENT_SCHEMA
     ]
+    provider_smoke_resource_digest = provider_smokes[0].get(
+        "provider_resources_sha256"
+    )
+    if (
+        not isinstance(provider_smoke_resource_digest, str)
+        or provider_smoke_resource_digest not in provider_resources_by_digest
+    ):
+        errors.append("provider smoke: provider resource snapshot is unavailable")
+        return
     _validate_provider_smoke_component(
         provider_smokes[0],
         config=config,
         sdk_approval_sha256=sdk_approval_digest,
-        provider_resources=(provider_resources[0][1], provider_resources[0][0]),
+        provider_resources=(
+            provider_resources_by_digest[provider_smoke_resource_digest],
+            provider_smoke_resource_digest,
+        ),
         errors=errors,
     )
     provider_smoke_time = _parse_timestamp(provider_smokes[0].get("recorded_at"))
@@ -2923,6 +3035,14 @@ def _validate_component_bundle(
         )
         if recorded_at is not None:
             component_times[digest] = recorded_at
+        if payload.get("schema") in remote_component_schemas:
+            _validate_provider_resource_gate_binding(
+                payload,
+                label=f"component {digest}",
+                provider_resources=provider_resources_by_digest,
+                recorded_at=recorded_at,
+                errors=errors,
+            )
 
     provider_task_owners: dict[str, list[str]] = {}
     smoke_tasks = provider_smokes[0].get("tasks")
@@ -2934,11 +3054,6 @@ def _validate_component_bundle(
                 provider_task_owners.setdefault(task["provider_task_id"], []).append(
                     f"provider smoke task {index}"
                 )
-    remote_component_schemas = {
-        SYSTEM_COMPONENT_SCHEMA,
-        PORTABILITY_COMPONENT_SCHEMA,
-        TRAINING_COMPONENT_SCHEMA,
-    }
     for digest, payload in component_payloads.items():
         if payload.get("schema") not in remote_component_schemas:
             continue
@@ -3102,6 +3217,7 @@ def _validate_component_bundle(
             "source_preflight_sha256",
             "transfer_manifest_sha256",
             "environment_lock_sha256",
+            "provider_resource_gate",
             "python_version",
             "torch_version",
             "kaiwu_sdk_version",
@@ -3645,7 +3761,13 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
     for label, record in (("primary", primary), ("replay", replay)):
         if record.get("component_bundle_required") is not True:
             errors.append(f"{label}: component bundle must be explicitly required")
-    expected_component_count = 10 + 2 * len(config.get("seeds", []))
+    provider_resource_count = sum(
+        payload.get("schema") == PROVIDER_RESOURCES_COMPONENT_SCHEMA
+        for payload in component_payloads.values()
+    )
+    expected_component_count = (
+        9 + provider_resource_count + 2 * len(config.get("seeds", []))
+    )
     if len(component_payloads) != expected_component_count:
         errors.append(
             "manifest: component bundle does not contain every source record"

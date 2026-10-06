@@ -37,6 +37,15 @@ from flagquantum.ecosystem.kaiwu import (
 pytestmark = pytest.mark.unit
 
 
+def _provider_resource_gate() -> dict[str, object]:
+    return {
+        "snapshot_sha256": "9" * 64,
+        "checked_at": "2026-10-05T12:00:00+00:00",
+        "mode": "sampling",
+        "required_calls": 71269,
+    }
+
+
 class _ConfigObject:
     def __init__(self, **kwargs: Any) -> None:
         self.__dict__.update(kwargs)
@@ -339,6 +348,7 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
         source_preflight_sha256="e" * 64,
         transfer_manifest_sha256="f" * 64,
         environment_lock_sha256="0" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         preflight_sha256="d" * 64,
         artifact_snapshots=snapshots,
@@ -688,6 +698,7 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
         source_preflight_sha256="e" * 64,
         transfer_manifest_sha256="f" * 64,
         environment_lock_sha256="0" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         preflight_sha256="d" * 64,
     )
@@ -696,6 +707,7 @@ def test_training_seed_records_interruption_without_claiming_acceptance(
     assert record["source_preflight_sha256"] == "e" * 64
     assert record["transfer_manifest_sha256"] == "f" * 64
     assert record["environment_lock_sha256"] == "0" * 64
+    assert record["provider_resource_gate"] == _provider_resource_gate()
     assert record["failure"]["type"] == "KeyboardInterrupt"
     assert record["transport"] == "kaiwu_cim"
     assert record["pinned_sdk_client"] is True

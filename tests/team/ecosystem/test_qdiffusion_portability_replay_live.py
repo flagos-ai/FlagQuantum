@@ -27,6 +27,15 @@ from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 pytestmark = pytest.mark.unit
 
 
+def _provider_resource_gate() -> dict[str, object]:
+    return {
+        "snapshot_sha256": "9" * 64,
+        "checked_at": "2026-10-05T12:00:00+00:00",
+        "mode": "sampling",
+        "required_calls": 128,
+    }
+
+
 class _CompletedClient:
     def submit(
         self,
@@ -202,6 +211,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay",
@@ -224,6 +234,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
     assert record["source_preflight_sha256"] == "f" * 64
     assert record["transfer_manifest_sha256"] == "0" * 64
     assert record["environment_lock_sha256"] == "1" * 64
+    assert record["provider_resource_gate"] == _provider_resource_gate()
     assert record["acceptance"]["portability"] == "fail"
 
 
@@ -279,6 +290,7 @@ def test_portability_producer_rejects_non_cuda_request_before_pass(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay",
@@ -336,6 +348,7 @@ def test_portability_replay_rejects_checkpoint_change_during_weight_load(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay-checkpoint-change",
@@ -405,6 +418,7 @@ def test_portability_replay_rejects_frozen_input_change_during_build(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay-input-change",
@@ -462,6 +476,7 @@ def test_portability_replay_sdk_subclass_cannot_claim_real_transport(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay-subclass",
@@ -517,6 +532,7 @@ def test_portability_replay_preserves_proven_provider_use_after_local_failure(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay-failed-after-provider-use",
@@ -580,6 +596,7 @@ def test_portability_replay_receipt_only_timeout_does_not_claim_provider_use(
         source_preflight_sha256="f" * 64,
         transfer_manifest_sha256="0" * 64,
         environment_lock_sha256="1" * 64,
+        provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
         project_no="project",
         task_prefix="replay-receipt-only-timeout",

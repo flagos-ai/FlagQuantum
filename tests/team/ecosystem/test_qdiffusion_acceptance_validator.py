@@ -4,7 +4,7 @@ import ast
 import copy
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +23,7 @@ from examples.qdiffusion_kaiwu.validate_acceptance import (
     _validate_execution_component_time,
     _validate_final_record_field_sets,
     _validate_precision_evidence,
+    _validate_provider_resource_gate_binding,
     _validate_provider_result_schema,
     _validate_sampling_receipt,
     _validate_system_record,
@@ -52,6 +53,76 @@ def test_executable_component_field_sets_are_closed(schema: str) -> None:
         errors = []
         _validate_component_field_set(mutation, label="component", errors=errors)
         assert errors == ["component: field set differs from its closed schema"]
+
+
+def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None:
+    snapshot = {
+        "schema": "flagquantum.qboson_provider_resources",
+        "version": "1.0",
+        "source": "authenticated_resource_bill",
+        "captured_at": "2026-10-05T00:00:00+00:00",
+        "valid_until": "2026-10-06T00:00:00+00:00",
+        "resources": [
+            {
+                "target": target,
+                "mode": mode,
+                "available": 127 if mode == "sampling" else 1,
+                "used": 0,
+            }
+            for target in ("SPQC-1", "SPQC-550", "SPQC-1000")
+            for mode in ("optimization", "sampling")
+        ],
+        "claim_boundary": (
+            "Account-resource observation only; it is not spend approval, project "
+            "assignment, provider evidence, execution evidence, or acceptance evidence."
+        ),
+    }
+    record = {
+        "schema": "flagquantum.qboson_qdiffusion_system_live_probe",
+        "remote_call_budget": 128,
+        "provider_resource_gate": {
+            "snapshot_sha256": "a" * 64,
+            "checked_at": "2026-10-05T12:00:00+00:00",
+            "mode": "sampling",
+            "required_calls": 128,
+        },
+        "task_receipts": [
+            {"submitted_at": "2026-10-05T13:00:00+00:00"}
+        ],
+    }
+    errors: list[str] = []
+
+    _validate_provider_resource_gate_binding(
+        record,
+        label="system",
+        provider_resources={"a" * 64: snapshot},
+        recorded_at=datetime(2026, 10, 5, 14, tzinfo=timezone.utc),
+        errors=errors,
+    )
+
+    assert errors == [
+        "system: provider resource gate failed: "
+        "sampling_resource_budget_insufficient"
+    ]
+
+    for resource in snapshot["resources"]:
+        if resource["mode"] == "sampling":
+            resource["available"] = 128
+    record["task_receipts"] = [
+        {"submitted_at": "2026-10-06T01:00:00+00:00"}
+    ]
+    errors = []
+    _validate_provider_resource_gate_binding(
+        record,
+        label="system",
+        provider_resources={"a" * 64: snapshot},
+        recorded_at=datetime(2026, 10, 6, 2, tzinfo=timezone.utc),
+        errors=errors,
+    )
+
+    assert errors == [
+        "system: remote receipt 0 follows resource snapshot expiry"
+    ]
 
 
 @pytest.mark.parametrize(
@@ -774,6 +845,12 @@ def _record(
         "source_preflight_sha256": ("8" * 64 if host == "jp-a800-171" else "9" * 64),
         "transfer_manifest_sha256": "7" * 64,
         "environment_lock_sha256": environment_lock_sha256,
+        "provider_resource_gate": {
+            "snapshot_sha256": "c" * 64,
+            "checked_at": "2026-10-05T12:00:00+00:00",
+            "mode": "sampling",
+            "required_calls": 128,
+        },
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",

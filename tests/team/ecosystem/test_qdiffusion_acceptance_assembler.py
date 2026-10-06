@@ -38,6 +38,18 @@ def _config() -> dict[str, Any]:
     return _full_config()
 
 
+def test_assembler_accepts_repeated_provider_resource_snapshots() -> None:
+    source = (
+        Path(__file__).parents[3]
+        / "examples"
+        / "qdiffusion_kaiwu"
+        / "assemble_acceptance.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"--provider-resources", action="append", required=True' in source
+    assert "provider_resources_by_digest.setdefault(digest" in source
+
+
 def _provider_resources() -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_provider_resources",
@@ -46,7 +58,12 @@ def _provider_resources() -> dict[str, Any]:
         "captured_at": "2026-10-05T12:00:00+00:00",
         "valid_until": "2026-10-06T12:00:00+00:00",
         "resources": [
-            {"target": target, "mode": mode, "available": 1, "used": 0}
+            {
+                "target": target,
+                "mode": mode,
+                "available": 100000 if mode == "sampling" else 1,
+                "used": 0,
+            }
             for target in ("SPQC-1", "SPQC-550", "SPQC-1000")
             for mode in ("optimization", "sampling")
         ],
@@ -148,6 +165,7 @@ def _system(
     role: str,
     task_id: str,
     transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
+    provider_resources_sha256: str = "c" * 64,
 ) -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_qdiffusion_system_live_probe",
@@ -163,6 +181,12 @@ def _system(
         ),
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": ENVIRONMENT_LOCK_SHA,
+        "provider_resource_gate": {
+            "snapshot_sha256": provider_resources_sha256,
+            "checked_at": "2026-10-05T12:00:00+00:00",
+            "mode": "sampling",
+            "required_calls": 128,
+        },
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
@@ -194,7 +218,7 @@ def _system(
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",
-                "submitted_at": "2026-10-05T00:00:00+00:00",
+                "submitted_at": "2026-10-05T13:00:00+00:00",
                 "provider_task_id": task_id,
                 "provider_target": "SPQC-provider",
             }
@@ -356,6 +380,7 @@ def _components(
     config_sha256: str = "9" * 64,
     source_preflight_sha256: str = PRIMARY_SOURCE_PREFLIGHT_SHA,
     transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
+    provider_resources_sha256: str = "c" * 64,
 ) -> tuple[
     list[tuple[dict[str, Any], str]],
     list[tuple[dict[str, Any], str]],
@@ -376,6 +401,12 @@ def _components(
                     "python_version": "3.10.18",
                     "torch_version": "2.7.0",
                     "kaiwu_sdk_version": "1.3.1",
+                    "provider_resource_gate": {
+                        "snapshot_sha256": provider_resources_sha256,
+                        "checked_at": "2026-10-05T12:00:00+00:00",
+                        "mode": "sampling",
+                        "required_calls": 71269,
+                    },
                     "seed": seed,
                     "run_completed": True,
                     "failure": None,
@@ -439,7 +470,7 @@ def _components(
                             "mode": "sampling",
                             "requested_samples": 10,
                             "project_no": "CPQC-test",
-                            "submitted_at": "2026-10-05T00:00:00+00:00",
+                            "submitted_at": "2026-10-05T13:00:00+00:00",
                             "provider_task_id": f"protein-task-{seed}",
                             "provider_target": "SPQC-provider",
                         }
@@ -538,6 +569,7 @@ def _portability(
     source_preflight_sha256: str = REPLAY_SOURCE_PREFLIGHT_SHA,
     transfer_manifest_sha256: str = TRANSFER_MANIFEST_SHA,
     environment_lock_sha256: str = ENVIRONMENT_LOCK_SHA,
+    provider_resources_sha256: str = "c" * 64,
 ) -> dict[str, Any]:
     return {
         "schema": "flagquantum.qboson_qdiffusion_portability_replay",
@@ -558,6 +590,12 @@ def _portability(
         "python_version": "3.10.18",
         "torch_version": "2.7.0",
         "kaiwu_sdk_version": "1.3.1",
+        "provider_resource_gate": {
+            "snapshot_sha256": provider_resources_sha256,
+            "checked_at": "2026-10-05T12:00:00+00:00",
+            "mode": "sampling",
+            "required_calls": 128,
+        },
         "transport": "kaiwu_cim",
         "pinned_sdk_client": True,
         "qboson_hardware_used": True,
@@ -575,7 +613,7 @@ def _portability(
                 "mode": "sampling",
                 "requested_samples": 10,
                 "project_no": "CPQC-test",
-                "submitted_at": "2026-10-05T00:00:00+00:00",
+                "submitted_at": "2026-10-05T13:00:00+00:00",
                 "provider_task_id": "portability-task",
                 "provider_target": "SPQC-provider",
             }
@@ -1289,10 +1327,18 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     primary_system_path = tmp_path / "components" / "primary-system.json"
     replay_system_path = tmp_path / "components" / "replay-system.json"
     primary_system_record = _system(
-        "jp-a800-171", "primary", "primary-task", transfer_manifest_sha
+        "jp-a800-171",
+        "primary",
+        "primary-task",
+        transfer_manifest_sha,
+        provider_resources_sha,
     )
     replay_system_record = _system(
-        "jp-a800-172", "portability_replay", "replay-task", transfer_manifest_sha
+        "jp-a800-172",
+        "portability_replay",
+        "replay-task",
+        transfer_manifest_sha,
+        provider_resources_sha,
     )
     primary_system_record["source_preflight_sha256"] = primary_preflight_sha
     replay_system_record["source_preflight_sha256"] = replay_preflight_sha
@@ -1304,7 +1350,10 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     replay_system_sha = _write_json(replay_system_path, replay_system_record)
 
     training_templates, evaluation_templates = _components(
-        config_sha, primary_preflight_sha, transfer_manifest_sha
+        config_sha,
+        primary_preflight_sha,
+        transfer_manifest_sha,
+        provider_resources_sha,
     )
     training_entries: list[tuple[dict[str, Any], str]] = []
     evaluation_entries: list[tuple[dict[str, Any], str]] = []
@@ -1336,6 +1385,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         source_preflight_sha256=replay_preflight_sha,
         transfer_manifest_sha256=transfer_manifest_sha,
         environment_lock_sha256=environment_lock_sha,
+        provider_resources_sha256=provider_resources_sha,
     )
     portability_record["artifact_preflight_sha256"] = artifact_preflight_sha
     portability_path = tmp_path / "components" / "portability.json"
@@ -1498,7 +1548,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][15]["sha256"] = tampered_resources_sha
     _write_json(manifest_path, manifest)
     assert any(
-        "provider resource snapshot identity mismatch" in error
+        "provider resource snapshots differ from retained gate references" in error
         for error in validate_acceptance(manifest_path)
     )
 
@@ -1508,8 +1558,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][14]["sha256"] = tampered_smoke_sha
     _write_json(manifest_path, manifest)
     assert any(
-        "provider resource snapshot was not ready: sampling_resource_unavailable"
-        in error
+        "provider resource snapshots differ from retained gate references" in error
         for error in validate_acceptance(manifest_path)
     )
 

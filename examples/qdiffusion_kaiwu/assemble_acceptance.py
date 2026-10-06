@@ -231,6 +231,7 @@ def _final_host_record(
         "source_preflight_sha256": system.get("source_preflight_sha256"),
         "transfer_manifest_sha256": system.get("transfer_manifest_sha256"),
         "environment_lock_sha256": system.get("environment_lock_sha256"),
+        "provider_resource_gate": system.get("provider_resource_gate"),
         "python_version": system.get("python_version"),
         "torch_version": system.get("torch_version"),
         "kaiwu_sdk_version": system.get("kaiwu_sdk_version"),
@@ -705,7 +706,9 @@ def main() -> None:
     parser.add_argument("--replay-source-preflight", required=True, type=Path)
     parser.add_argument("--transfer-manifest", required=True, type=Path)
     parser.add_argument("--sdk-approval", required=True, type=Path)
-    parser.add_argument("--provider-resources", required=True, type=Path)
+    parser.add_argument(
+        "--provider-resources", action="append", required=True, type=Path
+    )
     parser.add_argument("--provider-smoke", required=True, type=Path)
     parser.add_argument("--artifact-preflight", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
@@ -724,10 +727,10 @@ def main() -> None:
         args.replay_source_preflight,
         args.transfer_manifest,
         args.sdk_approval,
-        args.provider_resources,
         args.provider_smoke,
         args.artifact_preflight,
         args.portability,
+        *args.provider_resources,
         *args.training_record,
         *args.evaluation_record,
     ]
@@ -756,9 +759,10 @@ def main() -> None:
         args.transfer_manifest, TRANSFER_MANIFEST_SCHEMA
     )
     sdk_approval = _load_component(args.sdk_approval, SDK_APPROVAL_SCHEMA)
-    provider_resources = _load_component(
-        args.provider_resources, PROVIDER_RESOURCES_SCHEMA
-    )
+    provider_resources_by_digest: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for path in args.provider_resources:
+        record, digest = _load_component(path, PROVIDER_RESOURCES_SCHEMA)
+        provider_resources_by_digest.setdefault(digest, (path, record))
     provider_smoke = _load_component(args.provider_smoke, PROVIDER_SMOKE_SCHEMA)
     artifact_preflight = _load_component(
         args.artifact_preflight, ARTIFACT_PREFLIGHT_SCHEMA
@@ -788,7 +792,6 @@ def main() -> None:
         "replay-source-preflight.json": args.replay_source_preflight,
         "transfer-manifest.json": args.transfer_manifest,
         "sdk-approval.json": args.sdk_approval,
-        "provider-resources.json": args.provider_resources,
         "provider-smoke.json": args.provider_smoke,
         "artifact-preflight.json": args.artifact_preflight,
         "portability.json": args.portability,
@@ -797,6 +800,13 @@ def main() -> None:
         component_sources[f"training-{index}.json"] = path
     for index, path in enumerate(args.evaluation_record):
         component_sources[f"evaluation-{index}.json"] = path
+    for index, (path, _) in enumerate(provider_resources_by_digest.values()):
+        name = (
+            "provider-resources.json"
+            if index == 0
+            else f"provider-resources-{index}.json"
+        )
+        component_sources[name] = path
     component_digests = {
         "primary-system.json": primary_system[1],
         "replay-system.json": replay_system[1],
@@ -804,7 +814,6 @@ def main() -> None:
         "replay-source-preflight.json": replay_source_preflight[1],
         "transfer-manifest.json": transfer_manifest[1],
         "sdk-approval.json": sdk_approval[1],
-        "provider-resources.json": provider_resources[1],
         "provider-smoke.json": provider_smoke[1],
         "artifact-preflight.json": artifact_preflight[1],
         "portability.json": portability[1],
@@ -813,6 +822,13 @@ def main() -> None:
         component_digests[f"training-{index}.json"] = digest
     for index, (_, digest) in enumerate(evaluations):
         component_digests[f"evaluation-{index}.json"] = digest
+    for index, digest in enumerate(provider_resources_by_digest):
+        name = (
+            "provider-resources.json"
+            if index == 0
+            else f"provider-resources-{index}.json"
+        )
+        component_digests[name] = digest
     _publish_acceptance_bundle(
         args.evidence_dir,
         config_path=args.config,

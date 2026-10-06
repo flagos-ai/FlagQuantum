@@ -31,7 +31,9 @@ from examples.qdiffusion_kaiwu.private_io import (
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
+    build_provider_resource_gate,
     load_provider_resources,
+    validate_provider_resource_gate,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
@@ -264,6 +266,7 @@ def run_live_system_probe(
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
     environment_lock_sha256: str,
+    provider_resource_gate: dict[str, Any],
     sdk_version: str,
     device: torch.device,
     observed_gpu: str,
@@ -275,6 +278,7 @@ def run_live_system_probe(
     real_provider_transport: bool,
     plugin_root: Path,
 ) -> dict[str, Any]:
+    provider_resource_gate = validate_provider_resource_gate(provider_resource_gate)
     if requested_samples != config.get("requested_samples"):
         raise ValueError("requested_samples differs from the frozen configuration")
     role, remote_call_budget, target_range = _validate_lane(
@@ -383,6 +387,7 @@ def run_live_system_probe(
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": environment_lock_sha256,
+        "provider_resource_gate": provider_resource_gate,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -542,14 +547,24 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(arguments.config)
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
-    provider_resources, _ = load_provider_resources(arguments.provider_resources)
+    provider_resources, provider_resources_sha256 = load_provider_resources(
+        arguments.provider_resources
+    )
+    provider_resources_checked_at = datetime.now(timezone.utc)
     resources_ready, resource_reason = assess_provider_budget(
         provider_resources,
         mode="sampling",
         required_calls=config["remote_call_budget"],
+        now=provider_resources_checked_at,
     )
     if not resources_ready:
         parser.error(f"provider resource gate failed: {resource_reason}")
+    provider_resource_gate = build_provider_resource_gate(
+        snapshot_sha256=provider_resources_sha256,
+        checked_at=provider_resources_checked_at,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+    )
     if arguments.expected_hostname != config["host_identities"][
         arguments.execution_host
     ]:
@@ -609,6 +624,7 @@ def main() -> None:
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
         environment_lock_sha256=environment_lock_sha256,
+        provider_resource_gate=provider_resource_gate,
         sdk_version=arguments.expected_sdk_version,
         device=device,
         observed_gpu=observed_gpu,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,8 @@ _CLAIM_BOUNDARY = (
     "Account-resource observation only; it is not spend approval, project "
     "assignment, provider evidence, execution evidence, or acceptance evidence."
 )
+GATE_FIELDS = frozenset({"snapshot_sha256", "checked_at", "mode", "required_calls"})
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 def _parse_utc_timestamp(value: object, *, label: str) -> datetime:
@@ -169,6 +172,47 @@ def assess_provider_budget(
     return True, f"provider_{mode}_budget_available"
 
 
+def build_provider_resource_gate(
+    *,
+    snapshot_sha256: str,
+    checked_at: datetime,
+    mode: str,
+    required_calls: int,
+) -> dict[str, Any]:
+    """Build closed evidence describing one successful pre-submission check."""
+
+    if not isinstance(snapshot_sha256, str) or _SHA256.fullmatch(
+        snapshot_sha256
+    ) is None:
+        raise ValueError("snapshot_sha256 must be a lowercase SHA-256 digest")
+    if checked_at.tzinfo is None or checked_at.utcoffset() != timedelta(0):
+        raise ValueError("checked_at must be an aware UTC timestamp")
+    if mode not in MODES:
+        raise ValueError("mode must be optimization or sampling")
+    if type(required_calls) is not int or required_calls <= 0:
+        raise ValueError("required_calls must be a positive integer")
+    return {
+        "snapshot_sha256": snapshot_sha256,
+        "checked_at": checked_at.isoformat(),
+        "mode": mode,
+        "required_calls": required_calls,
+    }
+
+
+def validate_provider_resource_gate(record: object) -> dict[str, Any]:
+    """Validate retained resource-gate evidence without trusting its producer."""
+
+    if not isinstance(record, dict) or set(record) != GATE_FIELDS:
+        raise ValueError("provider resource gate has an invalid schema")
+    checked_at = _parse_utc_timestamp(record["checked_at"], label="checked_at")
+    return build_provider_resource_gate(
+        snapshot_sha256=record["snapshot_sha256"],
+        checked_at=checked_at,
+        mode=record["mode"],
+        required_calls=record["required_calls"],
+    )
+
+
 __all__ = (
     "SCHEMA",
     "SOURCE",
@@ -176,6 +220,8 @@ __all__ = (
     "VERSION",
     "assess_provider_budget",
     "assess_provider_resources",
+    "build_provider_resource_gate",
     "load_provider_resources",
+    "validate_provider_resource_gate",
     "validate_provider_resources",
 )

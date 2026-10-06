@@ -890,6 +890,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   Sampling target to cover its frozen per-seed ceiling. These checks prevent a
   direct CLI invocation from starting a run whose declared task budget exceeds
   the observed balance, without treating the observation as a reservation.
+- System, training, and portability records now retain the exact Resource Bill
+  digest, UTC check time, mode, and declared call ceiling. Final assembly accepts
+  repeated `--provider-resources` inputs, deduplicates them by content digest,
+  and requires the copied snapshot set to equal the set referenced by smoke and
+  executable records. Offline validation recomputes each budget decision at its
+  retained check time and rejects remote receipts that predate the check or
+  follow the snapshot's validity window.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

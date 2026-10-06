@@ -44,7 +44,9 @@ from examples.qdiffusion_kaiwu.private_io import (
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
+    build_provider_resource_gate,
     load_provider_resources,
+    validate_provider_resource_gate,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _load_pinned_qdiffusion_api,
@@ -413,11 +415,13 @@ def run_training_seed(
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
     environment_lock_sha256: str,
+    provider_resource_gate: dict[str, Any],
     sdk_version: str,
     preflight_sha256: str,
     artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
     retained_output_snapshots: dict[str, RegularFileSnapshot] | None = None,
 ) -> dict[str, Any]:
+    provider_resource_gate = validate_provider_resource_gate(provider_resource_gate)
     failure: dict[str, str] | None = None
     run_directory: Path | None = None
     checkpoint_name: str | None = None
@@ -486,6 +490,7 @@ def run_training_seed(
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": environment_lock_sha256,
+        "provider_resource_gate": provider_resource_gate,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -638,14 +643,24 @@ def main() -> None:
         parser.error("--requested-samples differs from the frozen configuration")
     if args.seed not in config["seeds"]:
         parser.error("--seed is not present in the frozen seed list")
-    provider_resources, _ = load_provider_resources(args.provider_resources)
+    provider_resources, provider_resources_sha256 = load_provider_resources(
+        args.provider_resources
+    )
+    provider_resources_checked_at = datetime.now(timezone.utc)
     resources_ready, resource_reason = assess_provider_budget(
         provider_resources,
         mode="sampling",
         required_calls=config["training"]["remote_call_budget_per_seed"],
+        now=provider_resources_checked_at,
     )
     if not resources_ready:
         parser.error(f"provider resource gate failed: {resource_reason}")
+    provider_resource_gate = build_provider_resource_gate(
+        snapshot_sha256=provider_resources_sha256,
+        checked_at=provider_resources_checked_at,
+        mode="sampling",
+        required_calls=config["training"]["remote_call_budget_per_seed"],
+    )
     if args.expected_hostname != config["host_identities"][args.execution_host]:
         parser.error("--expected-hostname differs from the frozen host identity")
     observed_hostname = socket.gethostname()
@@ -744,6 +759,7 @@ def main() -> None:
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
         environment_lock_sha256=environment_lock_sha256,
+        provider_resource_gate=provider_resource_gate,
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
         artifact_snapshots=artifact_snapshots,

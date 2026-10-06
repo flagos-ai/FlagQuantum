@@ -353,6 +353,10 @@ private provider-resource snapshot whose balance on one Sampling target covers
 the frozen per-seed remote-call ceiling. The portability launcher applies the
 same check to the frozen system/replay ceiling. These are fail-closed spending
 guards; the snapshots remain observations rather than provider reservations.
+Each record retains a closed gate containing the snapshot digest, UTC check
+time, Sampling mode, and declared ceiling. Final validation replays that check
+against the copied snapshot and rejects a receipt that predates its gate or
+follows the snapshot's validity window.
 
 After training returns, the command rehashes the frozen config, FASTA, base
 checkpoint/tokenizer tree, and ESM2 checkpoint before publishing its record.
@@ -444,8 +448,10 @@ directories are unavailable. The frozen protein-artifact preflight is also a
 required copied component: every training record and the portability replay
 must reference its exact digest, allowing offline revalidation of the dataset,
 checkpoint, tokenizer, and evaluation-model identities. The
-standalone SDK approval, provider-resource snapshot, and successful Phase 2
-provider smoke are required copied components as well. Final validation
+standalone SDK approval, every uniquely referenced provider-resource snapshot,
+and successful Phase 2 provider smoke are required copied components as well.
+Repeat `--provider-resources` during assembly when the staged executions used
+different snapshots. Final validation
 requires the approval to equal the frozen config decision, binds both private
 input digests to the smoke, verifies that the smoke time fell within the
 snapshot's bounded validity interval, rechecks that one target had both

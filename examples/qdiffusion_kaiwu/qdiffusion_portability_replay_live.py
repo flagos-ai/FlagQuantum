@@ -42,7 +42,9 @@ from examples.qdiffusion_kaiwu.private_io import (
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
 from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
+    build_provider_resource_gate,
     load_provider_resources,
+    validate_provider_resource_gate,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _load_training_record,
@@ -194,6 +196,7 @@ def run_portability_replay(
     source_preflight_sha256: str,
     transfer_manifest_sha256: str,
     environment_lock_sha256: str,
+    provider_resource_gate: dict[str, Any],
     sdk_version: str,
     project_no: str,
     task_prefix: str,
@@ -205,6 +208,7 @@ def run_portability_replay(
     trained_checkpoint_snapshot: RegularFileSnapshot | None = None,
     artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
 ) -> dict[str, Any]:
+    provider_resource_gate = validate_provider_resource_gate(provider_resource_gate)
     if requested_samples != config.get("requested_samples"):
         raise ValueError("requested_samples differs from the frozen configuration")
     generation = config["generation"]
@@ -361,6 +365,7 @@ def run_portability_replay(
         "source_preflight_sha256": source_preflight_sha256,
         "transfer_manifest_sha256": transfer_manifest_sha256,
         "environment_lock_sha256": environment_lock_sha256,
+        "provider_resource_gate": provider_resource_gate,
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "kaiwu_sdk_version": sdk_version,
@@ -517,14 +522,24 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(args.config)
     if args.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
-    provider_resources, _ = load_provider_resources(args.provider_resources)
+    provider_resources, provider_resources_sha256 = load_provider_resources(
+        args.provider_resources
+    )
+    provider_resources_checked_at = datetime.now(timezone.utc)
     resources_ready, resource_reason = assess_provider_budget(
         provider_resources,
         mode="sampling",
         required_calls=config["remote_call_budget"],
+        now=provider_resources_checked_at,
     )
     if not resources_ready:
         parser.error(f"provider resource gate failed: {resource_reason}")
+    provider_resource_gate = build_provider_resource_gate(
+        snapshot_sha256=provider_resources_sha256,
+        checked_at=provider_resources_checked_at,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+    )
     if args.expected_hostname != config["host_identities"][args.execution_host]:
         parser.error("--expected-hostname differs from the frozen host identity")
     hostname = socket.gethostname()
@@ -631,6 +646,7 @@ def main() -> None:
         source_preflight_sha256=source_preflight_sha256,
         transfer_manifest_sha256=source_preflight["manifest_sha256"],
         environment_lock_sha256=environment_lock_sha256,
+        provider_resource_gate=provider_resource_gate,
         sdk_version=args.expected_sdk_version,
         project_no=args.project_no,
         task_prefix=args.task_prefix,

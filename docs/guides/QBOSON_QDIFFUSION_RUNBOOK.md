@@ -927,6 +927,12 @@ python -B -s -m examples.qdiffusion_kaiwu.assemble_acceptance \
   --evidence-dir /absolute/final/qboson-qdiffusion-acceptance
 ```
 
+Pass `--provider-resources` once for every distinct Resource Bill snapshot
+referenced by the smoke, system, training, or portability records. Repeating a
+byte-identical snapshot is harmless and is deduplicated by SHA-256. Assembly
+rejects both unreferenced snapshots and a retained gate whose snapshot is
+missing.
+
 The target directory must not exist. The assembler verifies component schemas,
 config identities, both revision-bound extraction preflights, their exact shared
 transfer manifest, host roles, seed coverage, training/evaluation links, and the

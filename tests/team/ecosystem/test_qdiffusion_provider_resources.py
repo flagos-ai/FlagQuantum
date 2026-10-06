@@ -11,7 +11,9 @@ import pytest
 from examples.qdiffusion_kaiwu.provider_resources import (
     assess_provider_budget,
     assess_provider_resources,
+    build_provider_resource_gate,
     load_provider_resources,
+    validate_provider_resource_gate,
     validate_provider_resources,
 )
 
@@ -204,3 +206,38 @@ def test_resource_budget_rejects_invalid_requirements(
             required_calls=required_calls,
             now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
         )
+
+
+def test_provider_resource_gate_round_trips_as_a_closed_record() -> None:
+    gate = build_provider_resource_gate(
+        snapshot_sha256="a" * 64,
+        checked_at=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
+        mode="sampling",
+        required_calls=128,
+    )
+
+    assert validate_provider_resource_gate(gate) == gate
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        (lambda gate: gate.update(extra=True), "invalid schema"),
+        (lambda gate: gate.update(snapshot_sha256="invalid"), "SHA-256"),
+        (lambda gate: gate.update(checked_at="2026-10-06T12:00:00"), "UTC"),
+        (lambda gate: gate.update(required_calls=0), "positive integer"),
+    ),
+)
+def test_provider_resource_gate_rejects_ambiguous_evidence(
+    mutation: Callable[[dict[str, object]], object], message: str
+) -> None:
+    gate: dict[str, object] = build_provider_resource_gate(
+        snapshot_sha256="a" * 64,
+        checked_at=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
+        mode="sampling",
+        required_calls=128,
+    )
+    mutation(gate)
+
+    with pytest.raises(ValueError, match=message):
+        validate_provider_resource_gate(gate)
