@@ -323,29 +323,62 @@ fail_closed = "The rule is enforced where it is load-bearing rather than only of
 
 [[rows]]
 id = "qec_dem_chunking"
-status = "absent"
-floor = "later"
-floor_override_reason = "The parity matrix folds this under qec_decoder_family, whose priority is now. Chunk seams are the substrate of sliding-window decoding rather than of decoding as such, and nothing in this repository decodes yet, so the floor here is the stage after the first decoder lands."
+status = "partial"
+floor = "now"
+domain_row = "qec_decoder_family"
+maturity_ref = "detector_error_model_chunking"
 domain_items = ["cudaq-qec library"]
 dependency_class = "B_open_neutral"
 baseline = "A DEM as a sequence of chunks with named seams: SeamId from a name string, seam_name.prev_round/next_round, phase_name.init/bulk/final, DemChunkSpec/DemChunksSpec, dem_chunk_from_spec, dem_chunks_from_spec, expand_dem_chunks, dem_stitch/dem_stitch_all/dem_stitch_merged, dem_close/dem_close_all, and dem_chunks_to_d_sparse / dem_chunks_to_o_sparse / dem_chunks_to_pcm."
 target = "A model that can be built, stored and consumed one round-window at a time, because a sliding-window decoder needs a chunk boundary to exist before it can slide over it."
+symbols_present = [
+    "flagquantum.qec.ChunkLayout",
+    "flagquantum.qec.ChunkLayout.from_memory_circuit",
+    "flagquantum.qec.DemChunk",
+    "flagquantum.qec.DemChunk.interior_rows",
+    "flagquantum.qec.DemChunk.seam_rows",
+    "flagquantum.qec.DemChunkSpec",
+    "flagquantum.qec.DemChunksSpec",
+    "flagquantum.qec.DemChunksSpec.chunk_specs",
+    "flagquantum.qec.DemChunksSpec.layer_ranges",
+    "flagquantum.qec.DemChunksSpec.phase_sequence",
+    "flagquantum.qec.DemSeam",
+    "flagquantum.qec.PhaseId",
+    "flagquantum.qec.PhaseId.bulk",
+    "flagquantum.qec.PhaseId.final",
+    "flagquantum.qec.PhaseId.init",
+    "flagquantum.qec.SeamId",
+    "flagquantum.qec.SeamId.next_round",
+    "flagquantum.qec.SeamId.prev_round",
+    "flagquantum.qec.dem_chunk_from_spec",
+    "flagquantum.qec.dem_chunks_from_spec",
+    "flagquantum.qec.dem_close",
+    "flagquantum.qec.dem_close_all",
+    "flagquantum.qec.dem_stitch",
+    "flagquantum.qec.dem_stitch_all",
+    "flagquantum.qec.dem_stitch_merged",
+]
 symbols_absent = [
-    "dem_chunk_from_spec",
-    "dem_chunks_from_spec",
-    "expand_dem_chunks",
-    "dem_stitch",
-    "dem_close_all",
-    "SeamId",
+    "dem_chunks_to_d_sparse",
+    "dem_chunks_to_o_sparse",
+    "dem_chunks_to_pcm",
 ]
 negative_search = [
     "symbol:flagquantum.qec.ExtendedDem",
-    "flagquantum/qec/chunks.py",
+    "symbol:flagquantum.qec.expand_dem_chunks",
+    "symbol:flagquantum.qec.seam_name",
+    "symbol:flagquantum.qec.phase_name",
     "flagquantum/qec/seams.py",
 ]
-evidence = ["flagquantum/qec/dem.py", "flagquantum/qec/circuit.py"]
-next_action = "Do not build this before a decoder needs it. The prerequisite is a chunk identity that survives round boundaries, which is the same identity a streaming decoder window needs; Detector and MeasurementRef already carry the round and the check a chunk boundary would fall on, so the record to extend exists before the operation does."
-fail_closed = "Six named absences and two absent module paths, so the row turns red the day any chunk or seam machinery appears and has to be rewritten rather than left stale."
+evidence = [
+    "flagquantum/qec/chunks.py",
+    "flagquantum/qec/circuit.py",
+    "flagquantum/qec/dem.py",
+    "tests/qec/test_dem_chunks.py",
+]
+next_action = "The chunk identity and the operations over it have landed; what is left of the baseline's list is the chunk-scoped matrix view. dem_chunks_to_d_sparse, dem_chunks_to_o_sparse and dem_chunks_to_pcm project one window onto the detector matrix, the observable matrix and the parity-check matrix, and they are withheld rather than approximated because a window's matrices are what a sliding-window decoder is handed rather than what a record states: flagquantum.qec.detector_error_matrix and flagquantum.qec.DecodingGraph already project a whole model, a chunk closes back to one through flagquantum.qec.dem_close_all, and the per-window projection is the input shape of the decoder that reads it, so it lands with that decoder inside qec_decoder_family instead of ahead of it. Three further shapes are accounted for rather than pending and are not gaps. expand_dem_chunks exists upstream because its spec is a phase graph with a sparse shorthand that has to be expanded against a round count supplied at expansion time; the spec here is linear, flagquantum.qec.DemChunksSpec.chunk_specs is that expansion, and a second name for one operation would be a second spelling of it. A seam here is identified by its name text rather than by a compile-time hash of one, so there is no name registry a diagnostic has to consult and no hash that can collide. And the stride between windows is fixed at the window width minus one, so a caller that wants to advance by less reads windows without stitching them, while a layer count that does not tile is refused rather than described by the straddle flags upstream carries for it."
+fail_closed = "Every refusal is at the point where the caller still holds the decomposition. A window of one detector layer, a window wider than the layout, and a layer count that does not tile into windows at the fixed stride are all refused with the layer count named, and a layer numbering with a gap in it is refused rather than closed up, because renumbering the rounds after a missing one would silently move every window that follows it. A mechanism that no window contains whole is refused and never split, since splitting it would be two weaker faults where the model stated one, and a mechanism that flips no detector is refused because an observable-only fault has no round to be placed in and choosing one would be inventing placement. A layout whose layer widths do not sum to the model's detector count, and a layout read from a memory circuit whose detector count disagrees with the model's, are refused instead of being reconciled. A chunk may name only the two standard boundary seams, at most once each, with the leading band starting at local row zero and the trailing band ending at the last local row, and two seam bands may not overlap. A stitch refuses two chunks that do not share exactly one detector layer, an observable count that differs between the two sides, a boundary either side does not carry, and -- the check that makes this an identity rather than arithmetic -- a contracted band whose detectors are not the same rows in the same order on both sides, so two boundaries of equal width that are not the same boundary are refused. A close refuses a sequence whose windows disagree on their observable count, that does not share exactly one boundary layer window by window, and whose contracted bands are not the same detectors; and the round-trip invariant is asserted rather than assumed, because flagquantum.qec.dem_close_all of the windows of a model and flagquantum.qec.dem_close of their stitch are both held equal to the model they were cut from."
+
 
 [[rows]]
 id = "qec_dem_text_interchange"
@@ -677,21 +710,21 @@ note = "Same operation, same two rules, different nouns and a different carrier.
 [[fields]]
 id = "dem_seam_and_chunk_api"
 cudaq_symbol = "chunks with named seams: SeamId, seam_name.prev_round/next_round, phase_name.init/bulk/final, DemChunkSpec, dem_chunk_from_spec, dem_chunks_from_spec, expand_dem_chunks, dem_stitch / dem_stitch_all / dem_stitch_merged, dem_close / dem_close_all"
-flagquantum_symbol = ""
-verdict = "absent"
+flagquantum_symbol = "flagquantum.qec.dem_chunks_from_spec"
+verdict = "reshaped"
 negative_search = [
     "symbol:flagquantum.qec.ExtendedDem",
-    "flagquantum/qec/chunks.py",
-    "flagquantum/qec/seams.py",
+    "symbol:flagquantum.qec.expand_dem_chunks",
+    "symbol:flagquantum.qec.dem_chunks_to_pcm",
 ]
-note = "Upstream a model is a sequence of chunks with named seams that can be stitched and closed, which is what a sliding-window decoder slides over; the seam names are values derived from a name string, so a seam identity is stable across processes. Here a model is monolithic and one round-window of it cannot be named."
+note = "A model decomposes into windows over named seams on both sides, and the differences are four decisions rather than four omissions. The seam identity: upstream hashes a seam's name into an uint32 at compile time and keeps a name registry only so a diagnostic can turn the hash back into text, where flagquantum.qec.SeamId keeps the name as the identity, so nothing hashes, nothing interns, and two seams are the same seam exactly when their names are equal. The content of a seam: upstream's per-seam tags are caller-chosen labels numbered positionally within the seam, which makes its tag check the same statement as its width check, where the rows here carry the global detector index, so flagquantum.qec.dem_stitch refuses a contraction whose two bands merely have the same width and compares identities instead. The spec: upstream's DemChunkSpec accepts a sparse shorthand expanded against a list of seam ids, with a second form carrying a separate matrix per seam, where a chunk here is cut from a model whose rows are already laid out in layers, so there is no shorthand to expand and the expansion step upstream spells expand_dem_chunks is flagquantum.qec.DemChunksSpec.chunk_specs and flagquantum.qec.dem_chunks_from_spec. And the sequence: upstream's DemChunksSpec is a phase graph with caller-named phases, edges, a self-loop for the repeating phase and a round count supplied at expansion, where this repository keeps the linear case a memory experiment has -- init, a repetition of bulk, final -- and refuses anything else rather than approximating it, so flagquantum.qec.PhaseId labels a window's position and does not select a template: an init window carries no prev_round seam because no detector layer precedes it. Two further carriers are deliberately not mirrored. Upstream's extended_dem is a model type holding H, O, error_rates and the seams; here a window is a plain flagquantum.qec.DetectorErrorModel plus its seams, which is the same decomposition without a second model type, and flagquantum.qec.dem_close is what turns one back into a model numbered by detector identity. And the chunk-scoped matrices (dem_chunks_to_d_sparse, dem_chunks_to_o_sparse, dem_chunks_to_pcm, with their seam convention and their whole-round-interior-rows refusal) have no counterpart yet, because a window's matrices are the input shape of the sliding-window decoder rather than of the model record; the alignment row qec_dem_chunking records that gap and where it lands."
 
 [[fields]]
 id = "dem_measurement_to_detector_map"
 cudaq_symbol = "decoder_init.measurement_to_detectors() (D, detectors by raw measurements), the d_sparse helper, and dem_chunks_to_d_sparse / dem_chunks_to_o_sparse / dem_chunks_to_pcm"
 flagquantum_symbol = "flagquantum.qec.MeasurementMap"
 verdict = "reshaped"
-note = "The same information -- which measurements compose each deterministic parity -- is one row per detector or observable of the measurements whose parity it is. Upstream reaches it two ways: a stored dense (detectors, raw measurements) matrix on decoder_init, and free-function sparse helpers for a realtime decoder configuration. Here flagquantum.qec.MeasurementMap is one record that does both, because the row structure is what it stores: dense() projects to upstream's orientation and flattened() to the -1-terminated sparse form d_sparse produces, with the terminator being what makes a row that reads nothing visible to a sparse reader. The composition is closed on both sides: a row is a parity, so it is sorted, it may not name one measurement twice because two reads of one measurement cancel, and an index outside the buffer the map states is refused. Two differences remain and neither is a mismatch of meaning. The carrier: here the map is handed to a decoder beside the model through flagquantum.qec.DecoderInputs, where upstream it hangs off decoder_init, which is the same pairing reached from the other end. And the chunk-scoped helpers -- dem_chunks_to_d_sparse, dem_chunks_to_o_sparse, dem_chunks_to_pcm, with their seam convention and their whole-round-interior-rows refusal -- have no counterpart, because a model here is monolithic and dem_seam_and_chunk_api records that absence. The relation on the circuit side is still a separate reading: what construction is driven by is the layout's ordered flagquantum.qec.DetectorLayout records, and the map is derived from them rather than the other way round, which is the direction difference the previous revision of this row recorded and which the map makes explicit rather than implicit."
+note = "The same information -- which measurements compose each deterministic parity -- is one row per detector or observable of the measurements whose parity it is. Upstream reaches it two ways: a stored dense (detectors, raw measurements) matrix on decoder_init, and free-function sparse helpers for a realtime decoder configuration. Here flagquantum.qec.MeasurementMap is one record that does both, because the row structure is what it stores: dense() projects to upstream's orientation and flattened() to the -1-terminated sparse form d_sparse produces, with the terminator being what makes a row that reads nothing visible to a sparse reader. The composition is closed on both sides: a row is a parity, so it is sorted, it may not name one measurement twice because two reads of one measurement cancel, and an index outside the buffer the map states is refused. Two differences remain and neither is a mismatch of meaning. The carrier: here the map is handed to a decoder beside the model through flagquantum.qec.DecoderInputs, where upstream it hangs off decoder_init, which is the same pairing reached from the other end. And the chunk-scoped helpers -- dem_chunks_to_d_sparse, dem_chunks_to_o_sparse, dem_chunks_to_pcm, with their seam convention and their whole-round-interior-rows refusal -- have no counterpart yet: a model now decomposes into windows over named seams, which dem_seam_and_chunk_api records, but a window's matrices are the input shape of the sliding-window decoder rather than of this map, so the projection lands with that decoder and qec_dem_chunking records the gap. The relation on the circuit side is still a separate reading: what construction is driven by is the layout's ordered flagquantum.qec.DetectorLayout records, and the map is derived from them rather than the other way round, which is the direction difference the previous revision of this row recorded and which the map makes explicit rather than implicit."
 
 [[fields]]
 id = "kernel_annotation_surface"

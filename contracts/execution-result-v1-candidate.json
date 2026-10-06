@@ -53,7 +53,7 @@
       "native",
       "summary"
     ],
-    "properties": ["probabilities", "counts", "expectations"],
+    "properties": ["probabilities", "counts", "density_matrix", "expectations"],
     "missing_data_failure": "RuntimeError",
     "implicit_native_attribute_delegation": false,
     "native_output_stability": "none",

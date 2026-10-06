@@ -2,12 +2,13 @@
 """Validate the construction-time composition contract against the implementation.
 
 `contracts/circuit-composition-contract.toml` is the repository's own statement of what
-`Circuit.compose` and `Circuit.adjoint` guarantee and of every way they refuse. This
-gate reads that statement back against the code: a contracted refusal whose phrase no
-longer occurs in its source, a refusal the contract does not list, a declared adjoint
-rule the operator schema does not define, an operation the contract calls absent but
-that someone added, an opcode census that no longer supports the unreachable row, or a
-composition operation without an expand-and-compare test all fail here.
+`Circuit.compose`, `Circuit.adjoint`, and `Circuit.control` guarantee and of every way
+they refuse. This gate reads that statement back against the code: a contracted refusal
+whose phrase no longer occurs in its source, a refusal the contract does not list, a
+declared adjoint or control rule the operator schema does not define, an operation the
+contract calls absent but that someone added, an opcode census that no longer supports a
+refusal, a control claim the expansion contradicts, or a composition operation without an
+expand-and-compare test all fail here.
 
 The instruction-by-instruction requirement is the reason this gate exists next to the
 conformance test rather than inside it: the contract names one expansion test per
@@ -23,13 +24,23 @@ import inspect
 from pathlib import Path
 from typing import Any
 
+import torch
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
     import tomli as tomllib
 
 import flagquantum as fq
-from flagquantum.core import ADJOINT_RULES, OPERATOR_SCHEMAS
+from flagquantum.core import (
+    ADJOINT_RULES,
+    CONTROL_RULES,
+    MAX_LADDER_LEVEL,
+    OPERATOR_SCHEMAS,
+    control_ladder_level,
+    get_operator_schema,
+)
+from flagquantum.core.controlled import controlled_instructions
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError, ValidationError
 
@@ -47,6 +58,16 @@ EXCEPTIONS: dict[str, type[BaseException]] = {
 #: The instruction fields a second IR would have to add. `ir_version_effect = "none"`
 #: claims none of them appeared, so they are read off the IR rather than trusted.
 FORBIDDEN_IR_FIELDS = frozenset({"adjoint", "compose", "control", "power"})
+
+#: The opcodes whose controlled form is the ladder alone, with no basis change and no
+#: correction gate around it. `x` is ``h . C(P(pi)) . h`` and `rz` carries a phase
+#: correction, so neither measures the bound itself; these do.
+LADDER_BENCHMARK_OPCODES = ("z", "t", "phase", "s", "sdg", "cz", "cphase")
+
+#: How deep the gate measures the ladder bound. The bound is a formula, so a few rungs
+#: decide whether the formula is the one the expansion follows; the ceiling itself is
+#: checked against `MAX_LADDER_LEVEL` rather than by building the deepest program.
+LADDER_PROBE_LEVELS = (1, 2, 3, 4, 5, 6)
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
@@ -79,6 +100,8 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "implementation",
         "placement_implementation",
         "adjoint_rule_source",
+        "control_rule_source",
+        "control_expansion_implementation",
     ):
         raw = contract.get(name)
         if not isinstance(raw, str) or not (ROOT / raw).is_file():
@@ -90,9 +113,9 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     scope = contract.get("scope", {})
     provided = list(scope.get("provided", ()))
     not_provided = list(scope.get("not_provided", ()))
-    if provided != ["Circuit.compose", "Circuit.adjoint"]:
+    if provided != ["Circuit.compose", "Circuit.adjoint", "Circuit.control"]:
         errors.append("circuit composition provided surface drifted")
-    if not_provided != ["Circuit.control", "Circuit.power"]:
+    if not_provided != ["Circuit.power"]:
         errors.append("circuit composition absent surface drifted")
     for dotted in provided:
         owner, _, attribute = dotted.partition(".")
@@ -102,9 +125,12 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         owner, _, attribute = dotted.partition(".")
         if attribute and hasattr(getattr(fq, owner, None), attribute):
             errors.append(f"contracted-absent operation {dotted!r} exists")
+    # The family is construction-time methods on `Circuit`. `power` is absent and
+    # `control` is provided, but neither may become an operation of its own at the root:
+    # a module-level `fq.control` would be a second way to say the same thing.
     for entry in ("control", "power"):
         if entry in fq.__all__:
-            errors.append(f"{entry!r} is a root export but is contracted as absent")
+            errors.append(f"{entry!r} is a root export; the family is Circuit methods")
 
     placement = contract.get("placement", {})
     compose_signature = inspect.signature(fq.Circuit.compose)
@@ -163,11 +189,229 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
 
     refused = _refusal_errors(contract)
     errors.extend(refused)
+    errors.extend(_control_errors(contract))
     errors.extend(_vocabulary_errors(contract))
     errors.extend(_relabelling_errors(contract))
     errors.extend(_census_errors(contract))
     errors.extend(_verification_errors(contract))
     return tuple(errors)
+
+
+def _control_errors(contract: dict[str, Any]) -> list[str]:
+    """Check the `[control]` table against the rules and the expansion themselves.
+
+    The table makes two kinds of claim. The first kind is a name: which rules exist, where
+    the ceiling lives, which table the one-control shortcut is read from. Those are read
+    back against `flagquantum/core/operator_schema.py`. The second kind is a behaviour --
+    the width, the ancilla count, the emitted opcodes, the ladder bound -- and those are
+    measured by expanding a real receiver, because a behavior checked by reading the
+    table that states it is not checked at all.
+    """
+
+    errors: list[str] = []
+    control = contract.get("control", {})
+    authorization = control.get("authorization")
+    if authorization not in list(contract.get("authorization", ())):
+        errors.append(
+            f"circuit control authorization {authorization!r} is not among this file's "
+            "authorizations"
+        )
+    if list(control.get("declared_opcode_rules", ())) != list(CONTROL_RULES):
+        errors.append(
+            "circuit control declared rules drifted from CONTROL_RULES: "
+            f"contract={control.get('declared_opcode_rules')}, "
+            f"implementation={list(CONTROL_RULES)}"
+        )
+    if control.get("absence_rule") != "not_available":
+        errors.append("circuit control absence rule must be not_available")
+    missing = [
+        name
+        for name in ("single_control_partner_source", "max_ladder_level_source")
+        if control.get(name) != "flagquantum/core/operator_schema.py"
+    ]
+    if missing:
+        errors.append(f"circuit control {missing} must name the operator schema")
+    if control.get("max_ladder_level") != MAX_LADDER_LEVEL:
+        errors.append(
+            "circuit control ladder ceiling drifted: "
+            f"contract={control.get('max_ladder_level')}, "
+            f"implementation={MAX_LADDER_LEVEL}"
+        )
+    if control.get("ancilla_qubits") != 0:
+        errors.append("circuit control must contract zero ancillas")
+
+    # The signature is the contract a user reads, so it is read off the method rather than
+    # restated: the count precedes the control qubits because the count is what the control
+    # qubits have to agree with, and neither may take a default -- a defaulted control
+    # qubit set would make the count the only required argument while the qubits it counts
+    # are implied.
+    signature = inspect.signature(fq.Circuit.control)
+    names = list(signature.parameters)
+    if names != [
+        "self",
+        control.get("control_count_argument"),
+        control.get("control_qubits_argument"),
+    ]:
+        errors.append(f"Circuit.control signature drifted: {names}")
+    else:
+        for name in names[1:]:
+            parameter = signature.parameters[name]
+            if parameter.kind is not inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                errors.append(f"Circuit.control {name} must be positional or keyword")
+            if parameter.default is not inspect.Parameter.empty:
+                errors.append(f"Circuit.control {name} must have no default")
+
+    # The shape claims. Each is either a formula the gate evaluates itself or a string the
+    # gate reads back, so editing the contract's prose without editing the measurement --
+    # or the other way round -- fails here.
+    formulas = {
+        "ladder_control_count": "n_controls",
+        "ladder_level": "n_controls + arity - 1",
+        "ladder_instruction_bound": "4 * 3 ** (ladder_level - 1) - 3",
+        "ladder_depth_growth": "exponential",
+        "result_width": "max(ctrl_qubits) + 1",
+        "returns": "new_circuit",
+        "instruction_order": "forward",
+    }
+    for name, expected in formulas.items():
+        if control.get(name) != expected:
+            errors.append(f"circuit control {name} must be {expected!r}")
+
+    flags = {
+        "receiver_is_mutated": False,
+        "control_qubits_are_added": True,
+        "control_qubits_must_be_distinct": True,
+        "control_qubits_must_be_outside_the_receiver": True,
+        "emitted_opcodes_are_registered": True,
+        "zero_angles_are_emitted": True,
+    }
+    for name, expected in flags.items():
+        if control.get(name) is not expected:
+            errors.append(f"circuit control {name} must be contracted as {expected}")
+
+    # The rules must also be the rules the opcodes actually use, or the list is a
+    # vocabulary nobody speaks.
+    used = {schema.control for schema in OPERATOR_SCHEMAS.values()}
+    unspoken = sorted(set(CONTROL_RULES) - used)
+    if unspoken:
+        errors.append(
+            f"circuit control rules declared but used by no opcode: {unspoken}"
+        )
+
+    receiver = fq.Circuit(2).h(0).cnot(0, 1)
+    receiver_before = [
+        (item.name, item.wires) for item in receiver.to_ir().instructions
+    ]
+    controlled = receiver.control(1, ctrl_qubits=(4,))
+    receiver_after = [(item.name, item.wires) for item in receiver.to_ir().instructions]
+    if receiver_after != receiver_before:
+        errors.append("Circuit.control mutated its receiver")
+    # A control qubit is added, so the width is one past the greatest control qubit named
+    # and is therefore always greater than the receiver's own width.
+    if controlled.n_qubits != 5:
+        errors.append(
+            "Circuit.control result width is not one past the greatest control qubit, "
+            f"got {controlled.n_qubits}"
+        )
+    preserved = {
+        "bsz": (controlled.bsz, receiver.bsz),
+        "device": (controlled.device, receiver.device),
+        "dtype": (controlled.dtype, receiver.dtype),
+    }
+    drifted = sorted(name for name, (got, want) in preserved.items() if got != want)
+    if drifted:
+        errors.append(
+            f"Circuit.control did not preserve contracted attributes: {drifted}"
+        )
+    if list(control.get("preserves", ())) != ["bsz", "device", "dtype"]:
+        errors.append(
+            "circuit control preserves must be exactly bsz, device and dtype; n_qubits "
+            "cannot be preserved because a control qubit is added"
+        )
+
+    # `receiver_input_state` is a claim about amplitudes, so it is measured on a receiver
+    # that carries an input state and no instructions. Qubit 0 is the most significant
+    # amplitude bit, so the added control qubit is the least significant one and the
+    # receiver's own amplitudes land at index 0 of each added-qubit pair with `|0>` in the
+    # other slot. Dropping the receiver's input instead of carrying it would leave a
+    # program that runs and computes something else, which is why this is contracted.
+    if control.get("receiver_input_state") != (
+        "carried into the wider register with every added qubit at |0>"
+    ):
+        errors.append("circuit control receiver input state claim drifted")
+    state = torch.tensor([[0.6, 0.8]], dtype=torch.complex128)
+    carrying = fq.Circuit(1, dtype=torch.complex128, inputs=state)
+    embedded = carrying.control(1, ctrl_qubits=(1,)).state()
+    expected = torch.tensor([[0.6 + 0j, 0j, 0.8 + 0j, 0j]], dtype=torch.complex128)
+    if not torch.allclose(embedded, expected, atol=1e-14):
+        errors.append(
+            "Circuit.control did not carry the receiver's input state into the wider "
+            f"register: {embedded.tolist()}"
+        )
+
+    # The emitted opcode census, measured over every unitary opcode the registry declares
+    # rather than over the receiver above: a rule that reached for an opcode nobody
+    # registered would put a name into the IR that the IR cannot execute.
+    emitted: set[str] = set()
+    for opcode, schema in OPERATOR_SCHEMAS.items():
+        if schema.opcode != opcode or schema.control == "not_available":
+            continue
+        for level in (1, 2):
+            qubits = tuple(range(schema.arity))
+            controls = tuple(range(schema.arity, schema.arity + level))
+            expansion = controlled_instructions(
+                schema, dict.fromkeys(schema.parameters, 0.37), qubits, controls
+            )
+            emitted |= {item.name for item in (expansion or ())}
+    unknown = sorted(name for name in emitted if get_operator_schema(name) is None)
+    if unknown:
+        errors.append(f"Circuit.control emitted unregistered opcodes: {unknown}")
+
+    # The ladder level is a claim about the implementation, so it is read over a grid
+    # rather than at one point: a formula that agrees at level 1 and drifts with arity is
+    # the failure this catches.
+    for arity in (1, 2, 3):
+        for count in range(1, 4):
+            got = control_ladder_level(arity, count)
+            if got != count + arity - 1:
+                errors.append(
+                    f"circuit control ladder level for arity {arity} and {count} "
+                    f"control(s) is {got}, not the contracted {count + arity - 1}"
+                )
+
+    # The ladder bound, measured on opcodes whose controlled form is the ladder alone. The
+    # expected count is the contract's own formula, evaluated here rather than read back
+    # from the code that emits it.
+    for opcode in LADDER_BENCHMARK_OPCODES:
+        schema = get_operator_schema(opcode)
+        if schema is None:  # pragma: no cover - the contract's own vocabulary
+            errors.append(
+                f"circuit control benchmark opcode {opcode!r} is not registered"
+            )
+            continue
+        if schema.arity != 1 and opcode in {"z", "t", "phase", "s", "sdg"}:
+            errors.append(f"circuit control benchmark opcode {opcode!r} changed arity")
+        params = dict.fromkeys(schema.parameters, 0.37)
+        for count in LADDER_PROBE_LEVELS:
+            qubits = tuple(range(schema.arity))
+            controls = tuple(range(schema.arity, schema.arity + count))
+            expansion = controlled_instructions(schema, params, qubits, controls)
+            level = count + schema.arity - 1
+            expected = 4 * 3 ** (level - 1) - 3
+            if expansion is None or len(expansion) != expected:
+                errors.append(
+                    f"circuit control ladder for {opcode!r} under {count} control(s) "
+                    f"emitted {None if expansion is None else len(expansion)} "
+                    f"instructions, not the contracted {expected}"
+                )
+            reached = {qubit for item in (expansion or ()) for qubit in item.wires}
+            outside = sorted(reached - set(qubits) - set(controls))
+            if outside:
+                errors.append(
+                    f"circuit control ladder for {opcode!r} under {count} control(s) "
+                    f"named qubits outside the control set: {outside}"
+                )
+    return errors
 
 
 def _refusal_errors(contract: dict[str, Any]) -> list[str]:
@@ -178,20 +422,20 @@ def _refusal_errors(contract: dict[str, Any]) -> list[str]:
     if duplicates:
         errors.append(f"circuit composition refusal codes repeat: {duplicates}")
     entry_points = {row.get("entry_point") for row in refusals}
-    if not entry_points <= {"compose", "adjoint"}:
+    if not entry_points <= {"compose", "adjoint", "control"}:
         errors.append(
             f"circuit composition refusals name unknown entry points: {entry_points}"
         )
-    if len(refusals) != 17:
+    if len(refusals) != 30:
         errors.append(
-            f"circuit composition must contract 17 refusals, found {len(refusals)}"
+            f"circuit composition must contract 30 refusals, found {len(refusals)}"
         )
     for row in refusals:
         code = row.get("code")
         if not isinstance(code, str) or not code:
             errors.append(f"circuit composition refusal {row!r} has no code")
             continue
-        if row.get("entry_point") not in {"compose", "adjoint"}:
+        if row.get("entry_point") not in {"compose", "adjoint", "control"}:
             errors.append(f"circuit composition refusal {code!r} has no entry point")
         name = row.get("exception")
         if name not in EXCEPTIONS:
@@ -401,6 +645,40 @@ def _census_errors(contract: dict[str, Any]) -> list[str]:
     elif not refusals:
         errors.append(
             "circuit composition unreachable row needs a refusing opcode family"
+        )
+
+    # The same census read through the control rules. It is the measurement behind the
+    # control row that reports "no controlled form": every opcode that declares no rule is
+    # a noise channel, and a program holding one without its `is_channel` metadata is the
+    # route that reaches the row.
+    controlled = {
+        opcode for opcode, schema in OPERATOR_SCHEMAS.items() if schema.opcode == opcode
+    }
+    undeclared = sorted(
+        opcode
+        for opcode in controlled
+        if OPERATOR_SCHEMAS[opcode].control == "not_available"
+    )
+    declared = sorted(controlled - set(undeclared))
+    control_census = contract.get("verification", {}).get("control_census", "")
+    control_refusals = sorted(
+        opcode
+        for opcode in undeclared
+        if OPERATOR_SCHEMAS[opcode].semantic_kind == "channel"
+    )
+    if control_refusals != undeclared:
+        errors.append(
+            "circuit control opcodes without a controlled form are not all channels: "
+            f"{sorted(set(undeclared) - set(control_refusals))}"
+        )
+    if (
+        f"{len(declared)} of {len(OPERATOR_SCHEMAS)} registered opcodes declare a "
+        "controlled form" not in control_census
+    ):
+        errors.append(
+            "circuit control census drifted: "
+            f"{len(declared)} of {len(OPERATOR_SCHEMAS)} registered opcodes declare a "
+            "controlled form"
         )
     return errors
 

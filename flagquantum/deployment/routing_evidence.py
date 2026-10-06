@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from ..compiler import CouplingMap
@@ -15,6 +15,55 @@ DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"
 
 class DeploymentRoutingEvidenceError(ValueError):
     """Raised when a deployment package has inconsistent routing evidence."""
+
+
+def _undirected_couplings(
+    couplings: Iterable[Iterable[int]],
+) -> frozenset[tuple[int, int]]:
+    """Normalize couplings so that only the connected physical pairs remain.
+
+    This is the one definition of device identity in this module. It also
+    normalizes the couplings a *plan* records, so a malformed ``coupling_edges``
+    field is rejected by name whether or not there is a device to compare it
+    against.
+    """
+
+    normalized = set()
+    for coupling in couplings:
+        try:
+            left, right = coupling
+        except (TypeError, ValueError) as malformed:
+            raise DeploymentRoutingEvidenceError(
+                "routing coupling edges must be pairs of qubits"
+            ) from malformed
+        normalized.add((min(int(left), int(right)), max(int(left), int(right))))
+    return frozenset(normalized)
+
+
+def same_undirected_device(
+    left_couplings: Iterable[Iterable[int]],
+    right_couplings: Iterable[Iterable[int]],
+) -> bool:
+    """Return whether two coupling sequences describe the same device.
+
+    A device is a set of physical couplings, so neither the order of the couplings
+    nor the order of the endpoints inside one coupling is part of the hardware.
+    Comparing the sequences themselves would instead make device identity a
+    property of whoever serialized the list last: ``CouplingMap`` keeps the edge
+    order its caller declared while ``DirectedCouplingMap`` sorts, so the
+    compiler's two device types disagree about the same device by construction.
+
+    Args:
+        left_couplings: Coupling edges from a routing plan, a record, or a device.
+        right_couplings: Coupling edges from the device being compared against.
+
+    Returns:
+        ``True`` when both sequences name the same set of undirected couplings.
+    """
+
+    return _undirected_couplings(left_couplings) == _undirected_couplings(
+        right_couplings
+    )
 
 
 def _non_negative_int(plan: Mapping[str, Any], key: str) -> int:
@@ -68,10 +117,10 @@ def validate_deployment_routing_plan(
             "routing direction semantics are missing or unsupported"
         )
 
-    plan_edges = tuple(
-        tuple(int(qubit) for qubit in edge) for edge in plan.get("coupling_edges", ())
-    )
-    if coupling_map is not None and plan_edges != coupling_map.edges:
+    plan_couplings = _undirected_couplings(plan.get("coupling_edges", ()))
+    if coupling_map is not None and plan_couplings != _undirected_couplings(
+        coupling_map.edges
+    ):
         raise DeploymentRoutingEvidenceError(
             "routing coupling edges do not match the deployment backend"
         )
@@ -195,6 +244,7 @@ __all__ = [
     "DeploymentRoutingEvidenceError",
     "build_deployment_routing_evidence",
     "deployment_artifact_sha256",
+    "same_undirected_device",
     "stable_payload_sha256",
     "validate_deployment_routing_plan",
 ]
