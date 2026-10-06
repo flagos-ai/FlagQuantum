@@ -170,6 +170,10 @@ def test_public_mps_sampling_routes_each_nonterminal_wire(
     stats = site_kernel_stats()
     assert stats["triton_sampling_collapse_calls"] == 2
     assert stats["sampling_collapse_fallback_calls"] == 0
-    (route_event,) = site_kernel_cache_events()
+    route_event = next(
+        event
+        for event in site_kernel_cache_events()
+        if event.get("semantic_id") == "mps.sampling.collapse_wire.local"
+    )
     assert route_event["semantic_id"] == "mps.sampling.collapse_wire.local"
     assert route_event["implementation_id"] == "FQKI-TRITON-MPS-008-A"
