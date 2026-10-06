@@ -163,8 +163,8 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         if not _two_qubit_matrix_kernel_enabled(
             state,
             matrix,
-            wires=wires,
-            n_wires=n_wires,
+            qubits=wires,
+            n_qubits=n_wires,
         ):
             raise RuntimeError("the fixed SV-009 case did not select the kernel")
         actual = _public_dispatch(state, matrix, wires, n_wires)

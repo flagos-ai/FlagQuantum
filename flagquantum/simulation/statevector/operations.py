@@ -719,8 +719,8 @@ def _apply_matrix(
             dispatched := _try_apply_cataloged_two_qubit_matrix(
                 state,
                 matrix,
-                wires=wires,
-                n_wires=n_wires,
+                qubits=wires,
+                n_qubits=n_wires,
             )
         ) is not None:
             return dispatched

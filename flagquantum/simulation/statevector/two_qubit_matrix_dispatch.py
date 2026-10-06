@@ -35,29 +35,29 @@ def _two_qubit_matrix_shape_supported(
     state_shape: Sequence[int],
     matrix_shape: Sequence[int],
     *,
-    wires: Sequence[int],
-    n_wires: int,
+    qubits: Sequence[int],
+    n_qubits: int,
 ) -> bool:
     """Return whether structural inputs stay inside the measured rollout window."""
 
     state_shape = tuple(int(item) for item in state_shape)
     matrix_shape = tuple(int(item) for item in matrix_shape)
-    wires = tuple(int(wire) for wire in wires)
-    n_wires = int(n_wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    n_qubits = int(n_qubits)
     if (
         len(state_shape) != 2
         or matrix_shape != (4, 4)
-        or len(wires) != 2
-        or n_wires < 2
+        or len(qubits) != 2
+        or n_qubits < 2
     ):
         return False
     batch, amplitudes = state_shape
     return bool(
         batch in _EVIDENCED_BATCHES
         and _MIN_AMPLITUDES_PER_STATE <= amplitudes <= _MAX_AMPLITUDES_PER_STATE
-        and amplitudes == 1 << n_wires
-        and wires[0] != wires[1]
-        and all(0 <= wire < n_wires for wire in wires)
+        and amplitudes == 1 << n_qubits
+        and qubits[0] != qubits[1]
+        and all(0 <= qubit < n_qubits for qubit in qubits)
     )
 
 
@@ -65,23 +65,23 @@ def _two_qubit_matrix_kernel_enabled(
     state: torch.Tensor,
     matrix: torch.Tensor,
     *,
-    wires: Sequence[int],
-    n_wires: int,
+    qubits: Sequence[int],
+    n_qubits: int,
 ) -> bool:
     """Return whether SV-009 supports this exact public runtime request."""
 
     if not _two_qubit_matrix_dispatch_enabled():
         return False
-    if state.ndim != 2 or matrix.shape != (4, 4) or len(wires) != 2 or n_wires < 2:
+    if state.ndim != 2 or matrix.shape != (4, 4) or len(qubits) != 2 or n_qubits < 2:
         return False
     batch, amplitudes = state.shape
     return bool(
         batch in _EVIDENCED_BATCHES
         and _MIN_AMPLITUDES_PER_STATE <= amplitudes <= _MAX_AMPLITUDES_PER_STATE
-        and amplitudes == 1 << n_wires
-        and wires[0] != wires[1]
-        and 0 <= wires[0] < n_wires
-        and 0 <= wires[1] < n_wires
+        and amplitudes == 1 << n_qubits
+        and qubits[0] != qubits[1]
+        and 0 <= qubits[0] < n_qubits
+        and 0 <= qubits[1] < n_qubits
         and state.is_cuda
         and matrix.is_cuda
         and state.device == matrix.device
@@ -136,12 +136,12 @@ def _apply_cataloged_two_qubit_matrix(
     state: torch.Tensor,
     matrix: torch.Tensor,
     *,
-    wires: Sequence[int],
-    n_wires: int,
+    qubits: Sequence[int],
+    n_qubits: int,
 ) -> torch.Tensor:
     """Execute SV-009 after exact catalog authorization."""
 
-    normalized_wires = tuple(int(wire) for wire in wires)
+    normalized_qubits = tuple(int(qubit) for qubit in qubits)
     _require_two_qubit_matrix_kernel(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
@@ -151,8 +151,8 @@ def _apply_cataloged_two_qubit_matrix(
     return apply_complex64_local_2q(
         state,
         matrix,
-        first_bit_position=int(n_wires) - 1 - normalized_wires[0],
-        second_bit_position=int(n_wires) - 1 - normalized_wires[1],
+        first_bit_position=int(n_qubits) - 1 - normalized_qubits[0],
+        second_bit_position=int(n_qubits) - 1 - normalized_qubits[1],
     )
 
 
@@ -160,23 +160,23 @@ def _try_apply_cataloged_two_qubit_matrix(
     state: torch.Tensor,
     matrix: torch.Tensor,
     *,
-    wires: Sequence[int],
-    n_wires: int,
+    qubits: Sequence[int],
+    n_qubits: int,
 ) -> torch.Tensor | None:
     """Route an evidenced dense request or preserve the reference path."""
 
     if not _two_qubit_matrix_kernel_enabled(
         state,
         matrix,
-        wires=wires,
-        n_wires=n_wires,
+        qubits=qubits,
+        n_qubits=n_qubits,
     ):
         return None
     return _apply_cataloged_two_qubit_matrix(
         state,
         matrix,
-        wires=wires,
-        n_wires=n_wires,
+        qubits=qubits,
+        n_qubits=n_qubits,
     )
 
 

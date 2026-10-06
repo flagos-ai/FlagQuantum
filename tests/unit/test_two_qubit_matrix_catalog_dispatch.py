@@ -98,8 +98,8 @@ def test_two_qubit_matrix_shape_policy_matches_evidenced_window(
         _two_qubit_matrix_shape_supported(
             state_shape,
             matrix_shape,
-            wires=wires,
-            n_wires=n_wires,
+            qubits=wires,
+            n_qubits=n_wires,
         )
         is supported
     )
