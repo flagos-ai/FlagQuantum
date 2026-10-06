@@ -313,6 +313,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_unsupported_input_uses_fallback",
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_validates_input",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/mps_sampling_collapse_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-MEAS-001-A",

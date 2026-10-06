@@ -11,15 +11,11 @@ import statistics
 import sys
 import time
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import torch
-
-from flagquantum.kernels.provenance import triton_compiler_provenance
-from flagquantum.kernels.triton.mps_sampling_collapse import (
-    fused_mps_sampling_collapse,
-)
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_sampling_collapse.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_sampling_collapse.v1"
@@ -35,6 +31,11 @@ SHAPE_MATRIX = (
     (2048, 32, 64),
     (2048, 64, 64),
 )
+
+
+class TimingResult(TypedDict):
+    samples_seconds_per_invocation: list[float]
+    median_seconds_per_invocation: float
 
 
 def _reference(
@@ -61,7 +62,7 @@ def _measure(
     warmup: int,
     repeats: int,
     group_size: int,
-) -> dict[str, object]:
+) -> TimingResult:
     for _ in range(warmup):
         operation()
     torch.cuda.synchronize()
@@ -80,6 +81,11 @@ def _measure(
 
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed MPS-008 matrix."""
+
+    from flagquantum.kernels.provenance import triton_compiler_provenance
+    from flagquantum.kernels.triton.mps_sampling_collapse import (
+        fused_mps_sampling_collapse,
+    )
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for MPS-008 benchmark evidence")
@@ -123,17 +129,13 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
         torch.testing.assert_close(actual[0], expected[0], rtol=0, atol=0)
         torch.testing.assert_close(actual[1], expected[1], rtol=2e-5, atol=2e-5)
         direct = _measure(
-            lambda site=site, next_site=next_site, bits=bits: (
-                fused_mps_sampling_collapse(site, next_site, bits)
-            ),
+            partial(fused_mps_sampling_collapse, site, next_site, bits),
             warmup=args.warmup,
             repeats=args.repeats,
             group_size=args.group_size,
         )
         reference = _measure(
-            lambda site=site, next_site=next_site, bits=bits: _reference(
-                site, next_site, bits
-            ),
+            partial(_reference, site, next_site, bits),
             warmup=args.warmup,
             repeats=args.repeats,
             group_size=args.group_size,
@@ -148,10 +150,8 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
                 },
                 "direct_kernel_wrapper": direct,
                 "pytorch_reference": reference,
-                "speedup_over_pytorch": float(
-                    reference["median_seconds_per_invocation"]
-                )
-                / float(direct["median_seconds_per_invocation"]),
+                "speedup_over_pytorch": reference["median_seconds_per_invocation"]
+                / direct["median_seconds_per_invocation"],
                 "maximum_absolute_error": float(torch.max(torch.abs(difference))),
                 "relative_l2_error": float(
                     torch.linalg.vector_norm(difference)

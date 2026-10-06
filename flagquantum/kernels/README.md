@@ -859,9 +859,20 @@ resulting right boundary, contracts that boundary into the next site, and
 materializes the collapsed basis tensor. The experimental direct Triton wrapper
 supports contiguous CUDA `complex64` inputs with both bond dimensions at most
 64 and retains the exact PyTorch operation elsewhere. It is not connected to
-runtime dispatch in this change. A fixed dual-A800 benchmark must establish a
-winning support window before a later PR may route the public sampling path to
-this implementation.
+runtime dispatch in this change.
+
+The checked-in
+[`mps_sampling_collapse_a800.json`](../../benchmarks/results/local/mps_sampling_collapse_a800.json)
+artifact preserves 30 synchronized groups of 10 invocations for five fixed
+sampling-step shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
+3.7.1 and FlagTree 0.7.0. Across all 20 host, compiler, and shape cases, the
+direct wrapper is `1.435x` to `1.785x` faster than the exact PyTorch semantic.
+Maximum absolute and relative L2 error are `1.20e-6` and `1.97e-7`. The
+aggregate decision is `eligible_for_dispatch_evaluation`: this authorizes a
+separate public-path benchmark and dispatch PR, not default routing, maturity
+promotion, a release gate, or a scalability claim. Reproduce or validate it
+with
+[`benchmarks/internal/evidence/mps_sampling_collapse_probe.py`](../../benchmarks/internal/evidence/mps_sampling_collapse_probe.py).
 
 NUM-002 contracts the explicit non-view layout `azcb,czdb->zad` as a strided
 complex batched matrix multiplication, avoiding canonical input
