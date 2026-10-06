@@ -387,6 +387,24 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and parameter update, and retained all acceptance flags as false. These
   remain development-only records and are not inputs to the live acceptance
   manifest.
+- The same bounded streaming rehearsal was repeated after the sampler quota,
+  recovery, and evidence-publication hardening at source revision
+  `648102538e23ea84759e858b4c57fd2ae5576108`. Both hosts again observed
+  `NVIDIA A800-SXM4-80GB` on `cuda:0`, completed ten calls within a 64-call
+  budget, produced the same finite objective, nonzero gradient, and parameter
+  update, passed token constraints, and reported no fallback. The new private
+  mode-0600 records have SHA-256 digests
+  `65a9617d94e3864a3a8fb1af6848c364979169713cad646986a95587bf9b31f1`
+  (`jp-a800-171`) and
+  `262ae985ce78bdfba5d916893eb9fe701ad769d595f3130fa4bac3d67306f383`
+  (`jp-a800-172`). Each record passed the offline retained-record validator and
+  is bound to its host-specific immutable validation-image ID, the reviewed
+  transfer manifest, and the host-specific extraction preflight. These runs
+  again used the explicit in-memory fake transport, contacted no QBoson
+  service, consumed no provider quota, and kept `qboson_hardware_used`,
+  `real_provider_evidence`, and `system_acceptance` false. They update only the
+  two-host development evidence; they do not satisfy any live-provider,
+  pinned-runtime, portability, protein, or final acceptance gate.
 - Retained development records now have an offline `validate-record` path that
   rechecks the private record, extraction preflight, retained manifest, host,
   image, and revision hash chain without SSH or provider access. Source
