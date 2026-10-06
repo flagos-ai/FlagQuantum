@@ -202,6 +202,23 @@ PyPI wheel, but the wheel was not installed, imported, or executed. Artifact
 identity evidence does not replace the explicit rights, project-assignment,
 and use approvals required by the same record.
 
+`inspect_sdk_wheel.py` makes that distinction reproducible before installation:
+
+```bash
+python -m examples.qdiffusion_kaiwu.inspect_sdk_wheel \
+  --wheel /absolute/private/kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl \
+  --output /absolute/private/static-inspection.json
+```
+
+The input wheel and both parent directories must be owner-only. The command
+reads a bounded ZIP archive without importing it, verifies the pinned filename
+and digest, inventories distribution metadata, dependencies, compatibility
+tags, compiled extensions, and license-related metadata or files, and writes a
+new mode-0600 record. Its classification is always
+`artifact_identity_verified_unapproved`; execution, provider use, and
+redistribution remain explicitly false. This record cannot be supplied in
+place of `sdk_approval.example.json`.
+
 `sdk_approval.example.json` defines the same strict approval object as a
 standalone private record. It exists so the Phase 2 provider smoke can enforce
 the SDK rights gate before the later protein configuration is complete. Its

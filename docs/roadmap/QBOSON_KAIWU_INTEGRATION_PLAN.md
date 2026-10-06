@@ -228,6 +228,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   source audit, license approval, or permission to use or redistribute the
   package; the explicit package and service-terms review still precedes the
   pinned SDK lane.
+- The same inspection is now reproducible through a bounded, no-import wheel
+  inspector. Against the exact private review copy it records 62 archive
+  members, 45 compiled extension modules, the nine declared dependencies, no
+  license metadata, and no legal license-file member. Its mode-0600 evidence
+  record has SHA-256
+  `22fa0ac88da9aeed12a6d9668d8b7a23995874427aea2fb514379de242934249`
+  and fixes execution, provider use, and redistribution approval to `false`.
+  It is deliberately a separate schema from the SDK approval record and cannot
+  open a credential or quota-consuming path.
 - The service-terms source is no longer unknown. The Kaiwu 1.3.1 license page
   links to the public QBoson Quantum Cloud Platform User Service Agreement;
   the currently rendered agreement is effective 2026-07-09 and expressly

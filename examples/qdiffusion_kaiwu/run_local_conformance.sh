@@ -88,6 +88,7 @@ cd -- "$REPOSITORY_ROOT"
   tests/team/ecosystem/test_qdiffusion_readiness.py \
   tests/team/ecosystem/test_qdiffusion_source_preflight.py \
   tests/team/ecosystem/test_qdiffusion_sdk_approval.py \
+  tests/team/ecosystem/test_qdiffusion_sdk_wheel_inspection.py \
   tests/team/ecosystem/test_qdiffusion_strict_json.py \
   tests/team/ecosystem/test_qdiffusion_transfer_builder.py \
   tests/team/ecosystem/test_qdiffusion_transfer_bundle.py \
