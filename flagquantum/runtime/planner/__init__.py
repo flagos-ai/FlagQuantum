@@ -640,6 +640,9 @@ def _require_executable_backend(
 def _require_stabilizer_request(
     resolved: Any,
     source_ir: CircuitIR,
+    *,
+    has_noise: bool,
+    noise_model: Any | None,
 ) -> None:
     """Refuse a stabilizer request the option vocabulary cannot express.
 
@@ -654,9 +657,23 @@ def _require_stabilizer_request(
     a request against that representation is; a list kept in the planner would be
     a second answer to a question the engine already answers, and the executor
     reads the same one.
+
+    A noisy program is admitted for sampling only. The engine gathers a noisy
+    circuit's statistics by drawing frames shot by shot, so there is no exact
+    Pauli value to report, and returning the noiseless expansion's value instead
+    would be a different circuit's answer. The census of which programs that
+    route can execute comes from the engine's own survey of the program the
+    executor will receive, which for a caller-supplied model means the lowered
+    program; the survey is a classification and runs nothing, so asking it here
+    costs no execution and moves the refusal ahead of a published plan.
     """
 
-    from ...simulation.stabilizer import STABILIZER_MEASUREMENT_KINDS
+    from ...simulation.stabilizer import (
+        STABILIZER_MEASUREMENT_KINDS,
+        STABILIZER_SAMPLING_KINDS,
+        require_clifford_program,
+        survey_stabilizer_program,
+    )
 
     if resolved.target in {"state", "amplitudes"}:
         raise CapabilityError(
@@ -685,9 +702,33 @@ def _require_stabilizer_request(
             f"mode='stabilizer' runs on cpu only and cannot use device="
             f"{requested_device!r}; it does not fall back silently"
         )
-    from ...simulation.stabilizer import require_clifford_program
-
-    require_clifford_program(source_ir)
+    if not has_noise:
+        require_clifford_program(source_ir)
+        return
+    unsupported = sorted(
+        {
+            node.kind
+            for node in source_ir.measurements
+            if node.kind not in STABILIZER_SAMPLING_KINDS
+        }
+    )
+    if unsupported:
+        raise CapabilityError(
+            "mode='stabilizer' draws the frames a noisy program samples, so it has "
+            "no exact value for one; it cannot serve measurement kind(s) "
+            f"{', '.join(unsupported)} on a program that carries noise. Request "
+            "outcomes with outputs=fq.samples() or fq.counts() and a shot count"
+        )
+    classified = (
+        source_ir if noise_model is None else lower_noise_model(source_ir, noise_model)
+    )
+    survey = survey_stabilizer_program(classified)
+    if survey.blockers:
+        raise CapabilityError(
+            "mode='stabilizer' executes a noisy program as Pauli frames over a "
+            f"Clifford circuit, and this one is outside that set: "
+            f"{'; '.join(survey.blockers)}"
+        )
 
 
 def _require_stabilizer_representation(
@@ -810,19 +851,34 @@ def plan(
         world_size=resolve_distributed_backend_policy().effective_world_size,
         require_gradients=bool(resolved.require_gradients),
     )
-    # The stabilizer route names the specific obstacle -- a channel is not a
-    # Clifford operation -- and the engine owns that vocabulary, so its own check
-    # runs first and the generic representation rule below answers for the rest.
+    # The model is one of two ways channel instructions reach the program; the
+    # other is a channel the caller wrote with `Circuit`. Everything below is a
+    # statement about the instructions, so it reads the program rather than the
+    # argument, and an inline channel gets the same route an equivalent model
+    # would. Reading only the argument left `mode="auto"` with an inline channel
+    # on a plain MPS representation, which returned the noiseless number.
+    has_noise = noise_model is not None or carries_noise_channels(source_ir)
+    # The stabilizer route names its own obstacles -- a channel is not a Clifford
+    # operation, and a noisy program has frames rather than an exact value -- and
+    # those are different questions from the representation rule below, so the
+    # engine-backed check runs first and this rule answers for the rest. The
+    # answer is computed once above and both rules read it.
     if resolved.mode == "stabilizer":
-        _require_stabilizer_request(resolved, source_ir)
-    if (
-        noise_model is not None or carries_noise_channels(source_ir)
-    ) and resolved.mode not in {"auto", "density_matrix"}:
+        _require_stabilizer_request(
+            resolved,
+            source_ir,
+            has_noise=has_noise,
+            noise_model=noise_model,
+        )
+    if has_noise and resolved.mode not in {"auto", "density_matrix", "stabilizer"}:
         # The channel's Kraus operators are not a unitary, so a representation that
         # holds amplitudes cannot execute them. Refusing here is what keeps
         # `mode="mps"` from returning the noiseless number instead of a failure.
+        # The stabilizer representation holds no amplitudes and samples the frames
+        # instead, so it is named here as the second route a channel has.
         raise ValidationError(
-            "stable noisy execution supports mode='auto' or mode='density_matrix'"
+            "stable noisy execution supports mode='auto', mode='density_matrix', or "
+            "mode='stabilizer'"
         )
     from ...core.runtime_config import get_runtime_config
 
@@ -862,13 +918,6 @@ def plan(
     stable_trajectory_count = 32
     stable_mps_max_bond: int | None = None
     complex_bytes = 16 if resolved.precision == "complex128" else 8
-    # The model is one of two ways channel instructions reach the program; the
-    # other is a channel the caller wrote with `Circuit`. Everything below is a
-    # statement about the instructions, so it reads the program rather than the
-    # argument, and an inline channel gets the same route an equivalent model
-    # would. Reading only the argument left `mode="auto"` with an inline channel
-    # on a plain MPS representation, which returned the noiseless number.
-    has_noise = noise_model is not None or carries_noise_channels(source_ir)
     if (
         has_noise
         and resolved.mode == "auto"
@@ -908,12 +957,21 @@ def plan(
     )
     if has_noise:
         noisy_mps = internal_plan.state_mode == "mps"
+        # A tableau is neither an amplitude representation nor a bond-limited one:
+        # it carries the error exactly as a Pauli frame per drawing, which is what
+        # the engine calls it, so the plan names the representation that actually
+        # ran instead of the density-matrix default.
+        noisy_stabilizer = internal_plan.state_mode == "stabilizer"
         internal_plan = replace(
             internal_plan,
             noisy_execution_plan=build_noisy_execution_plan(
                 internal_plan,
-                representation="mps" if noisy_mps else "density_matrix",
-                evolution="quantum_trajectory" if noisy_mps else "exact_channel",
+                representation=(
+                    "stabilizer"
+                    if noisy_stabilizer
+                    else ("mps" if noisy_mps else "density_matrix")
+                ),
+                evolution=("quantum_trajectory" if noisy_mps else "exact_channel"),
                 trajectories=stable_trajectory_count if noisy_mps else None,
                 seed=resolved.seed,
                 memory_limit_bytes=resolved.memory_limit_bytes,

@@ -42,6 +42,12 @@ class StabilizerTarget:
     the IR's. The returned tensors carry the leading batch axis the contract
     expects; a real batch would mean re-running one circuit rather than running a
     different one.
+
+    A program that carries channels is sampled through the engine's positioned
+    noise entry point and a clean one through its noiseless entry point. Which of
+    the two applies is read from the program rather than passed alongside it, so
+    the route cannot hold a program and a claim about it that disagree; the engine
+    owns that classification and the target asks it.
     """
 
     def __init__(self, program: CircuitIR, *, seed: int | None = None) -> None:
@@ -59,18 +65,36 @@ class StabilizerTarget:
         generator: Any | None = None,
         format: str = "bits",
     ) -> torch.Tensor:
-        from ....simulation.stabilizer import sample_stabilizer
+        from ....simulation.stabilizer import (
+            sample_noisy_measurements,
+            sample_stabilizer,
+            survey_stabilizer_program,
+        )
 
         if format != "bits":
             raise CapabilityError(
                 "stabilizer sampling returns bit strings; "
                 f"format={format!r} has no stabilizer route"
             )
-        return sample_stabilizer(
-            self._program,
-            shots=int(shots),
-            seed=self._seed,
-        ).unsqueeze(0)
+        # The engine's own census decides which of its two sampling entry points
+        # applies, because a channel reaches the IR both as a schema-declared
+        # opcode and as a lowered instruction and only the engine reads both. All
+        # wires are terminal here: the contract selects the columns it asked for,
+        # so this target answers for the whole register in wire order either way.
+        if survey_stabilizer_program(self._program).noise_instructions:
+            samples = sample_noisy_measurements(
+                self._program,
+                shots=int(shots),
+                terminal_wires=tuple(range(self._program.n_wires)),
+                seed=self._seed,
+            )
+        else:
+            samples = sample_stabilizer(
+                self._program,
+                shots=int(shots),
+                seed=self._seed,
+            )
+        return samples.unsqueeze(0)
 
     def expectation_ps(
         self,
@@ -144,6 +168,12 @@ def run_stabilizer_mode(
     read from the sampling request rather than from the first request, because the
     first request is a readout as soon as a run mixes the two, and a readout
     carries no seed to give the sampler.
+
+    A scene-level model was already lowered into positioned channel instructions
+    by the dispatcher that called this funnel, the way the density-matrix route
+    lowers it, so an inline channel and an equivalent model arrive here as the same
+    program. This module holds no Compiler dependency of its own, and the program
+    it receives is the one it samples.
     """
 
     from ....simulation.stabilizer import (

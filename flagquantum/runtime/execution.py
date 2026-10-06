@@ -847,7 +847,7 @@ def _run_standard_native_mode(
     plan_options: dict[str, Any],
     provided_execution_plan: ExecutionPlan | None,
 ) -> tuple[Any, ExecutionPlan]:
-    if mode != "density_matrix" and noise_model is not None:
+    if mode not in {"density_matrix", "stabilizer"} and noise_model is not None:
         raise ValueError("Noise models require density_matrix mode.")
     if mode == "statevector":
         return _run_statevector_mode(
@@ -877,8 +877,20 @@ def _run_standard_native_mode(
             provided_execution_plan=provided_execution_plan,
         )
     if mode == "stabilizer":
+        # Lowering happens here rather than in the executor, because a scene-level
+        # model becomes positioned channel instructions through a Compiler
+        # dependency Runtime already holds at this level and the executor boundary
+        # does not. The density-matrix sibling above lowers the same way; a run
+        # that already carries a plan does not lower again, because the plan was
+        # built from the lowered program and its own execution program is the one
+        # carrying the channels.
+        stabilizer_ir = (
+            execution_ir
+            if provided_execution_plan is not None
+            else lower_noise_model(execution_ir, noise_model)
+        )
         return run_stabilizer_mode(
-            execution_ir,
+            stabilizer_ir,
             options=options,
             plan_options=plan_options,
             provided_execution_plan=provided_execution_plan,

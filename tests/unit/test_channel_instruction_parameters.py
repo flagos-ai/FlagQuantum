@@ -216,11 +216,17 @@ def test_an_inline_channel_is_planned_as_a_noisy_program() -> None:
 
 @pytest.mark.parametrize("mode", ["mps", "tensor_network", "statevector"])
 def test_a_representation_that_holds_amplitudes_refuses_a_channel(mode: str) -> None:
-    """Refusing is the point: the alternative was returning the noiseless number."""
+    """Refusing is the point: the alternative was returning the noiseless number.
+
+    The stabilizer representation is named as the second route a channel has, and
+    it is not one of these: it holds no amplitudes, so a channel is a program it
+    can sample rather than an operator it cannot apply.
+    """
 
     with pytest.raises(
         ValidationError,
-        match=r"stable noisy execution supports mode='auto' or mode='density_matrix'",
+        match=r"stable noisy execution supports mode='auto', mode='density_matrix', "
+        r"or mode='stabilizer'",
     ):
         fq.run(
             fq.Circuit(1).h(0).depolarizing(0, 0.1),

@@ -205,7 +205,12 @@ def test_auto_selects_the_route_exactly_when_the_program_carries_a_channel() -> 
 
 @pytest.mark.parametrize("mode", ["statevector", "mps"])
 def test_a_carrier_of_a_channel_is_refused_by_name_on_other_routes(mode: str) -> None:
-    """A channel is refused, never approximated onto an amplitude store."""
+    """A channel is refused, never approximated onto an amplitude store.
+
+    The refusal names every route a channel has, so the message says where to go
+    instead of only where not to: the density matrix applies the channel and the
+    stabilizer route samples its frames.
+    """
 
     with pytest.raises(Exception) as caught:
         fq.run(
@@ -214,7 +219,9 @@ def test_a_carrier_of_a_channel_is_refused_by_name_on_other_routes(mode: str) ->
             outputs=fq.probabilities(),
         )
     message = str(caught.value)
-    assert "mode='auto' or mode='density_matrix'" in message, message
+    assert (
+        "mode='auto', mode='density_matrix', or mode='stabilizer'" in message
+    ), message
 
 
 def test_a_channel_free_program_uses_the_same_engine_as_the_runtime() -> None:

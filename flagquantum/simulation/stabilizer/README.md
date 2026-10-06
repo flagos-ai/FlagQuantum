@@ -32,8 +32,13 @@ amplitude store can hold.
   it finds it, which means the *caller* owns the Pauli-frame attribution and this
   entry point owns only the execution; the recorded measurement columns come back
   in program order and the terminal wires are appended in the order the caller
-  names them. It is deliberately not reachable from the planner or the executor,
-  so `mode='stabilizer'` keeps refusing a noisy program.
+  names them. The routed `mode='stabilizer'` reaches this entry point for a
+  program that carries a channel and `sample_stabilizer` for one that does not,
+  and it asks `survey_stabilizer_program` which of the two applies rather than
+  being told, so the route cannot hold a program and a claim about it that
+  disagree. Which entry point a routed run takes is therefore read from the
+  program, and an inline channel and an equivalent `NoiseModel` rule reach the
+  same one.
 - Call `survey_stabilizer_program(program)` to ask that same question without
   sampling. It returns a `StabilizerSurvey`: how many gates, resets, recorded
   measurements, and noise instructions the program has, whether every channel in

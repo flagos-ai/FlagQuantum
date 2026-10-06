@@ -340,3 +340,215 @@ def test_the_mode_does_not_disturb_the_amplitude_paths() -> None:
 
     assert automatic.runtime["mode"] == "statevector"
     assert automatic.runtime["execution_path"] != "local_stabilizer"
+
+
+_SHOTS = 4000
+_SEED = 11
+_CHANNEL_PROBABILITY = 0.05
+#: The reference route in the once-or-twice test is drawn at five times these
+#: shots, because it is the estimate the routed rate is compared against and a
+#: reference is worth a tighter standard error than the reading under test.
+_REFERENCE_SHOTS = 20_000
+#: Four standard errors of a rate near 0.13 at ``_REFERENCE_SHOTS``, and about a
+#: fifth of the gap between one lowering and two.
+_RATE_TOLERANCE = 0.02
+
+
+def _noisy_ghz(n_wires: int = 3) -> fq.Circuit:
+    """Return the GHZ chain with a depolarizing channel on the first CX.
+
+    The channel sits on a CX rather than on the leading Hadamard because a frame
+    applied there is invisible to a computational-basis readout: `X`, `Z`, and
+    `Y` on the first wire after `H` all leave the two-outcome correlation intact,
+    so a channel in that position would make every distributional assertion below
+    vacuous. On a CX the frame spreads to the other wires and breaks it.
+    """
+
+    circuit = _ghz(n_wires)
+    circuit.depolarizing(1, _CHANNEL_PROBABILITY)
+    return circuit
+
+
+def _uncorrelated_rate(samples: torch.Tensor) -> float:
+    """Return the share of drawings whose bits are not all equal."""
+
+    rows = samples.reshape(-1, samples.shape[-1])
+    return float((rows.min(dim=1).values != rows.max(dim=1).values).float().mean())
+
+
+def test_a_channel_in_the_program_reaches_the_tableau_route() -> None:
+    """The inline form and an equivalent model must land on the same route."""
+
+    import flagquantum.noise as noise
+
+    circuit = _noisy_ghz()
+    model = noise.NoiseModel()
+    model.add(("cx",), noise.depolarizing_channel(_CHANNEL_PROBABILITY))
+
+    inline = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED),
+        outputs=fq.samples(),
+    )
+    modelled = fq.run(
+        _ghz(3),
+        options=fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED),
+        outputs=fq.samples(),
+        noise_model=model,
+    )
+
+    for result in (inline, modelled):
+        assert result.runtime["mode"] == "stabilizer"
+        assert result.runtime["execution_path"] == "local_stabilizer"
+        assert result.plan.noisy_execution_plan is not None
+        assert result.plan.noisy_execution_plan.representation == "stabilizer"
+
+
+def test_a_channel_breaks_the_correlation_the_noiseless_circuit_keeps() -> None:
+    """A strict inequality, because the two laws differ and the seed is fixed.
+
+    A noiseless GHZ chain draws from two rows and never from anything else, so
+    its uncorrelated share is exactly zero. The assertion is that a noisy share is
+    larger, not that it equals a rate: the rate depends on the engine's stream and
+    on where the frames land, and pinning it would be a second implementation of
+    the channel rather than a test of the route.
+
+    Both ways of writing the same channel are read, because they reach the
+    dispatcher as different arguments: the inline channel is already on the
+    program, and the model route needs the lowering the dispatcher performs. A
+    route that skipped that lowering would hand the engine a clean circuit and
+    draw the noiseless law, which is exactly the zero this test would then see.
+    """
+
+    import flagquantum.noise as noise
+
+    model = noise.NoiseModel()
+    model.add(("cx",), noise.depolarizing_channel(_CHANNEL_PROBABILITY))
+    options = fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED)
+
+    clean = fq.run(_ghz(3), options=options, outputs=fq.samples())
+    inline = fq.run(_noisy_ghz(), options=options, outputs=fq.samples())
+    modelled = fq.run(_ghz(3), options=options, outputs=fq.samples(), noise_model=model)
+
+    assert clean.samples is not None
+    assert _uncorrelated_rate(clean.samples) == 0.0
+    for result in (inline, modelled):
+        assert result.samples is not None
+        assert _uncorrelated_rate(result.samples) > 0.0
+
+
+def test_a_model_route_is_lowered_once_rather_than_twice() -> None:
+    """A model is absorbed by planning, and absorbing it again would double it.
+
+    A routed run hands the executor a plan whose execution program has already
+    taken the model in, so an executor that lowered the model a second time would
+    place every channel twice. That is invisible in one program and plain in the
+    law, so the comparison is against the density-matrix route on the same circuit
+    and the same model, which lowers once: the doubled rate measured on this pair
+    is 0.239 against 0.130, and the reference is drawn at five times the shots so
+    the tolerance is several standard errors of it. The rate is compared rather
+    than a formula because the second channel here sits mid-chain and its effect
+    propagates through the next controlled gate.
+    """
+
+    import flagquantum.noise as noise
+
+    model = noise.NoiseModel()
+    model.add(("cx",), noise.depolarizing_channel(_CHANNEL_PROBABILITY))
+    routed = fq.run(
+        _ghz(3),
+        options=fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED),
+        outputs=fq.samples(),
+        noise_model=model,
+    )
+    reference = fq.run(
+        _ghz(3),
+        options=fq.ExecutionOptions(
+            mode="density_matrix", shots=_REFERENCE_SHOTS, seed=_SEED
+        ),
+        outputs=fq.samples(),
+        noise_model=model,
+    )
+
+    assert routed.samples is not None
+    assert reference.samples is not None
+    assert (
+        abs(_uncorrelated_rate(routed.samples) - _uncorrelated_rate(reference.samples))
+        < _RATE_TOLERANCE
+    )
+
+
+def test_a_noisy_run_reports_counts_rather_than_only_samples() -> None:
+    """The same drawing backs both outputs, so the histogram matches the rows."""
+
+    result = fq.run(
+        _noisy_ghz(),
+        options=fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED),
+        outputs=fq.counts(),
+    )
+
+    assert result.counts is not None
+    histogram = result.counts[0]
+    assert sum(histogram.values()) == _SHOTS
+    assert len(histogram) > 2
+
+
+def test_a_noisy_run_is_reproducible_from_its_seed() -> None:
+    options = fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED)
+    first = fq.run(_noisy_ghz(), options=options, outputs=fq.samples())
+    second = fq.run(_noisy_ghz(), options=options, outputs=fq.samples())
+
+    assert first.samples is not None
+    assert second.samples is not None
+    assert torch.equal(first.samples, second.samples)
+
+
+def test_a_noisy_run_reports_the_plan_it_executed() -> None:
+    """A published plan replays to the same drawing, which is what pins identity."""
+
+    from flagquantum.runtime.plan_execution import execute_plan
+
+    plan = fq.plan(
+        _noisy_ghz(),
+        options=fq.ExecutionOptions(mode="stabilizer", shots=_SHOTS, seed=_SEED),
+        outputs=fq.samples(),
+    )
+    first = execute_plan(plan)
+    second = execute_plan(plan)
+
+    assert first.samples is not None
+    assert second.samples is not None
+    assert torch.equal(first.samples, second.samples)
+
+
+def test_a_noisy_run_refuses_an_exact_value_request() -> None:
+    with pytest.raises(CapabilityError, match="has no exact value for one"):
+        fq.run(
+            _noisy_ghz(),
+            options=fq.ExecutionOptions(mode="stabilizer"),
+            outputs=[fq.expectation(fq.Z(0))],
+        )
+
+
+def test_a_noisy_run_refuses_a_gate_outside_the_clifford_set() -> None:
+    circuit = _noisy_ghz()
+    circuit.t(2)
+
+    with pytest.raises(CapabilityError, match="outside that set: instruction 4 't'"):
+        fq.run(
+            circuit,
+            options=fq.ExecutionOptions(mode="stabilizer", shots=16, seed=_SEED),
+            outputs=fq.samples(),
+        )
+
+
+def test_a_noisy_run_still_refuses_the_representations_that_hold_amplitudes() -> None:
+    with pytest.raises(
+        ValueError,
+        match=r"mode='auto', mode='density_matrix', or mode='stabilizer'",
+    ):
+        fq.run(
+            _noisy_ghz(),
+            options=fq.ExecutionOptions(mode="mps", shots=16),
+            outputs=fq.samples(),
+        )

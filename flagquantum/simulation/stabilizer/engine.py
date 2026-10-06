@@ -1035,7 +1035,12 @@ def survey_stabilizer_program(program: Any) -> StabilizerSurvey:
                 noise += 1
             operations = _instruction_operations(instruction, index)
         except FlagQuantumError as error:
-            blockers.append(f"instruction {index} {instruction.name!r}: {error}")
+            # Each translation refusal names the instruction it refused, so the
+            # census records it as it stands rather than wrapping it. A wrapper
+            # would print the index and the opcode twice - once from here and
+            # once from the engine - and the routed mode surfaces this text to
+            # the caller verbatim.
+            blockers.append(str(error))
             if declares_channel:
                 all_pauli_frames = False
             continue

@@ -128,24 +128,26 @@ Planner behaviour after the change, for
 
 ```text
 default, auto, density_matrix   executes; decision mode = density_matrix
+stabilizer                      refuses a probability request, because a frame
+                                draw answers outcomes rather than a distribution;
+                                with outputs=fq.samples() or fq.counts() it
+                                samples the channel's frames
 mps, tensor_network, statevector
-    ValidationError: stable noisy execution supports mode='auto' or mode='density_matrix'
-stabilizer                      CapabilityError: mode='stabilizer' samples
-                                measurement outcomes; it cannot serve
-                                measurement kind(s) probabilities
+    ValidationError: stable noisy execution supports mode='auto',
+    mode='density_matrix', or mode='stabilizer'
 ```
 
-The stabilizer refusal is reported before the representation refusal, because
-the stabilizer engine already owns a more specific statement of the same
-obstacle and a caller asking for that mode should read the error about that
-mode.
+The `stabilizer` route was widened after this proposal was implemented: a
+channel is a program that route can sample rather than an operator it cannot
+apply. The message above names it among the routes a channel has, so the refusal
+says where to go as well as where not to.
 
-The one route that admits a channel without `mode="density_matrix"` is
-`mode="auto"` with `allow_approximate=True` and a memory limit the density
-matrix cannot meet. Measured on `fq.Circuit(6).h(0).cx(0,1)...cx(4,5)` with
-`depolarizing(0, 1.0)` appended, `memory_limit_bytes=16384`, `shots=200`,
-`seed=7` (the bond budget this limit resolves to is 2, the smallest that
-represents the state):
+The one route that admits a channel without `mode="density_matrix"` or
+`mode="stabilizer"` is `mode="auto"` with `allow_approximate=True` and a memory
+limit the density matrix cannot meet. Measured on
+`fq.Circuit(6).h(0).cx(0,1)...cx(4,5)` with `depolarizing(0, 1.0)` appended,
+`memory_limit_bytes=16384`, `shots=200`, `seed=7` (the bond budget this limit
+resolves to is 2, the smallest that represents the state):
 
 ```text
                                 plan decision mode   noisy_execution_plan        counts
@@ -423,14 +425,14 @@ python tools/check_legacy_root_api_usage.py                  # pass
 
 1. **Trajectory representations — resolved for `auto`, open for an explicit
    request.** `mode="mps"` with a channel still reads the specific refusal
-   `stable noisy execution supports mode='auto' or mode='density_matrix'`,
-   because naming a representation whose executor cannot consume a channel is a
-   request the caller can make differently. The `auto` route with
-   `allow_approximate=True` now builds the MPS trajectory representation for an
-   inline channel exactly as it did for a `NoiseModel`, and a saved plan
-   restores it. Whether an explicit `mode="mps"` should be admitted once the
-   trajectory representation is reachable for inline channels is a separate
-   question about the mode vocabulary, and it is left open.
+   `stable noisy execution supports mode='auto', mode='density_matrix', or
+   mode='stabilizer'`, because naming a representation whose executor cannot
+   consume a channel is a request the caller can make differently. The `auto`
+   route with `allow_approximate=True` now builds the MPS trajectory
+   representation for an inline channel exactly as it did for a `NoiseModel`, and
+   a saved plan restores it. Whether an explicit `mode="mps"` should be admitted
+   once the trajectory representation is reachable for inline channels is a
+   separate question about the mode vocabulary, and it is left open.
 2. **Sampling-axis breadth.** The inline form covers the four opcodes with a
    native factory. `flagquantum.noise` exposes sixteen callables, including
    thermal relaxation, readout error, and coherent overrotation. Which of those

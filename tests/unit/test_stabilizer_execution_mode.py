@@ -108,11 +108,66 @@ def test_a_non_clifford_gate_fails_planning_with_the_gate_named() -> None:
         fq.plan(circuit, options=_options())
 
 
-def test_planning_refuses_a_channel_before_a_route_is_selected() -> None:
-    circuit = fq.Circuit(2).h(0).depolarizing(1, 0.1)
+def test_a_channel_is_admitted_for_sampling_and_planned_once() -> None:
+    """A channel is a refusal for the exact readout and a program for sampling.
 
-    with pytest.raises(CapabilityError, match="is a noise channel"):
-        fq.plan(circuit, options=_options())
+    The plan's own program is the lowered one, so a planner that lowered twice
+    would ask the engine for two errors where the caller wrote one. The count is
+    what makes that visible: one channel in, one channel instruction delivered.
+    """
+
+    from flagquantum.runtime.execution_plan_contract import (
+        plan_execution_program,
+        plan_program,
+    )
+
+    circuit = fq.Circuit(2).h(0).cx(0, 1).depolarizing(1, 0.1)
+    plan = fq.plan(circuit, options=_options(), outputs=fq.samples())
+
+    assert plan.state_mode == "stabilizer"
+    assert plan.noisy_execution_plan is not None
+    assert plan.noisy_execution_plan.representation == "stabilizer"
+
+    def channels(ir: object) -> list[str]:
+        return [
+            instruction.name
+            for instruction in ir.instructions
+            if instruction.metadata.get("is_channel")
+        ]
+
+    assert channels(plan_program(plan)) == ["depolarizing"]
+    assert channels(plan_execution_program(plan)) == ["depolarizing"]
+
+
+def test_a_channel_the_engine_cannot_frame_is_refused_while_planning() -> None:
+    """An amplitude-damping branch is not a Pauli frame, so no shot count helps.
+
+    This is the planner's own refusal: the survey runs while planning, so the
+    caller learns before a plan exists rather than after sampling.
+    """
+
+    import flagquantum.noise as noise
+
+    model = noise.NoiseModel()
+    model.add(("h",), noise.amplitude_damping_channel(0.05))
+
+    with pytest.raises(
+        CapabilityError, match=r"outside that set: instruction 1 'amplitude_damping"
+    ):
+        fq.plan(fq.Circuit(1).h(0), options=_options(), noise_model=model)
+
+
+def test_a_channel_with_an_exact_value_request_is_refused_by_name() -> None:
+    """Sampling is what a frame can answer; a readout would need one Pauli."""
+
+    circuit = fq.Circuit(2).h(0).cx(0, 1).depolarizing(1, 0.1)
+
+    with pytest.raises(CapabilityError, match="has no exact value for one"):
+        fq.plan(
+            circuit,
+            options=fq.ExecutionOptions(mode="stabilizer"),
+            outputs=[fq.expectation(fq.Z(0))],
+        )
 
 
 def test_the_planning_refusal_is_the_engine_refusal() -> None:
@@ -129,14 +184,24 @@ def test_the_planning_refusal_is_the_engine_refusal() -> None:
     assert str(planner.value) == str(engine.value)
 
 
-def test_a_noisy_program_is_refused_by_the_stable_noise_rule() -> None:
+@pytest.mark.parametrize("mode", ["mps", "statevector", "tensor_network"])
+def test_a_noisy_program_is_still_refused_by_the_stable_noise_rule(mode: str) -> None:
+    """The stabilizer route is the second route a channel has, not a third rule."""
+
     import flagquantum.noise as noise
 
     model = noise.NoiseModel()
     model.add(("h",), noise.depolarizing_channel(0.01))
 
-    with pytest.raises(ValidationError, match="mode='auto' or mode='density_matrix'"):
-        fq.plan(fq.Circuit(1).h(0), options=_options(), noise_model=model)
+    with pytest.raises(
+        ValidationError,
+        match=r"mode='auto', mode='density_matrix', or mode='stabilizer'",
+    ):
+        fq.plan(
+            fq.Circuit(1).h(0),
+            options=_options(mode=mode),
+            noise_model=model,
+        )
 
 
 @pytest.mark.parametrize(
