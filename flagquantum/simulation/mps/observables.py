@@ -51,14 +51,23 @@ def transfer_mps_operator_right_environment(
     and leaving the order to the einsum planner costs 2.8x at the recorded hot
     shape -- environment ``(1, 64, 64)``, tensor ``(1, 64, 2, 64)``, operator
     ``(2, 2)`` -- measured as a chain, which is what the scan is.
+
+    A site tensor's two bond legs are not one leg: ``T[i, p, r]`` contracts the
+    left bond ``i`` with the site to its left and the right bond ``r`` with the
+    site to its right, and a scan walking right to left hands this function an
+    environment that lives on ``r``. Every reshaping below therefore names the
+    leg it folds, because the two dimensions are equal only in the interior of a
+    bond-uniform chain. The edge tensors of a chain whose bond is still growing,
+    and the first site after each truncation, are exactly where they differ.
     """
 
-    batch, bond, physical = tensor.shape[0], tensor.shape[1], tensor.shape[2]
+    batch = tensor.shape[0]
+    left, physical, right = tensor.shape[1], tensor.shape[2], tensor.shape[3]
     lifted = torch.einsum("bipr,pq->biqr", tensor.conj(), operator)
     contracted = torch.bmm(
-        lifted.reshape(batch, bond * physical, bond), environment
-    ).reshape(batch, bond, physical * bond)
-    ket = tensor.reshape(batch, bond, physical * bond)
+        lifted.reshape(batch, left * physical, right), environment
+    ).reshape(batch, left, physical * right)
+    ket = tensor.reshape(batch, left, physical * right)
     return torch.bmm(contracted, ket.transpose(1, 2))
 
 

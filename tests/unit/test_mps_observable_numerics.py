@@ -86,6 +86,52 @@ def test_heisenberg_scan_preserves_bell_correlations_and_gradients(
     torch.testing.assert_close(z.grad, torch.ones_like(z))
 
 
+@pytest.mark.parametrize(
+    ("dtype", "tolerance"),
+    [(torch.complex64, 1e-4), (torch.complex128, 1e-10)],
+)
+@pytest.mark.parametrize(
+    ("left", "physical", "right"),
+    [
+        (2, 2, 1),
+        (7, 4, 1),
+        (3, 2, 5),
+        (64, 2, 1),
+        (1, 2, 4),
+        (9, 3, 4),
+    ],
+)
+def test_right_transfer_folds_the_leg_it_names_when_the_bonds_differ(
+    dtype: torch.dtype,
+    tolerance: float,
+    left: int,
+    physical: int,
+    right: int,
+) -> None:
+    """The two bond legs of a site tensor are different legs.
+
+    ``T[i, p, r]`` contracts the left bond ``i`` with the site to its left and
+    the right bond ``r`` with the site to its right, and the reverse scan hands
+    this function an environment on ``r``. The folded form reshapes the bra
+    tensor by fusing one bond leg with the physical leg, so a reshaped extent
+    taken from the wrong leg is only reusable while the two are equal -- and a
+    chain is bond-uniform only in its interior. The rightmost tensor of the scan
+    is ``(batch, chi, physical, 1)``, so the square case is the one shape the
+    scan never presents first.
+    """
+
+    generator = torch.Generator().manual_seed(17)
+    environment = torch.randn((1, right, right), generator=generator, dtype=dtype)
+    tensor = torch.randn((1, left, physical, right), generator=generator, dtype=dtype)
+    operator = torch.randn((physical, physical), generator=generator, dtype=dtype)
+
+    expected = _reference_right_transfer(environment, tensor, operator)
+    actual = transfer_mps_operator_right_environment(tensor, operator, environment)
+
+    assert actual.shape == expected.shape
+    torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
+
+
 def _reference_right_transfer(
     environment: torch.Tensor,
     tensor: torch.Tensor,
