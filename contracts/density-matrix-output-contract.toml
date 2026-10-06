@@ -1,0 +1,185 @@
+# The density-matrix output contract.
+#
+# `fq.density_matrix(qubits=...)` asks an execution for the state on those qubits as a matrix
+# instead of as a bitstring distribution. The output kind is authorized by
+# `contracts/observable-outputs-v1-candidate.json`; what that contract cannot state is what the
+# matrix *is*, because a matrix is a numerical object rather than a name. This file records the
+# three properties that make the answer meaningful and the one bound that makes it affordable,
+# and `tools/check_density_matrix_output_contract.py` re-measures all of them on every run.
+#
+# This is a frozen baseline, not a live mirror. The `[[baseline]]` matrices were measured once
+# from the implementation and are compared on every run; they catch a regression. They are not
+# the correctness evidence: an implementation and a baseline generated from it can be wrong
+# together. The correctness evidence is the three independent measurements the gate also makes
+# -- the trace, the agreement with the measurement path, and the basis permutation -- plus the
+# PennyLane comparison recorded in `docs/api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md`.
+
+schema = "flagquantum_density_matrix_output_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/simulation/density_matrix.py"
+declaration_source = "flagquantum/observables/__init__.py"
+record = "docs/api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md"
+proposal = "docs/development/API_CHANGE_PROPOSAL_068_DENSITY_MATRIX_OUTPUT.md"
+
+[request]
+# The kind string the runtime dispatches on, and the one constructor that produces it. A second
+# spelling of the same request would be a second source of truth for the output vocabulary.
+kind = "density_matrix"
+constructor = "flagquantum.density_matrix"
+selection_parameter = "qubits"
+# The reduction is a property of the state, not of the execution route, so every mode that holds
+# the state has to answer with the same matrix. `auto` is included because it selects one of the
+# other three and must not disagree with whichever one it selected.
+modes = ["auto", "statevector", "density_matrix", "mps"]
+
+[reduction]
+# The matrix is the state on the named qubits, so its trace is one. This is the measurement that
+# separates a trace from a marginal: summing a row or column index instead of contracting the row
+# index against the column index returns a matrix whose trace is the whole state's purity.
+trace_value = 1.0
+trace_tolerance = 1e-10
+# A reduction is only meaningful if it reproduces what the measurement path already reports for
+# an operator on the same qubits, Tr(O rho_S) == <O>. The reduced matrix is built in Simulation
+# from amplitudes and the expectation is built in Runtime through the observable's own route, so
+# agreement is evidence about both rather than about one of them.
+operator_tolerance = 1e-10
+# Naming the qubits in another order is one basis permutation of the same matrix. The gate checks
+# the permutation rather than a second reduction, so an implementation that returned the surviving
+# qubits in ascending order would differ here instead of passing by coincidence.
+permutation_tolerance = 1e-10
+
+[bound]
+# Building a matrix from amplitudes writes 4**n entries, the square of the state it is built from,
+# so the statevector route is bounded while the density-matrix route, which has already paid for
+# the matrix, is not.
+max_statevector_qubits = 10
+probed_qubits = 12
+required_route_in_message = "mode='density_matrix'"
+
+# The sentences the request raises when it cannot answer. The contract states the wording; the
+# gate reproduces the trigger. A refusal whose message is only in the implementation is a
+# refusal a user cannot be told about in advance.
+[[refusal]]
+name = "an observable is not a qubit selection"
+error = "TypeError"
+message_fragment = "density_matrix requires qubit indices, not an Observable"
+
+[[refusal]]
+name = "a kind-level observable is refused as well"
+error = "TypeError"
+message_fragment = "density_matrix output does not accept an observable"
+
+[[refusal]]
+name = "a qubit outside the program is named"
+error = "ValueError"
+message_fragment = "are outside a"
+
+[[refusal]]
+name = "a repeated qubit is refused rather than summed"
+error = "ValueError"
+message_fragment = "output qubits must be unique"
+
+[[refusal]]
+name = "readout confusion is refused rather than folded in"
+error = "ValueError"
+message_fragment = "cannot include readout confusion"
+
+[[refusal]]
+name = "the statevector route names the smaller route"
+error = "ValueError"
+message_fragment = "mode='density_matrix'"
+
+# PennyLane agreement, recorded so the check is auditable rather than remembered. Every row was
+# measured against PennyLane 0.45.1 on `default.qubit` with the same gate list; the value is the
+# largest absolute difference over the whole matrix.
+[reference_programs]
+tool = "pennylane==0.45.1"
+device = "default.qubit"
+largest_measured_difference = 1.4e-16
+
+[[baseline]]
+name = "bell pair, one qubit"
+n_qubits = 2
+style = "bell"
+entanglers = [[0, 1]]
+qubits = [0]
+real = [
+    [0.4999999999999999, 0.4999999999999999],
+    [0.4999999999999999, 0.4999999999999999]
+]
+imag = [
+    [0.0, 0.0],
+    [0.0, 0.0]
+]
+
+[[baseline]]
+name = "bell pair, both qubits"
+n_qubits = 2
+style = "bell"
+entanglers = [[0, 1]]
+qubits = [0, 1]
+real = [
+    [0.4999999999999999, 0.0, 0.4999999999999999, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.4999999999999999, 0.0, 0.4999999999999999, 0.0],
+    [0.0, 0.0, 0.0, 0.0]
+]
+imag = [
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0]
+]
+
+[[baseline]]
+name = "three-qubit chain, one qubit"
+n_qubits = 3
+rotations = [[0, 0.7], [1, 1.1], [2, 0.4]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [0]
+real = [
+    [0.8824210936422443, 0.287065772173993],
+    [0.287065772173993, 0.11757890635775575]
+]
+imag = [
+    [0.0, 0.0],
+    [0.0, 0.0]
+]
+
+[[baseline]]
+name = "three-qubit chain, outer pair"
+n_qubits = 3
+rotations = [[0, 0.7], [1, 1.1], [2, 0.4]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [0, 2]
+real = [
+    [0.6255437663771499, 0.1718154797521746, 0.14353288608699652, 0.055894338566774546],
+    [0.1718154797521746, 0.25687732726509444, 0.055894338566774546, 0.1435328860869965],
+    [0.14353288608699652, 0.055894338566774546, 0.03422782549685777, 0.022893691402150647],
+    [0.055894338566774546, 0.1435328860869965, 0.022893691402150647, 0.08335108086089799]
+]
+imag = [
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0]
+]
+
+[[baseline]]
+name = "three-qubit chain, reversed pair"
+n_qubits = 3
+rotations = [[0, 0.7], [1, 1.1], [2, 0.4]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [1, 0]
+real = [
+    [0.6413419395912413, 0.14353288608699652, 0.15312322012762453, 0.09116598155642558],
+    [0.14353288608699652, 0.0321227852362083, 0.03426911036858157, 0.02040302627657186],
+    [0.15312322012762453, 0.03426911036858157, 0.24107915405100303, 0.1435328860869965],
+    [0.09116598155642558, 0.02040302627657186, 0.1435328860869965, 0.08545612112154745]
+]
+imag = [
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0]
+]

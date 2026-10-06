@@ -21,6 +21,7 @@ import importlib.util
 import inspect
 import json
 import math
+import pathlib
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives import qft
-from flagquantum.core import ADJOINT_RULES, OPERATOR_SCHEMAS
+from flagquantum.core import (
+    ADJOINT_RULES,
+    CONTROL_RULES,
+    MAX_LADDER_LEVEL,
+    OPERATOR_SCHEMAS,
+)
 from flagquantum.core.ir import IR_VERSION, Instruction, IRValidationError
 from flagquantum.errors import CapabilityError, ValidationError
 
@@ -122,6 +128,43 @@ _TRIGGERS: dict[str, Callable[[], object]] = {
     "inverse_of_matrix_without_conjugate_transpose": lambda: _with_instruction(
         Instruction("custom", (1,), matrix=((1.0, 0.0), (0.0, 1.0)))
     ).adjoint(),
+    # `n_controls` is read before the control qubits are, so the count refusals are
+    # reached without a valid control set and the label refusal is reached without a
+    # valid count.
+    "control_count_not_an_integer": lambda: fq.Circuit(2).control(
+        2.5, ctrl_qubits=(2, 3)
+    ),
+    "control_count_not_positive": lambda: fq.Circuit(2).control(0, ctrl_qubits=()),
+    "control_label_not_an_integer": lambda: fq.Circuit(2).control(
+        1, ctrl_qubits=(2.0,)
+    ),
+    "control_count_mismatch": lambda: fq.Circuit(2).control(2, ctrl_qubits=(2,)),
+    "control_qubit_repeated": lambda: fq.Circuit(2).control(2, ctrl_qubits=(2, 2)),
+    "control_qubit_negative": lambda: fq.Circuit(2).control(1, ctrl_qubits=(-1,)),
+    "control_qubit_inside_receiver": lambda: fq.Circuit(2).control(1, ctrl_qubits=(1,)),
+    "control_of_channel": lambda: fq.Circuit(1)
+    .depolarizing(0, 0.1)
+    .control(1, ctrl_qubits=(1,)),
+    # The same two hand-built instructions the adjoint triggers use, so the two surfaces
+    # are refused for the same reason on the same input rather than on two similar ones.
+    "control_of_dynamic_operation": lambda: _with_instruction(
+        Instruction("reset", (1,), metadata={"is_dynamic": True})
+    ).control(1, ctrl_qubits=(2,)),
+    "control_of_conditioned_gate": lambda: _with_instruction(
+        Instruction("x", (1,), metadata={"conditions": (("c", 1),)})
+    ).control(1, ctrl_qubits=(2,)),
+    "control_of_matrix": lambda: fq.Circuit(1)
+    .any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    .control(1, ctrl_qubits=(1,)),
+    "control_of_execution_metadata": lambda: _with_instruction(
+        Instruction("h", (1,), metadata={"origin": "test"})
+    ).control(1, ctrl_qubits=(2,)),
+    # A noise-channel opcode recorded without its `is_channel` metadata reaches the
+    # declaration itself rather than the channel branch, which is the one reachable
+    # spelling of an opcode that declares no controlled form.
+    "control_of_opcode_without_a_controlled_form": lambda: _with_instruction(
+        Instruction("bit_flip", (1,), params={"probability": 0.1})
+    ).control(1, ctrl_qubits=(2,)),
 }
 
 
@@ -133,7 +176,13 @@ def test_contract_header_names_the_surface_and_its_authorization() -> None:
     assert contract["surface"] == "construction_time_program_composition"
     assert contract["ir_version_effect"] == "none"
     assert contract["root_export_effect"] == "none"
-    for field in ("implementation", "placement_implementation", "adjoint_rule_source"):
+    for field in (
+        "implementation",
+        "placement_implementation",
+        "adjoint_rule_source",
+        "control_rule_source",
+        "control_expansion_implementation",
+    ):
         assert (ROOT / contract[field]).is_file(), field
     for proposal in contract["authorization"]:
         assert (ROOT / proposal).is_file(), proposal
@@ -432,6 +481,230 @@ def test_the_adjoint_flags_hold_on_a_measured_inversion() -> None:
     assert adjoint["matrix_route"] == "conjugate_transpose"
 
 
+def test_declared_control_rules_are_the_operator_schema_vocabulary() -> None:
+    control = _contract()["control"]
+
+    # The list is read from the implementation rather than restated here, so a rule that
+    # is added to the schema but not to the contract fails in both directions.
+    assert list(control["declared_opcode_rules"]) == list(CONTROL_RULES)
+    assert control["absence_rule"] in CONTROL_RULES
+    assert _contract()["control_rule_source"] == "flagquantum/core/operator_schema.py"
+    assert list(_contract()["scope"]["provided"])[-1] == "Circuit.control"
+    assert "Circuit.control" not in _contract()["scope"]["not_provided"]
+
+    # Every declared rule is spoken by at least one opcode, and the only rule that is an
+    # absence rather than a form is the one the four channels declare.
+    used = {schema.control for schema in OPERATOR_SCHEMAS.values()}
+    assert set(CONTROL_RULES) <= used
+    undeclared = sorted(
+        name
+        for name, schema in OPERATOR_SCHEMAS.items()
+        if schema.opcode == name and schema.control == control["absence_rule"]
+    )
+    assert all(OPERATOR_SCHEMAS[name].semantic_kind == "channel" for name in undeclared)
+
+
+def test_the_control_flags_hold_on_a_measured_control() -> None:
+    """Every `[control]` flag is the user-visible result of one measurement."""
+
+    contract = _contract()
+    control = contract["control"]
+    block = fq.Circuit(2).h(0).cnot(0, 1)
+    forward = [(item.name, item.wires) for item in block.to_ir().instructions]
+
+    # `receiver_is_mutated` and `returns`: the receiver is read again afterwards, so a
+    # control appended in place would show up here.
+    widened = block.control(1, ctrl_qubits=(4,))
+    assert [(item.name, item.wires) for item in block.to_ir().instructions] == forward
+    assert widened is not block
+    assert control["receiver_is_mutated"] is False
+    assert control["returns"] == "new_circuit"
+
+    # `instruction_order`, `instruction_qubits` and `instruction_order_within_gate`: the
+    # receiver's own program is expanded instruction by instruction in its own order, and
+    # no gate is relabelled. The expansion is therefore the concatenation of the two
+    # instructions' own expansions, in the order the receiver wrote them.
+    assert _instruction_fields(widened) == _instruction_fields(
+        fq.Circuit(1).h(0).control(1, ctrl_qubits=(4,))
+    ) + _instruction_fields(fq.Circuit(2).cnot(0, 1).control(1, ctrl_qubits=(4,)))
+    assert control["instruction_order"] == "forward"
+    assert control["instruction_qubits"] == "unchanged"
+    assert control["instruction_order_within_gate"] == "unchanged"
+    assert {4} <= {
+        qubit for item in widened.to_ir().instructions for qubit in item.wires
+    }
+    assert 4 not in {
+        qubit for item in block.to_ir().instructions for qubit in item.wires
+    }
+    assert {item.wires for item in widened.to_ir().instructions} <= {
+        (0,),
+        (4, 0),
+        (4, 0, 1),
+    }
+
+    # `result_width`: the control qubit is added, so the width is one past the greatest
+    # control qubit named rather than the receiver's width plus the count.
+    assert control["result_width"] == "max(ctrl_qubits) + 1"
+    assert widened.n_qubits == 5
+    assert fq.Circuit(3).h(0).control(2, ctrl_qubits=(7, 9)).n_qubits == 10
+
+    # `preserves`: `n_qubits` is deliberately absent from the list, and every attribute
+    # that is listed is read from the contract rather than restated.
+    assert control["preserves"] == ["bsz", "device", "dtype"]
+    shaped = fq.Circuit(2, bsz=3, device="cpu", dtype=torch.complex64).h(1)
+    shaped_control = shaped.control(1, ctrl_qubits=(2,))
+    for attribute in control["preserves"]:
+        assert getattr(shaped_control, attribute) == getattr(shaped, attribute)
+    assert shaped_control.n_qubits != shaped.n_qubits
+
+    # `receiver_input_state`: a receiver carrying an input state keeps it. Qubit 0 is the
+    # most significant amplitude bit, so the added control qubit is the least significant
+    # one and the receiver's amplitudes move to slot 0 of each pair.
+    state = torch.tensor([[0.6, 0.8]], dtype=torch.complex128)
+    carried = fq.Circuit(1, dtype=torch.complex128, inputs=state).control(
+        1, ctrl_qubits=(1,)
+    )
+    assert torch.allclose(
+        carried.state().detach(),
+        torch.tensor([[0.6 + 0j, 0j, 0.8 + 0j, 0j]], dtype=torch.complex128),
+        atol=1e-14,
+    )
+    assert "at |0>" in control["receiver_input_state"]
+
+    # `ancilla_qubits` and the ladder shape: the expansion names no qubit outside the
+    # receiver's own qubits and the controls, which is what zero ancillas means, and the
+    # deepest measured rung is the bound the contract states.
+    assert control["ancilla_qubits"] == 0
+    assert control["ladder_control_count"] == "n_controls"
+    assert control["ladder_level"] == "n_controls + arity - 1"
+    assert control["max_ladder_level"] == MAX_LADDER_LEVEL
+    assert control["ladder_depth_growth"] == "exponential"
+    ladder = fq.Circuit(1).t(0).control(4, ctrl_qubits=(1, 2, 3, 4))
+    assert len(ladder.to_ir().instructions) == 4 * 3**3 - 3
+    assert {qubit for item in ladder.to_ir().instructions for qubit in item.wires} == {
+        0,
+        1,
+        2,
+        3,
+        4,
+    }
+
+    # `zero_angles_are_emitted`: an opcode whose controlled form is a phase ladder with an
+    # explicit angle still emits its own ladder, so the count is the same as for any other
+    # angle. A version that elided a zero angle would shrink this list.
+    zeroed = fq.Circuit(1).rz(0, 0.0).control(2, ctrl_qubits=(1, 2))
+    assert control["zero_angles_are_emitted"] is True
+    assert len(zeroed.to_ir().instructions) == len(
+        fq.Circuit(1).rz(0, 0.37).control(2, ctrl_qubits=(1, 2)).to_ir().instructions
+    )
+
+    # `single_control_partner_source` and `max_ladder_level_source`: both tables are read
+    # from the operator schema, so the contract cannot point at a copy.
+    for field in ("single_control_partner_source", "max_ladder_level_source"):
+        assert control[field] == "flagquantum/core/operator_schema.py"
+    assert pathlib.Path(ROOT / control["single_control_partner_source"]).is_file()
+    assert control["angle_handling"].startswith("scaled in place")
+
+    # `emitted_opcodes_are_registered`: a rule that reached for an opcode the registry
+    # does not declare would put a name into the IR that the IR cannot execute.
+    for instruction in ladder.to_ir().instructions:
+        schema = OPERATOR_SCHEMAS.get(instruction.name)
+        assert schema is not None and schema.opcode == instruction.name
+
+
+def test_control_expands_to_the_hand_built_ladder() -> None:
+    """Expansion, instruction by instruction: the controlled program is the hand-built one.
+
+    `expansion_tests` in the contract names this test, and
+    `tools/check_circuit_composition_contract.py` refuses a name that is not here. Both
+    halves of the claim are measured: the emitted instruction list is compared with the
+    program a user would have written, exact and in order, and the result is then applied
+    to a basis and compared with the diagonal the definition of a controlled gate names,
+    because two different programs can reach the same state and an instruction listing
+    cannot tell a correct ladder from a wrong one.
+    """
+
+    # The one-control shortcut: for these five opcodes the controlled form is the
+    # registered partner, so the emitted program is a single instruction and the control
+    # qubit is named first.
+    for opcode, params, partner, wires in (
+        ("x", {}, "cx", (2, 0)),
+        ("cnot", {}, "ccx", (2, 0, 1)),
+        ("swap", {}, "cswap", (2, 0, 1)),
+        ("rz", {"theta": 0.7}, "crz", (2, 0)),
+    ):
+        width = 2 if opcode in {"cnot", "swap"} else 1
+        builder = getattr(fq.Circuit(width), opcode)
+        receiver = builder(*range(width), **params)
+        emitted = receiver.control(1, ctrl_qubits=(2,))
+        assert [(item.name, item.wires) for item in emitted.to_ir().instructions] == [
+            (partner, wires)
+        ], opcode
+
+    # The ladder itself, written out by hand for the two shallowest rungs. `t` is a phase
+    # gate, so its controlled form is the ladder with no basis change around it and the
+    # angle is halved once per added control.
+    one_control = fq.Circuit(1).t(0).control(1, ctrl_qubits=(1,))
+    assert _instruction_fields(one_control) == _instruction_fields(
+        fq.Circuit(2).cphase(1, 0, theta=math.pi / 4)
+    )
+    two_controls = fq.Circuit(1).t(0).control(2, ctrl_qubits=(1, 2))
+    hand_built = (
+        fq.Circuit(3)
+        .h(2)
+        .cphase(1, 2, theta=math.pi)
+        .h(2)
+        .cphase(2, 0, theta=-math.pi / 8)
+        .h(2)
+        .cphase(1, 2, theta=math.pi)
+        .h(2)
+        .cphase(2, 0, theta=math.pi / 8)
+        .cphase(1, 0, theta=math.pi / 8)
+    )
+    assert _instruction_fields(two_controls) == _instruction_fields(hand_built)
+    assert two_controls.to_ir().instructions == hand_built.to_ir().instructions
+
+    # The emitted list is the receiver's own order, one instruction at a time: two
+    # different gates in one receiver expand to their own forms in the order they were
+    # written, which is what `instruction_order` claims.
+    ordered = fq.Circuit(1).x(0).t(0).control(1, ctrl_qubits=(1,))
+    assert _instruction_fields(ordered) == _instruction_fields(
+        fq.Circuit(2).cx(1, 0).cphase(1, 0, theta=math.pi / 4)
+    )
+
+    # And the ladder computes the gate. The controlled program is placed after a
+    # preparation on the same register, so both controls are exercised as well as the
+    # target: qubit 0 is the most significant amplitude bit, which makes the register index
+    # `q0 * 4 + q1 * 2 + q2`. `t` is the phase gate, so the phase lands only on the basis
+    # state where both controls and the target are set, and the other three rows are the
+    # near misses that must stay at unit amplitude. The reference is the basis state and
+    # the phase the definition names, written here rather than read back from the expansion.
+    controlled = fq.Circuit(1).t(0).control(2, ctrl_qubits=(1, 2))
+    quarter = complex(math.cos(math.pi / 4), math.sin(math.pi / 4))
+    for preparation, index, expected in (
+        ((), 0, 1.0),
+        ((1, 2), 3, 1.0),
+        ((0, 1, 2), 7, quarter),
+        ((0, 1), 6, 1.0),
+    ):
+        register = fq.Circuit(3, dtype=torch.complex128)
+        for qubit in preparation:
+            register.x(qubit)
+        register.compose(controlled)
+        reference = torch.zeros(8, dtype=torch.complex128)
+        reference[index] = expected
+        assert torch.allclose(
+            register.state().detach()[0], reference, atol=1e-14
+        ), preparation
+
+    # `receiver_is_mutated`: the receiver is read again afterwards and still holds the
+    # program it was written with, so the expansion copied rather than consumed it.
+    receiver = fq.Circuit(1).t(0)
+    before = _instruction_fields(receiver)
+    receiver.control(2, ctrl_qubits=(1, 2))
+    assert _instruction_fields(receiver) == before
+
+
 def test_the_unreachable_adjoint_branch_is_unreachable_by_construction() -> None:
     """The `reachable = false` row is measured here rather than asserted in the table."""
 
@@ -512,9 +785,12 @@ def test_the_refusal_vocabulary_is_unique_and_complete() -> None:
 
     assert len(codes) == len(set(codes)), "two refusals share a code"
     assert len(phrases) == len(set(phrases)), "two refusals share a message phrase"
+    # The count is the contract's own length, so dropping a row is a change to this
+    # number rather than a change nobody notices.
+    assert len(refusals) == 30
     for row in refusals:
         assert required <= set(row), (row["code"], sorted(required - set(row)))
-        assert row["entry_point"] in {"compose", "adjoint"}, row["code"]
+        assert row["entry_point"] in {"compose", "adjoint", "control"}, row["code"]
         assert row["exception"] in _EXCEPTIONS, row["exception"]
         assert (ROOT / row["message_source"]).is_file(), row["message_source"]
         if row["reachable"] is False:
@@ -552,6 +828,7 @@ def test_every_reachable_refusal_has_a_trigger_and_every_trigger_a_refusal() -> 
     assert {row["entry_point"] for row in _refusals() if row["reachable"]} == {
         "compose",
         "adjoint",
+        "control",
     }
 
 
@@ -756,8 +1033,53 @@ def _drop_rule(contract: dict[str, Any]) -> None:
 
 
 def _claim_control(contract: dict[str, Any]) -> None:
-    contract["scope"]["provided"].append("Circuit.control")
-    contract["scope"]["not_provided"].remove("Circuit.control")
+    """Claim an operation the contract says is absent, which is the direction that matters.
+
+    `Circuit.control` is provided, so the interesting mutation is the other one: a contract
+    that promises an operation nobody wrote. `Circuit.power` is the contracted absence, and
+    this mutation moves it into `provided`.
+    """
+
+    contract["scope"]["provided"].append("Circuit.power")
+    contract["scope"]["not_provided"].remove("Circuit.power")
+
+
+def _dropped_control_authorization(contract: dict[str, Any]) -> None:
+    contract["control"][
+        "authorization"
+    ] = "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md"
+
+
+def _control_rule_dropped(contract: dict[str, Any]) -> None:
+    contract["control"]["declared_opcode_rules"].remove("u_angle_ladder")
+
+
+def _control_claims_ancillas(contract: dict[str, Any]) -> None:
+    contract["control"]["ancilla_qubits"] = 2
+
+
+def _control_mutates_receiver(contract: dict[str, Any]) -> None:
+    contract["control"]["receiver_is_mutated"] = True
+
+
+def _stale_ladder_ceiling(contract: dict[str, Any]) -> None:
+    contract["control"]["max_ladder_level"] = 9
+
+
+def _stale_ladder_formula(contract: dict[str, Any]) -> None:
+    contract["control"]["ladder_instruction_bound"] = "3 ** k"
+
+
+def _control_wire_spelling(contract: dict[str, Any]) -> None:
+    contract["control"]["control_qubits_argument"] = "ctrl_wires"
+
+
+def _control_preserves_width(contract: dict[str, Any]) -> None:
+    contract["control"]["preserves"] = ["n_qubits", "bsz", "device", "dtype"]
+
+
+def _stale_control_census(contract: dict[str, Any]) -> None:
+    contract["verification"]["control_census"] = "30 of 35 registered opcodes"
 
 
 def _no_trigger(contract: dict[str, Any]) -> None:
@@ -822,7 +1144,16 @@ def _mutated_matrix_route(contract: dict[str, Any]) -> None:
     ("mutate", "expected"),
     [
         (_drop_rule, "declared adjoint rules drifted"),
-        (_claim_control, "contracted operation 'Circuit.control' does not exist"),
+        (_claim_control, "contracted operation 'Circuit.power' does not exist"),
+        (_dropped_control_authorization, "circuit control authorization"),
+        (_control_rule_dropped, "declared rules drifted from CONTROL_RULES"),
+        (_control_claims_ancillas, "must contract zero ancillas"),
+        (_control_mutates_receiver, "receiver_is_mutated must be contracted as False"),
+        (_stale_ladder_ceiling, "ladder ceiling drifted"),
+        (_stale_ladder_formula, "ladder_instruction_bound must be"),
+        (_control_wire_spelling, "Circuit.control signature drifted"),
+        (_control_preserves_width, "preserves must be exactly bsz, device and dtype"),
+        (_stale_control_census, "control census drifted"),
         (_no_trigger, "is reachable with no trigger"),
         (_no_reachability_note, "is unreachable with no reachability note"),
         (_second_unreachable_row, "exactly one unreachable refusal"),

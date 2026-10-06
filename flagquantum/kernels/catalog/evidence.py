@@ -132,6 +132,16 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-013-A",
+        "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_rejects_unsupported_contracts",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_reversible_3q_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-GR-001-A",
         "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         gradient_tests=(
