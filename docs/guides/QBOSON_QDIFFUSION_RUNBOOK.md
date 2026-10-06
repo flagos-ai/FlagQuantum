@@ -670,8 +670,10 @@ The evaluator retains a stable no-follow snapshot for every consumed training
 FASTA and quality JSON. Plugin FASTA reads are bracketed by identity checks,
 quality JSON is parsed from the captured descriptor, and the complete set is
 rechecked after metrics. Replay retains the same snapshots around plugin
-consumption. Rehashing later is not used as a substitute for this in-run
-identity binding.
+consumption. Its trained energy checkpoint is likewise captured after matching
+the training record, checked immediately before and after the plugin weight
+loader, and rechecked after generation. Rehashing later is not used as a
+substitute for this in-run identity binding.
 
 Training rehashes the frozen config and all four input roles after the workflow
 returns. Replay repeats that check and also revalidates the transferred test

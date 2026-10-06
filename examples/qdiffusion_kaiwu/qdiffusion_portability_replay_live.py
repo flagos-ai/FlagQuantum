@@ -58,6 +58,11 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.stable_source_tree import (
+    RegularFileSnapshot,
+    capture_regular_file,
+    revalidate_regular_file,
+)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )
@@ -110,25 +115,38 @@ def _load_pinned_modules(
     return modules["builder"], modules["runtime"], modules["io"]
 
 
-def _verified_checkpoint(
+def _verified_checkpoint_snapshot(
     run_directory: Path,
     checkpoint_path: Path,
     training_record: dict[str, Any],
-) -> str:
+) -> RegularFileSnapshot:
     try:
         checkpoint_path.resolve().relative_to(run_directory.resolve())
     except ValueError:
         raise ValueError(
             "trained checkpoint is outside the recorded run directory"
         ) from None
-    if checkpoint_path.is_symlink() or not checkpoint_path.is_file():
-        raise ValueError("trained checkpoint is absent or symbolic")
     if checkpoint_path.name != training_record.get("trained_energy_checkpoint_name"):
         raise ValueError("trained checkpoint name differs from the training record")
-    digest = hashlib.sha256(checkpoint_path.read_bytes()).hexdigest()
-    if digest != training_record.get("trained_energy_checkpoint_sha256"):
+    try:
+        snapshot = capture_regular_file(
+            checkpoint_path, label="trained energy checkpoint"
+        )
+    except ValueError:
+        raise ValueError("trained checkpoint is absent or symbolic") from None
+    if snapshot.sha256 != training_record.get("trained_energy_checkpoint_sha256"):
         raise ValueError("trained checkpoint digest differs from the training record")
-    return digest
+    return snapshot
+
+
+def _verified_checkpoint(
+    run_directory: Path,
+    checkpoint_path: Path,
+    training_record: dict[str, Any],
+) -> str:
+    return _verified_checkpoint_snapshot(
+        run_directory, checkpoint_path, training_record
+    ).sha256
 
 
 def _token_constraints(
@@ -170,6 +188,7 @@ def run_portability_replay(
     poll_interval: float,
     device: torch.device,
     real_provider_transport: bool,
+    trained_checkpoint_snapshot: RegularFileSnapshot | None = None,
 ) -> dict[str, Any]:
     if requested_samples != config.get("requested_samples"):
         raise ValueError("requested_samples differs from the frozen configuration")
@@ -195,6 +214,14 @@ def run_portability_replay(
     generated_length: int | None = None
     generated_sha256: str | None = None
     retrieval_resubmitted: bool | None = None
+    checkpoint_snapshot = trained_checkpoint_snapshot or capture_regular_file(
+        trained_checkpoint, label="trained energy checkpoint"
+    )
+    if (
+        checkpoint_snapshot.path != trained_checkpoint
+        or checkpoint_snapshot.sha256 != trained_checkpoint_sha256
+    ):
+        raise ValueError("trained checkpoint snapshot differs from replay inputs")
     try:
         generator = (
             builder.build_qdiffusion(
@@ -217,8 +244,14 @@ def run_portability_replay(
         )
         if id(getattr(generator.energy_model, "sampler", None)) != id(sampler):
             raise RuntimeError("DPLM builder did not retain the FlagQuantum sampler")
+        revalidate_regular_file(
+            checkpoint_snapshot, label="trained energy checkpoint"
+        )
         runtime.load_trained_energy_weights(
             generator, str(trained_checkpoint), str(device)
+        )
+        revalidate_regular_file(
+            checkpoint_snapshot, label="trained energy checkpoint"
         )
         records = io_module.read_fasta_records(test_fasta)
         index = generation["portability_fixture_index"]
@@ -244,6 +277,9 @@ def run_portability_replay(
             generated_length,
             generated_sha256,
         ) = _token_constraints(generator, generated)
+        revalidate_regular_file(
+            checkpoint_snapshot, label="trained energy checkpoint"
+        )
         last_job = sampler.last_job
         if last_job is None:
             raise RuntimeError("portability replay completed without a recoverable job")
@@ -471,9 +507,10 @@ def main() -> None:
     training_paths = _verified_training_paths(
         args.training_run_directory, training_record
     )
-    checkpoint_sha256 = _verified_checkpoint(
+    checkpoint_snapshot = _verified_checkpoint_snapshot(
         args.training_run_directory, args.trained_checkpoint, training_record
     )
+    checkpoint_sha256 = checkpoint_snapshot.sha256
     if args.base_checkpoint.resolve() != args.tokenizer.resolve():
         parser.error("the pinned plugin requires tokenizer files in base checkpoint")
     source_preflight, source_preflight_sha256 = load_source_preflight(
@@ -558,13 +595,14 @@ def main() -> None:
         poll_interval=args.poll_interval,
         device=device,
         real_provider_transport=True,
+        trained_checkpoint_snapshot=checkpoint_snapshot,
     )
     artifact_postflight_error: BaseException | None = None
     try:
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
         _revalidate_training_paths(training_paths)
-        _verified_checkpoint(
-            args.training_run_directory, args.trained_checkpoint, training_record
+        revalidate_regular_file(
+            checkpoint_snapshot, label="trained energy checkpoint"
         )
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc

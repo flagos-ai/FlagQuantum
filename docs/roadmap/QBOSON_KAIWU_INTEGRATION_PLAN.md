@@ -785,6 +785,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   descriptor, and both evaluation and portability replay revalidate the
   original snapshots after consumption instead of relying only on a later
   same-digest path lookup.
+- Portability replay now carries the selected trained-energy checkpoint as a
+  stable snapshot after matching its name and digest to the primary training
+  record. The plugin weight loader is bracketed by identity checks, generation
+  rechecks it again, and final postflight validates the original snapshot; a
+  checkpoint swap cannot separate recorded identity from loaded weights.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
