@@ -625,6 +625,46 @@ holds the measurement and the commands that reproduce it. The checked-in port is
 also the only runnable form of the algorithm left to this repository, because
 Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
 
+What those strategies cost is a checked-in number rather than an impression.
+[benchmarks/compiler_routing_quality.py](../../benchmarks/compiler_routing_quality.py)
+compiles the same 140 programs through `flagquantum.compiler.compile` -- the entry
+point a caller uses, so the programs are optimized before they are routed, as a
+caller's are -- and reports the SWAPs each of the five entry points retains after
+post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
+automatic selection 4310, `restore_after_each_gate` 4660 and
+`persistent_layout` 4716, with every entry point routing all 140 programs, no
+two-wire operation off the device, and every compiled program equal to its source
+to `2.8e-16`. These are the counts at the default optimization level, `2`: a
+caller who names a lower level runs fewer of the optimization passes that remove
+inserted SWAPs afterwards, so the level is part of what a retained count means.
+Two numbers there are worth carrying forward. The automatic
+selection never resolves to a SABRE strategy, because its cost estimate can rank
+only `restore_after_each_gate` and `persistent_layout`, and that scope costs
+`2.14` times what the best available strategy costs -- so the price of the
+restriction is measured rather than merely stated. And the estimate is good inside
+that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
+and lands within `1.005` of always picking the better one. The eight misses are
+not a bias in the estimate. It minimizes the SWAPs a plan *inserts*, as its
+objective field states: its planned count equals the router's planned count on all
+140 programs for both candidates, and its objective with its declared tie-break
+reproduces the selection on all 140. The misses are the gap between two questions.
+This benchmark scores the SWAPs *retained*, and the post-routing optimization
+removes 5.25% of one candidate's planned SWAPs and 5.49% of the other's, so a
+program where `persistent_layout` plans fewer and retains no fewer is scored as a
+miss. Those counts are a reading of the shipped router, and
+they are only reproducible because that router resolves a physical pair to one
+route: `CouplingMap.shortest_path` expands from the lower-indexed endpoint rather
+than from whichever endpoint the caller passed, so the two operand orders are
+exact reverses of each other and a device that has already answered other queries
+routes exactly as a cold one does. A pair on an even ring has two routes of equal
+length, so the route is a tie-break, and a tie-break that reads the device's
+history would make the count depend on which pass asked first.
+`DirectedCouplingMap.shortest_path` breaks the same tie the same way, because SWAP
+placement travels the same undirected graph whichever device describes it.
+[test_compiler_routing_quality.py](../../tests/benchmark_contract/test_compiler_routing_quality.py)
+holds those readings, including a test that fails if the automatic selection
+becomes an alias of one candidate or quietly widens its scope.
+
 Routing moves two-qubit operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more qubits, so such
 an operation is carried through unchanged, and only when the device already

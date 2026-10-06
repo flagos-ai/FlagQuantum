@@ -21,6 +21,15 @@ site plan this shape can hold, and each leg's inter-node layer halo is what says
 the cut it placed was carried across the hosts. A cut that never moved is not
 evidence about a cut, so the probe measures the widths instead of declaring one.
 
+The measured circuit carries the release contract's own parameterization: one
+independent trainable leaf per gate, thirty-one of them, which is what the
+contract freezes for the workload it certifies. The contract's own rung is five
+hundred and twelve sites wide and cannot be held as an exact statevector, and
+that statevector is what says site sharding preserved the state, so the shape
+measured here is the pair's own six wires carrying the contract's leaf count.
+What the artifact records is the contract file it read, the digest of that file,
+the count the contract declares and the count the built circuit bound.
+
 It makes no scale claim: the scope, the claim flags and the blockers in the
 artifact say exactly how narrow the shape is.
 """
@@ -29,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import platform
@@ -46,7 +56,6 @@ import torch.distributed as dist
 import flagquantum as fq
 from flagquantum.experimental.distributed import train_distributed_mps
 from flagquantum.runtime.audit.claim_boundary import (
-    BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
     BLOCKER_TWO_NODE_PAIR_ONLY,
     BLOCKER_VALIDATION_ONLY_TINY_FULL_MPS_GATHER,
     ClaimBoundaryError,
@@ -58,6 +67,7 @@ from flagquantum.runtime.audit.claim_boundary import (
     measurement_claim_blockers,
     observed_network_route,
     staging_claim_blockers,
+    toy_circuit_claim_blockers,
     transport_claim_blockers,
 )
 from flagquantum.runtime.distributed.transport_observability import (
@@ -66,6 +76,10 @@ from flagquantum.runtime.distributed.transport_observability import (
 from flagquantum.runtime.executors.mps.forward import (
     execute_torch_distributed_mps_forward,
     gather_mps_for_validation,
+)
+from flagquantum.runtime.executors.mps.gather import (
+    SITE_ORDER_CANONICAL_LOGICAL,
+    export_distributed_mps,
 )
 from flagquantum.runtime.executors.mps.reverse import (
     execute_torch_distributed_mps_reverse,
@@ -77,12 +91,39 @@ from flagquantum.runtime.executors.mps.state import (
 
 ROOT = Path(__file__).resolve().parents[1]
 
+#: The release contract this probe's parameterization comes from, and the rung
+#: inside it that is the widest one the contract's own single-device floor says
+#: completes. The rung is named rather than restated: the artifact records this
+#: file and its digest, so the leaf count the probe binds is checkable against
+#: the count the committed contract declares for the rung.
+RELEASE_MANIFEST = ROOT / "benchmarks/manifests/mps_release_v1.json"
+RELEASE_CONFIGURATION = "matched_speed_8192sites_chi64"
+#: The rung's site count and bond limit. The contract's own workload builder
+#: (`benchmarks/internal/evidence/general_mps_capacity_16.py`) derives one leaf
+#: per rank-owning rotation plus one per sharded boundary, which is thirty-one
+#: leaves for the sixteen-rank release topology.
+RELEASE_N_SITES = 8192
+RELEASE_MAX_BOND = 64
+
 #: The forward scope. Six wires at two ranks gives three owned sites per rank,
 #: so the pair of wires in the middle straddles the ownership boundary and the
 #: exchange is exercised by an ordinary adjacent gate.
 N_WIRES = 6
 COMPLEX_DTYPE = torch.complex128
 REAL_DTYPE = torch.float64
+
+#: The measured circuit's parameterization: one independent leaf per
+#: parameterized gate, which is one rotation per wire per layer plus the single
+#: coupling that straddles the ownership boundary. That last gate is a
+#: parameter, so the exchange the artifact is about is carried by a leaf of the
+#: workload rather than by a gate that binds nothing.
+FORWARD_LAYERS = 5
+CROSSING_LEAF = FORWARD_LAYERS * N_WIRES
+#: One leaf per gate: `ry` on each of the sixteen rank-owning wires plus `rxx`
+#: on each of the fifteen sharded boundaries in the contract's own release
+#: topology. The count is checked against the contract's builder at run time
+#: rather than trusted from this arithmetic.
+PARAMETER_COUNT = CROSSING_LEAF + 1
 
 #: The bond limit for every leg. Six wires cannot carry a bond dimension above
 #: thirty-two, so this is headroom rather than truncation: an exact MPS here,
@@ -115,6 +156,21 @@ TRAINABLE_VALUES = (0.23, -0.37)
 MEASUREMENT = "sharded_mps_forward"
 MEASUREMENT_WARMUP_ITERATIONS = 2
 MEASUREMENT_ITERATIONS = 5
+
+#: The export leg. The forward executor refuses to reconstruct the global state,
+#: so the whole matrix product state can only exist because a workload asked for
+#: it by name. This leg is that ask: it exports the state through the runtime's
+#: own export surface and reports the exported state as its product. It is a
+#: separate measurement from `MEASUREMENT` because the export is a second full
+#: interchange of the same sites, and a duration that had one inside it would not
+#: be a duration of the forward.
+EXPORT_MEASUREMENT = "distributed_mps_full_state_export"
+EXPORT_WARMUP_ITERATIONS = 2
+EXPORT_ITERATIONS = 5
+#: The slice of the exported state the product is read from, and the name the
+#: artifact publishes for it. The exported object is the whole state; the digest
+#: is taken over its site tensors so a reader can compare two exports.
+EXPORTED_PRODUCT = "full_mps_state"
 
 #: The staging audit profiles the steady state for the same reason the samples
 #: warm up: a circuit's first execution also does the planning it will not
@@ -282,22 +338,209 @@ def _git_revision() -> str:
         return "unavailable"
 
 
-def _forward_circuit() -> fq.Circuit:
-    """An adjacent-gate circuit whose middle gate crosses the site boundary."""
+def _forward_angles(
+    *, device: torch.device | None, layers: int = FORWARD_LAYERS
+) -> tuple[torch.Tensor, ...]:
+    """One leaf per parameterized gate, in the order the circuit binds them.
 
-    return (
-        fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE)
-        .h(0)
-        .ry(1, 0.31)
-        .cx(0, 1)
-        .rx(2, -0.27)
-        .cx(1, 2)
-        .cx(*BOUNDARY_PAIR)
-        .ry(3, 0.41)
-        .rz(4, 0.19)
-        .cx(3, 4)
-        .cx(4, 5)
+    The rotation angles are deterministic functions of the layer and the wire,
+    so the reference and the distributed run bind the same numbers without
+    either of them carrying a table, and the crossing coupling gets a leaf of
+    its own rather than sharing one: a gate that binds its parameter twice would
+    report a leaf count below the number of gates the contract counts.
+
+    Every leaf is a tensor even on the host, because the count the artifact
+    records is the number of distinct tensors the built circuit binds, and a
+    Python float is not one of them.
+    """
+
+    values: list[torch.Tensor] = []
+    for layer in range(layers):
+        for wire in range(N_WIRES):
+            value = 0.11 * (1 + layer) * (1 + wire) / N_WIRES
+            values.append(torch.tensor(value, dtype=REAL_DTYPE, device=device))
+    values.append(torch.tensor(-0.29, dtype=REAL_DTYPE, device=device))
+    return tuple(values)
+
+
+def _forward_circuit(*, device: torch.device | None = None) -> fq.Circuit:
+    """An adjacent-gate circuit whose middle gate crosses the site boundary.
+
+    Every parameterized gate binds its own leaf, and there are exactly
+    `PARAMETER_COUNT` of them: five rotations on each of the six wires, plus the
+    one coupling that straddles the ownership boundary. The gate that the
+    inter-node transport exists for is therefore also a parameter the workload
+    holds, so the exchange the artifact is about is exercised by the same object
+    whose count the release contract declares.
+
+    The leaves are tensors rather than `nn.Parameter`s, for the same reason the
+    statevector probe gives: a parameter's gradient metadata is additional state
+    to move, and this forward workload does not differentiate its inputs. On a
+    device they are device tensors, which is the form a training loop holds its
+    parameters in: an accelerator workload handed a host scalar has to copy that
+    scalar across, so a host-scalar circuit would make the measured region carry
+    one parameter upload per rotation that the production shape does not have.
+    """
+
+    angles = _forward_angles(device=device)
+    circuit = fq.Circuit(N_WIRES, dtype=COMPLEX_DTYPE, device=device)
+    for layer in range(FORWARD_LAYERS):
+        offset = layer * N_WIRES
+        for wire in range(N_WIRES):
+            circuit.ry(wire, angles[offset + wire])
+        if layer % 2 == 0:
+            for wire in range(0, N_WIRES - 1, 2):
+                circuit.cx(wire, wire + 1)
+        else:
+            for wire in range(1, N_WIRES - 1, 2):
+                circuit.cx(wire, wire + 1)
+    circuit.rxx(*BOUNDARY_PAIR, angles[CROSSING_LEAF])
+    return circuit
+
+
+def _frozen_circuit_observation() -> dict[str, Any]:
+    """What the measured workload bound, and the frozen file it was read from.
+
+    Read at run time from the release contract rather than restated here, because
+    a copy of the numbers is a second source of truth: the artifact records the
+    digest of the file it read, so a reader can compare the declaration against
+    the committed manifest and against the leaf count the built circuit
+    reported. The rung named here is the widest one whose single-device floor
+    entry the contract records as completed, so the parameterization measured is
+    one the contract has already accepted rather than one chosen to be
+    measurable.
+
+    The count is cross-checked against the contract's own workload builder as
+    well as against the manifest, because the manifest's ladder is a table and
+    the builder is the code that produced it: a refrozen ladder that moved the
+    count would have to move the builder with it, and this observation would
+    then report the disagreement instead of a number that agrees with itself.
+    """
+
+    manifest = json.loads(RELEASE_MANIFEST.read_text(encoding="utf-8"))
+    speed = manifest["speed_workload"]
+    floors = [
+        item
+        for item in speed["measured_single_device_floor"]
+        if item["name"] == RELEASE_CONFIGURATION
+    ]
+    if len(floors) != 1:
+        raise RuntimeError(
+            f"{RELEASE_MANIFEST} names {len(floors)} single-device floor entries "
+            f"called {RELEASE_CONFIGURATION!r}"
+        )
+    floor = floors[0]
+    for field, expected in (
+        ("n_sites", RELEASE_N_SITES),
+        ("trained_max_bond", RELEASE_MAX_BOND),
+    ):
+        if int(floor[field]) != expected:
+            raise RuntimeError(
+                f"frozen rung {RELEASE_CONFIGURATION!r} declares {field}="
+                f"{floor[field]!r}, but this probe reads {expected!r}"
+            )
+    if str(floor["status"]) != "completed":
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} is recorded as "
+            f"{floor['status']!r} rather than completed on one device"
+        )
+    declared = int(floor["parameter_count"])
+    if declared != PARAMETER_COUNT:
+        raise RuntimeError(
+            f"frozen rung {RELEASE_CONFIGURATION!r} declares {declared} "
+            f"parameters, but this probe binds {PARAMETER_COUNT}"
+        )
+    builder_count = _capacity_workload_parameter_count()
+    if builder_count != declared:
+        raise RuntimeError(
+            "the contract's own workload builder derives "
+            f"{builder_count} parameters where its manifest declares {declared}"
+        )
+    # The rung is a copy inside the manifest, so it is checked against the
+    # ladder file the manifest names: the recomputed fingerprint covers every
+    # rung shape, the acceptance name and the step count, which is what makes
+    # the number below a fact about a committed file rather than a table beside
+    # one. The shape is then read from that file rather than from the copy.
+    ladder = _contract_module(
+        "internal/evidence/general_mps_speed_ladder_v1.py",
+        "flagquantum_probe_mps_speed_ladder",
     )
+    recomputed = ladder.ladder_fingerprint()
+    if recomputed != speed["ladder_fingerprint"]:
+        raise RuntimeError(
+            "the contract's frozen ladder disagrees with the ladder file it "
+            f"names: {recomputed} against {speed['ladder_fingerprint']}"
+        )
+    if ladder.ACCEPTANCE != RELEASE_CONFIGURATION:
+        raise RuntimeError(
+            f"the frozen ladder publishes its speedup at {ladder.ACCEPTANCE!r}, "
+            f"but this probe reads {RELEASE_CONFIGURATION!r}"
+        )
+    measured_rung = ladder.rung(RELEASE_CONFIGURATION)
+    for field, expected in (
+        ("n_sites", RELEASE_N_SITES),
+        ("trained_max_bond", RELEASE_MAX_BOND),
+    ):
+        if int(measured_rung[field]) != expected:
+            raise RuntimeError(
+                f"the ladder's own rung {RELEASE_CONFIGURATION!r} declares "
+                f"{field}={measured_rung[field]!r}, but this probe reads "
+                f"{expected!r}"
+            )
+    circuit = _forward_circuit()
+    bound = len(
+        {
+            id(value)
+            for instruction in circuit.to_ir().instructions
+            for value in instruction.params.values()
+            if isinstance(value, torch.Tensor)
+        }
+    )
+    return {
+        "manifest": str(RELEASE_MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": hashlib.sha256(RELEASE_MANIFEST.read_bytes()).hexdigest(),
+        "configuration": RELEASE_CONFIGURATION,
+        "n_sites": RELEASE_N_SITES,
+        "trained_max_bond": RELEASE_MAX_BOND,
+        "n_wires": N_WIRES,
+        "declared_parameter_count": declared,
+        "bound_parameter_count": bound,
+    }
+
+
+def _contract_module(relative_path: str, module_name: str):
+    """Load one file the release contract names, without touching `sys.path`.
+
+    Loaded under a private module name so it cannot shadow, or be shadowed by,
+    anything else that happens to be on the path.
+    """
+
+    source = RELEASE_MANIFEST.parent.parent / relative_path
+    if not source.exists():
+        raise RuntimeError(f"the contract names a file that is missing: {source}")
+    spec = importlib.util.spec_from_file_location(module_name, source)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(
+            f"the contract names a file that is not importable: {source}"
+        )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _capacity_workload_parameter_count() -> int:
+    """The leaf count the contract's own workload builder derives.
+
+    The builder is the file the manifest names as its workload, so importing it
+    and asking for the count checks the manifest against its source rather than
+    against this probe.
+    """
+
+    builder = _contract_module(
+        "internal/evidence/general_mps_capacity_16.py",
+        "flagquantum_probe_mps_capacity_builder",
+    )
+    return int(builder.parameter_count())
 
 
 def _bind_trainable(
@@ -416,7 +659,7 @@ def _performance_observations(*, device: torch.device) -> dict[str, Any]:
     is visible rather than summarized away.
     """
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
 
     def once() -> float:
         _synchronize(device)
@@ -441,6 +684,154 @@ def _performance_observations(*, device: torch.device) -> dict[str, Any]:
     observation["n_wires"] = N_WIRES
     observation["max_bond"] = MAX_BOND
     return observation
+
+
+def _require_export_placement(
+    summary: dict[str, Any], *, world_size: int, local_world_size: int
+) -> None:
+    """The export leg has to have resolved the shape the launch declared.
+
+    The export reports `replicated_per_rank` rather than the forward's
+    `sharded_across_ranks`, because after it every rank holds the whole state.
+    That is the point of the leg rather than a defect in it, so the shape is
+    checked against what was launched and the distribution against what an
+    export is allowed to say.
+    """
+
+    if summary["world_size"] != world_size:
+        raise RuntimeError(
+            f"the export leg ran at {summary['world_size']} ranks where "
+            f"{world_size} were launched"
+        )
+    if summary["local_world_size"] != local_world_size:
+        raise RuntimeError(
+            f"the export leg resolved {summary['local_world_size']} ranks per node "
+            f"where {local_world_size} were launched"
+        )
+    if summary["node_count"] != 2:
+        raise RuntimeError(
+            "the export leg resolved "
+            f"{summary['node_count']} nodes rather than the two hosts this probe "
+            f"requires (world_size={summary['world_size']} "
+            f"local_world_size={summary['local_world_size']})"
+        )
+    expected = "replicated_per_rank"
+    if summary["distribution_semantics"] != expected:
+        raise RuntimeError(
+            f"the export leg reported {summary['distribution_semantics']!r} where "
+            f"an export leaves every rank holding the whole state ({expected!r})"
+        )
+    if summary["site_order"] != SITE_ORDER_CANONICAL_LOGICAL:
+        raise RuntimeError(
+            f"the export leg published site order {summary['site_order']!r} rather "
+            f"than {SITE_ORDER_CANONICAL_LOGICAL!r}"
+        )
+
+
+def _export_observation(
+    forward: Any,
+    *,
+    device: torch.device,
+    world_size: int,
+    local_world_size: int,
+) -> dict[str, Any]:
+    """Export the whole matrix product state, and time the gather that produces it.
+
+    This is a separate act from the forward validation. Validation gathers the
+    sites to compare them against a single-device statevector, so the gathered
+    object is a check on an answer computed elsewhere. The export is the runtime's
+    own export surface, called because the whole state is what this leg produces,
+    and the export's own record is the product's description.
+
+    Each sample is checked against the same reference as it is taken, so the
+    duration and the state it belongs to cannot come from different calls: an
+    export that returned sites in the wrong order, or a truncated state, would
+    otherwise be published as a product.
+
+    Every rank runs this, because the gather is a collective.
+    """
+
+    reference = _reference_statevector().reshape(1, -1).to(device=device)
+
+    durations: list[float] = []
+    errors: list[float] = []
+    latest: Any = None
+    for index in range(EXPORT_WARMUP_ITERATIONS + EXPORT_ITERATIONS):
+        _synchronize(device)
+        started = time.perf_counter()
+        exported = export_distributed_mps(forward)
+        _synchronize(device)
+        elapsed = time.perf_counter() - started
+        errors.append(
+            float(
+                torch.max(torch.abs(exported.state.to_statevector() - reference)).item()
+            )
+        )
+        if index >= EXPORT_WARMUP_ITERATIONS:
+            durations.append(elapsed)
+        latest = exported
+    if latest is None:  # pragma: no cover - both counts are positive constants
+        raise RuntimeError("the export leg has no iterations to run")
+    summary = latest.summary()
+    _require_export_placement(
+        summary, world_size=world_size, local_world_size=local_world_size
+    )
+
+    observed_error = max(errors)
+    if observed_error > NUMERICAL_TOLERANCE:
+        raise RuntimeError(
+            "the exported matrix product state disagrees with the single-device "
+            f"statevector reference: max_abs_error={observed_error}"
+        )
+
+    digest = hashlib.sha256()
+    product_bytes = 0
+    for wire, tensor in enumerate(latest.state.tensors):
+        canonical = tensor.detach().to(device="cpu", dtype=COMPLEX_DTYPE).contiguous()
+        digest.update(f"{wire}:{tuple(canonical.shape)}:{canonical.dtype}".encode())
+        digest.update(canonical.numpy().tobytes())
+        product_bytes += int(canonical.numel() * canonical.element_size())
+    return {
+        "measurement": EXPORT_MEASUREMENT,
+        "operation": summary["operation"],
+        "operation_semantics": summary["operation_semantics"],
+        "gather_cost_semantics": summary["gather_cost_semantics"],
+        "product": EXPORTED_PRODUCT,
+        "product_is_the_full_state": True,
+        "product_bytes": product_bytes,
+        "site_tensors_sha256": digest.hexdigest(),
+        "max_abs_error": observed_error,
+        "gather": measured_performance(
+            durations,
+            warmup_iterations=EXPORT_WARMUP_ITERATIONS,
+            measurement=EXPORT_MEASUREMENT,
+        ),
+        # The export's own record, published whole rather than paraphrased: it
+        # carries the site order, the rank ownership, the byte counts, and the
+        # blocker that keeps these durations from being read as a speedup.
+        "result": summary,
+    }
+
+
+def _exports_the_full_state(export: dict[str, Any] | None) -> bool:
+    """Whether the export leg produced the whole matrix product state as its product.
+
+    Read from the recorded export summary rather than from a bare flag beside it,
+    so the fact the blocker turns on and the fact the artifact publishes cannot
+    drift apart. Two things have to hold: the state was materialized in full, and
+    it was the product rather than a shard moved aside to check an answer.
+    """
+
+    if export is None:
+        return False
+    result = export.get("result")
+    if not isinstance(result, dict):
+        return False
+    return (
+        result.get("full_state_materialization") is True
+        and result.get("site_order") == SITE_ORDER_CANONICAL_LOGICAL
+        and export.get("product") == EXPORTED_PRODUCT
+    )
 
 
 def _profiler_activities(device: torch.device) -> list[torch.profiler.ProfilerActivity]:
@@ -500,7 +891,7 @@ def _host_staging_observation(*, device: torch.device) -> dict[str, Any]:
             "profiler_error": reason or "the profiler is unavailable on another rank",
         }
 
-    circuit = _forward_circuit()
+    circuit = _forward_circuit(device=device)
     for _ in range(HOST_STAGING_WARMUP_EXECUTIONS):
         execute_torch_distributed_mps_forward(circuit, device=device, max_bond=MAX_BOND)
     _synchronize(device)
@@ -947,13 +1338,13 @@ def _cut_width_observations(
 def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """Every blocker this run's own observations can retract.
 
-    The declared part of the boundary -- the pair of hosts and the fixed
-    circuit -- is not decided here, because nothing inside the run can retract
-    it. What is decided here is only what the run observed, and the cut width is
-    one of those: only the reverse accepts a plan, so the sweep above moves the
-    site boundary and the widths the run crossed are the ones this reads. A
-    sweep that never moved the cut leaves the blocker standing, which is what
-    makes it a retraction rather than a relabelling.
+    The pair of hosts is not decided here, because nothing inside the run can
+    retract it. What is decided here is only what the run observed: the
+    parameterization the measured circuit bound, the cut width the sweep moved,
+    the transport and measurement the artifact records, and whether the
+    materialization it published was a product rather than a check. A sweep that
+    never moved the cut leaves its blocker standing, which is what makes it a
+    retraction rather than a relabelling.
 
     Called once while the artifact is assembled and again after the route has
     been read, because that observation arrives after the process group is gone
@@ -962,10 +1353,8 @@ def _derived_claim_blockers(observations: dict[str, Any]) -> list[str]:
     """
 
     return claim_blockers(
-        [
-            BLOCKER_TWO_NODE_PAIR_ONLY,
-            BLOCKER_TOY_CIRCUIT_PARAMETERS_ONLY,
-        ],
+        [BLOCKER_TWO_NODE_PAIR_ONLY],
+        toy_circuit_claim_blockers(observations),
         gather_claim_blockers(
             production_materialization=bool(
                 observations["production_full_mps_materialization"]
@@ -990,6 +1379,8 @@ def _artifact(
     network: dict[str, Any],
     performance: dict[str, Any] | None,
     host_staging: dict[str, Any] | None,
+    export: dict[str, Any] | None,
+    frozen_circuit: dict[str, Any],
     world_size: int,
     local_world_size: int,
 ) -> dict[str, Any]:
@@ -997,6 +1388,7 @@ def _artifact(
     # the blockers cannot be decided from a different set of observations than
     # the artifact publishes.
     observations: dict[str, Any] = {
+        "frozen_circuit": frozen_circuit,
         "numerical_metrics": metrics,
         "training": training,
         "rank_records": rank_records,
@@ -1004,8 +1396,12 @@ def _artifact(
         "network": network,
         "performance": performance,
         "host_staging": host_staging,
+        "export": export,
         "validation_full_mps_materialization": True,
-        "production_full_mps_materialization": False,
+        # Derived from the export's own record rather than written down here: the
+        # gather that validates the forward and the export that produces the
+        # whole state are different acts, and only the second one is a product.
+        "production_full_mps_materialization": _exports_the_full_state(export),
     }
     evidence = {
         "schema": "flagquantum.cuda_multinode_mps_probe.v1",
@@ -1021,6 +1417,8 @@ def _artifact(
             "dtype": "complex128",
             "n_wires": N_WIRES,
             "max_bond": MAX_BOND,
+            "release_configuration": RELEASE_CONFIGURATION,
+            "parameter_count": PARAMETER_COUNT,
             "world_size": world_size,
             "local_world_size": local_world_size,
             "node_count": world_size // local_world_size,
@@ -1030,13 +1428,16 @@ def _artifact(
             "site_ownership": [record["owned_sites"] for record in rank_records],
             "observable_wires": list(OBSERVABLE_WIRES),
             "distribution_semantics": "sharded_across_ranks",
-            "execution": "forward_backward_optimizer_and_checkpoint_resume",
+            "execution": (
+                "forward_backward_optimizer_checkpoint_resume_and_full_state_export"
+            ),
+            "exported_product": EXPORTED_PRODUCT,
         },
         "observations": observations,
-        # The declared blockers, and why the pair and the circuit are among them,
-        # are explained where the list is derived, as is the cut width, which is
-        # retracted by the sweep rather than declared. The route arrives after
-        # this call and is applied by `probe`.
+        # The declared blockers, and why the pair is among them, are explained
+        # where the list is derived, as is the cut width, which is retracted by
+        # the sweep rather than declared. The route arrives after this call and
+        # is applied by `probe`.
         "claim_blockers": _derived_claim_blockers(observations),
         "scalability_claim_allowed": False,
         "release_gate_allowed": False,
@@ -1153,6 +1554,10 @@ def probe(
     local_rank = int(os.environ["LOCAL_RANK"])
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
+    # Read from the contract before the group forms: every rank runs the same
+    # local check, so a contract that no longer matches this circuit stops the
+    # launch together rather than leaving one rank waiting in a collective.
+    frozen_circuit = _frozen_circuit_observation()
     dist.init_process_group("nccl", device_id=device)
     rank = dist.get_rank()
     payload: dict[str, Any] | None = None
@@ -1160,7 +1565,7 @@ def probe(
     host_staging: dict[str, Any] | None = None
     try:
         _prepare_checkpoint_directory(checkpoint_directory, rank=rank, device=device)
-        circuit = _forward_circuit()
+        circuit = _forward_circuit(device=device)
         forward = execute_torch_distributed_mps_forward(
             circuit,
             device=device,
@@ -1476,6 +1881,16 @@ def probe(
             performance = _performance_observations(device=device)
         host_staging = _host_staging_observation(device=device)
 
+        # The export is a collective and comes after the staging audit, because
+        # it is a second full interchange of the same sites the audit profiles
+        # and the audit is about the execution path rather than about this leg.
+        export = _export_observation(
+            forward,
+            device=device,
+            world_size=world_size,
+            local_world_size=local_world_size,
+        )
+
         properties = torch.cuda.get_device_properties(device)
         record = forward_summary
         record.update(
@@ -1505,6 +1920,8 @@ def probe(
                 network={},
                 performance=performance,
                 host_staging=host_staging,
+                export=export,
+                frozen_circuit=frozen_circuit,
                 world_size=world_size,
                 local_world_size=local_world_size,
             )

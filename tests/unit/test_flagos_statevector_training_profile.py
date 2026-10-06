@@ -33,6 +33,7 @@ def _case(name: str, dtype: str) -> FlagOSTrainingCase:
         communication_bytes=1024,
         peak_memory_bytes=4096,
         device_type="flagos",
+        gradient_distribution="owner_sharded_reduce_scatter",
     )
 
 
@@ -64,7 +65,10 @@ def test_complete_training_ladder_is_accepted_but_claims_remain_closed():
     assert payload["world_sizes"] == [2, 4, 8]
     assert payload["sharded_backward_profile_accepted"] is True
     assert payload["sharded_optimizer_profile_accepted"] is True
-    assert payload["gradient_distribution"] == "replicated_after_all_reduce"
+    assert payload["gradient_distribution"] == "owner_sharded_reduce_scatter"
+    assert payload["gradient_distributions_observed"] == [
+        "owner_sharded_reduce_scatter"
+    ]
     assert payload["optimizer_update_semantics"] == "owner_step_then_broadcast"
     assert payload["flagcx_route_verified"] is False
     assert payload["scalability_claim_allowed"] is False
@@ -76,6 +80,9 @@ def test_complete_training_ladder_is_accepted_but_claims_remain_closed():
     (
         ("full_state_materialization", True),
         ("backward_uses_full_state_replay", True),
+        # A rank-local gradient, and the forward distribution vocabulary used
+        # where this field names a reduction. Neither is a rank-summed scheme.
+        ("gradient_distribution", "local"),
         ("gradient_distribution", "sharded_across_ranks"),
         ("optimizer_update_semantics", "replicated"),
         ("communication_count", 0),
@@ -87,6 +94,22 @@ def test_training_run_rejects_missing_execution_evidence(field, value):
     run = _run(2)
     broken = replace(run.cases[0], **{field: value})
     assert replace(run, cases=(broken, *run.cases[1:])).accepted is False
+
+
+def test_profile_fails_closed_when_cases_disagree_on_the_gradient_reduction():
+    run = _run(2)
+    other = replace(run.cases[0], gradient_distribution="replicated_after_all_reduce")
+    mixed = replace(run, cases=(other, *run.cases[1:]))
+    assert mixed.accepted is True
+    profile = build_training_profile([mixed, _run(4), _run(8)], environment={})
+    payload = profile.to_dict()
+    assert profile.accepted is False
+    assert "gradient_distribution_inconsistent_across_cases" in payload["blockers"]
+    assert payload["gradient_distribution"] == "inconsistent_across_cases"
+    assert payload["gradient_distributions_observed"] == [
+        "owner_sharded_reduce_scatter",
+        "replicated_after_all_reduce",
+    ]
 
 
 def test_profile_fails_closed_when_world_size_is_missing():

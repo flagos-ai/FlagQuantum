@@ -1,6 +1,10 @@
 """Experimental quantum-error-correction domain."""
 
 from .adapters import MatchingDependencyError, PyMatchingDecoder
+from .belief_propagation import (
+    BeliefPropagationDecoder,
+    BeliefPropagationDecodeResult,
+)
 from .circuit import (
     Detector,
     DetectorLayout,
@@ -27,6 +31,7 @@ from .context import (
     MeasurementMap,
     decoder_context_from_memory_circuit,
 )
+from .css_code import CssCode
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -46,6 +51,7 @@ from .noise import (
 from .pauli import Pauli
 from .registry import (
     AUTHORITY_NAME,
+    BELIEF_PROPAGATION_NAME,
     CROSS_CHECK_NAME,
     DetectorErrorModelDecoder,
     decoder_names,
@@ -73,8 +79,12 @@ from .types import (
 
 __all__ = (
     "AUTHORITY_NAME",
+    "BELIEF_PROPAGATION_NAME",
+    "BeliefPropagationDecodeResult",
+    "BeliefPropagationDecoder",
     "CROSS_CHECK_NAME",
     "CodeCheck",
+    "CssCode",
     "CssCodeMatrices",
     "Correction",
     "DecodeResult",

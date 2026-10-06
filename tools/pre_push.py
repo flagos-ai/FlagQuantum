@@ -120,6 +120,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_density_matrix_output_contract.py"),
         ),
         Check(
+            "batch parameter-shift coverage contract",
+            (python_executable, "tools/check_parameter_shift_coverage_contract.py"),
+        ),
+        Check(
             "primitives admission contract",
             (python_executable, "tools/check_primitives_admission_contract.py"),
         ),

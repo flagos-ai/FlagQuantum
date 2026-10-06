@@ -1445,6 +1445,70 @@ def test_distributed_observable_batch_uses_one_shared_reduction():
     )
 
 
+def test_amplitude_projectors_cross_the_host_boundary_independently_of_batch():
+    """Projector construction must not move any host value onto the device.
+
+    A projector built element by element reads one host scalar per target per
+    projected wire, and the projection is attached inside the region a caller
+    times, so the contraction looks like it staged data through the host when it
+    only built its plan. Lifting the target table instead already bounded that at
+    one copy, but one copy is still a host-to-device transfer inside the timed
+    region, so the batch is now built by indexing a device-resident identity and
+    the count is zero for any batch.
+    """
+
+    circuit = fq.Circuit(6)
+    for wire in range(6):
+        circuit.ry(wire, theta=0.02)
+    plan = build_tensor_network(circuit)
+
+    def host_lifts(bitstrings):
+        original = torch.as_tensor
+        lifted: list[object] = []
+
+        def counting(value, *args, **kwargs):
+            lifted.append(value)
+            return original(value, *args, **kwargs)
+
+        torch.as_tensor = counting
+        try:
+            nodes, outputs = tensor_execution._amplitude_batch_projection(
+                plan, bitstrings
+            )
+        finally:
+            torch.as_tensor = original
+        return nodes, outputs, lifted
+
+    single_nodes, _, single_lifts = host_lifts(("010101",))
+    batch_nodes, batch_outputs, batch_lifts = host_lifts(
+        ("010101", "101010", "000000", "111111")
+    )
+
+    assert single_lifts == []
+    assert batch_lifts == []
+
+    expected_target = max(label for node in plan.nodes for label in node.labels) + 1
+    assert batch_outputs == (plan.output_labels[0], expected_target)
+    assert len(single_nodes) == len(plan.nodes) + len(plan.output_labels) - 1
+
+    projectors = [
+        node.tensor for node in batch_nodes if node.name.startswith("amplitude_batch_")
+    ]
+    assert len(projectors) == len(plan.output_labels) - 1
+    for wire, projector in enumerate(projectors):
+        assert projector.shape == (4, 2)
+        assert projector.dtype == plan.nodes[0].tensor.dtype
+        assert projector.device == plan.nodes[0].tensor.device
+        for target, bitstring in enumerate(("010101", "101010", "000000", "111111")):
+            expected = torch.zeros(2, dtype=torch.float64)
+            expected[int(bitstring[wire])] = 1.0
+            assert torch.equal(projector[target].real.to(torch.float64), expected)
+    # A projector aliasing another target's row would satisfy the value checks
+    # above only by accident, so the rows must also be independent storage.
+    projectors[0][0, 0] = 0.0
+    assert projectors[0][1, 1] == 1.0
+
+
 def test_parallel_slice_planner_reduces_rank_local_cost_vs_label_order():
     circuit = fq.Circuit(12)
     for layer in range(4):

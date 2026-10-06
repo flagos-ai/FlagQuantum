@@ -14,6 +14,7 @@ from ..native_cpu.rotation import fused_static_clifford_layer_
 from .clifford_matching import apply_native_clifford_matching
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
+    _apply_hadamard_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
 )
 from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
@@ -35,6 +36,7 @@ from .program import (
     _StatevectorCXSequenceStep,
     _StatevectorFusedGateStep,
     _StatevectorGateStep,
+    _StatevectorHadamardControlledPhaseGraphStep,
     _StatevectorProgramStep,
 )
 from .wire_permutation import _apply_wire_permutation_gather
@@ -294,7 +296,13 @@ def _step_qubit_groups(step: _StatevectorProgramStep) -> tuple[tuple[int, ...], 
         return (step.wires,)
     if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
         return ((step.control, step.target),)
-    if isinstance(step, _StatevectorControlledPhaseGraphStep):
+    if isinstance(
+        step,
+        (
+            _StatevectorControlledPhaseGraphStep,
+            _StatevectorHadamardControlledPhaseGraphStep,
+        ),
+    ):
         return (
             tuple(
                 sorted(
@@ -389,7 +397,11 @@ def product_state_execution_is_beneficial(
     for step in program:
         static_clifford = static_clifford and _is_static_clifford_step(step)
         contains_controlled_phase_graph = contains_controlled_phase_graph or isinstance(
-            step, _StatevectorControlledPhaseGraphStep
+            step,
+            (
+                _StatevectorControlledPhaseGraphStep,
+                _StatevectorHadamardControlledPhaseGraphStep,
+            ),
         )
         swap_qubits = _swap_qubits(step)
         if enable_swap_remapping and swap_qubits is not None:
@@ -402,7 +414,11 @@ def product_state_execution_is_beneficial(
             return False
         for qubits in groups:
             estimated_work += 2 ** merge(qubits)
-            operation_count += 1
+            operation_count += (
+                2
+                if isinstance(step, _StatevectorHadamardControlledPhaseGraphStep)
+                else 1
+            )
     dense_work = max(len(program), operation_count) * 2**n_qubits
     if contains_controlled_phase_graph:
         maximum_ratio = _PRODUCT_STATE_MAX_CONTROLLED_PHASE_GRAPH_WORK_RATIO
@@ -541,13 +557,20 @@ def _apply_step(
         | _StatevectorFusedGateStep
         | _StatevectorControlledPhaseDecompositionStep
         | _StatevectorControlledPhaseGraphStep
+        | _StatevectorHadamardControlledPhaseGraphStep
     ),
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     constant_cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor] | None,
     enable_fixed_clifford: bool,
 ) -> torch.Tensor:
     global_qubits: tuple[int, ...]
-    if isinstance(step, _StatevectorControlledPhaseGraphStep):
+    if isinstance(
+        step,
+        (
+            _StatevectorControlledPhaseGraphStep,
+            _StatevectorHadamardControlledPhaseGraphStep,
+        ),
+    ):
         global_qubits = tuple(
             sorted(
                 {
@@ -577,11 +600,18 @@ def _apply_step(
             if constant_cache is not None:
                 constant_cache[key] = factors
         local_qubits = tuple(component.qubits.index(qubit) for qubit in global_qubits)
+        if isinstance(step, _StatevectorHadamardControlledPhaseGraphStep):
+            local_target = component.qubits.index(step.target)
+            return _apply_hadamard_controlled_phase_graph_cpu(
+                component.state,
+                factors,
+                local_qubits,
+                local_target,
+                len(component.qubits),
+                inplace=True,
+            )
         return _apply_controlled_phase_graph_cpu(
-            component.state,
-            factors,
-            local_qubits,
-            len(component.qubits),
+            component.state, factors, local_qubits, len(component.qubits)
         )
     if isinstance(step, _StatevectorControlledPhaseDecompositionStep):
         global_qubits = (step.control, step.target)
@@ -787,6 +817,7 @@ def execute_product_state_program(
                 _StatevectorFusedGateStep,
                 _StatevectorControlledPhaseDecompositionStep,
                 _StatevectorControlledPhaseGraphStep,
+                _StatevectorHadamardControlledPhaseGraphStep,
             ),
         ):
             raise TypeError(f"unsupported product-state program step: {type(step)!r}")

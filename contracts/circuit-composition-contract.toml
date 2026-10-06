@@ -107,6 +107,16 @@ owner = "remap_qubits"
 exception = "ValueError"
 message_phrase = "which the qubit map does not name"
 reason = "the caller always adapts its input into the dense tuple form before remapping"
+# Relabelling a recorded qubit sequence is Core semantics -- that is what makes the
+# phrase above internal-only -- so the rule has one implementation and this row records
+# who reads it. The list is measured against the import graph inside `flagquantum/`
+# rather than trusted: a package module that reads the rule without being recorded here,
+# or a recorded reader that stopped reading it, is a drift the gate refuses. The retired
+# private wording `outside its mapping` is also refused anywhere in the package, so a
+# reader that folds a failed lookup into its own refusal is caught even if it never
+# mentions the rule.
+consumers = ["flagquantum/circuit.py", "flagquantum/twin/region_model.py"]
+retired_wording = "outside its mapping"
 
 [verification]
 contract = "tests/unit/test_circuit_composition_contract.py"

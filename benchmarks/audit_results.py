@@ -65,8 +65,10 @@ def _is_generated_audit_summary(path: Path) -> bool:
 
 def _is_auxiliary_report(path: Path) -> bool:
     payload, error = _read_json(path)
-    return error is None and payload is not None and (
-        payload.get("artifact_class") == "auxiliary_report"
+    return (
+        error is None
+        and payload is not None
+        and (payload.get("artifact_class") == "auxiliary_report")
     )
 
 
@@ -81,6 +83,25 @@ def _read_json(path: Path) -> tuple[dict[str, Any] | None, dict[str, str] | None
             "message": "top-level JSON value is not an object",
         }
     return data, None
+
+
+def sealed_evidence(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the benchmark payload a sealed runtime evidence envelope encloses.
+
+    A promoted scalability artifact is a ``measured_production_run`` envelope:
+    the payload the executor measured under ``evidence``, wrapped in the
+    provenance, topology, device inventory and signature that make the
+    measurement verifiable. The benchmark verdict is a property of that enclosed
+    payload, so a scanner that read the wrapper would see a file that never
+    reported its distribution semantics. This is the one definition of what a
+    sealed envelope encloses; the strict audit, the general scan, and the
+    contract tests all resolve the artifact through it.
+    """
+
+    if payload.get("artifact_class") != "measured_production_run":
+        return None
+    evidence = payload.get("evidence")
+    return evidence if isinstance(evidence, dict) else None
 
 
 def audit_paths(
@@ -135,9 +156,12 @@ def audit_paths(
                 }
             )
             continue
+        enclosed = sealed_evidence(payload)
         if require_scalability:
-            provenance_valid, provenance_errors = _evidence_module.verify_evidence_artifact(
-                payload, signing_key=signing_key or b""
+            provenance_valid, provenance_errors = (
+                _evidence_module.verify_evidence_artifact(
+                    payload, signing_key=signing_key or b""
+                )
             )
             audited_payload = payload.get("evidence", {})
             if not provenance_valid or not isinstance(audited_payload, dict):
@@ -159,7 +183,25 @@ def audit_paths(
                 continue
             audit = _audit_module.validate_distributed_claim_evidence(audited_payload)
         else:
-            audit = _audit_module.audit_distributed_scalability(payload)
+            audit = _audit_module.audit_distributed_scalability(
+                enclosed if enclosed is not None else payload
+            )
+        summary = audit.summary()
+        if enclosed is not None:
+            # A general scan audits structure, not authorship: without the
+            # campaign key the envelope's signature cannot be checked, and a
+            # reader of the summary would otherwise see no trace of that. The
+            # strict scan is where an unverified signature rejects the payload
+            # instead of annotating it.
+            verified, signature_errors = _evidence_module.verify_evidence_artifact(
+                payload, signing_key=signing_key or b""
+            )
+            if not verified:
+                summary["warnings"] = [
+                    *summary["warnings"],
+                    "sealed envelope signature not verified: "
+                    + "; ".join(signature_errors),
+                ]
         records.append(
             {
                 "path": str(path),
@@ -169,7 +211,7 @@ def audit_paths(
                 "scalability_claim_allowed": audit.scalability_claim_allowed,
                 "claim_evidence_type": audit.claim_evidence_type,
                 "release_gate_allowed": audit.release_gate_allowed,
-                "scalability_audit": audit.summary(),
+                "scalability_audit": summary,
             }
         )
 

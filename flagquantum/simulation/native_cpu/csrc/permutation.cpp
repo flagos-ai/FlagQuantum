@@ -4,6 +4,7 @@
 #include <torch/library.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <tuple>
 #include <utility>
@@ -139,6 +140,70 @@ at::Tensor& fused_compact_cx_gather_out_cpu(
                     shift_mode,
                     state_mask);
                 output_data[item] = state_data[source];
+              }
+            });
+      });
+  return output;
+}
+
+at::Tensor& fused_compact_cx_rzz_swap_out_cpu(
+    const at::Tensor& state,
+    const at::Tensor& images,
+    at::Tensor& output,
+    int64_t first_wire,
+    int64_t second_wire,
+    double angle) {
+  TORCH_CHECK(state.device().is_cpu() && images.device().is_cpu() &&
+                  output.device().is_cpu(), "CX/RZZ/SWAP inputs must be on CPU");
+  TORCH_CHECK(state.is_contiguous() && images.is_contiguous() &&
+                  output.is_contiguous(), "CX/RZZ/SWAP inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(output.sizes() == state.sizes(), "output shape must match state");
+  TORCH_CHECK(output.scalar_type() == state.scalar_type(),
+              "output dtype must match state");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(images.dim() == 1 && images.scalar_type() == at::kLong,
+              "images must be a one-dimensional int64 tensor");
+  TORCH_CHECK(!state.is_alias_of(output), "state and output must not alias");
+  const int64_t n_wires = images.numel();
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "image count must be in [2, 62]");
+  TORCH_CHECK(first_wire >= 0 && first_wire < n_wires && second_wire >= 0 &&
+                  second_wire < n_wires && first_wire != second_wire,
+              "RZZ wires must be distinct and in range");
+  const int64_t width = state.size(1);
+  TORCH_CHECK(width == (int64_t{1} << n_wires),
+              "image count must match state width");
+  const int64_t batch = state.size(0);
+  const int64_t chunk_count = (n_wires + 7) / 8;
+  const LinearLookup lookup = build_linear_lookup(images);
+  const int64_t shift_mode = linear_shift_mode(images);
+  const uint64_t state_mask = (uint64_t{1} << n_wires) - 1;
+  const uint64_t first_mask = uint64_t{1} << (n_wires - first_wire - 1);
+  const uint64_t second_mask = uint64_t{1} << (n_wires - second_wire - 1);
+
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_compact_cx_rzz_swap_out_cpu", [&] {
+        using real_t = typename scalar_t::value_type;
+        const scalar_t* state_data = state.const_data_ptr<scalar_t>();
+        scalar_t* output_data = output.data_ptr<scalar_t>();
+        const real_t half_angle = static_cast<real_t>(angle * 0.5);
+        const scalar_t even_phase(std::cos(half_angle), -std::sin(half_angle));
+        const scalar_t odd_phase(std::cos(half_angle), std::sin(half_angle));
+        at::parallel_for(
+            int64_t{0}, batch * width, int64_t{4096},
+            [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / width;
+                const uint64_t destination = static_cast<uint64_t>(item - row * width);
+                const int64_t source = apply_linear_lookup(
+                    destination, lookup, chunk_count, shift_mode, state_mask);
+                const bool odd = ((destination & first_mask) != 0) !=
+                    ((destination & second_mask) != 0);
+                output_data[item] = state_data[row * width + source] *
+                    (odd ? odd_phase : even_phase);
               }
             });
       });
@@ -578,6 +643,10 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
       "fused_compact_cx_gather_out(Tensor state, Tensor images, "
       "Tensor(a!) output) -> Tensor(a!)");
   library.def(
+      "fused_compact_cx_rzz_swap_out(Tensor state, Tensor images, "
+      "Tensor(a!) output, int first_wire, int second_wire, float angle) "
+      "-> Tensor(a!)");
+  library.def(
       "fused_clifford_matching_out(Tensor state, Tensor cx_mapping, "
       "Tensor cz_edges, Tensor(a!) output, int n_wires, bool phase_encoded) "
       "-> Tensor(a!)");
@@ -598,6 +667,8 @@ TORCH_LIBRARY_FRAGMENT(flagquantum_native, library) {
 TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl("fused_cx_gather_out", fused_cx_gather_out_cpu);
   library.impl("fused_compact_cx_gather_out", fused_compact_cx_gather_out_cpu);
+  library.impl(
+      "fused_compact_cx_rzz_swap_out", fused_compact_cx_rzz_swap_out_cpu);
   library.impl("fused_clifford_matching_out", fused_clifford_matching_out_cpu);
   library.impl("fused_cx_adjoint_gather", fused_cx_adjoint_gather_cpu);
   library.impl(
