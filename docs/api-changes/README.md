@@ -36,6 +36,7 @@ process.
 - [Circuit control](FQ-CIRCUIT-CONTROL-20261022.md)
 - [Gradient parameter frequencies](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md)
 - [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
+- [The metric tensor differentiates the state and reads no rule](FQ-METRIC-TENSOR-20261031.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)

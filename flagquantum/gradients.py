@@ -411,6 +411,148 @@ def parameter_shift_gradient(
     )
 
 
+def metric_tensor(
+    circuit_builder: CircuitBuilder,
+    parameters: torch.Tensor,
+    *,
+    options: Any = None,
+    step: float | None = None,
+) -> torch.Tensor:
+    """The Fubini-Study metric tensor of a program's state.
+
+    Cell ``[i, j]`` is ``Re[<d_i|d_j> - <d_i|psi><psi|d_j>]`` for the state
+    derivatives with respect to the flattened parameters, which is the
+    Fubini-Study metric. It is not the quantum Fisher information: the two agree
+    in shape and in units but differ by a factor of four, and
+    ``QFIM = 4 * metric_tensor(...)``. The factor is named here rather than left
+    to a reader because a silent factor of four is exactly the kind of
+    discrepancy that survives every shape assertion. The convention matches
+    PennyLane's ``qml.metric_tensor``, which returns the same quarter, and the
+    gate checks the factor against a hand-rolled quantum Fisher information
+    rather than against this docstring.
+
+    The derivative is a central difference of the state that the execution
+    delivers, and deliberately not the shift rule each gate declares.
+    ``OperatorSchema.parameter_frequencies`` is a statement about a gate's
+    *expectation value*: an observable's shift rule and the derivative of a
+    state are different objects, and reading the declared rule as a state
+    derivative is wrong by a factor of ``sqrt(2)`` on a single ``ry`` -- measured
+    in ``contracts/metric-tensor-contract.toml``. There is no rescaling of the
+    declared rule that repairs this in general either, because the rule's shape
+    depends on the generator's spectrum: a rotation and a phase gate with the
+    same declared frequency differentiate differently. Reading the declaration
+    and then correcting it would be a second rule table maintained by hand, so
+    this route reads no rule at all and differentiates the state it is handed.
+
+    That choice buys a property ``parameter_shift_gradient`` cannot offer: a
+    program carrying an explicit matrix still has a state, so this route serves
+    it, while the declared rule has nothing to say about a matrix no opcode
+    declares.
+
+    Cost is ``1 + 2 * parameters.numel()`` state evaluations -- one base state
+    plus a central pair per parameter -- and does not grow with the square of the
+    parameter count the way the Hessian's does, because the state derivative is
+    computed once per parameter and every matrix cell reuses that pair.
+
+    The result carries the precision the *execution* ran in, not the precision
+    of ``parameters``: a ``complex64`` state yields a ``float32`` matrix, whose
+    central-difference error is bounded by the step rather than by the
+    differencing, so at the ``complex64`` default this matrix is good to about
+    six digits and no further. Build the circuit with
+    ``dtype=torch.complex128`` when the metric is read past that.
+
+    Args:
+        circuit_builder: Builds a circuit from a parameter tensor, exactly as
+            :func:`parameter_shift_gradient` receives it.
+        parameters: Real, non-empty parameter tensor.
+        options: Execution options, forwarded to :func:`flagquantum.run`. The
+            default resolves the way an unqualified run does.
+        step: Central-difference displacement. The default is derived from the
+            precision the state carries.
+
+    Returns:
+        A detached Fubini-Study metric tensor with shape
+        ``(*parameters.shape, *parameters.shape)``. The dtype follows the state
+        the execution produced and the device follows ``parameters``.
+
+    Raises:
+        TypeError: If ``circuit_builder`` is not callable.
+        ValueError: If ``step`` is not a positive finite displacement.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, if
+            the execution returns no state, or if the state changes shape as the
+            parameters move.
+        CapabilityError: If the execution returns the state as a density matrix
+            rather than a statevector, or as more than one state.
+    """
+
+    if not callable(circuit_builder):
+        raise TypeError("circuit_builder must be callable")
+    base = _validated_parameter_tensor(parameters)
+    from ._api import run as run_program
+
+    def deliver(values: torch.Tensor) -> torch.Tensor:
+        return _state_of(run_program(circuit_builder(values), options=options), options)
+
+    reference = deliver(base)
+    width = base.numel()
+    if step is None:
+        step = default_difference_step(reference)
+
+    def displaced(values: torch.Tensor) -> torch.Tensor:
+        state = deliver(values)
+        if state.shape != reference.shape:
+            raise ValidationError(
+                "the program is not static: its state has shape "
+                f"{tuple(state.shape)} at these parameters and "
+                f"{tuple(reference.shape)} at the base point, so a derivative "
+                "with respect to the parameters is not defined"
+            )
+        return state
+
+    deviations = central_difference_gradient(displaced, base, step=step)
+    derivatives = deviations.reshape(width, -1).to(
+        device=parameters.device, dtype=deviations.dtype
+    )
+    reference = reference.to(device=derivatives.device, dtype=deviations.dtype)
+    overlaps = derivatives @ derivatives.conj().T
+    projections = derivatives @ reference.conj()
+    return (overlaps - torch.outer(projections, projections.conj())).real.reshape(
+        *parameters.shape, *parameters.shape
+    )
+
+
+def _state_of(result: Any, options: Any) -> torch.Tensor:
+    """The one state a metric-tensor route differentiates, or a refusal.
+
+    ``ExecutionResult.to_statevector`` is the representation-agnostic accessor:
+    it hands back whatever the backend produced, which is a ket for a
+    state-producing mode and a density matrix for a density-matrix one. The
+    rank is therefore the only place the representation is visible, and a
+    matrix is refused rather than reinterpreted. The pure-state formula this
+    route evaluates and the mixed-state quantum Fisher information are different
+    quantities -- measured at ``2.30e-01`` apart on a program with a single
+    ``depolarizing(1, 0.1)`` -- so reinterpreting a matrix would not be a
+    precision problem, it would be a different number.
+    """
+
+    state: torch.Tensor = result.to_statevector()
+    if state.ndim == 3:
+        raise CapabilityError(
+            "the execution returned the state as a density matrix, so its purity "
+            "is not one; the metric tensor of a mixed state is the quantum "
+            "Fisher information built from the symmetric logarithmic derivative, "
+            "which this route does not compute. Ask for a statevector-producing "
+            "execution mode on a program with no channel"
+        )
+    if state.ndim == 2 and state.shape[0] != 1:
+        raise CapabilityError(
+            f"the execution returned {state.shape[0]} states; the metric tensor "
+            "is a matrix per parameter set, so one state is required and a batch "
+            "must be differentiated one member at a time"
+        )
+    return state.reshape(-1)
+
+
 def _occurrence_shift_rule(
     profile: tuple[tuple[Any, ...], tuple[Any, ...]],
     circuit_builder: CircuitBuilder,
@@ -752,5 +894,6 @@ def _batch_losses(
 __all__ = [
     "batched_parameter_shift_gradient",
     "gradient",
+    "metric_tensor",
     "parameter_shift_gradient",
 ]
