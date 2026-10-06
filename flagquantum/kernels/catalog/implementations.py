@@ -153,6 +153,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "statevector_diagonal",
         "apply_complex64_local_diagonal",
         layouts=("flat_statevector", "diagonal_operator"),
+        maturity="provisional",
     ),
     _triton(
         "FQKI-TRITON-GR-001-A",

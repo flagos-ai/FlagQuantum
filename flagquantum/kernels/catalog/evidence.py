@@ -128,6 +128,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_non_cuda_state",
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_unsupported_contracts",
         ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_diagonal_a800.json",
+        ),
     ),
     _evidence(
         "FQKI-TRITON-GR-001-A",

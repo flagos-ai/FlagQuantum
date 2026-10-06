@@ -63,7 +63,7 @@ def test_current_catalog_is_valid_and_has_expected_inventory() -> None:
     assert maturity_by_id["FQKI-TRITON-SV-001-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-SV-002-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-SV-003-A"] == "provisional"
-    assert maturity_by_id["FQKI-TRITON-SV-010-A"] == "experimental"
+    assert maturity_by_id["FQKI-TRITON-SV-010-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-GR-002-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-GR-003-A"] == "provisional"
     assert maturity_by_id["FQKI-TRITON-GR-004-A"] == "provisional"
