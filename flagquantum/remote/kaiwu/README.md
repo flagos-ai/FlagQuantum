@@ -42,6 +42,34 @@ for idempotent execution but not for a provider task ID or provider-reported
 target; hardware acceptance remains closed until a real pinned response
 establishes those mappings.
 
+## Pinned SDK compatibility record
+
+The public SDK documentation was rechecked on 2026-10-07. This is a contract
+comparison, not permission to install, execute, or substitute another SDK
+version:
+
+| Surface | Kaiwu 1.3.1 pinned lane | Kaiwu 1.4.1 current documentation |
+| --- | --- | --- |
+| Python lane | separately approved CPython 3.10 environment | not accepted as a replacement for the pinned lane |
+| optimization mode passed to `CIMOptimizer` | string `"quota"` | `TaskMode.OPTIMIZATION`, value `"optimization"` |
+| sampling mode passed to `CIMOptimizer` | string `"sample"` | `TaskMode.SAMPLING`, value `"sampling"` |
+| sampling count | required for sampling, inclusive range 10 through 2,000 | required for sampling, inclusive range 10 through 2,000 |
+| documented recovery identity | exact `task_name + ising_matrix` | exact `task_name + ising_matrix` |
+| incomplete result | `solve` documents `None` while the task is running | no equivalent `None` lifecycle contract is documented on the current module page |
+| task details | `get_task_result(ising_matrix) -> dict`, keys undocumented | `get_task_result(ising_matrix) -> dict`, keys undocumented |
+
+Sources: the official
+[Kaiwu 1.3.1 `cim` module](https://kaiwu-sdk-docs.qboson.com/zh/v1.3.1/source/modules/kaiwu.cim.html)
+and the official
+[Kaiwu 1.4.1 `cim` module](https://kaiwu-sdk-docs.qboson.com/zh/latest/source/modules/kaiwu.cim.html).
+The mode rename and changed solver signature are compatibility breaks at this
+boundary. FlagQuantum therefore does not translate modes by guessing the
+installed version, and it does not treat the latest documentation as evidence
+for the pinned wheel's runtime behavior. Neither version documents the provider
+task-ID, provider-target, status, or result-dictionary field names required by
+hardware acceptance; those mappings still require an approved, redacted real
+response or written provider documentation.
+
 Before license initialization, the client requires the configured checkpoint
 directory to be an existing private, non-symlink directory. Before the first
 SDK task operation, it writes and syncs a complete mode-0600 temporary recovery
