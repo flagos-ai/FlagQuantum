@@ -2539,6 +2539,8 @@ def _validate_evaluation_component(
     }
     for field in ("baseline_metrics", "guided_metrics"):
         metrics = _mapping(record.get(field), f"{label}.{field}", errors)
+        if set(metrics) != set(METRIC_NAMES):
+            errors.append(f"{label}.{field}: metric field set is not closed")
         for metric in METRIC_NAMES:
             value = _finite_number(
                 metrics.get(metric), f"{label}.{field}.{metric}", errors

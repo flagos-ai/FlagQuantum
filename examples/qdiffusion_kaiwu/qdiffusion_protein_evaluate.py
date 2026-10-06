@@ -47,6 +47,9 @@ from examples.qdiffusion_kaiwu.stable_source_tree import (
 )
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
+    EVALUATION_COMPONENT_FIELDS,
+    EVALUATION_COMPONENT_SCHEMA,
+    _validate_evaluation_component,
     _validate_training_provider_evidence,
 )
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
@@ -383,6 +386,29 @@ def evaluate_outputs(
     return results[0], results[1]
 
 
+def _validate_evaluation_candidate(
+    record: dict[str, Any], *, config: dict[str, Any], config_sha256: str
+) -> list[str]:
+    """Validate one locally produced evaluation before exclusive publication."""
+
+    errors: list[str] = []
+    if set(record) != EVALUATION_COMPONENT_FIELDS:
+        errors.append("evaluation component field set is not closed")
+    if (
+        record.get("schema") != EVALUATION_COMPONENT_SCHEMA
+        or record.get("version") != "1.0"
+    ):
+        errors.append("evaluation component schema or version is invalid")
+    _validate_evaluation_component(
+        record,
+        config=config,
+        config_sha256=config_sha256,
+        label="evaluation candidate",
+        errors=errors,
+    )
+    return errors
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
@@ -519,6 +545,14 @@ def main() -> None:
     }
     revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")
     _revalidate_training_paths(paths)
+    candidate_errors = _validate_evaluation_candidate(
+        payload, config=config, config_sha256=config_sha256
+    )
+    if candidate_errors:
+        raise RuntimeError(
+            "protein evaluation candidate failed validation: "
+            + "; ".join(candidate_errors)
+        )
     _write_private_redacted_json(args.output, payload, forbidden_values=())
     print(f"Private protein-evaluation record written to {args.output}")
 

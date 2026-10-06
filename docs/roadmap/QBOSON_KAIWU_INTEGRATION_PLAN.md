@@ -640,6 +640,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   sequences, secret redaction, and zero provider-quota use before aggregation.
   A linked training digest alone can no longer legitimize foreign or fabricated
   evaluation metrics.
+- The ESM2 evaluation producer now runs that same component validator before
+  exclusive publication, including the closed top-level schema and version.
+  Baseline and guided metric mappings must contain exactly the twelve frozen
+  metric names; out-of-range values, invalid sequences, missing metrics, and
+  undeclared extensions fail locally instead of surviving until final bundle
+  assembly.
 - Post-extraction content-set digests are now path-order normalized and
   execution-time recomputable. Protein training, evaluation, and replay bind
   the actual plugin-root name, file count, regular-file set, and content digest

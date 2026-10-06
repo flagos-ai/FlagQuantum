@@ -15,9 +15,13 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _load_training_record,
     _read_aligned_records,
     _source_preflight_identity,
+    _validate_evaluation_candidate,
     _verified_evaluation_source,
     _verified_training_paths,
     evaluate_outputs,
+)
+from examples.qdiffusion_kaiwu.validate_acceptance import (
+    EVALUATION_COMPONENT_FIELDS,
 )
 
 pytestmark = pytest.mark.unit
@@ -111,6 +115,92 @@ def _provider_training_record() -> dict[str, Any]:
             }
         ],
     }
+
+
+def _evaluation_metrics() -> dict[str, float | int]:
+    return {
+        "mean_cosine_distance": 0.2,
+        "median_cosine_distance": 0.2,
+        "mean_l2_distance": 1.0,
+        "median_l2_distance": 1.0,
+        "identity_to_reference_mean": 0.8,
+        "amino_acid_jsd": 0.1,
+        "kmer2_jsd": 0.1,
+        "kmer3_jsd": 0.1,
+        "uniqueness_ratio": 1.0,
+        "repeat_ratio_ge4": 0.0,
+        "length_match_ratio": 1.0,
+        "invalid_sequence_count": 0,
+    }
+
+
+def _evaluation_config_and_record() -> tuple[dict[str, Any], dict[str, Any]]:
+    software = {
+        "source_revision": "a" * 40,
+        "flagquantum_version": "0.2.0",
+        "kaiwu_pytorch_plugin_revision": "b" * 40,
+        "python_version": "3.10.18",
+        "torch_version": "2.7.0",
+        "kaiwu_sdk_version": "1.3.1",
+        "environment_lock_sha256": "c" * 64,
+    }
+    config = {
+        "software": software,
+        "primary_host": "jp-a800-171",
+        "evaluation_model": {"sha256": "d" * 64},
+    }
+    record = {
+        "schema": "flagquantum.qboson_qdiffusion_protein_evaluation",
+        "version": "1.0",
+        "recorded_at": "2026-10-06T00:00:00+00:00",
+        "experiment_config_sha256": "e" * 64,
+        "training_record_sha256": "f" * 64,
+        **software,
+        "source_preflight_sha256": "1" * 64,
+        "transfer_manifest_sha256": "2" * 64,
+        "execution_host": "jp-a800-171",
+        "observed_hostname": "node-171",
+        "observed_gpu_model": "NVIDIA A800-SXM4-80GB",
+        "observed_tensor_device": "cuda:0",
+        "seed": 1701,
+        "evaluation_model_sha256": "d" * 64,
+        "artifact_inputs_unchanged": True,
+        "baseline_metrics": _evaluation_metrics(),
+        "guided_metrics": _evaluation_metrics(),
+        "secrets_redacted": True,
+        "provider_quota_consumed": False,
+        "acceptance": "candidate_evidence_only",
+    }
+    assert set(record) == EVALUATION_COMPONENT_FIELDS
+    return config, record
+
+
+def test_evaluation_candidate_is_validated_before_publication() -> None:
+    config, record = _evaluation_config_and_record()
+
+    assert (
+        _validate_evaluation_candidate(
+            record, config=config, config_sha256="e" * 64
+        )
+        == []
+    )
+
+    record["guided_metrics"]["uniqueness_ratio"] = 1.1
+    errors = _validate_evaluation_candidate(
+        record, config=config, config_sha256="e" * 64
+    )
+    assert any("expected a ratio in [0, 1]" in error for error in errors)
+
+
+def test_evaluation_metrics_reject_undeclared_extensions() -> None:
+    config, record = _evaluation_config_and_record()
+    record["baseline_metrics"]["provider_note"] = 1.0
+
+    errors = _validate_evaluation_candidate(
+        record, config=config, config_sha256="e" * 64
+    )
+
+    assert any("metric field set is not closed" in error for error in errors)
 
 
 def _write(path: Path, content: str) -> str:
