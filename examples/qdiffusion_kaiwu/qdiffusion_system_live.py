@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import math
+import os
 import platform
 import re
 import socket
@@ -498,6 +499,8 @@ def main() -> None:
 
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
+    os.environ.pop("QBOSON_USER_ID", None)
+    os.environ.pop("QBOSON_SDK_CODE", None)
     client = KaiwuSDKClient(
         checkpoint_dir=arguments.checkpoint_dir,
         credentials=credentials,

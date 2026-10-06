@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -224,6 +225,8 @@ def main() -> None:
     _, environment_lock_sha256 = verify_environment_lock(arguments.environment_lock)
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
+    os.environ.pop("QBOSON_USER_ID", None)
+    os.environ.pop("QBOSON_SDK_CODE", None)
     client = KaiwuSDKClient(
         checkpoint_dir=arguments.checkpoint_dir,
         credentials=credentials,

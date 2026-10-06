@@ -40,6 +40,11 @@ The SDK authorization code is a secret. Do not paste either credential into a
 ticket, chat transcript, shell history, command line, log, checkpoint, receipt,
 or evidence JSON.
 
+Each quota-consuming CLI resolves the dedicated pair into an explicit
+in-memory object and then removes `QBOSON_USER_ID` and `QBOSON_SDK_CODE` from
+its own environment before constructing the SDK client. Do not depend on those
+variables remaining available to later plugin code or child processes.
+
 Every quota-consuming evidence writer recursively scans all nested JSON keys
 and string values for both resolved credentials before serialization and
 refuses to create the record on a match. Quotes and backslashes cannot bypass

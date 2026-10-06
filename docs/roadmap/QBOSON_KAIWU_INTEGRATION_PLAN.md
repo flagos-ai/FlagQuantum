@@ -45,6 +45,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   operation occurs during credential resolution. Explicit and environment
   values are trimmed and must remain nonempty and printable; embedded control
   or format characters fail without echoing either credential.
+- Each quota-consuming CLI converts the resolved pair into an explicit
+  non-serializable credential object and immediately removes
+  `QBOSON_USER_ID`/`QBOSON_SDK_CODE` from its process environment before SDK
+  client construction. Later plugin code and accidental child processes cannot
+  inherit the secrets; the retained in-memory strings remain available only for
+  recursive evidence-leak refusal.
 - A Kaiwu-specific experimental task lifecycle now covers single submission,
   normalized status, fail-closed result validation, bounded waiting, private
   receipt persistence, and restore without resubmission. Its in-memory fake

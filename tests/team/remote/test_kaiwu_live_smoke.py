@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -295,6 +296,12 @@ def test_live_smoke_verifies_environment_before_client_initialization() -> None:
     assert source.index("resolve_kaiwu_credentials()") < source.index(
         "client = KaiwuSDKClient("
     )
+    assert source.index('os.environ.pop("QBOSON_USER_ID", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
+    assert source.index('os.environ.pop("QBOSON_SDK_CODE", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
     assert "type(client) is KaiwuSDKClient" in source
     assert 'if not payload["hardware_acceptance"]:' in source
     assert "raise SystemExit(1)" in source
@@ -388,20 +395,21 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
 ) -> None:
     class _CLIClient(_CompletedClient):
         def __init__(self, **kwargs: object) -> None:
+            assert "QBOSON_USER_ID" not in os.environ
+            assert "QBOSON_SDK_CODE" not in os.environ
+            credentials = kwargs["credentials"]
+            assert isinstance(credentials, smoke_module.KaiwuCredentials)
             del kwargs
             super().__init__(expose_provider_identity=False)
 
     output = tmp_path / "smoke.json"
+    monkeypatch.setenv("QBOSON_USER_ID", "test-user")
+    monkeypatch.setenv("QBOSON_SDK_CODE", "test-sdk-code")
     monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _CLIClient)
     monkeypatch.setattr(
         smoke_module,
         "verify_environment_lock",
         lambda path: ({}, "d" * 64),
-    )
-    monkeypatch.setattr(
-        smoke_module,
-        "resolve_kaiwu_credentials",
-        lambda: ("test-user", "test-sdk-code"),
     )
     monkeypatch.setattr(
         sys,

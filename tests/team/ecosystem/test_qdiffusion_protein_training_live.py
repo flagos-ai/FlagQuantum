@@ -231,6 +231,12 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index("validate_private_directory(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index('os.environ.pop("QBOSON_USER_ID", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
+    assert source.index('os.environ.pop("QBOSON_SDK_CODE", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
     assert '"application": "not_evaluated"' in source
     assert "HF_HUB_OFFLINE" in source
 

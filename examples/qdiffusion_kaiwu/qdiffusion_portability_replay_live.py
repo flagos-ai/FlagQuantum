@@ -495,6 +495,8 @@ def main() -> None:
     builder, runtime, io_module = _load_pinned_modules(args.plugin_root)
     user_id, sdk_code = resolve_kaiwu_credentials()
     credentials = KaiwuCredentials(user_id=user_id, sdk_code=sdk_code)
+    os.environ.pop("QBOSON_USER_ID", None)
+    os.environ.pop("QBOSON_SDK_CODE", None)
     client = KaiwuSDKClient(
         checkpoint_dir=args.sdk_checkpoint_dir,
         credentials=credentials,

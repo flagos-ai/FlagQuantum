@@ -355,6 +355,12 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     assert source.index("validate_private_directory(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index('os.environ.pop("QBOSON_USER_ID", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
+    assert source.index('os.environ.pop("QBOSON_SDK_CODE", None)') < source.index(
+        "client = KaiwuSDKClient("
+    )
     assert 'parser.add_argument("--plugin-root"' in source
     assert "source_root=Path(__file__).resolve().parents[2]" in source
     assert "plugin_root=arguments.plugin_root" in source

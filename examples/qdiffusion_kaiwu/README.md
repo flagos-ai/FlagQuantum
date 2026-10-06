@@ -171,8 +171,11 @@ The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
 private checkpoint directory, and an explicitly selected project. All
 quota-consuming entrypoints reject a missing, public, relative, or symlinked
 checkpoint directory before resolving credentials; the SDK client repeats the
-check before license initialization. The acknowledgement must be typed exactly
-so an ordinary test run cannot spend provider quota:
+check before license initialization. After resolving a valid pair, each CLI
+copies it into an explicit in-memory credential object and removes both
+variables from the process environment before SDK client construction, so
+later plugin code or child processes cannot inherit them. The acknowledgement
+must be typed exactly so an ordinary test run cannot spend provider quota:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
