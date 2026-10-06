@@ -416,6 +416,7 @@ def test_concurrent_status_queries_share_one_serialized_sdk_operation(
         assert second.result(timeout=2.0) == "succeeded"
 
     assert call_count == 2
+    assert "project_no" not in _FakeOptimizer.created_options[0]
 
 
 def test_client_maps_optimization_to_pinned_1_3_1_quota_mode(

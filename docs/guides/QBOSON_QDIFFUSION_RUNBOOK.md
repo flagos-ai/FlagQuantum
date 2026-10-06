@@ -477,8 +477,12 @@ installed must continue to work in the normal environment.
 
 ## 5. Run the guarded provider smoke test
 
-Use a fresh task prefix and the assigned project. The following command submits
-one optimization task and one sampling task and may consume quota:
+Use a fresh task prefix and the reviewed project assignment. Kaiwu 1.3.1
+documents `project_no` as technically optional, but this acceptance lane
+requires a concrete reviewed project ID until an approved contract explicitly
+models use of the account default. This is an evidence and quota-attribution
+gate, not an SDK constructor limitation. The following command submits one
+optimization task and one sampling task and may consume quota:
 
 Both identifiers must be nonempty printable text without control or format
 characters. Receipt restoration and final validation also reject surrounding

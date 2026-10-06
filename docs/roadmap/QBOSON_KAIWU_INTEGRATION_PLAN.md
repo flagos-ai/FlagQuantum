@@ -52,6 +52,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   `solve_qubo` interface changes. The acceptance contract therefore remains
   explicitly pinned to `1.3.1`. Reviewing or adopting `1.4.x` is a separate
   migration and must not happen through the download page's default selection.
+- The versioned Kaiwu 1.3.1 API reference confirms the exact adapter contract:
+  `CIMOptimizer` uses legacy task modes `"quota"` and `"sample"`, sampling
+  accepts 10 through 2000 results, task identity is based on `task_name` plus
+  the Ising matrix, and `project_no=None` is technically valid. The Remote
+  adapter already maps the stable FlagQuantum vocabulary to those legacy modes,
+  enforces the sampling range, omits `project_no` when absent, and persists the
+  documented identity inputs. Final acceptance nevertheless continues to
+  require a reviewed project assignment so provider work and quota have an
+  accountable scope. That is an evidence policy, not a claim that the SDK
+  constructor always requires a project number; an account-default assignment
+  would need an explicit reviewed decision and contract update before use.
 - The Phase 1 pure-data boundary is implemented under
   `flagquantum/ecosystem/kaiwu`. Ising validation, independent
   Kaiwu-convention energy evaluation, symmetric QUBO-to-Ising encoding with
