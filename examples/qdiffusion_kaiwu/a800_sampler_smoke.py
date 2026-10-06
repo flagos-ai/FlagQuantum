@@ -109,7 +109,9 @@ def run_probe(
             f"expected hostname {expected_hostname!r}, observed {observed_hostname!r}"
         )
     device = torch.device(device_name)
-    if device.type != "cuda" or not torch.cuda.is_available():
+    if device != torch.device("cuda:0"):
+        raise RuntimeError("A800 sampler smoke requires explicit cuda:0")
+    if not torch.cuda.is_available():
         raise RuntimeError("A800 sampler smoke requires an observed CUDA device")
     torch.cuda.set_device(device)
     observed_gpu = torch.cuda.get_device_name(device)

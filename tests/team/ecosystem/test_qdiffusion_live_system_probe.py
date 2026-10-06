@@ -16,6 +16,7 @@ from examples.qdiffusion_kaiwu import qdiffusion_system_live as system_module
 from examples.qdiffusion_kaiwu.plan_quota import SYSTEM_MAX_CALLS_PER_HOST
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _validate_lane,
+    _validate_requested_cuda_device,
     _write_private_redacted_json,
     run_live_system_probe,
 )
@@ -122,6 +123,18 @@ def test_lane_rejects_flagquantum_version_drift() -> None:
             plugin_revision="b" * 40,
             sdk_version="1.3.1",
         )
+
+
+@pytest.mark.parametrize("device_name", ("cuda", "cuda:1", "cpu", "not-a-device"))
+def test_live_system_requires_explicit_cuda_zero_before_provider_use(
+    device_name: str,
+) -> None:
+    with pytest.raises(ValueError, match="requires explicit cuda:0"):
+        _validate_requested_cuda_device(device_name)
+
+
+def test_live_system_accepts_explicit_cuda_zero() -> None:
+    assert _validate_requested_cuda_device("cuda:0") == torch.device("cuda:0")
 
 
 def test_injected_transport_cannot_pass_live_system_acceptance() -> None:

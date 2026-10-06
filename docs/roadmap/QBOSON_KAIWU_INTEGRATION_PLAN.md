@@ -458,6 +458,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   hash and exact software lane, persists attempted receipts, checks repeat
   retrieval without a new sampler submission, scans output for both credential
   values, and fails the system gate when provider task or target IDs are absent.
+- The quota-consuming live-system entrypoint now requires the requested device
+  to resolve exactly to `cuda:0` before credential resolution or client
+  construction. Bare `cuda`, another CUDA index, CPU, and malformed device
+  names fail locally instead of consuming QBoson quota for a run that the
+  acceptance validator must later reject. The two development entrypoints use
+  the same explicit device restriction.
 - System-component acceptance now independently reconciles its exact SDK-client
   provenance, remote-call count, sampling receipts, matrix identities, requested
   sample counts, provider task IDs, and single provider target. Final summaries

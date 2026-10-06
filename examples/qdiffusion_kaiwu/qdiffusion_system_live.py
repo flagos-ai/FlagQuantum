@@ -109,6 +109,18 @@ def _validate_lane(
     return role, remote_call_budget, target_range
 
 
+def _validate_requested_cuda_device(device_name: str) -> torch.device:
+    """Require the single CUDA device authorized by the acceptance protocol."""
+
+    try:
+        device = torch.device(device_name)
+    except (RuntimeError, TypeError):
+        raise ValueError("live QDiffusion system probe requires explicit cuda:0") from None
+    if device != torch.device("cuda:0"):
+        raise ValueError("live QDiffusion system probe requires explicit cuda:0")
+    return device
+
+
 def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
     return [
         {
@@ -502,8 +514,11 @@ def main() -> None:
     observed_hostname = socket.gethostname()
     if observed_hostname != arguments.expected_hostname:
         parser.error("observed hostname differs from --expected-hostname")
-    device = torch.device(arguments.device)
-    if device.type != "cuda" or not torch.cuda.is_available():
+    try:
+        device = _validate_requested_cuda_device(arguments.device)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if not torch.cuda.is_available():
         parser.error("live QDiffusion system probe requires an observed CUDA device")
     torch.cuda.set_device(device)
     observed_gpu = torch.cuda.get_device_name(device)
