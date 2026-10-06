@@ -1,4 +1,13 @@
-"""Coverage for certifying a logical product and reading it out in its own frame."""
+"""Coverage for certifying a logical product and reading it out in its own frame.
+
+Every code here declares checks of a single type except the ZXXZ surface patch,
+whose every check is a product of an ``X`` factor and a ``Z`` factor. That patch
+is what makes the two questions this module asks -- is a candidate a product of
+the checks, and which checks constrain a candidate -- questions about a check
+rather than about a family of checks, and it is the reason both of them are
+answered per check and over the whole operator rather than per type and over a
+support.
+"""
 
 from __future__ import annotations
 
@@ -14,12 +23,13 @@ from flagquantum.qec.circuit import (
     _detector_layout,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode, SteaneCode
+from flagquantum.qec.codes import RepetitionCode, SteaneCode
 from flagquantum.qec.logical import (
     certify_logical_product,
     derive_anticommuting_logical_product,
 )
 from flagquantum.qec.pauli import Pauli
+from flagquantum.qec.surface import RotatedSurfaceCode, ZxxzSurfaceCode
 
 pytestmark = pytest.mark.unit
 
@@ -96,10 +106,13 @@ def test_certification_accepts_another_representative_of_the_other_class() -> No
         (RotatedSurfaceCode(2), (1, 3)),
         (RotatedSurfaceCode(3), (2, 5, 8)),
         (SteaneCode(), (2, 4, 5)),
+        (ZxxzSurfaceCode(3), (0, 4, 8)),
+        (ZxxzSurfaceCode(5), (0, 6, 12, 18, 24)),
+        (ZxxzSurfaceCode(7), (0, 8, 16, 24, 32, 40, 48)),
     ),
 )
 def test_derivation_returns_a_weight_d_partner(
-    code: RepetitionCode | RotatedSurfaceCode | SteaneCode,
+    code: RepetitionCode | RotatedSurfaceCode | SteaneCode | ZxxzSurfaceCode,
     expected: tuple[int, ...],
 ) -> None:
     derived = derive_anticommuting_logical_product(code, 0)
@@ -108,6 +121,41 @@ def test_derivation_returns_a_weight_d_partner(
     assert derived.weight == code.distance
     assert certify_logical_product(code, derived) == derived
     assert not derived.commutes_with(code.logical_observables[0])
+
+
+@pytest.mark.parametrize("distance", (3, 5, 7))
+def test_derivation_on_a_mixed_check_code_reads_the_z_factors_alone(
+    distance: int,
+) -> None:
+    """Only a check's ``Z`` factor constrains an X-type candidate, and only it.
+
+    The derivation is a linear system over the checks, and the row a mixed check
+    contributes is the one its ``Z`` factor gives. Reading the row off the check's
+    *support* instead -- both factors at once -- over-constrains the system, and
+    the solution is then the operator on every data wire: measured here as the
+    weight-``d ** 2`` operator that is the wrong answer this test names rather
+    than as a count. The correct system's solution is the patch's own declared
+    X-type observable, of weight ``d``, which is where the declaration and the
+    derivation have to meet: the two halves of this file are otherwise independent
+    of each other.
+
+    The all-mixed control is asserted first, because on a code whose checks are
+    pure the two readings agree and the test would prove nothing.
+    """
+
+    patch = ZxxzSurfaceCode(distance)
+    declared_x = patch.logical_observables[1]
+    derived = derive_anticommuting_logical_product(patch, 0)
+
+    assert all(
+        check.stabilizer.x_wires and check.stabilizer.z_wires for check in patch.checks
+    )
+    assert derived == declared_x
+    assert derived.weight == distance
+    assert derived != Pauli(x_wires=patch.data_wires)
+    assert set(derived.support) < set(patch.data_wires)
+    assert not derived.commutes_with(patch.logical_observables[0])
+    assert certify_logical_product(patch, derived) == derived
 
 
 def test_derivation_refuses_a_code_with_no_x_type_partner() -> None:

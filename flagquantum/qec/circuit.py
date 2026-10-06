@@ -329,12 +329,15 @@ def _protected_checks(
     """Return, per check, whether it is deterministic in round zero and at the end.
 
     A check is deterministic in the preparation state when the state pins the
-    eigenvalue the check measures. A Z-type check reads a pair of data wires that
-    start in ``|0>``, and an X-type check reads a pair that start in ``|+>``;
-    either way the check is pinned exactly when every wire of its support was
-    prepared in the basis its type needs, which is the Z basis unless the wire is
-    in ``x_readout``. The same condition holds again at the terminal readout,
-    because the experiment ends by measuring each data wire in that same basis.
+    eigenvalue the check measures. Each wire of the check's support is prepared in
+    the Z basis unless it is in ``x_readout``, so the check is pinned exactly when
+    every wire carrying an ``X`` factor was prepared in the X basis and every wire
+    carrying a ``Z`` factor was prepared in the Z basis. A pure Z-type check needs
+    every wire of its support unrotated and a pure X-type check needs every wire
+    of its support rotated, which is the condition this test started as; a mixed
+    check needs a *pattern* of rotations rather than all or none. The same
+    condition holds again at the terminal readout, because the experiment ends by
+    measuring each data wire in that same basis.
 
     A check that fails the condition is still measured every round: comparing two
     consecutive rounds of it is what detects the errors the readout is vulnerable
@@ -344,7 +347,7 @@ def _protected_checks(
     rotated = frozenset(x_readout)
     return tuple(
         all(
-            (wire in rotated) == bool(check.stabilizer.x_wires)
+            (wire in rotated) == (wire in check.stabilizer.x_wires)
             for wire in check.stabilizer.support
         )
         for check in code.checks
@@ -372,11 +375,20 @@ def _check_source(code: StabilizerCode, *, x_readout: tuple[int, ...] = ()) -> s
     lines.append("    for round_index in range(rounds):")
     for check in code.checks:
         ancilla = check.ancilla_wire
-        if check.stabilizer.x_wires:
-            lines.append(f"        qp.H(wires={ancilla})")
-        for control, target in check.cnot_wires:
+        # ``CodeCheck`` orders the coupling as its stabilizer orders the factors:
+        # the Z-factor pairs, which read the data wires into the ancilla, then the
+        # X-factor pairs, which read the ancilla out into the data wires. The H
+        # pair wraps the second run and only the second run, because it is what
+        # turns the ancilla-controlled coupling into a Z-basis readout of the
+        # X factor; a check with no X factor gets no H at all, which is why the
+        # two pure shapes are this one rule's two ends rather than special cases.
+        split = len(check.stabilizer.z_wires)
+        for control, target in check.cnot_wires[:split]:
             lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
         if check.stabilizer.x_wires:
+            lines.append(f"        qp.H(wires={ancilla})")
+            for control, target in check.cnot_wires[split:]:
+                lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
             lines.append(f"        qp.H(wires={ancilla})")
         lines.append(f"        last = qp.measure(wires={ancilla})")
         lines.append(f"        qp.reset(wires={ancilla})")

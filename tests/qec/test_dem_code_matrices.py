@@ -256,7 +256,35 @@ def test_css_code_matrices_refuse_a_mixed_type_logical_operator() -> None:
         css_code_matrices(code)
 
 
-def test_css_code_matrices_refuse_a_check_outside_the_data_wires() -> None:
+def test_css_code_matrices_refuse_a_mixed_check() -> None:
+    """A matrix route has two blocks, so a two-factor check has no row in either.
+
+    The refusal is the *matrix route's* and not the check protocol's: a mixed
+    stabilizer is measurable, by one ancilla and both CNOT directions, and
+    ``ZxxzSurfaceCode`` is a record whose every check is one. What the matrix route
+    cannot do is state it, because writing the X factor as a row of ``hx`` and the
+    Z factor as a row of ``hz`` would describe two checks that do not commute
+    rather than the one that was meant. That is why the refusal names the check
+    and tells the caller which route does carry the family.
+    """
+
+    code = _Code(
+        data=(0, 1),
+        ancillas=(2,),
+        checks=(
+            CodeCheck(
+                index=0,
+                stabilizer=Pauli(x_wires=(0,), z_wires=(1,)),
+                ancilla_wire=2,
+                cnot_wires=((1, 2), (2, 0)),
+            ),
+        ),
+        observables=(Pauli(z_wires=(0,)),),
+    )
+
+    with pytest.raises(ValueError, match="measures a mixed X-and-Z stabilizer"):
+        css_code_matrices(code)
+
     """A support wire the code never declares is a broken record, not a column."""
 
     code = _Code(

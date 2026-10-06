@@ -19,7 +19,7 @@ import pytest
 import torch
 
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import RepetitionCode
 from flagquantum.qec.context import (
     DecoderContext,
     DecoderInputs,
@@ -29,6 +29,7 @@ from flagquantum.qec.context import (
 from flagquantum.qec.dem import DemError, DetectorErrorModel
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.sampling import _measurement_plan
+from flagquantum.qec.surface import RotatedSurfaceCode, ZxxzSurfaceCode
 
 pytestmark = pytest.mark.unit
 
@@ -492,7 +493,30 @@ def test_a_component_of_an_id_carrying_model_is_refused() -> None:
     assert context.full_component().dem.stated_error_ids() == (7,)
 
 
-def test_a_component_is_a_reading_and_not_a_reconstruction() -> None:
+def test_a_component_of_a_mixed_check_model_is_refused() -> None:
+    """A split is defined only for a code whose checks are pure.
+
+    The two components keep the detectors a check of one basis type carries, so
+    the split needs every check to have exactly one type. A ZXXZ patch has none:
+    every check is a product of an X factor and a Z factor, its detectors fire for
+    faults of both families, and there is no honest way to put one of them in a
+    single component. The refusal names the check rather than dropping it, and it
+    is answered in both bases, because a caller that asked the other way round
+    would otherwise be handed the complement of an arbitrary choice.
+
+    The whole model is still readable, which is what keeps this a deliberate
+    limit rather than a lost capability.
+    """
+
+    context = decoder_context_from_memory_circuit(
+        build_memory_circuit(ZxxzSurfaceCode(distance=3), rounds=2), noise=_NOISE
+    )
+    with pytest.raises(ValueError, match="mixed X-and-Z stabilizer"):
+        context.x_component()
+    with pytest.raises(ValueError, match="belong to neither basis component"):
+        context.z_component()
+    assert context.full_component().dem.num_detectors > 0
+
     """Two contexts over one circuit agree, and a component is stable across reads."""
 
     context = _context()

@@ -66,8 +66,8 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wir
 indices; a `StabilizerCode` is a value that declares its distance, wire layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode`, `triangular_colour_code`
-and `toric_code` are the five records that implement it.
+layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode`, `triangular_colour_code`,
+`toric_code` and `ZxxzSurfaceCode` are the six records that implement it.
 
 `CssCode` is the second way into that protocol, and it is the way in for a code
 this package does not declare. It takes the four CSS blocks as plain sequences of
@@ -116,13 +116,15 @@ qubits and 1.3 s at a hundred and forty, and raising it to four costs 0.021 s an
 37.5 s at the same two sizes, which is why three is the default and why the route
 is demonstrated at eight and eighteen data qubits.
 
-Two limits survive the new route because they belong to the protocol rather than
-to it, and saying so is the honest boundary: a `CodeCheck` states one ancilla and
-one CNOT direction chosen by the check's type, so a mixed X-and-Z stabilizer still
-has no row here, and `build_memory_circuit` still refuses a declared product that
-is neither pure X nor pure Z. The named qLDPC, Reichardt and Floquet families
-remain absent as *records* -- a matrix has a route in, and two families now arrive
-that way without a caller writing them, but none of these three does. What the
+One limit survives the new route because it belongs to the protocol rather than to
+it, and saying so is the honest boundary: this route states a code as parity-check
+matrices, so a stabilizer carrying both an X factor and a Z factor has no row here --
+not because the protocol refuses it but because one row of `hz` and one row of `hx`
+would describe two checks that do not commute. `build_memory_circuit` still refuses a
+declared product that is neither pure X nor pure Z. The named qLDPC, Reichardt and
+Floquet families remain absent as *records* -- a matrix has a route in, and three
+families now arrive that way without a caller writing them, but none of these three
+does. What the
 colour record changes about the layer above it is the shape of a check: a face on
 the triangular patch's edge spans four qubits and a face in its bulk spans six, so
 `triangular_colour_code` is the record whose checks reach weight six, and its two
@@ -665,14 +667,20 @@ because that entry needs a model to decode and therefore names
 `DetectorErrorModel`. The detector error model's own README section is still the
 Stage 5 documentation sweep's.
 
-One representational boundary is explicit and enforced. A `CodeCheck` states one
-ancilla and one CNOT direction, and the direction is fixed by the check's type
-rather than left to the caller: a Z-type check controls from each data wire in
-the stabilizer's support into an ancilla prepared in `|0>`, and an X-type check
-controls from an ancilla prepared in `|+>` into each data wire. Both gadgets
-leave the ancilla's Z-basis readout equal to the check's eigenvalue, which is
-what makes the two symmetric. A mixed X-and-Z stabilizer is still refused, since
-it needs a second ancilla and a second gadget that this record does not describe.
+One representational boundary is explicit and enforced, and it is now one rule
+rather than two gadgets. A `CodeCheck` states one ancilla and one **coupling order**:
+the Z-factor pairs first, each controlling from a data wire in the stabilizer's
+Z-factor support into the ancilla, then the X-factor pairs, each controlling from
+the ancilla into a data wire in the stabilizer's X-factor support. The order is not
+a convention -- the boundary between the two runs is exactly what the emitted `H`
+pair wraps -- and it is what makes one ancilla measure the product of the two
+factors. A pure check is the case whose second run is empty, so the Z-type gadget
+(control from the data, ancilla prepared in `|0>`, read in the Z basis) and the
+X-type gadget (the same with an `H` pair around the second run) are the two ends of
+one rule and the source they emit is byte-identical to what it was. An earlier
+revision of this file recorded that a mixed stabilizer needs a second ancilla;
+that reading was wrong and is retracted, because the second ancilla buys nothing
+the second CNOT direction does not already give.
 
 `RotatedSurfaceCode` is the first code here that needs both check types. Data
 qubits occupy wires `0..distance**2 - 1`, indexed so lattice site `(i, j)` is wire

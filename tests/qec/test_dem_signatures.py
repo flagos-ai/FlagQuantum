@@ -12,12 +12,13 @@ from flagquantum.qec.circuit import (
     MemoryCircuit,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.dem_construction import (
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
 )
+from flagquantum.qec.surface import RotatedSurfaceCode
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 
 pytestmark = pytest.mark.integration

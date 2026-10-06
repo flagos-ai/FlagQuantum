@@ -14,8 +14,9 @@ from collections import Counter
 import pytest
 
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.pauli import Pauli
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.unit
 

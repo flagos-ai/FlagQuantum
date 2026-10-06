@@ -82,12 +82,13 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec import triangular_colour_code
 from flagquantum.qec.bposd import BeliefPropagationOsdDecoder
 from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import RepetitionCode
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import _inject_data_flip
 from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.sampling import sample_memory_circuit
+from flagquantum.qec.surface import RotatedSurfaceCode
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 
 pytestmark = pytest.mark.integration

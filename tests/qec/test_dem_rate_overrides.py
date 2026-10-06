@@ -31,6 +31,7 @@ from flagquantum.qec import (
     RepetitionCode,
     RotatedSurfaceCode,
     SteaneCode,
+    ZxxzSurfaceCode,
     build_memory_circuit,
     css_code_matrices,
 )
@@ -434,7 +435,41 @@ def test_a_per_check_vector_that_does_not_name_every_check_is_refused() -> None:
         DetectorErrorModel.from_code(RotatedSurfaceCode(distance=3), noise=noise)
 
 
-def test_the_circuit_route_refuses_the_same_two_lengths() -> None:
+def test_a_per_check_vector_is_refused_on_a_code_whose_checks_are_mixed() -> None:
+    """A vector indexed by row order needs rows, and a mixed check has none.
+
+    The order this vector is stated in is the matrix row order -- every Z-type
+    check, then every X-type check -- so a check carrying both factors has no
+    position to be stated at. The refusal names the check and points at the
+    uniform rate, whose value does not depend on the order, and it is the only
+    answer that keeps one vector from naming two different checks in the two
+    construction routes.
+
+    The uniform rate is read on the same code without complaint, which is what
+    makes this a limit of the *vector* rather than of the code: the split exists
+    so a caller can state a per-location profile, and a code cannot be handed one
+    it has no index for.
+
+    The circuit route is the one this is measured on, because the matrix route
+    refuses such a code earlier and for its own reason -- two blocks cannot state
+    one two-factor check -- so a caller reaching the order at all is a caller on
+    the circuit route.
+    """
+
+    code = ZxxzSurfaceCode(distance=3)
+    memory = build_memory_circuit(code, rounds=_ROUNDS)
+    per_check = PhenomenologicalNoise(
+        measurement_flip_per_check=(0.02,) * len(code.checks)
+    )
+    with pytest.raises(ValueError, match=r"no row index it could be stated at"):
+        DetectorErrorModel.from_memory_circuit(memory, noise=per_check)
+    assert (
+        DetectorErrorModel.from_memory_circuit(
+            memory, noise=PhenomenologicalNoise(measurement_flip=0.02)
+        ).num_detectors
+        > 0
+    )
+
     """The circuit route resolves the vectors against its own code record.
 
     A vector that named fewer wires than the circuit has would be read as a rate

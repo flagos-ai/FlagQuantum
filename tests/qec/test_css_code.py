@@ -1,11 +1,11 @@
 """Unit coverage for the code record built from a parity-check matrix.
 
-Five records in this package are written down as a family -- a repetition
+Six records in this package are written down as a family -- a repetition
 lattice, a rotated surface lattice, the Steane code, the triangular colour patch,
-the square-lattice torus -- and each states its own checks, its own logical
-operators and its own distance, the colour patch and the torus deriving them from
-a rule about their lattice rather than tabulating them. This record is the fifth
-route: the matrices are the input,
+the square-lattice torus, the ZXXZ surface patch -- and each states its own
+checks, its own logical operators and its own distance, the colour patch and the
+torus deriving them from a rule about their lattice rather than tabulating them.
+This record is the sixth route: the matrices are the input,
 so a code this package never wrote down can still be a
 `~flagquantum.qec.StabilizerCode` and walk the rest of the path. The tests here
 pin the algebra that route relies on and the refusals that keep a set of matrices
@@ -68,11 +68,11 @@ from flagquantum.qec.circuit import MemoryCircuit, build_memory_circuit
 from flagquantum.qec.codes import (
     CssCode,
     RepetitionCode,
-    RotatedSurfaceCode,
     StabilizerCode,
     SteaneCode,
 )
 from flagquantum.qec.dem_construction import css_code_matrices
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.unit
 

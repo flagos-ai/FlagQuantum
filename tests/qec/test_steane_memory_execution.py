@@ -64,12 +64,7 @@ import pytest
 from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
-from flagquantum.qec.codes import (
-    RepetitionCode,
-    RotatedSurfaceCode,
-    StabilizerCode,
-    SteaneCode,
-)
+from flagquantum.qec.codes import RepetitionCode, StabilizerCode, SteaneCode
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
     _inject_data_flip,
@@ -79,6 +74,7 @@ from flagquantum.qec.dem_construction import (
 )
 from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
+from flagquantum.qec.surface import RotatedSurfaceCode
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 
 pytestmark = pytest.mark.integration

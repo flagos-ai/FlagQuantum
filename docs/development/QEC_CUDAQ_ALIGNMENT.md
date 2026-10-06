@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Five records declared — repetition, rotated surface, Steane, triangular colour and square-lattice toric — and each feeds both the circuit and the matrix route in either readout basis; the colour and toric records are derived from a rule about their lattices rather than transcribed, the toric record is the first that leaves two logical qubits, and the record set is still one code per family, so a qLDPC or bivariate-bicycle code has no record and a mixed-type observable is refused. |
+| `qec_code_record` | partial | now | `qec_code_library` | Six records declared — repetition, rotated surface, Steane, triangular colour, square-lattice toric and ZXXZ surface — and each feeds both the circuit and the matrix route in either readout basis; the colour and toric records are derived from a rule about their lattices rather than transcribed, the toric record is the first that leaves two logical qubits, the ZXXZ record is the first whose every check is mixed and whose Z-basis memory experiment is therefore unanchored to the readout, and the record set is still one code per family, so a qLDPC or bivariate-bicycle code has no record and a mixed-type observable is refused. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -346,12 +346,14 @@ but upstream's `CssNoise` also carries `px`/`py`/`pz`/`pm` per qubit or per chec
 and here the record states uniform scalars, so a per-location profile is still
 not expressible. That limit is carried by `dem_code_capacity_noise`, which stays
 `reshaped`. The record set is the other thing the code-row target implies, and
-it has grown by two: the triangular colour code is declared as
-`flagquantum.qec.triangular_colour_code` and the square-lattice toric code as
-`flagquantum.qec.toric_code`, and both derive their lattices from an argument
-instead of transcribing a table, so each family is stated as a rule about its
-lattice rather than copied out of another framework's source. What the record
-set still does not have is a family beyond the five, which is the absence
+it has grown by three: the triangular colour code is declared as
+`flagquantum.qec.triangular_colour_code`, the square-lattice toric code as
+`flagquantum.qec.toric_code`, and the ZXXZ surface patch as
+`flagquantum.qec.ZxxzSurfaceCode`, the first two deriving their lattices from
+an argument instead of transcribing a table, so each family is stated as a
+rule about its lattice rather than copied out of another framework's source.
+What the record set still does not have is a family beyond the six, which is
+the absence
 `symbol:flagquantum.qec.qldpc_code` and
 `symbol:flagquantum.qec.bivariate_bicycle_code` state. The colour patch is worth
 naming for one further reason: its two check families are literally one matrix,
@@ -378,6 +380,54 @@ boundaries, one mechanism reaches weight four, and the matcher refuses a model i
 accepted at one round. `tests/qec/test_toric_memory_execution.py` measures both
 sides at the same code, round count and fault rate, so the row records a
 comparison rather than a refusal on its own.
+
+The ZXXZ patch is the third arrival and the one that changed the protocol. It
+is the rotated patch of the same distance with a Hadamard on the data
+checkerboard, so it occupies the rotated patch's own wires, declares the same
+ancillas in the same lattice order, and has the same check weights and the same
+distance, while **every one of its checks carries both factors and none is
+pure**. That is what the row's earlier revision could not state: a check used
+to have to be pure, on this row's own reading that a mixture would need a
+second ancilla and a second CNOT direction. Half of that was wrong, and the
+correction is the round's finding. The **second CNOT direction** is genuinely
+needed; the **second ancilla** is not, because the X-factor pairs are
+controlled by the declared ancilla while the Z-factor pairs control it, so one
+ancilla measures the product of the two. `CodeCheck` therefore states one
+coupling order — the Z-factor pairs first, each reading a data wire into the
+ancilla, then the X-factor pairs, each reading the ancilla out into a data
+wire — and the boundary between the two runs is exactly what the emitted `H`
+pair wraps. A pure check is the case whose second run is empty, so the two
+emission shapes are one rule and the pure checks' source is byte-identical
+across the change.
+
+The record is pinned by re-deriving the conjugation rather than by repeating
+it: `tests/qec/test_zxxz_code.py` writes the board and the conjugation rule out
+itself, feeds the rotated patch's own checks in, and requires the record's
+checks to be exactly that image, index by index, with every weight and the
+whole commutation table preserved. The family's distance is then measured on
+the record by exhausting every pure operator below `d`, and the choice of
+checkerboard parity is shown to be load-bearing rather than cosmetic: the
+other parity leaves the declared observable's coset with no pure-Z member at
+all, which is what would happen to the Z-basis memory experiment under it.
+
+Running the memory experiment is what found the limit this row now records.
+A mixed check's outcome is deterministic neither at the all-zero preparation
+nor at a Z-basis readout, so no check of the Z-basis experiment is anchored in
+either place and the experiment carries detectors only **between** syndrome
+rounds — none from a syndrome round to the data. The consequence is a
+mechanism at every distance that fires no detector and flips the observable:
+the readout, merging the logical operator's `d` wires into one mechanism of
+probability `(1 - (1 - 2p) ** d) / 2`, whose probability **grows with the
+distance** and which no pairing decoder can suppress because there is no
+detector to pair. `tests/qec/test_zxxz_memory_execution.py` measures it from
+both sides: no detector of the Z frame references the data readout while the
+X frame's do, the blind mechanism's probability is asserted against its closed
+form at three distances and three rates, every syndrome the model samples is
+reproduced exactly by the correction, and the decoded rate stays above
+`raw / 1.5` at distances three and five against `raw / 4` or better for the
+rotated patch through the identical harness — same distance, rate, budget and
+seed. The row records that contrast as a limitation of this record's memory
+experiment and not as a decoding result.
 
 **What `qec_logical_operations` closed, and what it did not.** The row was
 `absent` on all three of its named operations and on an absent module path. Of

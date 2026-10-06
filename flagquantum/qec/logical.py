@@ -25,11 +25,38 @@ if TYPE_CHECKING:
     from .codes import StabilizerCode
 
 
-def _mask(pauli: Pauli, positions: dict[int, int]) -> int:
-    """Return ``pauli`` as one bit per data wire, in ``positions`` order."""
+def _symplectic_mask(pauli: Pauli, positions: dict[int, int], width: int) -> int:
+    """Return ``pauli`` as one X bit and one Z bit per data wire.
+
+    The two halves are packed into one integer so that a whole stabilizer group is
+    a set of GF(2) rows: bit ``p`` is the X factor on the ``p``-th data wire and
+    bit ``width + p`` its Z factor. A wire listed in both carries ``Y``, which is
+    what makes this the correct mask for a **mixed** check -- a check that is a
+    product of the two families is neither an X-type row nor a Z-type row, and a
+    mask that recorded only its support would conflate it with an operator of a
+    different Pauli type.
+    """
 
     bits = 0
-    for wire in pauli.support:
+    for wire in pauli.x_wires:
+        bits |= 1 << positions[wire]
+    for wire in pauli.z_wires:
+        bits |= 1 << (width + positions[wire])
+    return bits
+
+
+def _z_part_mask(pauli: Pauli, positions: dict[int, int]) -> int:
+    """Return only ``pauli``'s Z support, as one bit per data wire.
+
+    An X-type candidate commutes with an operator exactly when the two agree on an
+    even number of wires the operator carries a ``Z`` factor on, so a Z factor is
+    the whole of what constrains it and an X factor constrains it not at all. This
+    is the mask a commutation constraint is stated with, and it is why a mixed
+    check constrains an X-type candidate as much as a pure Z-type check does.
+    """
+
+    bits = 0
+    for wire in pauli.z_wires:
         bits |= 1 << positions[wire]
     return bits
 
@@ -77,6 +104,13 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
     product is measured in one basis, and a wire carrying both an ``X`` and a
     ``Z`` factor would need a third basis. Identity is refused for the same
     reason an identity observable is: it is measured by nothing.
+
+    The **checks** are under no such restriction, and the second condition is
+    asked of all of them together. A check of a code whose stabilizers mix the two
+    factors is a product of both, so being a product of checks is a question about
+    the group rather than about one family of it, and it is answered over the full
+    X-and-Z description of every check. A candidate that is a product of a code's
+    mixed checks is a stabilizer even though it matches no single family's rows.
     """
 
     if not isinstance(product, Pauli):
@@ -102,13 +136,16 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
                 f"it anticommutes with check {check.index}"
             )
     positions = {wire: index for index, wire in enumerate(code.data_wires)}
-    wanted_x_type = bool(product.x_wires)
+    width = len(code.data_wires)
+    # Every check constrains the candidate, of whichever type it is. An operator
+    # that is a product of checks is the identity element of the stabilizer group
+    # only as a symplectic vector, so the span is asked of the full X-and-Z
+    # description: a candidate that agrees with a mixed check's X half but not its
+    # Z half is not a stabilizer, and a support-only test could not tell.
     rows = [
-        _mask(check.stabilizer, positions)
-        for check in code.checks
-        if bool(check.stabilizer.x_wires) == wanted_x_type
+        _symplectic_mask(check.stabilizer, positions, width) for check in code.checks
     ]
-    if in_span(_mask(product, positions), rows):
+    if in_span(_symplectic_mask(product, positions, width), rows):
         raise ValueError(
             "logical product must not lie in the code's stabilizer span, because "
             "a stabilizer outcome is fixed and the terminal readout would report "
@@ -126,12 +163,15 @@ def derive_anticommuting_logical_product(code: StabilizerCode, index: int = 0) -
     declare only their Z-type logical observable. This function derives it.
 
     The derivation is a GF(2) linear system over the code's data wires. An X-type
-    operator commutes with every X-type check automatically, so the constraints
-    that matter are commutation with the Z-type checks and the anticommutation
-    with exactly one declared Z-type observable -- the one at ``index``. The
-    constraint matrix therefore has one row per Z-type check and per declared
-    Z-type observable, all read over the data wires, and the right-hand side is
-    one at the target row and zero at every other.
+    operator commutes with an operator exactly when it overlaps that operator's
+    ``Z`` factor on an even number of wires, so a check constrains the candidate
+    through its ``Z`` factor alone and a check carrying none constrains it not at
+    all. A pure X-type check is therefore free, a pure Z-type check is a full
+    constraint, and a **mixed** check is a constraint of exactly the size of its
+    ``Z`` half -- which is the reason the rows are stated per check rather than
+    per family. The constraint matrix has one row per check, each read on that
+    check's ``Z`` factor, plus one row per declared Z-type observable, and the
+    right-hand side is one at the target observable's row and zero at every other.
 
     Raises:
         ValueError: If ``index`` names no declared Z-type observable, or if the
@@ -152,12 +192,13 @@ def derive_anticommuting_logical_product(code: StabilizerCode, index: int = 0) -
             "Z-type observable has an X-type partner to derive"
         )
     positions = {wire: position for position, wire in enumerate(code.data_wires)}
-    z_checks = [
-        _mask(check.stabilizer, positions)
-        for check in code.checks
-        if not check.stabilizer.x_wires
-    ]
-    z_observables = [_mask(observable, positions) for observable in readable]
+    # Every check's Z factor is a constraint, a mixed check's included: an X-type
+    # candidate anticommutes with a check exactly when it overlaps that check's Z
+    # support oddly. A check carrying no Z factor therefore contributes a row of
+    # zeros, which constrains nothing and is dropped by the elimination itself
+    # rather than by a type test here.
+    z_checks = [_z_part_mask(check.stabilizer, positions) for check in code.checks]
+    z_observables = [_z_part_mask(observable, positions) for observable in readable]
     rhs = [0] * (len(z_checks) + len(z_observables))
     rhs[len(z_checks) + index] = 1
     solution = _solve([*z_checks, *z_observables], rhs)

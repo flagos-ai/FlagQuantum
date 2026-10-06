@@ -287,7 +287,7 @@ by row, with the Z-type checks first.
 ## Declare a code this package does not ship
 
 The other direction of the same record: `CssCode` takes the four blocks a caller
-writes and returns the same kind of code record the five declared families
+writes and returns the same kind of code record the six declared families
 return, so a code no record here declares reaches the memory circuit, the model,
 the sampler and the decoder through the same `StabilizerCode` protocol.
 
@@ -322,9 +322,14 @@ with the bound named rather than answered with the best weight it happened to
 reach. Raise the bound for a code that needs it, and expect the cost to grow with
 the data-qubit count.
 
-A check still states one ancilla and one CNOT direction chosen by the check's
-type, so the CSS class is what this route admits: a mixed X-and-Z stabilizer has
-no row here, exactly as it has no check in the declared records.
+A check states one ancilla and one coupling order -- the Z-factor pairs first,
+then the X-factor pairs -- so a mixed X-and-Z stabilizer is measurable by one
+ancilla rather than needing a second, and `CodeCheck` states that rule once.
+What a *matrix* route can state is narrower than what the check protocol admits:
+this one takes a Z-type block and an X-type block, so a mixed stabilizer has no
+row here, because writing it as a row of each would describe two checks that do
+not commute. A family whose checks are all mixed is declared as a record instead,
+and `ZxxzSurfaceCode` is the first one.
 
 ## Derive a family from its lattice
 

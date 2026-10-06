@@ -73,8 +73,8 @@ import pytest
 import torch
 
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RotatedSurfaceCode
 from flagquantum.qec.dem import DemError, DetectorErrorModel
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 if TYPE_CHECKING:
     import stim

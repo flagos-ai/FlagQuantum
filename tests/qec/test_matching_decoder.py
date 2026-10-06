@@ -21,7 +21,7 @@ import pytest
 
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import RepetitionCode
 from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
 from flagquantum.qec.dem import DemError, DetectorErrorModel
 from flagquantum.qec.matching import (
@@ -29,6 +29,7 @@ from flagquantum.qec.matching import (
     MinimumWeightMatchingDecoder,
 )
 from flagquantum.qec.noise import PhenomenologicalNoise
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.unit
 

@@ -217,14 +217,39 @@ def test_check_still_rejects_an_x_type_stabilizer_measured_the_z_type_way() -> N
         )
 
 
-def test_check_rejects_a_mixed_x_and_z_stabilizer() -> None:
-    """A mixed stabilizer needs a second ancilla and a second gadget.
+def test_check_accepts_a_mixed_x_and_z_stabilizer_on_one_ancilla() -> None:
+    """One ancilla measures a mixed stabilizer, with the CNOTs in factor order.
 
-    ``CodeCheck`` describes one ancilla and one CNOT direction, so it refuses a
-    mixed operator instead of guessing which half the CNOTs belong to.
+    A mixed check used to be refused on the premise that it needs a second
+    ancilla. It does not. The Z-factor pairs come first with the data wire
+    controlling, the X-factor pairs follow with the ancilla controlling, and the
+    single ``H`` pair the emission wraps around the second run is what makes the
+    same ancilla's Z-basis readout equal to the product's eigenvalue. The two
+    runs are what makes the order load-bearing: it is the boundary between them
+    that says which pairs the ``H`` gates wrap, so a permutation of the pairs is
+    a different operator rather than a different spelling of this one.
     """
 
-    with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
+    check = CodeCheck(
+        index=0,
+        stabilizer=Pauli(x_wires=(0,), z_wires=(1,)),
+        ancilla_wire=2,
+        cnot_wires=((1, 2), (2, 0)),
+    )
+
+    assert check.cnot_wires == ((1, 2), (2, 0))
+    assert check.stabilizer == Pauli(x_wires=(0,), z_wires=(1,))
+
+
+def test_check_rejects_a_mixed_stabilizer_whose_x_run_comes_first() -> None:
+    """The run order is checked, and the mirrored order is not this check.
+
+    ``(ancilla, data)`` then ``(data, ancilla)`` describes the same two CNOTs
+    read in the opposite order, and the emission would wrap its ``H`` pair around
+    the wrong half, so it is refused rather than silently reordered.
+    """
+
+    with pytest.raises(ValueError, match="after the Z-factor pairs"):
         CodeCheck(
             index=0,
             stabilizer=Pauli(x_wires=(0,), z_wires=(1,)),
@@ -267,7 +292,7 @@ def test_check_rejects_a_z_type_check_that_controls_from_its_ancilla() -> None:
     the direction guard as the only guard that rejects the record.
     """
 
-    with pytest.raises(ValueError, match="control data wires, not the ancilla"):
+    with pytest.raises(ValueError, match="data wires, not the ancilla"):
         CodeCheck(
             index=0,
             stabilizer=Pauli(z_wires=(0, 1, 2)),

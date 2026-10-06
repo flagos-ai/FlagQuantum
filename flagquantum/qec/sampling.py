@@ -245,7 +245,16 @@ def _noise_locations(
         ("y_flip", noise.both_flip_rates(num_qubits=len(memory.code.data_wires))),
     )
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
-    rate_order = _check_rate_order(checks)
+    # The matrix row order is what a *per-check vector* is stated in, and it is
+    # the same translation the construction route applies, so a rate cannot name
+    # one check here and another there. A uniform rate is order-free, which is
+    # what lets a code carrying a mixed check -- with no family order to be read
+    # in -- be sampled at all.
+    rate_order = (
+        _check_rate_order(checks)
+        if noise.measurement_flip_per_check
+        else tuple(range(len(checks)))
+    )
     locations: list[_NoiseLocation] = []
     for round_index in range(memory.rounds):
         start = round_index * plan.block

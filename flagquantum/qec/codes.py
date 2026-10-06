@@ -6,14 +6,25 @@ a value so that circuit generation, detector layout, and decoding can be derived
 from it rather than pinned to one instance.
 
 Two routes reach such a record. A family declares its own layout from a distance
-or an index -- the repetition profile, the rotated surface patch, the Steane code,
-the triangular colour patch and the square-lattice torus all do -- and
-:class:`CssCode` instead takes the four matrices a Calderbank-Shor-Steane code is
-already written down as, which is the route a code this package does not declare
-arrives by. The two routes meet: :func:`triangular_colour_code` and
-:func:`toric_code` derive a family's matrices and return the same :class:`CssCode`
-a caller would otherwise have written out by hand. Every route satisfies the same
-protocol, so no consumer can tell which one it was handed.
+or an index -- the repetition profile, the Steane code, the triangular colour
+patch and the square-lattice torus all do -- and :class:`CssCode` instead takes
+the four matrices a Calderbank-Shor-Steane code is already written down as, which
+is the route a code this package does not declare arrives by. The two surface
+patches declare their layout the same way, from a lattice rather than from
+matrices, and live in :mod:`flagquantum.qec.surface` because that lattice -- and
+the frame conjugation cut from it -- is the machinery they share. The two routes meet:
+:func:`triangular_colour_code` and :func:`toric_code` derive a family's matrices
+and return the same :class:`CssCode` a caller would otherwise have written out by
+hand. Every route satisfies the same protocol, so no consumer can tell which one
+it was handed.
+
+A check names one ancilla and the CNOT pairs that couple it to the stabilizer's
+support, and the direction of each pair is fixed by the factor that wire carries.
+A pure Z-type check therefore uses one direction alone, a pure X-type check the
+other, and a mixed X-and-Z check -- which is what every check of the ZXXZ surface
+patch is -- uses both directions through the same ancilla. The two surface
+records are named here only by :mod:`flagquantum.qec.surface`, which is where
+their lattice and that conjugation are described.
 """
 
 from __future__ import annotations
@@ -32,14 +43,39 @@ from .pauli import Pauli
 class CodeCheck:
     """One stabilizer check with its ancilla and its CNOT coupling.
 
-    Each entry of ``cnot_wires`` is a ``(control, target)`` pair, and which wire
-    is which is fixed by the check type rather than left to the caller. A
-    Z-type check couples every data wire in the stabilizer's support into an
-    ancilla prepared in ``|0>``, so the data wire controls and the ancilla is
-    the target. An X-type check couples the ancilla out into the same support
-    with the ancilla prepared in ``|+>``, so the ancilla controls and the data
-    wire is the target. Both gadgets leave the ancilla's Z-basis readout equal
-    to the check's eigenvalue, which is what makes the two symmetric here.
+    Each entry of ``cnot_wires`` is a ``(control, target)`` pair, and every pair
+    couples the check's single ancilla to one data wire of the stabilizer's
+    support. Which way a pair points is fixed by the stabilizer factor it
+    carries rather than left to the caller:
+
+    * A **Z factor** on a data wire is read by coupling that data wire into the
+      ancilla with the data wire controlling, so it comes first:
+      ``(data_wire, ancilla)``.
+    * An **X factor** is read by conjugating the ancilla with ``H`` and coupling
+      it out into that data wire with the ancilla controlling:
+      ``(ancilla, data_wire)``.
+
+    So ``cnot_wires`` is the Z-factor pairs in the stabilizer's own wire order,
+    then the X-factor pairs in the stabilizer's own wire order, and the boundary
+    between the two runs is what says which pairs the ``H`` gates wrap. The
+    emitted gadget is the Z pairs, then ``H``, then the X pairs, then ``H``,
+    then a Z-basis readout of the ancilla — which leaves that readout equal to
+    the check's eigenvalue.
+
+    **One ancilla measures a mixed stabilizer.** A pure Z-type check has an
+    empty X run and no ``H`` gates at all; a pure X-type check has an empty Z
+    run and is the ``H``-wrapped gadget alone. Those are the two shapes this
+    record described before it described the mixed one, and they are not two
+    rules beside a third: they are the two ends of the one rule above, and they
+    are emitted by it unchanged.
+
+    **Why the X run needs the H gates and the Z run does not.** Reading a Z
+    factor through the ancilla is a CNOT in one direction, and reading an X
+    factor is the same CNOT conjugated by ``H`` on the ancilla, because
+    ``H X H = Z``. A mixed stabilizer needs both directions through the *same*
+    ancilla, so it needs the ``H`` pair around the X half only — never a second
+    ancilla, and never an ``H`` that would also conjugate the Z half and turn
+    the check into a different operator.
     """
 
     index: int
@@ -52,12 +88,6 @@ class CodeCheck:
             raise ValueError("check index must be non-negative")
         if not isinstance(self.stabilizer, Pauli):
             raise TypeError("check stabilizer must be a Pauli operator")
-        if self.stabilizer.x_wires and self.stabilizer.z_wires:
-            raise ValueError(
-                "check stabilizer must be pure X-type or pure Z-type, not a "
-                "mixture: a mixture needs a second ancilla and a second CNOT "
-                "direction, which this record does not describe"
-            )
         if self.ancilla_wire < 0:
             raise ValueError("check ancilla wire must be non-negative")
         if not self.cnot_wires:
@@ -65,28 +95,55 @@ class CodeCheck:
         for control, target in self.cnot_wires:
             if control < 0 or target < 0:
                 raise ValueError("check CNOT wires must be non-negative")
-        if self.stabilizer.x_wires:
-            self._validate_x_type()
-        else:
-            self._validate_z_type()
+        if not self.stabilizer.support:
+            raise ValueError(
+                "check stabilizer must have a non-empty support, because an "
+                "identity check measures nothing and its ancilla has nothing to "
+                "read"
+            )
+        self._validate_z_run()
+        self._validate_x_run()
 
-    def _validate_z_type(self) -> None:
-        if any(control == self.ancilla_wire for control, _ in self.cnot_wires):
-            raise ValueError("check CNOTs must control data wires, not the ancilla")
-        if any(target != self.ancilla_wire for _, target in self.cnot_wires):
-            raise ValueError("check CNOTs must target the declared ancilla")
-        controls = tuple(sorted(control for control, _ in self.cnot_wires))
-        if controls != self.stabilizer.support:
-            raise ValueError("check CNOT controls must match the stabilizer support")
+    def _validate_z_run(self) -> None:
+        """Require the leading run to be the Z factors, each into the ancilla."""
 
-    def _validate_x_type(self) -> None:
-        if any(target == self.ancilla_wire for _, target in self.cnot_wires):
-            raise ValueError("check CNOTs must target data wires, not the ancilla")
-        if any(control != self.ancilla_wire for control, _ in self.cnot_wires):
-            raise ValueError("check CNOTs must be controlled by the declared ancilla")
-        targets = tuple(sorted(target for _, target in self.cnot_wires))
-        if targets != self.stabilizer.support:
-            raise ValueError("check CNOT targets must match the stabilizer support")
+        z_wires = self.stabilizer.z_wires
+        run = self.cnot_wires[: len(z_wires)]
+        for _, target in run:
+            if target != self.ancilla_wire:
+                raise ValueError(
+                    "check CNOT targets an X-factor pair, which must come after "
+                    "the Z-factor pairs, or couples a wire the stabilizer does "
+                    "not carry a Z factor on"
+                )
+        controls = tuple(sorted(control for control, _ in run))
+        if self.ancilla_wire in controls:
+            raise ValueError(
+                "check CNOT controls must be data wires, not the ancilla, "
+                "because a Z-factor pair draws a data wire into the ancilla"
+            )
+        if controls != z_wires:
+            raise ValueError(
+                "check CNOT controls must match the stabilizer's Z-factor support"
+            )
+
+    def _validate_x_run(self) -> None:
+        """Require the trailing run to be the X factors, each out of the ancilla."""
+
+        x_wires = self.stabilizer.x_wires
+        run = self.cnot_wires[len(self.stabilizer.z_wires) :]
+        for control, _ in run:
+            if control != self.ancilla_wire:
+                raise ValueError(
+                    "check CNOT controls must be the declared ancilla, because an "
+                    "X-factor pair is controlled by the declared ancilla and its "
+                    "target data wires are the stabilizer's X-factor support"
+                )
+        targets = tuple(sorted(target for _, target in run))
+        if targets != x_wires:
+            raise ValueError(
+                "check CNOT targets must match the stabilizer's X-factor support"
+            )
 
 
 @runtime_checkable
@@ -175,118 +232,6 @@ class RepetitionCode:
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
         return (Pauli(z_wires=self.data_wires),)
-
-
-def _surface_ancilla_sites(distance: int) -> tuple[tuple[int, int, bool], ...]:
-    """Return the rotated-surface-code ancilla sites as ``(a, b, is_x)``.
-
-    Data qubits sit on the lattice ``(i, j)`` with ``0 <= i, j <= distance - 1``
-    and an ancilla sits on ``(a, b)`` with ``0 <= a, b <= distance``. An X-type
-    ancilla needs an interior column and an odd lattice parity, a Z-type ancilla
-    needs an interior row and an even lattice parity, which is the stabilizer
-    assignment the rotated layout requires: the parity that would place an
-    ancilla outside the patch is what truncates the boundary checks.
-
-    Sites are reported in lattice order so the check and ancilla indices are
-    reproducible.
-    """
-
-    sites: list[tuple[int, int, bool]] = []
-    for a in range(distance + 1):
-        for b in range(distance + 1):
-            if 1 <= a <= distance - 1 and (a + b) % 2 == 1:
-                sites.append((a, b, True))
-            elif 1 <= b <= distance - 1 and (a + b) % 2 == 0:
-                sites.append((a, b, False))
-    return tuple(sites)
-
-
-@dataclass(frozen=True)
-class RotatedSurfaceCode:
-    """The rotated surface code of odd ``distance`` read out as Z memory.
-
-    Data qubits occupy wires ``0..distance**2 - 1``, indexed so that lattice
-    site ``(i, j)`` is wire ``j * distance + i``. Ancillas follow the data wires
-    in lattice order. ``(i, j)`` is a data qubit for ``0 <= i, j <= distance - 1``
-    and ``(a, b)`` is an ancilla for ``0 <= a, b <= distance``; an X-type ancilla
-    sits on an interior column with odd lattice parity, a Z-type ancilla on an
-    interior row with even lattice parity, and its support is the up to four data
-    qubits diagonally adjacent to it. That assignment is the rotated layout: a
-    check that would fall outside the patch is truncated, which is what leaves
-    the boundary checks at weight two.
-
-    The declared logical observable is ``Z`` on the data row ``j == 0``, which is
-    one complete row of the patch, and the two logical operators of the patch
-    therefore read out as Z memory. The X-type checks are still measured every
-    round, because they detect the Z errors this readout is vulnerable to; they
-    are simply not deterministic in the initial all-zero state.
-
-    This record describes the checks and the observable. It does not choose a
-    decoding strategy, a noise model, or an error-correction threshold.
-    """
-
-    distance: int = 3
-
-    def __post_init__(self) -> None:
-        if isinstance(self.distance, bool) or not isinstance(self.distance, Integral):
-            raise TypeError("rotated-surface-code distance must be an integer")
-        if self.distance < 2:
-            raise ValueError("rotated-surface-code distance must be at least two")
-
-    @property
-    def num_data_qubits(self) -> int:
-        return self.distance * self.distance
-
-    @property
-    def num_ancilla_qubits(self) -> int:
-        return len(_surface_ancilla_sites(self.distance))
-
-    @property
-    def data_wires(self) -> tuple[int, ...]:
-        return tuple(range(self.num_data_qubits))
-
-    @property
-    def ancilla_wires(self) -> tuple[int, ...]:
-        first = self.num_data_qubits
-        return tuple(first + index for index in range(self.num_ancilla_qubits))
-
-    @property
-    def checks(self) -> tuple[CodeCheck, ...]:
-        distance = self.distance
-        checks: list[CodeCheck] = []
-        for index, (a, b, is_x) in enumerate(_surface_ancilla_sites(distance)):
-            ancilla = self.num_data_qubits + index
-            support = tuple(
-                sorted(
-                    j * distance + i
-                    for i in range(distance)
-                    for j in range(distance)
-                    if i in (a - 1, a) and j in (b - 1, b)
-                )
-            )
-            if is_x:
-                stabilizer = Pauli(x_wires=support)
-                cnot_wires = tuple((ancilla, wire) for wire in support)
-            else:
-                stabilizer = Pauli(z_wires=support)
-                cnot_wires = tuple((wire, ancilla) for wire in support)
-            checks.append(
-                CodeCheck(
-                    index=index,
-                    stabilizer=stabilizer,
-                    ancilla_wire=ancilla,
-                    cnot_wires=cnot_wires,
-                )
-            )
-        return tuple(checks)
-
-    @property
-    def stabilizers(self) -> tuple[Pauli, ...]:
-        return tuple(check.stabilizer for check in self.checks)
-
-    @property
-    def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=tuple(range(self.distance))),)
 
 
 _STEANE_CHECK_SUPPORTS: tuple[tuple[int, ...], ...] = (
@@ -1071,7 +1016,6 @@ __all__ = (
     "CodeCheck",
     "CssCode",
     "RepetitionCode",
-    "RotatedSurfaceCode",
     "SteaneCode",
     "StabilizerCode",
     "toric_code",

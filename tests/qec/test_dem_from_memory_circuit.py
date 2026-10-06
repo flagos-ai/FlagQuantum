@@ -16,7 +16,6 @@ from flagquantum.qec.circuit import (
 from flagquantum.qec.codes import (
     CodeCheck,
     RepetitionCode,
-    RotatedSurfaceCode,
     StabilizerCode,
     SteaneCode,
 )
@@ -31,6 +30,7 @@ from flagquantum.qec.dem_construction import (
 from flagquantum.qec.logical import derive_anticommuting_logical_product
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.integration
 

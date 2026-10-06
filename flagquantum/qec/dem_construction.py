@@ -132,9 +132,15 @@ def _flipped_measurements(
     it is injected in to the last, for every check the fault anticommutes with on
     that wire, and it flips the terminal sample of the wire when the fault
     anticommutes with the basis the wire is read out in. Which checks and which
-    readouts those are is read from the code's check types and the circuit's
-    ``x_readout_wires``; a Z-type check measures a Z stabilizer and so sees the
-    faults that anticommute with Z, and a wire read out in X sees the same.
+    readouts those are is read from the code's checks and the circuit's
+    ``x_readout_wires``: a Z fault anticommutes with the X factor a check carries
+    on that wire, an X fault with the Z factor, and a Y fault with either — so the
+    question is asked of **the one factor the check carries on the faulted wire**,
+    which is the whole of the rule. A pure Z-type check carries a Z factor on
+    every wire of its support, so every Z fault on its support flips it and no X
+    fault does, which is the rule this derivation started as; a mixed check
+    answers the same question per wire, and a wire its stabilizer carries no
+    factor on is not in its support at all.
 
     The fault stays on the data wire, so the run of flipped syndrome bits starts at
     the injected round and does not stop; that is why a data fault opens one
@@ -154,15 +160,15 @@ def _flipped_measurements(
     if flips_readout:
         flips.add((None, mechanism.wire))
     for check in circuit.code.checks:
-        if mechanism.wire not in check.stabilizer.support:
+        stabilizer = check.stabilizer
+        if mechanism.wire not in stabilizer.support:
             continue
-        x_type = bool(check.stabilizer.x_wires)
         if mechanism.fault == "y":
             coupled = True
         elif mechanism.fault == "z":
-            coupled = x_type
+            coupled = mechanism.wire in stabilizer.x_wires
         else:
-            coupled = not x_type
+            coupled = mechanism.wire in stabilizer.z_wires
         if not coupled:
             continue
         flips.update(
@@ -562,10 +568,20 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
     type, so it is not a CSS logical operator, and reading only its X support or
     only its Z support would report a different observable than the code declared.
 
+    A **check** that is neither pure X-type nor pure Z-type is refused for the
+    same reason, and the refusal is about the matrices rather than about the
+    check: this route states a code as two families, and a mixed check would need
+    a row in each. The two rows would then leave ``hz hx^T`` non-symmetric, while
+    a code whose family rows commute needs it to vanish, so the pair of matrices
+    this function returned would describe a code whose checks do not commute.
+    Such a code is a stabilizer code and is modelled by
+    :meth:`~flagquantum.qec.DetectorErrorModel.from_memory_circuit`, which carries
+    each check as the one mixed operator it is.
+
     Raises:
         TypeError: If ``code`` is not a :class:`~flagquantum.qec.StabilizerCode`.
-        ValueError: If a logical observable is of mixed type, or if a check or
-            observable names a wire the code does not declare as a data wire.
+        ValueError: If a check or a logical observable is of mixed type, or if one
+            of them names a wire the code does not declare as a data wire.
     """
 
     if not isinstance(code, StabilizerCode):
@@ -586,6 +602,14 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
         return matrix
 
     checks = tuple(code.checks)
+    for check in checks:
+        if check.stabilizer.x_wires and check.stabilizer.z_wires:
+            raise ValueError(
+                f"check {check.index} measures a mixed X-and-Z stabilizer, so it "
+                "is not a Calderbank-Shor-Steane check: writing it as a row of "
+                "each family would state a pair of matrices whose checks do not "
+                "commute, and the code it describes is not this one"
+            )
     hz = _rows(
         tuple(
             (f"check {check.index}", check.stabilizer.z_wires)
@@ -676,10 +700,16 @@ def _check_rate_order(checks: tuple[CodeCheck, ...]) -> tuple[int, ...]:
     declare its checks in any order -- the rotated surface code declares them in
     lattice order, which interleaves the two types -- so the position a check has
     in that declaration is not the index its rate is stated at, and this is the
-    translation between the two. The two lists partition the checks rather than
-    overlapping: :class:`~flagquantum.qec.CodeCheck` refuses a stabilizer that is
-    neither pure X-type nor pure Z-type, so every check lands in exactly one of
-    them and no check is left without a row.
+    translation between the two.
+
+    **A check that is neither pure X-type nor pure Z-type has no index here.** The
+    row order exists because the matrix route splits a code into two families, and
+    a mixed check belongs to neither: it carries both factors, so it has no row in
+    either family's matrix. Refusing it is the only answer that keeps one vector
+    from naming two different checks in the two routes; a caller that wants
+    per-check measurement noise on such a code states the uniform rate, whose
+    value does not depend on the order at all, which is why the two callers of
+    this function consult it only when a per-check vector is actually stated.
     """
 
     z_positions = [
@@ -688,6 +718,19 @@ def _check_rate_order(checks: tuple[CodeCheck, ...]) -> tuple[int, ...]:
     x_positions = [
         position for position, check in enumerate(checks) if check.stabilizer.x_wires
     ]
+    if len(z_positions) + len(x_positions) != len(checks):
+        mixed = next(
+            check
+            for check in checks
+            if check.stabilizer.x_wires and check.stabilizer.z_wires
+        )
+        raise ValueError(
+            f"check {mixed.index} measures a mixed X-and-Z stabilizer, so it "
+            "belongs to neither of the two families a per-check measurement-flip "
+            "vector is ordered by and there is no row index it could be stated "
+            "at: state the uniform measurement_flip rate for a code like this, "
+            "whose value does not depend on the order"
+        )
     order = [0] * len(checks)
     for row, position in enumerate((*z_positions, *x_positions)):
         order[position] = row
@@ -719,7 +762,9 @@ def _mechanisms(
     resolved through the same accessors the matrix route uses, so the two routes
     cannot read one vector two ways. The per-check vector is indexed in the matrix
     row order rather than in the code's declaration order, which is what
-    :func:`_check_rate_order` translates.
+    :func:`_check_rate_order` translates; a uniform per-check rate is order-free,
+    so a code that carries a mixed check -- and therefore has no matrix row order
+    -- is enumerated by the same loop with the declaration order standing in.
 
     A code that declares a data wire twice is refused rather than enumerated
     twice. Its second copy would be the same physical location as the first
@@ -760,7 +805,14 @@ def _mechanisms(
     phase_flip_rates = noise.phase_flip_rates(num_qubits=len(data_wires))
     both_flip_rates = noise.both_flip_rates(num_qubits=len(data_wires))
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
-    rate_order = _check_rate_order(checks)
+    # The matrix row order is what a *per-check vector* is stated in. A uniform
+    # rate carries one value to every check, so no order can change what it reads,
+    # and a code carrying a mixed check has no family order to be read in at all.
+    rate_order = (
+        _check_rate_order(checks)
+        if noise.measurement_flip_per_check
+        else tuple(range(len(checks)))
+    )
     mechanisms: list[_Mechanism] = []
     families: tuple[tuple[Literal["x", "z", "y"], tuple[float, ...]], ...] = (
         ("x", data_flip_rates),

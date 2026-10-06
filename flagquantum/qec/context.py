@@ -392,6 +392,11 @@ class DecoderContext:
     matrix is laid out in uniform per-round blocks; here the layout states the
     boundary detectors themselves, so the union needs no separate bookkeeping,
     and ``full_component`` is the model as built.
+
+    The split is defined only for a code whose checks are pure: a check carrying
+    both factors has one ancilla that reports both fault families, so its
+    detectors are in neither component and both components refuse such a code
+    rather than reading its detectors under one label.
     """
 
     circuit: MemoryCircuit
@@ -477,8 +482,33 @@ class DecoderContext:
         )
 
     def _basis(self, *, x_type: bool) -> DecoderInputs:
-        """Return the component for one basis, or refuse an empty one."""
+        """Return the component for one basis, or refuse an empty one.
 
+        The split is by the **check** that carries a detector, and it exists
+        because a detector of a pure Z-type check fires for the X faults on its
+        support and one of a pure X-type check fires for the Z faults, so each
+        component is a decoding problem in one fault family. A check carrying both
+        factors fires for both families through one ancilla, so its detectors
+        belong to neither component, and attributing them to one would claim the
+        other family's faults are invisible to it. Such a code is therefore
+        refused in **both** bases; its model is still well formed and is reached
+        whole through :meth:`full_component`.
+        """
+
+        mixed = next(
+            (
+                check
+                for check in self.circuit.code.checks
+                if check.stabilizer.x_wires and check.stabilizer.z_wires
+            ),
+            None,
+        )
+        if mixed is not None:
+            raise ValueError(
+                f"check {mixed.index} measures a mixed X-and-Z stabilizer, so its "
+                "detectors fire for faults of both families and belong to neither "
+                "basis component; read the model whole through full_component"
+            )
         owners = _detector_checks(self.circuit)
         kept = tuple(
             detector.index

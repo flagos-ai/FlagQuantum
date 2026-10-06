@@ -18,7 +18,6 @@ from .codes import (
     CodeCheck,
     CssCode,
     RepetitionCode,
-    RotatedSurfaceCode,
     StabilizerCode,
     SteaneCode,
     toric_code,
@@ -64,6 +63,7 @@ from .registry import (
 from .repetition import run_repetition_memory_experiment
 from .sampling import sample_memory_circuit
 from .sliding_window import SlidingWindowMatchingDecoder
+from .surface import RotatedSurfaceCode, ZxxzSurfaceCode
 from .types import (
     Correction,
     DecodeResult,
@@ -144,4 +144,5 @@ __all__ = (
     "sample_memory_circuit",
     "toric_code",
     "triangular_colour_code",
+    "ZxxzSurfaceCode",
 )

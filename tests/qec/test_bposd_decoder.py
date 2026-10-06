@@ -35,10 +35,11 @@ from flagquantum.qec.bposd import (
     BeliefPropagationOsdDecodeResult,
 )
 from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode, SteaneCode
+from flagquantum.qec.codes import RepetitionCode, SteaneCode
 from flagquantum.qec.dem import DemError, DetectorErrorModel
 from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
+from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.unit
 
