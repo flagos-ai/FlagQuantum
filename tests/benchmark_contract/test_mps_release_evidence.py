@@ -1539,3 +1539,21 @@ def test_the_timed_leg_exchanges_records_before_it_tears_the_group_down(
     ]
     written = json.loads(output.read_text(encoding="utf-8"))
     assert len(written["ranks"]) == 2
+
+
+def test_the_premise_artifact_is_named_the_way_the_checkout_names_it():
+    """A promoted payload must name a checked-in artifact a reader can open.
+
+    The completion role is launched from the scratch checkout the measurement was
+    taken in, and ``--premise`` is passed to it as an absolute path there. The
+    projection records that argument as the payload's capacity baseline artifact,
+    so without this the release payload names a checked-in artifact by a path that
+    exists on the producing host and nowhere else -- and two payloads promoted
+    from the same release would name the same repository file two different ways.
+    A path that genuinely lies outside the repository is left alone, because then
+    there is no repository name for it and a relative one would name nothing.
+    """
+
+    inside = producer.REPO_ROOT / "benchmarks/results/local/example.json"
+    assert producer._repo_relative(inside) == "benchmarks/results/local/example.json"
+    assert producer._repo_relative(Path("/tmp/example.json")) == "/tmp/example.json"

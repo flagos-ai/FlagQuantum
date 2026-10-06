@@ -124,6 +124,23 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _repo_relative(path: Path) -> str:
+    """Return ``path`` as the repository names it, or unchanged when outside.
+
+    A payload that names a checked-in artifact is read by somebody who has the
+    checkout and not the filesystem the measurement ran on, so the artifact is
+    named the way the checkout names it. An absolute path is left alone when the
+    file really is outside the repository, because then there is no repository
+    name for it and inventing a relative one would name nothing.
+    """
+
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
 def _capacity_contract(manifest_path: Path) -> dict[str, Any]:
     """Return the frozen capacity contract, checked against the manifest digests."""
 
@@ -1322,7 +1339,7 @@ def _premise(
         )
     source = "the single-device failure record named by the premise"
     return {
-        "path": str(path),
+        "path": _repo_relative(path),
         "sha256": _sha256(Path(path)),
         "topology_fingerprint": fingerprint,
         "baseline": {
