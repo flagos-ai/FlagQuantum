@@ -31,8 +31,7 @@ from examples.qdiffusion_kaiwu.plan_quota import (
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     ArtifactSnapshot,
     assert_artifacts_unchanged,
-    capture_artifact_snapshots,
-    preflight_artifacts,
+    preflight_artifacts_with_snapshots,
     revalidate_artifact_snapshots,
 )
 from examples.qdiffusion_kaiwu.private_io import (
@@ -501,14 +500,11 @@ def main() -> None:
         "tokenizer": args.tokenizer,
         "evaluation_model": args.evaluation_model,
     }
-    artifact_preflight = preflight_artifacts(
+    artifact_preflight, artifact_snapshots = preflight_artifacts_with_snapshots(
         args.config, artifact_paths, args.artifact_preflight_output
     )
     if artifact_preflight.get("config_sha256") != config_sha256:
         raise RuntimeError("frozen experiment config changed before training")
-    artifact_snapshots = capture_artifact_snapshots(
-        artifact_paths, artifact_preflight
-    )
     preflight_sha256 = hashlib.sha256(
         read_private_bytes(
             args.artifact_preflight_output,

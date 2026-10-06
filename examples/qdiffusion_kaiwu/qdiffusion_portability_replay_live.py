@@ -28,8 +28,10 @@ from examples.qdiffusion_kaiwu.failure_evidence import (
 )
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
+    ArtifactSnapshot,
     assert_artifacts_unchanged,
-    preflight_artifacts,
+    preflight_artifacts_with_snapshots,
+    revalidate_artifact_snapshots,
 )
 from examples.qdiffusion_kaiwu.private_io import (
     read_private_bytes,
@@ -189,6 +191,7 @@ def run_portability_replay(
     device: torch.device,
     real_provider_transport: bool,
     trained_checkpoint_snapshot: RegularFileSnapshot | None = None,
+    artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
 ) -> dict[str, Any]:
     if requested_samples != config.get("requested_samples"):
         raise ValueError("requested_samples differs from the frozen configuration")
@@ -223,6 +226,8 @@ def run_portability_replay(
     ):
         raise ValueError("trained checkpoint snapshot differs from replay inputs")
     try:
+        if artifact_snapshots is not None:
+            revalidate_artifact_snapshots(artifact_snapshots)
         generator = (
             builder.build_qdiffusion(
                 proposal_ckpt=str(base_checkpoint),
@@ -242,6 +247,8 @@ def run_portability_replay(
             .eval()
             .to(device)
         )
+        if artifact_snapshots is not None:
+            revalidate_artifact_snapshots(artifact_snapshots)
         if id(getattr(generator.energy_model, "sampler", None)) != id(sampler):
             raise RuntimeError("DPLM builder did not retain the FlagQuantum sampler")
         revalidate_regular_file(
@@ -280,6 +287,8 @@ def run_portability_replay(
         revalidate_regular_file(
             checkpoint_snapshot, label="trained energy checkpoint"
         )
+        if artifact_snapshots is not None:
+            revalidate_artifact_snapshots(artifact_snapshots)
         last_job = sampler.last_job
         if last_job is None:
             raise RuntimeError("portability replay completed without a recoverable job")
@@ -532,7 +541,7 @@ def main() -> None:
         "tokenizer": args.tokenizer,
         "evaluation_model": args.evaluation_model,
     }
-    artifact_preflight = preflight_artifacts(
+    artifact_preflight, artifact_snapshots = preflight_artifacts_with_snapshots(
         args.config, artifact_paths, args.artifact_preflight_output
     )
     if artifact_preflight.get("config_sha256") != config_sha256:
@@ -596,9 +605,11 @@ def main() -> None:
         device=device,
         real_provider_transport=True,
         trained_checkpoint_snapshot=checkpoint_snapshot,
+        artifact_snapshots=artifact_snapshots,
     )
     artifact_postflight_error: BaseException | None = None
     try:
+        revalidate_artifact_snapshots(artifact_snapshots)
         assert_artifacts_unchanged(args.config, artifact_paths, artifact_preflight)
         _revalidate_training_paths(training_paths)
         revalidate_regular_file(

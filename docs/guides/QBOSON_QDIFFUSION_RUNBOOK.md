@@ -638,13 +638,13 @@ and replay-host runner apply the provider checks while loading the selected
 training record, before loading a model, allocating A800 work, resolving
 credentials, or submitting another task.
 
-The training launcher captures stable no-follow snapshots for the dataset,
-base checkpoint, tokenizer, and evaluation model immediately after their
-identities match the exclusive preflight record. It revalidates all four before
-the plugin workflow, immediately after it returns, and again during postflight.
-Consequently an input rewritten or replaced during the run fails the component
-even when the replacement has the same bytes and would pass a later digest-only
-check.
+The exclusive preflight returns the exact stable no-follow snapshots used to
+produce its record; the launcher does not reopen the paths to create a second
+identity. Training and replay retain the dataset, base checkpoint, tokenizer,
+and evaluation-model snapshots, revalidate all four before and after plugin
+consumption, and check them again during postflight. Consequently an input
+rewritten or replaced during either run fails the component even when the
+replacement has the same bytes and would pass a later digest-only check.
 
 For training evidence, those provider checks reconcile the ordered task-ID
 list and single provider-reported target with every receipt; require unique

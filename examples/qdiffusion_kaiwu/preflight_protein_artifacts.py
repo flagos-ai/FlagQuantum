@@ -239,7 +239,11 @@ def _dataset_profile(
 
 def _inspect_artifacts(
     config_path: Path, artifact_paths: dict[str, Path]
-) -> tuple[str, dict[str, dict[str, Any]]]:
+) -> tuple[
+    str,
+    dict[str, dict[str, Any]],
+    dict[str, ArtifactSnapshot],
+]:
     """Recompute the complete frozen input set without publishing evidence."""
 
     config, config_sha256 = _read_config(config_path)
@@ -247,6 +251,7 @@ def _inspect_artifacts(
         raise ValueError("all four named artifact paths are required")
 
     artifacts: dict[str, dict[str, Any]] = {}
+    snapshots: dict[str, ArtifactSnapshot] = {}
     errors: list[str] = []
     for artifact_name, config_name in ARTIFACT_FIELDS.items():
         section = config.get(config_name)
@@ -269,13 +274,14 @@ def _inspect_artifacts(
             "algorithm": algorithm,
             "file_count": file_count,
         }
+        snapshots[artifact_name] = snapshot
         if artifact_name == "dataset" and digest == expected:
             artifacts[artifact_name]["profile"] = _dataset_profile(
                 snapshot, config
             )
     if errors:
         raise ValueError("artifact preflight failed:\n- " + "\n- ".join(errors))
-    return config_sha256, artifacts
+    return config_sha256, artifacts, snapshots
 
 
 def assert_artifacts_unchanged(
@@ -285,7 +291,7 @@ def assert_artifacts_unchanged(
 ) -> None:
     """Fail if any frozen input or the config changed after preflight."""
 
-    config_sha256, artifacts = _inspect_artifacts(config_path, artifact_paths)
+    config_sha256, artifacts, _ = _inspect_artifacts(config_path, artifact_paths)
     if preflight_record.get("config_sha256") != config_sha256:
         raise ValueError("frozen experiment config changed after artifact preflight")
     if preflight_record.get("artifacts") != artifacts:
@@ -299,7 +305,22 @@ def preflight_artifacts(
 ) -> dict[str, Any]:
     """Hash all required local artifacts and fail if config identities differ."""
 
-    config_sha256, artifacts = _inspect_artifacts(config_path, artifact_paths)
+    record, _ = preflight_artifacts_with_snapshots(
+        config_path, artifact_paths, output_path
+    )
+    return record
+
+
+def preflight_artifacts_with_snapshots(
+    config_path: Path,
+    artifact_paths: dict[str, Path],
+    output_path: Path,
+) -> tuple[dict[str, Any], dict[str, ArtifactSnapshot]]:
+    """Publish preflight and retain the exact artifact snapshots it verified."""
+
+    config_sha256, artifacts, snapshots = _inspect_artifacts(
+        config_path, artifact_paths
+    )
 
     record: dict[str, Any] = {
         "schema": PREFLIGHT_SCHEMA,
@@ -310,7 +331,8 @@ def preflight_artifacts(
         "artifacts": artifacts,
     }
     write_private_json_exclusive(output_path, record)
-    return record
+    revalidate_artifact_snapshots(snapshots)
+    return record, snapshots
 
 
 def _parser() -> argparse.ArgumentParser:

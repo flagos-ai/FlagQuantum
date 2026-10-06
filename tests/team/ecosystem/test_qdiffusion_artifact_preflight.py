@@ -12,6 +12,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     assert_artifacts_unchanged,
     capture_artifact_snapshots,
     preflight_artifacts,
+    preflight_artifacts_with_snapshots,
     revalidate_artifact_snapshots,
 )
 
@@ -218,6 +219,27 @@ def test_artifact_snapshot_rejects_same_digest_rewrite_after_preflight(
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         revalidate_artifact_snapshots(snapshots)
+
+
+def test_preflight_returns_the_exact_snapshots_used_for_published_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    real_write = preflight_module.write_private_json_exclusive
+    original = paths["dataset"].read_bytes()
+
+    def write_then_replace(path: Path, value: object) -> None:
+        real_write(path, value)
+        paths["dataset"].write_bytes(original)
+
+    monkeypatch.setattr(
+        preflight_module, "write_private_json_exclusive", write_then_replace
+    )
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        preflight_artifacts_with_snapshots(
+            config_path, paths, tmp_path / "preflight.json"
+        )
 
 
 def test_postflight_rejects_artifact_drift(tmp_path: Path) -> None:

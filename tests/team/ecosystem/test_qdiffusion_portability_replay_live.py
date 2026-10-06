@@ -16,6 +16,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
     _verified_checkpoint,
     run_portability_replay,
 )
+from examples.qdiffusion_kaiwu.stable_source_tree import capture_regular_file
 from flagquantum.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
@@ -268,6 +269,76 @@ def test_portability_replay_rejects_checkpoint_change_during_weight_load(
     assert record["acceptance"]["portability"] == "fail"
 
 
+def test_portability_replay_rejects_frozen_input_change_during_build(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "trained.pt"
+    checkpoint.write_bytes(b"trained")
+    frozen_paths = {
+        "dataset": tmp_path / "dataset.fasta",
+        "base_checkpoint": tmp_path / "base.pt",
+        "tokenizer": tmp_path / "tokenizer.json",
+        "evaluation_model": tmp_path / "esm2.pt",
+    }
+    for name, path in frozen_paths.items():
+        path.write_bytes(name.encode())
+    artifact_snapshots = {
+        name: capture_regular_file(path, label=name)
+        for name, path in frozen_paths.items()
+    }
+
+    def build_and_mutate(**kwargs: object) -> _Generator:
+        frozen_paths["base_checkpoint"].write_bytes(b"changed")
+        return _Generator(kwargs["bm_sampler"])
+
+    builder = SimpleNamespace(build_qdiffusion=build_and_mutate)
+    runtime = SimpleNamespace(
+        load_trained_energy_weights=lambda *args: {},
+        seed_torch=lambda seed: None,
+        encode_sequence=lambda *args, **kwargs: torch.tensor([[1, 2, 3]]),
+    )
+    io_module = SimpleNamespace(
+        read_fasta_records=lambda path: [("protein", "ACDE")]
+    )
+
+    record = run_portability_replay(
+        builder=builder,
+        runtime=runtime,
+        io_module=io_module,
+        client=_CompletedClient(),
+        config=_config(),
+        config_sha256="a" * 64,
+        artifact_preflight_sha256="e" * 64,
+        training_record_sha256="b" * 64,
+        test_fasta=tmp_path / "test.fasta",
+        base_checkpoint=frozen_paths["base_checkpoint"],
+        trained_checkpoint=checkpoint,
+        trained_checkpoint_sha256=hashlib.sha256(b"trained").hexdigest(),
+        execution_host="jp-a800-172",
+        observed_hostname="host-172",
+        observed_gpu="NVIDIA A800-SXM4-80GB",
+        source_revision="c" * 40,
+        plugin_revision="d" * 40,
+        source_preflight_sha256="f" * 64,
+        transfer_manifest_sha256="0" * 64,
+        environment_lock_sha256="1" * 64,
+        sdk_version="1.3.1",
+        project_no="project",
+        task_prefix="replay-input-change",
+        requested_samples=10,
+        timeout=1.0,
+        poll_interval=0.01,
+        device=torch.device("cpu"),
+        real_provider_transport=False,
+        artifact_snapshots=artifact_snapshots,
+    )
+
+    assert record["run_completed"] is False
+    assert record["failure"]["type"] == "ValueError"
+    assert record["remote_call_count"] == 0
+    assert record["acceptance"]["portability"] == "fail"
+
+
 def test_portability_replay_sdk_subclass_cannot_claim_real_transport(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -457,7 +528,7 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     assert source.index("_load_training_record(") < source.index(
         "resolve_kaiwu_credentials()"
     )
-    assert source.index("preflight_artifacts(") < source.index(
+    assert source.index("preflight_artifacts_with_snapshots(") < source.index(
         "resolve_kaiwu_credentials()"
     )
     assert source.index('artifact_preflight.get("config_sha256")') < source.index(

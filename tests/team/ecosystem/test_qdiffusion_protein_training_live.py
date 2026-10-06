@@ -297,7 +297,7 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     ).read_text(encoding="utf-8")
 
     assert "ACKNOWLEDGEMENT" in source
-    assert source.index("preflight_artifacts(") < source.index(
+    assert source.index("preflight_artifacts_with_snapshots(") < source.index(
         "resolve_kaiwu_credentials()"
     )
     assert source.index('artifact_preflight.get("config_sha256")') < source.index(

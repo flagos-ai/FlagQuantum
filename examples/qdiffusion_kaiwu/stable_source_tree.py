@@ -48,6 +48,11 @@ def _stream_sha256(stream: BinaryIO) -> str:
 
 
 def _metadata_identity(metadata: os.stat_result) -> tuple[int, ...]:
+    if stat.S_ISDIR(metadata.st_mode):
+        # Directory entry churn is validated from the captured path/inode set.
+        # Including mtime/ctime here would make an unrelated sibling file
+        # creation invalidate an otherwise unchanged captured leaf.
+        return (metadata.st_dev, metadata.st_ino, metadata.st_mode)
     return tuple(getattr(metadata, field) for field in _STABLE_METADATA_FIELDS)
 
 
