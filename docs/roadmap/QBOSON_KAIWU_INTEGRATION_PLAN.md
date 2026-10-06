@@ -1283,7 +1283,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   acceptance validation. The exact archive file snapshot now remains anchored
   through primary training and portability replay, with checks around plugin
   work and at postflight; decompression also fails as soon as it exceeds the
-  captured FASTA length rather than continuing through oversized output.
+  captured FASTA length rather than continuing through oversized output. The
+  stable file capture now rejects an oversized FASTA or a gzip whose byte
+  length differs from the frozen value before hashing its body, and repeats the
+  size check on the opened no-follow descriptor.
 - Protein preflight now returns the exact stable snapshots from the pass that
   produced its record instead of reopening the paths to establish a second
   identity. Primary training and portability replay retain those snapshots and

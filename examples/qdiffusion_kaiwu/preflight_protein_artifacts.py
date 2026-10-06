@@ -44,7 +44,7 @@ _SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 def _artifact_identity_snapshot(
-    path: Path,
+    path: Path, *, max_bytes: int | None = None
 ) -> tuple[str, str, int, RegularFileSnapshot | RegularTreeSnapshot]:
     """Return one stable artifact identity and its re-openable snapshot."""
 
@@ -57,8 +57,12 @@ def _artifact_identity_snapshot(
     if path.is_symlink():
         raise ValueError(f"artifact root must not be a symlink: {path}")
     if stat.S_ISREG(metadata.st_mode):
-        snapshot = capture_regular_file(path, label="artifact")
+        snapshot = capture_regular_file(
+            path, label="artifact", max_bytes=max_bytes
+        )
         return snapshot.sha256, "file-sha256-v1", 1, snapshot
+    if max_bytes is not None:
+        raise ValueError("size-bounded artifact must be a regular file")
     if not stat.S_ISDIR(metadata.st_mode):
         raise ValueError(f"artifact must be a regular file or directory: {path}")
     snapshot = capture_regular_tree(path, label="artifact tree")
@@ -274,7 +278,10 @@ def _verify_dataset_source_archive(
         )
 
     source_snapshot = capture_regular_file(
-        archive_path, label="dataset source archive"
+        archive_path,
+        label="dataset source archive",
+        max_bytes=_MAX_DATASET_BYTES,
+        expected_bytes=expected_bytes,
     )
     if source_snapshot.sha256 != expected_sha256:
         raise ValueError("dataset source archive digest differs from config")
@@ -351,7 +358,10 @@ def _inspect_artifacts(
             errors.append(f"config.{config_name}.sha256: expected a digest")
             continue
         digest, algorithm, file_count, snapshot = _artifact_identity_snapshot(
-            artifact_paths[artifact_name]
+            artifact_paths[artifact_name],
+            max_bytes=(
+                _MAX_DATASET_BYTES if artifact_name == "dataset" else None
+            ),
         )
         if digest != expected:
             errors.append(

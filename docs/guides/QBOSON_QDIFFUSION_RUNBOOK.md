@@ -719,7 +719,9 @@ post-decompression file. The exact source-archive file snapshot remains pinned
 through primary training and portability replay and is checked before and after
 plugin work and again during postflight. Decompression stops immediately if it
 would exceed the captured FASTA size; the 4 GiB dataset ceiling also applies
-before FASTA parsing.
+before hashing or FASTA parsing. The retained gzip must match its frozen byte
+length before hashing, and that exact size is rechecked on the no-follow file
+descriptor before any archive bytes are consumed.
 
 The frozen configuration includes every plugin knob that changes the selected
 corpus or generated sequences: record-length bounds, record cap, validation and

@@ -57,7 +57,14 @@ def _metadata_identity(metadata: os.stat_result) -> tuple[int, ...]:
     return tuple(getattr(metadata, field) for field in _STABLE_METADATA_FIELDS)
 
 
-def _hash_stable_file(target: Path, metadata: os.stat_result, *, label: str) -> str:
+def _hash_stable_file(
+    target: Path,
+    metadata: os.stat_result,
+    *,
+    label: str,
+    max_bytes: int | None = None,
+    expected_bytes: int | None = None,
+) -> str:
     no_follow = getattr(os, "O_NOFOLLOW", None)
     if no_follow is None:
         raise ValueError(f"platform cannot safely hash {label}")
@@ -73,6 +80,10 @@ def _hash_stable_file(target: Path, metadata: os.stat_result, *, label: str) -> 
             or (opened.st_dev, opened.st_ino) != (metadata.st_dev, metadata.st_ino)
         ):
             raise ValueError(f"{label} file changed before hashing: {target.name}")
+        if max_bytes is not None and opened.st_size > max_bytes:
+            raise ValueError(f"{label} exceeds the size bound")
+        if expected_bytes is not None and opened.st_size != expected_bytes:
+            raise ValueError(f"{label} size differs from the expected value")
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
             digest = _stream_sha256(stream)
         after = os.fstat(descriptor)
@@ -109,11 +120,21 @@ def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> Non
         raise ValueError(f"{label} changed after identity capture")
 
 
-def capture_regular_file(path: Path, *, label: str) -> RegularFileSnapshot:
+def capture_regular_file(
+    path: Path,
+    *,
+    label: str,
+    max_bytes: int | None = None,
+    expected_bytes: int | None = None,
+) -> RegularFileSnapshot:
     """Hash one regular file and retain its leaf and parent identities."""
 
     if not path.is_absolute():
         raise ValueError(f"{label} path must be absolute")
+    if max_bytes is not None and max_bytes < 0:
+        raise ValueError(f"{label} size bound must be nonnegative")
+    if expected_bytes is not None and expected_bytes < 0:
+        raise ValueError(f"{label} expected size must be nonnegative")
     parent_path = path.parent
     try:
         parent = parent_path.lstat()
@@ -124,9 +145,19 @@ def capture_regular_file(path: Path, *, label: str) -> RegularFileSnapshot:
         raise ValueError(f"{label} parent must be a regular, non-symlink directory")
     if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
         raise ValueError(f"{label} must be a regular, non-symlink file")
+    if max_bytes is not None and metadata.st_size > max_bytes:
+        raise ValueError(f"{label} exceeds the size bound")
+    if expected_bytes is not None and metadata.st_size != expected_bytes:
+        raise ValueError(f"{label} size differs from the expected value")
     snapshot = RegularFileSnapshot(
         path=path,
-        sha256=_hash_stable_file(path, metadata, label=label),
+        sha256=_hash_stable_file(
+            path,
+            metadata,
+            label=label,
+            max_bytes=max_bytes,
+            expected_bytes=expected_bytes,
+        ),
         size=metadata.st_size,
         identity=_metadata_identity(metadata),
         parent=parent_path,

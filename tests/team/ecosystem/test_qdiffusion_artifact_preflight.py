@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu import preflight_protein_artifacts as preflight_module
+from examples.qdiffusion_kaiwu import stable_source_tree as stable_tree_module
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     _artifact_identity,
     capture_artifact_snapshots,
@@ -111,6 +112,63 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, Path]]:
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
     config_path.chmod(0o600)
     return config_path, paths
+
+
+def test_preflight_rejects_oversized_dataset_before_hashing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    monkeypatch.setattr(
+        preflight_module,
+        "_MAX_DATASET_BYTES",
+        paths["dataset"].stat().st_size - 1,
+    )
+
+    def unexpected_hash(_: object) -> str:
+        raise AssertionError("oversized dataset must not be hashed")
+
+    monkeypatch.setattr(stable_tree_module, "_stream_sha256", unexpected_hash)
+
+    with pytest.raises(ValueError, match="exceeds the size bound"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_preflight_rejects_dataset_directory_before_tree_walk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    paths["dataset"].unlink()
+    paths["dataset"].mkdir()
+    (paths["dataset"] / "unexpected.fasta").write_bytes(b">p1\nACDE\n")
+
+    def unexpected_capture(*_: object, **__: object) -> object:
+        raise AssertionError("dataset directory must not be traversed")
+
+    monkeypatch.setattr(preflight_module, "capture_regular_tree", unexpected_capture)
+
+    with pytest.raises(ValueError, match="size-bounded artifact"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
+
+
+def test_preflight_rejects_source_size_mismatch_before_archive_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path, paths = _fixture(tmp_path)
+    source_path = _dataset_source_archive(paths)
+    source_path.write_bytes(source_path.read_bytes() + b"unexpected")
+    real_hash = stable_tree_module._hash_stable_file
+
+    def reject_archive_hash(
+        target: Path, metadata: object, **kwargs: object
+    ) -> str:
+        if target == source_path:
+            raise AssertionError("size-mismatched archive must not be hashed")
+        return real_hash(target, metadata, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(stable_tree_module, "_hash_stable_file", reject_archive_hash)
+
+    with pytest.raises(ValueError, match="size differs from the expected value"):
+        preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
 
 
 @pytest.mark.parametrize("unsafe_kind", ("public_file", "public_parent"))
@@ -271,8 +329,8 @@ def test_preflight_binds_dataset_profile_to_hashed_file_snapshot(
     config_path, paths = _fixture(tmp_path)
     real_capture = preflight_module._artifact_identity_snapshot
 
-    def capture_then_mutate(path: Path):
-        identity = real_capture(path)
+    def capture_then_mutate(path: Path, **kwargs: int | None):
+        identity = real_capture(path, **kwargs)
         if path == paths["dataset"]:
             path.write_bytes(b">changed\nAAAA\n")
         return identity
