@@ -2059,7 +2059,7 @@
           }
         }
       ],
-      "command": "benchmarks/tn_layout_contraction.py run --host-label jp-a800-171 --compiler-lane stock_triton --source-revision d6c0381671ed66a787a99555b993b20f580b2b2a --warmup 10 --repeats 30 --group-size 10 --output /root/fq-num002-output-d6c038167/jp-a800-171-stock.json",
+      "command": "benchmarks/tn_layout_contraction.py run --host-label jp-a800-171 --compiler-lane stock_triton --source-revision d6c0381671ed66a787a99555b993b20f580b2b2a --warmup 10 --repeats 30 --group-size 10 --output <redacted-path>",
       "compiler": {
         "distribution": "triton",
         "identity_source": "python_package_metadata",
@@ -4131,7 +4131,7 @@
           }
         }
       ],
-      "command": "benchmarks/tn_layout_contraction.py run --host-label jp-a800-172 --compiler-lane stock_triton --source-revision d6c0381671ed66a787a99555b993b20f580b2b2a --warmup 10 --repeats 30 --group-size 10 --output /root/fq-num002-output-d6c038167/jp-a800-172-stock.json",
+      "command": "benchmarks/tn_layout_contraction.py run --host-label jp-a800-172 --compiler-lane stock_triton --source-revision d6c0381671ed66a787a99555b993b20f580b2b2a --warmup 10 --repeats 30 --group-size 10 --output <redacted-path>",
       "compiler": {
         "distribution": "triton",
         "identity_source": "python_package_metadata",
