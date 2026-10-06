@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -741,6 +743,49 @@ def test_bundle_publisher_does_not_replace_dangling_destination_symlink(
         )
 
     assert destination.is_symlink()
+
+
+def test_bundle_publisher_syncs_files_staging_and_output_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "config.json"
+    environment_lock_path = tmp_path / "environment-lock.json"
+    component_path = tmp_path / "component.json"
+    _write_json(config_path, {"schema": "test.config", "version": "1.0"})
+    _write_json(environment_lock_path, {"schema": "test.environment"})
+    _write_json(component_path, {"schema": "test.component", "version": "1.0"})
+    destination = tmp_path / "acceptance"
+    synced_types: list[int] = []
+    real_fsync = os.fsync
+
+    def record_fsync(descriptor: int) -> None:
+        synced_types.append(os.fstat(descriptor).st_mode)
+        real_fsync(descriptor)
+
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.validate_acceptance",
+        lambda _: [],
+    )
+    monkeypatch.setattr(
+        "examples.qdiffusion_kaiwu.assemble_acceptance.os.fsync", record_fsync
+    )
+
+    _publish_acceptance_bundle(
+        destination,
+        config_path=config_path,
+        environment_lock_path=environment_lock_path,
+        config={
+            "primary_host": "jp-a800-171",
+            "replay_host": "jp-a800-172",
+        },
+        primary={},
+        replay={},
+        component_sources={"component.json": component_path},
+    )
+
+    assert any(stat.S_ISREG(mode) for mode in synced_types)
+    assert sum(stat.S_ISDIR(mode) for mode in synced_types) >= 3
+    assert (destination / "manifest.json").is_file()
 
 
 def test_bundle_publisher_detects_dangling_symlink_created_during_validation(

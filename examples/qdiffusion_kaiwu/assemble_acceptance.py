@@ -461,6 +461,26 @@ def _write_exclusive(path: Path, encoded: bytes) -> None:
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "wb") as stream:
         stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def _sync_directory(path: Path) -> None:
+    """Persist directory-entry changes without following the directory leaf."""
+
+    descriptor = os.open(
+        path,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise ValueError("acceptance bundle directory changed during sync")
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _require_absent_destination(path: Path, *, final_check: bool = False) -> None:
@@ -508,6 +528,7 @@ def _materialize_acceptance_bundle(
                 "sha256": hashlib.sha256(encoded).hexdigest(),
             }
         )
+    _sync_directory(components)
 
     primary_name = f"{config['primary_host']}.json"
     replay_name = f"{config['replay_host']}.json"
@@ -534,6 +555,7 @@ def _materialize_acceptance_bundle(
     }
     manifest_path = root / "manifest.json"
     _write_exclusive(manifest_path, _json_bytes(manifest))
+    _sync_directory(root)
     return manifest_path
 
 
@@ -610,6 +632,7 @@ def _publish_acceptance_bundle(
             )
         _require_absent_destination(destination, final_check=True)
         os.replace(staging, destination)
+        _sync_directory(destination.parent)
 
 
 def main() -> None:

@@ -631,6 +631,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   frozen seed. It recomputes cross-seed means, validates all hash links, copies
   the exact components into a private bundle, and invokes the fail-closed final
   validator; selective seed reporting and component replacement are rejected.
+- Final bundle publication now syncs every newly written file, the component
+  directory, the staging root, and the output parent after the atomic directory
+  rename. A successful assembler exit therefore represents durable evidence
+  publication rather than only page-cache visibility.
 - A credential-free local golden-path script now verifies clean checkouts at the
   pinned Kaiwu Community and Kaiwu PyTorch Plugin revisions, clears provider
   credential variables, explicitly gates source-only conformance without
