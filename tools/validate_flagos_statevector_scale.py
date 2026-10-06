@@ -333,7 +333,7 @@ def _run_case(
         norm_error=norm_error,
         determinism_error=determinism_error,
         tolerance=tolerance,
-        persistent_qubit_layout=persistent,
+        persistent_wire_layout=persistent,
         device_type=actual.device.type,
         reference_scope=reference_scope,
     )

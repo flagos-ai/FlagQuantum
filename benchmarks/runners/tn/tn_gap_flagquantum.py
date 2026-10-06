@@ -58,7 +58,7 @@ def main() -> None:
         )
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=0,
+        n_qubits=0,
         bsz=1,
         nodes=nodes,
         output_labels=workload.output,
