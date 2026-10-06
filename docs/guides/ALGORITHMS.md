@@ -1360,7 +1360,7 @@ families and the magnitudes their refusals report:
 its word immediately after the channel instruction it inverts, so `E^-1` composed with `E` is
 the identity and the program that is read is the declared noise removed. On `h(0); cx(0, 1)`
 with `zz(0, 1)` and `bit_flip` at `p = 0.1` on the `cx`, the two-location composite reads
-`0.639999995231628` unmitigated and `1.000000000000000` mitigated in `complex128`:
+`0.639999995231628` unmitigated and `0.999999999999999` mitigated in `complex128`:
 
 ```python
 import torch
@@ -1376,13 +1376,13 @@ model = NoiseModel().add("cx", bit_flip_channel(0.1, dtype=torch.complex128))
 
 result = run_pec(circuit, observable, noise_model=model, dtype=torch.complex128)
 print(f"{result.estimate:.15f}", f"{result.unmitigated:.15f}")
-# 1.000000000000000 0.639999995231628
+# 0.999999999999999 0.639999995231628
 
 print(f"{result.gamma:.12f}", result.term_count, result.executions)
 # 1.562500011642 16 17
 ```
 
-The same channel at the runtime's default single precision gives `0.999999866503456` against
+The same channel at the runtime's default single precision gives `0.999999866503455` against
 an unmitigated `0.639999806880951`, so the floor the mitigation leaves is the precision the
 channel was declared in rather than the method's. The one-location read of the same program
 is `0.799999997019768` unmitigated, `1.000000000000000` mitigated, at `gamma` `1.250000004657`

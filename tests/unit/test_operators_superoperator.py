@@ -922,3 +922,328 @@ def test_the_dense_form_is_refused_above_its_byte_ceiling() -> None:
     assert "4096 x 4096" in large_message
     assert "268435456 bytes" in large_message
     assert "16777216-byte ceiling" in large_message
+
+
+def _normalized_pauli_basis(
+    n_qubits: int, dtype: torch.dtype = _COMPLEX128
+) -> tuple[torch.Tensor, ...]:
+    """Return ``P_i / sqrt(d)`` for one or two wires, built without the network.
+
+    The four matrices are written out as literals rather than read from
+    ``flagquantum.simulation.pauli``, so a convention error in the Pauli-product
+    helper cannot be inherited by the basis this module transforms with. The word
+    order is the identity-first order ``flagquantum.simulation.pauli.pauli_words``
+    fixes and ``flagquantum.algorithms.pec`` indexes its weights by.
+    """
+
+    identity = torch.eye(2, dtype=dtype)
+    exchange = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype)
+    # ``Y`` is ``i`` times the real antisymmetric matrix. The factor matters even
+    # though a per-element phase leaves the diagonal of `P^dag D P` untouched: it
+    # is what makes this the Pauli basis rather than a basis that merely resembles
+    # it, and only the literal form can catch a phase error on the production
+    # builder this helper is the independent counterweight to.
+    imaginary = torch.tensor([[0.0, -1.0], [1.0, 0.0]], dtype=dtype) * 1j
+    phase = torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=dtype)
+    single = (identity, exchange, imaginary, phase)
+    if n_qubits == 1:
+        return tuple(matrix / (2.0**0.5) for matrix in single)
+    if n_qubits != 2:
+        raise ValueError(f"this helper builds one or two wires, not {n_qubits}")
+    return tuple(torch.kron(left, right) / 2.0 for left in single for right in single)
+
+
+def _basis_action_oracle(
+    mapped: SuperOperator, basis: tuple[torch.Tensor, ...]
+) -> torch.Tensor:
+    """Build ``trace(B_i^dag E(B_j))`` from the map's own ``apply``."""
+
+    size = len(basis)
+    matrix = torch.zeros(size, size, dtype=basis[0].dtype)
+    for row in range(size):
+        for column in range(size):
+            matrix[row, column] = torch.trace(
+                basis[row].mH @ mapped.apply(basis[column])
+            )
+    return matrix
+
+
+def _from_kraus_by_hand(operators: tuple[torch.Tensor, ...]) -> SuperOperator:
+    """Accumulate ``sum_k K_k . K_k^dag`` through the public constructors."""
+
+    total = SuperOperator()
+    for operator in operators:
+        total += SuperOperator.left_right_multiply(operator, operator.conj().T)
+    return total
+
+
+def test_from_kraus_is_the_two_sided_sum_of_its_operators() -> None:
+    operators = _complex_factors(_DIMENSION)
+    mapped = SuperOperator.from_kraus(operators)
+    expected = _from_kraus_by_hand(operators)
+    state = _density_matrix()
+
+    assert mapped == expected
+    assert len(mapped) == len(operators)
+    assert torch.equal(mapped.apply(state), expected.apply(state))
+    assert torch.equal(mapped.dense(), expected.dense())
+    # Each operator is used beside its own adjoint, and the right factor is the
+    # adjoint rather than the operator, so a non-normal pair is distinguishable.
+    for index, operator in enumerate(operators):
+        coefficient, left, right = mapped.terms[index]
+        assert coefficient == 1.0 + 0.0j
+        assert left is operator
+        assert torch.equal(right, operator.conj().T)
+
+
+def test_from_kraus_refuses_an_empty_list_by_name() -> None:
+    with pytest.raises(ValueError) as refused:
+        SuperOperator.from_kraus(())
+    message = str(refused.value)
+    assert "at least one operator" in message
+    assert "no dimension to act on" in message
+
+
+def test_from_kraus_refuses_a_factor_that_cannot_be_adjointed() -> None:
+    matrix = torch.eye(_DIMENSION, dtype=torch.float64)
+    with pytest.raises(ValueError, match="must support adjoint"):
+        SuperOperator.from_kraus((_MatrixWithoutAdjoint(matrix),))
+
+
+def test_from_kraus_refuses_operators_that_disagree_on_dimension() -> None:
+    with pytest.raises(ValueError, match="share one dimension"):
+        SuperOperator.from_kraus(
+            (torch.eye(2, dtype=_COMPLEX128), torch.eye(4, dtype=_COMPLEX128))
+        )
+
+
+def _unit_matrices(dimension: int) -> tuple[torch.Tensor, ...]:
+    """Return the ``d**2`` matrix units, an orthonormal basis of matrices."""
+
+    matrices = []
+    for row in range(dimension):
+        for column in range(dimension):
+            matrix = torch.zeros(dimension, dimension, dtype=_COMPLEX128)
+            matrix[row, column] = 1.0 + 0.0j
+            matrices.append(matrix)
+    return tuple(matrices)
+
+
+def test_matrix_in_basis_of_the_identity_map_is_the_identity() -> None:
+    for n_qubits in (1, 2):
+        dimension = 2**n_qubits
+        identity_map = SuperOperator.from_kraus(
+            (torch.eye(dimension, dtype=_COMPLEX128),)
+        )
+        expected = torch.eye(dimension * dimension, dtype=_COMPLEX128)
+
+        transfer = identity_map.matrix_in_basis(_normalized_pauli_basis(n_qubits))
+        assert transfer.shape == (dimension * dimension, dimension * dimension)
+        assert torch.allclose(transfer, expected, atol=1e-14)
+
+        # The matrix units are orthonormal too, and in them the identity map's
+        # matrix is the identity for the same reason rather than by coincidence.
+        assert torch.allclose(
+            identity_map.matrix_in_basis(_unit_matrices(dimension)),
+            expected,
+            atol=1e-14,
+        )
+
+
+def test_matrix_in_basis_agrees_with_the_maps_own_action() -> None:
+    for n_qubits in (1, 2):
+        dimension = 2**n_qubits
+        operators = (
+            _complex_factors(dimension)[0],
+            _complex_factors(dimension)[1],
+        )
+        mapped = SuperOperator.from_kraus(operators)
+        basis = _normalized_pauli_basis(n_qubits)
+        assert torch.allclose(
+            mapped.matrix_in_basis(basis),
+            _basis_action_oracle(mapped, basis),
+            atol=1e-13,
+        )
+
+
+def test_matrix_in_basis_reads_the_pauli_transfer_matrix_of_a_channel() -> None:
+    identity = torch.eye(2, dtype=_COMPLEX128)
+    exchange = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=_COMPLEX128)
+    phase = torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=_COMPLEX128)
+    basis = _normalized_pauli_basis(1)
+
+    # A bit flip at probability p sends X to (1 - 2p) X and Y to (1 - 2p) Y while
+    # leaving I and Z alone, so its transfer matrix is diagonal.
+    probability = 0.25
+    flip = SuperOperator.from_kraus(
+        ((1.0 - probability) ** 0.5 * identity, probability**0.5 * exchange)
+    )
+    expected = torch.diag(
+        torch.tensor([1.0, 1.0, 1.0 - 2.0 * probability, 1.0 - 2.0 * probability])
+    ).to(_COMPLEX128)
+    assert torch.allclose(flip.matrix_in_basis(basis), expected, atol=1e-14)
+
+    # A phase flip is the same statement on the other two axes.
+    damped = SuperOperator.from_kraus(
+        ((1.0 - probability) ** 0.5 * identity, probability**0.5 * phase)
+    )
+    expected_phase = torch.diag(
+        torch.tensor([1.0, 1.0 - 2.0 * probability, 1.0 - 2.0 * probability, 1.0])
+    ).to(_COMPLEX128)
+    assert torch.allclose(damped.matrix_in_basis(basis), expected_phase, atol=1e-14)
+
+    # Amplitude damping is not a Pauli channel: its only off-diagonal entry is the
+    # transition the map performs, and that entry is exactly gamma.
+    gamma = 0.3
+    lowering = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=_COMPLEX128)
+    damping = SuperOperator.from_kraus(
+        (
+            torch.tensor([[1.0, 0.0], [0.0, (1.0 - gamma) ** 0.5]], dtype=_COMPLEX128),
+            (gamma**0.5) * lowering,
+        )
+    )
+    transfer = damping.matrix_in_basis(basis)
+    expected_damping = torch.tensor(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, (1.0 - gamma) ** 0.5, 0.0, 0.0],
+            [0.0, 0.0, (1.0 - gamma) ** 0.5, 0.0],
+            [gamma, 0.0, 0.0, 1.0 - gamma],
+        ],
+        dtype=_COMPLEX128,
+    )
+    assert torch.allclose(transfer, expected_damping, atol=1e-15)
+
+
+def test_matrix_in_basis_admits_a_single_precision_basis() -> None:
+    # The tolerance is eight epsilons of the map's own dtype, so the same
+    # normalized Pauli basis that is orthonormal to 2.2e-16 in complex128 is
+    # admitted in complex64, where its residual is 6.0e-08. A single absolute
+    # threshold would have refused one of the two.
+    single = _normalized_pauli_basis(1, torch.complex64)
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=torch.complex64),))
+    transfer = mapped.matrix_in_basis(single)
+    assert transfer.dtype == torch.complex64
+    assert torch.allclose(transfer, torch.eye(4, dtype=torch.complex64), atol=1e-6)
+
+
+def test_matrix_in_basis_refuses_a_basis_that_is_not_the_right_length() -> None:
+    basis = _normalized_pauli_basis(1)
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=_COMPLEX128),))
+
+    with pytest.raises(ValueError) as short:
+        mapped.matrix_in_basis(basis[:3])
+    assert "basis of 4 matrices" in str(short.value)
+    assert "3 were given" in str(short.value)
+
+    with pytest.raises(ValueError) as long:
+        mapped.matrix_in_basis((*basis, basis[0]))
+    assert "5 were given" in str(long.value)
+
+
+def test_matrix_in_basis_refuses_a_basis_that_is_not_orthonormal() -> None:
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=_COMPLEX128),))
+    units = _normalized_pauli_basis(1)
+
+    # The unnormalized Pauli words span the same space and are the natural wrong
+    # basis to reach for: their Gram matrix is 2 * the identity, exactly 1.0 away.
+    unnormalized = tuple(matrix * (2.0**0.5) for matrix in units)
+    with pytest.raises(ValueError) as refused:
+        mapped.matrix_in_basis(unnormalized)
+    message = str(refused.value)
+    assert "not orthonormal" in message
+    assert "1.000e+00 away from the identity" in message
+    assert "1.776e-15 tolerance" in message
+    assert "P^dag D P rather than P^-1 D P" in message
+
+    # A basis that is almost orthonormal is still refused, because the residual is
+    # what the returned matrix is wrong by and the margin here is one part in 1e-9.
+    almost = list(units)
+    almost[1] = almost[1] * (1.0 + 1e-6)
+    with pytest.raises(ValueError, match="2.000e-06 away from the identity"):
+        mapped.matrix_in_basis(almost)
+
+
+def test_matrix_in_basis_refuses_an_entry_that_is_not_a_basis_matrix() -> None:
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=_COMPLEX128),))
+    units = _normalized_pauli_basis(1)
+
+    with pytest.raises(ValueError, match="must be a tensor"):
+        mapped.matrix_in_basis((*units[:3], None))
+    with pytest.raises(ValueError, match="must be a 2 x 2 matrix"):
+        mapped.matrix_in_basis((*units[:3], torch.eye(3, dtype=_COMPLEX128)))
+    with pytest.raises(ValueError, match="must share the superoperator dtype"):
+        mapped.matrix_in_basis((*units[:3], units[3].to(torch.complex64)))
+    with pytest.raises(ValueError, match="needs at least one element"):
+        mapped.matrix_in_basis(())
+
+
+def test_matrix_in_basis_refuses_a_basis_on_another_device() -> None:
+    # The dense form is a CPU reference, so a basis that is not on the CPU is
+    # refused by name rather than reaching a Kronecker product whose operands
+    # disagree. ``meta`` supplies the second device without an accelerator.
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=_COMPLEX128),))
+    elsewhere = tuple(matrix.to(device="meta") for matrix in _normalized_pauli_basis(1))
+
+    with pytest.raises(ValueError) as refused:
+        mapped.matrix_in_basis(elsewhere)
+    message = str(refused.value)
+    assert "must live on the CPU device" in message
+    assert "this one is on meta" in message
+
+
+def test_the_published_pauli_basis_composes_with_the_basis_transform() -> None:
+    """The seam between the two modules: the basis Core reads is Simulation's.
+
+    ``_normalized_pauli_basis`` above is this file's own oracle, built from
+    literals so it cannot inherit a convention error from the production path.
+    This test is the other direction: it feeds the basis
+    :func:`flagquantum.simulation.pauli.normalized_pauli_basis` publishes into
+    :meth:`SuperOperator.matrix_in_basis` and checks the same transfer matrix
+    comes back, so the two modules agree on the word order and the scale rather
+    than only each agreeing with this file.
+    """
+
+    from flagquantum.simulation.pauli import normalized_pauli_basis, pauli_words
+
+    assert pauli_words(1) == ("I", "X", "Y", "Z")
+    published = normalized_pauli_basis(1, dtype=_COMPLEX128, device="cpu")
+    mine = _normalized_pauli_basis(1)
+    assert len(published) == len(mine)
+    for expected, actual in zip(mine, published, strict=True):
+        assert torch.allclose(expected, actual, atol=0.0)
+
+    probability = 0.25
+    flip = SuperOperator.from_kraus(
+        (
+            (1.0 - probability) ** 0.5 * torch.eye(2, dtype=_COMPLEX128),
+            probability**0.5
+            * torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=_COMPLEX128),
+        )
+    )
+    expected = torch.diag(
+        torch.tensor([1.0, 1.0, 1.0 - 2.0 * probability, 1.0 - 2.0 * probability])
+    ).to(_COMPLEX128)
+    assert torch.allclose(flip.matrix_in_basis(published), expected, atol=1e-14)
+
+
+def test_matrix_in_basis_refuses_a_basis_spanning_two_devices() -> None:
+    """A mixed basis is refused by name, not by ``torch.stack``'s own error.
+
+    ``torch.stack`` refuses tensors that disagree on device with a bare
+    ``RuntimeError``, so the named refusal has to run before the stack rather than
+    after it. The assertion is on the message, because the ordering is the whole
+    claim: if the stack ran first the caller would see the tensor library's
+    wording and this message would never be produced.
+    """
+
+    mapped = SuperOperator.from_kraus((torch.eye(2, dtype=_COMPLEX128),))
+    basis = _normalized_pauli_basis(1)
+    mixed = (basis[0], basis[1], basis[2], basis[3].to(device="meta"))
+
+    with pytest.raises(ValueError) as refused:
+        mapped.matrix_in_basis(mixed)
+    message = str(refused.value)
+    assert "must share one device" in message
+    assert "cpu" in message
+    assert "meta" in message

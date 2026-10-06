@@ -48,9 +48,14 @@ than samples; ``sampling_overhead`` is the cost a sampled implementation would p
 rather than a measured one.
 
 Dense Pauli-product mathematics lives in :mod:`flagquantum.simulation.pauli` and
-is reused here rather than restated. What this module owns is the quasi-probability
-arithmetic and the composition of one inverted channel per noise location, which
-is the same division of labour ``error_mitigation`` uses for its own fits.
+is reused here rather than restated. The channel's Pauli transfer matrix is not
+computed here either: this module hands the channel's Kraus list to
+:meth:`flagquantum.operators.SuperOperator.from_kraus` and reads the map back in
+the normalized Pauli basis, so the matrix this unit inverts and the spectrum it
+reads are one object seen in two bases rather than a second implementation of the
+same arithmetic. What this module owns is the quasi-probability arithmetic and the
+composition of one inverted channel per noise location, which is the same division
+of labour ``error_mitigation`` uses for its own fits.
 """
 
 from __future__ import annotations
@@ -64,8 +69,13 @@ import torch
 
 from ..core.ir import CircuitIR, Instruction
 from ..noise import KrausChannel, NoiseModel
+from ..operators import SuperOperator
 from ..simulation.density_matrix import density_matrix_from_ir
-from ..simulation.pauli import pauli_product_operator
+from ..simulation.pauli import (
+    normalized_pauli_basis,
+    pauli_product_operator,
+    pauli_words,
+)
 from .core import Hamiltonian
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for typing only
@@ -101,7 +111,6 @@ _DECOMPOSITION_TOLERANCE = 1e-6
 #: have intended.
 _MAXIMUM_TERMS = 1024
 
-_PAULI_CHARACTERS = ("I", "X", "Y", "Z")
 
 #: What must hold for the mitigated value to be closer to the noiseless value than
 #: the unmitigated one. These are the method's obligations, not the unit's
@@ -160,20 +169,6 @@ PEC_LIMITATIONS: tuple[str, ...] = (
 )
 
 
-def _pauli_words(n_qubits: int) -> tuple[str, ...]:
-    """Every Pauli word on ``n_qubits``, identity first, in one fixed order.
-
-    The order is load-bearing: a transfer spectrum indexed by this tuple has the
-    identity at position zero, which is what makes ``sum(coefficients) == 1`` the
-    trace-preservation check it is.
-    """
-
-    return tuple(
-        "".join(characters)
-        for characters in itertools.product(_PAULI_CHARACTERS, repeat=n_qubits)
-    )
-
-
 def _word_operators(word: str, n_qubits: int) -> tuple[tuple[int, str], ...]:
     """One word's non-identity factors, as the channel-local wire/name pairs."""
 
@@ -205,40 +200,6 @@ def _commutation_parity(left: str, right: str) -> int:
         )
         % 2
     )
-
-
-def _pauli_transfer_matrix(channel: KrausChannel) -> torch.Tensor:
-    """The channel's action on the Pauli basis, indexed by :func:`_pauli_words`.
-
-    Entry ``[i, j]`` is ``Tr(P_i E(P_j)) / d`` in double precision whatever
-    precision the channel's operators carry, so the decomposition is not limited
-    by the width of the channel it reads.
-    """
-
-    n_qubits = channel.n_wires
-    dimension = 1 << n_qubits
-    operators = [
-        pauli_product_operator(
-            _word_operators(word, n_qubits),
-            n_qubits,
-            dtype=torch.complex128,
-            device="cpu",
-        )
-        for word in _pauli_words(n_qubits)
-    ]
-    kraus = [
-        op.detach().to(device="cpu", dtype=torch.complex128) for op in channel.kraus
-    ]
-    images = torch.stack(
-        [
-            sum(
-                (op @ operator @ op.mH for op in kraus),
-                start=torch.zeros_like(operator),
-            )
-            for operator in operators
-        ]
-    )
-    return torch.einsum("iab,jba->ij", torch.stack(operators), images) / dimension
 
 
 def _quasi_probabilities(
@@ -274,7 +235,8 @@ class PauliTwirlDecomposition:
         channel_name: The channel this inverts, by the name it declares.
         n_wires: How many wires the channel acts on.
         pauli_words: The basis the weights are indexed by, identity first, in the
-            fixed order :func:`_pauli_words` produces.
+            fixed order :func:`flagquantum.simulation.pauli.pauli_words`
+            produces, which puts the identity at index zero.
         coefficients: The signed weight of each word in the inverse channel.
         transfer_spectrum: The eigenvalue each word's operator is sent to, in the
             same order, so a reader can see what the inversion divided by.
@@ -298,7 +260,10 @@ class PauliTwirlDecomposition:
             raise ValueError(
                 f"a channel acts on at least one wire, and {self.n_wires} was given"
             )
-        expected = _pauli_words(self.n_wires)
+        # The field above carries the caller's list; this is the enumeration
+        # every such list must equal. The bare name is the module-level
+        # function, since a dataclass field is only reachable through `self`.
+        expected = pauli_words(self.n_wires)
         if self.pauli_words != expected:
             raise ValueError(
                 "the Pauli words must be every word on this many wires, identity "
@@ -380,8 +345,15 @@ def pauli_twirl_decomposition(channel: KrausChannel) -> PauliTwirlDecomposition:
             "a Pauli twirl decomposition needs a Kraus channel, and "
             f"{type(channel).__name__} was given"
         )
-    words = _pauli_words(channel.n_wires)
-    transfer = _pauli_transfer_matrix(channel)
+    words = pauli_words(channel.n_wires)
+    channel_map = SuperOperator.from_kraus(
+        tuple(
+            op.detach().to(device="cpu", dtype=torch.complex128) for op in channel.kraus
+        )
+    )
+    transfer = channel_map.matrix_in_basis(
+        normalized_pauli_basis(channel.n_wires, dtype=torch.complex128, device="cpu")
+    )
     diagonal = torch.diag(transfer.diagonal())
     off_diagonal = transfer - diagonal
     largest_offdiagonal = float(torch.abs(off_diagonal).max())

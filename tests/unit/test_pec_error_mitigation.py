@@ -309,7 +309,12 @@ def test_the_weights_always_sum_to_one_however_the_channel_is_parameterized(
     # measured gap over these six channels is 7.0e-08, six orders below the 0.125
     # that a halved identity weight, or a 1/N**2 normalization, would leave.
     assert abs(math.fsum(decomposition.coefficients) - 1.0) <= 1e-6
-    assert decomposition.gamma >= 1.0
+    # ``gamma >= 1`` follows analytically from ``sum(c) == 1``, and it is asserted
+    # at a floating floor rather than exactly: the transfer matrix is read as
+    # ``P^dag D P``, so the identity eigenvalue lands one ulp above 1.0 and gamma
+    # one ulp below it. The measured gap over these six channels is 2.2e-16, far
+    # under the 1e-12 allowed here.
+    assert decomposition.gamma >= 1.0 - 1e-12
     assert decomposition.dominant_word[0].strip("IXYZ") == ""
     assert abs(decomposition.dominant_word[1]) == max(
         abs(value) for value in decomposition.coefficients
@@ -581,13 +586,18 @@ def test_a_precision_the_channel_declares_limits_the_correction() -> None:
     assert abs(single.estimate + 1.0) < 1e-6
     # A channel whose declared transfer matrix is stored exactly enough does reach
     # the simulation's own floor, which is why the two are reported separately.
+    # The floor is one complex128 epsilon here, 2.2e-16, and not zero: the transfer
+    # matrix is read from the channel's Kraus list as ``P^dag D P``, so an entry can
+    # land one rounding away from the value the sum of Pauli words would print. What
+    # this line separates is the *scale* of the two floors -- 1e-16 against the
+    # 3.5e-08 the single-precision channel above stops at -- not the bit pattern.
     exact = run_pec(
         Circuit(1, dtype=torch.complex128).x(0),
         observable,
         noise_model=NoiseModel().add("x", bit_flip_channel(0.1)),
         dtype=torch.complex128,
     )
-    assert abs(exact.estimate + 1.0) == 0.0
+    assert abs(exact.estimate + 1.0) <= 1e-15
     assert abs(float(exact.estimate) - float(single.estimate)) < 1e-6
 
 

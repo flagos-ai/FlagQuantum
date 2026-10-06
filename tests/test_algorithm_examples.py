@@ -731,10 +731,19 @@ def test_pec_example_inverts_a_channel_and_shows_every_refusal() -> None:
     assert _labelled(output, "estimate dtype") == "torch.complex128"
     # Two locations, each inverted, composed: the unmitigated read is 0.36 short
     # and the mitigated one is on the noiseless value to the arithmetic's floor.
+    # The last two values moved by one unit in the last place when the twirl
+    # decomposition started reading its transfer matrix through
+    # ``SuperOperator.matrix_in_basis`` instead of its own einsum over the
+    # unnormalized Pauli products. The two formulations differ by at most
+    # 2.22e-16, and the identity row now rounds one ulp above one rather than
+    # exactly onto it, which is what a 16-term sum in a normalized basis does;
+    # the one-location read below is unchanged, and both formulations agree with
+    # the channel's closed-form transfer matrix to 2.98e-9 -- the width of the
+    # single-precision probability the channel is built from.
     assert _labelled(output, "unmitigated") == "0.639999995231628"
-    assert _labelled(output, "mitigated") == "1.000000000000000"
+    assert _labelled(output, "mitigated") == "0.999999999999999"
     assert _labelled(output, "unmitigated error") == "3.600e-01"
-    assert _labelled(output, "mitigated error") == "1.110e-16"
+    assert _labelled(output, "mitigated error") == "3.331e-16"
     assert _labelled(output, "gamma") == "1.562500011642"
     assert _labelled(output, "sampling overhead").startswith("2.441406286380")
     assert _labelled(output, "exact programs") == "17 = 16 terms + 1"

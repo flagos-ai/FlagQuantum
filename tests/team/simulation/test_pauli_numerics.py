@@ -9,9 +9,11 @@ import torch
 from flagquantum.simulation.pauli import (
     exponential_pauli_operator,
     infer_n_wires_from_dense_state,
+    normalized_pauli_basis,
     pauli_product_density_expectation,
     pauli_product_operator,
     pauli_product_statevector_expectation,
+    pauli_words,
 )
 
 pytestmark = pytest.mark.unit
@@ -472,3 +474,112 @@ def test_pauli_z_expectation_has_analytic_rotation_gradient(density_mode: bool) 
     gradient = torch.autograd.grad(value.sum(), theta)[0]
     torch.testing.assert_close(value.squeeze(), theta.cos())
     torch.testing.assert_close(gradient, -theta.sin())
+
+
+_PAULI_LITERALS = {
+    # Written out here rather than read from the gate table, so this oracle cannot
+    # inherit a convention error from the table the code under test reads. Each
+    # character maps to (real part, imaginary part), each a 2x2 literal.
+    "I": (((1.0, 0.0), (0.0, 1.0)), ((0.0, 0.0), (0.0, 0.0))),
+    "X": (((0.0, 1.0), (1.0, 0.0)), ((0.0, 0.0), (0.0, 0.0))),
+    "Y": (((0.0, 0.0), (0.0, 0.0)), ((0.0, -1.0), (1.0, 0.0))),
+    "Z": (((1.0, 0.0), (0.0, -1.0)), ((0.0, 0.0), (0.0, 0.0))),
+}
+
+
+def _literal_pauli_matrix(word: str) -> torch.Tensor:
+    """Build one word's matrix by an explicit Kronecker product of literals."""
+
+    result = torch.ones(1, 1, dtype=_COMPLEX128)
+    for character in word:
+        real, imaginary = _PAULI_LITERALS[character]
+        entry = torch.complex(
+            torch.tensor(real, dtype=torch.float64),
+            torch.tensor(imaginary, dtype=torch.float64),
+        )
+        result = torch.kron(result, entry)
+    return result.to(_COMPLEX128)
+
+
+def test_pauli_words_enumerates_every_word_once_identity_first() -> None:
+    assert pauli_words(0) == ("",)
+    assert pauli_words(1) == ("I", "X", "Y", "Z")
+    # The first qubit is the most significant character, so the identity word
+    # leads and the all-Z word closes the list.
+    assert pauli_words(2) == (
+        "II",
+        "IX",
+        "IY",
+        "IZ",
+        "XI",
+        "XX",
+        "XY",
+        "XZ",
+        "YI",
+        "YX",
+        "YY",
+        "YZ",
+        "ZI",
+        "ZX",
+        "ZY",
+        "ZZ",
+    )
+    for n_qubits in (0, 1, 2, 3):
+        words = pauli_words(n_qubits)
+        assert len(words) == 4**n_qubits
+        assert len(set(words)) == len(words)
+        assert all(len(word) == n_qubits for word in words)
+
+
+def test_pauli_words_refuses_a_count_that_is_not_a_non_negative_integer() -> None:
+    with pytest.raises(ValueError, match="must be an integer"):
+        pauli_words(1.0)
+    with pytest.raises(ValueError, match="must be an integer"):
+        pauli_words(True)
+    with pytest.raises(ValueError, match="must be non-negative"):
+        pauli_words(-1)
+
+
+def test_the_normalized_pauli_basis_is_orthonormal_in_both_dtypes() -> None:
+    for n_qubits in (1, 2, 3):
+        dimension = 2**n_qubits
+        for dtype in (torch.complex64, torch.complex128):
+            entries = normalized_pauli_basis(n_qubits, dtype=dtype, device="cpu")
+            expected = 4**n_qubits
+            assert len(entries) == expected
+            assert all(entry.shape == (dimension, dimension) for entry in entries)
+            assert all(entry.dtype == dtype for entry in entries)
+
+            stacked = torch.stack(list(entries)).reshape(expected, expected)
+            gram = stacked.mH @ stacked
+            deviation = float(
+                torch.max(torch.abs(gram - torch.eye(expected, dtype=dtype)))
+            )
+            # The residual is bounded by the dtype's own epsilon rather than by a
+            # number chosen here: a normalized Pauli family is orthonormal exactly,
+            # so anything above a few epsilons would be a scale error.
+            assert deviation <= 8.0 * float(torch.finfo(dtype).eps)
+
+
+def test_each_normalized_basis_element_is_its_word_over_root_dimension() -> None:
+    for n_qubits in (1, 2):
+        dimension = 2**n_qubits
+        entries = normalized_pauli_basis(n_qubits, dtype=_COMPLEX128, device="cpu")
+        words = pauli_words(n_qubits)
+        assert len(entries) == len(words)
+        for word, entry in zip(words, entries, strict=True):
+            expected = _literal_pauli_matrix(word) / math.sqrt(dimension)
+            torch.testing.assert_close(entry, expected)
+
+
+def test_the_normalized_basis_honours_its_declared_device() -> None:
+    # ``meta`` records the requested placement without needing an accelerator, so
+    # this checks that the argument reaches every element rather than being
+    # accepted and dropped.
+    entries = normalized_pauli_basis(1, dtype=_COMPLEX128, device="meta")
+    assert all(entry.device.type == "meta" for entry in entries)
+
+
+def test_the_normalized_pauli_basis_refuses_a_negative_count() -> None:
+    with pytest.raises(ValueError, match="must be non-negative"):
+        normalized_pauli_basis(-1, dtype=_COMPLEX128, device="cpu")
