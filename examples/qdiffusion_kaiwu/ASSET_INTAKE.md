@@ -10,14 +10,21 @@ checkpoint bytes stay outside Git and inside the private evidence boundary.
 | Input | Candidate source | Candidate revision or release | License status | Intake status |
 | --- | --- | --- | --- | --- |
 | Human proteome FASTA | UniProt reference-proteome directory and `RELEASE.metalink` under `https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/` | Candidate release `2026_03`; canonical base file `UP000005640_9606.fasta.gz`, 7,728,297 compressed bytes, upstream MD5 `4e4f5aca22ba12eabda1e347765db069`; explicitly exclude the separate `_additional` file | The same official metalink declares CC BY 4.0. The exact release, attribution, acquisition, decompression, and final SHA-256 still require review | Not downloaded; candidate semantics are canonical-only and match the plugin's default `UP000005640_9606.fasta` name, but the `current_release` URL is mutable and cannot be frozen without approved acquisition and a content digest |
-| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate commit `49b7125a5d28c6418fcc2f3c4fe799352ac1488b`; repository metadata binds `pytorch_model.bin` to a 595,359,662-byte LFS object with SHA-256 `ea4eaa99536b60ed76f945f71a1a5e604f08447ec3def5104a93ca6001a59961` | The model card says the repository contains the 150M checkpoint and points to the official `bytedance/dplm` repository; that repository says it contains pretrained DPLM weights and loads the `airkingbd` model family under Apache-2.0. The model metadata still has no license field and its seven-file inventory has no license file, so the reciprocal linkage does not by itself prove that Apache-2.0 governs the separately hosted bytes. | Weight bytes were not downloaded; the pinned resolver metadata narrows the candidate identity, but acquisition, an independent digest, and explicit use approval remain required |
+| DPLM 150M checkpoint | `https://huggingface.co/airkingbd/dplm_150m` | Candidate commit `49b7125a5d28c6418fcc2f3c4fe799352ac1488b`; repository metadata binds `pytorch_model.bin` to a 595,359,662-byte LFS object with SHA-256 `ea4eaa99536b60ed76f945f71a1a5e604f08447ec3def5104a93ca6001a59961` | The model card says the repository contains the 150M checkpoint and points to the official `bytedance/dplm` repository; that repository says it contains pretrained DPLM weights and loads the `airkingbd` model family under Apache-2.0. The model metadata still has no license field and its seven-file inventory has no license file. An Apache-2.0 metadata proposal exists in Hugging Face discussion 5 but is not merged into `main`, so it is evidence of intent only, not a license grant for the separately hosted bytes. | Weight bytes were not downloaded; the pinned resolver metadata narrows the candidate identity, but acquisition, an independent digest, and explicit use approval remain required |
 | DPLM tokenizer | Same frozen DPLM repository and revision as the checkpoint | Candidate commit `49b7125a5d28c6418fcc2f3c4fe799352ac1488b`; resolver metadata identifies `config.json`, `special_tokens_map.json`, `tokenizer_config.json`, and `vocab.txt` by Git object IDs `4910cb02f1840e9ac577026f601829604af58c74`, `ba0f9b53dbbf27934f7555e5d31e37bdea9317f1`, `dbcdd9fb2e742627ee310713615e0d7aeed0c34e`, and `6b946952cc35537226f07fd70957ee2f848880d2` | The pinned Hugging Face commit adds the checkpoint and tokenizer files together, and the official repository names the same model family; applicability of Apache-2.0 to those separately hosted bytes still requires explicit review | Files were not downloaded; Git object IDs are source metadata rather than the path-normalized SHA-256 required by final intake, and explicit approval remains required |
-| ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | The archived official ESM README directly names and links this exact model file; a read-only upstream response reports 2,604,537,549 bytes, last modified 2022-08-18, S3 version `2G4typsUSwOKQLH35sqPMJ27ZLX1AEJG`, and multipart ETag `12a18098227c0ff911354647d25d494d-311`; downloaded bytes and SHA-256 still to freeze | The same official repository is MIT-licensed and its loader consumes the linked `.pt` file. Applicability of that license to the checkpoint bytes must still be explicitly recorded rather than inferred by the intake | Not downloaded; source-to-file linkage and upstream object metadata are identified, blocked on explicit review and an independent exact digest |
+| ESM2 evaluation checkpoint | `https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt` | The archived official ESM README directly names and links this exact model file; a read-only upstream response reports 2,604,537,549 bytes, last modified 2022-08-18, S3 version `2G4typsUSwOKQLH35sqPMJ27ZLX1AEJG`, and multipart ETag `12a18098227c0ff911354647d25d494d-311`; downloaded bytes and SHA-256 still to freeze | The official `facebook/esm2_t33_650M_UR50D` model page explicitly labels the model MIT, while the archived official repository is MIT-licensed and directly links the selected `.pt`. This resolves the public-source license identification; organizational approval and retention of the evidence remain required. | Not downloaded; source-to-file linkage, license metadata, and upstream object metadata are identified, blocked on explicit approval and an independent exact digest |
 | Kaiwu SDK wheel | Qboson-owned PyPI release metadata at `https://pypi.org/pypi/kaiwu/1.3.1/json`, or the QBoson platform | Linux candidate `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`; published and independently reproduced SHA-256 `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455` | PyPI identifies owner `nixd` and author `Qboson Inc` but exposes neither a license expression nor license files. Static wheel inspection also found no `LICENSE`, `COPYING`, or `NOTICE` member. The public QBoson platform agreement effective 2026-07-09 covers Kaiwu SDK, KPP, and remote APIs, but its use, transfer, data, and risk clauses require organizational review | Downloaded only to an owner-only temporary review directory and statically inspected; not installed, imported, executed, or approved; blocked on explicit package and service-terms approval |
 
 The candidate DPLM commit above was obtained from both the public repository
 reference and the model metadata API. It is discovery metadata, not an approved
 frozen revision. Public availability alone is insufficient for acceptance.
+
+The license evidence was refreshed on 2026-10-07. Hugging Face discussion 5
+proposes adding `license: apache-2.0` to `airkingbd/dplm_150m`, but the current
+`main` model page still reports missing YAML metadata and the current README at
+commit `3a93d22` contains no license declaration. Treat the unmerged proposal as
+non-authoritative review context only. It does not close the DPLM checkpoint or
+tokenizer license gate.
 
 The linkage evidence was rechecked on 2026-10-06 against the official
 [`bytedance/dplm` repository](https://github.com/bytedance/dplm), its
@@ -52,14 +59,15 @@ or record a guessed archive URL. Until UniProt publishes that immutable path,
 an approved acquisition must retain the exact `current_release` archive and
 metalink bytes and freeze both compressed and decompressed identities.
 
-The ESM candidate was refreshed against the archived official ESM README and
-license. The README directly maps `esm2_t33_650M_UR50D` to the selected
-`dl.fbaipublicfiles.com` URL, and the repository is MIT-licensed. A body-free
-response-header check records the candidate size, modification time, S3 version,
-and multipart ETag above; the multipart ETag is not an MD5 or SHA-256 and must
-not be promoted into the final artifact identity. This is strong source
-identity evidence, but the organizational review must still state whether the
-license applies to the linked checkpoint and retain that decision. Approved
+The ESM candidate was refreshed against the archived official ESM README,
+repository license, and the official `facebook/esm2_t33_650M_UR50D` Hugging
+Face model page. The model page explicitly labels the model MIT, and the README
+directly maps the same model identifier to the selected
+`dl.fbaipublicfiles.com` URL. A body-free response-header check records the
+candidate size, modification time, S3 version, and multipart ETag above; the
+multipart ETag is not an MD5 or SHA-256 and must not be promoted into the final
+artifact identity. The public license identification is now explicit, but the
+organizational review must still approve use and retain the evidence. Approved
 acquisition must independently hash the complete bytes with SHA-256.
 
 The Kaiwu 1.3.1 documentation points to a QBoson user agreement. The public
@@ -116,8 +124,9 @@ or CI/container usage rights required by this integration.
   excluding the `_additional` FASTA. Retain the official metalink, CC BY 4.0
   attribution decision, compressed-source identity, decompression procedure,
   and SHA-256 of the exact uncompressed FASTA.
-- Confirm that the official ESM2 model license applies to the selected `.pt`
-  checkpoint and retain the evidence URL used for that decision.
+- Approve or reject the MIT-licensed official ESM2 model for this acceptance,
+  and retain both the official model-page license metadata and the archived
+  repository README that links the selected `.pt` checkpoint.
 - Approve or reject the statically inspected PyPI Kaiwu 1.3.1 Linux wheel and
   retain the applicable package and cloud-service terms. Resolve whether the
   public user agreement permits the intended organizational development, isolated
