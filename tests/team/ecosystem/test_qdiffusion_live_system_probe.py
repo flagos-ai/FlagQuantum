@@ -11,6 +11,7 @@ import pytest
 import torch
 
 from examples.qdiffusion_kaiwu import qdiffusion_system_live as system_module
+from examples.qdiffusion_kaiwu.plan_quota import SYSTEM_MAX_CALLS_PER_HOST
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
     run_live_system_probe,
@@ -139,7 +140,11 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
     assert record["fallback_occurred"] is False
     assert record["retrieval_resubmitted"] is False
-    assert 0 < record["remote_call_count"] <= record["remote_call_budget"]
+    # Quantization-equivalent matrices may deduplicate differently across
+    # devices; the quota planner records the reviewed upper bound, not an exact
+    # expected count.
+    assert 0 < record["remote_call_count"] <= SYSTEM_MAX_CALLS_PER_HOST
+    assert record["remote_call_count"] <= record["remote_call_budget"]
     assert client.submissions == record["remote_call_count"]
     precision = record["precision_policy"]
     assert record["precision_evidence_complete"] is True

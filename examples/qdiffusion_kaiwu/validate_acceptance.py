@@ -10,9 +10,15 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath
 from statistics import fmean
-from typing import Any, cast
+from typing import Any
 from urllib.parse import urlsplit
 
+from examples.qdiffusion_kaiwu.plan_quota import (
+    estimate_portability_remote_calls as _estimate_portability_remote_calls,
+)
+from examples.qdiffusion_kaiwu.plan_quota import (
+    estimate_protein_remote_calls as _estimate_protein_remote_calls,
+)
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
 )
@@ -354,77 +360,6 @@ def _validate_precision_transfer_origins(
     }
     if precision_origins != transfer_origins:
         errors.append(f"{label}: precision origins differ from sampler transfers")
-
-
-def _estimate_protein_remote_calls(config: dict[str, Any]) -> int | None:
-    """Estimate the workflow's worst-case distinct sampler calls per seed."""
-    dataset = config.get("dataset")
-    training = config.get("training")
-    generation = config.get("generation")
-    if not all(
-        isinstance(section, dict) for section in (dataset, training, generation)
-    ):
-        return None
-    assert isinstance(dataset, dict)
-    assert isinstance(training, dict)
-    assert isinstance(generation, dict)
-    integer_fields = (
-        dataset.get("max_records"),
-        training.get("epochs"),
-        training.get("num_candidates"),
-        training.get("validation_steps"),
-        generation.get("sequence_count"),
-        generation.get("max_steps"),
-        generation.get("num_candidates"),
-    )
-    if any(type(value) is not int or value <= 0 for value in integer_fields):
-        return None
-    validation_ratio = dataset.get("validation_ratio")
-    test_ratio = dataset.get("test_ratio")
-    if any(
-        isinstance(value, bool) or not isinstance(value, (int, float))
-        for value in (validation_ratio, test_ratio)
-    ):
-        return None
-    selected = int(dataset["max_records"])
-    validation_count = max(
-        1, int(selected * float(cast(int | float, validation_ratio)))
-    )
-    test_count = max(1, int(selected * float(cast(int | float, test_ratio))))
-    train_count = selected - validation_count - test_count
-    if train_count <= 0 or generation["sequence_count"] != test_count:
-        return None
-    training_candidates = int(training["num_candidates"])
-    generation_candidates = int(generation["num_candidates"])
-    validation_steps = int(training["validation_steps"])
-    epochs = int(training["epochs"])
-    max_steps = int(generation["max_steps"])
-    # Structural validation uses one candidate: one positive call, one negative
-    # call, then one candidate-scoring call per generation step.
-    structural_calls = 2 + validation_steps
-    epoch_calls = epochs * (train_count + validation_count) * (1 + training_candidates)
-    # Each baseline/guided record first executes objective(), then generate().
-    baseline_calls_per_record = 2 + max_steps
-    guided_calls_per_record = (
-        1 + generation_candidates + max_steps * generation_candidates
-    )
-    generation_calls = test_count * (
-        baseline_calls_per_record + guided_calls_per_record
-    )
-    return structural_calls + epoch_calls + generation_calls
-
-
-def _estimate_portability_remote_calls(config: dict[str, Any]) -> int | None:
-    generation = config.get("generation")
-    if not isinstance(generation, dict):
-        return None
-    candidates = generation.get("num_candidates")
-    steps = generation.get("portability_steps")
-    if type(candidates) is not int or candidates <= 0:
-        return None
-    if type(steps) is not int or steps <= 0:
-        return None
-    return 1 + candidates + steps * candidates
 
 
 def _validate_config(config: dict[str, Any], errors: list[str]) -> None:

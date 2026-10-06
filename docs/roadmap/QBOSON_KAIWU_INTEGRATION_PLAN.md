@@ -356,6 +356,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   actual positive/negative energy and generation loops; the illustrative full
   config requires up to 71,269 submissions per seed, so its protein budget stays
   unresolved until experiment size and QBoson quota are explicitly approved.
+- A credential-free quota planner now exposes the same calculation as a
+  strict-JSON report, broken down into the two-host system slice, each protein
+  seed's structural/training/generation calls, the replay fixture, and the
+  two-task smoke. The illustrative config derives a conservative maximum of
+  213,846 distinct provider task submissions in total and deliberately reports
+  an unresolved declared ceiling while its per-seed protein budget is
+  `<required>`. Deduplication may lower an actual run. Polling and repeat
+  retrieval are excluded from the submission unit, and the report states that
+  it is planning data rather than quota approval or provider evidence.
 - Completed training records now hash the exact held-out, baseline, guided,
   history, and sequence-quality artifacts. A local-only ESM2 evaluator verifies
   that chain, loads one frozen checkpoint file without implicit download, checks

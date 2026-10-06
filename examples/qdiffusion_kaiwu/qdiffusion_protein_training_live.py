@@ -21,6 +21,9 @@ from typing import Any
 
 import torch
 
+from examples.qdiffusion_kaiwu.plan_quota import (
+    estimate_protein_remote_calls as _estimate_protein_remote_calls,
+)
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     assert_artifacts_unchanged,
     preflight_artifacts,
@@ -37,9 +40,6 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
 )
 from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
-from examples.qdiffusion_kaiwu.validate_acceptance import (
-    _estimate_protein_remote_calls,
-)
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )

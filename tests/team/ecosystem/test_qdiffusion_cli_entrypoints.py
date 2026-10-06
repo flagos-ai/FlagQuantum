@@ -14,6 +14,7 @@ ENTRYPOINTS = (
     "assemble_acceptance",
     "build_environment_lock",
     "build_transfer_bundle",
+    "plan_quota",
     "preflight_protein_artifacts",
     "qboson_live_smoke",
     "qdiffusion_portability_replay_live",

@@ -246,6 +246,24 @@ training candidates, test count, both baseline/guided objectives, generation
 candidates, and generation steps; it rejects a smaller per-seed budget before
 credentials are used.
 
+Before requesting quota, render the complete submission plan without resolving
+credentials or importing Kaiwu:
+
+```bash
+python -B -s -m examples.qdiffusion_kaiwu.plan_quota \
+  path/to/frozen-acceptance-config.json
+```
+
+The strict-JSON report separates the two system hosts, every protein seed, the
+portability replay, and the two-task smoke test. Its unit is distinct provider
+task submissions; status polls and repeated result retrievals are explicitly
+excluded. For the illustrative template it derives a conservative maximum of
+71,269 submissions per protein seed and 213,846 submissions overall, while
+leaving the declared total ceiling unresolved because
+`training.remote_call_budget_per_seed` is still `<required>`. Deduplication may
+reduce an actual run. This is a planning calculation, not quota approval or
+execution evidence.
+
 `qdiffusion_protein_evaluate.py` performs the subsequent local A800 evaluation
 without submitting any new provider task. It verifies the training record's
 hash chain for the held-out test FASTA, baseline and guided FASTA files, and
