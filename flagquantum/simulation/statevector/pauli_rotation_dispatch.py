@@ -143,12 +143,16 @@ def _apply_cataloged_pauli_rotation(
         apply_complex64_local_pauli_rotation_2q,
     )
 
+    qubit_tuple = tuple(int(qubit) for qubit in qubits)
+    if len(qubit_tuple) != 2:
+        raise ValueError("two-qubit Pauli rotations require exactly two qubits")
+    qubit_pair = (qubit_tuple[0], qubit_tuple[1])
     half_angles = angles / 2
     rotation = torch.complex(torch.cos(half_angles), torch.sin(half_angles))
     return apply_complex64_local_pauli_rotation_2q(
         state,
         rotation,
-        qubits=tuple(int(qubit) for qubit in qubits),
+        qubits=qubit_pair,
         pauli=_PAULI_BY_OPCODE[opcode],
     )
 
