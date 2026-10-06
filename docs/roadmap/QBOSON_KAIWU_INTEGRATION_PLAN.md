@@ -1331,6 +1331,26 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   host writes, QBoson credentials, provider service, and quota were not used,
   and all live-provider, system, protein, domestic-accelerator, multi-node, and
   distributed acceptance gates remain closed.
+- After correcting the support-request record and rejecting future-dated task
+  receipts, the same probe was refreshed again on both hosts at source revision
+  `c439b7d3f1982fef3aba14a1a2fba2fa50c74531`. Each independent run observed
+  `NVIDIA A800-SXM4-80GB` on explicit `cuda:0`, completed ten sampler calls
+  within the 64-call development budget, reproduced the finite objective
+  `1.3875621557235718`, recorded a nonzero finite gradient and parameter update,
+  passed token constraints, and reported no fallback. Offline retained-record
+  validation produced SHA-256
+  `71bc98f5fc745e4ac067a3c841cd0ee3b31d1200189c2880b26c79a9f77ac470`
+  for `jp-a800-171` and
+  `eb1480e1cb217c0e4d85a2704c5dba53175afd64777e79958c60500cc612e014`
+  for `jp-a800-172`. The reviewed source and record existed on each host only
+  inside a network-disabled, read-only, auto-removed container whose input,
+  workspace, and evidence used tmpfs; container logging was disabled and no
+  host bind mount was present. The transport remained `in_memory_fake`, no
+  QBoson credential, service, or quota was used, and the records retain
+  `qboson_hardware_used=false`, `real_provider_evidence=false`, and
+  `system_acceptance=false`. This refresh establishes only two independent
+  single-host A800 development paths, not live-provider, system, protein,
+  domestic-accelerator, multi-node, or distributed acceptance.
 - ESM2 evaluation now retains those stable snapshots for every training FASTA
   and quality JSON after matching the training record. Plugin FASTA reads are
   bracketed by identity checks, quality JSON is parsed from its captured
