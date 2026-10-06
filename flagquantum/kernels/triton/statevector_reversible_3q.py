@@ -173,7 +173,7 @@ def apply_complex64_local_reversible_3q(
 
     bit_positions = tuple(n_qubits - 1 - qubit for qubit in qubits)
     group_count = amplitude_count // 8
-    block_groups = 128
+    block_groups = 64
     _complex64_local_reversible_3q_kernel[
         (triton.cdiv(state.shape[0] * group_count, block_groups),)
     ](
@@ -185,7 +185,7 @@ def apply_complex64_local_reversible_3q(
         *bit_positions,
         IS_CCX=operation == "ccx",
         BLOCK_GROUPS=block_groups,
-        num_warps=8,
+        num_warps=4,
         num_stages=2,
     )
     return output
