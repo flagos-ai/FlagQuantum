@@ -109,10 +109,14 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   update in that image, but it must remain classified as preliminary evidence
   because it neither uses the frozen composite Python 3.10/Torch 2.7/Kaiwu
   1.3.1 lane nor QBoson hardware.
-- The documented `kaiwu==1.3.1` package was not available from the configured
-  public package index during a download-only probe. The proprietary wheel or
-  an approved platform download is still required to inspect and implement its
-  provider-state mapping without guessing.
+- The earlier configured-index probe found no `kaiwu==1.3.1` package, but that
+  external state has changed. PyPI now publishes the Qboson-owned CPython 3.10
+  Linux wheel `kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl`, uploaded on
+  2026-06-26 with SHA-256
+  `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455`.
+  Its PyPI metadata has no license identifier or license files. The wheel has
+  therefore been identified but not downloaded, installed, or approved; an
+  explicit package and service-terms review still precedes the pinned SDK lane.
 - The QDiffusion acceptance decision is now executable rather than narrative:
   a frozen experiment-config template, two-host manifest template, and
   fail-closed validator recompute system and application gates. Fake transport,
@@ -837,14 +841,15 @@ The Kaiwu dependency must be optional and lazily imported. Importing
 credentials, or network access.
 
 The initial compatibility environment should be pinned as a separate test lane.
-At the reviewed plugin revision, `pyproject.toml` declares Python `>=3.8`, while
-its requirements file independently pins Torch 2.7.0, NumPy 2.2.6, and Kaiwu
-1.3.1. Python 3.10 is imposed by the proprietary Kaiwu SDK documentation, so it
-is a requirement of the composite provider lane rather than a plugin metadata
-claim. Current Kaiwu documentation describes SDK 1.4.1. The project must
-validate the chosen SDK version instead of assuming that 1.3.1 and 1.4.1 are
-interchangeable. FlagQuantum's broader Torch support must not be narrowed for
-users who do not install the integration.
+At the reviewed plugin revision, packaging metadata declares Python `>=3.8`,
+while the plugin README and installation guide declare Python 3.10 and its
+requirements file pins Torch 2.7.0, NumPy 2.2.6, and Kaiwu 1.3.1. The published
+Kaiwu 1.3.1 wheel metadata independently requires Python `>=3.10`. The composite
+lane therefore freezes Python 3.10 without misrepresenting the broader plugin
+packaging marker. Current Kaiwu documentation describes SDK 1.4.1. The project
+must validate the chosen SDK version instead of assuming that 1.3.1 and 1.4.1
+are interchangeable. FlagQuantum's broader Torch support must not be narrowed
+for users who do not install the integration.
 
 Before production support, record the Kaiwu package source, hashes or lockfile,
 license, cloud-service terms, credential requirements, and an exit path that

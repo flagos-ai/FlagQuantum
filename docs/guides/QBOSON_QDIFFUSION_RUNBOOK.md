@@ -23,8 +23,9 @@ Do not begin a live run until all entries are available and reviewed:
 - full FlagQuantum and Kaiwu PyTorch Plugin Git revisions;
 - an approved Python 3.10 environment with the exact Torch, NumPy, plugin, and
   Kaiwu SDK versions frozen in `acceptance_config.json`;
-- the proprietary Kaiwu wheel, its SHA-256 digest, source, license, and approved
-  redistribution boundary;
+- the approved Kaiwu 1.3.1 wheel, its SHA-256 digest, source, license or package
+  terms, cloud-service terms, and approved redistribution boundary; public
+  availability on PyPI is source evidence, not approval by itself;
 - an assigned QBoson project number and sufficient optimization and sampling
   quota;
 - `QBOSON_USER_ID` and `QBOSON_SDK_CODE`, supplied through a private process

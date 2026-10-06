@@ -125,6 +125,7 @@ def test_sampler_runs_through_plugin_condition_sample_without_sdk_objects() -> N
 def test_plugin_compatibility_metadata_is_recorded_exactly() -> None:
     _, plugin_root = _require_plugin_source()
     pyproject = (plugin_root / "pyproject.toml").read_text(encoding="utf-8")
+    readme = (plugin_root / "README.md").read_text(encoding="utf-8")
     requirements = (
         (plugin_root / "requirements" / "requirements.txt")
         .read_text(encoding="utf-8")
@@ -133,6 +134,8 @@ def test_plugin_compatibility_metadata_is_recorded_exactly() -> None:
 
     assert 'requires-python = ">=3.8"' in pyproject
     assert requirements == ["numpy==2.2.6", "torch==2.7.0", "kaiwu==1.3.1"]
+    assert "- python == 3.10" in readme
+    assert "`pip install kaiwu==1.3.1`" in readme
 
 
 def test_qdiffusion_development_slice_uses_bounded_flagquantum_sampler() -> None:
