@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
+Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
 
 - API Change Proposal 068 documents the provider-specific Ising, remote-task,
   sampler, dependency, evidence, and maturity boundaries. Its status is draft;
@@ -53,6 +53,17 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   table with zero submitted tasks, and only a blank new-feedback form. No
   response, ticket history, or durable submission identifier was exposed, so
   the request and every external gate remain unresolved.
+  A second authenticated Resource Bill observation on 2026-10-07 was retained
+  as a private mode-0600 closed-schema snapshot with SHA-256
+  `22915cad3e26d61ecf6143e264e948de4b9b9ecf67b06f7fa62073bd8a8f9ce7`.
+  It independently reconfirmed zero optimization credits for SPQC-1, two for
+  SPQC-550, one for SPQC-1000, and zero sampling credits and zero use for all
+  three targets. The offline readiness audit accepted the snapshot itself and
+  failed the provider-smoke resource gate with the stable reason
+  `sampling_resource_unavailable`. The record contains only aggregate resource
+  counts and timestamps; it contains no account identifier, transaction ID,
+  SDK code, or other credential, expires after 24 hours, and is resource-state
+  evidence rather than spend approval or provider execution evidence.
 - The authenticated SDK page currently offers platform downloads for Kaiwu
   1.4.1 and retains a 1.3.1 release-note entry describing sample-mode task
   submission. It also shows that an account-bound SDK authorization code exists,
