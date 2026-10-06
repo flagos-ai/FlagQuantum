@@ -212,6 +212,9 @@ Shared private-evidence readers and writers additionally require parent
 directories and leaf files to belong to the current effective UID.
 Final-bundle publication applies the same ownership rule to its opened output
 parent throughout validation and the atomic directory rename.
+Protein training applies it to the workflow output root, generated run
+directory, checkpoint, and retained evaluation artifacts; stable snapshots
+also bind UID so ownership changes invalidate the run.
 The SDK client repeats that private-directory check before it initializes the
 license. Recovery receipts are synced to a private temporary file and atomically
 published without replacement; resume rejects public, non-regular, or symlinked

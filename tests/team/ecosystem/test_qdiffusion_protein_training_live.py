@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -16,6 +17,7 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
+    _capture_private_training_output,
     _capture_training_output_snapshots,
     _capture_training_outputs,
     _checkpoint_identity,
@@ -278,6 +280,44 @@ def test_run_workflow_rejects_public_seed_output_root(tmp_path: Path) -> None:
             "frozen-config",
             cast(KaiwuSampler, object()),
             output_root,
+        )
+
+
+def test_run_workflow_rejects_foreign_owned_output_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_root = tmp_path / "runs"
+    output_root.mkdir(mode=0o700)
+    workflow = SimpleNamespace(
+        build_default_workflow_config=lambda: "original-config",
+        default_outputs_root=lambda: tmp_path / "original",
+    )
+    monkeypatch.setattr(training_module, "_effective_uid", lambda: os.geteuid() + 1)
+
+    with pytest.raises(ValueError, match="private real directory"):
+        _run_workflow(
+            workflow,
+            "frozen-config",
+            cast(KaiwuSampler, object()),
+            output_root,
+        )
+
+
+def test_training_output_rejects_foreign_owned_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact = tmp_path / "artifact.json"
+    artifact.write_text("{}", encoding="utf-8")
+    artifact.chmod(0o600)
+    monkeypatch.setattr(training_module, "_effective_uid", lambda: os.geteuid() + 1)
+
+    with pytest.raises(ValueError, match="owned by the current effective user"):
+        _capture_private_training_output(
+            artifact,
+            run_directory=tmp_path,
+            label="training artifact",
         )
 
 

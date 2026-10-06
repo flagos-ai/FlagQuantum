@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -20,6 +21,33 @@ pytestmark = pytest.mark.unit
 
 SOURCE_REVISION = "a" * 40
 PLUGIN_REVISION = "b" * 40
+
+
+def test_stable_file_snapshot_rejects_owner_change(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.py"
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    snapshot = source_tree_module.capture_regular_file(source, label="source")
+    real_lstat = Path.lstat
+
+    def owner_changed(path: Path):
+        metadata = real_lstat(path)
+        if path != source:
+            return metadata
+        fields = {
+            name: getattr(metadata, name)
+            for name in dir(metadata)
+            if name.startswith("st_")
+        }
+        fields["st_uid"] = metadata.st_uid + 1
+        return SimpleNamespace(**fields)
+
+    monkeypatch.setattr(Path, "lstat", owner_changed)
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        source_tree_module.revalidate_regular_file(snapshot, label="source")
 
 
 def _record() -> dict[str, object]:

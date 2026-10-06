@@ -15,6 +15,7 @@ _STABLE_METADATA_FIELDS = (
     "st_dev",
     "st_ino",
     "st_mode",
+    "st_uid",
     "st_size",
     "st_mtime_ns",
     "st_ctime_ns",
@@ -52,7 +53,7 @@ def _metadata_identity(metadata: os.stat_result) -> tuple[int, ...]:
         # Directory entry churn is validated from the captured path/inode set.
         # Including mtime/ctime here would make an unrelated sibling file
         # creation invalidate an otherwise unchanged captured leaf.
-        return (metadata.st_dev, metadata.st_ino, metadata.st_mode)
+        return (metadata.st_dev, metadata.st_ino, metadata.st_mode, metadata.st_uid)
     return tuple(getattr(metadata, field) for field in _STABLE_METADATA_FIELDS)
 
 

@@ -89,6 +89,13 @@ SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
 _MAX_ARTIFACT_PREFLIGHT_BYTES = 4 * 1024 * 1024
 
 
+def _effective_uid() -> int:
+    getter = getattr(os, "geteuid", None)
+    if not callable(getter):
+        raise ValueError("platform cannot validate protein output ownership")
+    return int(getter())
+
+
 def _load_pinned_workflow(plugin_root: Path) -> ModuleType:
     root = plugin_root.resolve()
     case_root = root / "example" / "qdiffusion"
@@ -184,6 +191,7 @@ def _run_workflow(
             output_root.is_symlink()
             or not stat.S_ISDIR(output_metadata.st_mode)
             or stat.S_IMODE(output_metadata.st_mode) & 0o077
+            or output_metadata.st_uid != _effective_uid()
         ):
             raise ValueError(
                 "protein workflow output root must be a private real directory"
@@ -200,11 +208,14 @@ def _run_workflow(
             workflow.build_default_workflow_config = original_config_factory
             workflow.default_outputs_root = original_outputs_factory
         created = [item for item in output_root.iterdir() if item.name not in before]
+        created_metadata = created[0].lstat() if len(created) == 1 else None
         if (
             len(created) != 1
             or created[0].is_symlink()
-            or not created[0].is_dir()
-            or stat.S_IMODE(created[0].lstat().st_mode) & 0o077
+            or created_metadata is None
+            or not stat.S_ISDIR(created_metadata.st_mode)
+            or stat.S_IMODE(created_metadata.st_mode) & 0o077
+            or created_metadata.st_uid != _effective_uid()
         ):
             raise RuntimeError(
                 "protein workflow did not create exactly one private run directory"
@@ -222,8 +233,11 @@ def _capture_private_training_output(
     except ValueError:
         raise ValueError(f"{label} is outside the training run directory") from None
     snapshot = capture_regular_file(path, label=label)
-    if stat.S_IMODE(path.lstat().st_mode) & 0o077:
+    metadata = path.lstat()
+    if stat.S_IMODE(metadata.st_mode) & 0o077:
         raise ValueError(f"{label} must be owner-only")
+    if metadata.st_uid != _effective_uid():
+        raise ValueError(f"{label} must be owned by the current effective user")
     return snapshot
 
 

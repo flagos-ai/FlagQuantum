@@ -146,6 +146,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and leaf rechecks after descriptor-relative reads and during exclusive
   publication. Final acceptance assembly also freezes an output parent owned by
   that UID and rechecks ownership through validation and atomic publication.
+- Protein-training output roots, generated run directories, checkpoints, and
+  retained workflow artifacts must be owned by the current effective UID.
+  Stable source and artifact snapshots now include UID in their metadata
+  identity, so an ownership change after capture invalidates the evidence.
 - The synchronous ecosystem sampler now matches the
   `kaiwu-pytorch-plugin` `solve(ising_matrix)` surface, delegates every unique
   matrix to the Remote lifecycle, deduplicates identical matrices, enforces a
