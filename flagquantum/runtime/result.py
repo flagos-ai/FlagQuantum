@@ -184,6 +184,12 @@ class ExecutionResult:
         return self._unique_tensor_measurement("probabilities")
 
     @property
+    def density_matrix(self) -> torch.Tensor:
+        """Return the unique requested density-matrix tensor."""
+
+        return self._unique_tensor_measurement("density_matrix")
+
+    @property
     def counts(self) -> list[dict[str | int, int]]:
         """Return the unique requested outcome counts."""
 

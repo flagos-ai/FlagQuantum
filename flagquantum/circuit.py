@@ -714,9 +714,19 @@ class Circuit:
     def noisy_density_matrix(
         self, noise_model: NoiseModel | None = None
     ) -> torch.Tensor:
+        """Return this circuit's noisy density matrix at the circuit's dtype.
+
+        The circuit carries the precision, the way it does for :meth:`state` and
+        :meth:`density_matrix`, and the noisy path reads it from there. A noisy
+        matrix was previously built at the process-wide runtime default while the
+        noiseless one kept the circuit's dtype, so on a ``complex128`` circuit the
+        two paths disagreed by the ``complex64`` rounding floor and an operator at
+        the circuit's dtype could not be contracted against the result at all.
+        """
+
         from .runtime.noise_registry import noisy_density_matrix
 
-        return noisy_density_matrix(self, noise_model)
+        return noisy_density_matrix(self, noise_model, dtype=self.dtype)
 
     def run(
         self,
