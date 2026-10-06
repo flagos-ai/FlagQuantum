@@ -30,6 +30,7 @@ from benchmarks.compiler_two_qubit_synthesis import (
     two_qubit_instruction,
 )
 from flagquantum.compiler.two_qubit_synthesis import synthesize_two_qubit
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -383,8 +384,10 @@ def test_the_qiskit_anchor_agrees_on_the_entangler_count(payload: dict) -> None:
     # Which lane took this reading. The entangler counts asserted below are the
     # stable half of the anchor; the per-row `reference_gate_count` beside them
     # moves with the installed library, so the field that separates the two has to
-    # be present for the stable half to be read as stable.
-    assert anchor["qiskit_version"], anchor
+    # be present for the stable half to be read as stable. The lane also has to be
+    # certified: the per-row half moves between lanes, and a lane nobody certified
+    # is one where neither half carries a measurement this repository stands behind.
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     expected = len(TWO_QUBIT_OPCODES) * len(SUPERCONTROLLED_ENTANGLERS)
     assert anchor["compared_case_count"] == expected
     assert anchor["mismatches"] == []

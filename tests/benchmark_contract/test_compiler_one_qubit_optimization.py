@@ -18,6 +18,7 @@ from benchmarks.compiler_one_qubit_optimization import (
     SINGLE_QUBIT_OPCODES,
     run_benchmark,
 )
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -377,8 +378,11 @@ def test_the_qiskit_anchor_reports_the_global_phase_split(payload: dict) -> None
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
     # The lane, not the pinned revision string: the mean counts below are read off
     # whichever Qiskit is installed, and a reading that does not name its lane
-    # cannot be told apart from one taken on a lane that no longer exists.
-    assert anchor["qiskit_version"], anchor
+    # cannot be told apart from one taken on a lane that no longer exists. The
+    # lane has to be one this repository certifies, because comparing these counts
+    # outside the lanes the anchor family was measured on is a comparison with an
+    # instrument nobody calibrated.
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     assert anchor["pass"] == "Optimize1qGates(basis=['u3','u1'])"
     assert anchor["agrees_up_to_global_phase"] is True
     assert anchor["worst_overlap_gap"] < 1e-12
