@@ -69,9 +69,15 @@ def arbitrary_state(
     already exponential in size: this prepares a state efficiently *given* its amplitudes, and
     it does not show that preparing a state is cheaper than its classical description.
 
+    The amplitudes are read as classical data, not as a differentiable input. Their values fix
+    the rotation angles outright, and each angle is emitted as a plain float, so a tensor that
+    requires a gradient receives none: the vector is detached on entry and no autograd edge
+    reaches the circuit. ``requires_grad`` on ``amplitudes`` is therefore accepted and ignored.
+
     Args:
         amplitudes: The amplitude vector, one-dimensional, of power-of-two length at least
             two, and not the zero vector. Any norm is accepted; the vector is normalised here.
+            Read as classical data: see above.
         qubits: The qubits to prepare, most significant first; defaults to
             ``range(n)`` with ``n = log2(len(amplitudes))``.
 
@@ -101,9 +107,13 @@ def append_arbitrary_state(
     Computing the rotation angles takes a classical pass over all ``2**n`` amplitudes and a
     ``2**n`` by ``2**n`` linear solve, so the input is already exponential in size.
 
+    As in :func:`arbitrary_state`, the amplitudes are read as classical data and detached on
+    entry, so no gradient flows back to the caller's tensor.
+
     Args:
         circuit: The circuit to extend.
-        amplitudes: The amplitude vector, validated as in :func:`arbitrary_state`.
+        amplitudes: The amplitude vector, validated as in :func:`arbitrary_state`, and read as
+            classical data there.
         qubits: The qubits to prepare, most significant first.
 
     Raises:
@@ -149,13 +159,17 @@ def _prepared_amplitudes(amplitudes: torch.Tensor) -> tuple[torch.Tensor, int]:
             "n qubits carries 2**n amplitudes"
         )
     data = amplitudes.to(device="cpu", dtype=torch.complex64)
-    norm = float(data.norm())
+    # The amplitudes are read as classical data: the angles below are solved from their values
+    # and emitted as plain floats, so no gradient can flow back to the caller's vector. The
+    # `detach` states that once, here, rather than leaving every later scalar conversion to
+    # raise a PyTorch warning about a `requires_grad` tensor being read as a number.
+    norm = float(data.detach().norm())
     if norm == 0.0:
         raise ValueError(
             "amplitudes must not be the zero vector; nothing can be normalised"
         )
     n_qubits = length.bit_length() - 1
-    return data / norm, n_qubits
+    return data.detach() / norm, n_qubits
 
 
 def _resolve_qubits(qubits: Sequence[int] | None, n_qubits: int) -> list[int]:

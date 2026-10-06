@@ -175,6 +175,21 @@ The 332 added lines are the dispatcher, the validation, the three new kernels,
 and the docstring. No new contract type, registry, manager, or factory is
 introduced: `GradientResult` is a plain frozen dataclass with four fields.
 
+### Later relocation of the two difference helpers
+
+Nothing in this record's decisions changes, but the two difference helpers it
+names no longer live where it says. A later convergence change
+(`flagquantum/core/finite_differences.py`) found that `_central_difference_gradient`
+here and `_finite_difference_gradient` in
+`flagquantum/runtime/executors/statevector/split_real_imag_autograd_conformance.py`
+were the same quotient with the same denominator behind different signatures — one
+source of truth divided by two, which engineering decision principle 6 forbids.
+Both now call `flagquantum.core.finite_differences.central_difference_gradient`,
+and the default displacement is `default_difference_step` there. Neither name
+here is public, no signature in `contracts/gradient-api-v1-candidate.json`
+mentions either, and `fq.gradient`'s behaviour is unchanged: the convergence was
+verified bitwise identical on both routes before it was proposed.
+
 ### Scope of the support claim
 
 | Dimension | Boundary |

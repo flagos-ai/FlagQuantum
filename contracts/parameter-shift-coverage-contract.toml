@@ -382,4 +382,3 @@ declared_frequencies = []
 evaluation_pairs = 0
 admitted = false
 refusal_reason = "constant_outside_protocol_scope"
-

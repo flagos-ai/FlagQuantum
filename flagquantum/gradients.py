@@ -9,6 +9,10 @@ from typing import Any
 
 import torch
 
+from .core.finite_differences import (
+    central_difference_gradient,
+    default_difference_step,
+)
 from .core.ir import ensure_circuit_ir
 from .core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema
 from .errors import CapabilityError, ValidationError
@@ -175,10 +179,14 @@ def gradient(
         )
 
     if step is None:
-        step = _default_step(probe_value if probe_value is not None else evaluate(base))
+        step = default_difference_step(
+            probe_value if probe_value is not None else evaluate(base)
+        )
     if method == "finite_difference":
         return GradientResult(
-            gradient=_central_difference_gradient(evaluate, base, step=step),
+            gradient=_as_parameters(
+                central_difference_gradient(evaluate, base, step=step), base
+            ),
             method="finite_difference",
             exact=False,
             step=step,
@@ -312,40 +320,6 @@ def _shifted_gradient(
             "method='finite_difference' or method='spsa' for a circuit that does "
             "not meet that condition."
         ) from error
-
-
-def _default_step(sample: torch.Tensor) -> float:
-    """Derive a difference displacement from the precision the loss carries.
-
-    A difference quotient loses significant digits to roundoff as the step
-    shrinks, and the roundoff floor is set by the dtype the program computes in,
-    not by the dtype the caller's parameters happen to have. The loss's dtype is
-    the measured one, and the cube root of its machine epsilon is the step that
-    balances truncation against roundoff for a central difference.
-    """
-
-    return math.pow(float(torch.finfo(sample.dtype).eps), 1.0 / 3.0)
-
-
-def _central_difference_gradient(
-    evaluate: LossFunction,
-    parameters: torch.Tensor,
-    *,
-    step: float,
-) -> torch.Tensor:
-    base = parameters.detach()
-    flat = base.reshape(-1)
-    terms = []
-    for index in range(flat.numel()):
-        plus = flat.clone()
-        minus = flat.clone()
-        plus[index] += step
-        minus[index] -= step
-        terms.append(
-            (evaluate(plus.reshape_as(base)) - evaluate(minus.reshape_as(base)))
-            / (2.0 * step)
-        )
-    return _as_parameters(torch.stack(terms), base)
 
 
 def _spsa_gradient(

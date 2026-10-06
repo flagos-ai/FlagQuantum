@@ -71,7 +71,7 @@ def test_the_profile_is_the_constant_scope_plus_the_derivation() -> None:
 
     derived = _single_pair_shift_opcodes(OPERATOR_SCHEMAS)
     assert derived, "the derivation collapsed to nothing"
-    assert _BATCH_PROFILE_GATES == _BATCH_PROFILE_CONSTANT_GATES | derived
+    assert _BATCH_PROFILE_CONSTANT_GATES | derived == _BATCH_PROFILE_GATES
     assert not derived & _BATCH_PROFILE_CONSTANT_GATES
 
 
@@ -223,7 +223,9 @@ def test_a_multidimensional_parameter_tensor_keeps_its_shape_and_dtype() -> None
         (opcode, name)
         for opcode, schema in OPERATOR_SCHEMAS.items()
         if schema.differentiable
-        and all(len(schema.shift_rule(parameter)) == 2 for parameter in schema.parameters)
+        and all(
+            len(schema.shift_rule(parameter)) == 2 for parameter in schema.parameters
+        )
         for name in schema.parameters
     ),
 )
@@ -290,7 +292,7 @@ def test_a_wider_declared_rule_is_refused_by_name_and_pair_count(opcode: str) ->
     pairs = len(schema.shift_rule(name)) // 2
 
     def build(values: torch.Tensor):
-        parameters = {parameter: 0.23 for parameter in schema.parameters}
+        parameters = dict.fromkeys(schema.parameters, 0.23)
         parameters[name] = values[0]
         return fq.Circuit(arity, dtype=torch.complex128).gate(
             opcode, tuple(range(arity)), params=parameters
