@@ -505,9 +505,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   or QBoson evidence. After adding the quota planner, pinned 1.3.1 mode mapping,
   fail-closed SDK-lane selection, xattr-free stream contract, and pre-credential
   private-output validation, credential clearing, persisted-failure redaction,
-  and printable canonical provider-identity validation to that gate, the
-  complete path passed at revision
-  `f57854dbbbcbd48c2445086a4f022e1465618edf` on 2026-10-06 with 476 tests and
+  printable canonical provider-identity validation, and exact plugin metadata
+  provenance to that gate, the complete path passed at revision
+  `26cc02340818cd1fc6bd56b5df80a7d4a0efefcd` on 2026-10-06 with 477 tests and
   no provider credentials present.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
