@@ -299,7 +299,7 @@ credentials or importing Kaiwu:
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.plan_quota \
-  path/to/frozen-acceptance-config.json
+  /absolute/private/path/to/frozen-acceptance-config.json
 ```
 
 The strict-JSON report separates the two system hosts, every protein seed, the
@@ -311,6 +311,10 @@ leaving the declared total ceiling unresolved because
 `training.remote_call_budget_per_seed` is still `<required>`. Deduplication may
 reduce an actual run. This is a planning calculation, not quota approval or
 execution evidence.
+
+The quota planner treats that frozen configuration as private control input:
+both the file and its immediate real directory must be owner-only, and symbolic
+links are rejected.
 
 `qdiffusion_protein_evaluate.py` performs the subsequent local A800 evaluation
 without submitting any new provider task. It verifies the training record's

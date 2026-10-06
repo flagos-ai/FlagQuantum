@@ -21,7 +21,10 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     AMINO_ACIDS,
     _artifact_identity,
 )
-from examples.qdiffusion_kaiwu.private_io import validate_private_json_output_path
+from examples.qdiffusion_kaiwu.private_io import (
+    read_private_bytes,
+    validate_private_json_output_path,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _validate_imported_module_tree,
 )
@@ -44,6 +47,7 @@ from examples.qdiffusion_kaiwu.verify_environment_lock import (
 
 SCHEMA = "flagquantum.qboson_qdiffusion_protein_evaluation"
 TRAINING_SCHEMA = "flagquantum.qboson_qdiffusion_protein_training"
+_MAX_TRAINING_RECORD_BYTES = 64 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -77,7 +81,11 @@ def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleTyp
 
 
 def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
-    encoded = path.read_bytes()
+    encoded = read_private_bytes(
+        path,
+        label="protein-training record",
+        max_bytes=_MAX_TRAINING_RECORD_BYTES,
+    )
     record = loads_json_strict(encoded)
     if not isinstance(record, dict):
         raise ValueError("training record must be a JSON object")

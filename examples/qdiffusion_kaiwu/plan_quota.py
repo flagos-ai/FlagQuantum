@@ -9,12 +9,14 @@ import re
 from pathlib import Path
 from typing import Any, cast
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_qdiffusion_quota_plan"
 SYSTEM_MAX_CALLS_PER_HOST = 10
 SYSTEM_HOST_COUNT = 2
 SMOKE_CALLS = 2
+_MAX_CONFIG_BYTES = 1024 * 1024
 
 
 def protein_remote_call_breakdown(config: dict[str, Any]) -> dict[str, int] | None:
@@ -230,7 +232,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", type=Path)
     arguments = parser.parse_args()
-    raw = arguments.config.read_bytes()
+    try:
+        raw = read_private_bytes(
+            arguments.config,
+            label="quota-plan configuration",
+            max_bytes=_MAX_CONFIG_BYTES,
+        )
+    except ValueError as error:
+        parser.error(str(error))
     config = loads_json_strict(raw)
     if not isinstance(config, dict):
         parser.error("config must be a JSON object")

@@ -114,6 +114,7 @@ def test_cli_hashes_strict_config_and_prints_no_paths(tmp_path: Path) -> None:
     config_path = tmp_path / "private-config.json"
     raw = json.dumps(_config(), sort_keys=True).encode()
     config_path.write_bytes(raw)
+    config_path.chmod(0o600)
 
     completed = subprocess.run(
         [
@@ -133,3 +134,39 @@ def test_cli_hashes_strict_config_and_prints_no_paths(tmp_path: Path) -> None:
     plan = json.loads(completed.stdout)
     assert plan["experiment_config_sha256"] == hashlib.sha256(raw).hexdigest()
     assert str(tmp_path) not in completed.stdout
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public-file", "public-parent", "symlink"))
+def test_cli_requires_private_anchored_config(
+    tmp_path: Path, unsafe_kind: str
+) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    config_path = private_parent / "config.json"
+    config_path.write_text(json.dumps(_config()), encoding="utf-8")
+    config_path.chmod(0o600)
+    argument = config_path
+    if unsafe_kind == "public-file":
+        config_path.chmod(0o644)
+    elif unsafe_kind == "public-parent":
+        private_parent.chmod(0o755)
+    else:
+        argument = private_parent / "config-link.json"
+        argument.symlink_to(config_path)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-s",
+            "-m",
+            "examples.qdiffusion_kaiwu.plan_quota",
+            str(argument),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert "quota-plan configuration" in completed.stderr

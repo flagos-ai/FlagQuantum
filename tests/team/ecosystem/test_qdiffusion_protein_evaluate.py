@@ -180,6 +180,7 @@ def test_training_record_loader_rejects_injected_provider_evidence(
     path = tmp_path / "training.json"
     record = _provider_training_record()
     path.write_text(json.dumps(record), encoding="utf-8")
+    path.chmod(0o600)
 
     loaded, digest = _load_training_record(path)
 
@@ -189,8 +190,31 @@ def test_training_record_loader_rejects_injected_provider_evidence(
     record["transport"] = "injected_test"
     record["real_provider_evidence"] = False
     path.write_text(json.dumps(record), encoding="utf-8")
+    path.chmod(0o600)
     with pytest.raises(ValueError, match="provider evidence is invalid"):
         _load_training_record(path)
+
+
+@pytest.mark.parametrize("unsafe_kind", ("public-file", "public-parent", "symlink"))
+def test_training_record_loader_requires_private_anchored_input(
+    tmp_path: Path, unsafe_kind: str
+) -> None:
+    private_parent = tmp_path / "private"
+    private_parent.mkdir(mode=0o700)
+    path = private_parent / "training.json"
+    path.write_text(json.dumps(_provider_training_record()), encoding="utf-8")
+    path.chmod(0o600)
+    candidate = path
+    if unsafe_kind == "public-file":
+        path.chmod(0o644)
+    elif unsafe_kind == "public-parent":
+        private_parent.chmod(0o755)
+    else:
+        candidate = private_parent / "training-link.json"
+        candidate.symlink_to(path)
+
+    with pytest.raises(ValueError, match="protein-training record"):
+        _load_training_record(candidate)
 
 
 def test_aligned_fasta_reader_rejects_header_drift(tmp_path: Path) -> None:

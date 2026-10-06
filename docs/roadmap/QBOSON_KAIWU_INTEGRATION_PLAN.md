@@ -624,6 +624,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   returning to last-key-wins parsing. The parser also rejects non-standard
   `NaN`/`Infinity` constants and numeric exponents that decode to nonfinite
   floats anywhere in nested evidence.
+- The credential-free quota planner and protein evaluator now read their frozen
+  configuration and provider-linked training record through the same bounded,
+  descriptor-anchored private-input gate. Public files or parents and symbolic
+  links fail before planning or GPU work.
 
 This section is a progress ledger, not a maturity or hardware-support claim.
 
