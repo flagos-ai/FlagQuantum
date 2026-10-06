@@ -71,8 +71,7 @@ def test_local_pauli_rotation_matches_matrix_reference(
 
     actual = apply_complex64_local_pauli_rotation_2q(
         state,
-        torch.cos(angles / 2),
-        torch.sin(angles / 2),
+        torch.complex(torch.cos(angles / 2), torch.sin(angles / 2)),
         qubits=qubits,
         pauli=pauli,
     )
@@ -87,8 +86,7 @@ def test_local_pauli_rotation_rejects_non_cuda_state() -> None:
     with pytest.raises(ValueError, match="contiguous CUDA complex64"):
         apply_complex64_local_pauli_rotation_2q(
             state,
-            1.0,
-            0.0,
+            torch.ones(1, dtype=torch.complex64),
             qubits=(0, 1),
             pauli="XX",
         )
@@ -101,32 +99,28 @@ def test_local_pauli_rotation_rejects_unsupported_contracts() -> None:
     with pytest.raises(ValueError, match="XX, YY, or ZZ"):
         apply_complex64_local_pauli_rotation_2q(
             state,
-            1.0,
-            0.0,
+            torch.ones(1, device="cuda", dtype=torch.complex64),
             qubits=(0, 1),
             pauli="XY",
         )
     with pytest.raises(ValueError, match="two distinct"):
         apply_complex64_local_pauli_rotation_2q(
             state,
-            1.0,
-            0.0,
+            torch.ones(1, device="cuda", dtype=torch.complex64),
             qubits=(1, 1),
             pauli="XX",
         )
-    with pytest.raises(ValueError, match="same batch shape"):
+    with pytest.raises(ValueError, match="one or batch values"):
         apply_complex64_local_pauli_rotation_2q(
             state,
-            torch.ones(2, device="cuda"),
-            torch.zeros(1, device="cuda"),
+            torch.ones(3, device="cuda", dtype=torch.complex64),
             qubits=(0, 1),
             pauli="XX",
         )
     with pytest.raises(ValueError, match="output must be distinct"):
         apply_complex64_local_pauli_rotation_2q(
             state,
-            1.0,
-            0.0,
+            torch.ones(1, device="cuda", dtype=torch.complex64),
             qubits=(0, 1),
             pauli="XX",
             output=state,

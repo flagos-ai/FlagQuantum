@@ -17,12 +17,11 @@ else:
 @jit(do_not_specialize=["first_bit_position", "second_bit_position"])
 def _complex64_local_pauli_rotation_kernel(
     state_parts: tl.tensor,
-    cosine: tl.tensor,
-    sine: tl.tensor,
+    rotation_parts: tl.tensor,
     output_parts: tl.tensor,
     amplitude_count: tl.tensor,
     batch_count: tl.tensor,
-    coefficient_batch_stride: tl.tensor,
+    rotation_batch_stride: tl.tensor,
     first_bit_position: tl.tensor,
     second_bit_position: tl.tensor,
     PAULI_KIND: tl.constexpr,  # noqa: N803
@@ -37,9 +36,9 @@ def _complex64_local_pauli_rotation_kernel(
     second_bit = (amplitude >> second_bit_position) & 1
     parity = first_bit ^ second_bit
 
-    coefficient_index = batch * coefficient_batch_stride
-    c = tl.load(cosine + coefficient_index, mask=mask, other=0.0)
-    s = tl.load(sine + coefficient_index, mask=mask, other=0.0)
+    rotation_index = batch * rotation_batch_stride
+    c = tl.load(rotation_parts + 2 * rotation_index, mask=mask, other=0.0)
+    s = tl.load(rotation_parts + 2 * rotation_index + 1, mask=mask, other=0.0)
     if PAULI_KIND == 2:
         paired_amplitude = amplitude
         phase = 1.0 - 2.0 * parity
@@ -72,31 +71,15 @@ def _complex64_local_pauli_rotation_kernel(
     )
 
 
-def _coefficient_tensor(
-    value: torch.Tensor | float,
-    *,
-    state: torch.Tensor,
-    name: str,
-) -> tuple[torch.Tensor, int]:
-    coefficient = torch.as_tensor(value, device=state.device, dtype=torch.float32)
-    if coefficient.requires_grad:
-        raise ValueError("Triton Pauli rotation is a forward-only kernel")
-    coefficient = coefficient.reshape(-1).contiguous()
-    if coefficient.numel() not in {1, state.shape[0]}:
-        raise ValueError(f"{name} must be scalar or have one value per batch")
-    return coefficient, 0 if coefficient.numel() == 1 else 1
-
-
 def apply_complex64_local_pauli_rotation_2q(
     state: torch.Tensor,
-    cosine: torch.Tensor | float,
-    sine: torch.Tensor | float,
+    rotation: torch.Tensor,
     *,
     qubits: tuple[int, int],
     pauli: str,
     output: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Apply ``exp(-i theta P/2)`` from precomputed cosine and sine values."""
+    """Apply ``exp(-i theta P/2)`` from ``cos(theta/2) + i sin(theta/2)``."""
 
     if (
         state.device.type != "cuda"
@@ -127,21 +110,21 @@ def apply_complex64_local_pauli_rotation_2q(
     normalized_pauli = pauli.upper()
     if normalized_pauli not in {"XX", "YY", "ZZ"}:
         raise ValueError("Triton Pauli rotation supports XX, YY, or ZZ")
-    if state.requires_grad:
+    if state.requires_grad or rotation.requires_grad:
         raise ValueError("Triton Pauli rotation is a forward-only kernel")
-
-    cosine_tensor, cosine_stride = _coefficient_tensor(
-        cosine,
-        state=state,
-        name="cosine",
-    )
-    sine_tensor, sine_stride = _coefficient_tensor(
-        sine,
-        state=state,
-        name="sine",
-    )
-    if cosine_stride != sine_stride:
-        raise ValueError("cosine and sine must use the same batch shape")
+    if (
+        rotation.device != state.device
+        or rotation.dtype != torch.complex64
+        or rotation.ndim != 1
+        or rotation.numel() not in {1, state.shape[0]}
+        or not rotation.is_contiguous()
+        or rotation.is_conj()
+        or rotation.is_neg()
+    ):
+        raise ValueError(
+            "rotation must be contiguous CUDA complex64 with one or batch values"
+        )
+    rotation_stride = 0 if rotation.numel() == 1 else 1
 
     output = torch.empty_like(state) if output is None else output
     if (
@@ -159,12 +142,11 @@ def apply_complex64_local_pauli_rotation_2q(
     block = 256
     _complex64_local_pauli_rotation_kernel[(triton.cdiv(state.numel(), block),)](
         torch.view_as_real(state),
-        cosine_tensor,
-        sine_tensor,
+        torch.view_as_real(rotation),
         torch.view_as_real(output),
         amplitude_count,
         state.shape[0],
-        cosine_stride,
+        rotation_stride,
         bit_positions[0],
         bit_positions[1],
         PAULI_KIND={"XX": 0, "YY": 1, "ZZ": 2}[normalized_pauli],
