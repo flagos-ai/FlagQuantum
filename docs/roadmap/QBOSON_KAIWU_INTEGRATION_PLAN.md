@@ -972,6 +972,21 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   it remains Phase 1 contract and conformance evidence only; it does not prove
   the frozen Python 3.10/Torch 2.7/Kaiwu 1.3.1 environment, A800 execution,
   provider use, system acceptance, or protein effectiveness.
+- On 2026-10-07 the integration-owned Kaiwu surfaces passed their strict MyPy
+  checks at revision `03a8721f254ddabfe006bff4677bb95ece0b0d3d`, and the full
+  repository Ruff and Black checks passed without exclusions. The public-API
+  snapshot, capability-maturity, and repository-hygiene gates also passed. The
+  complete credential-free golden path then passed all 771 selected tests in
+  41.54 seconds against the same clean pinned Kaiwu Community and Kaiwu PyTorch
+  Plugin revisions, with provider credentials removed and the socket guard
+  active. This is not a claim that every repository-wide gate is green: the
+  whole-package MyPy run still reports two pre-existing, integration-unrelated
+  macOS `sched_getaffinity` errors in
+  `flagquantum/benchmarking/socket_local_throughput.py`, and the architecture
+  gate still reports the unrelated `flagquantum/simulation/mps/state.py` at
+  1,251 lines against its 1,250-line ceiling. Neither residual changes the
+  Kaiwu contract evidence or closes any provider, frozen-environment, A800,
+  system-acceptance, or protein-effectiveness gate.
 - A value-free offline readiness command now composes the existing frozen-config,
   quota, approved-SDK environment, two-host source-preflight, common transfer
   manifest, and protein-artifact validators into one fail-closed inventory. It
