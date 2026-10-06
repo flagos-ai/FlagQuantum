@@ -1,0 +1,195 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Construction-layer acceptance: what must be true of a program that `Circuit.compose`
+# built, measured two ways — against the program a user would have written by hand for
+# the same placement, and against the same request served by every execution mode that
+# accepts it.
+#
+# This is an acceptance contract, not a semantics contract. What `compose` means and
+# every way it refuses belong to `contracts/circuit-composition-contract.toml` and are
+# not restated here. What is recorded here is the measurement that the construction
+# layer produces one program, not one program per route.
+schema = "flagquantum_construction_acceptance_contract_v1"
+maturity = "development_evidence"
+surface = "construction_layer_acceptance"
+accepted_program = "programs built with Circuit.compose"
+implementation = "flagquantum/circuit.py"
+semantics_source = "flagquantum/core/operator_schema.py"
+ir_source = "flagquantum/core/ir.py"
+# Acceptance adds no capability, so it changes no version and no export. Both are
+# recorded as measured facts rather than asserted, because an acceptance slice that
+# quietly widened the public surface would be the failure this contract exists to stop.
+ir_version_effect = "none"
+root_export_effect = "none"
+measured_ir_version = "1.0"
+measured_root_export_count = 36
+authorization_required = false
+authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
+
+[subject]
+# The construction-layer members this acceptance covers. Each must be present in the
+# tree and must have a requirement row under [verification.requirements].
+covered = ["Circuit.compose", "Circuit.adjoint"]
+# The rest of the construction family, named so that its absence is contracted rather
+# than discovered. Each is delivered by its own slice and is not this slice's to claim.
+not_covered = ["Circuit.control", "Circuit.power"]
+not_covered_reason = "each is an upstream slice of its own and is not present in this tree"
+not_covered_evidence = [
+    "https://github.com/flagos-ai/FlagQuantum/pull/552",
+    "https://github.com/flagos-ai/FlagQuantum/pull/542",
+]
+
+[census]
+# The measurement behind `covered` and `not_covered`. This is the fail-closed mechanism:
+# the moment the construction layer grows, a name recorded here as absent stops being
+# absent and this contract fails until the acceptance is extended to cover it.
+measurement = "hasattr(fq.Circuit(2), name.rsplit('.', 1)[1]) for each contracted member"
+covered_members_are_present = true
+not_covered_members_are_absent = true
+# Reading `Circuit.__pow__` as well keeps the census honest about the operator spelling:
+# `power` is absent as a method and absent as an operator, which is one fact, not two.
+also_measured_absent = ["Circuit.__pow__"]
+
+[ir_identity]
+# The plan's claim is that a composed program's IR equals the hand-built program's IR.
+# It is measured on the four things a user can observe without reading private state.
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+instruction_signature = "(name, tuple(qubits), sorted (param, repr(value)) pairs)"
+tolerance = "exact"
+# The hand-built counterpart is the placement expanded by hand, not the block left
+# where it was. A block placed at qubits (2, 0) is compared against `h(2); cnot(2, 0)`,
+# which is the program the user writes when they place it that way.
+hand_built_definition = "the block's ladder emitted directly on the placed qubits"
+block_program = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+block_instruction_count = "2 * width - 1"
+placement_forms = ["qubits", "qubit_map"]
+# Placing on the identity target and placing on nothing are the two ways this claim can
+# pass trivially, so both are in the shape list below rather than left as edge cases.
+identity_placement_is_in_shapes = true
+
+# One row per measured placement. The gate expands each by hand and compares.
+[[placement]]
+n_qubits = 2
+qubits = [0]
+[[placement]]
+n_qubits = 3
+qubits = [0, 1]
+[[placement]]
+n_qubits = 3
+qubits = [2, 0]
+[[placement]]
+n_qubits = 3
+qubits = [1, 2]
+[[placement]]
+n_qubits = 3
+qubits = [1]
+[[placement]]
+n_qubits = 4
+qubits = [0, 1, 2]
+[[placement]]
+n_qubits = 5
+qubits = [3, 4]
+[[placement]]
+n_qubits = 6
+qubits = [5, 2, 4]
+
+# The same claim through the mapping form, where the map is sparse and out of order.
+[[placement_map]]
+n_qubits = 3
+mapping = { "0" = 2, "1" = 0 }
+[[placement_map]]
+n_qubits = 4
+mapping = { "0" = 3, "1" = 1 }
+[[placement_map]]
+n_qubits = 5
+mapping = { "0" = 4, "1" = 0, "2" = 2 }
+
+[result_identity]
+# The plan's second claim is that the modes agree. It is measured on probabilities
+# because that is the one output every full-state mode serves; `state` is `None` for the
+# two tensor modes, so comparing states would silently compare nothing.
+requested_output = "probabilities"
+request_kind = "probabilities"
+# Two claims hide under the word "agree", and they are not the same claim:
+#   1. the two construction routes agree with each other;
+#   2. each mode agrees with the reference mode.
+# (1) is exact and is asserted as exact. (2) is not exact and must not be recorded as if
+# it were: three of the five modes compute in a different arithmetic and land within
+# complex64 resolution of the reference rather than on it.
+between_construction_routes = "exact"
+between_modes = "tolerance"
+reference_mode = "statevector"
+between_modes_tolerance = 1e-06
+between_modes_tolerance_rationale = "the non-reference full-state modes land within complex64 resolution of the reference on the measured program; the widest measured spread is 2.980e-08 across density_matrix, mps, and tensor_network, and 8.429e-08 for the distributed member, against a complex64 epsilon of 1.192e-07"
+measured_max_spread = "recorded in docs/api-changes/FQ-CONSTRUCTION-ACCEPTANCE-20261024.md"
+
+[modes]
+# Measured from `ExecutionOptions`'s own mode set, not from prose. `serving` are the
+# modes that answer the request above; `refused` is the mode that does not, recorded
+# with the class and phrase so that the refusal is contracted rather than tolerated.
+serving = ["auto", "density_matrix", "mps", "statevector", "tensor_network"]
+refused = ["stabilizer"]
+refusal_class = "CapabilityError"
+refusal_phrase = "samples measurement outcomes"
+serving_and_refused_must_partition_the_mode_set = true
+
+[distributed_member]
+# The plan names `distributed_statevector` as the fourth mode. It is a real native mode
+# and it is reachable — but not the way the plan wrote it, so the route is recorded as
+# measured rather than assumed.
+reachable_through_execution_options = false
+execution_options_refusal_class = "ValidationError"
+execution_options_refusal_phrase = "mode must be one of"
+accepted_mode_argument = "distributed_statevector"
+# The keyword that carries the member is not a public keyword either: `fq.run` and
+# `fq.plan` refuse `world_size`, so the route is the runtime executor entry point.
+root_run_accepts_world_size = false
+root_plan_accepts_world_size = false
+route = "flagquantum.runtime.execution.run_native"
+world_size_argument = "world_size"
+served_output = "state"
+plan_flag = "is_distributed"
+measured_world_sizes = [2, 4, 8]
+between_construction_routes = "exact"
+between_modes = "tolerance"
+
+# The plan row named identifiers that do not exist. They are recorded here, with the
+# spelling that does exist, so that the correction is a measured row rather than a note
+# in a document that the next reader may not reach. `still_absent` is re-measured by the
+# gate: if any of these names appears later, this table is stale and the gate fails.
+[[plan_corrections]]
+field = "CircuitIR.n_qubits"
+recorded_by_plan = "the composed IR's n_qubits equals the hand-built IR's n_qubits"
+measured_spelling = "CircuitIR.n_wires"
+still_absent = true
+consequence = "the acceptance measures n_wires; n_qubits is not an attribute of CircuitIR"
+
+[[plan_corrections]]
+field = "CircuitIR.semantic_fingerprint"
+recorded_by_plan = "the composed IR's semantic_fingerprint equals the hand-built IR's"
+measured_spelling = "CircuitIR.content_hash"
+still_absent = true
+consequence = "the acceptance measures content_hash; semantic_fingerprint is not an attribute of CircuitIR"
+
+[[plan_corrections]]
+field = "ExecutionOptions(mode='distributed_statevector')"
+recorded_by_plan = "the fourth mode is selected by passing distributed_statevector as an ExecutionOptions mode"
+measured_spelling = "a native run-mode alias on the runtime executor entry point, not an ExecutionOptions value"
+still_absent = true
+consequence = "the acceptance reaches the distributed member through run_native(mode='distributed_statevector', world_size=...), and records that fq.run does not accept world_size"
+
+[[plan_corrections]]
+field = "cross-mode agreement"
+recorded_by_plan = "the four modes agree on the result"
+measured_spelling = "the two construction routes agree exactly; the modes agree within complex64 resolution"
+still_absent = false
+consequence = "the acceptance asserts exactness where it holds and a declared tolerance where it does not"
+
+[verification]
+contract_test = "tests/unit/test_construction_acceptance.py"
+gate = "tools/check_construction_acceptance_contract.py"
+# The split is deliberate. This gate owns the census and the deterministic IR claim,
+# because those are cheap and they are what goes stale when someone adds a member or a
+# mode. The conformance test owns the numerical claims, which need pytest's tolerance
+# reporting to be readable when they fail.
+requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse" }
