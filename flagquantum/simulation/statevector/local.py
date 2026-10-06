@@ -868,6 +868,28 @@ def _execute_statevector_program(
                 output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            if name in {"rxx", "ryy", "rzz"}:
+                parameters = _gate_parameters(
+                    circuit,
+                    instruction,
+                    output,
+                    parameter_bindings,
+                )
+                if parameters is not None:
+                    from .pauli_rotation_dispatch import (
+                        _try_apply_cataloged_pauli_rotation,
+                    )
+
+                    dispatched = _try_apply_cataloged_pauli_rotation(
+                        output,
+                        parameters[:, 0],
+                        qubits=instruction.wires,
+                        n_qubits=circuit.n_qubits,
+                        opcode=name,
+                    )
+                    if dispatched is not None:
+                        output = dispatched
+                        continue
             matrix = _gate_matrix(
                 instruction,
                 bsz=output.shape[0],
