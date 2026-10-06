@@ -33,9 +33,13 @@ from flagquantum.compiler.routing import (
 
 pytestmark = pytest.mark.benchmark_contract
 
-# ``line4`` and ``ring6`` are where the cost estimate picks the wrong candidate;
-# ``grid3x3`` keeps a two-dimensional device in the basis, where the two SABRE
-# strategies separate furthest from the two estimate-driven ones.
+# Three topologies, chosen because each carries behaviour the recorded result
+# turns on. ``grid3x3`` keeps a two-dimensional device in the basis, where the two
+# SABRE strategies separate furthest from the two estimate-driven ones and where
+# the largest program widths live. All three carry a program on which the cost
+# estimate picks the more expensive of its two candidates, so no one of them is
+# dead weight; ``ring6`` additionally carries a program on which the estimate
+# answers differently for the source program and for the routed one.
 _BASIS_TOPOLOGIES = ("line4", "ring6", "grid3x3")
 _BASIS_SEEDS = (0, 1, 2)
 _BASIS_CASE_COUNT = 36
