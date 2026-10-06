@@ -8,6 +8,7 @@ import pytest
 
 from examples.qdiffusion_kaiwu.source_preflight import (
     COMMUNITY_REVISION,
+    MAX_SOURCE_PREFLIGHT_BYTES,
     load_source_preflight,
     validate_common_transfer_manifest,
     validate_runtime_source_root,
@@ -124,6 +125,35 @@ def test_source_preflight_must_be_private_and_not_a_symlink(tmp_path: Path) -> N
     with pytest.raises(ValueError, match="non-symlink"):
         load_source_preflight(
             link,
+            execution_host="jp-a800-171",
+            source_revision=SOURCE_REVISION,
+            plugin_revision=PLUGIN_REVISION,
+        )
+
+
+def test_source_preflight_requires_private_parent_and_bounded_input(
+    tmp_path: Path,
+) -> None:
+    public_parent = tmp_path / "public"
+    public_parent.mkdir(mode=0o755)
+    public_parent.chmod(0o755)
+    public_path = public_parent / "source-preflight.json"
+    _write(public_path, _record())
+
+    with pytest.raises(ValueError, match="parent must be an existing private"):
+        load_source_preflight(
+            public_path,
+            execution_host="jp-a800-171",
+            source_revision=SOURCE_REVISION,
+            plugin_revision=PLUGIN_REVISION,
+        )
+
+    oversized = tmp_path / "oversized-source-preflight.json"
+    oversized.write_bytes(b" " * (MAX_SOURCE_PREFLIGHT_BYTES + 1))
+    oversized.chmod(0o600)
+    with pytest.raises(ValueError, match="exceeds the bounded size"):
+        load_source_preflight(
+            oversized,
             execution_host="jp-a800-171",
             source_revision=SOURCE_REVISION,
             plugin_revision=PLUGIN_REVISION,

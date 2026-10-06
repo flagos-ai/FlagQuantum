@@ -9,6 +9,7 @@ import stat
 from pathlib import Path
 from typing import Any
 
+from examples.qdiffusion_kaiwu.private_io import read_private_bytes
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 
 SCHEMA = "flagquantum.qboson_a800_extracted_bundle_verification"
@@ -24,6 +25,7 @@ ROLES = {
     "kaiwu-plugin-": "kaiwu-pytorch-plugin-",
     "kaiwu-community-": "kaiwu-community-",
 }
+MAX_SOURCE_PREFLIGHT_BYTES = 4 * 1024 * 1024
 
 
 def _artifact_for(artifacts: list[object], *, filename_prefix: str) -> dict[str, Any]:
@@ -75,15 +77,13 @@ def load_source_preflight(
 ) -> tuple[dict[str, Any], str]:
     """Load and validate one private post-extraction source record."""
 
-    if not path.is_absolute():
-        raise ValueError("source preflight path must be absolute")
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("source preflight must be a regular, non-symlink file")
-    if path.stat().st_mode & 0o077:
-        raise ValueError("source preflight must not be accessible by group or others")
     if execution_host not in HOSTS:
         raise ValueError("source preflight execution host is outside the reviewed pair")
-    encoded = path.read_bytes()
+    encoded = read_private_bytes(
+        path,
+        label="source preflight",
+        max_bytes=MAX_SOURCE_PREFLIGHT_BYTES,
+    )
     try:
         record = loads_json_strict(encoded)
     except json.JSONDecodeError as exc:

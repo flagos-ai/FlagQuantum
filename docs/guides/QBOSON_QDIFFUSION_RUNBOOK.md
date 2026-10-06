@@ -261,6 +261,26 @@ The record must retain all of these values:
 
 Never promote this record into the live acceptance manifest.
 
+Revalidate each retained local development record offline before relying on
+its summary or digest. This reads only private local files and performs no SSH,
+container, credential, or provider operation:
+
+```bash
+python -B -s -m examples.qdiffusion_kaiwu.stream_development_evidence validate-record \
+  --execution-host jp-a800-171 \
+  --expected-hostname bm-baai-dx-zone1-lc-a800-80g-15-171 \
+  --source-revision FULL_FLAGQUANTUM_REVISION \
+  --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
+  --source-preflight /absolute/private-evidence/jp-a800-171-extraction-preflight.json \
+  --validation-image-id sha256:FULL_REVIEWED_IMAGE_DIGEST \
+  --transfer-manifest /absolute/private-evidence/flagquantum-qboson-a800-bundle.manifest.json \
+  --record /absolute/private-evidence/jp-a800-171-development.json
+```
+
+Repeat with the second host's hostname, preflight, image ID, and record. The
+command prints the validated development-record SHA-256 only after its source
+preflight and retained transfer manifest hash chain match.
+
 ## 4. Establish the approved SDK lane
 
 Create an isolated Python 3.10 environment from the approved wheel set. Verify

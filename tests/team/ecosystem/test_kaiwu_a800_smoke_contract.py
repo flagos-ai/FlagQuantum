@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -13,6 +15,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
 )
 from examples.qdiffusion_kaiwu.stream_development_evidence import (
     validate_development_record,
+    validate_retained_development_record,
 )
 
 pytestmark = pytest.mark.unit
@@ -137,6 +140,101 @@ def test_streamed_development_record_preserves_non_acceptance_identity() -> None
     record = _streamed_record()
 
     assert _validate_streamed(record) is record
+
+
+def test_retained_development_record_revalidates_private_hash_chain(
+    tmp_path: Path,
+) -> None:
+    source_revision = "a" * 40
+    plugin_revision = "b" * 40
+    community_revision = "b648b531c034bd6ae9b7a34fed994c717967cc72"
+    roles = (
+        ("flagquantum-qboson-", "FlagQuantum-", source_revision),
+        ("kaiwu-plugin-", "kaiwu-pytorch-plugin-", plugin_revision),
+        ("kaiwu-community-", "kaiwu-community-", community_revision),
+    )
+    manifest = {
+        "schema": "flagquantum.qboson_a800_transfer_bundle",
+        "version": "1.0",
+        "created_for_hosts": ["jp-a800-171", "jp-a800-172"],
+        "classification": "local_preparation_only_not_execution_evidence",
+        "artifacts": [
+            {
+                "filename": f"{prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "sha256": "f" * 64,
+            }
+            for prefix, _, revision in roles
+        ],
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    manifest_path.chmod(0o600)
+    manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    preflight = {
+        "schema": "flagquantum.qboson_a800_extracted_bundle_verification",
+        "version": "1.0",
+        "evidence_class": "extraction_preflight_only",
+        "verification_hostname": "review-host",
+        "verified_for_target_host": "jp-a800-171",
+        "manifest_sha256": manifest_sha256,
+        "extracted_content_verified": True,
+        "artifacts": [
+            {
+                "filename": f"{prefix}{revision[:10]}.tar.gz",
+                "revision": revision,
+                "extracted_root": f"{root}{revision[:10]}",
+                "file_count": 1,
+                "content_set_sha256": "e" * 64,
+            }
+            for prefix, root, revision in roles
+        ],
+        "qboson_hardware_used": False,
+        "a800_execution_verified": False,
+        "acceptance_evidence": False,
+    }
+    preflight_path = tmp_path / "source-preflight.json"
+    preflight_path.write_text(json.dumps(preflight), encoding="utf-8")
+    preflight_path.chmod(0o600)
+    record = _streamed_record()
+    record["source_preflight_sha256"] = hashlib.sha256(
+        preflight_path.read_bytes()
+    ).hexdigest()
+    record["transfer_manifest_sha256"] = manifest_sha256
+    record_path = tmp_path / "development.json"
+    record_path.write_text(json.dumps(record), encoding="utf-8")
+    record_path.chmod(0o600)
+
+    result = validate_retained_development_record(
+        record_path=record_path,
+        execution_host="jp-a800-171",
+        expected_hostname="bm-baai-dx-zone1-lc-a800-80g-15-171",
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+        validation_image_id=f"sha256:{'e' * 64}",
+        source_preflight=preflight_path,
+        transfer_manifest=manifest_path,
+    )
+
+    assert result == {
+        "record_sha256": hashlib.sha256(record_path.read_bytes()).hexdigest(),
+        "source_preflight_sha256": record["source_preflight_sha256"],
+        "transfer_manifest_sha256": manifest_sha256,
+    }
+
+    record["source_preflight_sha256"] = "0" * 64
+    record_path.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError, match="source_preflight_sha256"):
+        validate_retained_development_record(
+            record_path=record_path,
+            execution_host="jp-a800-171",
+            expected_hostname="bm-baai-dx-zone1-lc-a800-80g-15-171",
+            source_revision=source_revision,
+            plugin_revision=plugin_revision,
+            validation_image_id=f"sha256:{'e' * 64}",
+            source_preflight=preflight_path,
+            transfer_manifest=manifest_path,
+        )
 
 
 @pytest.mark.parametrize(

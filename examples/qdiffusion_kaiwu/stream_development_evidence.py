@@ -10,8 +10,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
-from examples.qdiffusion_kaiwu.source_preflight import load_source_preflight
+from examples.qdiffusion_kaiwu.private_io import (
+    read_private_bytes,
+    write_private_json_exclusive,
+)
+from examples.qdiffusion_kaiwu.source_preflight import (
+    load_source_preflight,
+    validate_transfer_manifest_record,
+)
 from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.verify_transfer_bundle import verify_transfer_bundle
 
@@ -157,6 +163,63 @@ def validate_development_record(
     return record
 
 
+def validate_retained_development_record(
+    *,
+    record_path: Path,
+    execution_host: str,
+    expected_hostname: str,
+    source_revision: str,
+    plugin_revision: str,
+    validation_image_id: str,
+    source_preflight: Path,
+    transfer_manifest: Path,
+) -> dict[str, str]:
+    """Revalidate one retained local record without contacting a host."""
+
+    preflight_record, preflight_sha256 = load_source_preflight(
+        source_preflight,
+        execution_host=execution_host,
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+    )
+    manifest_bytes = read_private_bytes(
+        transfer_manifest,
+        label="transfer manifest",
+        max_bytes=MAX_RECORD_BYTES,
+    )
+    manifest = loads_json_strict(manifest_bytes)
+    if not isinstance(manifest, dict):
+        raise ValueError("transfer manifest must be a JSON object")
+    validate_transfer_manifest_record(
+        manifest,
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+    )
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    if preflight_record.get("manifest_sha256") != manifest_sha256:
+        raise ValueError("source preflight and retained transfer manifest differ")
+    record_bytes = read_private_bytes(
+        record_path,
+        label="development record",
+        max_bytes=MAX_RECORD_BYTES,
+    )
+    validate_development_record(
+        loads_json_strict(record_bytes),
+        execution_host=execution_host,
+        expected_hostname=expected_hostname,
+        source_revision=source_revision,
+        plugin_revision=plugin_revision,
+        validation_image_id=validation_image_id,
+        source_preflight_sha256=preflight_sha256,
+        transfer_manifest_sha256=manifest_sha256,
+    )
+    return {
+        "record_sha256": hashlib.sha256(record_bytes).hexdigest(),
+        "source_preflight_sha256": preflight_sha256,
+        "transfer_manifest_sha256": manifest_sha256,
+    }
+
+
 def _capture(arguments: argparse.Namespace) -> None:
     if IMAGE_ID.fullmatch(arguments.validation_image_id) is None:
         raise ValueError("validation image ID must be a full SHA-256 identity")
@@ -183,7 +246,8 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate = subparsers.add_parser("validate-inputs")
     capture = subparsers.add_parser("capture")
-    for command in (validate, capture):
+    retained = subparsers.add_parser("validate-record")
+    for command in (validate, capture, retained):
         command.add_argument(
             "--execution-host", choices=sorted(HOSTNAMES), required=True
         )
@@ -196,6 +260,9 @@ def main() -> None:
     capture.add_argument("--validation-image-id", required=True)
     capture.add_argument("--transfer-manifest-sha256", required=True)
     capture.add_argument("--output", required=True, type=Path)
+    retained.add_argument("--validation-image-id", required=True)
+    retained.add_argument("--transfer-manifest", required=True, type=Path)
+    retained.add_argument("--record", required=True, type=Path)
     arguments = parser.parse_args()
     try:
         if arguments.command == "validate-inputs":
@@ -209,8 +276,20 @@ def main() -> None:
                 plugin_revision=arguments.plugin_revision,
             )
             print(result["manifest_sha256"])
-        else:
+        elif arguments.command == "capture":
             _capture(arguments)
+        else:
+            result = validate_retained_development_record(
+                record_path=arguments.record,
+                execution_host=arguments.execution_host,
+                expected_hostname=arguments.expected_hostname,
+                source_revision=arguments.source_revision,
+                plugin_revision=arguments.plugin_revision,
+                validation_image_id=arguments.validation_image_id,
+                source_preflight=arguments.source_preflight,
+                transfer_manifest=arguments.transfer_manifest,
+            )
+            print(result["record_sha256"])
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
 

@@ -355,6 +355,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   and parameter update, and retained all acceptance flags as false. These
   remain development-only records and are not inputs to the live acceptance
   manifest.
+- Retained development records now have an offline `validate-record` path that
+  rechecks the private record, extraction preflight, retained manifest, host,
+  image, and revision hash chain without SSH or provider access. Source
+  preflight loading also uses the bounded descriptor-relative private reader,
+  rejecting public or replaced parents and oversized inputs rather than relying
+  on an ordinary path read.
 - A separate quota-guarded live-system command now composes that QDiffusion
   slice with `KaiwuSDKClient`. It binds execution to the preregistered config
   hash and exact software lane, persists attempted receipts, checks repeat
