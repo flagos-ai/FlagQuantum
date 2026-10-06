@@ -108,6 +108,8 @@ def _write_private_json_exclusive(path: str | Path, payload: object) -> None:
     encoded = (
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
     ).encode()
+    if len(encoded) > _MAX_PRIVATE_JSON_BYTES:
+        raise ValueError("Kaiwu receipt exceeds the bounded size limit")
     directory_descriptor, directory_metadata = _open_private_directory(
         parent, description="Kaiwu receipt parent"
     )

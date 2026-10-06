@@ -216,6 +216,20 @@ def test_save_never_overwrites_receipt(tmp_path: Path) -> None:
         job.save(receipt_path)
 
 
+def test_save_rejects_unrestorable_oversized_receipt_before_file_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    job = submit_kaiwu_task(_MATRIX, client=_FakeClient(), task_name="bounded-save")
+    receipt_path = tmp_path / "oversized.json"
+    monkeypatch.setattr(jobs_module, "_MAX_PRIVATE_JSON_BYTES", 32)
+
+    with pytest.raises(ValueError, match="bounded size"):
+        job.save(receipt_path)
+
+    assert not receipt_path.exists()
+    assert not list(tmp_path.glob(f".{receipt_path.name}.*.tmp"))
+
+
 def test_save_syncs_file_and_parent_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
