@@ -124,6 +124,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_opcode_gradient_exactness.py"),
         ),
         Check(
+            "native gradients contract",
+            (python_executable, "tools/check_native_gradients_contract.py"),
+        ),
+        Check(
             "primitives admission contract",
             (python_executable, "tools/check_primitives_admission_contract.py"),
         ),
