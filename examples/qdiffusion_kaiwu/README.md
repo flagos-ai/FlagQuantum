@@ -47,8 +47,8 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --evaluation-model /private/esm2_t33_650M_UR50D.pt
 ```
 
-The audit inspects credential and project-variable presence without recording
-their values, validates the frozen quota ceiling, approved SDK environment,
+The audit validates credential and project-variable presence and basic format
+without recording their values, then checks the frozen quota ceiling and SDK environment,
 standalone/frozen approval alignment, common transfer manifest, and protein
 artifacts, and performs no network or provider operation. Provider-smoke
 readiness is reported independently of the unfinished protein configuration;

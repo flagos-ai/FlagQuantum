@@ -750,8 +750,9 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
 - A value-free offline readiness command now composes the existing frozen-config,
   quota, approved-SDK environment, two-host source-preflight, common transfer
   manifest, and protein-artifact validators into one fail-closed inventory. It
-  reports only credential and project-variable presence, emits stable reason
-  codes for missing or invalid inputs, and performs no provider operation.
+  validates credential and project-variable presence and format without
+  recording their values, emits stable reason codes for missing or invalid
+  inputs, and performs no provider operation.
   Provider-smoke readiness uses the standalone approval without requiring the
   unfinished protein config; system readiness additionally requires that the
   frozen approval is identical. This closes the local handoff checklist but does

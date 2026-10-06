@@ -134,6 +134,45 @@ def test_readiness_rejects_partial_credentials() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("environ", "check", "reason"),
+    (
+        (
+            {"QBOSON_USER_ID": " ", "QBOSON_SDK_CODE": "code"},
+            "credentials",
+            "credential_pair_invalid",
+        ),
+        (
+            {"QBOSON_USER_ID": "user", "QBOSON_SDK_CODE": "co\nde"},
+            "credentials",
+            "credential_pair_invalid",
+        ),
+        (
+            {"QBOSON_PROJECT_NO": "\u200b"},
+            "project",
+            "project_invalid",
+        ),
+    ),
+)
+def test_readiness_rejects_invalid_private_values_without_echoing_them(
+    environ: dict[str, str], check: str, reason: str
+) -> None:
+    report = audit_readiness(
+        config_path=None,
+        environment_lock_path=None,
+        sdk_approval_path=None,
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        environ=environ,
+    )
+
+    assert report["checks"][check] == {"status": "fail", "reason": reason}
+    encoded = json.dumps(report)
+    assert all(value not in encoded for value in environ.values() if value.strip())
+
+
 def test_readiness_rejects_preflights_from_different_transfer_manifests(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

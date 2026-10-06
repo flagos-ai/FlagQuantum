@@ -91,8 +91,9 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 ```
 
 Arguments may be omitted on an inventory run; missing prerequisites are reported
-with stable reason codes. The command only checks credential and project-variable
-presence, never their values, and performs no network or provider operation. A
+with stable reason codes. The command checks credential and project-variable
+presence and basic format, never records their values, and performs no network
+or provider operation. A
 zero exit means all locally inspectable prerequisites for the protein experiment
 are present and valid. It is not evidence that QBoson, either A800 host, or the
 acceptance workload has run.

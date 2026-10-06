@@ -32,6 +32,10 @@ def _check(status: str, reason: str) -> dict[str, str]:
     return {"status": status, "reason": reason}
 
 
+def _valid_private_value(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value.strip().isprintable()
+
+
 def audit_readiness(
     *,
     config_path: Path | None,
@@ -48,19 +52,23 @@ def audit_readiness(
 
     environment = os.environ if environ is None else environ
     checks: dict[str, dict[str, str]] = {}
-    user_present = bool(environment.get("QBOSON_USER_ID"))
-    code_present = bool(environment.get("QBOSON_SDK_CODE"))
-    if user_present and code_present:
-        checks["credentials"] = _check("pass", "credential_pair_present")
-    elif user_present or code_present:
-        checks["credentials"] = _check("fail", "partial_credential_pair")
-    else:
+    user_id = environment.get("QBOSON_USER_ID")
+    sdk_code = environment.get("QBOSON_SDK_CODE")
+    if user_id is None and sdk_code is None:
         checks["credentials"] = _check("missing", "credential_pair_absent")
-    checks["project"] = (
-        _check("pass", "project_present")
-        if bool(environment.get("QBOSON_PROJECT_NO"))
-        else _check("missing", "project_absent")
-    )
+    elif user_id is None or sdk_code is None:
+        checks["credentials"] = _check("fail", "partial_credential_pair")
+    elif _valid_private_value(user_id) and _valid_private_value(sdk_code):
+        checks["credentials"] = _check("pass", "credential_pair_present")
+    else:
+        checks["credentials"] = _check("fail", "credential_pair_invalid")
+    project_no = environment.get("QBOSON_PROJECT_NO")
+    if project_no is None:
+        checks["project"] = _check("missing", "project_absent")
+    elif _valid_private_value(project_no):
+        checks["project"] = _check("pass", "project_present")
+    else:
+        checks["project"] = _check("fail", "project_invalid")
 
     config: dict[str, Any] | None = None
     config_sha256: str | None = None
