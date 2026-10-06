@@ -56,9 +56,7 @@ def test_bundle_builder_retains_archive_snapshots_through_host_verification(
             archive.chmod(0o600)
         return {"safe_to_extract": True}
 
-    monkeypatch.setattr(
-        build_module, "verify_transfer_bundle", verify_then_replace
-    )
+    monkeypatch.setattr(build_module, "verify_transfer_bundle", verify_then_replace)
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         build_module.build_transfer_bundle(
@@ -395,9 +393,7 @@ def test_extracted_bundle_rejects_archive_drift_after_bundle_verification(
         archive.chmod(0o600)
         return result
 
-    monkeypatch.setattr(
-        extracted_module, "verify_transfer_bundle", verify_then_replace
-    )
+    monkeypatch.setattr(extracted_module, "verify_transfer_bundle", verify_then_replace)
 
     with pytest.raises(ValueError, match="changed after bundle verification"):
         verify_extracted_bundle(
@@ -454,6 +450,4 @@ def test_extracted_bundle_has_no_unsafe_no_follow_fallback(
     monkeypatch.delattr(source_tree_module.os, "O_NOFOLLOW")
 
     with pytest.raises(ValueError, match="cannot safely hash"):
-        source_tree_module._hash_stable_file(
-            target, metadata, label="extracted tree"
-        )
+        source_tree_module._hash_stable_file(target, metadata, label="extracted tree")

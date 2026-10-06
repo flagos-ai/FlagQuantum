@@ -240,9 +240,7 @@ def test_distribution_content_digest_rechecks_complete_file_set(
             first.write_bytes(first.read_bytes())
         return snapshot
 
-    monkeypatch.setattr(
-        verify_module, "capture_regular_file", capture_then_replace
-    )
+    monkeypatch.setattr(verify_module, "capture_regular_file", capture_then_replace)
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]

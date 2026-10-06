@@ -137,9 +137,7 @@ def test_cli_hashes_strict_config_and_prints_no_paths(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("unsafe_kind", ("public-file", "public-parent", "symlink"))
-def test_cli_requires_private_anchored_config(
-    tmp_path: Path, unsafe_kind: str
-) -> None:
+def test_cli_requires_private_anchored_config(tmp_path: Path, unsafe_kind: str) -> None:
     private_parent = tmp_path / "private"
     private_parent.mkdir(mode=0o700)
     config_path = private_parent / "config.json"

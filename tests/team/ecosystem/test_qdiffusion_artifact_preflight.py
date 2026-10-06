@@ -158,9 +158,7 @@ def test_preflight_rejects_source_size_mismatch_before_archive_hash(
     source_path.write_bytes(source_path.read_bytes() + b"unexpected")
     real_hash = stable_tree_module._hash_stable_file
 
-    def reject_archive_hash(
-        target: Path, metadata: object, **kwargs: object
-    ) -> str:
+    def reject_archive_hash(target: Path, metadata: object, **kwargs: object) -> str:
         if target == source_path:
             raise AssertionError("size-mismatched archive must not be hashed")
         return real_hash(target, metadata, **kwargs)  # type: ignore[arg-type]
@@ -240,9 +238,7 @@ def test_preflight_rejects_dataset_source_that_does_not_produce_frozen_fasta(
     replacement = gzip.compress(b">other\nAAAA\n", mtime=0)
     source.write_bytes(replacement)
     config = json.loads(config_path.read_text(encoding="utf-8"))
-    config["dataset"]["source_archive_sha256"] = hashlib.sha256(
-        replacement
-    ).hexdigest()
+    config["dataset"]["source_archive_sha256"] = hashlib.sha256(replacement).hexdigest()
     config["dataset"]["source_archive_bytes"] = len(replacement)
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
 
@@ -409,9 +405,7 @@ def test_preflight_stops_when_archive_expands_past_frozen_fasta(
     replacement = gzip.compress(dataset_bytes + b"unexpected", mtime=0)
     source_path.write_bytes(replacement)
     config = json.loads(config_path.read_text(encoding="utf-8"))
-    config["dataset"]["source_archive_sha256"] = hashlib.sha256(
-        replacement
-    ).hexdigest()
+    config["dataset"]["source_archive_sha256"] = hashlib.sha256(replacement).hexdigest()
     config["dataset"]["source_archive_bytes"] = len(replacement)
     config_path.write_text(json.dumps(config) + "\n", encoding="utf-8")
 

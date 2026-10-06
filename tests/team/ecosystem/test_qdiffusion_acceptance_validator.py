@@ -90,9 +90,7 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
             "mode": "sampling",
             "required_calls": 128,
         },
-        "task_receipts": [
-            {"submitted_at": "2026-10-05T13:00:00+00:00"}
-        ],
+        "task_receipts": [{"submitted_at": "2026-10-05T13:00:00+00:00"}],
     }
     errors: list[str] = []
 
@@ -112,9 +110,7 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
     for resource in snapshot["resources"]:
         if resource["mode"] == "sampling":
             resource["available"] = 128
-    record["task_receipts"] = [
-        {"submitted_at": "2026-10-06T01:00:00+00:00"}
-    ]
+    record["task_receipts"] = [{"submitted_at": "2026-10-06T01:00:00+00:00"}]
     errors = []
     _validate_provider_resource_gate_binding(
         record,
@@ -124,16 +120,10 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
         errors=errors,
     )
 
-    assert errors == [
-        "system: remote receipt 0 follows resource snapshot expiry"
-    ]
+    assert errors == ["system: remote receipt 0 follows resource snapshot expiry"]
 
-    record["provider_resource_gate"]["checked_at"] = (
-        "2026-10-04T23:59:00+00:00"
-    )
-    record["task_receipts"] = [
-        {"submitted_at": "2026-10-04T23:59:30+00:00"}
-    ]
+    record["provider_resource_gate"]["checked_at"] = "2026-10-04T23:59:00+00:00"
+    record["task_receipts"] = [{"submitted_at": "2026-10-04T23:59:30+00:00"}]
     errors = []
     _validate_provider_resource_gate_binding(
         record,
@@ -143,9 +133,7 @@ def test_provider_resource_gate_binding_recomputes_the_declared_budget() -> None
         errors=errors,
     )
 
-    assert (
-        "system: remote receipt 0 predates resource snapshot capture" in errors
-    )
+    assert "system: remote receipt 0 predates resource snapshot capture" in errors
 
 
 def test_provider_smoke_tasks_cannot_predate_the_resource_snapshot() -> None:
@@ -369,9 +357,7 @@ def test_final_host_record_and_nested_field_sets_are_closed() -> None:
     environment_hash = "d" * 64
     records = (
         _record("jp-a800-171", "primary", config_hash, environment_hash),
-        _record(
-            "jp-a800-172", "portability_replay", config_hash, environment_hash
-        ),
+        _record("jp-a800-172", "portability_replay", config_hash, environment_hash),
     )
     for record in records:
         errors: list[str] = []
@@ -388,12 +374,14 @@ def test_final_host_record_and_nested_field_sets_are_closed() -> None:
             ("transfer_accounting", "sampler_boundaries", 0),
             ("acceptance",),
             (
-                "application_evidence",
-                "records",
-                0,
-            )
-            if record["run_role"] == "primary"
-            else ("portability_evidence",),
+                (
+                    "application_evidence",
+                    "records",
+                    0,
+                )
+                if record["run_role"] == "primary"
+                else ("portability_evidence",)
+            ),
         ):
             changed = copy.deepcopy(record)
             target: Any = changed
@@ -401,9 +389,7 @@ def test_final_host_record_and_nested_field_sets_are_closed() -> None:
                 target = target[part]
             target["unexpected_secret_field"] = "must-not-pass"
             errors = []
-            _validate_final_record_field_sets(
-                changed, label="record", errors=errors
-            )
+            _validate_final_record_field_sets(changed, label="record", errors=errors)
             assert any("closed schema" in error for error in errors)
 
 
@@ -462,9 +448,7 @@ def test_system_component_nested_fields_reject_extensions_and_false_failures() -
         ],
     }
     errors: list[str] = []
-    _validate_executable_component_nested_fields(
-        record, label="system", errors=errors
-    )
+    _validate_executable_component_nested_fields(record, label="system", errors=errors)
     assert errors == []
 
     mutations = []
@@ -576,9 +560,7 @@ def test_other_component_nested_fields_reject_extensions() -> None:
         ),
         (
             evaluation,
-            lambda record: record["guided_metrics"].update(
-                unexpected_secret_field=0.0
-            ),
+            lambda record: record["guided_metrics"].update(unexpected_secret_field=0.0),
         ),
         (
             portability,
@@ -625,18 +607,14 @@ def test_execution_component_time_is_bound_to_prerequisites_and_receipts() -> No
         (
             {
                 **valid,
-                "task_receipts": [
-                    {"submitted_at": "2026-10-07T00:00:00+00:00"}
-                ],
+                "task_receipts": [{"submitted_at": "2026-10-07T00:00:00+00:00"}],
             },
             "submission follows its record",
         ),
         (
             {
                 **valid,
-                "task_receipts": [
-                    {"submitted_at": "2026-10-05T23:59:59+00:00"}
-                ],
+                "task_receipts": [{"submitted_at": "2026-10-05T23:59:59+00:00"}],
             },
             "remote receipt 0 predates the provider smoke",
         ),
@@ -1087,12 +1065,8 @@ def _record(
     }
     if role == "primary":
         record["attempted_seeds"] = [1701, 1702, 1703]
-        record["baseline_metrics"] = _metrics(
-            cosine=0.5, uniqueness=1.0, repeat=0.0
-        )
-        record["guided_metrics"] = _metrics(
-            cosine=0.4, uniqueness=0.96, repeat=0.04
-        )
+        record["baseline_metrics"] = _metrics(cosine=0.5, uniqueness=1.0, repeat=0.0)
+        record["guided_metrics"] = _metrics(cosine=0.4, uniqueness=0.96, repeat=0.04)
         record["application_evidence"] = {
             "aggregation": "arithmetic_mean_across_frozen_seeds",
             "records": [
@@ -1134,7 +1108,7 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
                 "version": "2.7.0",
                 "approved_artifact_sha256": "a" * 64,
                 "installed_content_sha256": "b" * 64,
-            }
+            },
         ],
     }
     environment_path = tmp_path / "environment-lock.json"
@@ -1238,7 +1212,9 @@ def test_host_only_manifest_cannot_bypass_required_component_bundle(
     errors = validate_acceptance(manifest_path)
 
     assert any("does not contain every source record" in error for error in errors)
-    assert any("do not reference the exact component bundle" in error for error in errors)
+    assert any(
+        "do not reference the exact component bundle" in error for error in errors
+    )
 
 
 def test_validator_rejects_foreign_owned_manifest_before_parsing(
@@ -1247,9 +1223,7 @@ def test_validator_rejects_foreign_owned_manifest_before_parsing(
 ) -> None:
     manifest_path, _ = _bundle(tmp_path)
     effective_uid = os.geteuid()
-    monkeypatch.setattr(
-        validator_module.os, "geteuid", lambda: effective_uid + 1
-    )
+    monkeypatch.setattr(validator_module.os, "geteuid", lambda: effective_uid + 1)
 
     assert validate_acceptance(manifest_path) == [
         "manifest: must be owned by the current effective user"
@@ -1399,23 +1373,18 @@ def test_validator_rejects_extra_or_public_evidence_directories(
 def test_component_validator_rejects_different_host_transfer_manifests() -> None:
     config = _config()
     component_payloads = {
-        "0" * 64: {
+        "0"
+        * 64: {
             "schema": "flagquantum.qboson_qdiffusion_artifact_preflight",
             "version": "1.0",
             "offline_preflight_only": True,
             "acceptance_evidence": False,
             "config_sha256": "c" * 64,
             "dataset_source": {
-                "source_archive_sha256": config["dataset"][
-                    "source_archive_sha256"
-                ],
+                "source_archive_sha256": config["dataset"]["source_archive_sha256"],
                 "source_archive_bytes": config["dataset"]["source_archive_bytes"],
-                "source_archive_format": config["dataset"][
-                    "source_archive_format"
-                ],
-                "decompression_policy": config["dataset"][
-                    "decompression_policy"
-                ],
+                "source_archive_format": config["dataset"]["source_archive_format"],
+                "decompression_policy": config["dataset"]["decompression_policy"],
                 "decompressed_sha256": config["dataset"]["sha256"],
                 "decompressed_bytes": 456,
             },
@@ -1437,7 +1406,8 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
         "2" * 64: _source_preflight("jp-a800-172", "b" * 64),
         "a" * 64: _transfer_manifest(),
         "d" * 64: config["kaiwu_sdk"],
-        "c" * 64: {
+        "c"
+        * 64: {
             "schema": "flagquantum.qboson_provider_resources",
             "version": "1.0",
             "source": "authenticated_resource_bill",
@@ -1459,7 +1429,8 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
                 "acceptance evidence."
             ),
         },
-        "e" * 64: {
+        "e"
+        * 64: {
             "schema": "flagquantum.qboson_kaiwu_live_smoke",
             "version": "1.0",
             "recorded_at": "2026-10-06T00:00:00+00:00",
@@ -1468,9 +1439,7 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
             "qboson_hardware_used": True,
             "qboson_target": "SPQC-provider",
             "project_no": "CPQC-test",
-            "environment_lock_sha256": config["software"][
-                "environment_lock_sha256"
-            ],
+            "environment_lock_sha256": config["software"]["environment_lock_sha256"],
             "sdk_approval_sha256": "d" * 64,
             "provider_resources_sha256": "c" * 64,
             "tasks": [
@@ -1486,12 +1455,8 @@ def test_component_validator_rejects_different_host_transfer_manifests() -> None
                     "project_no": "CPQC-test",
                     "submitted_at": "2026-10-06T00:00:00+00:00",
                     "returned_samples": config["requested_samples"],
-                    "samples": [
-                        [1, -1] for _ in range(config["requested_samples"])
-                    ],
-                    "energies": [
-                        2.0 for _ in range(config["requested_samples"])
-                    ],
+                    "samples": [[1, -1] for _ in range(config["requested_samples"])],
+                    "energies": [2.0 for _ in range(config["requested_samples"])],
                     "provider_task_id": f"task-{mode}",
                     "provider_target": "SPQC-provider",
                     "raw_status": "completed",
@@ -1784,19 +1749,13 @@ def test_documented_protein_sources_match_review_candidates() -> None:
     assert template["checkpoint"]["source_url"] == (
         "https://huggingface.co/airkingbd/dplm_150m"
     )
-    assert template["tokenizer"]["source_url"] == template["checkpoint"][
-        "source_url"
-    ]
+    assert template["tokenizer"]["source_url"] == template["checkpoint"]["source_url"]
     assert template["evaluation_model"]["source_url"] == (
-        "https://dl.fbaipublicfiles.com/fair-esm/models/"
-        "esm2_t33_650M_UR50D.pt"
+        "https://dl.fbaipublicfiles.com/fair-esm/models/" "esm2_t33_650M_UR50D.pt"
     )
 
     intake_path = (
-        Path(__file__).parents[3]
-        / "examples"
-        / "qdiffusion_kaiwu"
-        / "ASSET_INTAKE.md"
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / "ASSET_INTAKE.md"
     )
     intake = intake_path.read_text(encoding="utf-8")
     assert "49b7125a5d28c6418fcc2f3c4fe799352ac1488b" in intake
@@ -1864,9 +1823,7 @@ def test_environment_lock_kaiwu_artifact_is_bound_to_approval(tmp_path: Path) ->
     lock_path = tmp_path / manifest["environment_lock"]["path"]
     environment_lock = json.loads(lock_path.read_text())
     environment_lock["distributions"][0]["approved_artifact_sha256"] = "b" * 64
-    manifest["environment_lock"]["sha256"] = _write_json(
-        lock_path, environment_lock
-    )
+    manifest["environment_lock"]["sha256"] = _write_json(lock_path, environment_lock)
     config_path = tmp_path / manifest["config"]["path"]
     config = json.loads(config_path.read_text())
     config["software"]["environment_lock_sha256"] = manifest["environment_lock"][
@@ -2012,7 +1969,9 @@ def test_component_bundle_requirement_cannot_be_disabled(tmp_path: Path) -> None
 
     errors = validate_acceptance(manifest_path)
 
-    assert any("component bundle must be explicitly required" in error for error in errors)
+    assert any(
+        "component bundle must be explicitly required" in error for error in errors
+    )
     assert any("does not contain every source record" in error for error in errors)
     assert any(
         "do not reference the exact component bundle" in error for error in errors

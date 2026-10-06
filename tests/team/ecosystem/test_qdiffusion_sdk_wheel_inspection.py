@@ -67,9 +67,7 @@ def test_inspection_records_identity_without_granting_permission(
     _accept_fixture_digest(monkeypatch, wheel)
     output = tmp_path / "inspection.json"
 
-    digest = inspect_sdk_wheel(
-        wheel_path=wheel.resolve(), output_path=output.resolve()
-    )
+    digest = inspect_sdk_wheel(wheel_path=wheel.resolve(), output_path=output.resolve())
 
     record = json.loads(output.read_text(encoding="utf-8"))
     assert set(record) == {

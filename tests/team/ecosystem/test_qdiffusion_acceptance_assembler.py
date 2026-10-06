@@ -792,9 +792,7 @@ def test_bundle_publisher_rejects_foreign_owned_output_parent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     effective_uid = os.geteuid()
-    monkeypatch.setattr(
-        assembler_module.os, "geteuid", lambda: effective_uid + 1
-    )
+    monkeypatch.setattr(assembler_module.os, "geteuid", lambda: effective_uid + 1)
 
     with pytest.raises(ValueError, match="output parent must be an existing private"):
         _open_output_parent(tmp_path)
@@ -884,9 +882,7 @@ def test_bundle_publisher_detects_dangling_symlink_created_during_validation(
     destination = tmp_path / "acceptance"
 
     def create_destination(_: Path) -> list[str]:
-        destination.symlink_to(
-            tmp_path / "missing-target", target_is_directory=True
-        )
+        destination.symlink_to(tmp_path / "missing-target", target_is_directory=True)
         return []
 
     monkeypatch.setattr(
@@ -1299,7 +1295,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
                     "version": "2.7.0",
                     "approved_artifact_sha256": "a" * 64,
                     "installed_content_sha256": "b" * 64,
-                }
+                },
             ],
         },
     )
@@ -1597,9 +1593,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     for resource in tampered_resources["resources"]:
         if resource["mode"] == "sampling":
             resource["available"] = 0
-    tampered_resources_sha = _write_json(
-        component_paths[15], tampered_resources
-    )
+    tampered_resources_sha = _write_json(component_paths[15], tampered_resources)
     manifest["component_records"][15]["sha256"] = tampered_resources_sha
     _write_json(manifest_path, manifest)
     assert any(
@@ -1617,9 +1611,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
         for error in validate_acceptance(manifest_path)
     )
 
-    provider_resources_sha = _write_json(
-        component_paths[15], provider_resources_record
-    )
+    provider_resources_sha = _write_json(component_paths[15], provider_resources_record)
     manifest["component_records"][15]["sha256"] = provider_resources_sha
     restored_smoke_sha = _write_json(component_paths[14], provider_smoke_record)
     manifest["component_records"][14]["sha256"] = restored_smoke_sha

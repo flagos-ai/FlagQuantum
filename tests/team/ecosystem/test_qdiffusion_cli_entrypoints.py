@@ -65,10 +65,7 @@ RUNBOOK_ACCEPTANCE_ENTRYPOINTS = (
 
 def _runbook_command(entrypoint: str) -> str:
     runbook = (
-        Path(__file__).parents[3]
-        / "docs"
-        / "guides"
-        / "QBOSON_QDIFFUSION_RUNBOOK.md"
+        Path(__file__).parents[3] / "docs" / "guides" / "QBOSON_QDIFFUSION_RUNBOOK.md"
     ).read_text(encoding="utf-8")
     marker = f"-m examples.qdiffusion_kaiwu.{entrypoint}"
     start = runbook.index(marker)
@@ -78,10 +75,7 @@ def _runbook_command(entrypoint: str) -> str:
 
 def _argument_flags(entrypoint: str) -> tuple[set[str], set[str]]:
     source = (
-        Path(__file__).parents[3]
-        / "examples"
-        / "qdiffusion_kaiwu"
-        / f"{entrypoint}.py"
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / f"{entrypoint}.py"
     ).read_text(encoding="utf-8")
     all_flags: set[str] = set()
     required_flags: set[str] = set()
@@ -208,14 +202,11 @@ def test_live_entrypoint_binds_expected_hostname_to_frozen_host_identity(
     entrypoint: str,
 ) -> None:
     source = (
-        Path(__file__).parents[3]
-        / "examples"
-        / "qdiffusion_kaiwu"
-        / f"{entrypoint}.py"
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / f"{entrypoint}.py"
     ).read_text(encoding="utf-8")
 
     assert "expected_hostname !=" in source
-    assert "config[\"host_identities\"]" in source
+    assert 'config["host_identities"]' in source
     assert (
         'parser.error("--expected-hostname differs from the frozen host identity")'
         in source

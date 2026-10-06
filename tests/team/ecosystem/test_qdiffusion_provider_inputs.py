@@ -129,6 +129,6 @@ def test_live_cli_binds_project_to_reviewed_assignment_before_credentials(
     ).read_text(encoding="utf-8")
     main_source = source[source.index("def main() -> None:") :]
 
-    assert main_source.index(
-        "verify_approved_project_assignment("
-    ) < main_source.index("resolve_kaiwu_credentials()")
+    assert main_source.index("verify_approved_project_assignment(") < main_source.index(
+        "resolve_kaiwu_credentials()"
+    )

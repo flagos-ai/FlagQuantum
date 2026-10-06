@@ -310,9 +310,7 @@ def test_live_system_producer_rejects_cpu_slice_even_with_provider_identity(
         }
 
     monkeypatch.setattr(system_module, "KaiwuSDKClient", _IdentityClient)
-    monkeypatch.setattr(
-        system_module, "_execute_qdiffusion_slice", execute_cpu_slice
-    )
+    monkeypatch.setattr(system_module, "_execute_qdiffusion_slice", execute_cpu_slice)
     record = run_live_system_probe(
         client=_IdentityClient(),
         config=_config(),
@@ -453,9 +451,7 @@ def test_live_system_receipt_only_timeout_does_not_claim_provider_use(
         return {}
 
     monkeypatch.setattr(system_module, "KaiwuSDKClient", _PendingClient)
-    monkeypatch.setattr(
-        system_module, "_execute_qdiffusion_slice", submit_then_timeout
-    )
+    monkeypatch.setattr(system_module, "_execute_qdiffusion_slice", submit_then_timeout)
     record = run_live_system_probe(
         client=_PendingClient(),
         config=_config(),
@@ -512,9 +508,7 @@ def test_live_system_preserves_completed_result_when_later_receipt_times_out(
                 provider_task_id=(
                     f"completed-{self.submissions}" if self.submissions == 1 else None
                 ),
-                provider_target=(
-                    "injected-target" if self.submissions == 1 else None
-                ),
+                provider_target=("injected-target" if self.submissions == 1 else None),
             )
 
         def query_status(

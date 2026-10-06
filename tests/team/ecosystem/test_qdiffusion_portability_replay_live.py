@@ -267,9 +267,7 @@ def test_portability_producer_rejects_non_cuda_request_before_pass(
         def generate(self, target: torch.Tensor, *, max_steps: int) -> object:
             del target, max_steps
             self.sampler.solve(
-                np.asarray(
-                    [[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]]
-                )
+                np.asarray([[0.0, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.0]])
             )
             return SimpleNamespace(device=torch.device("cuda:0"))
 
@@ -424,9 +422,7 @@ def test_portability_replay_rejects_frozen_input_change_during_build(
         seed_torch=lambda seed: None,
         encode_sequence=lambda *args, **kwargs: torch.tensor([[1, 2, 3]]),
     )
-    io_module = SimpleNamespace(
-        read_fasta_records=lambda path: [("protein", "ACDE")]
-    )
+    io_module = SimpleNamespace(read_fasta_records=lambda path: [("protein", "ACDE")])
 
     record = run_portability_replay(
         builder=builder,
@@ -691,8 +687,11 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
         "resolve_kaiwu_credentials()"
     )
     postflight = source[
-        source.index("artifact_postflight_error: BaseException | None = None") :
-        source.index("apply_artifact_postflight(payload, artifact_postflight_error)")
+        source.index(
+            "artifact_postflight_error: BaseException | None = None"
+        ) : source.index(
+            "apply_artifact_postflight(payload, artifact_postflight_error)"
+        )
     ]
     assert postflight.count("revalidate_artifact_snapshots(artifact_snapshots)") == 2
     assert postflight.rindex(

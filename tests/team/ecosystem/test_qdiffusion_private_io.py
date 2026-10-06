@@ -62,9 +62,11 @@ def test_open_private_binary_rejects_foreign_owned_leaf(
 
     monkeypatch.setattr(private_io_module.os, "fstat", foreign_leaf)
 
-    with pytest.raises(ValueError, match="owned by the current effective user"):
-        with open_private_binary(path, label="artifact", max_bytes=64):
-            pytest.fail("foreign-owned evidence must fail before consumption")
+    with (
+        pytest.raises(ValueError, match="owned by the current effective user"),
+        open_private_binary(path, label="artifact", max_bytes=64),
+    ):
+        pytest.fail("foreign-owned evidence must fail before consumption")
 
 
 def test_open_private_binary_rechecks_leaf_owner_after_consumption(

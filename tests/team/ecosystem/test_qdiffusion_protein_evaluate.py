@@ -46,9 +46,12 @@ def test_evaluation_preflights_private_output_before_workflow() -> None:
         "_artifact_identity_snapshot(args.evaluation_model)"
     ) < source.index('device = torch.device("cuda:0")')
     write_index = source.index("_write_private_redacted_json(args.output")
-    assert source.rindex(
-        'revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")'
-    ) < write_index
+    assert (
+        source.rindex(
+            'revalidate_regular_file(evaluation_snapshot, label="ESM2 checkpoint")'
+        )
+        < write_index
+    )
     assert source.rindex("_revalidate_training_paths(paths)") < write_index
 
 
@@ -180,9 +183,7 @@ def test_evaluation_candidate_is_validated_before_publication() -> None:
     config, record = _evaluation_config_and_record()
 
     assert (
-        _validate_evaluation_candidate(
-            record, config=config, config_sha256="e" * 64
-        )
+        _validate_evaluation_candidate(record, config=config, config_sha256="e" * 64)
         == []
     )
 
@@ -572,9 +573,7 @@ def test_evaluate_outputs_rejects_esm2_change_during_local_load(
 
     helpers = SimpleNamespace(
         esm=SimpleNamespace(
-            pretrained=SimpleNamespace(
-                load_model_and_alphabet_local=load_then_mutate
-            )
+            pretrained=SimpleNamespace(load_model_and_alphabet_local=load_then_mutate)
         )
     )
 

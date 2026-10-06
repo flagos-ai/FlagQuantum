@@ -136,19 +136,21 @@ class KaiwuSampler:
         ):
             raise ValueError("project_no must be a non-empty printable string or None")
 
-        self._client = client
-        self._task_name = task_name.strip()
-        self._project_no = project_no.strip() if project_no is not None else None
-        self._requested_samples = requested_samples
-        self._timeout = float(timeout)
-        self._poll_interval = float(poll_interval)
-        self._max_remote_calls = max_remote_calls
-        self._integer_target_range = integer_target_range
-        self._solve_lock = RLock()
+        self._client: KaiwuTaskClient = client
+        self._task_name: str = task_name.strip()
+        self._project_no: str | None = (
+            project_no.strip() if project_no is not None else None
+        )
+        self._requested_samples: int = requested_samples
+        self._timeout: float = float(timeout)
+        self._poll_interval: float = float(poll_interval)
+        self._max_remote_calls: int = max_remote_calls
+        self._integer_target_range: tuple[int, int] | None = integer_target_range
+        self._solve_lock: RLock = RLock()
         self._cache: dict[str, tuple[tuple[int, ...], ...]] = {}
         self._jobs: dict[str, KaiwuRemoteJob] = {}
         self._receipts: list[KaiwuTaskReceipt] = []
-        self._remote_call_count = 0
+        self._remote_call_count: int = 0
         self._last_job: KaiwuRemoteJob | None = None
         self._last_result: KaiwuTaskResult | None = None
         self._last_precision_report: IntegerPrecisionReport | None = None

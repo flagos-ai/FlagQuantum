@@ -75,12 +75,15 @@ def test_private_sdk_approval_loads_with_stable_identity(tmp_path: Path) -> None
 
 def test_documented_records_use_reviewed_distribution_identity() -> None:
     standalone = json.loads(
-        (_REPOSITORY_ROOT / "examples/qdiffusion_kaiwu/sdk_approval.example.json")
-        .read_text(encoding="utf-8")
+        (
+            _REPOSITORY_ROOT / "examples/qdiffusion_kaiwu/sdk_approval.example.json"
+        ).read_text(encoding="utf-8")
     )
     acceptance = json.loads(
-        (_REPOSITORY_ROOT / "examples/qdiffusion_kaiwu/acceptance_config.example.json")
-        .read_text(encoding="utf-8")
+        (
+            _REPOSITORY_ROOT
+            / "examples/qdiffusion_kaiwu/acceptance_config.example.json"
+        ).read_text(encoding="utf-8")
     )["kaiwu_sdk"]
 
     for field, expected in EXPECTED_IDENTITY.items():
@@ -128,9 +131,7 @@ def test_documented_records_use_reviewed_distribution_identity() -> None:
         ("adapter_distribution_approved", False, "explicit approval is required"),
     ),
 )
-def test_sdk_approval_fails_closed(
-    field: str, value: object, message: str
-) -> None:
+def test_sdk_approval_fails_closed(field: str, value: object, message: str) -> None:
     record = _approval()
     record[field] = value
 
@@ -204,9 +205,7 @@ def test_sdk_approval_loader_rejects_unbounded_input(tmp_path: Path) -> None:
         ("artifact", "artifact differs"),
     ),
 )
-def test_environment_lock_must_match_sdk_approval(
-    mutation: str, message: str
-) -> None:
+def test_environment_lock_must_match_sdk_approval(mutation: str, message: str) -> None:
     environment = _environment()
     distributions = environment["distributions"]
     assert isinstance(distributions, list)

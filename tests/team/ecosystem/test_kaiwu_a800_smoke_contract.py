@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from examples.qdiffusion_kaiwu.a800_sampler_smoke import _write_private_json
 from examples.qdiffusion_kaiwu import private_io as private_io_module
+from examples.qdiffusion_kaiwu.a800_sampler_smoke import _write_private_json
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _write_private_json as _write_development_json,
 )
@@ -103,9 +103,7 @@ def test_stream_inputs_reject_foreign_owned_output_parent_before_bundle_checks(
     transfer = tmp_path / "transfer"
     transfer.mkdir(mode=0o700)
     effective_uid = os.geteuid()
-    monkeypatch.setattr(
-        private_io_module.os, "geteuid", lambda: effective_uid + 1
-    )
+    monkeypatch.setattr(private_io_module.os, "geteuid", lambda: effective_uid + 1)
 
     with pytest.raises(ValueError, match="output parent must"):
         validate_stream_inputs(
