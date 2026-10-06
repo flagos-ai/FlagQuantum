@@ -15,7 +15,31 @@ else:
 
 
 @jit(do_not_specialize=["first_bit_position", "second_bit_position"])
-def _complex64_local_swap_kernel(
+def _complex64_local_swap_out_kernel(
+    state_parts: tl.tensor,
+    output_parts: tl.tensor,
+    amplitude_count: tl.tensor,
+    total_amplitudes: tl.tensor,
+    first_bit_position: tl.tensor,
+    second_bit_position: tl.tensor,
+    BLOCK: tl.constexpr,  # noqa: N803
+) -> None:
+    linear = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
+    mask = linear < total_amplitudes
+    amplitude = linear % amplitude_count
+    first = (amplitude >> first_bit_position) & 1
+    second = (amplitude >> second_bit_position) & 1
+    source_amplitude = amplitude ^ ((first ^ second) << first_bit_position)
+    source_amplitude = source_amplitude ^ ((first ^ second) << second_bit_position)
+    source = linear - amplitude + source_amplitude
+    real = tl.load(state_parts + 2 * source, mask=mask, other=0.0)
+    imag = tl.load(state_parts + 2 * source + 1, mask=mask, other=0.0)
+    tl.store(output_parts + 2 * linear, real, mask=mask)
+    tl.store(output_parts + 2 * linear + 1, imag, mask=mask)
+
+
+@jit(do_not_specialize=["first_bit_position", "second_bit_position"])
+def _complex64_local_swap_inplace_kernel(
     state_parts: tl.tensor,
     output_parts: tl.tensor,
     group_count: tl.tensor,
@@ -112,22 +136,39 @@ def apply_complex64_local_swap(
         raise ValueError("Triton SWAP output must be contiguous and match input")
 
     bit_positions = tuple(n_qubits - 1 - qubit for qubit in normalized_qubits)
-    group_count = amplitude_count // 4
-    block_groups = 256
-    _complex64_local_swap_kernel[
-        (triton.cdiv(state.shape[0] * group_count, block_groups),)
-    ](
-        torch.view_as_real(state),
-        torch.view_as_real(output),
-        group_count,
-        state.shape[0],
-        state.stride(0),
-        bit_positions[0],
-        bit_positions[1],
-        BLOCK_GROUPS=block_groups,
-        num_warps=8,
-        num_stages=2,
-    )
+    state_parts = torch.view_as_real(state)
+    output_parts = torch.view_as_real(output)
+    if output.data_ptr() == state.data_ptr():
+        group_count = amplitude_count // 4
+        block_groups = 256
+        _complex64_local_swap_inplace_kernel[
+            (triton.cdiv(state.shape[0] * group_count, block_groups),)
+        ](
+            state_parts,
+            output_parts,
+            group_count,
+            state.shape[0],
+            state.stride(0),
+            bit_positions[0],
+            bit_positions[1],
+            BLOCK_GROUPS=block_groups,
+            num_warps=8,
+            num_stages=2,
+        )
+    else:
+        total_amplitudes = state.numel()
+        block = 256
+        _complex64_local_swap_out_kernel[(triton.cdiv(total_amplitudes, block),)](
+            state_parts,
+            output_parts,
+            amplitude_count,
+            total_amplitudes,
+            bit_positions[0],
+            bit_positions[1],
+            BLOCK=block,
+            num_warps=8,
+            num_stages=2,
+        )
     return output
 
 
