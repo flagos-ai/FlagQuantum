@@ -603,6 +603,25 @@ energy backbones in the first acceptance scope. The guided energy checkpoint is
 then produced by the frozen training procedure. Record its digest in both host
 records; the replay host must load that exact primary-host artifact.
 
+### 9.1 Protein asset intake status
+
+The following intake review was refreshed on 2026-10-06. It identifies
+candidate sources only; it does not authorize acquisition, redistribution, or
+use. No dataset or model file was downloaded during this review.
+
+| Artifact | Candidate source and observed state | Intake decision |
+| --- | --- | --- |
+| Human proteome FASTA | [UniProt REST stream](https://rest.uniprot.org/uniprotkb/stream?compressed=false&format=fasta&query=%28proteome%3AUP000005640%29); UniProt publishes [CC BY 4.0 license information](https://www.uniprot.org/help/license). | Source and license evidence identified. Acquisition still requires explicit authorization, a frozen revision or retrieval identity, a content digest, and a completed review timestamp. |
+| DPLM 150M checkpoint and tokenizer | [`airkingbd/dplm_150m`](https://huggingface.co/airkingbd/dplm_150m) identifies itself as the 150M checkpoint and links the official implementation. The model repository currently exposes checkpoint and tokenizer files but no license badge, license metadata, or LICENSE file. The linked [implementation repository](https://github.com/bytedance/dplm) is Apache-2.0, but that notice is not treated as an authoritative license for the separately hosted model bytes. | Blocked. Do not download, stage, or fill the checkpoint/tokenizer `license_id` fields until the model publisher or an approved organizational review explicitly resolves the weights and tokenizer rights. |
+| ESM2 evaluation model | [`facebook/esm2_t33_650M_UR50D`](https://huggingface.co/facebook/esm2_t33_650M_UR50D) declares MIT. The configured binary source remains the Meta-hosted checkpoint URL. | Source and license evidence identified. Acquisition still requires explicit authorization, an immutable revision or release identity, a content digest, and a completed review timestamp. |
+
+Before downloading any approved artifact, replace mutable branch names with an
+immutable source revision or release identity and record the exact expected
+files. A short web-interface commit label is not sufficient by itself. The
+download must occur outside the acceptance containers, and the resulting local
+artifacts must pass the offline preflight below before any credential or quota
+lookup. Public availability is not approval.
+
 Before either host run, verify the four staged inputs offline. File artifacts
 use ordinary SHA-256; directory snapshots use the path-aware
 `tree-sha256-v1` algorithm implemented by the preflight tool. The tool rejects

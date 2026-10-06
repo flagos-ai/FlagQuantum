@@ -600,8 +600,11 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   pretrained weights, but the exact separately hosted checkpoint bytes have not
   been authoritatively linked to that notice. The checkpoint therefore remains
   blocked rather than being treated as approved merely because it is publicly
-  downloadable. The asset intake runbook records that no model or dataset
-  download has yet been authorized or performed.
+  downloadable. A 2026-10-06 intake refresh also confirms that the candidate
+  UniProt and ESM2 sources expose license evidence, while acquisition still
+  requires explicit authorization, immutable identities, and content digests.
+  The asset intake runbook records that no model or dataset download has yet
+  been authorized or performed.
 - Protein training now rehashes the frozen config, dataset, shared base
   checkpoint/tokenizer tree, and ESM2 checkpoint after the workflow returns.
   Portability replay repeats that check and revalidates the transferred test
