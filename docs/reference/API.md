@@ -25,6 +25,7 @@ tests, and rendered in the
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
 | Differentiate a program and report the method | `fq.gradient` | Derivative, method, exactness, step |
+| Differentiate several outputs at once | `fq.jacobian`, `fq.jvp`, `fq.vjp` | Every partial derivative, or one directional product |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -376,6 +377,50 @@ assert torch.allclose(
     fq.gradient(build_circuit, parameters, loss_in("statevector")).gradient,
 )
 ```
+
+### Differentiate several outputs at once
+
+`fq.gradient` needs one scalar. A program returning a probability vector or one
+expectation value per qubit has no single scalar gradient, so three entry points
+answer for the whole vector instead:
+
+```python
+def two_expectations(parameters):
+    result = fq.run(
+        build_circuit(parameters),
+        outputs=[fq.expectation(fq.Z(0)), fq.expectation(fq.Z(1))],
+    )
+    return torch.stack(list(result.expectations))
+
+jacobian = fq.jacobian(two_expectations, parameters)
+forward = fq.jvp(two_expectations, parameters, tangent)
+reverse = fq.vjp(two_expectations, parameters, cotangent)
+```
+
+`fq.jacobian` returns every partial derivative, shaped
+`(*program_output.shape, *parameters.shape)`. `fq.jvp` applies that derivative to
+a parameter direction, returning `J @ tangent` shaped like the output, and
+`fq.vjp` applies it to an output direction, returning `cotangent @ J` shaped like
+the parameters. The two products are adjoint -- `<Jv, c>` equals `<v, J^T c>`,
+which is the identity a training step relies on when a scalar objective is
+assembled from several measured values. `fq.jvp` costs two backward sweeps
+whatever the output size; `fq.vjp` costs one whatever the parameter count;
+`fq.jacobian` costs one per output element.
+
+A direction must be shaped exactly like the tensor it is paired with. A tangent
+that merely broadcasts to the parameter shape is refused, because broadcasting
+would differentiate along a different parameterization and the result would look
+right for the wrong reason.
+
+None of the three takes a `method`. There is no shift rule for a vector output
+and no displacement to read off a result, so all three are autograd-only, and a
+program whose output carries no PyTorch graph is refused rather than answered
+with a zero derivative. `fq.jvp` needs the program differentiated twice and is
+refused with `CapabilityError` where an executor cannot build a graph of a graph.
+A complex program output is refused too: no entry point here defines a Wirtinger
+convention, so rather than guess one, take a real value such as an expectation.
+Every result is detached and carries the dtype and device of `parameters`, so a
+second derivative needs an explicit route rather than a nest of these calls.
 
 ## Optimize without a gradient
 

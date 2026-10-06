@@ -36,6 +36,8 @@ __all__ = (
     "expectation",
     "from_openqasm",
     "gradient",
+    "jacobian",
+    "jvp",
     "plan",
     "probabilities",
     "run",
@@ -43,6 +45,7 @@ __all__ = (
     "restore_job",
     "samples",
     "train",
+    "vjp",
     "__version__",
     "experimental",
     "twin",
@@ -91,7 +94,11 @@ def __getattr__(name: str) -> Any:
         return getattr(import_module(".observables", __name__), name)
     if name in {"submit", "restore_job"}:
         return getattr(import_module(".remote.jobs", __name__), name)
-    if name in {"compile", "from_openqasm", "gradient", "plan", "run"}:
+    if name in {"compile", "from_openqasm", "gradient", "plan", "run"} or name in {
+        "jacobian",
+        "jvp",
+        "vjp",
+    }:
         return getattr(import_module("._api", __name__), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

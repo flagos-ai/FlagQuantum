@@ -38,6 +38,8 @@
       "experimental",
       "from_openqasm",
       "gradient",
+      "jacobian",
+      "jvp",
       "plan",
       "probabilities",
       "restore_job",
@@ -45,7 +47,8 @@
       "samples",
       "submit",
       "train",
-      "twin"
+      "twin",
+      "vjp"
     ],
     "planned_additions": []
   },
@@ -221,7 +224,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 36,
+    "root_export_budget": 39,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,
