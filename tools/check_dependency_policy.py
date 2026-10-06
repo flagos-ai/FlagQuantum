@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,33 @@ POLICY = ROOT / "dependency-policy.toml"
 PYPROJECT = ROOT / "pyproject.toml"
 EXPECTED_SCHEMA = "flagquantum_dependency_policy_v2"
 EXPECTED_INTEROP_EXTRAS = ("braket", "cirq", "pennylane", "quafu", "qiskit")
+
+#: Trees whose modules an optional-extra-free environment imports.
+#:
+#: `tests` is collected by pytest and `tools` is executed by the quality job and
+#: by pre-push, and both run in an environment installed from `.[dev]` alone.
+#: A reference to an optional root in either tree is therefore a failure on the
+#: lane that has no such extra -- a collection error in `tests`, an import error
+#: in `tools` -- rather than a skip. `benchmarks` is excluded deliberately: it
+#: holds standalone comparison scripts that a lane installs the comparison
+#: extras to run, and their module-level imports are script entry points, not
+#: modules any marker selects.
+COLLECTION_TREES = ("tests", "tools")
+
+#: Trees whose Python sources are read for rules about the interpreter itself.
+#: A standard-library module can be missing on a supported interpreter version
+#: or in a stripped distribution, so that rule belongs to every source file
+#: rather than to the collection surfaces above.
+SOURCE_TREES = ("benchmarks", "flagquantum", "tests", "tools")
+
+#: Handlers that absorb a missing optional dependency.
+IMPORT_ERRORS = frozenset(
+    {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
+)
+
+#: Guards that only hold when the module using them also skips.
+SKIP_NAMES = frozenset({"skip", "skipif"})
+
 REQUIREMENT_NAME = re.compile(r"^\s*([A-Za-z0-9_.-]+)")
 # An environment marker such as ``python_version < '3.11'`` is not a bound, so a
 # version must start with a digit for the specifier to count.
@@ -238,6 +266,260 @@ def development_floor_pins(policy: dict[str, Any]) -> tuple[str, ...]:
     return tuple(pins)
 
 
+def python_files(trees: tuple[str, ...]) -> tuple[Path, ...]:
+    """Return every Python source under ``trees``, in a stable order."""
+
+    found: list[Path] = []
+    for tree in trees:
+        directory = ROOT / tree
+        if not directory.is_dir():
+            continue
+        found.extend(
+            path
+            for path in sorted(directory.rglob("*.py"))
+            if "__pycache__" not in path.parts
+        )
+    return tuple(found)
+
+
+def guard_implications(policy: dict[str, Any]) -> dict[str, frozenset[str]]:
+    """Return which guarded root also implies another root is importable.
+
+    ``guard_implications["numpy"] = ["stim"]`` records that a module guarded by
+    ``pytest.importorskip("stim")`` may then import numpy, because numpy is a
+    declared requirement of stim. That fact belongs to stim's metadata and to no
+    file in this repository, so it is declared once here rather than restated as
+    a per-file exemption. Adding an entry requires citing the distribution's own
+    requirements, because the declaration asserts exactly that.
+    """
+
+    declared = policy.get("import_policy", {}).get("guard_implications", {})
+    if not isinstance(declared, dict):
+        return {}
+    return {
+        root: frozenset(names)
+        for root, names in declared.items()
+        if isinstance(root, str) and isinstance(names, list)
+    }
+
+
+def imported_roots(node: ast.AST) -> tuple[str, ...]:
+    """Return the root packages one import statement names."""
+
+    if isinstance(node, ast.Import):
+        return tuple(alias.name.split(".")[0] for alias in node.names)
+    if isinstance(node, ast.ImportFrom):
+        if node.level or node.module is None:
+            return ()
+        return (node.module.split(".")[0],)
+    return ()
+
+
+def node_parents(tree: ast.AST) -> dict[ast.AST, ast.AST]:
+    parents: dict[ast.AST, ast.AST] = {}
+    for parent in ast.walk(tree):
+        for child in ast.iter_child_nodes(parent):
+            parents[child] = parent
+    return parents
+
+
+def names_in(node: ast.AST) -> frozenset[str]:
+    """Return every identifier a type expression mentions."""
+
+    names: set[str] = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Name):
+            names.add(child.id)
+        elif isinstance(child, ast.Attribute):
+            names.add(child.attr)
+    return frozenset(names)
+
+
+def type_checker_only(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> bool:
+    """True when the node only exists for a static checker to read.
+
+    ``if TYPE_CHECKING: import numpy`` names an optional dependency without ever
+    running, so it is not a reference the interpreter can fail on.
+    """
+
+    current = node
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, ast.If):
+            if names_in(current.test) & {"TYPE_CHECKING", "False"}:
+                return True
+    return False
+
+
+def scope_chain(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> tuple[ast.AST, ...]:
+    """Return the module and function bodies the node is nested in."""
+
+    chain: list[ast.AST] = []
+    current = node
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef)):
+            chain.append(current)
+    return tuple(chain)
+
+
+def absorbs_import_error(node: ast.AST, parents: dict[ast.AST, ast.AST]) -> bool:
+    """True when an enclosing ``try`` handles the missing module itself."""
+
+    current = node
+    while current in parents:
+        current = parents[current]
+        if not isinstance(current, ast.Try):
+            continue
+        for handler in current.handlers:
+            if handler.type is None or names_in(handler.type) & IMPORT_ERRORS:
+                return True
+    return False
+
+
+def scope_guards(scope: ast.AST) -> frozenset[str]:
+    """Return the roots one module or function body gates on.
+
+    ``pytest.importorskip("stim")`` gates on stim. ``importlib.util.find_spec``
+    only gates when the same body also skips or marks a skip on the result, so a
+    body that merely inspects a specification does not count as a guard.
+    """
+
+    gated: set[str] = set()
+    inspected: set[str] = set()
+    skips = False
+    for child in ast.walk(scope):
+        if isinstance(child, ast.Attribute) and child.attr in SKIP_NAMES:
+            skips = True
+        if not isinstance(child, ast.Call):
+            continue
+        name = getattr(child.func, "attr", None) or getattr(child.func, "id", None)
+        if name not in {"importorskip", "find_spec"}:
+            continue
+        if not child.args or not isinstance(child.args[0], ast.Constant):
+            continue
+        value = child.args[0].value
+        if not isinstance(value, str) or not value:
+            continue
+        target = gated if name == "importorskip" else inspected
+        target.add(value.split(".")[0])
+    return frozenset(gated | inspected) if skips else frozenset(gated)
+
+
+def reference_errors(policy: dict[str, Any]) -> tuple[str, ...]:
+    """Report unguarded references to an optional dependency in collected code.
+
+    An environment installed from ``.[dev]`` holds no optional extra. A module
+    that an optional-extra-free lane imports must therefore either not name an
+    optional root or name it where the absence is handled: inside a ``try`` that
+    absorbs the import error, or under a guard on that root or on a root that
+    requires it. A reference anywhere else is what turns a missing extra into a
+    collection error on one lane and a green light everywhere else, which is the
+    defect ``tests/unit/test_circuit_power.py`` and the density-matrix contract
+    suite each shipped once.
+    """
+
+    forbidden = tuple(policy.get("import_policy", {}).get("core_forbidden_imports", ()))
+    implications = guard_implications(policy)
+    errors: list[str] = []
+    for path in python_files(COLLECTION_TREES):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (
+            SyntaxError
+        ) as error:  # pragma: no cover - a syntax error is its own gate
+            errors.append(f"{path.relative_to(ROOT).as_posix()}: {error}")
+            continue
+        parents = node_parents(tree)
+        relative = path.relative_to(ROOT).as_posix()
+        for node in ast.walk(tree):
+            for root in imported_roots(node):
+                if root not in forbidden:
+                    continue
+                if type_checker_only(node, parents):
+                    continue
+                if absorbs_import_error(node, parents):
+                    continue
+                allowed = {root} | set(implications.get(root, frozenset()))
+                gated: set[str] = set()
+                for scope in scope_chain(node, parents):
+                    gated |= scope_guards(scope)
+                if gated & allowed:
+                    continue
+                errors.append(
+                    f"{relative}:{node.lineno}: {root!r} is referenced without a "
+                    "guard; an environment installed from `.[dev]` has no such "
+                    "extra, so this module fails to collect there. Guard it with "
+                    f"`try: import {root} / except ModuleNotFoundError`, "
+                    f'`pytest.importorskip("{root}")`, or a skip on '
+                    f'`find_spec("{root}")`'
+                )
+    return tuple(errors)
+
+
+def stdlib_fallback_errors() -> tuple[str, ...]:
+    """Report a standard-library import that assumes the interpreter has it.
+
+    ``tomllib`` is a 3.11 addition, so every reference needs a fallback that a
+    version test cannot provide: ``sys.version_info`` proves the interpreter
+    version, not that the module is there, and it cannot be simulated on a
+    supported interpreter the way a missing import can. The ``try``/``except
+    ModuleNotFoundError`` form is the one the other 51 sites use, so this rule
+    holds one idiom instead of two.
+    """
+
+    errors: list[str] = []
+    for path in python_files(SOURCE_TREES):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except SyntaxError:  # pragma: no cover - a syntax error is its own gate
+            continue
+        parents = node_parents(tree)
+        relative = path.relative_to(ROOT).as_posix()
+        for node in ast.walk(tree):
+            if "tomllib" not in imported_roots(node):
+                continue
+            if type_checker_only(node, parents):
+                continue
+            if absorbs_import_error(node, parents):
+                continue
+            errors.append(
+                f"{relative}:{node.lineno}: `tomllib` needs the fallback form; "
+                "use `try: import tomllib / except ModuleNotFoundError: import "
+                "tomli as tomllib` so a 3.10 interpreter and a stripped standard "
+                "library both work"
+            )
+    return tuple(errors)
+
+
+def reference_census(policy: dict[str, Any]) -> str:
+    """Return how many guarded references the scan sees, for the record."""
+
+    implications = guard_implications(policy)
+    counts: dict[str, int] = {}
+    files: dict[str, int] = {}
+    for path in python_files(COLLECTION_TREES):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        parents = node_parents(tree)
+        tree_name = path.relative_to(ROOT).parts[0]
+        files[tree_name] = files.get(tree_name, 0) + 1
+        for node in ast.walk(tree):
+            for root in imported_roots(node):
+                if type_checker_only(node, parents):
+                    continue
+                if absorbs_import_error(node, parents):
+                    continue
+                allowed = {root} | set(implications.get(root, frozenset()))
+                gated: set[str] = set()
+                for scope in scope_chain(node, parents):
+                    gated |= scope_guards(scope)
+                if gated & allowed:
+                    counts[root] = counts.get(root, 0) + 1
+    summary = ", ".join(f"{root} {counts[root]}" for root in sorted(counts))
+    scanned = ", ".join(f"{tree} {files[tree]}" for tree in sorted(files))
+    return f"scanned {scanned}; guarded references: {summary or 'none'}"
+
+
 def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[str, ...]:
     errors: list[str] = []
     if policy.get("schema") != EXPECTED_SCHEMA:
@@ -389,6 +671,29 @@ def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[st
                     errors.append(
                         f"externally managed import {name!r} is not forbidden at core import"
                     )
+        implications = import_policy.get("guard_implications")
+        if not isinstance(implications, dict):
+            errors.append("import_policy.guard_implications must be a table")
+        else:
+            for root, names in implications.items():
+                if not isinstance(names, list) or not all(
+                    isinstance(name, str) and name for name in names
+                ):
+                    errors.append(
+                        f"import_policy.guard_implications[{root!r}] must be a list "
+                        "of root package names"
+                    )
+                    continue
+                if root in names:
+                    errors.append(
+                        f"import_policy.guard_implications[{root!r}] cannot name itself"
+                    )
+                for name in names:
+                    if name not in (forbidden or []):
+                        errors.append(
+                            f"import_policy.guard_implications[{root!r}] names "
+                            f"{name!r}, which is not forbidden at core import"
+                        )
 
     return tuple(errors)
 
@@ -401,6 +706,11 @@ def main(argv: list[str] | None = None) -> int:
         "--print-floor",
         action="store_true",
         help="print the pinned development floor for the CI floor lane",
+    )
+    parser.add_argument(
+        "--print-reference-census",
+        action="store_true",
+        help="print the guarded references the collection scan sees",
     )
     args = parser.parse_args(argv)
     policy = load_toml(args.policy)
@@ -415,6 +725,13 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(" ".join(pins))
         return 0
+    if args.print_reference_census:
+        print(reference_census(policy))
+        return 0
+    errors = reference_errors(policy) + stdlib_fallback_errors()
+    if errors:
+        print("\n".join(errors))
+        return 1
     print("dependency policy passed")
     return 0
 
