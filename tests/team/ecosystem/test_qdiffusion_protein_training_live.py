@@ -529,6 +529,12 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index("verify_approved_kaiwu_distribution(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("load_provider_resources(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("assess_provider_budget(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index(
         'args.workflow_output_root, label="protein workflow output directory"'
     ) < source.index("resolve_kaiwu_credentials()")

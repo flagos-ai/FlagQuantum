@@ -40,6 +40,10 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_json_output_path,
 )
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
+from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_budget,
+    load_provider_resources,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _load_training_record,
     _revalidate_training_paths,
@@ -465,6 +469,7 @@ def main() -> None:
     parser.add_argument("--plugin-revision", required=True)
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
+    parser.add_argument("--provider-resources", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
@@ -499,6 +504,7 @@ def main() -> None:
         "output": args.output,
         "source-preflight": args.source_preflight,
         "environment-lock": args.environment_lock,
+        "provider-resources": args.provider_resources,
     }.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
@@ -511,6 +517,14 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(args.config)
     if args.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
+    provider_resources, _ = load_provider_resources(args.provider_resources)
+    resources_ready, resource_reason = assess_provider_budget(
+        provider_resources,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+    )
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
     if args.expected_hostname != config["host_identities"][args.execution_host]:
         parser.error("--expected-hostname differs from the frozen host identity")
     hostname = socket.gethostname()

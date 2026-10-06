@@ -626,6 +626,12 @@ def test_replay_source_preflights_before_credentials_and_requires_cost_ack() -> 
     assert source.index("verify_approved_kaiwu_distribution(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("load_provider_resources(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("assess_provider_budget(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index(
         "validate_private_json_output_path(args.artifact_preflight_output)"
     ) < source.index("resolve_kaiwu_credentials()")

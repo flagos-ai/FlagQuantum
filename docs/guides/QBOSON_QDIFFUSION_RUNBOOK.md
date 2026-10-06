@@ -518,6 +518,7 @@ python3 -B -s -m examples.qdiffusion_kaiwu.qdiffusion_system_live \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --source-preflight /absolute/private-evidence/extraction-preflight.json \
   --environment-lock /absolute/private-evidence/environment-lock.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --project-no "$QBOSON_PROJECT_NO" \
   --task-prefix "flagquantum-qdiffusion-${RUN_ID}" \
   --device cuda:0 \
@@ -721,6 +722,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_training_live \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
   --source-preflight /absolute/evidence/extraction-preflight.json \
   --environment-lock /absolute/evidence/environment-lock.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-protein \
   --seed 1701 \
@@ -879,6 +881,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --plugin-revision f047bce7b1077449967bbe9e9fab5741542b48d4 \
   --source-preflight /absolute/evidence/replay-extraction-preflight.json \
   --environment-lock /absolute/evidence/environment-lock.json \
+  --provider-resources /absolute/private-evidence/provider-resources.json \
   --project-no APPROVED_PROJECT \
   --task-prefix qdiffusion-portability \
   --expected-sdk-version 1.3.1 \

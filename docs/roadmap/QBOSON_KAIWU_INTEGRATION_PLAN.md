@@ -883,6 +883,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   closed schema, validity interval, and same-target optimization-plus-sampling
   balance to the smoke timestamp. Directly invoking the quota-consuming smoke
   can therefore no longer bypass the readiness-only resource check.
+- The three larger quota-consuming entrypoints now also require a current
+  private Resource Bill snapshot before credential discovery or SDK client
+  initialization. System and portability runs require one Sampling target to
+  cover the frozen remote-call ceiling; each protein-training run requires one
+  Sampling target to cover its frozen per-seed ceiling. These checks prevent a
+  direct CLI invocation from starting a run whose declared task budget exceeds
+  the observed balance, without treating the observation as a reservation.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

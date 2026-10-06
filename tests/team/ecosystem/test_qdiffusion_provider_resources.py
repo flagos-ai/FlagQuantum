@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_budget,
     assess_provider_resources,
     load_provider_resources,
     validate_provider_resources,
@@ -152,3 +153,54 @@ def test_resource_snapshot_expires_fail_closed() -> None:
 
     assert ready is False
     assert reason == "provider_resource_snapshot_expired"
+
+
+def test_resource_budget_requires_one_target_to_cover_the_declared_ceiling() -> None:
+    record = _record(sampling=4)
+    resources = record["resources"]
+    assert isinstance(resources, list)
+    for resource in resources:
+        if resource["target"] == "SPQC-550" and resource["mode"] == "sampling":
+            resource["available"] = 128
+
+    ready, reason = assess_provider_budget(
+        validate_provider_resources(record),
+        mode="sampling",
+        required_calls=128,
+        now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
+    )
+
+    assert ready is True
+    assert reason == "provider_sampling_budget_available"
+
+
+def test_resource_budget_rejects_a_split_or_insufficient_balance() -> None:
+    ready, reason = assess_provider_budget(
+        validate_provider_resources(_record(sampling=127)),
+        mode="sampling",
+        required_calls=128,
+        now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
+    )
+
+    assert ready is False
+    assert reason == "sampling_resource_budget_insufficient"
+
+
+@pytest.mark.parametrize(
+    ("mode", "required_calls", "message"),
+    (
+        ("unsupported", 1, "mode must be"),
+        ("sampling", 0, "positive integer"),
+        ("sampling", True, "positive integer"),
+    ),
+)
+def test_resource_budget_rejects_invalid_requirements(
+    mode: str, required_calls: int, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        assess_provider_budget(
+            validate_provider_resources(_record()),
+            mode=mode,
+            required_calls=required_calls,
+            now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
+        )

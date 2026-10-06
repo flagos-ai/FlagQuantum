@@ -677,6 +677,12 @@ def test_live_system_validates_source_preflight_before_credentials() -> None:
     assert source.index("verify_approved_kaiwu_distribution(") < source.index(
         "resolve_kaiwu_credentials()"
     )
+    assert source.index("load_provider_resources(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert source.index("assess_provider_budget(") < source.index(
+        "resolve_kaiwu_credentials()"
+    )
     assert source.index("validate_private_json_output_path(arguments.output)") < (
         source.index("resolve_kaiwu_credentials()")
     )
@@ -733,6 +739,8 @@ def test_live_system_cli_rejects_existing_output_before_credentials(
             str(tmp_path / "source-preflight.json"),
             "--environment-lock",
             str(tmp_path / "environment-lock.json"),
+            "--provider-resources",
+            str(tmp_path / "provider-resources.json"),
             "--project-no",
             "CPQC-test",
             "--task-prefix",

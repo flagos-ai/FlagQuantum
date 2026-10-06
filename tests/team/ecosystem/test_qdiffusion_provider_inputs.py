@@ -46,3 +46,29 @@ def test_live_cli_normalizes_provider_identifiers_before_credentials(
     assert main_source.rindex("normalize_provider_identifier(") < main_source.index(
         "resolve_kaiwu_credentials()"
     )
+
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    (
+        "qdiffusion_system_live",
+        "qdiffusion_protein_training_live",
+        "qdiffusion_portability_replay_live",
+    ),
+)
+def test_budgeted_live_cli_requires_fresh_resources_before_credentials(
+    entrypoint: str,
+) -> None:
+    source = (
+        Path(__file__).parents[3] / "examples" / "qdiffusion_kaiwu" / f"{entrypoint}.py"
+    ).read_text(encoding="utf-8")
+    main_source = source[source.index("def main() -> None:") :]
+
+    assert 'parser.add_argument("--provider-resources", required=True' in main_source
+    assert main_source.index("load_provider_resources(") < main_source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert main_source.index("assess_provider_budget(") < main_source.index(
+        "resolve_kaiwu_credentials()"
+    )
+    assert 'mode="sampling"' in main_source

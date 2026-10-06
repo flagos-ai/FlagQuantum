@@ -320,7 +320,10 @@ The command requires the same exact quota acknowledgement as the smaller live
 smoke test. It writes attempted task receipts even when the QDiffusion slice
 fails after submission, verifies repeat retrieval against the same last task,
 and scans the serialized record for the resolved `user_id` and `sdk_code`
-before creating a mode-0600 file. There is no local fallback.
+before creating a mode-0600 file. It also requires a current private provider
+resource snapshot and verifies that one Sampling target can cover the frozen
+`remote_call_budget` before credentials or the SDK client are initialized.
+There is no local fallback.
 
 This probe exits unsuccessfully until all system gates pass. In particular,
 the current documented SDK adapter leaves provider task and target identity
@@ -344,6 +347,12 @@ Transformers into offline mode, constructs every plugin dataclass from the
 frozen acceptance config, and binds all workflow-created generators to one
 budgeted FlagQuantum `KaiwuSampler`. The base checkpoint directory must also
 contain the tokenizer files required by the pinned plugin.
+
+Before credentials or model imports, the training launcher requires a current
+private provider-resource snapshot whose balance on one Sampling target covers
+the frozen per-seed remote-call ceiling. The portability launcher applies the
+same check to the frozen system/replay ceiling. These are fail-closed spending
+guards; the snapshots remain observations rather than provider reservations.
 
 After training returns, the command rehashes the frozen config, FASTA, base
 checkpoint/tokenizer tree, and ESM2 checkpoint before publishing its record.

@@ -136,11 +136,45 @@ def assess_provider_resources(
     return True, "provider_smoke_resources_available"
 
 
+def assess_provider_budget(
+    record: dict[str, Any],
+    *,
+    mode: str,
+    required_calls: int,
+    now: datetime | None = None,
+) -> tuple[bool, str]:
+    """Check freshness and one target's balance for a bounded live run."""
+
+    validate_provider_resources(record)
+    if mode not in MODES:
+        raise ValueError("mode must be optimization or sampling")
+    if type(required_calls) is not int or required_calls <= 0:
+        raise ValueError("required_calls must be a positive integer")
+    observed_now = datetime.now(timezone.utc) if now is None else now
+    if observed_now.tzinfo is None or observed_now.utcoffset() != timedelta(0):
+        raise ValueError("now must be an aware UTC timestamp")
+    captured_at = _parse_utc_timestamp(record["captured_at"], label="captured_at")
+    valid_until = _parse_utc_timestamp(record["valid_until"], label="valid_until")
+    if observed_now < captured_at - timedelta(minutes=5):
+        return False, "provider_resource_snapshot_from_future"
+    if observed_now > valid_until:
+        return False, "provider_resource_snapshot_expired"
+    balances = [
+        item["available"]
+        for item in record["resources"]
+        if item["mode"] == mode
+    ]
+    if max(balances, default=0) < required_calls:
+        return False, f"{mode}_resource_budget_insufficient"
+    return True, f"provider_{mode}_budget_available"
+
+
 __all__ = (
     "SCHEMA",
     "SOURCE",
     "TARGETS",
     "VERSION",
+    "assess_provider_budget",
     "assess_provider_resources",
     "load_provider_resources",
     "validate_provider_resources",

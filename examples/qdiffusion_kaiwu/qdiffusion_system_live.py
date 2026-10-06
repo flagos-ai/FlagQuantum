@@ -29,6 +29,10 @@ from examples.qdiffusion_kaiwu.private_io import (
     write_private_json_exclusive,
 )
 from examples.qdiffusion_kaiwu.provider_inputs import normalize_provider_identifier
+from examples.qdiffusion_kaiwu.provider_resources import (
+    assess_provider_budget,
+    load_provider_resources,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     FULL_REVISION,
     HOSTS,
@@ -505,6 +509,7 @@ def main() -> None:
     parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
+    parser.add_argument("--provider-resources", required=True, type=Path)
     parser.add_argument("--project-no", required=True)
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--device", default="cuda:0")
@@ -537,6 +542,14 @@ def main() -> None:
     config, config_sha256 = _load_frozen_config(arguments.config)
     if arguments.requested_samples != config["requested_samples"]:
         parser.error("--requested-samples differs from the frozen configuration")
+    provider_resources, _ = load_provider_resources(arguments.provider_resources)
+    resources_ready, resource_reason = assess_provider_budget(
+        provider_resources,
+        mode="sampling",
+        required_calls=config["remote_call_budget"],
+    )
+    if not resources_ready:
+        parser.error(f"provider resource gate failed: {resource_reason}")
     if arguments.expected_hostname != config["host_identities"][
         arguments.execution_host
     ]:
