@@ -18,6 +18,12 @@ SCHEMA = "flagquantum.qboson_qdiffusion_environment_lock"
 SHA256 = re.compile(r"[0-9a-f]{64}")
 PLACEHOLDER = re.compile(r"<[^>]+>")
 _MAX_ENVIRONMENT_LOCK_BYTES = 4 * 1024 * 1024
+ENVIRONMENT_LOCK_FIELDS = frozenset(
+    {"schema", "version", "inventory_policy", "python_version", "distributions"}
+)
+ENVIRONMENT_DISTRIBUTION_FIELDS = frozenset(
+    {"name", "version", "approved_artifact_sha256", "installed_content_sha256"}
+)
 
 
 def _canonical_distribution_name(name: str) -> str:
@@ -90,6 +96,8 @@ def parse_environment_lock_bytes(encoded: bytes) -> tuple[dict[str, Any], str]:
         raise ValueError("environment lock is not valid JSON") from exc
     if not isinstance(record, dict):
         raise ValueError("environment lock must be a JSON object")
+    if set(record) != ENVIRONMENT_LOCK_FIELDS:
+        raise ValueError("environment lock field set differs from schema")
     if record.get("schema") != SCHEMA or record.get("version") != "1.0":
         raise ValueError("unsupported environment lock schema or version")
     if record.get("inventory_policy") != "exact":
@@ -108,6 +116,10 @@ def parse_environment_lock_bytes(encoded: bytes) -> tuple[dict[str, Any], str]:
     for index, distribution in enumerate(distributions):
         if not isinstance(distribution, dict):
             raise ValueError(f"environment lock distribution {index} is not an object")
+        if set(distribution) != ENVIRONMENT_DISTRIBUTION_FIELDS:
+            raise ValueError(
+                f"environment lock distribution {index} field set differs from schema"
+            )
         name = distribution.get("name")
         version = distribution.get("version")
         artifact_sha256 = distribution.get("approved_artifact_sha256")

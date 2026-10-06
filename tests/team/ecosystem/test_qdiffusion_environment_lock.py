@@ -75,6 +75,20 @@ def test_environment_lock_rejects_placeholder_and_public_file(tmp_path: Path) ->
         load_environment_lock(path)
 
 
+@pytest.mark.parametrize("nested", (False, True))
+def test_environment_lock_rejects_undeclared_fields(
+    tmp_path: Path, nested: bool
+) -> None:
+    path = tmp_path / "environment-lock.json"
+    record = _record()
+    target = record["distributions"][0] if nested else record  # type: ignore[index]
+    target["sdk_code"] = "must-not-be-retained"  # type: ignore[index]
+    _write(path, record)
+
+    with pytest.raises(ValueError, match="field set differs from schema"):
+        load_environment_lock(path)
+
+
 @pytest.mark.parametrize("unsafe_parent", ("public", "symlink"))
 def test_environment_lock_rejects_unsafe_parent(
     tmp_path: Path, unsafe_parent: str

@@ -104,6 +104,8 @@ records:
    the top level or any nested section. Undeclared keys are rejected before a
    live entrypoint resolves credentials, and the final validator repeats that
    check before retaining the config.
+   The environment lock is closed in the same way: its top-level object and
+   every distribution entry may contain only the documented inventory fields.
 2. Record the file's SHA-256 digest in each host record and in a manifest based
    on `acceptance_manifest.example.json`.
 3. Run the bounded system path independently on `jp-a800-171` and

@@ -663,6 +663,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   undeclared fields; the documented template is tested against the validator's
   field sets. An extra credential-like value can no longer hide in a config
   extension and be copied into the final self-contained evidence bundle.
+- The retained environment lock is now closed at both record and distribution
+  levels. Only the exact inventory policy, Python version, and sorted package
+  identity/version/artifact/content digests are accepted; arbitrary metadata
+  or credential-like extensions fail before runtime comparison and before the
+  lock is copied into final evidence. Builder tests assert that produced locks
+  match these same field sets.
 - Final assembly now rejects non-private or symlinked inputs and builds in a
   private sibling staging directory. The requested evidence directory appears
   atomically only after the independent validator passes, preventing a failed

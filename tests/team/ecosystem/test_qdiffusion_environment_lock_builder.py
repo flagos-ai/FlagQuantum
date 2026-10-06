@@ -8,6 +8,10 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.build_environment_lock import build_environment_lock
+from examples.qdiffusion_kaiwu.verify_environment_lock import (
+    ENVIRONMENT_DISTRIBUTION_FIELDS,
+    ENVIRONMENT_LOCK_FIELDS,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -39,6 +43,11 @@ def test_builder_binds_complete_runtime_to_reviewed_wheels(
     )
 
     record = json.loads(output.read_text(encoding="utf-8"))
+    assert set(record) == ENVIRONMENT_LOCK_FIELDS
+    assert all(
+        set(distribution) == ENVIRONMENT_DISTRIBUTION_FIELDS
+        for distribution in record["distributions"]
+    )
     assert output.stat().st_mode & 0o777 == 0o600
     assert digest == hashlib.sha256(output.read_bytes()).hexdigest()
     assert [entry["name"] for entry in record["distributions"]] == [
