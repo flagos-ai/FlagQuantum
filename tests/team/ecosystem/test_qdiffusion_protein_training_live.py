@@ -20,6 +20,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _capture_training_outputs,
     _checkpoint_identity,
     _run_workflow,
+    _training_component_ready,
     _workflow_artifact_identities,
     revalidate_training_output_snapshots,
     run_training_seed,
@@ -87,6 +88,63 @@ def _frozen_config() -> dict[str, Any]:
             "portability_steps": 3,
         },
     }
+
+
+def _ready_training_record() -> dict[str, Any]:
+    return {
+        "run_completed": True,
+        "failure": None,
+        "artifact_inputs_unchanged": True,
+        "transport": "kaiwu_cim",
+        "pinned_sdk_client": True,
+        "real_provider_evidence": True,
+        "qboson_hardware_used": True,
+        "provider_identity_complete": True,
+        "provider_reported_target": True,
+        "precision_evidence_complete": True,
+        "secrets_redacted": True,
+        "fallback_occurred": False,
+        "qboson_target": "SPQC-provider",
+        "remote_call_count": 2,
+        "protein_remote_call_budget_per_seed": 2,
+        "task_receipts": [{"task": 1}, {"task": 2}],
+        "qboson_task_ids": ["task-1", "task-2"],
+        "trained_energy_checkpoint_sha256": "a" * 64,
+    }
+
+
+def test_training_component_ready_requires_complete_provider_evidence() -> None:
+    record = _ready_training_record()
+
+    assert _training_component_ready(record) is True
+
+    for field in (
+        "artifact_inputs_unchanged",
+        "pinned_sdk_client",
+        "real_provider_evidence",
+        "qboson_hardware_used",
+        "provider_identity_complete",
+        "provider_reported_target",
+        "precision_evidence_complete",
+        "secrets_redacted",
+    ):
+        changed = dict(record)
+        changed[field] = False
+        assert _training_component_ready(changed) is False
+
+
+def test_training_component_ready_rejects_local_completion_and_quota_drift() -> None:
+    local = _ready_training_record()
+    local["transport"] = "injected_test"
+    assert _training_component_ready(local) is False
+
+    over_budget = _ready_training_record()
+    over_budget["remote_call_count"] = 3
+    assert _training_component_ready(over_budget) is False
+
+    duplicate_tasks = _ready_training_record()
+    duplicate_tasks["qboson_task_ids"] = ["task-1", "task-1"]
+    assert _training_component_ready(duplicate_tasks) is False
 
 
 def _workflow_types() -> SimpleNamespace:

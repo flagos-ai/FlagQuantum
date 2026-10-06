@@ -11,6 +11,7 @@ import hashlib
 import importlib
 import os
 import platform
+import re
 import socket
 import stat
 import sys
@@ -344,6 +345,49 @@ def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
         }
         for receipt in sampler.receipts
     ]
+
+
+def _training_component_ready(record: dict[str, Any]) -> bool:
+    """Return whether one seed is eligible for final-component validation."""
+
+    remote_calls = record.get("remote_call_count")
+    per_seed_budget = record.get("protein_remote_call_budget_per_seed")
+    receipts = record.get("task_receipts")
+    task_ids = record.get("qboson_task_ids")
+    checkpoint_sha256 = record.get("trained_energy_checkpoint_sha256")
+    return bool(
+        record.get("run_completed") is True
+        and record.get("failure") is None
+        and record.get("artifact_inputs_unchanged") is True
+        and record.get("transport") == "kaiwu_cim"
+        and all(
+            record.get(field) is True
+            for field in (
+                "pinned_sdk_client",
+                "real_provider_evidence",
+                "qboson_hardware_used",
+                "provider_identity_complete",
+                "provider_reported_target",
+                "precision_evidence_complete",
+                "secrets_redacted",
+            )
+        )
+        and record.get("fallback_occurred") is False
+        and isinstance(record.get("qboson_target"), str)
+        and bool(record["qboson_target"].strip())
+        and type(remote_calls) is int
+        and remote_calls > 0
+        and type(per_seed_budget) is int
+        and per_seed_budget > 0
+        and remote_calls <= per_seed_budget
+        and isinstance(receipts, list)
+        and len(receipts) == remote_calls
+        and isinstance(task_ids, list)
+        and len(task_ids) == remote_calls
+        and len(task_ids) == len(set(task_ids))
+        and isinstance(checkpoint_sha256, str)
+        and re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is not None
+    )
 
 
 def run_training_seed(
@@ -705,7 +749,7 @@ def main() -> None:
         forbidden_values=(user_id, sdk_code),
     )
     print(f"Private protein-training record written to {args.run_record}")
-    if not payload["run_completed"]:
+    if not _training_component_ready(payload):
         raise SystemExit(1)
 
 

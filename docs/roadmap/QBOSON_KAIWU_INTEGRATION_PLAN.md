@@ -613,6 +613,13 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   the frozen-input postflight and rechecks them immediately before exclusive
   record publication, closing the gap between output hashing and evidence
   write.
+- The protein-training CLI now distinguishes a locally completed workflow from
+  an acceptance-eligible seed component. It still publishes the private record
+  for diagnosis, but exits successfully only when real pinned SDK transport,
+  completed QBoson use, unique provider tasks and target, the per-seed quota,
+  precision evidence, frozen-input postflight, and the trained-checkpoint
+  identity are all complete. An injected or identity-incomplete run can no
+  longer return success merely because the upstream workflow exited normally.
 - The shared training-record loader used by both ESM2 evaluation and replay-host
   execution now revalidates real SDK transport, QBoson-use and identity flags,
   sampling receipts, call budget, no-fallback state, and precision completeness.
