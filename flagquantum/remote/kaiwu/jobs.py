@@ -224,9 +224,7 @@ def _read_private_json(path: str | Path) -> Any:
                 )
             if metadata.st_size > _MAX_PRIVATE_JSON_BYTES:
                 raise ValueError("Kaiwu receipt exceeds the bounded size limit")
-            encoded = _read_bounded_bytes(
-                descriptor, limit=_MAX_PRIVATE_JSON_BYTES
-            )
+            encoded = _read_bounded_bytes(descriptor, limit=_MAX_PRIVATE_JSON_BYTES)
             if len(encoded) > _MAX_PRIVATE_JSON_BYTES:
                 raise ValueError("Kaiwu receipt exceeds the bounded size limit")
             result = json.loads(
@@ -251,7 +249,9 @@ def _read_private_json(path: str | Path) -> Any:
             try:
                 visible = source.lstat()
             except OSError:
-                raise ValueError("Kaiwu receipt changed during receipt access") from None
+                raise ValueError(
+                    "Kaiwu receipt changed during receipt access"
+                ) from None
             if (
                 source.is_symlink()
                 or not stat.S_ISREG(visible.st_mode)

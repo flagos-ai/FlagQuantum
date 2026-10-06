@@ -139,10 +139,12 @@ provider values or infer a mapping from field names alone.
   indeterminate failed attempt, not permission to resubmit the task.
 - Existing recovery content is immutable and opened without following
   symlinks. Its schema and UTC timestamp are validated, provider task/target
-  identities must remain absent until an approved mapping exists, and every SDK
-  solve, poll, and result operation requires the in-memory receipt to match the
-  authoritative bundle exactly. A conflict, corruption, missing bundle, public
-  file, or generic restore mismatch fails before SDK task access.
+  identities must remain absent until an approved mapping exists, and a
+  submission time more than five minutes in the future is rejected before
+  polling or result retrieval. Every SDK solve, poll, and result operation
+  requires the in-memory receipt to match the authoritative bundle exactly. A
+  conflict, corruption, missing bundle, public file, or generic restore mismatch
+  fails before SDK task access.
 - Every successful result has valid spin shape and domain, matched sample and
   energy counts, independently recomputed finite energies, and explicit
   `fallback_occurred=false`.

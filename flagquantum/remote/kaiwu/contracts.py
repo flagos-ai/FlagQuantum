@@ -39,9 +39,7 @@ class KaiwuTaskResult:
     samples: tuple[tuple[int, ...], ...]
     energies: tuple[float, ...]
     raw_status: str
-    metadata: Mapping[str, str | int | float | bool | None] = field(
-        default_factory=dict
-    )
+    metadata: Mapping[str, object] = field(default_factory=dict)
 
 
 class KaiwuTaskClient(Protocol):

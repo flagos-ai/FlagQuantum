@@ -82,10 +82,13 @@ def _client(
     monkeypatch.setattr(
         client_module, "_preflight_kaiwu_sdk", Mock(return_value=module)
     )
-    return KaiwuSDKClient(
-        checkpoint_dir=checkpoint_dir,
-        **client_options,
-    ), manager
+    return (
+        KaiwuSDKClient(
+            checkpoint_dir=checkpoint_dir,
+            **client_options,
+        ),
+        manager,
+    )
 
 
 def test_client_rejects_unsafe_checkpoint_directory_before_license(
@@ -378,9 +381,7 @@ def test_concurrent_status_queries_share_one_serialized_sdk_operation(
     release_first_query = Event()
     call_count = 0
 
-    def controlled_solve(
-        optimizer: _FakeOptimizer, matrix: np.ndarray
-    ) -> object:
+    def controlled_solve(optimizer: _FakeOptimizer, matrix: np.ndarray) -> object:
         del optimizer
         nonlocal call_count
         assert matrix.tolist() == [[0.0, 1.0], [1.0, 0.0]]

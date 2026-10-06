@@ -464,11 +464,7 @@ def test_restore_rejects_nonfinite_json_constants(
 ) -> None:
     receipt_path = tmp_path / "nonfinite.json"
     receipt_path.write_text(
-        '{"matrix":[[0,'
-        + constant
-        + '],['
-        + constant
-        + ',0]],"receipt":{}}',
+        '{"matrix":[[0,' + constant + "],[" + constant + ',0]],"receipt":{}}',
         encoding="utf-8",
     )
     receipt_path.chmod(0o600)

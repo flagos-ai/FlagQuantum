@@ -337,16 +337,10 @@ class KaiwuSDKClient:
                 raise KaiwuSDKError("Kaiwu CIM returned an invalid solution shape")
             decoded = array.tolist()
             if any(type(spin) is bool for row in decoded for spin in row):
-                raise KaiwuSDKError(
-                    "Kaiwu CIM returned values outside the spin domain"
-                )
+                raise KaiwuSDKError("Kaiwu CIM returned values outside the spin domain")
             if not bool(np.all((array == -1) | (array == 1))):
-                raise KaiwuSDKError(
-                    "Kaiwu CIM returned values outside the spin domain"
-                )
-            solutions = tuple(
-                tuple(int(spin) for spin in row) for row in decoded
-            )
+                raise KaiwuSDKError("Kaiwu CIM returned values outside the spin domain")
+            solutions = tuple(tuple(int(spin) for spin in row) for row in decoded)
         except KaiwuSDKError:
             raise
         except Exception:
@@ -370,9 +364,7 @@ class KaiwuSDKClient:
             self._submission_deadline is not None
             and datetime.now(timezone.utc) > self._submission_deadline
         ):
-            raise KaiwuSDKError(
-                "Kaiwu submission deadline expired before provider use"
-            )
+            raise KaiwuSDKError("Kaiwu submission deadline expired before provider use")
         receipt = new_receipt(
             task_name=task_name,
             matrix=matrix,
