@@ -824,8 +824,8 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   environment, A800 execution, provider use, or acceptance.
 - After reconciling the authenticated-platform and protein-asset state, the
   complete credential-free golden path was rerun at revision
-  `a7464ba02c2b7c7903d03b76aa51af4e0e26ec4b` on 2026-10-06. All 689 selected
-  tests passed in 23.94 seconds against the same clean Kaiwu Community revision
+  `088c98bc7563f3748fe71cca42638eb7db5840f7` on 2026-10-06. All 701 selected
+  tests passed in 27.89 seconds against the same clean Kaiwu Community revision
   `b648b531c034bd6ae9b7a34fed994c717967cc72` and Kaiwu PyTorch Plugin revision
   `f047bce7b1077449967bbe9e9fab5741542b48d4`. The runner cleared provider
   credentials and denied network access. The available local lane was Python
