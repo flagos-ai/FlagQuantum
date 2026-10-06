@@ -196,8 +196,15 @@ def test_the_repository_scan_separates_the_three_populations() -> None:
     assert len(scanned.aliases) == 11
     # The private bucket moves only as a side effect: `WQ-5` renamed the 41,
     # `WQ-6` the 23, `WQ-7` the 18 and `WQ-8` the 49 `wire`-named parameters of
-    # their own private helpers, which no ledger counts.
-    assert len(scanned.internal) == 226
+    # their own private helpers, which no ledger counts. It is 225 rather than
+    # 226 because the observable-boundary Hamiltonian adjoint seed moved out of
+    # `statevector/reverse_adjoint_sweep.py` into `reverse_observable.py`, which
+    # already owns the statevector synthetic-boundary helpers, and the copy that
+    # moved was the branch's one private `n_wires` parameter; the move is what
+    # returned the sweep module to the 1250-line architecture ceiling. Removing
+    # a site shrinks the set, which the gate permits for a private bucket no
+    # ledger covers, and the contract's measured number is re-measured to match.
+    assert len(scanned.internal) == 225
     assert scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"

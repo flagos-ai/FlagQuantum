@@ -188,6 +188,21 @@ jobs:
           tests/unit/test_docs_source_of_truth.py
           tests/unit/test_evidence_revisions.py
           -q
+      # Three two-node probe contract tests recompute the digest of the contract
+      # each checked-in artifact recorded, from the revision the artifact names.
+      # That needs the commit, so those three assertions skip in a depth-1 lane
+      # rather than read a clone that never fetched the revision as a mismatch.
+      # They ran in the unit tier and errored there for exactly that reason,
+      # which is why the skip has to be paired with somewhere it reaches a
+      # verdict: this job, the only one that fetches full history. The rest of
+      # each module is about the artifact's own content and runs everywhere.
+      - name: Verify checked-in probe artifacts against their recorded contracts
+        run: >-
+          python -m pytest
+          tests/team/runtime/test_cuda_multinode_tn_probe.py
+          tests/team/runtime/test_cuda_multinode_mps_probe.py
+          tests/team/runtime/test_cuda_multinode_statevector_probe.py
+          -q
       # The six artifact validators in this job resolve the revision of the one
       # artifact each of them names, so an artifact no validator names was never
       # asked -- which is how nineteen artifacts under `artifacts/` came to record

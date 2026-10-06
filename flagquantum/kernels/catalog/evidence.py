@@ -122,6 +122,16 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-009-A",
+        "tests/test_statevector_triton_gates.py::test_generic_local_2q_matches_layout_reference_and_exact_alias",
+        capability_tests=(
+            "tests/test_statevector_triton_gates.py::test_generic_local_2q_rejects_unsupported_contracts",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_local_2q_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-GR-001-A",
         "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         gradient_tests=(
@@ -395,6 +405,9 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
         capability_tests=(
             "tests/unit/test_triton_complex_bmm.py::test_fused_complex_bmm_cpu_fallback_matches_torch",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/complex_bmm_dispatch_a800.json",
         ),
     ),
     _evidence(
