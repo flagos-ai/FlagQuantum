@@ -781,6 +781,16 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   (Python 3.12.14 and Torch 2.14.0), so it updates Phase 1 local conformance
   only; it does not establish the frozen Python 3.10/Torch 2.7/Kaiwu 1.3.1
   environment, A800 execution, provider use, or acceptance.
+- After recording the authenticated-platform coordination state, the complete
+  credential-free golden path was rerun at revision
+  `973b87a43a431aff86c95688440b41c20654f886` on 2026-10-06. All 689 selected
+  tests passed against the same clean Kaiwu Community revision
+  `b648b531c034bd6ae9b7a34fed994c717967cc72` and Kaiwu PyTorch Plugin revision
+  `f047bce7b1077449967bbe9e9fab5741542b48d4`. The runner cleared provider
+  credentials and denied network access. The available local lane was Python
+  3.12.14 and Torch 2.13.0, so this remains Phase 1 local conformance evidence;
+  it does not satisfy the pinned SDK, A800, live-provider, or QDiffusion
+  acceptance gates.
 - A value-free offline readiness command now composes the existing frozen-config,
   quota, approved-SDK environment, two-host source-preflight, common transfer
   manifest, and protein-artifact validators into one fail-closed inventory. It
