@@ -639,7 +639,7 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
                     {
                         "name": "kaiwu",
                         "version": "1.3.1",
-                        "approved_artifact_sha256": "a" * 64,
+                        "approved_artifact_sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
                     }
                 ]
             },
@@ -653,7 +653,7 @@ def test_live_smoke_cli_writes_diagnostic_then_exits_nonzero_when_closed(
         "sdk_version": "1.3.1",
         "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
         "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
-        "sha256": "a" * 64,
+        "sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
         "service_terms_url": (
             "https://platform.qboson.com/agreement?"
             "type=QBoson-SPQC-Platform-Users-Agreement"

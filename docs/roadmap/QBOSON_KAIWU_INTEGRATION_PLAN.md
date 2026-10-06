@@ -219,8 +219,15 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   2026-06-26 with SHA-256
   `7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455`.
   Its PyPI metadata has no license identifier or license files. The wheel has
-  therefore been identified but not downloaded, installed, or approved; an
-  explicit package and service-terms review still precedes the pinned SDK lane.
+  now been downloaded into an owner-only temporary review directory and its
+  bytes independently reproduce that published digest. Static ZIP inspection
+  confirms `Requires-Python: >=3.10`, author `Qboson Inc`, the documented
+  dependency declarations, CPython 3.10 Linux tagging, compiled extension
+  modules, and no `LICENSE`, `COPYING`, or `NOTICE` member. It has not been
+  installed, imported, or executed. This identity and metadata review is not a
+  source audit, license approval, or permission to use or redistribute the
+  package; the explicit package and service-terms review still precedes the
+  pinned SDK lane.
 - The service-terms source is no longer unknown. The Kaiwu 1.3.1 license page
   links to the public QBoson Quantum Cloud Platform User Service Agreement;
   the currently rendered agreement is effective 2026-07-09 and expressly
@@ -241,6 +248,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   distribution in the environment lock and cross-checks both its version and
   reviewed artifact digest; a version-only lock or prose-only approval can no
   longer pass acceptance.
+- Standalone SDK approval validation now fixes the published and independently
+  reproduced wheel SHA-256 as part of the reviewed 1.3.1 identity. A merely
+  well-formed digest for different bytes can no longer authorize the pinned
+  lane, even if its filename, version, and source labels are copied unchanged.
 - That gate now also executes before provider use rather than only during final
   assembly. A strict, private standalone SDK-approval record supports the
   earlier live smoke without depending on unfinished protein inputs; its digest

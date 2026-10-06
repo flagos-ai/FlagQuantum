@@ -866,7 +866,7 @@ def _config() -> dict[str, Any]:
             "sdk_version": "1.3.1",
             "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
             "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
-            "sha256": "a" * 64,
+            "sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
             "service_terms_url": (
                 "https://platform.qboson.com/agreement?"
                 "type=QBoson-SPQC-Platform-Users-Agreement"
@@ -1122,7 +1122,7 @@ def _bundle(tmp_path: Path) -> tuple[Path, list[dict[str, Any]]]:
             {
                 "name": "kaiwu",
                 "version": "1.3.1",
-                "approved_artifact_sha256": "a" * 64,
+                "approved_artifact_sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
                 "installed_content_sha256": "c" * 64,
             },
             {

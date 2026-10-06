@@ -195,6 +195,13 @@ be `true`; placeholders and inferred approval fail before credential
 resolution. Final validation also requires the exact Kaiwu wheel digest and
 version in the environment lock to match this reviewed SDK record.
 
+The 1.3.1 approval validator fixes SHA-256
+`7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455`.
+That digest has been reproduced from a private static-inspection copy of the
+PyPI wheel, but the wheel was not installed, imported, or executed. Artifact
+identity evidence does not replace the explicit rights, project-assignment,
+and use approvals required by the same record.
+
 `sdk_approval.example.json` defines the same strict approval object as a
 standalone private record. It exists so the Phase 2 provider smoke can enforce
 the SDK rights gate before the later protein configuration is complete. Its

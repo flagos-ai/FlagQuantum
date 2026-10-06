@@ -1283,7 +1283,7 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
                 {
                     "name": "kaiwu",
                     "version": "1.3.1",
-                    "approved_artifact_sha256": "a" * 64,
+                    "approved_artifact_sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
                     "installed_content_sha256": "c" * 64,
                 },
                 {

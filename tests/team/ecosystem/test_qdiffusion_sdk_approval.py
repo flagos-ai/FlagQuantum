@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from examples.qdiffusion_kaiwu.sdk_approval import (
+    EXPECTED_IDENTITY,
     load_sdk_approval,
     validate_sdk_approval_record,
     verify_approved_kaiwu_distribution,
@@ -13,6 +14,8 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
 )
 
 pytestmark = pytest.mark.unit
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _approval() -> dict[str, object]:
@@ -23,7 +26,7 @@ def _approval() -> dict[str, object]:
         "sdk_version": "1.3.1",
         "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
         "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
-        "sha256": "a" * 64,
+        "sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
         "service_terms_url": (
             "https://platform.qboson.com/agreement?"
             "type=QBoson-SPQC-Platform-Users-Agreement"
@@ -48,7 +51,7 @@ def _environment() -> dict[str, object]:
             {
                 "name": "kaiwu",
                 "version": "1.3.1",
-                "approved_artifact_sha256": "a" * 64,
+                "approved_artifact_sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
             }
         ]
     }
@@ -70,10 +73,26 @@ def test_private_sdk_approval_loads_with_stable_identity(tmp_path: Path) -> None
     verify_approved_kaiwu_distribution(_environment(), record)
 
 
+def test_documented_records_use_reviewed_distribution_identity() -> None:
+    standalone = json.loads(
+        (_REPOSITORY_ROOT / "examples/qdiffusion_kaiwu/sdk_approval.example.json")
+        .read_text(encoding="utf-8")
+    )
+    acceptance = json.loads(
+        (_REPOSITORY_ROOT / "examples/qdiffusion_kaiwu/acceptance_config.example.json")
+        .read_text(encoding="utf-8")
+    )["kaiwu_sdk"]
+
+    for field, expected in EXPECTED_IDENTITY.items():
+        assert standalone[field] == expected
+        assert acceptance[field] == expected
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     (
         ("wheel_filename", "other.whl", "reviewed 1.3.1 lane"),
+        ("sha256", "b" * 64, "reviewed 1.3.1 lane"),
         ("sha256", "invalid", "SHA-256 digest"),
         ("rights_reviewed_at", "2026-10-06", "timezone-aware timestamp"),
         (
