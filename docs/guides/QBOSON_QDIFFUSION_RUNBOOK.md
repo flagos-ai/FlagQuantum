@@ -647,7 +647,10 @@ the seven declared workflow artifacts with owner-only, no-follow stable
 snapshots and cross-revalidates all eight before writing their identities into
 the training record. A public or symlinked output, an output outside that
 directory, or a file replaced while the output set is being captured fails the
-component.
+component. Those exact eight snapshots remain live across frozen-input
+postflight and are checked again immediately before the exclusive training
+record is published; a change during postflight closes the run through its
+existing redacted failure fields.
 
 The exclusive preflight returns the exact stable no-follow snapshots used to
 produce its record; the launcher does not reopen the paths to create a second

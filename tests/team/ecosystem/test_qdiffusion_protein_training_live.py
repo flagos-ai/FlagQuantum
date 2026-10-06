@@ -16,10 +16,12 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_protein_training_live import (
     _build_workflow_config,
+    _capture_training_output_snapshots,
     _capture_training_outputs,
     _checkpoint_identity,
     _run_workflow,
     _workflow_artifact_identities,
+    revalidate_training_output_snapshots,
     run_training_seed,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
@@ -417,6 +419,34 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
         _capture_training_outputs(tmp_path)
 
 
+def test_training_output_snapshots_survive_until_record_publication(
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
+    checkpoint.parent.mkdir()
+    checkpoint.write_bytes(b"trained")
+    checkpoint.chmod(0o600)
+    for relative in (
+        "data_splits/test.fasta",
+        "baseline/proposal_only_generated_sequences.fasta",
+        "guided/energy_guided_generated_sequences.fasta",
+        "history.json",
+        "baseline_vs_guided.json",
+        "baseline_eval/quality_summary.json",
+        "guided_eval/quality_summary.json",
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(relative, encoding="utf-8")
+        path.chmod(0o600)
+
+    _, _, _, snapshots = _capture_training_output_snapshots(tmp_path)
+    checkpoint.write_bytes(b"trained")
+
+    with pytest.raises(ValueError, match="changed after identity capture"):
+        revalidate_training_output_snapshots(snapshots)
+
+
 def test_live_training_source_guards_cost_and_preflights_before_credentials() -> None:
     source = (
         Path(__file__).parents[3]
@@ -444,6 +474,9 @@ def test_live_training_source_guards_cost_and_preflights_before_credentials() ->
     assert source.index(
         'args.workflow_output_root, label="protein workflow output directory"'
     ) < source.index("resolve_kaiwu_credentials()")
+    assert source.index(
+        "revalidate_training_output_snapshots(output_snapshots)"
+    ) < source.index("_write_private_redacted_json(")
     assert source.index(
         "validate_private_json_output_path(args.artifact_preflight_output)"
     ) < source.index("resolve_kaiwu_credentials()")

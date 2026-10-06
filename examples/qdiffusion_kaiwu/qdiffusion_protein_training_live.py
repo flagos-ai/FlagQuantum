@@ -282,6 +282,20 @@ def _capture_training_outputs(
 ) -> tuple[str, str, dict[str, dict[str, str]]]:
     """Capture one internally consistent set of stable training outputs."""
 
+    name, digest, artifacts, _ = _capture_training_output_snapshots(run_directory)
+    return name, digest, artifacts
+
+
+def _capture_training_output_snapshots(
+    run_directory: Path,
+) -> tuple[
+    str,
+    str,
+    dict[str, dict[str, str]],
+    dict[str, RegularFileSnapshot],
+]:
+    """Capture identities plus snapshots retained until record publication."""
+
     checkpoint = _checkpoint_snapshot(run_directory)
     artifacts, snapshots = _workflow_artifact_snapshots(run_directory)
     revalidate_regular_file(checkpoint, label="trained energy checkpoint")
@@ -289,7 +303,29 @@ def _capture_training_outputs(
         revalidate_regular_file(
             snapshot, label=f"protein workflow artifact {name}"
         )
-    return checkpoint.path.name, checkpoint.sha256, artifacts
+    snapshots["trained_energy_checkpoint"] = checkpoint
+    return checkpoint.path.name, checkpoint.sha256, artifacts, snapshots
+
+
+def revalidate_training_output_snapshots(
+    snapshots: dict[str, RegularFileSnapshot],
+) -> None:
+    """Require every captured training output to remain at record publication."""
+
+    expected = {
+        "trained_energy_checkpoint",
+        "test_fasta",
+        "baseline_fasta",
+        "guided_fasta",
+        "training_history",
+        "sequence_metrics",
+        "baseline_quality",
+        "guided_quality",
+    }
+    if set(snapshots) != expected:
+        raise ValueError("complete training output snapshots are required")
+    for name, snapshot in snapshots.items():
+        revalidate_regular_file(snapshot, label=f"training output {name}")
 
 
 def _receipt_records(sampler: KaiwuSampler) -> list[dict[str, Any]]:
@@ -331,6 +367,7 @@ def run_training_seed(
     sdk_version: str,
     preflight_sha256: str,
     artifact_snapshots: dict[str, ArtifactSnapshot] | None = None,
+    retained_output_snapshots: dict[str, RegularFileSnapshot] | None = None,
 ) -> dict[str, Any]:
     failure: dict[str, str] | None = None
     run_directory: Path | None = None
@@ -356,7 +393,11 @@ def run_training_seed(
             checkpoint_name,
             checkpoint_sha256,
             workflow_artifacts,
-        ) = _capture_training_outputs(run_directory)
+            output_snapshots,
+        ) = _capture_training_output_snapshots(run_directory)
+        if retained_output_snapshots is not None:
+            retained_output_snapshots.clear()
+            retained_output_snapshots.update(output_snapshots)
     except (Exception, KeyboardInterrupt) as exc:
         failure = redacted_failure_record(exc)
 
@@ -619,6 +660,7 @@ def main() -> None:
         max_remote_calls=config["training"]["remote_call_budget_per_seed"],
         integer_target_range=target_range,
     )
+    output_snapshots: dict[str, RegularFileSnapshot] = {}
     payload = run_training_seed(
         workflow=workflow,
         config=config,
@@ -639,6 +681,7 @@ def main() -> None:
         sdk_version=args.expected_sdk_version,
         preflight_sha256=preflight_sha256,
         artifact_snapshots=artifact_snapshots,
+        retained_output_snapshots=output_snapshots,
     )
     artifact_postflight_error: BaseException | None = None
     try:
@@ -647,6 +690,15 @@ def main() -> None:
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
     apply_artifact_postflight(payload, artifact_postflight_error)
+    try:
+        if output_snapshots:
+            revalidate_training_output_snapshots(output_snapshots)
+        elif payload.get("run_completed") is True:
+            raise ValueError("completed training run has no retained output snapshots")
+    except (OSError, ValueError) as exc:
+        payload["run_completed"] = False
+        if payload.get("failure") is None:
+            payload["failure"] = redacted_failure_record(exc)
     _write_private_redacted_json(
         args.run_record,
         payload,

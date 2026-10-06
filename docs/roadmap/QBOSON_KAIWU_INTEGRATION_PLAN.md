@@ -525,7 +525,10 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   completed training component. The top-level workflow output root is validated
   as an existing owner-only directory before credentials, and directory/file
   creation runs under a restored `umask 077`; group- or other-accessible output
-  evidence is rejected.
+  evidence is rejected. The producer retains all eight output snapshots across
+  the frozen-input postflight and rechecks them immediately before exclusive
+  record publication, closing the gap between output hashing and evidence
+  write.
 - The shared training-record loader used by both ESM2 evaluation and replay-host
   execution now revalidates real SDK transport, QBoson-use and identity flags,
   sampling receipts, call budget, no-fallback state, and precision completeness.
