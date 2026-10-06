@@ -13,6 +13,7 @@ from examples.qdiffusion_kaiwu.plan_quota import build_quota_plan
 from examples.qdiffusion_kaiwu.preflight_protein_artifacts import _inspect_artifacts
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
 from examples.qdiffusion_kaiwu.sdk_approval import (
+    load_sdk_approval,
     verify_approved_kaiwu_distribution,
 )
 from examples.qdiffusion_kaiwu.source_preflight import (
@@ -20,7 +21,7 @@ from examples.qdiffusion_kaiwu.source_preflight import (
     validate_common_transfer_manifest,
 )
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
-    verify_frozen_environment_lock,
+    verify_environment_lock,
 )
 
 SCHEMA = "flagquantum.qboson_qdiffusion_readiness"
@@ -35,6 +36,7 @@ def audit_readiness(
     *,
     config_path: Path | None,
     environment_lock_path: Path | None,
+    sdk_approval_path: Path | None,
     plugin_root: Path | None,
     primary_source_preflight: Path | None,
     replay_source_preflight: Path | None,
@@ -87,27 +89,66 @@ def audit_readiness(
                 else _check("fail", "quota_ceiling_unresolved")
             )
 
-    if config is None:
-        checks["environment"] = _check("blocked", "config_not_validated")
-    elif environment_lock_path is None:
+    environment_record: dict[str, Any] | None = None
+    environment_sha256: str | None = None
+    if environment_lock_path is None:
         checks["environment"] = _check("missing", "environment_lock_absent")
     else:
         try:
-            environment_record, _ = verify_frozen_environment_lock(
-                environment_lock_path,
-                expected_sha256=config["software"]["environment_lock_sha256"],
+            environment_record, environment_sha256 = verify_environment_lock(
+                environment_lock_path
             )
+        except (OSError, ValueError):
+            checks["environment"] = _check("fail", "environment_lock_invalid")
+        else:
+            checks["environment"] = _check("pass", "environment_lock_valid")
+
+    sdk_approval: dict[str, Any] | None = None
+    if environment_record is None:
+        checks["sdk_approval"] = _check("blocked", "environment_not_validated")
+    elif sdk_approval_path is None:
+        checks["sdk_approval"] = _check("missing", "sdk_approval_absent")
+    else:
+        try:
+            sdk_approval, _ = load_sdk_approval(sdk_approval_path)
+            verify_approved_kaiwu_distribution(environment_record, sdk_approval)
+        except (OSError, ValueError):
+            checks["sdk_approval"] = _check("fail", "sdk_approval_invalid")
+        else:
+            checks["sdk_approval"] = _check("pass", "sdk_approval_valid")
+
+    if config is None:
+        checks["frozen_environment"] = _check("blocked", "config_not_validated")
+    elif environment_record is None or environment_sha256 is None:
+        checks["frozen_environment"] = _check(
+            "blocked", "environment_not_validated"
+        )
+    else:
+        try:
+            if environment_sha256 != config["software"]["environment_lock_sha256"]:
+                raise ValueError("environment lock differs from frozen configuration")
             verify_approved_kaiwu_distribution(
                 environment_record, config["kaiwu_sdk"]
             )
-        except (KeyError, OSError, ValueError):
-            checks["environment"] = _check(
-                "fail", "environment_or_sdk_approval_invalid"
+        except (KeyError, ValueError):
+            checks["frozen_environment"] = _check(
+                "fail", "frozen_environment_or_sdk_approval_invalid"
             )
         else:
-            checks["environment"] = _check(
-                "pass", "environment_and_sdk_approval_valid"
+            checks["frozen_environment"] = _check(
+                "pass", "frozen_environment_and_sdk_approval_valid"
             )
+
+    if config is None:
+        checks["approval_alignment"] = _check("blocked", "config_not_validated")
+    elif sdk_approval is None:
+        checks["approval_alignment"] = _check(
+            "blocked", "sdk_approval_not_validated"
+        )
+    elif config.get("kaiwu_sdk") != sdk_approval:
+        checks["approval_alignment"] = _check("fail", "sdk_approvals_differ")
+    else:
+        checks["approval_alignment"] = _check("pass", "sdk_approvals_match")
 
     preflight_paths = {
         "jp-a800-171": primary_source_preflight,
@@ -176,11 +217,17 @@ def audit_readiness(
 
     provider_smoke_ready = all(
         checks[name]["status"] == "pass"
-        for name in ("config", "environment", "credentials", "project")
+        for name in ("environment", "sdk_approval", "credentials", "project")
     )
     system_probe_ready = provider_smoke_ready and all(
         checks[name]["status"] == "pass"
-        for name in ("quota", "source_preflights")
+        for name in (
+            "config",
+            "quota",
+            "frozen_environment",
+            "approval_alignment",
+            "source_preflights",
+        )
     )
     protein_experiment_ready = system_probe_ready and (
         checks["protein_artifacts"]["status"] == "pass"
@@ -204,6 +251,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path)
     parser.add_argument("--environment-lock", type=Path)
+    parser.add_argument("--sdk-approval", type=Path)
     parser.add_argument("--plugin-root", type=Path)
     parser.add_argument("--primary-source-preflight", type=Path)
     parser.add_argument("--replay-source-preflight", type=Path)
@@ -215,6 +263,7 @@ def main() -> None:
     report = audit_readiness(
         config_path=args.config,
         environment_lock_path=args.environment_lock,
+        sdk_approval_path=args.sdk_approval,
         plugin_root=args.plugin_root,
         primary_source_preflight=args.primary_source_preflight,
         replay_source_preflight=args.replay_source_preflight,

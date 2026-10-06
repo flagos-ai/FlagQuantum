@@ -37,6 +37,7 @@ reason codes; provide the complete set when performing the final preflight:
 python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
+  --sdk-approval /private/sdk-approval.json \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
@@ -48,10 +49,12 @@ python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
 
 The audit inspects credential and project-variable presence without recording
 their values, validates the frozen quota ceiling, approved SDK environment,
-common transfer manifest, and protein artifacts, and performs no network or
-provider operation. It exits zero only when the complete protein experiment is
-ready. A passing report is readiness information, not provider, execution,
-hardware, or acceptance evidence.
+standalone/frozen approval alignment, common transfer manifest, and protein
+artifacts, and performs no network or provider operation. Provider-smoke
+readiness is reported independently of the unfinished protein configuration;
+the command exits zero only when the complete protein experiment is ready. A
+passing report is readiness information, not provider, execution, hardware, or
+acceptance evidence.
 
 `verify_transfer_bundle.py` is the pre-extraction gate for approved host
 transfers. It verifies the three colocated source archives against their

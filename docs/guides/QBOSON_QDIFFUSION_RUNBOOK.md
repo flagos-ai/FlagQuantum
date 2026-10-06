@@ -80,6 +80,7 @@ Next, run the offline readiness audit before invoking any live command:
 python -B -s -m examples.qdiffusion_kaiwu.audit_readiness \
   --config /private/acceptance_config.json \
   --environment-lock /private/environment_lock.json \
+  --sdk-approval /private/sdk-approval.json \
   --plugin-root /src/kaiwu-pytorch-plugin \
   --primary-source-preflight /private/jp-a800-171-extraction-preflight.json \
   --replay-source-preflight /private/jp-a800-172-extraction-preflight.json \
@@ -95,6 +96,11 @@ presence, never their values, and performs no network or provider operation. A
 zero exit means all locally inspectable prerequisites for the protein experiment
 are present and valid. It is not evidence that QBoson, either A800 host, or the
 acceptance workload has run.
+
+The report separates provider-smoke readiness from system and protein readiness.
+The first requires the standalone SDK approval but not the unfinished protein
+configuration. Later stages additionally require that the approval embedded in
+the frozen configuration exactly matches that standalone record.
 
 ## Current environment facts
 

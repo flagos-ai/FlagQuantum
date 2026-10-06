@@ -751,9 +751,12 @@ Status as of 2026-10-06 on branch `feat/qboson-kaiwu-integration`:
   quota, approved-SDK environment, two-host source-preflight, common transfer
   manifest, and protein-artifact validators into one fail-closed inventory. It
   reports only credential and project-variable presence, emits stable reason
-  codes for missing or invalid inputs, and performs no provider operation. This
-  closes the local handoff checklist but does not resolve the absent approval,
-  SDK artifact, credentials, quota, frozen protein assets, or any live evidence.
+  codes for missing or invalid inputs, and performs no provider operation.
+  Provider-smoke readiness uses the standalone approval without requiring the
+  unfinished protein config; system readiness additionally requires that the
+  frozen approval is identical. This closes the local handoff checklist but does
+  not resolve the absent approval, SDK artifact, credentials, quota, frozen
+  protein assets, or any live evidence.
 - Machine-checked draft API gates now keep Kaiwu out of the stable root,
   ecosystem parent, remote parent, and capability-maturity registry; normal
   FlagQuantum imports are also proven not to resolve the optional vendor

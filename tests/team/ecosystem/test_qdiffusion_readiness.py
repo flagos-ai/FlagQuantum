@@ -24,6 +24,7 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
     report = audit_readiness(
         config_path=None,
         environment_lock_path=None,
+        sdk_approval_path=None,
         plugin_root=None,
         primary_source_preflight=None,
         replay_source_preflight=None,
@@ -45,13 +46,14 @@ def test_readiness_reports_missing_inputs_without_credentials() -> None:
 def test_readiness_never_serializes_credential_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    sdk_approval = {"approved": True}
     config = {
         "software": {
             "source_revision": "a" * 40,
             "kaiwu_pytorch_plugin_revision": "b" * 40,
             "environment_lock_sha256": "c" * 64,
         },
-        "kaiwu_sdk": {"approved": True},
+        "kaiwu_sdk": sdk_approval,
     }
     monkeypatch.setattr(
         readiness_module,
@@ -65,8 +67,13 @@ def test_readiness_never_serializes_credential_values(
     )
     monkeypatch.setattr(
         readiness_module,
-        "verify_frozen_environment_lock",
-        lambda path, expected_sha256: ({"lock": True}, expected_sha256),
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
     )
     monkeypatch.setattr(
         readiness_module,
@@ -87,6 +94,7 @@ def test_readiness_never_serializes_credential_values(
     report = audit_readiness(
         config_path=Path("/private/config.json"),
         environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
         plugin_root=Path("/private/plugin"),
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
@@ -112,6 +120,7 @@ def test_readiness_rejects_partial_credentials() -> None:
     report = audit_readiness(
         config_path=None,
         environment_lock_path=None,
+        sdk_approval_path=None,
         plugin_root=None,
         primary_source_preflight=None,
         replay_source_preflight=None,
@@ -128,13 +137,14 @@ def test_readiness_rejects_partial_credentials() -> None:
 def test_readiness_rejects_preflights_from_different_transfer_manifests(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    sdk_approval = {"approved": True}
     config = {
         "software": {
             "source_revision": "a" * 40,
             "kaiwu_pytorch_plugin_revision": "b" * 40,
             "environment_lock_sha256": "c" * 64,
         },
-        "kaiwu_sdk": {"approved": True},
+        "kaiwu_sdk": sdk_approval,
     }
     monkeypatch.setattr(
         readiness_module,
@@ -148,8 +158,13 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
     )
     monkeypatch.setattr(
         readiness_module,
-        "verify_frozen_environment_lock",
-        lambda path, expected_sha256: ({"lock": True}, expected_sha256),
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
     )
     monkeypatch.setattr(
         readiness_module,
@@ -172,6 +187,7 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
     report = audit_readiness(
         config_path=Path("/private/config.json"),
         environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
         plugin_root=Path("/private/plugin"),
         primary_source_preflight=Path("/private/171.json"),
         replay_source_preflight=Path("/private/172.json"),
@@ -187,5 +203,117 @@ def test_readiness_rejects_preflights_from_different_transfer_manifests(
     assert report["checks"]["source_preflights"] == {
         "status": "fail",
         "reason": "source_preflight_invalid",
+    }
+    assert report["ready_to_start_system_probe"] is False
+
+
+def test_provider_smoke_readiness_does_not_require_protein_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk_approval = {"approved": True}
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_approved_kaiwu_distribution",
+        lambda environment, approval: None,
+    )
+
+    report = audit_readiness(
+        config_path=None,
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "present",
+        },
+    )
+
+    assert report["ready_to_start_provider_smoke"] is True
+    assert report["ready_to_start_system_probe"] is False
+    assert report["checks"]["config"]["status"] == "missing"
+
+
+def test_system_readiness_rejects_different_sdk_approval_records(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    standalone_approval = {"approval_reference": "standalone"}
+    config = {
+        "software": {
+            "source_revision": "a" * 40,
+            "kaiwu_pytorch_plugin_revision": "b" * 40,
+            "environment_lock_sha256": "c" * 64,
+        },
+        "kaiwu_sdk": {"approval_reference": "config"},
+    }
+    monkeypatch.setattr(
+        readiness_module,
+        "_load_frozen_config",
+        lambda path: (config, "d" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "build_quota_plan",
+        lambda config, digest: {"totals": {"budget_complete": True}},
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (standalone_approval, "1" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_approved_kaiwu_distribution",
+        lambda environment, approval: None,
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_source_preflight",
+        lambda *args, **kwargs: ({"manifest_sha256": "e" * 64}, "f" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "_inspect_artifacts",
+        lambda config_path, artifact_paths: ("d" * 64, {}, {}),
+    )
+
+    report = audit_readiness(
+        config_path=Path("/private/config.json"),
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=Path("/private/plugin"),
+        primary_source_preflight=Path("/private/171.json"),
+        replay_source_preflight=Path("/private/172.json"),
+        artifact_paths=_paths(),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "present",
+        },
+        source_root=Path("/private/source"),
+    )
+
+    assert report["ready_to_start_provider_smoke"] is True
+    assert report["checks"]["approval_alignment"] == {
+        "status": "fail",
+        "reason": "sdk_approvals_differ",
     }
     assert report["ready_to_start_system_probe"] is False
