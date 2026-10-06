@@ -415,7 +415,7 @@ window, including gradient-bearing inputs, retain the established PyTorch path;
 [`statevector_local_diagonal_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_diagonal_dispatch_a800.json)
 artifact exercises the real catalog-authorized public call across both A800
 hosts and both compiler lanes. All 20 cases meet the `1.0x` performance floor,
-with public speedups from `1.450x` through `7.099x`; maximum absolute and
+with public speedups from `1.431x` through `7.083x`; maximum absolute and
 relative L2 errors remain `5.34e-7` and `3.63e-8`. Reproduce it with
 [`benchmarks/statevector_local_diagonal_dispatch.py`](../../benchmarks/statevector_local_diagonal_dispatch.py).
 

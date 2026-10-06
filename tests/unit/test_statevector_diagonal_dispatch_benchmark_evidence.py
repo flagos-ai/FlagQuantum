@@ -32,7 +32,7 @@ _ARTIFACT = (
     / "local"
     / "statevector_local_diagonal_dispatch_a800.json"
 )
-_EVIDENCE_REVISION = "53467224223c1ea3766657feee4757fefc694c58"
+_EVIDENCE_REVISION = "a48acee51a39b30b403581154e13be83163770c9"
 
 
 def test_statevector_diagonal_dispatch_artifact_is_complete() -> None:
