@@ -18,10 +18,11 @@ from typing import Any, TypedDict
 
 import torch
 
+BENCHMARK = "statevector_swap"
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_swap.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.statevector_swap.v1"
-SEMANTIC_ID = "statevector.apply.swap.local"
-IMPLEMENTATION_ID = "FQKI-TRITON-SV-012-A"
+SEMANTIC_ID = "statevector.apply.swap_2q.local"
+IMPLEMENTATION_ID = "FQKI-TRITON-SV-014-A"
 RUNNER = "benchmarks/internal/evidence/statevector_swap_probe.py"
 HOSTS = ("jp-a800-171", "jp-a800-172")
 COMPILER_LANES = ("stock_triton", "flagtree")
@@ -58,6 +59,7 @@ def _reference(
 
 
 def _measure_group(operation: Callable[[], Any], group_size: int) -> float:
+    torch.cuda.synchronize()
     started = time.perf_counter()
     for _ in range(group_size):
         operation()
@@ -99,13 +101,13 @@ def _measure_pair(
 
 
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
-    """Execute one host/compiler lane of the fixed SV-012 matrix."""
+    """Execute one host/compiler lane of the fixed SV-014 matrix."""
 
     from flagquantum.kernels.provenance import triton_compiler_provenance
     from flagquantum.kernels.triton.statevector_swap import apply_complex64_local_swap
 
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is required for SV-012 benchmark evidence")
+        raise RuntimeError("CUDA is required for SV-014 benchmark evidence")
     distribution, version, integration_path, identity_status = (
         triton_compiler_provenance()
     )
@@ -212,16 +214,16 @@ def _validate_run(run: dict[str, Any]) -> None:
     }
     for field, expected in expected_fields.items():
         if run.get(field) != expected:
-            raise ValueError(f"SV-012 run field {field!r} is invalid")
+            raise ValueError(f"SV-014 run field {field!r} is invalid")
     if _FULL_REVISION.fullmatch(str(run.get("source_revision"))) is None:
-        raise ValueError("SV-012 source revision must be a full Git hash")
+        raise ValueError("SV-014 source revision must be a full Git hash")
     host = run.get("host_label")
     lane = run.get("compiler_lane")
     if host not in HOSTS or lane not in COMPILER_LANES:
-        raise ValueError("SV-012 run host or compiler lane is invalid")
+        raise ValueError("SV-014 run host or compiler lane is invalid")
     compiler = run.get("compiler")
     if not isinstance(compiler, dict):
-        raise ValueError("SV-012 compiler identity is missing")
+        raise ValueError("SV-014 compiler identity is missing")
     expected_compiler = {
         "stock_triton": ("triton", "direct"),
         "flagtree": ("flagtree", "flagtree"),
@@ -230,13 +232,13 @@ def _validate_run(run: dict[str, Any]) -> None:
         compiler.get("distribution"),
         compiler.get("integration_path"),
     ) != expected_compiler or compiler.get("identity_status") != "resolved":
-        raise ValueError("SV-012 compiler identity does not match its lane")
+        raise ValueError("SV-014 compiler identity does not match its lane")
     measurement = run.get("measurement")
     if not isinstance(measurement, dict):
-        raise ValueError("SV-012 measurement policy is missing")
+        raise ValueError("SV-014 measurement policy is missing")
     repeats = measurement.get("repeats")
     if not isinstance(repeats, int) or repeats <= 0:
-        raise ValueError("SV-012 repeats must be positive")
+        raise ValueError("SV-014 repeats must be positive")
     expected_shapes = [
         {
             "batch": batch,
@@ -250,15 +252,15 @@ def _validate_run(run: dict[str, Any]) -> None:
         not isinstance(cases, list)
         or [case.get("shape") for case in cases] != expected_shapes
     ):
-        raise ValueError("SV-012 evidence shape matrix mismatch")
+        raise ValueError("SV-014 evidence shape matrix mismatch")
     for index, case in enumerate(cases):
         if not isinstance(case, dict):
-            raise ValueError(f"SV-012 case {index} must be an object")
+            raise ValueError(f"SV-014 case {index} must be an object")
         medians = {}
         for result_name in RESULT_NAMES:
             result = case.get(result_name)
             if not isinstance(result, dict):
-                raise ValueError(f"SV-012 case {index} result is missing")
+                raise ValueError(f"SV-014 case {index} result is missing")
             samples = result.get("samples_seconds_per_invocation")
             if (
                 not isinstance(samples, list)
@@ -268,16 +270,16 @@ def _validate_run(run: dict[str, Any]) -> None:
                     for value in samples
                 )
             ):
-                raise ValueError(f"SV-012 case {index} samples are invalid")
+                raise ValueError(f"SV-014 case {index} samples are invalid")
             median = statistics.median(samples)
             if result.get("median_seconds_per_invocation") != median:
-                raise ValueError(f"SV-012 case {index} median is invalid")
+                raise ValueError(f"SV-014 case {index} median is invalid")
             medians[result_name] = median
         speedup = (
             medians["pytorch_layout_swap_reference"] / medians["direct_kernel_wrapper"]
         )
         if case.get("speedup_over_pytorch") != speedup:
-            raise ValueError(f"SV-012 case {index} speedup is invalid")
+            raise ValueError(f"SV-014 case {index} speedup is invalid")
         absolute_error = case.get("maximum_absolute_error")
         relative_error = case.get("relative_l2_error")
         if (
@@ -286,7 +288,7 @@ def _validate_run(run: dict[str, Any]) -> None:
             or not isinstance(relative_error, (int, float))
             or relative_error > _MAXIMUM_RELATIVE_L2_ERROR
         ):
-            raise ValueError(f"SV-012 case {index} exceeds its error tolerance")
+            raise ValueError(f"SV-014 case {index} exceeds its error tolerance")
 
 
 def aggregate_runs(paths: list[Path]) -> dict[str, object]:
@@ -294,7 +296,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
 
     runs = [json.loads(path.read_text()) for path in paths]
     if len(runs) != len(HOSTS) * len(COMPILER_LANES):
-        raise ValueError("SV-012 evidence requires exactly four raw runs")
+        raise ValueError("SV-014 evidence requires exactly four raw runs")
     for run in runs:
         _validate_run(run)
     identities = {(run["host_label"], run["compiler_lane"]) for run in runs}
@@ -302,11 +304,11 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         (host, compiler_lane) for host in HOSTS for compiler_lane in COMPILER_LANES
     }
     if identities != expected_identities:
-        raise ValueError("SV-012 evidence host/compiler matrix is incomplete")
+        raise ValueError("SV-014 evidence host/compiler matrix is incomplete")
     revisions = {run["source_revision"] for run in runs}
     measurements = {json.dumps(run["measurement"], sort_keys=True) for run in runs}
     if len(revisions) != 1 or len(measurements) != 1:
-        raise ValueError("SV-012 evidence must use one source and measurement policy")
+        raise ValueError("SV-014 evidence must use one source and measurement policy")
     expected_shapes = [
         {
             "batch": batch,
@@ -316,7 +318,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
         for batch, amplitudes, qubits in SHAPE_MATRIX
     ]
     if any([case["shape"] for case in run["cases"]] != expected_shapes for run in runs):
-        raise ValueError("SV-012 evidence shape matrix mismatch")
+        raise ValueError("SV-014 evidence shape matrix mismatch")
 
     cases = [case for run in runs for case in run["cases"]]
     speedups = [float(case["speedup_over_pytorch"]) for case in cases]
@@ -326,7 +328,7 @@ def aggregate_runs(paths: list[Path]) -> dict[str, object]:
     maximum_relative_l2_error = max(float(case["relative_l2_error"]) for case in cases)
     all_cases_win = all(speedup > 1.0 for speedup in speedups)
     return {
-        "benchmark": "statevector_swap",
+        "benchmark": BENCHMARK,
         "schema": EVIDENCE_SCHEMA,
         "semantic_id": SEMANTIC_ID,
         "implementation_id": IMPLEMENTATION_ID,
@@ -372,7 +374,7 @@ def main() -> None:
     run.add_argument("--warmup", type=int, default=10)
     run.add_argument("--repeats", type=int, default=30)
     run.add_argument("--group-size", type=int, default=10)
-    run.add_argument("--seed", type=int, default=261_012)
+    run.add_argument("--seed", type=int, default=261_014)
     aggregate = subparsers.add_parser("aggregate")
     aggregate.add_argument("--input", type=Path, nargs="+", required=True)
     aggregate.add_argument("--output", type=Path, required=True)
@@ -381,7 +383,7 @@ def main() -> None:
         collect_run(args) if args.command_name == "run" else aggregate_runs(args.input)
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2) + "\n")
+    args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2))
 
 

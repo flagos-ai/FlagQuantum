@@ -1,4 +1,4 @@
-"""Correctness and refusal boundaries for the SV-012 prototype."""
+"""Correctness and refusal boundaries for the SV-014 SWAP kernel."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _reference(state: torch.Tensor, qubits: tuple[int, int]) -> torch.Tensor:
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
 @pytest.mark.parametrize("qubits", ((0, 1), (0, 11), (7, 2), (11, 0)))
 def test_local_swap_matches_layout_reference(qubits: tuple[int, int]) -> None:
-    generator = torch.Generator(device="cuda").manual_seed(261_012)
+    generator = torch.Generator(device="cuda").manual_seed(261_014)
     state = torch.randn(
         3,
         1 << 12,
