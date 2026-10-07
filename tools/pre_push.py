@@ -124,6 +124,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_parameter_shift_coverage_contract.py"),
         ),
         Check(
+            "parameter-shift Hessian contract",
+            (python_executable, "tools/check_parameter_shift_hessian_contract.py"),
+        ),
+        Check(
             "opcode gradient exactness contract",
             (python_executable, "tools/check_opcode_gradient_exactness.py"),
         ),

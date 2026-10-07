@@ -652,9 +652,11 @@ def parameter_shift_gradient(
         TypeError: If ``circuit_builder`` does not return a circuit or IR.
         ValueError: If a parameter does not control exactly one declared gate
             parameter, or its opcode declares no derivative rule.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if ``loss_fn`` does not return one real scalar tensor.
     """
 
-    base = parameters.detach()
+    base = _validated_parameter_tensor(parameters)
     flat = base.reshape(-1)
     profile = _circuit_profile_of(circuit_builder(base))
     grads = []
@@ -671,7 +673,11 @@ def parameter_shift_gradient(
             shifted = flat.clone()
             shifted[index] += shift
             terms.append(
-                coefficient * loss_fn(circuit_builder(shifted.reshape_as(base)))
+                coefficient
+                * _scalar_loss(
+                    loss_fn(circuit_builder(shifted.reshape_as(base))),
+                    source="loss_fn",
+                )
             )
         # A one-pair rule is summed with a single tensor so no extra zero enters
         # the graph; every evaluated term carries the caller's loss gradient.
@@ -679,6 +685,104 @@ def parameter_shift_gradient(
     return (
         torch.stack(grads)
         .reshape_as(base)
+        .to(device=parameters.device, dtype=parameters.dtype)
+    )
+
+
+def parameter_shift_hessian(
+    circuit_builder: CircuitBuilder,
+    parameters: torch.Tensor,
+    loss_fn: LossFunction,
+) -> torch.Tensor:
+    """Estimate the second derivative of a scalar loss with the parameter-shift rule.
+
+    The rule is the one each gate already declares in ``OPERATOR_SCHEMAS``, read
+    twice. A parameterized gate whose generator has frequencies
+    ``{f_1, ..., f_n}`` has an expectation value that is a trigonometric
+    polynomial in those frequencies, so its first derivative is a fixed linear
+    combination of the evaluations at ``base + shift_i`` and its mixed second
+    derivative is a linear combination of the evaluations at
+    ``base + shift_i + shift_j``. This function therefore evaluates the loss at
+    those sums and reads no coefficient from anywhere but the declaration, so
+    there is no second table of second-order coefficients that could drift away
+    from the first.
+
+    The matrix is symmetric because a twice-differentiable loss has equal mixed
+    partials, and every cell is evaluated independently, so the two halves agree
+    to floating-point summation order rather than bit for bit. Symmetry is a
+    property of the construction and not evidence that the values are right; the
+    values are checked elsewhere against a finite-difference route that shares no
+    code with this one.
+
+    Cost grows as the square of the parameter count, which is why this is a
+    separate entry point rather than a mode of :func:`parameter_shift_gradient`:
+    every cell of the matrix is its own set of displaced circuits. For ``n``
+    parameters whose rules all declare one frequency, each diagonal cell needs
+    three evaluations and each off-diagonal cell four, so ``4 * n**2 - n`` loss
+    evaluations in total -- ``33`` for the three-parameter reference program,
+    against the ``6`` a first-order gradient of the same program costs.
+
+    The result is only as precise as the loss it is assembled from, and the loss
+    precision belongs to the execution rather than to ``parameters``. An
+    unqualified :func:`flagquantum.run` resolves to ``complex64``, so a Hessian
+    assembled from it plateaus near ``1e-07``; the same call on the same program
+    with ``precision="complex128"`` reaches ``1e-16``. Ask for the wider
+    precision on the execution options -- or build the circuit with
+    ``dtype=torch.complex128`` -- when the second derivatives are read past about
+    seven digits.
+
+    Args:
+        circuit_builder: Builds a circuit from a parameter tensor, exactly as
+            :func:`parameter_shift_gradient` receives it.
+        parameters: Real, non-empty parameter tensor.
+        loss_fn: Turns a circuit into one scalar tensor.
+
+    Returns:
+        A detached Hessian with shape ``(*parameters.shape, *parameters.shape)``
+        and the dtype and device of ``parameters``. Cell ``[i, j]`` holds the
+        second derivative with respect to the flattened parameters ``i`` and
+        ``j``, so a one-dimensional ``parameters`` of length ``n`` gives the
+        ``(n, n)`` matrix.
+
+    Raises:
+        TypeError: If ``circuit_builder`` does not return a circuit or IR.
+        ValueError: If a parameter does not control exactly one declared gate
+            parameter, or its opcode declares no derivative rule.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if ``loss_fn`` does not return one real scalar tensor.
+    """
+
+    base = _validated_parameter_tensor(parameters)
+    flat = base.reshape(-1)
+    width = flat.numel()
+    profile = _circuit_profile_of(circuit_builder(base))
+    rules = [
+        _occurrence_shift_rule(profile, circuit_builder, base, flat, index)
+        for index in range(width)
+    ]
+    rows = []
+    for left in range(width):
+        cells = []
+        for right in range(width):
+            terms = [
+                coefficient
+                * _scalar_loss(
+                    loss_fn(circuit_builder((flat + shift).reshape_as(base))),
+                    source="loss_fn",
+                )
+                for coefficient, shift in _composed_shift_terms(
+                    rules[left],
+                    rules[right],
+                    parameters=(left, right),
+                    width=width,
+                    dtype=base.dtype,
+                )
+            ]
+            cells.append(torch.stack(terms).sum())
+        rows.append(torch.stack(cells))
+    return (
+        torch.stack(rows)
+        .reshape(*base.shape, *base.shape)
         .to(device=parameters.device, dtype=parameters.dtype)
     )
 
@@ -712,6 +816,52 @@ def _occurrence_shift_rule(
             f"parameter {index} controls {opcode}.{name}, which cannot be "
             f"differentiated: {error}"
         ) from error
+
+
+def _composed_shift_terms(
+    left: Sequence[tuple[float, float]],
+    right: Sequence[tuple[float, float]],
+    *,
+    parameters: tuple[int, int],
+    width: int,
+    dtype: torch.dtype,
+) -> tuple[tuple[float, torch.Tensor], ...]:
+    """The second-order rule two declared first-order rules compose into.
+
+    Each declared rule is a list of ``(coefficient, shift)`` terms for one gate
+    parameter, so the mixed second derivative of a pair of parameters is the
+    product rule of the two: every pair of terms contributes the product of
+    their coefficients to the evaluation displaced by the first term's shift on
+    the first parameter plus the second term's shift on the second parameter.
+
+    Two term pairs that land on the same displacement are summed instead of
+    being evaluated twice. That merge is what keeps the diagonal of a two-term
+    rule at three evaluations rather than four: the two pairs whose shifts
+    cancel both land on the unshifted point.
+
+    A displacement whose collected coefficients cancel exactly is dropped. It
+    would contribute nothing to the sum, so keeping it would make the cost of
+    this function depend on the coefficients rather than on the rule structure.
+    """
+
+    collected: dict[tuple[float, ...], float] = {}
+    for left_coefficient, left_shift in left:
+        for right_coefficient, right_shift in right:
+            displacement = [0.0] * width
+            displacement[parameters[0]] += left_shift
+            displacement[parameters[1]] += right_shift
+            # Shifts are read from the declaration and re-created by addition, so
+            # two paths to the same displacement can differ in their last bits.
+            # Rounding to a fixed grid merges them; the coefficients stay exact.
+            key = tuple(round(value, 12) for value in displacement)
+            collected[key] = (
+                collected.get(key, 0.0) + left_coefficient * right_coefficient
+            )
+    return tuple(
+        (coefficient, torch.tensor(key, dtype=dtype))
+        for key, coefficient in collected.items()
+        if coefficient != 0.0
+    )
 
 
 def _changed_occurrence(
@@ -1027,5 +1177,6 @@ __all__ = [
     "jacobian",
     "jvp",
     "parameter_shift_gradient",
+    "parameter_shift_hessian",
     "vjp",
 ]
