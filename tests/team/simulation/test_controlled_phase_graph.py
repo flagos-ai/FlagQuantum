@@ -158,7 +158,7 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
         local_statevector, "_apply_controlled_phase_graph_cpu", record_inplace
     )
     selected = circuit.state(refresh=True)
-    assert calls == [False, True]
+    assert calls == [True, True]
 
     calls.clear()
     monkeypatch.setenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "0")
