@@ -71,11 +71,19 @@ from benchmarks.internal.evidence.mps_release_gate import (
 from benchmarks.internal.evidence.mps_release_gate import (
     load_manifest as _load_frozen_manifest,
 )
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    SERIAL_FRACTION_KEY,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
 from benchmarks.internal.evidence.speedup import (
     bootstrap_ratio_interval,
 )
 from benchmarks.internal.evidence.speedup import (
     median as _median,
+)
+from flagquantum.runtime.audit.release_policy import (
+    attach_sharded_optimizer_step_evidence,
 )
 from flagquantum.testing import (
     MPSCapacityCertificationError,
@@ -114,6 +122,23 @@ def _software() -> dict[str, str]:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _repo_relative(path: Path) -> str:
+    """Return ``path`` as the repository names it, or unchanged when outside.
+
+    A payload that names a checked-in artifact is read by somebody who has the
+    checkout and not the filesystem the measurement ran on, so the artifact is
+    named the way the checkout names it. An absolute path is left alone when the
+    file really is outside the repository, because then there is no repository
+    name for it and inventing a relative one would name nothing.
+    """
+
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _capacity_contract(manifest_path: Path) -> dict[str, Any]:
@@ -663,6 +688,167 @@ def _node_placement(
     return crossing
 
 
+def _describe_boundaries(
+    edges: Sequence[Mapping[str, Any]],
+    *,
+    crossing: Sequence[Sequence[int]],
+    collective_backend: str,
+) -> list[dict[str, Any]]:
+    """Return each measured boundary under the names a memory and transport audit reads.
+
+    Every value added here is a restatement of something the measurement already
+    established: the two ranks an edge joins, the bytes it carried, the
+    transport that carried them, and which host each rank sits on. Nothing is
+    inferred from a model of the workload, so a boundary the ranks did not
+    report cannot acquire a description here.
+    """
+
+    crossing_edges = {tuple(ranks) for ranks in crossing}
+    described: list[dict[str, Any]] = []
+    for edge in edges:
+        left_rank, right_rank = (int(rank) for rank in edge["owner_ranks"])
+        inter_node = (left_rank, right_rank) in crossing_edges
+        described.append(
+            {
+                **edge,
+                "boundary_edge_id": f"boundary:{int(edge['bond'])}",
+                "left_rank": left_rank,
+                "right_rank": right_rank,
+                "communication_bytes": int(edge["payload_bytes"]),
+                "communication_primitive": str(edge["reverse_transport"]),
+                "topology_tier": "inter_node" if inter_node else "intra_node",
+                "topology_route": (
+                    f"{collective_backend}_multi_node_fabric"
+                    if inter_node
+                    else f"{collective_backend}_intra_node_devices"
+                ),
+            }
+        )
+    return described
+
+
+def _site_span(sites: Sequence[int]) -> dict[str, Any]:
+    """Return one rank's measured sites in the smallest form that states them.
+
+    A rank owns a contiguous run of the chain, so the run's two ends and its
+    length state the whole set, and enumerating it writes that same fact once per
+    site. At the frozen capacity shape -- 131072 sites over sixteen ranks -- the
+    enumeration is what made the assembled payload 4.5 MB of index lists against
+    a repository that caps a tracked file at two million bytes, so each run is
+    stated by its ends.
+
+    A set that is not the contiguous run those ends name is reported in full
+    instead. Every reader of this map asks whether it is present rather than what
+    it contains, so a shorter spelling cannot weaken a check; what it could do is
+    round over a gap, and that would be a smaller file that says something
+    untrue. The length is carried beside the ends for the same reason: it makes
+    the run checkable without expanding it.
+    """
+
+    ordered = sorted(int(site) for site in sites)
+    span: dict[str, Any] = {
+        "first_site": ordered[0],
+        "last_site": ordered[-1],
+        "site_count": len(ordered),
+    }
+    if ordered != list(range(ordered[0], ordered[-1] + 1)):
+        span["sites"] = ordered
+    return span
+
+
+def _mps_backward_memory_plan(
+    step_metrics: Sequence[Mapping[str, Any]],
+    *,
+    site_ownership: Sequence[Sequence[int]],
+    reverse_peak: Sequence[int],
+    backend: str,
+) -> dict[str, Any]:
+    """Assemble the rank-by-rank backward memory the executed reverse pass held.
+
+    Each vector is read from the metric the rank recorded while it built its own
+    tape, so the plan describes the construction that ran rather than a model of
+    it. The two positive terms the audit requires are the operands the rank
+    retained for rematerialization and the adjoints it carried back through
+    them; a rank that retained none of either fails closed rather than reporting
+    a plan of zeros.
+    """
+
+    measured = (
+        "forward_tensor_bytes",
+        "adjoint_tensor_bytes",
+        "boundary_gradient_buffer_bytes",
+        "canonicalization_temporary_bytes",
+        "truncation_temporary_bytes",
+    )
+    missing = sorted(
+        {field for metric in step_metrics for field in measured if field not in metric}
+    )
+    if missing:
+        raise SystemExit(
+            "the measured step metrics report no "
+            f"{', '.join(missing)}, so the reverse pass this leg ran kept no "
+            "per-rank account of its own backward memory and cannot be assembled "
+            "into a memory plan"
+        )
+    vectors = {
+        "forward_tensor_bytes_by_rank": [
+            int(metric["forward_tensor_bytes"]) for metric in step_metrics
+        ],
+        "backward_adjoint_bytes_by_rank": [
+            int(metric["adjoint_tensor_bytes"]) for metric in step_metrics
+        ],
+        "boundary_gradient_buffer_bytes_by_rank": [
+            int(metric["boundary_gradient_buffer_bytes"]) for metric in step_metrics
+        ],
+        "canonicalization_temporary_bytes_by_rank": [
+            int(metric["canonicalization_temporary_bytes"]) for metric in step_metrics
+        ],
+        "truncation_temporary_bytes_by_rank": [
+            int(metric["truncation_temporary_bytes"]) for metric in step_metrics
+        ],
+    }
+    canonicalization_required = any(vectors["canonicalization_temporary_bytes_by_rank"])
+    rank_memory = [
+        {
+            "rank": rank,
+            "site_range": _site_span(site_ownership[rank]),
+            "forward_tensor_bytes": vectors["forward_tensor_bytes_by_rank"][rank],
+            "backward_adjoint_bytes": vectors["backward_adjoint_bytes_by_rank"][rank],
+            "boundary_gradient_buffer_bytes": (
+                vectors["boundary_gradient_buffer_bytes_by_rank"][rank]
+            ),
+            "canonicalization_temporary_bytes": (
+                vectors["canonicalization_temporary_bytes_by_rank"][rank]
+            ),
+            "canonicalization_not_required": not canonicalization_required,
+            "truncation_temporary_bytes": (
+                vectors["truncation_temporary_bytes_by_rank"][rank]
+            ),
+            "estimated_peak_backward_bytes": int(reverse_peak[rank]),
+        }
+        for rank in range(len(step_metrics))
+    ]
+    return {
+        "status": "production_measured",
+        "execution_scope": "multi_node_production_transport",
+        "backend": backend,
+        "canonicalization_required": canonicalization_required,
+        "source": (
+            "per-rank tape byte counters recorded by the executor while each rank "
+            "built the reverse tape this payload measured, and the reverse-pass "
+            "peak memory the same rank recorded for the same step"
+        ),
+        "per_rank_peak_bytes": [int(value) for value in reverse_peak],
+        "local_memory_bytes_by_rank": [int(value) for value in reverse_peak],
+        "communication_buffer_bytes": max(
+            vectors["boundary_gradient_buffer_bytes_by_rank"], default=0
+        ),
+        "rank_memory": rank_memory,
+        "blockers": [],
+        **vectors,
+    }
+
+
 def _sharded_contract(
     contract: Mapping[str, Any],
     runtime: Mapping[str, Any],
@@ -806,6 +992,9 @@ def _sharded_contract(
     crossing = _node_placement(
         edges, local_world_size=local_world_size, node_count=node_count
     )
+    edges = _describe_boundaries(
+        edges, crossing=crossing, collective_backend=collective_backend
+    )
     boundary_bytes = sum(int(metric["boundary_bytes"]) for metric in step_metrics)
     inter_node_bytes = sum(
         int(edge["payload_bytes"])
@@ -872,7 +1061,8 @@ def _sharded_contract(
         "truncation_error_budget": float(frozen["truncation_error_budget"]),
         "site_ownership_policy": str(summaries[0]["site_ownership_policy"]),
         "site_shard_ownership": {
-            f"rank:{rank}": list(sites) for rank, sites in enumerate(site_ownership)
+            f"rank:{rank}": _site_span(sites)
+            for rank, sites in enumerate(site_ownership)
         },
         "bond_shard_ownership": _bond_shard_ownership(site_ownership, edges),
         "bond_shard_ownership_source": (
@@ -928,18 +1118,48 @@ def _sharded_contract(
         ),
         "backward_execution_measured": reverse_exchanges > 0,
         "mps_backward_memory_plan": {
-            "status": "measured",
+            "status": "production_measured",
             "measured_backward_peak_memory_bytes": max(reverse_peak),
             "measured_backward_peak_memory_bytes_by_rank": reverse_peak,
             "measured_forward_peak_memory_bytes_by_rank": forward_peak,
-            "source": "step metrics of the executed reverse pass",
+            **_mps_backward_memory_plan(
+                step_metrics,
+                site_ownership=site_ownership,
+                reverse_peak=reverse_peak,
+                backend=collective_backend,
+            ),
         },
         "mps_backward_communication_plan": {
-            "status": "executed",
+            "status": "production_executed",
             "communication_protocol": (
                 "batched_isend_irecv_packed_multi_tensor_envelope"
             ),
+            "boundary_edge_count": len(edges),
             "boundary_edges": edges,
+            "communication_bytes": boundary_bytes,
+            "inter_node_communication_bytes": inter_node_bytes,
+            "intra_node_communication_bytes": boundary_bytes - inter_node_bytes,
+            "collective_backend": collective_backend,
+            "topology_scope": "multi_node_production_transport",
+            "boundary_adjoint_exchange": {
+                "status": "executed",
+                "execution_status": "executed",
+                "measured_step": step_count,
+                "boundary_count": len(edges),
+                "forward_exchanges": forward_exchanges,
+                "reverse_exchanges": reverse_exchanges,
+                "boundary_bytes": boundary_bytes,
+                "transport": "batched_isend_irecv_packed_multi_tensor_envelope",
+            },
+            "boundary_gradient_routes": {
+                f"boundary:{edge['bond']}": {
+                    "owner_ranks": edge["owner_ranks"],
+                    "operation_id": edge["operation_id"],
+                    "gradient_route": gradient_route,
+                    "update_route": update_route,
+                }
+                for edge in edges
+            },
         },
         "boundary_communication_bytes": {
             f"boundary:{edge['bond']}": int(edge["payload_bytes"]) for edge in edges
@@ -1008,7 +1228,21 @@ def _sharded_contract(
     )
     if extra is not None:
         evidence.update(dict(extra))
-    return evidence
+    # The optimizer step is the fourth half of a sharded training claim, beside
+    # forward, backward and transport. The engine assigns parameter ``index`` to
+    # rank ``index % world_size`` and its per-rank ownership records state, for
+    # every parameter, which rank holds the optimizer state; the loop above
+    # requires that record to place the state on the owning rank itself. The
+    # update therefore runs where the parameter lives, and the repository's own
+    # helper states that as ownership evidence rather than as a second copy of
+    # the rule.
+    return attach_sharded_optimizer_step_evidence(
+        evidence,
+        training_step_count=step_count,
+        parameter_ownership=parameter_ownership,
+        gradient_ownership=evidence["gradient_ownership"],
+        optimizer_update_ownership=evidence["optimizer_update_ownership"],
+    )
 
 
 def _bond_shard_ownership(
@@ -1135,7 +1369,7 @@ def _premise(
         )
     source = "the single-device failure record named by the premise"
     return {
-        "path": str(path),
+        "path": _repo_relative(path),
         "sha256": _sha256(Path(path)),
         "topology_fingerprint": fingerprint,
         "baseline": {
@@ -1726,6 +1960,16 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             f"configurations: {sorted(left)} against {sorted(right)} for the "
             f"frozen {frozen_names}"
         )
+    # The threshold is a ratio against the speedup this workload's own arithmetic
+    # permits rather than against the world size. Against a fully partitionable
+    # workload the two coincide, and against this one they do not: two environment
+    # scans walk every site in a fixed global order, so a share of the per-site
+    # cost is a recurrence no partition divides. The share is fitted by the
+    # calibration the manifest is digest-bound to rather than read from the legs
+    # being compared, because a denominator taken from the measurement it judges
+    # would make the threshold depend on its own answer.
+    serial_fraction = frozen_serial_fraction(speed)
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
     table = []
     for rung in ladder:
         name = str(rung["name"])
@@ -1753,7 +1997,11 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
                 "sharded_median_seconds": right_seconds,
                 "speedup": speedup,
                 "speedup_confidence_interval": [lower, upper],
-                "scaling_efficiency": speedup / world,
+                "scaling_efficiency": speedup / ceiling,
+                # The denominator this one replaces stays on every rung so the two
+                # remain comparable at a glance and so a reader can see how much of
+                # the shortfall the serial part explains.
+                "linear_scaling_efficiency": speedup / world,
             }
         )
     accepted = next((item for item in table if item["name"] == acceptance), None)
@@ -1819,6 +2067,12 @@ def _role_speed_summary(arguments: argparse.Namespace) -> int:
             "speedup": accepted["speedup"],
             "speedup_confidence_interval": accepted["speedup_confidence_interval"],
             "scaling_efficiency": accepted["scaling_efficiency"],
+            "scaling_efficiency_definition": str(
+                speed["scaling_efficiency_definition"]
+            ),
+            "linear_scaling_efficiency": accepted["linear_scaling_efficiency"],
+            SERIAL_FRACTION_KEY: serial_fraction,
+            "shardable_ceiling_speedup": ceiling,
             "configurations": table,
             "hardware_inventory": [
                 str(record["device_name"]) for record in rank_records

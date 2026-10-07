@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -9,6 +10,7 @@ import torch
 import torch.distributed as dist
 
 from ....core.ir import Instruction, ensure_circuit_ir
+from ....simulation.mps.rank_local import tensor_nbytes
 from ...distributed.context import resolve_local_world_size
 from .records import (
     MPSReverseCheckpointPolicy,
@@ -309,6 +311,18 @@ def execute_torch_distributed_mps_reverse(
         hamiltonian_terms=hamiltonian_terms,
         compile_observables=compile_observables,
     )
+    # The adjoint side of the tape is what the reverse pass replays here: every
+    # record this rank computes keeps its own input operands so the VJP can be
+    # taken from them. Sizing them from the record's shapes measures the rank's
+    # share of the reverse working set, and the objective's adjoints are added
+    # because they are held across the whole reverse pass.
+    element_bytes = torch.empty((), dtype=resolved_dtype).element_size()
+    adjoint_tensor_bytes = sum(
+        math.prod(shape) * element_bytes
+        for record in tape.records
+        if record.compute_owner == rank
+        for shape in record.input_shapes
+    ) + sum(tensor_nbytes(tensor) for tensor in adjoints.values())
     ownership_records = build_mps_gradient_ownership(
         tape,
         len(parameters),
@@ -406,6 +420,11 @@ def execute_torch_distributed_mps_reverse(
         layer_halo_intra_node_bytes=builder.layer_halo_intra_node_bytes,
         layer_halo_inter_node_bytes=builder.layer_halo_inter_node_bytes,
         layer_halo_wait_seconds=builder.layer_halo_wait_seconds,
+        adjoint_tensor_bytes=adjoint_tensor_bytes,
+        forward_tensor_bytes=builder.forward_tensor_bytes,
+        boundary_gradient_buffer_bytes=builder.boundary_gradient_buffer_bytes,
+        canonicalization_temporary_bytes=builder.canonicalization_temporary_bytes,
+        truncation_temporary_bytes=builder.truncation_temporary_bytes,
     )
 
 

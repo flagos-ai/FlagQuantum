@@ -860,48 +860,84 @@ monotonically help, which is the strongest form of the finding -- neither the
 label choice nor the budget is a knob the manifest can leave implicit and still
 claim to have frozen a capacity premise.
 
-#### Reading the MPS gate's default output
+#### Reading the MPS gate's output
 
-Promoting the five statevector envelopes into `benchmarks/results/scalability`
-changed what the MPS gate prints when it is run with no arguments, because that
-directory is the gate's own `RESULTS` and the gate reads every `*.json` in it.
-The statevector payloads are not MPS evidence, and the MPS gate has an explicit
-check for that, so the default invocation now reports one blocker more than the
-scoped one:
+The MPS gate is published as `python benchmarks/internal/evidence/mps_release_gate.py`
+and `capability-maturity.toml` names that path as the release gate, so it is the
+invocation a reviewer has. It needs `FQ_EVIDENCE_SIGNING_KEY` in the environment;
+without the key the gate cannot verify a sealed payload and adds
+`invalid_or_unsigned_production_artifact`.
+
+With no arguments the gate reads `benchmarks/results/scalability` plus the
+manifest's declared baseline. That directory now holds seven promoted payloads --
+five statevector and two MPS -- so the gate reports the foreign count:
 
 ```console
 $ python benchmarks/internal/evidence/mps_release_gate.py
-{"capability": "distributed_matrix_product_state", "artifact_count": 6, ...,
- "passed": false, "blockers": ["production_artifact_is_not_mps_evidence",
-   "missing_release_world_sizes", "missing_multinode_correctness_artifact",
-   "missing_sharded_training_ownership",
-   "missing_statistically_significant_speedup_artifact",
-   "capacity_premise_not_established",
-   "capacity_premise_evidence_not_verifiable"]}
+{"capability": "distributed_matrix_product_state", "artifact_count": 8, ...,
+ "evaluated": ["benchmarks/results/scalability",
+   "benchmarks/results/smoke/release_candidates/mps_single_gpu_capacity"],
+ "passed": false, "blockers": ["production_artifact_is_not_mps_evidence"]}
 ```
 
-The refusal is correct -- the envelopes were sealed for another capability --
-but it is a statement about the directory rather than about the MPS lane, and
-the MPS lane's own reading is the scoped one:
+`production_artifact_is_not_mps_evidence` is a statement about the directory, not
+about the MPS lane: the five statevector envelopes were sealed for another
+capability and the gate refuses to read them. It is the only blocker the default
+invocation reports, because the two MPS payloads in the same directory satisfy
+every other requirement the frozen manifest states.
+
+The lane's own reading is therefore the release set on its own, which is what
+`tools/promote_release_candidates.py` evaluated before it moved the files:
+
+```console
+$ rm -rf /tmp/gate && mkdir -p /tmp/gate/candidates /tmp/gate/baseline
+$ cp benchmarks/results/scalability/mps_matched_speed_2n16g.json \
+     benchmarks/results/scalability/mps_capacity_completion.json /tmp/gate/candidates/
+$ cp benchmarks/results/smoke/release_candidates/mps_single_gpu_capacity/\
+mps_single_gpu_capacity.json /tmp/gate/baseline/
+$ python benchmarks/internal/evidence/mps_release_gate.py \
+    --candidate /tmp/gate/candidates --baseline-directory /tmp/gate/baseline
+{"capability": "distributed_matrix_product_state", "artifact_count": 3,
+ "passed": true, "blockers": []}
+```
+
+That is the certificate, reproduced from the checked-in bytes with no hardware.
+The single-device baseline is copied rather than read in place because one device
+has no ranks to shard across: it can never be release-grade sharded evidence, so
+it stays under `smoke/` and the gate reads it as provenance.
+
+Both `--candidate` and `--baseline-directory` name **directories**. A payload path
+is refused with `evidence directory is not a directory: <path>`, because
+`Path.glob` on a regular file yields nothing and the gate would otherwise
+evaluate an empty set and report fewer blockers than the set has.
+
+The candidate the certificate's prerequisite rounds refused is still checked in,
+so the refusal path can be exercised against real bytes:
 
 ```console
 $ python benchmarks/internal/evidence/mps_release_gate.py \
-    --candidate benchmarks/results/smoke/release_candidates/mps_matched_speed_4x2
+    --candidate benchmarks/results/smoke/release_candidates/mps_matched_speed_4x2 \
+    --baseline-directory benchmarks/results/smoke/release_candidates/mps_matched_speed_4x2
 {"capability": "distributed_matrix_product_state", "artifact_count": 2, ...,
  "passed": false, "blockers": ["missing_release_world_sizes",
    "missing_multinode_correctness_artifact",
    "missing_sharded_training_ownership",
    "missing_statistically_significant_speedup_artifact",
-   "capacity_premise_not_established",
-   "capacity_premise_evidence_not_verifiable"]}
+   "missing_single_gpu_measured_oom_artifact",
+   "missing_multi_gpu_capacity_completion_artifact"]}
 ```
 
-Both invocations need `FQ_EVIDENCE_SIGNING_KEY` in the environment; without it
-the gate cannot verify a sealed payload and adds
-`invalid_or_unsigned_production_artifact` to either set. The two invocations
-differ only by `production_artifact_is_not_mps_evidence`, and neither is one
-blocker away from passing: `missing_release_world_sizes` wants a world size of
-sixteen carried by a signed envelope, which this pair cannot produce.
+The six blockers are the six the certificate closed, and pointing both arguments
+at the same directory is deliberate: that candidate carries neither a baseline nor
+a completion leg, so the two provenance blockers stay visible instead of being
+satisfied by the checked-in baseline. It must never be audited with
+`--require-scalability`.
+
+The enforcement that runs in CI is not this gate but
+`benchmarks/audit_results.py --input benchmarks/results/scalability
+--require-scalability`, which accepts all seven promoted payloads because it
+validates each against its own capability's schema. The promotion gate is a
+pre-promotion filter and is run against a candidate directory.
 
 #### Reading the tensor-network gate's default output
 

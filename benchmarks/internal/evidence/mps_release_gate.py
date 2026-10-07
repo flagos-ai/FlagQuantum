@@ -32,7 +32,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -49,8 +51,32 @@ from flagquantum.runtime.observability.evidence import (
     verify_evidence_artifact,
 )
 
+# The ceiling the speed threshold is measured against is a sibling package of this
+# file, and this file is published as `python
+# benchmarks/internal/evidence/mps_release_gate.py`, which puts
+# `benchmarks/internal/evidence` on the import path rather than the repository
+# root. The bootstrap lives here rather than in the caller's environment because
+# that path is the only invocation a reviewer has; the sibling statevector and
+# tensor-network gates import nothing from `benchmarks`, which is why only this
+# one needs it. `flagquantum` is installed into the environment, so it is imported
+# above and stays independent of this.
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from benchmarks.internal.evidence.mps_shardable_ceiling import (  # noqa: E402
+    SERIAL_FRACTION_KEY,
+    calibration_errors,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
+
 MANIFEST = Path("benchmarks/manifests/mps_release_v1.json")
 RESULTS = Path("benchmarks/results/scalability")
+# The frozen contract names its calibration artifact relative to the repository
+# rather than to the invocation, because the threshold it declares is a property
+# of the source tree a reader can re-read from any directory.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 # The status vocabularies are shared with the MPS readiness audit in
 # ``flagquantum.runtime.audit.mps_readiness``: a plan that has not reached one of
@@ -124,14 +150,13 @@ def premise_evidence_errors(
     """Return the frozen premise files that are missing or have drifted.
 
     ``capacity_workload`` names every file the premise rests on and digests it, so
-    a premise can be re-read rather than believed. Two of the entries are known to
-    be unresolvable -- ``premise_provenance`` records an absent raw log and an
-    absent telemetry file, and a completion artifact whose workload body digest
-    differs from the body on disk -- and those are returned as their own names
-    rather than raised, because a manifest that disclosed them must not be able to
-    hide behind a passing gate. The caller turns a non-empty result into a blocker,
-    so the disclosure is reported and the premise stays unestablished until the
-    files agree.
+    a premise can be re-read rather than believed. An entry this manifest already
+    knows to be unresolvable is returned as its own name rather than raised,
+    because a manifest that disclosed it must not be able to hide behind a passing
+    gate. This contract currently discloses none: the raw log and the telemetry it
+    once recorded as absent are on disk at the digests it recorded for them. The
+    caller turns a non-empty result into a blocker, so any future drift is reported
+    and the premise stays unestablished until the files agree.
     """
 
     errors: list[str] = []
@@ -170,6 +195,65 @@ def _as_float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return float("nan")
+
+
+def _efficiency_matches_frozen_ceiling(
+    evidence: Mapping[str, Any],
+    speed: Mapping[str, Any],
+    blockers: list[str],
+) -> bool:
+    """Return whether a payload's efficiency is the ceiling-relative one.
+
+    The scaling threshold is compared against the speedup the timed workload's own
+    arithmetic permits, and the payload states both the fraction it was computed
+    from and the ceiling it divides by. Trusting the payload's own efficiency would
+    let any denominator pass the gate, so the ceiling is recomputed from the frozen
+    fraction and the payload's world size, and the reported efficiency has to be
+    the ratio it implies. A payload that names the definition this contract
+    replaced is refused by name, so the refusal says which denominator was wrong
+    rather than reporting a number below a threshold.
+    """
+
+    serial_fraction = frozen_serial_fraction(speed)
+    # A payload reaches here only after the production-world binding admitted it,
+    # so its world is at least two and the ceiling is always computable; a world
+    # the ceiling cannot divide by is refused by that binding rather than here.
+    world = _as_int(evidence.get("world_size"))
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
+    expected_definition = str(speed["scaling_efficiency_definition"])
+    if str(evidence.get("scaling_efficiency_definition", "")) != expected_definition:
+        blockers.append("matched_speed_scaling_efficiency_uses_a_replaced_definition")
+        return False
+    if _as_float(evidence.get(SERIAL_FRACTION_KEY)) != serial_fraction:
+        blockers.append("matched_speed_payload_serial_fraction_disagrees_with_contract")
+        return False
+    if not _close(_as_float(evidence.get("shardable_ceiling_speedup")), ceiling):
+        blockers.append("matched_speed_ceiling_disagrees_with_frozen_fraction")
+        return False
+    speedup = _as_float(evidence.get("speedup"))
+    reported = _as_float(evidence.get("scaling_efficiency"))
+    if not _close(reported, speedup / ceiling):
+        blockers.append("matched_speed_scaling_efficiency_disagrees_with_its_ceiling")
+        return False
+    linear = _as_float(evidence.get("linear_scaling_efficiency"))
+    if not _close(linear, speedup / world):
+        blockers.append("matched_speed_linear_efficiency_disagrees_with_world")
+        return False
+    return True
+
+
+def _close(left: float, right: float) -> bool:
+    """Return whether two ratios agree to the precision a payload is written at.
+
+    The efficiency is a quotient of two measured numbers, so it is compared with a
+    relative tolerance rather than by equality: reading a payload is not the same
+    as re-sealing it, and a bit-exact comparison would refuse a document that was
+    rounded on the way through JSON.
+    """
+
+    if math.isnan(left) or math.isnan(right):
+        return False
+    return abs(left - right) <= 1e-9 * max(1.0, abs(right))
 
 
 def envelope_carries_world(world_size: int) -> bool:
@@ -883,16 +967,39 @@ def evaluate_mps_release(
     speed = manifest["speed_workload"]
     if not speed.get("configuration_ladder"):
         blockers.append("speed_configuration_ladder_not_frozen")
-    qualified = [
-        evidence
-        for evidence, _ in production
-        if evidence.get("acceptance_case") == "matched_speed"
-        and _as_float(evidence.get("speedup")) >= float(speed["minimum_speedup"])
-        and _confidence_interval_lower(evidence)
-        > float(speed["confidence_interval_must_exclude_speedup"])
-        and _as_float(evidence.get("scaling_efficiency"))
-        >= float(speed["minimum_scaling_efficiency"])
-    ]
+    # The scaling threshold is a ratio against a ceiling the timed workload's own
+    # fitted serial fraction implies, so that fraction has to be re-readable from
+    # the artifact this contract is digest-bound to. A contract whose calibration
+    # moved is not one whose threshold can be evaluated, and the gate names that
+    # rather than comparing every payload against a number nobody can reproduce.
+    calibration = calibration_errors(speed, REPOSITORY_ROOT)
+    if calibration:
+        blockers.append("speed_scaling_calibration_not_verifiable")
+    qualified = []
+    for evidence, _ in production:
+        if evidence.get("acceptance_case") != "matched_speed":
+            continue
+        if _as_float(evidence.get("speedup")) < float(speed["minimum_speedup"]):
+            continue
+        if _confidence_interval_lower(evidence) <= float(
+            speed["confidence_interval_must_exclude_speedup"]
+        ):
+            continue
+        if _as_float(evidence.get("scaling_efficiency")) < float(
+            speed["minimum_scaling_efficiency"]
+        ):
+            continue
+        # The efficiency is a ratio against a ceiling the workload's fitted serial
+        # fraction implies, so a payload reporting the definition this contract
+        # replaced is refused outright rather than read as a large number: against
+        # the old denominator a shardable workload and this one are not
+        # distinguished, and a payload cannot clear a measured threshold by
+        # choosing the denominator that flatters it.
+        if calibration:
+            continue
+        if not _efficiency_matches_frozen_ceiling(evidence, speed, blockers):
+            continue
+        qualified.append(evidence)
     if not qualified:
         blockers.append("missing_statistically_significant_speedup_artifact")
 
@@ -907,9 +1014,12 @@ def evaluate_mps_release(
         blockers.append("single_gpu_baseline_missing_required_fields")
 
     # The premise is a claim about files, so it is re-read rather than believed.
-    # ``premise_provenance`` already discloses that two sources are absent and
-    # that the completion artifact's body digest has drifted; reporting that here
-    # is what keeps the disclosure from being decorative.
+    # ``premise_provenance`` discloses which of the sources it cites resolve and
+    # which have drifted; reporting that here is what keeps the disclosure from
+    # being decorative. This contract's raw log and device telemetry now resolve
+    # at the digests the premise recorded, so the only source left unverifiable is
+    # the workload body the premise was assembled from, which was redesigned after
+    # that run and cannot resolve against a digest recorded before the redesign.
     if premise_evidence_errors(capacity):
         blockers.append("capacity_premise_evidence_not_verifiable")
 
@@ -1020,6 +1130,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         else baseline_results(manifest)
     )
     directories = (baseline, *args.candidate) if args.candidate else (RESULTS, baseline)
+    # A candidate that is not a directory contributes no artifacts, because
+    # ``Path.glob`` on a file yields nothing. The gate would then evaluate a
+    # smaller set and report *fewer* blockers than the set has, which is a
+    # false pass rather than a refusal, so a non-directory is rejected here.
+    for directory in directories:
+        if not directory.is_dir():
+            raise SystemExit(f"evidence directory is not a directory: {directory}")
     artifacts = [
         json.loads(path.read_text(encoding="utf-8"))
         for directory in directories

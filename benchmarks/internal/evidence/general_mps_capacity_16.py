@@ -102,6 +102,43 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _placement(arguments: argparse.Namespace, world: int) -> tuple[int, int]:
+    """Return the devices per host and the hosts this launch spanned.
+
+    A rank can read its own world size and its own local rank, and nothing about
+    how many hosts the world was spread over: the process group carries ranks,
+    not machines, so a launch over two hosts of eight devices and a launch over
+    sixteen hosts of one device are the same group from inside it. The launcher
+    placed the ranks, so the launcher states the placement, and it is checked
+    against the world size here rather than inferred: a launch that declares a
+    placement its own world cannot satisfy has misdescribed the run it measured,
+    and the payload it would write is the sharded-capacity evidence a reader
+    would have to trust.
+    """
+
+    if arguments.local_world_size is None or arguments.node_count is None:
+        if world != 1:
+            raise SystemExit(
+                f"a world of {world} spans more than one device, so the launch "
+                "has to state --local-world-size and --node-count; they are not "
+                "derivable from the rank count"
+            )
+        return 1, 1
+    local_world_size = int(arguments.local_world_size)
+    node_count = int(arguments.node_count)
+    if local_world_size <= 0 or node_count <= 0:
+        raise SystemExit(
+            "the declared placement has a non-positive device or host count"
+        )
+    if local_world_size * node_count != world:
+        raise SystemExit(
+            f"the declared placement of {node_count} host(s) of "
+            f"{local_world_size} device(s) does not place each of the {world} "
+            "ranks exactly once"
+        )
+    return local_world_size, node_count
+
+
 def target_boundaries() -> tuple[int, ...]:
     return tuple(
         (rank + 1) * N_SITES // TARGET_WORLD - 1
@@ -197,12 +234,30 @@ def main() -> None:
     parser.add_argument("--single-gpu-artifact", type=Path)
     parser.add_argument("--raw-log", type=Path)
     parser.add_argument("--gpu-samples", type=Path)
+    parser.add_argument(
+        "--local-world-size",
+        type=int,
+        default=None,
+        help=(
+            "devices per host. The launcher placed the ranks and the ranks "
+            "cannot see each other's hosts, so the placement is stated by the "
+            "launch and recorded as stated rather than inferred from a world "
+            "size that does not carry it"
+        ),
+    )
+    parser.add_argument(
+        "--node-count",
+        type=int,
+        default=None,
+        help="hosts the launch spanned, checked against the same placement",
+    )
     args = parser.parse_args()
     world = int(os.environ.get("WORLD_SIZE", "1"))
     rank = int(os.environ.get("RANK", "0"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     if world not in {1, TARGET_WORLD}:
         raise SystemExit("16-rank capacity gate supports only 1 or 16 ranks")
+    local_world_size, node_count = _placement(args, world)
     if world == TARGET_WORLD and (
         args.single_gpu_artifact is None
         or args.raw_log is None
@@ -296,8 +351,18 @@ def main() -> None:
     if rank == 0 and world == 1:
         payload = {
             "schema": "flagquantum.issue092.mps_capacity_baseline.v2",
+            "benchmark": args.output.stem,
+            "benchmark_evidence_class": "local_non_release",
             "status": status,
             "world_size": 1,
+            "local_world_size": local_world_size,
+            "node_count": node_count,
+            "distribution_semantics": "single_device_fast_path",
+            "claim_evidence_type": "development_smoke",
+            "non_release_evidence": True,
+            "scalability_blockers": [
+                "measured single-device capacity failure is baseline evidence only"
+            ],
             "batch_size": 1,
             "n_sites": N_SITES,
             "initial_max_bond": MAX_BOND,
@@ -363,6 +428,13 @@ def main() -> None:
             ]
             payload = {
                 "schema": "flagquantum.issue092.general_mps_capacity.v1",
+                "benchmark": args.output.stem,
+                "benchmark_evidence_class": "local_non_release",
+                "claim_evidence_type": "development_smoke",
+                "non_release_evidence": True,
+                "scalability_blockers": [
+                    "development A800 capacity evidence is not release-certified"
+                ],
                 "batch_size": 1,
                 "n_sites": N_SITES,
                 "initial_max_bond": MAX_BOND,
@@ -371,6 +443,8 @@ def main() -> None:
                 "parameter_count": parameter_count(),
                 "topology_fingerprint": topology_fingerprint(),
                 "world_size": TARGET_WORLD,
+                "local_world_size": local_world_size,
+                "node_count": node_count,
                 "distribution_semantics": "sharded_across_ranks",
                 "single_gpu_capacity_failure": True,
                 "sharded_completion": True,
@@ -384,6 +458,23 @@ def main() -> None:
                 ),
                 "truncation_error_budget": TRUNCATION_BUDGET,
                 "rank_records": records,
+                # The per-rank ownership and memory the release policy audit asks
+                # every sharded payload for. Both are read off the records the
+                # ranks published rather than restated from the launch: the wires
+                # a rank owns and the peak it reached are measurements, and the
+                # bytes it moved across its halo are the transport the same
+                # records report.
+                "rank_shards": [
+                    {
+                        "rank": record["rank"],
+                        "owned_wires": record["owned_wires"],
+                        "local_memory_bytes": record["peak_memory_bytes"],
+                    }
+                    for record in records
+                ],
+                "communication_bytes": sum(
+                    record["boundary_bytes"] for record in records
+                ),
                 "single_gpu_peak_memory_bytes": baseline["rank_record"][
                     "peak_memory_bytes"
                 ],
