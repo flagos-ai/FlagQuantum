@@ -132,6 +132,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_primitives_admission_contract.py"),
         ),
         Check(
+            "construction-layer acceptance contract",
+            (python_executable, "tools/check_construction_acceptance_contract.py"),
+        ),
+        Check(
             "OpenQASM import contract",
             (python_executable, "tools/check_openqasm_import_contract.py"),
         ),
