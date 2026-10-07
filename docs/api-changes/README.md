@@ -38,6 +38,7 @@ process.
 - [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
 - [Every differentiable opcode in every execution mode](FQ-GRADIENT-OPCODE-EXACTNESS-20261028.md)
+- [FlagQuantum's native gradient capability has one registration, and it disagrees with itself](FQ-NATIVE-GRADIENTS-CAPABILITY-20261029.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
 - [Pauli algebra and quantum_info ownership boundary](FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930.md)
