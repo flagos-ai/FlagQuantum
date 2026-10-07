@@ -344,13 +344,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-008-A",
         "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cuda_matches_reference",
+        "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_public_mps_sampling_routes_each_nonterminal_wire",
         capability_tests=(
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cpu_fallback_matches_reference",
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_unsupported_input_uses_fallback",
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_validates_input",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_reference_path_reports_fallback",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_route_enforces_evidenced_window",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_sampling_collapse_a800.json",
+            "benchmarks/results/local/mps_sampling_collapse_dispatch_a800.json",
         ),
     ),
     _evidence(
