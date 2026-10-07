@@ -159,7 +159,12 @@ from .readout_mitigation import (
     run_readout_mitigation,
     run_readout_mitigation_counts,
 )
-from .spsa import SPSAOptimizer
+from .spsa import (
+    SPSA_ASSUMPTIONS,
+    SPSA_LIMITATIONS,
+    SPSAOptimizer,
+    SPSAResult,
+)
 from .trotter import (
     TROTTER_ORDERS,
     pauli_exponential_circuit,
@@ -170,6 +175,7 @@ from .variational import (
     QAOA_LIMITATIONS,
     QAOAResult,
     maxcut_hamiltonian,
+    maxcut_objective,
     run_qaoa,
 )
 
@@ -229,6 +235,9 @@ __all__ = [
     "ReadoutMitigationResult",
     "SINGULAR_VALUE_FLOOR",
     "SPSAOptimizer",
+    "SPSAResult",
+    "SPSA_ASSUMPTIONS",
+    "SPSA_LIMITATIONS",
     "SURFACE_CODE_MODEL",
     "TROTTER_ORDERS",
     "UCCSDExcitations",
@@ -270,6 +279,7 @@ __all__ = [
     "kmedians",
     "logical_resources",
     "maxcut_hamiltonian",
+    "maxcut_objective",
     "molecular",
     "molecular_integrals",
     "molecular_orbital_integrals",

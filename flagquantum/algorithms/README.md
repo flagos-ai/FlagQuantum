@@ -167,8 +167,15 @@ executed by `tests/test_algorithm_examples.py`.
   evaluations per step whatever the parameter count. **The estimate is biased for
   every finite perturbation and is not a gradient**: an objective with an exact
   gradient is served more cheaply and exactly by autograd or parameter shift, and
-  the reason to use this unit is its evaluation cost. Demonstration scale: the
-  perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
+  the reason to use this unit is its evaluation cost. `minimize(objective,
+  parameters, steps=...)` runs a fixed budget in one call and returns the last
+  iterate with the cost before every update, so it is the same shape
+  `NelderMeadOptimizer.minimize` has and one objective can be handed to both;
+  unlike that unit's result it carries no spread and no `converged` flag, because
+  a shrinking perturbation would report a settled point as unsettled.
+  Demonstration scale: the perturbation is drawn from a caller-owned
+  `torch.Generator` so a run replays, and `variational.py`'s
+  `maxcut_objective` is the QAOA cost exposed for this unit to consume.
 - `nelder_mead.py`: Nelder-Mead simplex search — a gradient-free optimizer that
   compares objective values instead of differencing them, so it needs no
   perturbation size, no step size, and no random draw at all. **It requires a

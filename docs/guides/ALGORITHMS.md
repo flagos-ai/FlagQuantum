@@ -2163,13 +2163,60 @@ refused and the energy is `float32`-accurate. The result carries no cut:
 sampling the optimized circuit, decoding a bitstring, ranking sampled cuts and
 comparing a sampled best against the optimum are all the caller's steps.
 
+**The gradient-free route is the objective, not a second optimizer parameter.**
+The update inside `run_qaoa` is autograd-based and `optimizer_factory` is a
+`torch.optim` optimizer, so the two gradient-free units this package ships cannot
+be supplied in that slot: an SPSA step is a rate-limited update from two objective
+values rather than a `torch.optim` optimizer, and a simplex is a whole run
+released at once rather than one either, so a single parameter could not carry
+both shapes without a dispatch that hid which method ran.
+`maxcut_objective(n_qubits, edges, *, device=...)` therefore returns the very
+callable `run_qaoa` minimizes — the same checked edge list, the same gamma-then-beta
+split — and it is readable with `float()` without a backward pass, so
+[spsa.py](../../flagquantum/algorithms/spsa.py) and
+[nelder_mead.py](../../flagquantum/algorithms/nelder_mead.py) can be handed it
+directly:
+
+```python
+import torch
+
+from flagquantum.algorithms import (
+    NelderMeadOptimizer,
+    SPSAOptimizer,
+    maxcut_objective,
+    run_qaoa,
+)
+
+edges = ((0, 1), (1, 2), (2, 0))
+objective = maxcut_objective(3, edges)
+start = torch.full((2,), 0.05)
+print(round(float(objective(start)), 6), float(run_qaoa(3, edges, start, steps=300).energy))
+# 0.059502 -0.9999997615814209  -- the start's cost, and where Adam lands
+spsa = SPSAOptimizer(
+    maxiter=400, perturbation=0.05, generator=torch.Generator().manual_seed(11)
+).minimize(objective, start)
+print(spsa.value, spsa.steps, spsa.evaluations, spsa.history[0])
+# -0.9999911189079285 400 1201 0.05950213968753815
+#   -- the cost at the last iterate, the updates, the calls, and the starting cost
+simplex = NelderMeadOptimizer(maxiter=200).minimize(objective, start)
+print(simplex.value, simplex.evaluations, simplex.converged)
+# -1.0000003576278687 706 False
+#   -- at the optimum to the float32 resolution, with the flag reading False
+```
+
+On that instance, whose optimum is `-1.0`, all three routes land at it: Adam at
+`-0.9999997615814209`, SPSA at `-0.9999911189079285` in 1201 evaluations, and the
+simplex at `-1.0000003576278687` in 706. The simplex reaches the optimum while
+reporting `converged=False`, because that flag measures the two spreads collapsing
+and not the energy arriving, and SPSA reports no flag at all; the route is
+asserted on the energy rather than on the flag.
+
 **Not here:** a cost Hamiltonian for a general QUBO or Ising instance; any
-constraint, penalty or slack term; adaptive or multi-angle QAOA variants; a warm
-start from a classical heuristic; a multi-start or basin-hopping wrapper; and any
-shots, hardware or sampled path. The update is autograd-based, so the
-gradient-free units this package ships — [spsa.py](../../flagquantum/algorithms/spsa.py)
-and [nelder_mead.py](../../flagquantum/algorithms/nelder_mead.py) — cannot be
-supplied to `run_qaoa`, which a sampled or hardware objective would need. The VQE
+constraint, penalty or slack term; the constrained derivative-free handling COBYLA
+gives CUDA-Q's VQE path; adaptive or multi-angle QAOA variants; a warm start from
+a classical heuristic; a multi-start or basin-hopping wrapper; and any shots,
+hardware or sampled path — including on the gradient-free route, which reaches
+the same exact objective and therefore carries no shot noise either. The VQE
 entry points themselves stay where they were, in
 [core.py](../../flagquantum/algorithms/core.py); this module is the QAOA half of
 the family and it neither wraps nor replaces them. No demonstration here is a
