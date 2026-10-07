@@ -5,6 +5,8 @@ import flagquantum as fq
 import flagquantum.simulation.statevector.cx_sequence_dispatch as cx_sequence_dispatch
 import flagquantum.simulation.statevector.ry_rz_dispatch as ry_rz_dispatch
 import flagquantum.simulation.statevector.single_qubit_matrix_dispatch as single_qubit_matrix_dispatch
+import flagquantum.simulation.statevector.two_qubit_matrix_dispatch as two_qubit_matrix_dispatch
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 
@@ -112,6 +114,104 @@ def test_generic_local_2q_rejects_unsupported_contracts() -> None:
             second_bit_position=4,
             output=noncontiguous_output,
         )
+
+
+def test_public_local_2q_runtime_uses_catalog(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "1")
+    routes: list[str] = []
+    require_cataloged_kernel = (
+        two_qubit_matrix_dispatch._require_two_qubit_matrix_kernel
+    )
+
+    def capture_catalog_route(*, device_type: str, dtype: str):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_require_two_qubit_matrix_kernel",
+        capture_catalog_route,
+    )
+    generator = torch.Generator(device="cuda").manual_seed(47)
+    state = torch.randn(
+        1,
+        1 << 16,
+        generator=generator,
+        dtype=torch.complex64,
+        device="cuda",
+    )
+    matrix = torch.randn(
+        4,
+        4,
+        generator=generator,
+        dtype=torch.complex64,
+        device="cuda",
+    )
+    expected = _reference_local_2q(state, matrix, 15, 0)
+
+    actual = _apply_matrix(state, matrix, (0, 15), 16)
+
+    torch.testing.assert_close(actual, expected, atol=2e-6, rtol=2e-6)
+    assert routes == ["FQKI-TRITON-SV-009-A"]
+
+
+def test_public_local_2q_kill_switch_uses_reference(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "0")
+    state = torch.randn(1, 1 << 16, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled SV-009 route must not execute")
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_apply_cataloged_two_qubit_matrix",
+        fail_if_called,
+    )
+    expected = _reference_local_2q(state, matrix, 15, 0)
+
+    actual = _apply_matrix(state, matrix, (0, 15), 16)
+
+    torch.testing.assert_close(actual, expected, atol=0.0, rtol=0.0)
+
+
+def test_public_local_2q_gradient_request_preserves_reference(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "1")
+    state = torch.randn(
+        1,
+        1 << 16,
+        dtype=torch.complex64,
+        device="cuda",
+        requires_grad=True,
+    )
+    matrix = torch.randn(
+        4,
+        4,
+        dtype=torch.complex64,
+        device="cuda",
+        requires_grad=True,
+    )
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("gradient requests must stay on the reference path")
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_apply_cataloged_two_qubit_matrix",
+        fail_if_called,
+    )
+    output = _apply_matrix(state, matrix, (0, 15), 16)
+    output.real.sum().backward()
+
+    assert state.grad is not None
+    assert matrix.grad is not None
 
 
 def test_control_one_pack_unpack_matches_index_reference() -> None:

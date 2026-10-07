@@ -54,6 +54,9 @@ def test_the_example_shows_the_reserved_level_failing_closed() -> None:
     assert stdout.count(": refused (") == 1
     assert "level 3: refused (" in stdout
     assert "level 3 is reserved, not implemented" in stdout
-    # The refusal names a missing capability rather than only an unimplemented
-    # number, which is what makes it actionable for a reader.
-    assert "no unitary-synthesis pass to move" in stdout
+    # The refusal names the capability that is out of reach and where the same
+    # capability is in reach, rather than only an unimplemented number: a reader
+    # told "no such pass exists" would go looking for a pass to write that this
+    # package already ships under a target-aware entry point.
+    assert "target-independent by contract" in stdout
+    assert "legalize_native_gates" in stdout

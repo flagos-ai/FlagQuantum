@@ -10,6 +10,22 @@ Keep credentials outside source control. `QUAFU_API_KEY` authenticates the
 current task API. `QUAFU_API_TOKEN` is optional, but is required for an
 authenticated fallback to the legacy SQC platform.
 
+A submission with **no** Quafu credential is rejected before any request is sent.
+`QUAFU_API_TOKEN` is the credential the legacy SQC endpoint authenticates with, so
+when it is unset the provider raises `flagquantum.errors.ValidationError` naming
+the missing source rather than posting a request that carries no authentication
+header:
+
+```text
+ValidationError: A Quafu credential is required to submit to the legacy SQC
+platform: pass token=... or set QUAFU_API_TOKEN. Neither QUAFU_API_KEY nor
+QUAFU_API_TOKEN is configured, so a request for target 'Baihua' would carry no
+authentication header. No request was sent.
+```
+
+`QUAFU_API_KEY` does not authorize that endpoint, so setting only the key is still
+refused, with a message that says which of the two credentials this route needs.
+
 ```bash
 export QUAFU_API_KEY=qf_replace_with_your_api_key
 export QUAFU_TASK_SERVER_URL=https://quafu.com.cn/api/v1

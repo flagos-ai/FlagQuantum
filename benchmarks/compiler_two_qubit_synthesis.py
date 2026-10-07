@@ -856,6 +856,7 @@ def _qiskit_anchor() -> dict[str, Any]:
 
     try:
         import numpy as np
+        import qiskit  # type: ignore[import-not-found]
         from qiskit.synthesis.two_qubit import (  # type: ignore[import-not-found]
             TwoQubitBasisDecomposer,
         )
@@ -912,6 +913,11 @@ def _qiskit_anchor() -> dict[str, Any]:
                 mismatches.append(row)
     return {
         "available": True,
+        # The library reading, not the pinned `reference_revision` above: the
+        # per-row `reference_gate_count` below moves between installed Qiskit
+        # versions while the entangler counts the test compares do not, so which
+        # of the two a reader is looking at is decided by this field.
+        "qiskit_version": qiskit.__version__,
         "decomposer": "TwoQubitBasisDecomposer(gate, euler_basis='ZSX')",
         "reference_entanglers": [name for name, _ in _reference_entanglers()],
         "compared_case_count": len(rows),

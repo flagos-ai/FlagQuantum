@@ -17,7 +17,7 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
-from . import controlled_phase, cz_graph, two_qubit_cpu
+from . import controlled_phase, cz_graph
 from .clifford_matching import (
     _reorder_disjoint_clifford_matchings,
     fuse_native_disjoint_clifford_matchings,
@@ -70,6 +70,7 @@ from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
+from .two_qubit_matrix_dispatch import _try_apply_preferred_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
@@ -284,7 +285,7 @@ def _compile_statevector_program(
     enable_cpu_native_fused_rotation_layer: bool = False,
     enable_cpu_native_scalar_fused_rotation_layer: bool = False,
     enable_cpu_native_rotation_clifford_fusion: bool = False,
-    enable_cpu_swap_sequence: bool = False,
+    swap_fusion_bounds: tuple[int, int | None] | None = None,
     enable_cpu_hadamard_controlled_phase: bool = False,
     enable_cpu_cx_rzz_swap: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
@@ -332,8 +333,8 @@ def _compile_statevector_program(
     program_with_cx = _fuse_cx_sequences(optimized)
     if enable_cpu_cx_rzz_swap:
         program_with_cx = _fuse_cx_rzz_swap_sequences(program_with_cx)
-    if enable_cpu_swap_sequence:
-        return tuple(_fuse_swap_sequences(program_with_cx))
+    if swap_fusion_bounds is not None:
+        return tuple(_fuse_swap_sequences(program_with_cx, bounds=swap_fusion_bounds))
     return tuple(program_with_cx)
 
 
@@ -713,21 +714,21 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
+    if (
+        len(wires) == 2
+        and (
+            preferred := _try_apply_preferred_two_qubit_matrix(
+                state, matrix, wires, n_wires
+            )
+        )
+        is not None
+    ):
+        return preferred
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
                 state, matrix, qubit=wires[0], n_qubits=n_wires
             )
-        if (
-            len(wires) == 2
-            and (
-                preferred := two_qubit_cpu._apply_preferred_two_qubit_matrix_cpu(
-                    state, matrix, wires, n_wires
-                )
-            )
-            is not None
-        ):
-            return preferred
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
 
 

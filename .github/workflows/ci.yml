@@ -117,6 +117,8 @@ jobs:
         run: python tools/check_density_matrix_output_contract.py
       - name: Verify primitives admission contract
         run: python tools/check_primitives_admission_contract.py
+      - name: Verify construction-layer acceptance contract
+        run: python tools/check_construction_acceptance_contract.py
       - name: Verify interoperability capability-gap matrix
         run: python tools/check_interop_capability_gap_matrix.py
       - name: Verify OpenQASM import contract
@@ -157,6 +159,12 @@ jobs:
         run: python tools/operator_manifest.py --check
       - name: Verify batch parameter-shift coverage against the opcode declaration
         run: python tools/check_parameter_shift_coverage_contract.py
+      - name: Verify every differentiable opcode against an independent difference scheme
+        run: python tools/check_opcode_gradient_exactness.py
+      - name: Verify the gradient method and execution mode matrix by re-measuring it
+        run: python tools/check_gradient_methods_contract.py
+      - name: Verify the native gradient capability registration
+        run: python tools/check_native_gradients_contract.py
       - name: Verify the metric tensor against its independent routes
         run: python tools/check_metric_tensor_contract.py
       - name: Verify runtime contract schema
@@ -399,6 +407,19 @@ jobs:
               'sympy>=1.13,<2'
             python tools/check_qiskit_interop_contract.py
             python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
+            # Ten of the fifteen compiler benchmark contracts do not check this
+            # repository against itself. Each builds its payload in-process, reads
+            # a Qiskit anchor out of it, and compares the two, so the comparison
+            # exists only where Qiskit is importable and the file skips when it is
+            # not. The only lane that collected these files is `distributed-cpu`,
+            # which installs no Qiskit, so all ten comparisons skipped on every
+            # pull request and were reported as passes by the tier that owns their
+            # marker; a skipped agreement check reads exactly like an agreement.
+            # They are read here instead, on both certified lanes, because an
+            # anchor is only comparable with a release this repository certifies.
+            # `tests/benchmark_contract/qiskit_lane.py` holds that rule and fails
+            # rather than skips when a host is outside it.
+            python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
             python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
           done
 
