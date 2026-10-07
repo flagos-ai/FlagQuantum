@@ -34,6 +34,7 @@ process.
 - [Circuit composition](FQ-CIRCUIT-COMPOSITION-20261002.md)
 - [Circuit adjoint](FQ-CIRCUIT-ADJOINT-20261003.md)
 - [Circuit control](FQ-CIRCUIT-CONTROL-20261022.md)
+- [Construction-layer acceptance](FQ-CONSTRUCTION-ACCEPTANCE-20261024.md)
 - [Gradient parameter frequencies](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md)
 - [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
