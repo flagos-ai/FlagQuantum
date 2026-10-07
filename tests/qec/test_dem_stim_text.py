@@ -191,9 +191,120 @@ def test_a_declared_observable_still_governs_the_shape() -> None:
         )
 
 
-def test_rejects_a_repeat_block() -> None:
-    with pytest.raises(ValueError, match=r"repeat blocks are not supported"):
-        DetectorErrorModel.from_stim_text("repeat 2 {\n error(0.1) D0\n}\n")
+def test_a_repeat_block_states_the_instructions_it_repeats() -> None:
+    """The block is the same model as the instructions written out.
+
+    ``repeat`` is expansion and nothing else, so the block's mechanisms are its
+    instructions' mechanisms as many times over, at the probabilities the
+    instructions state and at the detector indices the shifts in force place
+    them at.
+    """
+
+    assert DetectorErrorModel.from_stim_text(
+        "repeat 2 {\n error(0.1) D0\n}\ndetector D0\n"
+    ) == DetectorErrorModel.from_stim_text(
+        "error(0.1) D0\nerror(0.1) D0\ndetector D0\n"
+    )
+
+
+def test_a_shift_inside_a_block_advances_once_per_iteration() -> None:
+    """Hoisting the shift out of the block would place every copy at detector zero.
+
+    This is the one arithmetic a block does that writing the instructions out
+    does not state explicitly, so it is asserted rather than inferred from a
+    count: the three copies of the mechanism land at detectors zero, two and
+    four, which is what stim reports for the same text.
+    """
+
+    text = (
+        "detector D0\n"
+        "detector D1\n"
+        "detector D2\n"
+        "detector D3\n"
+        "detector D4\n"
+        "repeat 3 {\n error(0.1) D0\n shift_detectors 2\n}\n"
+    )
+
+    assert DetectorErrorModel.from_stim_text(text).errors == (
+        DemError(probability=0.1, detectors=(0,), observables=()),
+        DemError(probability=0.1, detectors=(2,), observables=()),
+        DemError(probability=0.1, detectors=(4,), observables=()),
+    )
+
+
+def test_a_block_nests_inside_the_iteration_that_holds_it() -> None:
+    """An inner block runs once per outer iteration, not once in total."""
+
+    assert DetectorErrorModel.from_stim_text(
+        "repeat 2 {\n repeat 3 {\n  error(0.1) D0\n }\n detector D0\n}\n"
+    ) == DetectorErrorModel.from_stim_text("detector D0\n" + "error(0.1) D0\n" * 6)
+
+
+def test_a_block_repeated_zero_times_contributes_nothing() -> None:
+    """``repeat 0`` is legal, and its instructions never run, shifts included."""
+
+    assert DetectorErrorModel.from_stim_text(
+        "repeat 0 {\n error(0.1) D0\n shift_detectors 5\n}\ndetector D0\n"
+    ) == DetectorErrorModel.from_stim_text("detector D0\n")
+
+
+def test_a_comment_is_not_an_instruction() -> None:
+    """A comment runs from its ``#`` to the end of the line, wherever it starts."""
+
+    plain = DetectorErrorModel.from_stim_text("error(0.1) D0\ndetector D0\n")
+
+    assert (
+        DetectorErrorModel.from_stim_text(
+            "# what this model is\n"
+            "\n"
+            "error(0.1) D0  # the only mechanism\n"
+            "repeat 2 {\n"
+            " # a commented line inside a block\n"
+            "}\n"
+            "detector D0\n"
+        )
+        == plain
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "refusal"),
+    [
+        ("repeat {\n error(0.1) D0\n}\n", r"must open with `repeat <count> \{`"),
+        ("repeat 2 2 {\n error(0.1) D0\n}\n", r"must open with `repeat <count> \{`"),
+        ("repeat -1 {\n error(0.1) D0\n}\n", r"non-negative integer count, not '-1'"),
+        ("repeat +2 {\n error(0.1) D0\n}\n", r"non-negative integer count, not '\+2'"),
+        ("repeat 2 {\n error(0.1) D0\n}\n}\n", r"no repeat block is open"),
+    ],
+)
+def test_rejects_a_malformed_repeat_block(text: str, refusal: str) -> None:
+    """Each guard names its own fault, so none may fall through to another."""
+
+    with pytest.raises(ValueError, match=refusal):
+        DetectorErrorModel.from_stim_text(text)
+
+
+def test_rejects_a_block_that_never_closes() -> None:
+    """An unclosed block would silently drop every instruction it holds."""
+
+    with pytest.raises(
+        ValueError, match="must close with a brace on a line of its own"
+    ):
+        DetectorErrorModel.from_stim_text("repeat 2 {\n error(0.1) D0\ndetector D0\n")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "repeat 2 { error(0.1) D0 }\ndetector D0\n",
+        "error(0.1) D0 } \ndetector D0\n",
+    ],
+)
+def test_rejects_a_brace_that_is_not_a_block_boundary(text: str) -> None:
+    """Stim puts each block instruction on its own line, so a brace is one too."""
+
+    with pytest.raises(ValueError, match="brace that ends its line"):
+        DetectorErrorModel.from_stim_text(text)
 
 
 @pytest.mark.parametrize(
