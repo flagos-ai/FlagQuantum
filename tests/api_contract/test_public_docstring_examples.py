@@ -75,6 +75,7 @@ from flagquantum.qec import (
     CssCodeMatrices,
     bivariate_bicycle_code,
     qldpc_code,
+    reed_muller_code,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -127,13 +128,15 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes four: the code record a caller constructs,
+# error-correction package contributes five: the code record a caller constructs,
 # the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
-# example is not evidence of a distance, and the route that derives the same
-# record from a caller's check matrices, whose example is the Steane code written
-# as its three checks rather than as a record.
+# example is not evidence of a distance, the punctured Reed-Muller family, whose
+# example is its smallest member and whose two numbers are the two family
+# distances rather than the code's distance alone, and the route that derives the
+# same record from a caller's check matrices, whose example is the Steane code
+# written as its three checks rather than as a record.
 ENTRIES = (
     adder_circuit,
     adder_wires,
@@ -186,6 +189,7 @@ ENTRIES = (
     plan_lindblad_evolution,
     planner.plan,
     qldpc_code,
+    reed_muller_code,
     recommend_simulator,
     run_cirq,
     run_pennylane,

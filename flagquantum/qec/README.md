@@ -447,6 +447,55 @@ each refused with the reason named rather than answered. One of the two blocks m
 be empty — a code with only Z-type checks still states its width — but not both,
 because then nothing states how many data qubits there are.
 
+## The one family written on the Boolean cube
+
+Every route above is a lattice patch or a pair of polynomials over a group.
+`reed_muller_code` is the first family stated on the cube instead: `RM(m, m)` is the
+span of the monomials of degree at most `m` evaluated at all `2**m` points, the two
+blocks two degrees apart are punctured where every variable is one, and their duals
+state the two check families.
+
+```python
+from flagquantum.qec import reed_muller_code
+
+code = reed_muller_code(4)
+print(code.num_data_qubits, code.num_ancilla_qubits, code.distance)  # 15 14 3
+print(code.x_distance, code.z_distance)  # 7 3
+```
+
+Those two numbers are why the record states them separately. The least X-type
+logical operator has weight seven and the least Z-type one has weight three, so the
+code's distance is the smaller of the two, and a bound that reaches the lighter
+family does not reach the other. **The default bound of three therefore refuses this
+code rather than reporting three as its distance**, because a record reports a
+searched number and three was never a search over the X-type family:
+
+```python
+from flagquantum.qec import reed_muller_code
+
+reed_muller_code(4)                        # ValueError: no X-type logical operator
+reed_muller_code(4, distance_search_weight=7)  # (7, 3), distance 3
+```
+
+Which block states which family is a convention rather than a fact about the code:
+the two blocks exchanged is the same code with the two Pauli families renamed, and
+both readings were measured before the rule was written. What that means for a
+caller is that a code whose literature states `(3, 7)` is this one, not a different
+one — pass the pair through `qldpc_code` and the two numbers come back exchanged.
+
+The rule is stated for every cube width at or above four, and this route builds the
+two smallest. Four is the smallest width whose punctured pair states a code at all:
+at width three the two blocks are one and zero degrees apart, their duals carry
+three and six rows over seven points, and ten of those eighteen pairs of rows
+anticommute, so there is no stabilizer group to return. Five is the widest the
+distance search is paid for, and the refusal above five says so in the open rather
+than waiting: the search has to exhaust every subset of weight up to six, which is
+942648 subsets over the thirty-one points of width five, 75611760 over the
+sixty-three of width six, and 5434287328 over the hundred and twenty-seven of width
+seven. The width five instance is the one worth knowing about — thirty-one data
+qubits carrying **eleven** logical qubits three errors apart, where a lattice patch
+of the same length carries one.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per

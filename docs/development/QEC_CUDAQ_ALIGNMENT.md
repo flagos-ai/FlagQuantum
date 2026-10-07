@@ -51,7 +51,7 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Seven records declared — repetition, rotated surface, Steane, triangular colour, square-lattice toric, ZXXZ surface and bivariate bicycle — and each feeds both the circuit and the matrix route in either readout basis; the colour, toric and bicycle records are derived from a rule rather than transcribed, the toric record is the first that leaves two logical qubits, the ZXXZ record is the first whose every check is mixed and whose Z-basis memory experiment is therefore unanchored to the readout, and `qldpc_code` derives the logical operators of an arbitrary parity-check matrix pair, so the record set is still one code per family and only a mixed-type observable is refused. |
+| `qec_code_record` | partial | now | `qec_code_library` | Eight records declared — repetition, rotated surface, Steane, triangular colour, square-lattice toric, ZXXZ surface, bivariate bicycle and punctured Reed-Muller — and each feeds both the circuit and the matrix route in either readout basis; the colour, toric, bicycle and Reed-Muller records are derived from a rule rather than transcribed, the toric record is the first that leaves two logical qubits, the Reed-Muller record is the first whose two family distances are not equal, the ZXXZ record is the first whose every check is mixed and whose Z-basis memory experiment is therefore unanchored to the readout, and `qldpc_code` derives the logical operators of an arbitrary parity-check matrix pair, so the record set is still one code per family and only a mixed-type observable is refused. |
 | `qec_detector_annotations` | partial | now | — | Layouts beside the source, not annotations in the kernel; no measurement handles. |
 | `qec_syndrome_extraction_owner` | partial | now | — | `extract_syndrome` is in the CUDA-Q Logical preview, not CUDA-Q QEC. Both routes are cudaq-qec's own names; the inventory line it corrects is the only thing left. |
 | `qec_dem_construction` | partial | now | — | Construction is exact on both routes and the context object landed; no kernel-annotation route, so no X/Y fault family from a kernel body. |
@@ -352,12 +352,14 @@ it has grown by three: the triangular colour code is declared as
 `flagquantum.qec.ZxxzSurfaceCode`, the first two deriving their lattices from
 an argument instead of transcribing a table, so each family is stated as a
 rule about its lattice rather than copied out of another framework's source.
-What the record set still does not have is a family beyond the seven, which is
+What the record set still does not have is a family beyond the eight, which is
 the absence `symbol:flagquantum.qec.reichardt_code` and
 `symbol:flagquantum.qec.floquet_code` state. The seventh is
 `flagquantum.qec.bivariate_bicycle_code`, which derives the bivariate-bicycle
 family and its logical operators from two polynomials rather than declaring
-either. Beside the seven records there is now a route that is not a family at
+either, and the eighth is `flagquantum.qec.reed_muller_code`, which is the
+first record here written on the Boolean cube rather than on a lattice or on a
+group and the first whose two family distances are not equal. Beside the seven records there is now a route that is not a family at
 all: `flagquantum.qec.qldpc_code` takes an arbitrary pair of parity-check matrices
 and derives the logical operators for it, which is the general case of what the
 bicycle family does for its own pair, so a code with no record here reaches a
