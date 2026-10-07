@@ -281,13 +281,17 @@ def test_the_recorded_bound_is_a_claim_about_a_declared_precision() -> None:
         == torch.complex64
     )
     # The implementation on its own is the smaller of the two readings, and both
-    # are above the bound. The record exists so that neither is quoted as it.
-    assert implementation == pytest.approx(
-        float(exactness["default_program_dtype_implementation_deviation"]), rel=1e-06
-    )
-    assert reference == pytest.approx(
-        float(exactness["default_program_dtype_reference_deviation"]), rel=1e-06
-    )
+    # are above the bound. Neither reading nor its `float32` bits are portable,
+    # so the contract records the decade each one must fall in: that is the part
+    # of the claim the platform does not own, and it is also the part that shows
+    # the bound is not vacuously true at the executor default.
+    for field, reading in (
+        ("default_program_dtype_implementation_deviation_decade", implementation),
+        ("default_program_dtype_reference_deviation_decade", reference),
+    ):
+        decade = int(exactness[field])
+        assert 10.0**decade <= reading < 10.0 ** (decade + 1), (field, reading)
+        assert 10.0**decade > bound
     assert implementation > bound
     assert reference > implementation
 
@@ -587,11 +591,15 @@ def _misname_the_precision_witness(contract: dict[str, Any]) -> None:
 
 
 def _misstate_the_precision_deviation(contract: dict[str, Any]) -> None:
-    contract["exactness"]["default_program_dtype_implementation_deviation"] = 1e-30
+    contract["exactness"]["default_program_dtype_implementation_deviation_decade"] = -30
 
 
 def _misstate_the_reference_deviation(contract: dict[str, Any]) -> None:
-    contract["exactness"]["default_program_dtype_reference_deviation"] = 1e-30
+    contract["exactness"]["default_program_dtype_reference_deviation_decade"] = -30
+
+
+def _claim_the_wrong_precision_decade(contract: dict[str, Any]) -> None:
+    contract["exactness"]["default_program_dtype_implementation_deviation_decade"] = 3
 
 
 @pytest.mark.parametrize(
@@ -616,6 +624,7 @@ def _misstate_the_reference_deviation(contract: dict[str, Any]) -> None:
         (_claim_the_wrong_program_dtype, "records program_dtype"),
         (_misname_the_precision_witness, "default_program_dtype_implementation"),
         (_misstate_the_precision_deviation, "for default_program_dtype_implementation"),
+        (_claim_the_wrong_precision_decade, "for default_program_dtype_implementation"),
         (_misstate_the_reference_deviation, "for default_program_dtype_reference"),
     ],
 )

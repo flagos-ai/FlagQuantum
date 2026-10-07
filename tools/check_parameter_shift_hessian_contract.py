@@ -697,7 +697,15 @@ def _exactness_errors(contract: Mapping[str, Any]) -> list[str]:
 
 
 def _precision_errors(contract: Mapping[str, Any]) -> list[str]:
-    """The recorded bound is only true at the precision the witness pins."""
+    """The recorded bound is only true at the precision the witness pins.
+
+    The two readings this checks are `float32` quantities, so their low bits are
+    the platform's reduction order and not the composed rule's. The contract
+    records the decade each reading must fall in rather than one machine's bits,
+    and the decade must lie above the bound: a record that only restated the
+    bound would not establish that pinning the precision is what makes the sweep
+    pass.
+    """
 
     exactness = contract["exactness"]
     name = str(exactness["program_dtype"])
@@ -729,26 +737,33 @@ def _precision_errors(contract: Mapping[str, Any]) -> list[str]:
         ]
     measured = _measured_at_default_precision((opcode,), mode)
     pinned = _difference((opcode,), mode)
+    bound = float(exactness["agreement_bound"])
     readings = (
         (
-            "default_program_dtype_implementation_deviation",
+            "default_program_dtype_implementation_deviation_decade",
             (measured - pinned).abs().max().item(),
         ),
         (
-            "default_program_dtype_reference_deviation",
+            "default_program_dtype_reference_deviation_decade",
             (measured - _difference((opcode,), mode, pinned=False)).abs().max().item(),
         ),
     )
     for field, deviation in readings:
-        recorded = float(exactness[field])
-        # A relative tolerance with a floor far below every recorded reading: an
-        # absolute floor of `1e-06` would accept any value at all for a reading
-        # this small, which is how a contract stops constraining its own number.
-        tolerance = 1e-06 * max(abs(recorded), 1e-12)
-        if abs(deviation - recorded) > tolerance:
+        decade = exactness[field]
+        if isinstance(decade, bool) or not isinstance(decade, int):
+            return [f"{field} records {decade!r}, which is not a whole decade"]
+        lower = 10.0**decade
+        if lower <= bound:
+            return [
+                f"the decade {lower:g} recorded for {field} is not above the "
+                f"agreement bound {bound:g}, so it cannot show that the bound "
+                "holds only at the pinned precision"
+            ]
+        if not lower <= deviation < lower * 10:
             return [
                 f"at the executor default the {opcode}/{mode} cell reads "
-                f"{deviation} for {field}, but the contract records {recorded}"
+                f"{deviation} for {field}, which is not the decade {lower:g} it "
+                "records"
             ]
     return []
 

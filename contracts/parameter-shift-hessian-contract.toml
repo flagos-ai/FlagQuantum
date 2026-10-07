@@ -124,22 +124,33 @@ qubits = 3
 # an unqualified circuit returns `float32` expectations, and this sweep is three
 # orders of magnitude finer than that. The witness program therefore pins the
 # precision, and both readings the pinning changes are recorded next to the
-# bound so that neither can be quoted as the bound. Neither is inside it: the
-# bound is not true at the executor default, and this file says so rather than
-# relying on the witness to hide it.
+# bound so that neither can be quoted as the bound.
+#
+# Those two readings are `float32` quantities, and which bits a `float32`
+# contraction lands on is a property of the platform's reduction order rather
+# than of the composed rule. The same cell reads `1.7544981051331732e-07` for the
+# implementation and `0.030165275765790034` for the reference route on x86_64
+# Linux, and `1.828972331918699e-07` and `0.02846986220942621` on arm64 macOS:
+# 4% apart, which is six orders coarser than the tolerance a recorded bit pattern
+# would have to be asserted within. Recording either machine's bits would make
+# the gate measure the machine, so each reading is recorded as the decade it must
+# fall in -- the portable part of the claim -- and the gate additionally requires
+# that decade to lie above `agreement_bound`, which is the property the record
+# exists to establish: the bound is not true at the executor default, and this
+# file says so rather than relying on the witness to hide it.
 program_dtype = "complex128"
 default_program_dtype_witness = ["u2", "mps"]
 # The implementation alone, driven by `float32` losses, measured against the
 # pinned reference. This is what a user who builds an unqualified circuit sees:
-# `1.75e-07`, roughly two hundred times the bound. It is second-order error
-# amplification through `complex64`, not a defect in the composed rule, and it
-# is why the documented example above asks for `float64` parameters.
-default_program_dtype_implementation_deviation = 1.7544981051331732e-07
+# two orders of magnitude above the bound. It is second-order error amplification
+# through `complex64`, not a defect in the composed rule, and it is why the
+# documented example above asks for `float64` parameters.
+default_program_dtype_implementation_deviation_decade = -7
 # The same cell when the reference route is also taken at the executor default.
 # A fourth-order central stencil with a `1e-02` base step cancels catastrophically
-# in `float32`, so this reading measures the stencil and not the implementation
-# and is two and a half orders larger than the line above.
-default_program_dtype_reference_deviation = 0.030165275765790034
+# in `float32`, so this reading measures the stencil and not the implementation,
+# five decades above the line before it.
+default_program_dtype_reference_deviation_decade = -2
 # Off-axis preparation, so no cell of the reference is degenerate by symmetry.
 fixed_rotations = [0.9, 1.4, 0.6, 1.1]
 # One evaluation point per parameter position, reused by every opcode row.

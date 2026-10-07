@@ -254,12 +254,26 @@ Measured by the gate:
   magnitude finer than `float32` can carry: re-reading the `u2`/`mps` cell with
   the circuit left unqualified gives `1.7544981051331732e-07` against the pinned
   reference and `0.030165275765790034` when the reference route is taken at
-  `float32` too. Both readings are recorded in the contract and re-derived by
-  the gate, and neither is inside the bound. The witness program therefore pins
+  `float32` too. Neither is inside the bound. The witness program therefore pins
   `complex128`, the contract names the dtype it pins, and the gate refuses a
   contract whose recorded dtype the witness does not actually use. Without that
   pinning the sweep would still have passed and the bound would have described
   the wrong quantity.
+- **Those two readings are recorded as decades, not as bits.** They are `float32`
+  quantities, so their low bits belong to the platform's reduction order rather
+  than to the composed rule. Read on x86_64 Linux the same cell gives
+  `1.7544981051331732e-07` and `0.030165275765790034`; read on arm64 macOS it
+  gives `1.828972331918699e-07` and `0.02846986220942621`, 4% away in both
+  places. The first version of this contract recorded the x86_64 bits and
+  asserted them to a relative `1e-06`, which is a claim about the machine and not
+  about the code: it failed on any other platform before the implementation was
+  ever consulted. The contract now records the decade each reading must fall in
+  (`default_program_dtype_implementation_deviation_decade = -7`,
+  `default_program_dtype_reference_deviation_decade = -2`), which is the part of
+  the claim the platform does not own, and the gate additionally requires each
+  decade to sit above `agreement_bound` -- the property the record exists to
+  establish. Both measured readings and the platform each came from are kept in
+  the contract's comments as provenance.
 
 The same reading at the user's own scale, for the two-parameter program of the
 docstring example, where the diagonal cell is exactly `-cos(0.4) * cos(0.9)`:
@@ -273,14 +287,15 @@ The public guidance follows the measurement: the docstring names the precision
 the caller controls, and the contract records the deviation a caller who does not
 set it should expect.
 
-`tests/unit/test_parameter_shift_hessian_contract.py` (77 tests) owns the
+`tests/unit/test_parameter_shift_hessian_contract.py` (79 tests) owns the
 contract and the gate. Its last section mutates one clause at a time -- a term
 count, an admission, a cost, a cell cost, the agreement bound, the reference
 floor, an opcode row, a refusal's exception class, a refusal's message, a dropped
 refusal, a claimed root export, a claimed autograd graph, a claimed method value,
 a scope string, the contract test path, a census string, the recorded program
-dtype, the cell the default-precision reading names, and each of the two
-default-precision numbers -- and requires the gate to name each one. An earlier draft of this gate **crashed** on a mutated
+dtype, the cell the default-precision reading names, each of the two
+default-precision decades, and a decade that is above the bound but not the
+decade the cell reads -- and requires the gate to name each one. An earlier draft of this gate **crashed** on a mutated
 contract instead of reporting it, which is the failure mode those tests exist to
 catch.
 
