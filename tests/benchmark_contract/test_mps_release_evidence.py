@@ -469,6 +469,16 @@ def test_a_rank_site_run_is_stated_by_its_ends() -> None:
     }
 
 
+def test_a_rank_site_run_does_not_depend_on_the_order_it_was_measured_in() -> None:
+    """The run is the set of sites; the measurement order is not part of it."""
+
+    assert producer._site_span([9, 7, 8]) == {
+        "first_site": 7,
+        "last_site": 9,
+        "site_count": 3,
+    }
+
+
 def test_a_rank_site_set_with_a_gap_is_reported_in_full() -> None:
     """Ends that rounded over a gap would be a smaller file saying something false."""
 
