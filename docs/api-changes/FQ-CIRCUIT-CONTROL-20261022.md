@@ -46,10 +46,12 @@ qubit sequence spelled with `qubit`, and this document fixes it as
 recorded because a declined argument that is not written down is an argument
 someone will add later.
 
-Scope of the affected surface: `flagquantum/core/operator_schema.py` and
-`flagquantum/core/controlled.py` (both owned by team `core`),
-`flagquantum/core/__init__.py`, `flagquantum/circuit.py` (owned by team `core`),
-`docs/operator_manifest.json` (generated), and tests.
+Scope of the affected surface: `flagquantum/core/operator_schema.py`,
+`flagquantum/core/controlled.py`, and `flagquantum/core/_composition.py` (all owned by
+team `core`), `flagquantum/core/__init__.py`, `flagquantum/circuit.py` (owned by team
+`core`), `docs/operator_manifest.json` (generated), and tests. The per-instruction
+adapter that turns one recorded instruction into its controlled expansion lives in
+`_composition.py` beside `controlled.py`, which owns the expansion itself.
 
 ## Problem and affected user journey
 

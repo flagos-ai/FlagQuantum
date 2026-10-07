@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 28 semantics,
-30 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 30 semantics,
+32 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -76,6 +76,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-007 | `statevector.transport.control_subspace_pack` | `pack_complex64_control_one`, `pack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
+| FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
 | FQK-SV-013 | `statevector.apply.reversible_permutation_3q.local` | `apply_complex64_local_reversible_3q` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
@@ -379,6 +380,36 @@ within this measured CUDA `complex64` window. This is bounded single-device
 development evidence, not a framework-wide, distributed, or release claim.
 Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_2q_probe.py`](../../benchmarks/internal/evidence/statevector_local_2q_probe.py).
+
+`FQKI-TRITON-SV-010-A` applies one- or two-qubit diagonal operators directly
+to a flat statevector. It derives the operator-basis index from each
+amplitude's local address, then performs one complex multiply without a
+full-state permutation, contiguous materialization, or dense batched matrix
+multiplication. The ordered qubit tuple defines the diagonal basis order. The
+wrapper supports a shared diagonal or one diagonal per batch, contiguous CUDA
+`complex64` states, and an optional matching output buffer; exact input/output
+aliasing is safe because every amplitude is independent. It rejects gradient
+inputs rather than silently detaching them.
+
+The checked-in
+[`statevector_local_diagonal_a800.json`](../../benchmarks/results/local/statevector_local_diagonal_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed shapes spanning 65,536 through 16,777,216 amplitudes, one- and
+two-qubit operators, distant ordered qubits, shared and batch-resolved
+diagonals, and batch sizes one and four. It covers `jp-a800-171` and
+`jp-a800-172` under stock Triton 3.7.1 and FlagTree 0.7.0. Maximum absolute and
+relative L2 errors are `5.34e-7` and `3.63e-8`. Across all 20
+host/compiler/shape cases the direct wrapper reaches `1.084x` to `7.617x` the
+speed of the current PyTorch product reference. The aggregate decision is
+`eligible_for_dispatch_evaluation`, so SV-010-A is provisional within this
+measured CUDA `complex64` window. Runtime dispatch remains a separate review
+step. This is bounded single-device development evidence, not a distributed or
+release claim. Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_local_diagonal_probe.py`](../../benchmarks/internal/evidence/statevector_local_diagonal_probe.py).
+
+The semantic serves diagonal gates including Z, S, T, RZ, phase, CZ,
+controlled phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian
+simulation, and variational workloads.
 
 `FQKI-TRITON-SV-013-A` applies CCX and controlled-SWAP as fixed
 three-qubit permutations without materializing an eight-by-eight matrix,
@@ -1112,12 +1143,13 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 29 semantics and 36 implementations are implemented. The 26 direct
-Triton `-A` implementations from SV-001 through SV-009, SV-013, GR-001 through GR-006,
+The current 30 semantics and 37 implementations are implemented. The 27 direct
+Triton `-A` implementations from SV-001 through SV-010, SV-013, GR-001 through GR-006,
 MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
 evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, while the other listed routes have evidenced default-dispatch
-promotions. MPS-008, the two generic-autograd Triton `-B` implementations, the
+reason above, SV-010 awaits a separate dispatch review, and the other listed
+routes have evidenced default-dispatch promotions. MPS-008, the two
+generic-autograd Triton `-B` implementations, the
 two NUM implementations, and the five explicit FlagTree implementations remain
 experimental, for ten experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
