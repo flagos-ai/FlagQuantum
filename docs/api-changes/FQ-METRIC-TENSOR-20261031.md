@@ -145,7 +145,51 @@ derivative and says what the route does not compute.
 No existing behaviour changes. `flagquantum/gradients.py` gains one public
 function and one private helper, and `_GRADIENT_METHODS` is untouched: a metric
 tensor is not a sixth way to compute a first derivative, and adding a name there
-would turn the gradient contracts red for no benefit.
+would turn the gradient contracts red for no benefit. The parameter-occurrence
+helpers this route shares with the two shift routes leave that module for
+`flagquantum/core/_parameter_occurrence.py`, which the subsection below records.
+
+### The merged tree crossed the module budget, and it was restored by subtraction
+
+`architecture.toml` sets `default_module_line_ceiling = 1250`, and
+`tests/unit/test_architecture_boundaries.py` asserts that the policy carries no
+`legacy_exceptions` key at all, so the ceiling cannot be raised for one module.
+On the tree this slice merges into, `flagquantum/gradients.py` measured **1326**
+lines: `main` had grown it from the 899 this slice branched from to **1182**
+while the slice was in review, and the metric route adds **144** of the
+difference. Restoring the limit is therefore part of landing the route rather
+than a follow-up to it.
+
+The repository has one remedy for this, and this slice takes it.
+`FQ-CIRCUIT-POWER-20261021.md` records the same collision on the same file --
+"this method's per-instruction rewrite landed when the merged tree crossed the
+module line ceiling" -- and moved that machinery into
+`flagquantum/core/_composition.py` instead of recording an exception. Here the
+parameter-occurrence machinery moves to
+`flagquantum/core/_parameter_occurrence.py`: the profile of a program's static
+structure and scalar parameters, the probe that finds which gate occurrence a
+flat parameter index controls, and the two places that read that occurrence's
+declared rule or coefficient. It is one responsibility that three routes already
+shared -- `parameter_shift_gradient`, `parameter_shift_hessian`, and
+`batched_parameter_shift_gradient` -- and it crosses no team boundary, because
+`flagquantum/gradients.py` and `flagquantum/core/**` are both owned by `core`.
+
+Measured after the split:
+
+| File | Lines | Ceiling |
+| --- | --- | --- |
+| `flagquantum/gradients.py` | 1148 | 1250 |
+| `flagquantum/core/_parameter_occurrence.py` | 218 | 1250 |
+
+`python tools/check_architecture.py` reports `architecture boundaries passed`,
+and `python tools/check_team_scope.py --require-classified` classifies the new
+path under `core`. Nothing the contracts pin moves with it: both contract
+implementations keep their census strings in `flagquantum/gradients.py`, the
+coverage gate still finds the profile's constant opcode literals in that file,
+and every refusal either gate drives is measured by *calling* the route, so a
+moved function reports the same message and exception class as before. The split
+adds no public name: `flagquantum/core/_parameter_occurrence.py` is private and
+`__all__` is unchanged.
 
 ### Explicitly out of scope
 
