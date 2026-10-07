@@ -283,3 +283,75 @@ def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
             undeployable, n_wires=program.n_qubits, coupling_map=coupling
         )
     assert selection.selected_strategy in DEPLOYABLE_ROUTING_STRATEGIES
+
+
+def test_the_undirected_entries_refuse_a_directed_device_by_name() -> None:
+    """A directed device is refused here, not iterated into an opaque failure.
+
+    The Compiler does hold a direction-aware route -- ``legalize_circuit_topology``
+    reaches ``route_to_directed_topology`` -- and the three entries below price and
+    route against an undirected cost model. A ``DirectedCouplingMap`` is not
+    iterable, so before this refusal the coercion failed with the iteration's own
+    ``TypeError``, which named neither the accepted forms nor the entry that reads
+    direction. Each entry now refuses the argument itself.
+    """
+
+    from flagquantum.compiler.directed_topology import DirectedCouplingMap
+
+    program = _workload()
+    directed = DirectedCouplingMap(5, tuple(CouplingMap.line(5).edges))
+
+    for entry, call in (
+        (
+            "estimate_routing_cost",
+            lambda: estimate_routing_cost(program, directed),
+        ),
+        (
+            "select_routing_strategy",
+            lambda: select_routing_strategy(program, directed),
+        ),
+        (
+            "route_to_topology",
+            lambda: route_to_topology(program, directed),
+        ),
+    ):
+        with pytest.raises(TypeError) as refusal:
+            call()
+        message = str(refusal.value)
+        assert entry in message
+        assert "DirectedCouplingMap" in message
+        assert "legalize_circuit_topology" in message
+        # The old failure described the iteration, not the argument.
+        assert "not iterable" not in message
+
+
+def test_an_edge_sequence_and_a_coupling_map_route_the_same_program() -> None:
+    """The coercion accepts both documented forms and decides identically.
+
+    The price is compared whole, because it is a plan. The routed program is
+    compared by its instructions and by its routing plan minus ``path_cache``:
+    that entry is a delta against the cache the map instance had already
+    accumulated, so it reads differently for a map the caller passed in and for
+    the map the coercion built, without either routing having differed.
+    """
+
+    program = _workload()
+    edges = ((0, 1), (1, 2), (2, 3), (3, 4))
+    coupling = CouplingMap(5, edges)
+
+    assert estimate_routing_cost(
+        program, coupling, strategy="sabre"
+    ) == estimate_routing_cost(program, edges, strategy="sabre")
+    assert select_routing_strategy(program, coupling) == select_routing_strategy(
+        program, edges
+    )
+
+    from_map = route_to_topology(program, coupling)
+    from_edges = route_to_topology(program, edges)
+    assert from_map.instructions == from_edges.instructions
+    plan = from_map.metadata["routing"]
+    other = from_edges.metadata["routing"]
+    assert {key: value for key, value in plan.items() if key != "path_cache"} == {
+        key: value for key, value in other.items() if key != "path_cache"
+    }
+    assert plan["strategy"] == other["strategy"]

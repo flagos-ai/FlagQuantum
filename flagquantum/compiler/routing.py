@@ -560,6 +560,26 @@ def _estimate_swap_plan(
     return 2 * forward_swap_count, pre_restore_layout
 
 
+def _undirected_map(coupling_map: object, wire_count: int, entry: str) -> CouplingMap:
+    """Coerce an edge sequence; refuse a directed device by name.
+
+    ``DirectedCouplingMap`` is not iterable, so the fallback used to fail with the
+    iteration's own ``TypeError`` and named neither ``legalize_circuit_topology``
+    nor the two forms this accepts.
+    """
+
+    if isinstance(coupling_map, CouplingMap):
+        return coupling_map
+    if not isinstance(coupling_map, Iterable):
+        raise TypeError(
+            f"{entry} takes a CouplingMap or an iterable of (control, target) edges, "
+            f"not a {type(coupling_map).__name__}; a directed coupling map carries CX "
+            "direction this undirected cost model does not read, so route it through "
+            "flagquantum.compiler.legalize_circuit_topology"
+        )
+    return CouplingMap(wire_count, coupling_map)
+
+
 def estimate_routing_cost(
     circuit_or_ir: Any,
     coupling_map: CouplingMap | Iterable[tuple[int, int]],
@@ -587,6 +607,7 @@ def estimate_routing_cost(
         counts the same strategy would report in routing metadata.
 
     Raises:
+        TypeError: If ``coupling_map`` is neither a ``CouplingMap`` nor an edge sequence.
         ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
             map has fewer wires than the circuit, a costed path leaves the
             device, or a planner cannot route the program.
@@ -598,11 +619,7 @@ def estimate_routing_cost(
             + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
         )
     ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
+    coupling = _undirected_map(coupling_map, ir.n_wires, "estimate_routing_cost")
     if coupling.n_wires < ir.n_wires:
         raise ValueError("Coupling map has fewer wires than the circuit.")
 
@@ -658,14 +675,13 @@ def select_routing_strategy(
     Pricing a planner is planning it, so this call does the work
     ``route_to_topology`` will repeat. A caller who routes once should pass the
     strategy it wants rather than asking for ``"auto"``.
+
+    Raises:
+        TypeError: If ``coupling_map`` is neither a ``CouplingMap`` nor an edge sequence.
     """
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
+    coupling = _undirected_map(coupling_map, ir.n_wires, "select_routing_strategy")
     candidates = {
         name: estimate_routing_cost(ir, coupling, strategy=name)
         for name in DEPLOYABLE_ROUTING_STRATEGIES
@@ -1060,7 +1076,16 @@ def route_to_topology(
     *,
     strategy: str = "restore_after_each_gate",
 ) -> CircuitIR:
-    """Insert SWAP gates so two-qubit operations respect hardware topology."""
+    """Insert SWAP gates so two-qubit operations respect hardware topology.
+
+    The device is undirected; ``legalize_circuit_topology`` is the entry that reads
+    direction, and a directed device is refused here rather than routed against its
+    undirected projection.
+
+    Raises:
+        TypeError: If ``coupling_map`` is neither a ``CouplingMap`` nor an edge sequence.
+        ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``.
+    """
 
     if strategy not in ROUTING_STRATEGIES:
         raise ValueError(
@@ -1068,11 +1093,7 @@ def route_to_topology(
             + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
         )
     ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
+    coupling = _undirected_map(coupling_map, ir.n_wires, "route_to_topology")
     if coupling.n_wires < ir.n_wires:
         raise ValueError("Coupling map has fewer wires than the circuit.")
     path_cache_before = coupling.path_cache_info()
