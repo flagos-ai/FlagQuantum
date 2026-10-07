@@ -73,11 +73,8 @@ from .dem_construction import (
     _memory_circuit_entries,
     css_code_matrices,
 )
+from .dem_text import _DETECTOR_PREFIX, _OBSERVABLE_PREFIX, _parse_stim_text
 from .noise import PhenomenologicalNoise
-
-_DETECTOR_PREFIX = "D"
-_OBSERVABLE_PREFIX = "L"
-_SEPARATOR = "^"
 
 
 class DemMergeRule(str, Enum):
@@ -165,315 +162,6 @@ def _normalized_indices(values: Iterable[int], *, name: str) -> tuple[int, ...]:
             raise ValueError(f"{name} must contain non-negative indices")
         indices.append(index)
     return tuple(sorted(set(indices)))
-
-
-def _target_index(token: str, prefix: str) -> int | None:
-    """Return the index a stim target names, or ``None`` if it names nothing.
-
-    A target is a one-letter prefix followed by ASCII digits, so a token such
-    as ``X0`` or ``D`` is a malformed target rather than a crash inside
-    ``int``, which accepts the digits of other scripts.
-    """
-
-    digits = token[len(prefix) :]
-    if token.startswith(prefix) and digits.isascii() and digits.isdigit():
-        return int(digits)
-    return None
-
-
-def _parse_shift_detectors(line: str) -> int:
-    """Return the detector-index shift a ``shift_detectors`` line states.
-
-    The instruction takes optional coordinates in parentheses and exactly one
-    target, the shift itself. Coordinates carry geometry the model does not
-    represent, so they are accepted and discarded for the same reason a
-    ``detector`` declaration's coordinates are: the index is the target.
-
-    Stim reaches the absolute detector index by adding the shifts accumulated so
-    far, so the caller accumulates this value rather than replacing one.
-    """
-
-    remainder = line[len("shift_detectors") :]
-    if remainder.startswith("("):
-        closing = remainder.find(")")
-        if closing < 0:
-            raise ValueError("shift_detectors coordinates must close in parentheses")
-        remainder = remainder[closing + 1 :]
-    tokens = remainder.split()
-    if len(tokens) != 1:
-        raise ValueError(
-            "a shift_detectors instruction must state exactly one "
-            "detector-index shift"
-        )
-    shift = tokens[0]
-    # Stim accepts an unsigned integer here and nothing else, so a signed or
-    # non-ASCII token is malformed rather than a negative shift in disguise.
-    if not shift.isascii() or not shift.isdigit():
-        raise ValueError(
-            "a shift_detectors instruction must state a non-negative integer "
-            f"shift, not {shift!r}"
-        )
-    return int(shift)
-
-
-def _toggle(targets: set[int], index: int) -> None:
-    """Flip one target's membership, which is how a repeated target cancels."""
-
-    if index in targets:
-        targets.remove(index)
-    else:
-        targets.add(index)
-
-
-def _parse_error_line(
-    line: str, *, detector_shift: int, decomposed: bool = False
-) -> tuple[DemError, ...]:
-    """Parse one ``error(<p>) <targets...>`` line into its mechanisms.
-
-    A detector target is relative to the shifts in force at that line, which is
-    what makes a ``shift_detectors`` instruction meaningful; an observable
-    target is absolute, because the format has no observable shift.
-
-    Stim's ``^`` separators mark how a composite mechanism decomposes into
-    simpler ones; they partition the targets and do not change which detectors
-    and observables a shot of this mechanism flips. Read one way, the line is a
-    single mechanism whose signature is the symmetric difference of all its
-    targets, and the groups are not retained. Read the other way, each group
-    becomes a mechanism of its own at the parent probability, which is the
-    decomposition suggestion the separators carry and is a lossy reading of the
-    line rather than an equivalent one: two components that can each fire
-    independently at probability ``p`` do not reproduce a single mechanism at
-    probability ``p``. ``decomposed`` selects between the two, and the combined
-    reading is the default because it is the one that preserves the model.
-
-    A target that appears twice cancels, within a group and across groups alike,
-    which is the symmetric difference the combined reading states. Two
-    components with no targets at all are also possible -- ``error(0.1) D0 ^
-    D0`` states one twice -- and neither reading drops what it cannot state: the
-    combined reading refuses a line whose whole signature is empty, and the
-    decomposed reading refuses a component whose own signature is empty, because
-    a mechanism that flips nothing is not a mechanism this model can hold.
-    """
-
-    body = line[len("error") :]
-    if not body.startswith("("):
-        raise ValueError("an error line must state its probability in parentheses")
-    body = body[1:]
-    closing = body.find(")")
-    if closing < 0:
-        raise ValueError("an error line must close its probability in parentheses")
-    try:
-        probability = float(body[:closing])
-    except ValueError as error:
-        raise ValueError("an error line must state a numeric probability") from error
-    tokens = body[closing + 1 :].split()
-    if not tokens:
-        raise ValueError(
-            "an error mechanism must flip at least one detector or observable"
-        )
-    groups: list[tuple[set[int], set[int]]] = []
-    detectors: set[int] = set()
-    observables: set[int] = set()
-    group_is_empty = True
-    for token in tokens:
-        if token == _SEPARATOR:
-            if group_is_empty:
-                raise ValueError(
-                    "an error separator must sit between two groups of targets"
-                )
-            groups.append((detectors, observables))
-            detectors, observables = set(), set()
-            group_is_empty = True
-            continue
-        group_is_empty = False
-        detector = _target_index(token, _DETECTOR_PREFIX)
-        if detector is not None:
-            _toggle(detectors, detector + detector_shift)
-            continue
-        observable = _target_index(token, _OBSERVABLE_PREFIX)
-        if observable is not None:
-            _toggle(observables, observable)
-            continue
-        if _SEPARATOR in token:
-            raise ValueError("an error separator must be separated by spacing")
-        raise ValueError(f"error targets must be D or L indices, not {token!r}")
-    if group_is_empty:
-        raise ValueError("an error separator must sit between two groups of targets")
-    groups.append((detectors, observables))
-
-    if decomposed and len(groups) > 1:
-        # Upstream's `use_decomp_suggestions`: one column per component, each
-        # inheriting the parent instruction's probability. A component that
-        # flips nothing has no column to become, and dropping it silently would
-        # report a model with a mechanism removed, so the line is refused and
-        # the combined reading is named as the route that states it.
-        mechanisms: list[DemError] = []
-        for group_detectors, group_observables in groups:
-            if not group_detectors and not group_observables:
-                raise ValueError(
-                    "a decomposition component that flips nothing cannot be a "
-                    "mechanism of its own; read the line without "
-                    "use_decomp_suggestions to state its combined signature"
-                )
-            mechanisms.append(
-                DemError(
-                    probability=probability,
-                    detectors=tuple(group_detectors),
-                    observables=tuple(group_observables),
-                )
-            )
-        return tuple(mechanisms)
-
-    combined_detectors: set[int] = set()
-    combined_observables: set[int] = set()
-    for group_detectors, group_observables in groups:
-        combined_detectors ^= group_detectors
-        combined_observables ^= group_observables
-    # ``DemError`` re-checks this in its own constructor; refusing here as well
-    # fails at the parse site, where the offending line is still in hand.
-    if not combined_detectors and not combined_observables:
-        raise ValueError(
-            "an error mechanism must flip at least one detector or observable"
-        )
-    return (
-        DemError(
-            probability=probability,
-            detectors=tuple(combined_detectors),
-            observables=tuple(combined_observables),
-        ),
-    )
-
-
-def _parse_declaration_line(
-    line: str,
-    *,
-    instruction: str,
-    prefix: str,
-    coordinates: bool,
-    detector_shift: int,
-) -> int:
-    """Parse one ``detector [<coordinates>] D<i>`` declaration into ``i``.
-
-    Coordinates carry geometry the model does not represent, so a detector
-    declaration accepts them and discards them: the declared index is the
-    target, never the coordinate. A logical-observable declaration takes no
-    coordinates, which is the form the format itself accepts. A detector index
-    is relative to the shifts in force at that line.
-    """
-
-    remainder = line[len(instruction) :]
-    if coordinates and remainder.startswith("("):
-        closing = remainder.find(")")
-        if closing < 0:
-            raise ValueError(f"{instruction} coordinates must close in parentheses")
-        remainder = remainder[closing + 1 :]
-    tokens = remainder.split()
-    if len(tokens) != 1:
-        raise ValueError(
-            f"a {instruction} declaration must name exactly one {prefix} index"
-        )
-    index = _target_index(tokens[0], prefix)
-    if index is None:
-        raise ValueError(
-            f"a {instruction} declaration must name a {prefix} index, "
-            f"not {tokens[0]!r}"
-        )
-    return index + (detector_shift if prefix == _DETECTOR_PREFIX else 0)
-
-
-def _declared_count(declared: set[int], *, name: str, prefix: str) -> int:
-    """Return how many indices the text declared, refusing a hole.
-
-    The count may only come from the declarations, so a text that declares
-    ``D1`` without ``D0`` is malformed rather than a one-detector model that
-    happens to call its detector one.
-    """
-
-    count = len(declared)
-    if declared != set(range(count)):
-        raise ValueError(f"{name} declarations must be consecutive from {prefix}0")
-    return count
-
-
-def _parse_stim_text(
-    text: str, *, use_decomp_suggestions: bool = False
-) -> tuple[int, int, tuple[DemError, ...]]:
-    """Parse stim text into a model shape and its error mechanisms.
-
-    Only the instructions this model represents are accepted; every other
-    construct is refused with a stated reason, so a text that carries
-    information the model cannot hold fails closed instead of losing it.
-    ``use_decomp_suggestions`` decides whether a line's ``^`` groups are read as
-    one mechanism or as one mechanism each, which ``_parse_error_line`` states
-    in full.
-    """
-
-    declared_detectors: set[int] = set()
-    declared_observables: set[int] = set()
-    referenced_observables: set[int] = set()
-    detector_shift = 0
-    errors: list[DemError] = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        # The keyword is what precedes the first parenthesis, so the
-        # coordinates of ``detector(1, 2) D0`` belong to the body.
-        head = stripped.split("(", 1)[0].split()
-        keyword = head[0] if head else ""
-        if keyword == "error":
-            parsed = _parse_error_line(
-                stripped,
-                detector_shift=detector_shift,
-                decomposed=use_decomp_suggestions,
-            )
-            errors.extend(parsed)
-            for error in parsed:
-                referenced_observables.update(error.observables)
-        elif keyword == "detector":
-            declared_detectors.add(
-                _parse_declaration_line(
-                    stripped,
-                    instruction="detector",
-                    prefix=_DETECTOR_PREFIX,
-                    coordinates=True,
-                    detector_shift=detector_shift,
-                )
-            )
-        elif keyword == "logical_observable":
-            declared_observables.add(
-                _parse_declaration_line(
-                    stripped,
-                    instruction="logical_observable",
-                    prefix=_OBSERVABLE_PREFIX,
-                    coordinates=False,
-                    detector_shift=detector_shift,
-                )
-            )
-        elif keyword == "shift_detectors":
-            detector_shift += _parse_shift_detectors(stripped)
-        elif keyword == "repeat":
-            raise ValueError(
-                "repeat blocks are not supported: expand the block into the "
-                "instructions it repeats"
-            )
-        else:
-            raise ValueError(f"unsupported stim instruction {stripped!r}")
-    num_detectors = _declared_count(
-        declared_detectors, name="detector", prefix=_DETECTOR_PREFIX
-    )
-    # Stim declares the observable when no error mechanism references it and
-    # omits the declaration when one does, so at most one of these two sources
-    # has anything to say. A declared shape governs; the referenced indices
-    # govern only where there is no declaration to state the shape.
-    num_observables = (
-        _declared_count(
-            declared_observables, name="logical_observable", prefix=_OBSERVABLE_PREFIX
-        )
-        if declared_observables
-        else (max(referenced_observables) + 1 if referenced_observables else 0)
-    )
-    return num_detectors, num_observables, tuple(errors)
 
 
 @dataclass(frozen=True)
@@ -950,23 +638,42 @@ class DetectorErrorModel:
         line is refused with the combined reading named as the route that states
         it.
 
-        A ``repeat`` block is refused. Expanding one means interpreting a nested
-        instruction stream, and ``str(model.flattened())`` already states the
-        same instructions without the block, so this reader does not grow a
-        second implementation of the format. ``flatten_loops=True`` is not
-        equivalent: stim still emits a block for a long enough circuit.
+        A ``repeat <count> { ... }`` block is read by interpreting the block the
+        number of times its count states, so the shape, the mechanisms and the
+        accumulated ``shift_detectors`` offsets it produces are the ones its
+        instructions produce in sequence. The count is a run of ASCII digits:
+        ``repeat 0`` is legal and contributes nothing, while a signed or
+        non-numeric count is refused rather than guessed. Blocks nest, and an
+        inner block is drained inside the iteration that holds it. Reading a
+        block is therefore an expansion, which is the one cost this reader pays
+        that stim's own does not: stim keeps the block and expands it on demand.
+        The model either reader produces is the same, which
+        ``tests/qec/test_dem_stim_interop.py`` pins by parsing a text with its
+        blocks and the same text with ``stim``'s ``flattened()`` form and
+        requiring one model of the two.
 
-        What remains refused is a ``repeat`` block, a ``#`` comment, a
-        declaration that skips an index, and a malformed line. A developer-time
-        sweep of stim 1.16.0 over 240 detector error models -- repetition-code
-        and rotated-surface-code memory circuits, distances three, five and
-        seven, rounds one, two, three, five and nine, noisy and noise-free, with
-        and without decomposed errors -- parsed all 180 that carried no block,
-        agreeing with a re-read of the same text on the shape, on the error
-        count, and on every ``(probability, detectors, observables)`` mechanism.
-        The 60 refusals were all ``repeat`` blocks, all from
-        ``repetition_code:memory`` at five rounds or more. Every one of the same
-        240 models parsed when ``flattened()`` supplied the text.
+        A ``#`` comment is cut at the ``#`` wherever it sits and runs to the end
+        of its line, so a commented line states no instruction.
+
+        What remains refused is a declaration that skips an index, an error
+        mechanism that flips nothing, a closing brace with no block open, a block
+        that never closes, and a malformed line. Every refusal names what it
+        could not read rather than dropping the instruction, so a text carrying
+        information this model cannot state fails closed instead of being read
+        as a shorter model. One narrowing is deliberate rather than pending: the
+        detector count comes from the ``detector`` declarations, so a text that
+        states it only through its error targets -- ``error(0.1) D0``, which is
+        what stim writes for a flat one-detector circuit -- is read as a model
+        with no detector and refused by the model's own rule, where stim infers
+        the count from the targets. Reading the count off the largest index an
+        error names would accept a text that had lost its trailing detectors.
+        A developer-time sweep of stim 1.16.0 over 240 detector error models --
+        repetition-code and rotated-surface-code memory circuits, distances
+        three, five and seven, rounds one, two, three, five and nine, noisy and
+        noise-free, with and without decomposed errors -- parses all 240, sixty
+        of which carry a block, agreeing with a re-read of the same text on the
+        shape, on the error count, and on every
+        ``(probability, detectors, observables)`` mechanism.
 
         The printed text is the interchange format, so the printed value is the
         one this reader states. What that costs depends on which side wrote the
@@ -990,13 +697,20 @@ class DetectorErrorModel:
         bound against it.
         """
 
-        num_detectors, num_observables, errors = _parse_stim_text(
+        num_detectors, num_observables, entries = _parse_stim_text(
             text, use_decomp_suggestions=use_decomp_suggestions
         )
         return cls(
             num_detectors=num_detectors,
             num_observables=num_observables,
-            errors=errors,
+            errors=tuple(
+                DemError(
+                    probability=probability,
+                    detectors=detectors,
+                    observables=observables,
+                )
+                for probability, detectors, observables in entries
+            ),
         )
 
     @classmethod

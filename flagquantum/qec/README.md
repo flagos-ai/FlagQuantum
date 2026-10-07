@@ -341,6 +341,43 @@ of a matrix-built record is the matrix, so `get_code` still reaches the three
 declared records -- and it is CSS-shaped, so an arbitrary non-CSS stabilizer list
 still has no route in.
 
+## Read the text stim writes
+
+`DetectorErrorModel.from_stim_text(text)` reads the stim detector error model text
+without importing stim, and `DetectorErrorModel.to_stim_text()` writes it. The text
+stim prints for a memory experiment at five rounds or more states its repeated
+middles as a `repeat` block, and the reader interprets the block rather than
+refusing it:
+
+```python
+from flagquantum.qec import DetectorErrorModel
+
+model = DetectorErrorModel.from_stim_text(
+    "detector D0\n"
+    "detector D1\n"
+    "detector D2\n"
+    "detector D3\n"
+    "detector D4\n"
+    "repeat 3 {\n"
+    "    error(0.1) D0\n"
+    "    shift_detectors 2\n"
+    "}\n"
+)
+print([e.detectors for e in model.errors])  # [(0,), (2,), (4,)]
+```
+
+The block's `shift_detectors` advances once per iteration, which is what places the
+three copies at successive detectors, and `repeat 0` is legal and contributes
+nothing. Reading a block is an **expansion**, so a block costs what its count
+states — stim keeps the block and expands it on demand, and this reader does not.
+Whatever the block, this reader states no model it cannot hold: a declaration that
+skips an index, an error mechanism that flips nothing, a malformed line, a stray
+closing brace and a block that never closes are each refused with the reason
+named. One narrowing is deliberate. The detector count comes from the `detector`
+declarations, so a text that states it only through its error targets —
+`error(0.1) D0`, which is what stim prints for a flat one-detector circuit — is
+read as a model with no detector and refused, where stim would infer the count.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
@@ -713,8 +750,9 @@ decomposition, [registry.py](registry.py) for reaching either by name,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [css_code.py](css_code.py) for a code record built from
-parity-check matrices, [circuit.py](circuit.py) for detector and observable
-layouts, and [types.py](types.py) for records. Run from the repository root:
+parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
+[circuit.py](circuit.py) for detector and observable layouts, and
+[types.py](types.py) for records. Run from the repository root:
 
 ```bash
 python -m pytest tests/qec -q
