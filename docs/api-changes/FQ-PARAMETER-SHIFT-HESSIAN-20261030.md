@@ -100,9 +100,13 @@ The merged count is exact, and it is measured rather than derived:
 
 - **No root export.** `parameter_shift_hessian` is reachable as
   `fq.gradients.parameter_shift_hessian` and is **absent** from `fq.__all__` and
-  from the root namespace. `fq.__all__` stays at 37 (the count `origin/main`
-  reaches after the authorized `density_matrix` export) and `docs/public_api_v1.json`
-  is untouched, so this change needs no rule 8 authorization.
+  from the root namespace. `fq.__all__` is unchanged by this slice -- it reads the
+  40 names `origin/main` measures, after the authorized `density_matrix` export and
+  the three `N3-6` added -- and `docs/public_api_v1.json` is untouched, so this
+  change needs no rule 8 authorization. The count is recorded here as the merged
+  tree's reading rather than as the 37 the branch measured when it was written,
+  because a record that pinned the older number would be describing a tree that no
+  longer exists.
 - **No fifth gradient method.** `hessian` is not added to `_GRADIENT_METHODS`, and
   `fq.gradient(..., method="hessian")` is still refused. A second derivative is
   not a fifth way to compute a first one, and adding the name would turn both
@@ -120,7 +124,7 @@ The merged count is exact, and it is measured rather than derived:
 | Second derivative | absent | `fq.gradients.parameter_shift_hessian` |
 | Differentiable opcodes reachable | 14 | 14 (unchanged, read from the declaration) |
 | Serving modes | 5 | 5 (unchanged) |
-| Root surface | 37 exports | 37 exports (unchanged) |
+| Root surface | 40 exports | 40 exports (unchanged) |
 | `fq.gradient` methods | 5 | 5 (unchanged) |
 
 The existing behaviour of the first order is unchanged except in one place, and
@@ -170,8 +174,8 @@ preserving.
   every opcode whose declaration admits it, including ones added later.
 - Do not add `hessian` to `_GRADIENT_METHODS`. Both gradient contracts would go
   red, and the name would claim a second derivative is a first-order method.
-- Do not export the function from `fq`. The root surface stays at 37 exports and this
-  slice deliberately needs no authorization.
+- Do not export the function from `fq`. The root surface stays at the 40 exports
+  `main` measures and this slice deliberately needs no authorization.
 - Do not describe the matrix as symmetric "by construction" without saying what
   that means. It means equal mixed partials; it does not mean the two halves are
   bit-identical, and a test that asserted bit equality would fail on `u3`.
@@ -181,7 +185,8 @@ preserving.
 ## Compatibility
 
 - **No stable API changes.** `parameter_shift_hessian` is not in
-  `docs/public_api_v1.json`, `fq.__all__` is still 37 entries, and no signature,
+  `docs/public_api_v1.json`, `fq.__all__` still holds the 40 entries `main` had
+  before this branch merged it, and no signature,
   default, result field, or serialized schema moves. No change proposal is
   required and no API-owner approval is needed.
 - **`parameter_shift_gradient` gains refusals, not answers.** Every input it
@@ -252,9 +257,9 @@ Measured by the gate:
   unqualified `fq.Circuit` returns `float32` expectations. This sweep is a
   second derivative assembled from those expectations, and it is three orders of
   magnitude finer than `float32` can carry: re-reading the `u2`/`mps` cell with
-  the circuit left unqualified gives `1.7544981051331732e-07` against the pinned
-  reference and `0.030165275765790034` when the reference route is taken at
-  `float32` too. Neither is inside the bound. The witness program therefore pins
+  the circuit left unqualified gives `1.75e-07` against the pinned reference and
+  `0.030` when the reference route is taken at `float32` too. Neither is inside
+  the bound. The witness program therefore pins
   `complex128`, the contract names the dtype it pins, and the gate refuses a
   contract whose recorded dtype the witness does not actually use. Without that
   pinning the sweep would still have passed and the bound would have described
@@ -307,29 +312,45 @@ python -m pytest tests/unit/test_parameter_shift_hessian_contract.py -q
 python -m pytest tests/test_gradient_api.py tests/integration/test_gradient_modes.py -q
 ```
 
-The broader `python -m pytest -m "smoke or unit" -q` tier reports
-`11 failed, 7719 passed, 271 skipped, 2629 deselected`. All eleven failures are
-pre-existing: the identical ids fail on a pristine detached `origin/main`
-worktree (`0ebc710b2`), measured with the same interpreter. Seven of them were
-already failing at `8495a258d` before this branch merged `main` --
+The branch now merges `origin/main` at `b6f8890d2`, and that merge is itself the
+measurement that the three failures this slice was carrying were never its own.
+On `0b73885b` the `quality` job stopped at
+`tests/benchmark_contract/qiskit_lane.py:29: 'tomllib' needs the fallback form`,
+and `cpu-core` failed two tests that have nothing to do with gradients:
+`tests/unit/test_circuit_control.py::test_control_is_a_method_and_not_a_root_export`
+and
+`tests/unit/test_dependency_policy.py::test_collected_modules_guard_every_optional_reference`.
+All three are repaired on `main` -- by `4858229c` (#566), #552, and #560
+respectively -- so merging `main` removes them rather than working around them.
+
+The broader `python -m pytest -m "smoke or unit" -q` tier on the merged tree
+reports `11 failed, 8304 passed, 237 skipped`. All eleven failures are
+pre-existing, measured with the same interpreter: the identical eleven ids fail on
+a pristine detached `origin/main` worktree (`11 failed, 8225 passed, 237 skipped`),
+and the two failure lists are equal id for id. Two of them are
+`tests/unit/test_construction_acceptance.py`'s
+`test_the_census_is_a_partition_of_the_declared_family` and
+`test_acceptance_added_no_public_surface`, which fail on `main` too because
+`contracts/construction-acceptance-contract.toml` records
+`measured_root_export_count = 37` while `fq.__all__` has 40 -- a different slice's
+stale census, repaired in
+[#594](https://github.com/flagos-ai/FlagQuantum/pull/594) and picked up here in
+this branch's next `main` merge. The remaining nine were already failing at
+`8495a258d` before this branch merged `main` --
 `test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]`
 and `[dtype1]`, `test_product_state_qft_uses_hadamard_phase_fusion`,
 `test_native_fused_rotation_layer_only_promotes_terminal_regions`,
 `test_compact_cx_runtime_threshold_and_rollback`, and four chunking cases in
-`tests/unit/test_statevector_batch_chunking.py`. The other two arrive with
-`main` itself (merged by #552 and #560) and fail there:
-`tests/unit/test_circuit_control.py::test_control_is_a_method_and_not_a_root_export`
-and
-`tests/unit/test_dependency_policy.py::test_collected_modules_guard_every_optional_reference`
-(open PRs #569 and #578 are the fixes for those two). None of the eleven reads
+`tests/unit/test_statevector_batch_chunking.py`. None of the eleven reads
 `flagquantum/gradients.py`.
 
-`python -m mypy flagquantum` reports the same **five** errors on this branch and
-on a pristine `origin/main` with a cold cache -- two `sched_getaffinity` errors
-in `flagquantum/benchmarking/socket_local_throughput.py`, one `ndarray.min`
-overload error in `flagquantum/simulation/jax/mps/batched.py`, and two
-`var-annotated` errors in `flagquantum/runtime/executors/jax/mps/pullbacks.py`.
-`flagquantum/gradients.py` itself is clean, and the earlier
+`python -m mypy --strict --python-version 3.12 --ignore-missing-imports
+flagquantum` reports the same error set on this branch and on pristine
+`origin/main` -- equal once line numbers are removed -- with
+`flagquantum/gradients.py` contributing none of it. The locally installed
+`matplotlib` stubs add errors the CI runner does not have (22 locally, zero
+there), which is why the claim is stated as equality with `main` rather than as a
+count. The earlier
 `Argument 1 to "stack" has incompatible type "list[Tensor | None]"` error this
 change introduced was fixed rather than suppressed.
 
