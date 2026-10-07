@@ -72,6 +72,40 @@ REFERENCE_TOLERANCE = 1e-12
 NOISE_PROBABILITY = 0.05
 NOISE_GATE = "cx"
 
+#: The precision the noisy axis is measured at, which is the reference program's own.
+#: A channel is a tuple of Kraus operators whose coefficients are rounded once, when the
+#: channel is built, and every downstream number inherits that rounding. Built at
+#: `complex64`, those coefficients are float32 and the noisy gradient moves by `5.2e-08`
+#: even on a platform whose float32 square root rounds the same way as this one -- `5e04`
+#: times `REFERENCE_TOLERANCE`, and on the other side of it when the square root lands one
+#: ulp differently. That is not a worry, it is what happened: an earlier recording of this
+#: block came from a float32 channel, and the platform that disagreed read `7.6e-08` away
+#: from the float64 answer. Rebuilding that channel with `sqrt(1 - p)` moved up a single
+#: float32 ulp reproduces the four CI failures to `8e-17`. At `complex128` the
+#: coefficients carry float64 rounding, `1e-16` relative, so the numbers below are a
+#: property of the program rather than of the platform.
+NOISE_DTYPE = torch.complex128
+
+#: The dtype the channel's probability is read at. `depolarizing_channel` runs the value
+#: through `torch.as_tensor`, whose default dtype is `torch.float32`, so a bare `0.05`
+#: reaches the channel as `0.05000000074505806` even when the channel is built at
+#: `complex128`. Stating it as a float64 tensor is what makes the contract's
+#: `channel_probability = 0.05` mean the same number here as it does there, and it is
+#: worth `5.6e-10` of the noisy gradient -- 560 times the tolerance it is compared at.
+NOISE_PROBABILITY_DTYPE = torch.float64
+
+#: The step a float64 `finite_difference` run reports: the cube root of the loss dtype's
+#: epsilon. `_accuracy_errors` asserts it, and the noisy axis's agreement floor is
+#: derived from it rather than from a number either file can edit.
+FINITE_DIFFERENCE_STEP = 6.055454452393343e-06
+
+#: How many roundings of a loss evaluation the difference quotient's floor covers. The
+#: quotient is `(L(+step) - L(-step)) / (2 * step)`, so each evaluation rounds once and
+#: the subtraction rounds once: `2 * eps * |L| / step` is the floor such a quotient cannot
+#: go below. The factor of two on top covers the arithmetic between the state and the
+#: reported expectation, which accumulates across the density matrix.
+_DIFFERENCE_QUOTIENT_ROUNDINGS = 4.0
+
 
 def _build_reference(parameters: torch.Tensor) -> fq.Circuit:
     return (
@@ -84,7 +118,21 @@ def _build_reference(parameters: torch.Tensor) -> fq.Circuit:
 
 
 def _noise_model() -> NoiseModel:
-    return NoiseModel().add(NOISE_GATE, depolarizing_channel(NOISE_PROBABILITY))
+    """The reference noise, built at a stated probability *and* a stated precision.
+
+    Both arguments matter. Without `dtype=`, the channel takes its precision from the
+    process-wide runtime config, so a bare `depolarizing_channel(0.05)` is float32 in one
+    process and float64 in another and the two disagree at `1e-07`. Without a float64
+    probability tensor, the value is read at `torch.get_default_dtype()`. Stating both
+    puts the channel's rounding at `1e-16` relative, which is what lets the recorded
+    gradient below be compared at `REFERENCE_TOLERANCE` -- a comparison that a float32
+    channel fails by four orders of magnitude.
+    """
+
+    probability = torch.tensor(NOISE_PROBABILITY, dtype=NOISE_PROBABILITY_DTYPE)
+    return NoiseModel().add(
+        NOISE_GATE, depolarizing_channel(probability, dtype=NOISE_DTYPE)
+    )
 
 
 class _Counter:
@@ -94,6 +142,9 @@ class _Counter:
         self.mode = mode
         self.noise = noise
         self.calls = 0
+        #: The largest loss magnitude seen. The difference quotient's roundoff floor is
+        #: proportional to it, so it is measured where the loss is evaluated.
+        self.loss_scale = 0.0
 
     def __call__(self, circuit: fq.Circuit) -> torch.Tensor:
         self.calls += 1
@@ -103,7 +154,9 @@ class _Counter:
             outputs=fq.expectation(fq.Z(0)),
             noise_model=self.noise,
         )
-        return result.expectations[0]
+        value = result.expectations[0]
+        self.loss_scale = max(self.loss_scale, abs(float(value.detach())))
+        return value
 
 
 def _load_contract(path: Path = CONTRACT) -> dict[str, Any]:
@@ -294,7 +347,9 @@ def _reference_errors(
     return errors, measured
 
 
-def _noise_reference_errors(contract: dict[str, Any]) -> list[str]:
+def _noise_reference_errors(
+    contract: dict[str, Any], unnoisy: torch.Tensor | None
+) -> list[str]:
     """The `[noise]` block is one measurement, so it is measured once."""
 
     errors: list[str] = []
@@ -313,6 +368,21 @@ def _noise_reference_errors(contract: dict[str, Any]) -> list[str]:
         errors.append(
             "gradient methods noise.channel_probability differs from the gate's model"
         )
+    recorded_dtype = noise.get("channel_dtype")
+    model = _noise_model()
+    built_dtype = model.rules[0].channel.kraus[0].dtype
+    if built_dtype != NOISE_DTYPE:
+        errors.append(
+            f"gradient methods the gate built its noisy channel at {built_dtype!r}, not "
+            f"at the stated {NOISE_DTYPE!r}"
+        )
+    # The precision the contract records and the precision the axis was measured at are
+    # the same claim, so they are compared to each other rather than to a constant each.
+    if recorded_dtype != str(built_dtype).removeprefix("torch."):
+        errors.append(
+            f"gradient methods noise.channel_dtype is {recorded_dtype!r} but the gate "
+            f"measured the noisy axis at {built_dtype!r}"
+        )
     for flag in (
         "noise_narrows_the_reachable_mode_set",
         "noise_does_not_change_the_reported_method",
@@ -330,7 +400,7 @@ def _noise_reference_errors(contract: dict[str, Any]) -> list[str]:
         fq.gradient(
             _build_reference,
             REFERENCE_PARAMETERS,
-            _Counter(mode, _noise_model()),
+            _Counter(mode, model),
             method=method,
         )
         .gradient.detach()
@@ -345,61 +415,114 @@ def _noise_reference_errors(contract: dict[str, Any]) -> list[str]:
     for index, (left, right) in enumerate(
         zip(recorded, measured.tolist(), strict=False)
     ):
-        if abs(float(left) - float(right)) > 1e-12:
+        if abs(float(left) - float(right)) > REFERENCE_TOLERANCE:
             errors.append(
                 f"gradient methods noisy_reference_gradient[{index}] is {float(left)!r} but "
                 f"the noisy program produces {float(right)!r}"
             )
+
+    # `autograd` and `parameter_shift` are both exact, so their agreement is a precision
+    # claim rather than an approximation's, and it is held to the same tolerance as the
+    # unnoisy axis. The measurement itself is one rounding of a float64 loss, so the
+    # tolerance has four orders of margin rather than a machine's worth.
+    exact_spread = _measured_noisy_exact_spread()
+    recorded_exact = noise.get("noisy_exact_methods_max_spread")
+    if not isinstance(recorded_exact, (int, float)):
+        errors.append(
+            "gradient methods noise records no exact-method cross-method spread"
+        )
+    elif abs(float(recorded_exact) - exact_spread) > REFERENCE_TOLERANCE:
+        errors.append(
+            f"gradient methods noise.noisy_exact_methods_max_spread is "
+            f"{float(recorded_exact)!r} but the two exact noisy methods differ by "
+            f"{exact_spread!r}"
+        )
+
+    # `finite_difference` is an approximation, so the widest noisy disagreement is the
+    # step's own floor rather than a second measurement of the derivatives. The gate
+    # re-measures it and holds it, and the recorded number, to a floor derived from the
+    # step and the loss scale -- not to a tolerance either file can widen.
     spread = noise.get("noisy_cross_method_max_spread")
-    # A spread is a claim about agreement, so it is re-measured rather than range-checked:
-    # a number nobody recomputes can drift into a disagreement nobody notices.
     if not isinstance(spread, (int, float)):
         errors.append("gradient methods noise records no cross-method spread")
     else:
-        measured_spread = _measured_noisy_spread()
-        if abs(float(spread) - measured_spread) > 1e-14:
+        measured_spread, floor = _measured_noisy_spread()
+        if measured_spread > floor:
+            errors.append(
+                f"gradient methods the noisy methods differ by {measured_spread!r}, above "
+                f"the {floor!r} roundoff floor of the "
+                f"{FINITE_DIFFERENCE_STEP!r} finite-difference step"
+            )
+        elif abs(float(spread) - measured_spread) > floor:
             errors.append(
                 f"gradient methods noise.noisy_cross_method_max_spread is {float(spread)!r} "
-                f"but the noisy methods differ by {measured_spread!r}"
+                f"but the noisy methods differ by {measured_spread!r}, beyond the {floor!r} "
+                "roundoff floor of the finite-difference step"
             )
+
     delta = noise.get("noisy_minus_unnoisy_gradient")
     if not isinstance(delta, list) or len(delta) != measured.numel():
         errors.append(
             "gradient methods noise records no noisy-minus-unnoisy difference"
         )
+    elif unnoisy is not None:
+        for index, (left, right) in enumerate(
+            zip(delta, (measured - unnoisy).tolist(), strict=True)
+        ):
+            if abs(float(left) - float(right)) > REFERENCE_TOLERANCE:
+                errors.append(
+                    f"gradient methods noisy_minus_unnoisy_gradient[{index}] is "
+                    f"{float(left)!r} but the two axes differ by {float(right)!r}"
+                )
     return errors
 
 
-def _measured_noisy_spread() -> float:
-    """The widest disagreement among the noisy deterministic methods, measured."""
+def _noisy_gradient(method: str) -> tuple[torch.Tensor, _Counter]:
+    """One noisy method's gradient in the reference cell, with its loss counter."""
 
-    reference = (
-        fq.gradient(
-            _build_reference,
-            REFERENCE_PARAMETERS,
-            _Counter("density_matrix", _noise_model()),
-            method="parameter_shift",
-        )
-        .gradient.detach()
-        .reshape(-1)
-    )
+    counter = _Counter("density_matrix", _noise_model())
+    result = fq.gradient(_build_reference, REFERENCE_PARAMETERS, counter, method=method)
+    return result.gradient.detach().reshape(-1), counter
+
+
+def _measured_noisy_exact_spread() -> float:
+    """The disagreement between the two noisy methods that are exact."""
+
+    reference, _ = _noisy_gradient("parameter_shift")
+    candidate, _ = _noisy_gradient("autograd")
+    return float((reference - candidate).abs().max())
+
+
+def _measured_noisy_spread() -> tuple[float, float]:
+    """The widest disagreement among the noisy methods, and the floor it must respect.
+
+    The floor is the difference quotient's own roundoff: `finite_difference` differences
+    two loss evaluations and divides by `2 * step`, so it cannot resolve better than
+    `2 * eps * |L| / step`, and `_DIFFERENCE_QUOTIENT_ROUNDINGS` doubles that again for
+    the arithmetic around the evaluations. On the reference program that is `9.2e-11`
+    against a measured disagreement of `1.7e-11`, which is why the disagreement cannot be
+    compared to a recorded number at `1e-14`: it is the step's artifact, and it moves when
+    the step's arithmetic does.
+    """
+
+    reference, _ = _noisy_gradient("parameter_shift")
     results = []
+    loss_scale = 0.0
     for method in ("autograd", "finite_difference"):
-        candidate = (
-            fq.gradient(
-                _build_reference,
-                REFERENCE_PARAMETERS,
-                _Counter("density_matrix", _noise_model()),
-                method=method,
-            )
-            .gradient.detach()
-            .reshape(-1)
-        )
+        candidate, counter = _noisy_gradient(method)
+        loss_scale = max(loss_scale, counter.loss_scale)
         results.append(candidate)
-    return max(
+    spread = max(
         [float((reference - candidate).abs().max()) for candidate in results]
         + [float((results[0] - results[1]).abs().max())]
     )
+    floor = (
+        _DIFFERENCE_QUOTIENT_ROUNDINGS
+        * torch.finfo(torch.float64).eps
+        * loss_scale
+        / FINITE_DIFFERENCE_STEP
+    )
+    return spread, float(floor)
 
 
 def _rule_errors(contract: dict[str, Any]) -> list[str]:
@@ -737,7 +860,7 @@ def _accuracy_errors(
             f"gradient methods finite_difference deviates {deviation:.3e}, far above the "
             f"recorded {float(recorded):.3e}"
         )
-    if result.step != 6.055454452393343e-06:
+    if result.step != FINITE_DIFFERENCE_STEP:
         errors.append(
             f"gradient methods finite_difference step is {result.step!r} for float64, not the "
             "cube root of the loss dtype's epsilon"
@@ -899,7 +1022,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     errors.extend(_cell_shape_errors(contract, "noise_cells"))
     reference_errors, measured = _reference_errors(contract)
     errors.extend(reference_errors)
-    errors.extend(_noise_reference_errors(contract))
+    errors.extend(_noise_reference_errors(contract, measured))
     errors.extend(_accuracy_errors(contract, measured))
     errors.extend(_cost_errors(contract))
     errors.extend(_resolution_errors(contract))

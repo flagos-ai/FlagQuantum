@@ -51,7 +51,8 @@ drift from the implementation without a failure.
   sixty cells, and compares each measured verdict, reported method, and exactness with
   the recorded one. It also reads the two vocabularies out of the implementation, checks
   every refusal phrase against the file it names, re-counts loss evaluations, reproduces
-  all three `auto` resolutions, and measures both halves of the recorded reframing.
+  all three `auto` resolutions, measures both halves of the recorded reframing, and holds
+  the noisy axis to the precision and the step it records.
 - `tests/unit/test_gradient_methods_contract.py`: the file's internal consistency and
   the refusal vocabulary, plus a mutation per clause requiring the gate to name it.
 - `.github/workflows/ci.yml` and `tools/pre_push.py`: the gate is invoked by both.
@@ -151,7 +152,9 @@ The plan predicted a `noisy_density_matrix` column. There is no such mode. Noise
 `noise_model=` argument to `fq.run`; `ExecutionOptions` has no noise field, and
 `NoiseModel` is not a root export at all. A noisy program is therefore a *different
 program*, not a different column, and the file carries it as a second axis of thirty
-cells measured under `NoiseModel().add("cx", depolarizing_channel(0.05))`.
+cells measured under
+`NoiseModel().add("cx", depolarizing_channel(torch.tensor(0.05, dtype=torch.float64), dtype=torch.complex128))`
+-- the reference program's own precision, stated rather than inherited.
 
 What that axis measures is that **noise narrows the reachable mode set to two**:
 
@@ -168,15 +171,48 @@ method is unchanged by noise, so the second axis is a second measurement of the 
 and not a second dispatch table.
 
 The noisy reference gradient is
-`[-1.943050739368e-01, -5.290712169961e-01, 2.655714218122e-01]`, i.e.
-`[1.388e-02, 3.779e-02, -1.897e-02]` from the unnoisy one. The three deterministic
-noisy methods differ by at most `1.135e-11`, but that spread is `finite_difference`'s
-displacement rather than a disagreement about the derivative: `parameter_shift` and
-`autograd` agree to `1.110e-16`, and each differs from `finite_difference` by the
-`1.135e-11`. Both numbers are recorded so that a reader can neither mistake the noisy
-rows for a repeat of the unnoisy ones nor read the spread as an accuracy claim for the
-shift rule. The gate recomputes the spread, because a number nobody re-derives is how a
-disagreement goes unnoticed.
+`[-1.9430509291292702e-01, -5.290712686660374e-01, 2.6557144774835423e-01]`, i.e.
+`[1.387893520806624e-02, 3.779080490471731e-02, -1.8969389124882496e-02]` from the
+unnoisy one.
+
+The axis records the precision it was measured at -- `channel_dtype = "complex128"` --
+and that field is not decoration. A channel is a tuple of Kraus operators whose
+coefficients are rounded once, when the channel is built, and every downstream number
+inherits that rounding. Built at the runtime's default `complex64` they are float32, and
+the same program then reads up to `7.6e-08` away from this recording: `7.6e04` times the
+`1e-12` the reference gradient is compared at. That is not hypothetical, it is what
+happened -- an earlier recording of this block came from a float32 channel, and all four
+CI jobs that read it failed on the same three components with the same numbers. The
+disagreement was a single ulp: on the platform that disagreed, `sqrt(1 - p)` in float32
+landed one step above the correctly rounded value, and reconstructing that one-ulp channel
+reproduces those reported numbers to `8e-17`. At `complex128` the coefficients carry
+float64 rounding, `1e-16` relative, so the numbers above are a property of the program.
+The gate compares the recorded precision against the precision of the channel it actually
+built, so a fallback to the runtime default fails rather than quietly producing a
+different gradient.
+
+The probability is stated the same way and for the same reason:
+`depolarizing_channel` reads a value through `torch.as_tensor`, whose default dtype is
+`float32`, so a bare `0.05` arrives as `0.05000000074505806` even at `complex128` and is
+worth `5.6e-10` of the gradient -- 560 times the tolerance. Handing over a float64 tensor
+is what makes the file's `channel_probability = 0.05` mean `0.05`.
+
+The three deterministic noisy methods differ by at most `1.6954215809050766e-11`, but
+that spread is `finite_difference`'s displacement rather than a disagreement about the
+derivative: `parameter_shift` and `autograd` are both exact and agree to
+`1.6653345369377348e-16`, and each differs from `finite_difference` by the larger
+number. The two claims are therefore enforced differently, because they are different
+kinds of claim. The exact pair's agreement is held to `1e-12`, four orders above its own
+`1e-16` measurement. The cross-method spread is held to the floor its step implies --
+`2 * eps * |L| / step`, about `4.6e-11` for the `6.055454452393343e-06` step and the
+`0.628`-magnitude loss, and the gate allows twice that, `9.2e-11`, for the arithmetic
+around the two evaluations. A difference quotient's roundoff is a floor, not a
+nuisance: `1.135e-11` recorded from one build and `1.731e-11` measured on CI are the same
+statement about the same three methods, and comparing either at `1e-14` measured a
+platform's arithmetic rather than the program. The gate re-measures the spread, requires
+the measurement to stay inside the floor, and requires the recording to be within the
+floor of the measurement, so a spread stated orders of magnitude away from what the
+methods do is still a failure.
 
 ### `auto` is a policy, not a dispatch entry
 
@@ -313,6 +349,18 @@ method is not, and the contract says so before the run rather than after it.
    default is `8.514e-01` deviation from the exact gradient, which is far from useful,
    while `directions=4` costs six more evaluations and moves the median to `2.845e-01`.
    The default is a deliberate user choice, but it is not a documented one.
+4. **Should `depolarizing_channel` inherit the program's precision instead of the
+   runtime default?** `depolarizing_channel(probability, dtype=None)` reads the
+   process-wide `RuntimeConfig.complex_dtype`, so the same `NoiseModel` yields float32
+   Kraus coefficients in one process and float64 in another, and a noisy derivative
+   moves by `1e-07` between them. Noisy execution itself promotes the coefficients to
+   the state's precision, so nothing downstream is float32 once the program is
+   `complex128` -- but the coefficients were already rounded when the channel was built,
+   and that rounding is not recoverable. This gate survives it by stating
+   `channel_dtype` and a float64 probability explicitly; a user has no equivalent
+   signal, and a channel built at one precision cannot be compared with one built at
+   another. A fix belongs to `flagquantum/noise/**`, and would need to decide whether the
+   default follows the circuit or keeps the runtime configuration.
 
 ## Owner and approvals
 

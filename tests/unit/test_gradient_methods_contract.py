@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import torch
 
 try:
     import tomllib
@@ -381,8 +382,67 @@ def test_the_gate_refuses_a_misstated_noisy_cross_method_spread() -> None:
     """A spread is a claim about agreement, so the gate re-measures rather than trusts."""
 
     contract = _contract()
-    contract["noise"]["noisy_cross_method_max_spread"] = 1e-30
+    contract["noise"]["noisy_cross_method_max_spread"] = 1e-06
     assert any("cross_method_max_spread" in error for error in _errors(contract))
+
+
+def test_the_gate_tolerates_a_noisy_spread_within_the_step_floor() -> None:
+    """A spread inside the difference quotient's roundoff is not a claim the gate can refute.
+
+    This is a deliberate boundary rather than an oversight, and it is why the mutation
+    above loosens the recorded spread instead of tightening it: `finite_difference`'s
+    displacement sets the quantity, so a platform may measure anywhere between zero and
+    the floor, and the gate holds the recorded number to the floor rather than to a
+    bit-exact match. What the boundary must not do is let a *loose* recording through,
+    which the mutation above covers. The floor itself is asserted separately, so a real
+    disagreement between the methods still fails.
+    """
+
+    contract = _contract()
+    contract["noise"]["noisy_cross_method_max_spread"] = 0.0
+    assert not [
+        error for error in _errors(contract) if "cross_method_max_spread" in error
+    ]
+
+
+def test_the_gate_refuses_a_misstated_noisy_exact_method_spread() -> None:
+    """The two exact methods' agreement is a precision claim, so it is checked tightly."""
+
+    contract = _contract()
+    contract["noise"]["noisy_exact_methods_max_spread"] = 1e-03
+    assert any("exact_methods_max_spread" in error for error in _errors(contract))
+
+
+def test_the_gate_refuses_a_noise_precision_the_axis_was_not_measured_at() -> None:
+    """The recorded precision and the measured one are the same claim."""
+
+    contract = _contract()
+    contract["noise"]["channel_dtype"] = "complex64"
+    assert any("channel_dtype" in error for error in _errors(contract))
+
+
+def test_the_gate_refuses_a_noisy_gradient_measured_at_a_lower_precision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A float32 channel moves the noisy gradient by `5e-08`, far outside the tolerance.
+
+    This is the disagreement the contract was corrected for: the same program measured
+    with a `complex64` channel reads a different gradient on every platform that rounds
+    the channel's square roots differently, so the noisy axis is measured at the
+    reference program's own precision and this mutation reproduces the failure.
+    """
+
+    monkeypatch.setattr(_GATE, "NOISE_DTYPE", torch.complex64)
+    errors = _errors(_contract())
+    assert any("noisy_reference_gradient" in error for error in errors)
+
+
+def test_the_gate_refuses_a_misstated_noisy_minus_unnoisy_difference() -> None:
+    """The difference between the two axes is measured, not only length-checked."""
+
+    contract = _contract()
+    contract["noise"]["noisy_minus_unnoisy_gradient"][0] = 0.0
+    assert any("noisy_minus_unnoisy_gradient" in error for error in _errors(contract))
 
 
 def test_the_gate_refuses_a_misstated_spsa_cost() -> None:

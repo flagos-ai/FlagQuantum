@@ -35,6 +35,15 @@
 # program, not a different mode. Its measured shape is narrower than the unnoisy one --
 # only `auto` and `density_matrix` serve -- and that is the most consequential fact this
 # file carries, so it is recorded per cell rather than summarized.
+#
+# Every number in `[noise]` is a measurement at a stated precision and a stated step,
+# because those two things are what make it reproducible. A channel's Kraus coefficients
+# are rounded once, when the channel is built, so a `complex64` channel moves the noisy
+# gradient by 5.2e-08 and a float32 probability moves it by 5.6e-10 -- both far outside
+# the 1e-12 this block is compared at. The exact methods' agreement is therefore a
+# precision claim and is held to 1e-12; the spread that includes `finite_difference` is
+# the step's own roundoff, and is held to a floor derived from that step and from the
+# measured loss scale rather than to a literal.
 
 schema = "flagquantum_gradient_methods_contract_v1"
 maturity = "development_evidence"
@@ -575,20 +584,44 @@ refusal = "noisy_execution_needs_auto_or_density_matrix"
 [noise]
 channel = "depolarizing"
 channel_probability = 0.05
+# The precision the noisy axis is measured at, which is the reference program's own. A
+# channel's Kraus coefficients are rounded once, when the channel is built, and every
+# downstream number inherits that rounding. Built at `complex64` -- the runtime default --
+# they are float32, and the noisy gradient moves by 5.2e-08 even where the platform's
+# float32 square root rounds like this one, which is 5e04 times the 1e-12 the reference
+# gradient is compared at. That is how this block first failed: a float32 channel on a
+# platform whose `sqrt(1 - p)` landed one ulp high produced a gradient 7.6e-08 from the
+# float64 answer, on the other side of it, and the disagreement reached all four CI jobs
+# that read this block. At `complex128` the coefficients carry float64 rounding, 1e-16
+# relative, so this block measures the program rather than a platform's float32
+# arithmetic. The gate builds its channel at exactly this dtype and holds this field
+# against the dtype it actually built.
+channel_dtype = "complex128"
 attached_to_gate = "cx"
 reference_mode = "density_matrix"
 reference_method = "parameter_shift"
-noisy_reference_gradient = [-1.943050739368e-01, -5.290712169961e-01, 2.655714218122e-01]
+noisy_reference_gradient = [-1.9430509291292702e-01, -5.290712686660374e-01, 2.6557144774835423e-01]
+# `autograd` and `parameter_shift` are both exact, so their agreement under noise is a
+# precision claim rather than an accuracy claim, and the gate holds it to the same 1e-12
+# it holds the unnoisy reference gradient to. One rounding on the reference program.
+noisy_exact_methods_max_spread = 1.6653345369377348e-16
 # The largest disagreement between any two of the three deterministic noisy methods, in
-# the noisy reference cell (`density_matrix`). It is set by `finite_difference`'s
-# displacement and not by `parameter_shift`: the two exact methods agree to 1.110e-16
-# and `autograd` differs from `finite_difference` by this much. Recorded so that "the
-# noisy methods agree" is a measured number rather than an impression, and so nobody
-# reads it as an accuracy claim for the shift rule.
-noisy_cross_method_max_spread = 1.135e-11
+# the noisy reference cell (`density_matrix`), which includes `finite_difference`. The two
+# exact methods agree to one rounding, so this number is the difference quotient's own
+# roundoff and not a disagreement about the derivative, nor an accuracy claim for the
+# shift rule. Its natural scale is `2 * eps * |L| / step` -- the two evaluations and
+# their difference, divided by the 6.055454452393343e-06 step, which is 4.6e-11 for this
+# program's 0.628-magnitude loss -- and the gate allows twice that, 9.2e-11, for the
+# arithmetic around the evaluations. The consequence is deliberate: the gate re-measures
+# the spread and requires both the measurement and this recording to fall inside that
+# floor, so a spread stated orders of magnitude away from what the methods do is a
+# failure, while a spread that moved by a few 1e-12 between platforms is not. Comparing
+# this number bit-exactly, as an earlier revision of the gate did at 1e-14, measures a
+# platform's arithmetic rather than the program's behaviour.
+noisy_cross_method_max_spread = 1.6954215809050766e-11
 # The measured difference between the two axes at the same mode and method. Recorded so
 # that a reader cannot mistake the noisy rows for a repeat of the unnoisy ones.
-noisy_minus_unnoisy_gradient = [1.388e-02, 3.779e-02, -1.897e-02]
+noisy_minus_unnoisy_gradient = [1.387893520806624e-02, 3.779080490471731e-02, -1.8969389124882496e-02]
 noise_narrows_the_reachable_mode_set = true
 noise_does_not_change_the_reported_method = true
 
