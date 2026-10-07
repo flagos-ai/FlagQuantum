@@ -181,6 +181,60 @@ def _instruction_signature(circuit: fq.Circuit) -> tuple[Any, ...]:
     )
 
 
+#: The observable facts a route comparison reads. Declared once, so a contract that names a
+#: measure this gate cannot compute is reported rather than silently skipped.
+_ROUTE_CHECKS = ("to_dict", "content_hash", "n_wires", "instruction_signature")
+
+
+def _compare_routes(composed: fq.Circuit, hand: fq.Circuit) -> dict[str, bool]:
+    """The four facts that say two construction routes built one program.
+
+    The placement claim, the control claim, and the power claim are all this comparison,
+    so it is written once here rather than once per member under three names.
+    """
+
+    composed_ir, hand_ir = composed.to_ir(), hand.to_ir()
+    return {
+        "to_dict": composed_ir.to_dict() == hand_ir.to_dict(),
+        "content_hash": composed_ir.content_hash == hand_ir.content_hash,
+        "n_wires": hand_ir.n_wires == composed_ir.n_wires,
+        "instruction_signature": _instruction_signature(composed)
+        == _instruction_signature(hand),
+    }
+
+
+def _route_section_errors(section_name: str, section: dict[str, Any]) -> list[str]:
+    """A route claim's shape: exact identity, over measures this gate can read."""
+
+    errors: list[str] = []
+    if section.get("route_identity") != "exact":
+        errors.append(f"{section_name}.route_identity must be exact")
+    measures = tuple(section.get("measures", ()))
+    if not measures:
+        errors.append(
+            f"{section_name}.measures is empty, so this gate would compare nothing"
+        )
+    for name in measures:
+        if name not in _ROUTE_CHECKS:
+            errors.append(
+                f"{section_name} measures {name!r}, which this gate cannot read"
+            )
+    return errors
+
+
+def _route_differs(
+    label: str, measured: tuple[str, ...], composed: fq.Circuit, hand: fq.Circuit
+) -> list[str]:
+    """Every declared measure on which the two routes are not the same program."""
+
+    checks = _compare_routes(composed, hand)
+    return [
+        f"{label}: the composed route's {name} differs from the hand-built route's"
+        for name in measured
+        if name in checks and not checks[name]
+    ]
+
+
 def _census_errors(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     subject = contract.get("subject", {})
@@ -312,14 +366,9 @@ def _control_errors(contract: dict[str, Any]) -> list[str]:
     hand-built placement then `control` -- are one program.
     """
 
-    errors: list[str] = []
     section = contract.get("control_acceptance", {})
-    if section.get("route_identity") != "exact":
-        errors.append("control_acceptance.route_identity must be exact")
-    if not section.get("measures"):
-        errors.append(
-            "control_acceptance.measures is empty, so this gate would compare nothing"
-        )
+    errors = _route_section_errors("control_acceptance", section)
+    measured = tuple(section.get("measures", ()))
     rows = list(contract.get("control_placement", ()))
     if not rows:
         errors.append("the contract lists no control placement to measure")
@@ -375,25 +424,8 @@ def _control_errors(contract: dict[str, Any]) -> list[str]:
             n_controls, ctrl_qubits=list(ctrl_qubits)
         )
 
-        composed_ir, hand_ir = composed_route.to_ir(), hand_route.to_ir()
-        checks = {
-            "to_dict": composed_ir.to_dict() == hand_ir.to_dict(),
-            "content_hash": composed_ir.content_hash == hand_ir.content_hash,
-            "n_wires": hand_ir.n_wires == composed_ir.n_wires,
-            "instruction_signature": _instruction_signature(composed_route)
-            == _instruction_signature(hand_route),
-        }
-        for name in section.get("measures", ()):
-            if name not in checks:
-                errors.append(
-                    f"control_acceptance measures {name!r}, which this gate cannot read"
-                )
-                continue
-            if not checks[name]:
-                errors.append(
-                    f"{label}: the composed route's {name} differs from the hand-built "
-                    "route's"
-                )
+        errors += _route_differs(label, measured, composed_route, hand_route)
+        composed_ir = composed_route.to_ir()
         expected_width = max(ctrl_qubits) + 1
         if composed_ir.n_wires != expected_width:
             errors.append(
@@ -408,6 +440,92 @@ def _control_errors(contract: dict[str, Any]) -> list[str]:
             errors.append(
                 f"{label}: the controlled program is no larger than its receiver, so "
                 "nothing was controlled"
+            )
+    return errors
+
+
+def _power_errors(contract: dict[str, Any]) -> list[str]:
+    """Re-measure the fourth construction member on the same claim as the third.
+
+    `power`'s semantics are contracted in `circuit-composition-contract.toml` and are not
+    restated here. What is measured here is the claim this contract exists for: the two
+    routes that build a powered program -- `compose` then `power`, and the hand-built
+    placement then `power` -- are one program.
+    """
+
+    section = contract.get("power_acceptance", {})
+    errors = _route_section_errors("power_acceptance", section)
+    measured = tuple(section.get("measures", ()))
+    # The rewrite is the one part of this claim the gate cannot measure, because it needs a
+    # single-instruction receiver the contracted block cannot supply. It is contracted as a
+    # test's job, so a name that no longer exists would be a claim nothing measures.
+    rewrite_test = section.get("single_instruction_rewrite_measured_in")
+    test_path = contract.get("verification", {}).get("contract_test")
+    if not isinstance(rewrite_test, str) or not rewrite_test:
+        errors.append(
+            "power_acceptance.single_instruction_rewrite_measured_in is missing, so the "
+            "rewrite is contracted as measured by nothing"
+        )
+    elif isinstance(test_path, str) and (ROOT / test_path).is_file():
+        if rewrite_test.rsplit("::", 1)[-1] not in _test_names(ROOT / test_path):
+            errors.append(
+                f"power_acceptance names the rewrite test {rewrite_test!r}, which does "
+                "not exist"
+            )
+    rows = list(contract.get("power_placement", ()))
+    if not rows:
+        errors.append("the contract lists no power placement to measure")
+    flagged = [row for row in rows if row.get("mode_agreement")]
+    if not flagged:
+        errors.append(
+            "no power placement carries mode_agreement, so the mode half of the claim "
+            "would be measured on nothing"
+        )
+    for row in flagged:
+        if abs(int(row["exponent"])) < 2:
+            errors.append(
+                f"power_placement with mode_agreement names exponent={row['exponent']}; "
+                "the mode half is contracted on repeated programs only, because the "
+                "identity power is empty and power(1) is its receiver"
+            )
+    for row in rows:
+        receiver_n_qubits = int(row["n_qubits"])
+        targets = tuple(int(q) for q in row["qubits"])
+        exponent = int(row["exponent"])
+        label = f"power exponent={exponent} on q={targets}"
+
+        if len(set(targets)) != len(targets):
+            errors.append(f"{label}: the receiver repeats a qubit")
+            continue
+        # A row whose block sits outside the receiver is refused by the implementation
+        # rather than measured, so it is reported here as a malformed row.
+        outside = sorted(q for q in targets if q < 0 or q >= receiver_n_qubits)
+        if not targets or outside:
+            errors.append(
+                f"{label}: targets {outside or list(targets)} lie outside the "
+                f"{receiver_n_qubits}-qubit receiver"
+            )
+            continue
+
+        composed = fq.Circuit(receiver_n_qubits)
+        composed.compose(_block_program(len(targets)), qubits=targets)
+        composed_route = composed.power(exponent)
+        hand_route = _hand_built(receiver_n_qubits, targets).power(exponent)
+
+        errors += _route_differs(label, measured, composed_route, hand_route)
+        composed_ir = composed_route.to_ir()
+        # `power` repeats or rewrites the program it was given, so the width is the
+        # receiver's own. A route that returned a wider program is not the same program.
+        if composed_ir.n_wires != receiver_n_qubits:
+            errors.append(
+                f"{label}: the result is {composed_ir.n_wires} qubits wide, the contracted "
+                f"width is the receiver's {receiver_n_qubits}"
+            )
+        expected = abs(exponent) * (2 * len(targets) - 1)
+        if len(composed_ir.instructions) != expected:
+            errors.append(
+                f"{label}: emitted {len(composed_ir.instructions)} instructions, the "
+                f"contracted count is abs(exponent) * (2 * width - 1) = {expected}"
             )
     return errors
 
@@ -522,6 +640,7 @@ def contract_errors(contract: dict[str, Any]) -> list[str]:
     errors += _family_partition_errors(contract)
     errors += _ir_identity_errors(contract)
     errors += _control_errors(contract)
+    errors += _power_errors(contract)
     errors += _mode_partition_errors(contract)
     errors += _correction_errors(contract)
     errors += _verification_errors(contract)

@@ -137,6 +137,26 @@ def _control_routes(
     return composed_route, hand_route, controls
 
 
+def _contracted_powers() -> list[dict[str, Any]]:
+    """The contracted power rows, read as written so an exponent cannot be lost in a tuple."""
+
+    return list(_load_contract().get("power_placement", ()))
+
+
+def _power_routes(row: dict[str, Any]) -> tuple[fq.Circuit, fq.Circuit, int]:
+    """Build both routes for one contracted row and return them with its exponent."""
+
+    receiver_n_qubits = int(row["n_qubits"])
+    targets = tuple(int(q) for q in row["qubits"])
+    exponent = int(row["exponent"])
+
+    composed = fq.Circuit(receiver_n_qubits)
+    composed.compose(_block(len(targets)), qubits=targets)
+    composed_route = composed.power(exponent)
+    hand_route = _hand_built(receiver_n_qubits, targets).power(exponent)
+    return composed_route, hand_route, exponent
+
+
 def _served_modes() -> list[str]:
     return list(_load_contract().get("modes", {}).get("serving", ()))
 
@@ -314,6 +334,111 @@ def test_a_controlled_program_is_refused_by_the_refused_mode_the_same_way():
     for mode in contract["refused"]:
         with pytest.raises(error, match=contract["refusal_phrase"]):
             _probability_vector(controlled, mode)
+
+
+# ----------------------------------------------------------------------------- power
+# The fourth construction member, on the same claim again. `power` is the case where the
+# emitted instructions are derived from the receiver rather than copied out of it, so it
+# is where a route that read provenance instead of instructions would break first.
+
+
+def test_a_powered_program_is_the_hand_built_power():
+    """`compose` then `power`, against the hand-built placement then `power`.
+
+    The two routes would differ if `power` read anything about its receiver other than the
+    receiver's instructions, so this is the measurement that says `compose` leaves no trace
+    `power` can see and a user cannot reproduce by hand.
+    """
+
+    rows = _contracted_powers()
+    assert rows, "the contract lists no power placement to measure"
+    for row in rows:
+        composed_route, hand_route, exponent = _power_routes(row)
+        targets = tuple(int(q) for q in row["qubits"])
+        label = (row["qubits"], exponent)
+
+        composed_ir, hand_ir = composed_route.to_ir(), hand_route.to_ir()
+        assert composed_ir.to_dict() == hand_ir.to_dict(), label
+        assert composed_ir.content_hash == hand_ir.content_hash, label
+        assert hand_ir.n_wires == composed_ir.n_wires == int(row["n_qubits"]), label
+        assert _signature(composed_route) == _signature(hand_route), label
+
+        # The ladder is all `h` and `cnot`, and neither declares the exponential form the
+        # single-instruction rewrite applies to, so every non-zero exponent emits whole
+        # copies while `power(0)` is the empty program of the same width.
+        assert len(composed_ir.instructions) == abs(exponent) * (
+            2 * len(targets) - 1
+        ), label
+
+
+def test_the_power_placements_in_the_contract_are_well_formed():
+    for row in _contracted_powers():
+        receiver_n_qubits = int(row["n_qubits"])
+        targets = tuple(int(q) for q in row["qubits"])
+        assert len(set(targets)) == len(targets), row
+        assert all(0 <= target < receiver_n_qubits for target in targets), row
+
+
+def test_a_powered_single_instruction_receiver_is_rewritten_by_both_routes_alike():
+    """The one case where `power` derives new numbers instead of copying the receiver.
+
+    A single-instruction receiver whose gate declares an exponential form is rewritten as
+    that gate with the parameter multiplied by the exponent. This needs a receiver the
+    contracted block cannot supply, so it is measured here rather than in the gate -- and
+    it is the sharpest route question in the whole slice: the composed receiver and the
+    hand-built one hold the same instruction, so a `power` that consulted provenance
+    would rewrite one of them differently. `power(1)` is the exception that proves the
+    rule, because a copy is what the identity power is owed.
+    """
+
+    angle = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+    composed = fq.Circuit(2, dtype=torch.complex128)
+    composed.compose(fq.Circuit(1, dtype=torch.complex128).rx(0, angle), qubits=(1,))
+    hand = fq.Circuit(2, dtype=torch.complex128).rx(1, angle)
+
+    for exponent in (1, 2, 3, -1):
+        composed_route, hand_route = composed.power(exponent), hand.power(exponent)
+        assert (
+            composed_route.to_ir().to_dict() == hand_route.to_ir().to_dict()
+        ), exponent
+
+        (instruction,) = composed_route.to_ir().instructions
+        assert instruction.name == "rx", exponent
+        assert tuple(instruction.wires) == (1,), exponent
+        if exponent == 1:
+            # The identity power copies rather than rescaling, so the caller goes on
+            # holding the angle the program uses instead of a new tensor behind a `* 1`.
+            assert instruction.params["theta"] is angle, exponent
+        else:
+            assert instruction.params["theta"] is not angle, exponent
+            scaled = float(instruction.params["theta"].detach())
+            assert scaled == pytest.approx(0.3 * exponent), exponent
+
+
+def test_a_powered_program_is_one_program_in_every_serving_mode():
+    """The same claim once a mode serves it, on the rows the contract pins it to.
+
+    One route returning its receiver would satisfy the exact half only if its twin were
+    equally wrong, so the row carrying `mode_agreement` is a repeated program rather than
+    the identity power, which is the one exponent whose result is allowed to be empty or
+    unchanged.
+    """
+
+    flagged = [row for row in _contracted_powers() if row.get("mode_agreement")]
+    assert flagged, "the contract marks no row for the mode half"
+    assert all(abs(int(row["exponent"])) >= 2 for row in flagged)
+
+    for row in flagged:
+        composed_route, hand_route, exponent = _power_routes(row)
+        baseline = _probability_vector(composed_route, "statevector")
+        for mode in _served_modes():
+            left = _probability_vector(composed_route, mode)
+            right = _probability_vector(hand_route, mode)
+            # The two routes are the same program, so they agree exactly in every mode,
+            # not merely within the mode tolerance.
+            assert torch.equal(left, right), (mode, exponent)
+            spread = float((left - baseline).abs().max())
+            assert spread <= MODE_TOLERANCE, (mode, exponent, spread)
 
 
 # ----------------------------------------------------------------------------- modes

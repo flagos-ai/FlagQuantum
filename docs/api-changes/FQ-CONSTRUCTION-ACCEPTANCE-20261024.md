@@ -21,10 +21,10 @@ Measured against the pre-merge checkout this was first written on:
   "none"`.
 - The construction layer on that tree was `{Circuit.compose, Circuit.adjoint}`.
   Measured: `hasattr(fq.Circuit(2), "compose")` and `hasattr(..., "adjoint")` were
-  both true; `control`, `power`, and `__pow__` were all absent. `control` is now
-  present and covered — see *The census fired* — so the merged layer is
-  `{compose, adjoint, control}` and only `power` and `__pow__` remain contracted
-  absent.
+  both true; `control`, `power`, and `__pow__` were all absent. Both of the first
+  two absent members have since arrived and are covered — see *The census fired
+  twice* — so the merged layer is `{compose, adjoint, control, power}` and only
+  `__pow__` remains contracted absent.
 
 So this is written **without** a rule-8 authorization, and the contract says so in
 a field (`authorization_required = false`) that the gate re-reads rather than
@@ -36,19 +36,23 @@ branch-dependent rather than permanent. `Circuit.control` is delivered by
 [#552](https://github.com/flagos-ai/FlagQuantum/pull/552) and `Circuit.power` by
 [#542](https://github.com/flagos-ai/FlagQuantum/pull/542). The contract recorded
 both under `[subject].not_covered` with that evidence, **and the gate failed the
-moment either appeared in the tree** — which is what happened when #552 merged and
-this branch was merged with `main`. That is the intended behaviour, and it is the
-only reason the extension below exists at all: an acceptance that silently stops
-covering a new member is worse than no acceptance. `power` is still absent and
-still contracted as such; only `__pow__` remains under
+moment either appeared in the tree** — which is what happened twice, once when
+#552 merged and once when #542 did, each time against a branch that was still
+open. That is the intended behaviour, and it is the only reason the extensions
+below exist at all: an acceptance that silently stops covering a new member is
+worse than no acceptance. Both members are now covered, `[subject].not_covered`
+is empty and asserted as empty, and only `__pow__` remains under
 `[census].also_measured_absent`.
 
 `contracts/circuit-composition-contract.toml` also carried a row for these two
 names under `[scope].not_provided`, with the reason "no approved API change
 proposal; control and power are unplanned, not partial". That row was **true** of
 the tree this record measured, and it is no longer: `N1-4` removed `control` from
-it in its own PR, which is the adjudication Open Question 1 asked for. This change
-still does not edit another slice's contract; it re-reads the census against it.
+it in its own PR, which is the adjudication Open Question 1 asked for, and `N1-5`
+removed `power` the same way. This change still does not edit another slice's
+contract; it re-reads the census against it, and that contract now declares the
+family complete — which is why the emptiness of `not_covered` above is checked
+against it rather than asserted on its own.
 
 Scope of the affected surface: `contracts/construction-acceptance-contract.toml`
 (new), `tools/check_construction_acceptance_contract.py` (new),
@@ -66,7 +70,7 @@ $ python tools/check_team_scope.py --team integration --files \
 team ownership policy passed
 ```
 
-## The census fired
+## The census fired twice
 
 This record was written against a tree where `Circuit.control` did not exist, and its
 census wrote that absence down as a contracted fact: `[subject].not_covered` held
@@ -86,6 +90,21 @@ The second line is the same mechanism reading a different fact: `control` added 
 export, so the 36 in this contract is not wrong about this slice, it is stale about the
 repository. Both are the gate doing the job, and both are repaired here rather than
 suppressed.
+
+The gate then said the same sentence a second time, about the other member it had
+contracted absent. `N1-5` ([#542](https://github.com/flagos-ai/FlagQuantum/pull/542))
+merged `Circuit.power`, and the merge of `main` into this branch, which by then carried
+the `control` extension, failed again:
+
+```console
+construction member 'Circuit.power' is contracted as absent but is present; the
+acceptance must be extended to cover it
+```
+
+Two firings, one mechanism, and the second is the better evidence of the two: it is the
+mechanism working on a member this record had never written an extension for, arriving
+through a merge rather than through a plan. The root-export line did not appear the second
+time — `power` adds no export either, and 37 was already the measured number.
 
 ### The decision this forced
 
@@ -117,6 +136,66 @@ on all four observable surfaces, exactly, on every row. The width is `max(ctrl_q
 on every row, which is what "a control qubit is added rather than taken" means when it is
 measured instead of quoted.
 
+`Circuit.power` is now `[subject].covered` as well, and is measured by the same claim with
+the routes spelled for it:
+
+```text
+routes = ["compose then power", "hand-built placement then power"]
+```
+
+`power` is the sharpest of the four members for this claim, because it is the only one that
+*derives* instructions from its receiver rather than copying them out. A `power` that read
+provenance, or a `compose` that left a trace in the receiver, would show up here before it
+showed up anywhere else. Six rows, two of which exist to close the ways the claim could pass
+for the wrong reason:
+
+```text
+receiver 2  qubits=(0)     exponent=0   -> 2 qubits,  0 instructions   (empty program)
+receiver 2  qubits=(0)     exponent=1   -> 2 qubits,  1 instruction    (the copy case)
+receiver 2  qubits=(0)     exponent=2   -> 2 qubits,  2 instructions
+receiver 3  qubits=(1)     exponent=2   -> 3 qubits,  2 instructions
+receiver 3  qubits=(2, 0)  exponent=3   -> 3 qubits,  9 instructions
+receiver 4  qubits=(0, 1, 2)  exponent=-1 -> 4 qubits,  5 instructions (the inverse)
+
+to_dict mismatches: 0   content_hash mismatches: 0
+n_wires mismatches: 0   instruction-signature mismatches: 0
+```
+
+Three things are asserted beyond the route identity, because a route that returned its
+receiver would satisfy an equality of two routes if its twin were equally wrong:
+
+- the width is the receiver's own on every row — `power` repeats or rewrites a program, it
+  never adds a qubit, unlike `control`, which adds one;
+- the instruction count is `abs(exponent) * (2 * width - 1)` on every row, which is the
+  ladder's own shape repeated rather than a number copied from a run. The `h`/`cnot` ladder
+  is in the count because neither gate declares the exponential form the single-instruction
+  rewrite applies to, so every non-zero exponent emits whole copies;
+- `exponent = 0` is in the list on purpose: it is the empty program, so it is where a
+  comparison written the wrong way round passes trivially — and `exponent = 1` is in the
+  list for the mirror reason, because the identity power copies rather than rescaling and
+  must not grow the program.
+
+The one case the contracted block cannot supply is the rewrite itself, so it is measured in
+the conformance file rather than by the gate and named in the contract as such: a
+single-instruction receiver whose gate declares an exponential form is rewritten as that
+gate with the parameter multiplied by the exponent, while `power(1)` stays a copy. Both
+routes hold the same `rx`, so a `power` that consulted provenance would rewrite one of them
+differently; measured with a tensor angle carrying `requires_grad`, `power(1)` hands back
+the same tensor object and the wider exponents hand back a scaled one.
+
+The mode half is measured here too, and pinned the same way it is for `control`: `power` is
+placed among the serving modes on the row carrying `mode_agreement = true`, which the gate
+requires to be a repeated program. `power(0)` is empty and `power(1)` is its receiver, so
+neither of those exponents could tell a route that returned its input apart from one that
+built the program, and neither is allowed to carry the flag.
+
+The rewrite test the contract names under
+`power_acceptance.single_instruction_rewrite_measured_in` is checked the same way a
+`[verification].requirements` row is: the gate reads the conformance file's test names and
+fails if the named test is not in it. A field that said "measured elsewhere" while pointing
+at a test that no longer exists would be the same failure this record is about, one level
+up.
+
 ### What was deliberately *not* asserted
 
 The mode half of the claim — that the two routes stay one program once a mode serves them
@@ -147,7 +226,9 @@ does not depend on the bound, so it costs nothing to make it on the widest row a
 
 The paragraph above ends with an agreement between two documents: `power` "is the same
 single entry on both sides". That was true, and it was checked by reading. It is now
-checked by the gate, because the reading was shown to be insufficient.
+checked by the gate, because the reading was shown to be insufficient -- and the second
+firing above is what "insufficient" meant in practice: the agreement was true and the
+member was still uncovered.
 
 Five mutations of this contract were run, each one a different way of walking a
 contracted member backwards, and the gate's verdict on each was recorded:
@@ -171,6 +252,28 @@ fewer row to re-measure. The conformance file stayed green for a second reason t
 worth writing down: `test_a_controlled_program_has_the_hand_built_ir` was still in it and
 still passing. The test had not been deleted or weakened. It had stopped being required by
 anything, which is indistinguishable from passing.
+
+The same mutation was re-run against the `power` extension, and the fourth row of that
+table is now the first row of this one: the repair holds for a member added after it.
+
+```text
+power moved back to not_covered, dropped from covered       -> fails: names the member, and
+                                                              names its requirement
+power dropped from covered, not_covered untouched           -> fails: not the family, the
+                                                              spelling row, the requirement
+power dropped from covered AND its requirement deleted      -> fails: not the family, and the
+                                                              spelling row
+mode_agreement added to the exponent=1 row                  -> fails: repeated programs only
+no power row carries mode_agreement                         -> fails: measured on nothing
+a power_placement row repeats a qubit                       -> fails: the receiver repeats
+a power_placement row sits outside the receiver             -> fails: targets outside it
+also_measured_absent emptied                                -> fails: the spelling loses its row
+```
+
+The third row is the point of the paragraph above, measured a second time: the mutation
+that passed before the repair now fails, and it fails for two independent reasons rather
+than one, because `[census].also_measured_absent` also names the member its spelling
+belongs to. `Circuit.__pow__` staying absent is what keeps that second reason alive.
 
 This is the same class of failure the mode half of the contract already guards against:
 `serving` plus `refused` must equal the measured mode set, not merely be disjoint from
@@ -211,11 +314,14 @@ family.
 
 The first Open Question below asked who adjudicates
 `circuit-composition-contract.toml`'s `[scope].not_provided` row for `control` and
-`power`. The answer is that `N1-4` already did, in its own PR, which is the cheapest of the
-answers considered here: `control` is no longer in that row, and this contract's census now
-agrees with it. The row that remains — `power`, pending
-[#542](https://github.com/flagos-ai/FlagQuantum/pull/542) — is the one this contract still
-contracts as absent, and it is the same single entry on both sides.
+`power`. The answer is that each slice did it in its own PR, which is the cheapest of the
+answers considered here: `N1-4` removed `control` from that row and `N1-5`
+([#542](https://github.com/flagos-ai/FlagQuantum/pull/542)) removed `power`, and this
+contract's census now agrees with both. That contract's `[scope].not_provided` is empty and
+its `[scope].provided` lists all four members, so this contract's `covered` lists all four
+and its `not_covered` is empty — a fact the gate checks against the declaration rather than
+accepts as prose, which is why the second firing's repair could not be written by deleting
+the row.
 
 ## Problem and affected user journey
 
@@ -316,11 +422,11 @@ $ python tools/check_construction_acceptance_contract.py
 Construction acceptance contract passed: 37 exports, opcode census 35, IR_VERSION 1.0
 ```
 
-The conformance test, `tests/unit/test_construction_acceptance.py`, 26 tests:
+The conformance test, `tests/unit/test_construction_acceptance.py`, 33 tests:
 
 ```console
 $ python -m pytest tests/unit/test_construction_acceptance.py -q
-26 passed in 0.91s
+33 passed in 1.30s
 ```
 
 The IR-identity claim over the contract's eleven placements (`qubits` and
@@ -331,6 +437,11 @@ The IR-identity claim over the contract's eleven placements (`qubits` and
 IR mismatches: 0     (8 qubits placements, 3 qubit_map placements)
 instruction count == 2 * width - 1 in every case
 ```
+
+and the same claim over the two members that were added to it later: four control
+placements, six power placements, all four observable surfaces exact on every row, with
+the width and instruction-count rules the contract states re-measured on each row rather
+than quoted.
 
 The blast radius after the merge, `tests/unit` selected by `compose`, `adjoint`,
 `acceptance`, `mode`, `distributed`, `tensor_network`, `statevector`, `plan`:
@@ -419,6 +530,10 @@ changes what `Circuit.compose` does.
 - `tests/unit/test_construction_acceptance.py::test_the_control_placements_in_the_contract_are_well_formed`
 - `tests/unit/test_construction_acceptance.py::test_the_controlled_program_is_one_program_in_every_serving_mode`
 - `tests/unit/test_construction_acceptance.py::test_a_controlled_program_is_refused_by_the_refused_mode_the_same_way`
+- `tests/unit/test_construction_acceptance.py::test_a_powered_program_is_the_hand_built_power`
+- `tests/unit/test_construction_acceptance.py::test_the_power_placements_in_the_contract_are_well_formed`
+- `tests/unit/test_construction_acceptance.py::test_a_powered_single_instruction_receiver_is_rewritten_by_both_routes_alike`
+- `tests/unit/test_construction_acceptance.py::test_a_powered_program_is_one_program_in_every_serving_mode`
 - `tests/unit/test_construction_acceptance.py::test_the_construction_layer_covers_exactly_what_the_contract_covers`
 - `tests/unit/test_construction_acceptance.py::test_the_census_is_a_partition_of_the_declared_family`
 - `tests/unit/test_construction_acceptance.py::test_the_census_rejects_a_member_deleted_from_the_family`
@@ -429,7 +544,11 @@ construction member that is present while contracted absent, a mode set that the
 contract's partition does not equal, an IR-identity mismatch on any contracted
 placement, a control row whose width is not `max(ctrl_qubits) + 1`, a control row
 whose controlled program is no larger than its receiver, a control row carrying
-`mode_agreement` while adding more than one control, a `[[plan_corrections]]` row
+`mode_agreement` while adding more than one control, a power row whose width is not the
+receiver's, a power row whose instruction count is not `abs(exponent) * (2 * width - 1)`,
+a power row carrying `mode_agreement` with an exponent below two, a power row whose block
+sits outside its receiver, a route section whose identity is not exact or that names a
+measure the gate cannot read, a `[[plan_corrections]]` row
 whose name has appeared, an identifier the contract measures that the gate does not
 read, a requirement row naming a test that does not exist, a `covered` plus `not_covered`
 that is not the family `contracts/circuit-composition-contract.toml` declares, a declared
@@ -440,11 +559,12 @@ members at all.
 
 1. **Who adjudicates `circuit-composition-contract.toml`'s `not_provided` row?**
    ~~#552 and #542 falsify it on their branches; on `main` it remains true.~~ This
-   one is **answered**, by the merge that falsified it: `N1-4`/#552 updated the row
-   in its own PR, which is the cheapest of the answers considered here. `control`
-   is now in neither `not_provided` nor this contract's `not_covered`. `power`
-   remains in both until #542 merges, at which point the same mechanism fires
-   again and the same repair applies.
+   one is **answered**, twice, by the merges that falsified it: `N1-4`/#552 and
+   `N1-5`/#542 each updated the row in its own PR, which is the cheapest of the
+   answers considered here. `control` and `power` are both in neither `not_provided`
+   nor this contract's `not_covered`; that row is now empty, this contract's
+   `not_covered` is empty with it, and the gate checks the two against each other
+   rather than trusting either.
 
 2. **Should the distributed member be reachable from `fq.run`?** Today
    `fq.run(c, world_size=2)` is a `TypeError` and the native alias lives on
@@ -471,16 +591,24 @@ members at all.
    (measure the mode half on marked rows, record the wider number) is a holding
    position that should be revisited when a second multi-control row is added.
 
+6. **Does the mode half of the power claim belong here either?** It is measured on the
+   smallest repeated program (a two-qubit receiver halfway through a square), where the
+   spread is what a copy of one instruction produces and nothing more. `power` cannot
+   widen the mode spread the way `control` can, because it repeats or rescales a program
+   instead of expanding a gate into a ladder, so no row is currently near the bound. If a
+   later power row is measured near it, the same question as above applies.
+
 ## Owner and approvals
 
 Owner: team `integration` (protected contracts, `tools/**`, CI, and `tests/**`).
 This change requires no API-owner approval because it changes no API; the
 `authorization_required = false` field is re-read by the gate. Reviewer attention
 is best spent on the two claims the contract separates — exact between the
-construction routes, tolerance between the modes — and on whether the census
-`not_covered` list is the right set to fail on. The addendum adds a third thing to
-look at: whether pinning the mode half to the one-control rows is the right
-response to a bound the widest row nearly reaches, or whether that is a finding
+construction routes, tolerance between the modes — and on whether an empty
+`not_covered`, checked against the family the composition contract declares, is the right
+way to keep the census honest now that every declared member is covered. The addendum
+adds a third thing to look at: whether pinning the mode half to the one-control rows is
+the right response to a bound the widest row nearly reaches, or whether that is a finding
 about the bound that this contract is papering over. The census addendum adds a
 fourth: whether `circuit-composition-contract.toml` is the right authority for the family,
 or whether it belongs to a declaration of its own. It is read from that contract because

@@ -30,21 +30,21 @@ authorization_reason = "acceptance measures existing behaviour; it adds no expor
 # The construction-layer members this acceptance covers. Each must be present in the
 # tree and must have a requirement row under [verification.requirements].
 #
-# `Circuit.control` was listed as absent when this contract was written: the census below
-# is fail-closed, so the moment `N1-4` landed the census failed and named the member the
-# acceptance had to grow to cover. That is the mechanism working, not a plan that was
-# wrong -- the row that said "absent" was true of the tree this contract measured, and it
-# stopped being true, and the gate said so rather than staying green. `control` is now
-# measured, and what is measured is the claim this contract exists for: see
-# [control_acceptance].
-covered = ["Circuit.compose", "Circuit.adjoint", "Circuit.control"]
-# What is left of the construction family, named so that its absence is contracted rather
-# than discovered. `power` is delivered by its own slice, which is open and not merged.
-not_covered = ["Circuit.power"]
-not_covered_reason = "the upstream slice is open and not merged into the tree this acceptance measured"
-not_covered_evidence = [
-    "https://github.com/flagos-ai/FlagQuantum/pull/542",
-]
+# This list has grown twice, both times because the census below fired rather than because
+# a plan was written: `Circuit.control` was listed as absent when this contract was
+# written, and `Circuit.power` was listed as absent after `control` landed. Each row that
+# said "absent" was true of the tree this contract measured; each stopped being true when
+# its slice merged, and the gate named the member the acceptance had to grow to cover
+# rather than staying green. That is the mechanism working, not a plan that was wrong. What
+# is measured now is the claim this contract exists for: `compose` and `adjoint` by the
+# placement claim, `control` under [control_acceptance], `power` under [power_acceptance].
+covered = ["Circuit.compose", "Circuit.adjoint", "Circuit.control", "Circuit.power"]
+# Empty on purpose, and asserted as empty rather than left out: the contract that owns the
+# family declares it complete, so an entry here would be a member whose absence this
+# acceptance contracts. A later member of this family starts here with a reason, the way
+# `control` and `power` each did before their slices merged.
+not_covered = []
+not_covered_reason = "the construction-time composition family is complete; every declared member is covered by this acceptance"
 
 [census]
 # The measurement behind `covered` and `not_covered`. This is the fail-closed mechanism:
@@ -53,8 +53,11 @@ not_covered_evidence = [
 measurement = "hasattr(fq.Circuit(2), name.rsplit('.', 1)[1]) for each contracted member"
 covered_members_are_present = true
 not_covered_members_are_absent = true
-# Reading `Circuit.__pow__` as well keeps the census honest about the operator spelling:
-# `power` is absent as a method and absent as an operator, which is one fact, not two.
+# Reading `Circuit.__pow__` as well keeps the census honest about the operator spelling.
+# `power` is now present as a method and still absent as an operator, so those are two
+# facts rather than one: the method is covered above, and the spelling stays measured here,
+# which is what keeps `operator_spellings` below a live row rather than a stale alias. If
+# `__pow__` is ever added, this row stops being true and the gate says so.
 also_measured_absent = ["Circuit.__pow__"]
 # The construction family is declared once, by the contract that owns the members'
 # semantics. This gate reads that declaration instead of repeating it here, so the two
@@ -190,6 +193,85 @@ qubits = [3, 1]
 n_controls = 2
 ctrl_qubits = [5, 4]
 
+[power_acceptance]
+# The fourth construction member, measured on the same claim as the third and for the same
+# reason: `power` reads its receiver's instructions, not where they came from. What `power`
+# means -- the repeat rule, the single-instruction rewrite, the integer requirement, the
+# emission limit -- belongs to `contracts/circuit-composition-contract.toml` and is not
+# restated here.
+#
+# The two routes for `power` are `compose` then `power`, against the hand-built placement
+# then `power`. If `power` read the receiver's provenance rather than its instructions, or
+# if `compose` left anything in the receiver that a hand-written receiver does not have,
+# the two programs would differ and this fails. The receiver block is the same ladder the
+# placements place, so one measurement covers the interaction rather than inventing a
+# second block nothing else shares.
+receiver_block = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+routes = ["compose then power", "hand-built placement then power"]
+# The same four observable facts the placement claim is measured on, so the three claims
+# cannot drift into measuring different things while all calling it "the same program".
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+route_identity = "exact"
+# Both routes must also stay the same program once a mode serves them, which is the other
+# half of the same claim. It is measured on a repeated program rather than on the identity
+# power: `power(0)` is empty and `power(1)` is its receiver, so neither would tell a route
+# that returned its input apart from one that built the program.
+mode_agreement = "tolerance"
+mode_agreement_measured_on = "every power placement row carrying mode_agreement = true"
+# `power` repeats or rewrites the program it was given; it never adds a qubit. Recording
+# the rule lets the gate check the width instead of trusting it.
+result_width = "the receiver's width"
+# The ladder is all `h` and `cnot`, and neither declares the exponential form the
+# single-instruction rewrite applies to, so every non-zero exponent emits whole copies.
+# `power(0)` is the empty program of the same width, and a negative exponent is the
+# inverse repeated, which is the same count as its absolute value.
+result_instruction_count = "abs(exponent) * (2 * width - 1)"
+# The rewrite itself is the one case where `power` derives new numbers from the receiver
+# rather than copying it, so it is the case a route that read provenance would show up in
+# first. It needs a single-instruction receiver, which is not the block above, so it is
+# measured in the conformance test and recorded here as a contracted fact rather than
+# asserted by this gate. The gate checks that the test named here exists, so this row is a
+# claim something measures rather than a name someone typed once.
+single_instruction_rewrite_measured_in = "tests/unit/test_construction_acceptance.py::test_a_powered_single_instruction_receiver_is_rewritten_by_both_routes_alike"
+single_instruction_rewrite = "a one-instruction receiver whose gate declares an exponential form is rewritten as that gate with the parameter multiplied by exponent; power(1) stays a copy rather than being rescaled"
+
+# One row per measured power placement. `n_qubits` is the receiver's width, `qubits` is
+# where the block sits inside it, and `exponent` is the power asked for. The gate builds
+# both routes for every row and compares them, so a row added without both routes fails.
+#
+# `exponent = 1` is here on purpose. It is the case the implementation handles by copying
+# rather than by rewriting, so it is where a route that folded or unfolded differently
+# would show up first, and it is the one non-zero exponent that must not grow the program.
+#
+# `mode_agreement` marks the row the mode half of the claim is measured on. It is the
+# smallest repeated program in the list, because the mode half is about the arithmetic
+# rather than about how wide a program this acceptance chose to add.
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 0
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 1
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 2
+mode_agreement = true
+[[power_placement]]
+n_qubits = 3
+qubits = [1]
+exponent = 2
+[[power_placement]]
+n_qubits = 3
+qubits = [2, 0]
+exponent = 3
+[[power_placement]]
+n_qubits = 4
+qubits = [0, 1, 2]
+exponent = -1
+
 [result_identity]
 # The plan's second claim is that the modes agree. It is measured on probabilities
 # because that is the one output every full-state mode serves; `state` is `None` for the
@@ -278,4 +360,4 @@ gate = "tools/check_construction_acceptance_contract.py"
 # because those are cheap and they are what goes stale when someone adds a member or a
 # mode. The conformance test owns the numerical claims, which need pytest's tolerance
 # reporting to be readable when they fail.
-requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse", "Circuit.control" = "test_a_controlled_program_has_the_hand_built_ir" }
+requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse", "Circuit.control" = "test_a_controlled_program_has_the_hand_built_ir", "Circuit.power" = "test_a_powered_program_is_the_hand_built_power" }
