@@ -27,6 +27,7 @@ Use `optimize(program)` for target-independent optimization and
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
+| The named pass sequence, its registry, and the fixed point | [pass_manager.py](pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
@@ -48,6 +49,33 @@ Use `optimize(program)` for target-independent optimization and
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
 | Static resource estimation | [resource_estimation.py](resource_estimation.py) |
 | QIR base-profile emission | [qir.py](qir.py) |
+
+## Replace a fact the passes read
+
+The optimizer's passes read two opcode tables -- the self-inverse opcodes and
+the opcodes whose parameter is a rotation angle -- and one derived partition of
+the program into commuting blocks. Those are registered analyses, not module
+globals: each pass declares what it `uses` and what it `preserves`, and the
+manager hands it exactly those facts.
+
+Nothing in this section is a stable public API. `PassRegistry`, `PassManager`
+and `PassSpec` live inside this package so that the optimizer keeps one
+composition authority, and an out-of-tree pass reaches the optimizer through
+`flagquantum.ecosystem.extensions.pass_admission` rather than by editing the
+default pipeline. The names below are for working on Compiler itself.
+
+Two properties are enforced before the first pass runs. A name that no analysis
+is registered under is refused where the pass is registered, so a misspelled
+declaration cannot leave a half-applied pipeline. And an analysis that says it
+is independent of the program is computed once for a whole fixed-point run,
+which is only sound if every pass that reads it also declares that it preserves
+it -- so a reader that omits the claim is refused rather than silently handed a
+stale table.
+
+A fact that does depend on the program, such as the commuting-block partition,
+is recomputed from the program the round actually produced, and only when a
+reader that declared it reads it. Replacing one `AnalysisSpec` in the registry
+changes what a pass removes without touching the pass.
 
 ## Reach a Clifford+T basis
 
