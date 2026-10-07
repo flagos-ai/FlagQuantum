@@ -22,7 +22,14 @@ ir_source = "flagquantum/core/ir.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 measured_ir_version = "1.0"
-measured_root_export_count = 37
+# Re-measured when `fq.jacobian`, `fq.jvp` and `fq.vjp` landed as three additive Stable
+# Core root exports under
+# `docs/api-changes/FQ-VECTOR-DERIVATIVES-20261026.md`. The row fired exactly as intended:
+# the count is a fact about the tree, so it stopped being true the moment the public
+# surface changed, and it was corrected here rather than left asserting a stale number.
+# `root_export_effect = "none"` above still holds -- that row is about what *this*
+# acceptance adds, and this acceptance adds no export.
+measured_root_export_count = 40
 authorization_required = false
 authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
 
