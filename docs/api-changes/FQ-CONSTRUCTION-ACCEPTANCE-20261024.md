@@ -106,6 +106,31 @@ mechanism working on a member this record had never written an extension for, ar
 through a merge rather than through a plan. The root-export line did not appear the second
 time — `power` adds no export either, and 37 was already the measured number.
 
+### The third firing, and why it has nothing to do with the construction layer
+
+The root-export line came back on `main` on its own, with no merge into this branch
+involved and no construction-layer change anywhere in it:
+
+```console
+$ python tools/check_construction_acceptance_contract.py
+measured_root_export_count is stale: contract says 37, fq.__all__ has 40
+```
+
+`37` was a true measurement of the tree that wrote it, and it stopped being one when
+`N3-6` added three root exports — `fq.jacobian`, `fq.jvp`, and `fq.vjp` — and raised
+`contracts/public-api-v1-candidate.json`'s `root_export_budget` from 36 to 39 with its own
+record. That slice did not re-read this contract's census, so the repository carried two
+numbers for one fact and the `quality` job failed on this step for every open pull request
+that merged `main`, including pull requests that touch no construction-layer file at all.
+
+The count is re-measured to `40` here. What is *not* changed is the claim this contract
+makes: `root_export_effect = "none"` and `authorization_required = false` still hold, and
+neither `control` nor `power` added an export between them. The number is a reading of a
+repository fact that other slices own, which is exactly why the gate re-reads it instead of
+trusting the line — and why a repair here is a re-measurement rather than a relaxation.
+A number that only ever moves when this contract's own slice moves would be the
+assertion-shaped version of the same fact, and a weaker one.
+
 ### The decision this forced
 
 `Circuit.control` is now `[subject].covered`, and it is measured by the claim this

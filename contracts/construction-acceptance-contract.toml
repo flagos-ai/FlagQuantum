@@ -22,7 +22,18 @@ ir_source = "flagquantum/core/ir.py"
 ir_version_effect = "none"
 root_export_effect = "none"
 measured_ir_version = "1.0"
-measured_root_export_count = 37
+# Re-measured, not relaxed. The number moved to 40 because three exports landed in
+# a different slice -- `fq.jacobian`, `fq.jvp`, and `fq.vjp`, added by the
+# vector-derivative change -- and that slice raised
+# `contracts/public-api-v1-candidate.json`'s `root_export_budget` from 36 to 39
+# without re-reading the count recorded here. The gate said so on `main`:
+# `measured_root_export_count is stale: contract says 37, fq.__all__ has 40`.
+# `root_export_effect = "none"` remains this slice's own claim: the construction
+# layer still adds nothing to the root surface, and `Circuit.control` and
+# `Circuit.power` arrived without an export between them. What is corrected here
+# is the census reading a repository fact that other slices changed, which is the
+# mechanism this contract documents rather than an acceptance that moved with it.
+measured_root_export_count = 40
 authorization_required = false
 authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
 
