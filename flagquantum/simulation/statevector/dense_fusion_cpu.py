@@ -43,8 +43,16 @@ def _cpu_cx_rzz_swap_fusion_enabled() -> bool:
 
 def _fuse_swap_sequences(
     program: Sequence[_StatevectorProgramStep],
+    *,
+    bounds: tuple[int, int | None] = (2, None),
 ) -> list[_StatevectorProgramStep]:
     """Combine adjacent SWAPs so their axis permutation is materialized once."""
+
+    minimum_length, maximum_length = bounds
+    if minimum_length < 2:
+        raise ValueError("SWAP fusion requires a minimum length of at least two")
+    if maximum_length is not None and maximum_length < minimum_length:
+        raise ValueError("SWAP fusion maximum length must cover the minimum")
 
     optimized: list[_StatevectorProgramStep] = []
     index = 0
@@ -69,10 +77,12 @@ def _fuse_swap_sequences(
             left, right = candidate.instruction.wires
             swaps.append((int(left), int(right)))
             cursor += 1
-        if len(swaps) >= 2:
+        if len(swaps) >= minimum_length and (
+            maximum_length is None or len(swaps) <= maximum_length
+        ):
             optimized.append(_StatevectorSwapSequenceStep(tuple(swaps)))
         else:
-            optimized.append(step)
+            optimized.extend(program[index:cursor])
         index = cursor
     return optimized
 
@@ -141,13 +151,15 @@ def _apply_cx_rzz_swap_sequence(
     step: _StatevectorCXSequenceRZZSwapStep,
     state: torch.Tensor,
     n_qubits: int,
+    *,
+    scratch: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply one compiled static CX/RZZ/SWAP segment natively."""
 
     images = compact_cx_rzz_swap_images(
         step.controls, step.targets, step.swap_wires, n_qubits
     )
-    output = torch.empty_like(state)
+    output = scratch if scratch is not None else torch.empty_like(state)
     if not fused_compact_cx_rzz_swap_out(
         state,
         images,

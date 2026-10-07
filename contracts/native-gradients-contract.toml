@@ -1,0 +1,458 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Purpose: one machine-readable registration of FlagQuantum's native gradient
+# capability, in place of the three separate places that described it.
+#
+# The three places are the split real/imag statevector profiles (which report
+# `gradient_method = parameter_shift`), the P5 autograd bridge (which reports
+# `backward_method = parameter_shift`), and the reversible adjoint behind the
+# distributed statevector reverse executor (which reports `gradient_method =
+# statevector_adjoint`). None of the three could see the other two, and none of
+# them was compared with the vocabulary the public entry point accepts.
+#
+# Reading all of them together is what makes the real defect visible. The
+# identifier `gradient_method` carries two unrelated concepts: the
+# differentiation route, and the backward rule of a tensor-factorization split
+# (`projected_stop_subspace` / `none`). Within the differentiation route the
+# vocabularies disagree three ways:
+#
+#   * `parameter_shift` is the only name the executors, the benchmark table and
+#     the public API all agree on.
+#   * `statevector_adjoint` is declared by the reverse executor, by twenty rows
+#     of the benchmark table and twice by the hybrid compilation contract -- and
+#     it is not a public method name. Asking for it is refused as `unknown
+#     gradient method`, so the message a caller gets says the method does not
+#     exist while the capability is implemented and reachable as autograd's
+#     backward pass. Asking for `adjoint` instead gets the honest refusal below.
+#   * the route the public API calls `autograd` is declared twice more under two
+#     other names, and one of them is a sentence rather than an identifier.
+#
+# Four of the five public method names are declared by no capability block at
+# all, and every one of them is served. The asymmetry runs both ways -- a
+# declared name that no caller can request, and a served name that nothing
+# declares -- and neither direction is checked by anything today. This file
+# checks both, which is the part that was missing rather than the registration
+# itself.
+#
+# `[[alias]]` is the single registration of the correspondence, and it is what
+# makes the gate fail closed. Every differentiation-route value that appears in
+# the declaration census or in the engine table must have an alias row, so a new
+# declaration -- in code, in the benchmark table or in a contract -- turns the
+# gate red until it is registered here. An empty `public_method` is the record
+# that the declared value is not a method any caller can request.
+#
+# This file changes no implementation and no public surface. It registers what is
+# declared, and the gate re-derives each declaration rather than trusting it.
+schema = "flagquantum_native_gradients_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+census_source = "flagquantum/**/*.py"
+vocabulary_source = "flagquantum/gradients.py"
+engine_source = "flagquantum/benchmarking/differentiable_support.py"
+hybrid_source = "contracts/hybrid-compilation-private-v0-candidate.json"
+authorization = [
+    "docs/api-changes/FQ-NATIVE-GRADIENTS-CAPABILITY-20261029.md",
+]
+
+shared_identifier = "gradient_method"
+census_fields = ["backward_method", "gradient_method"]
+declared_public_methods = ["auto", "autograd", "parameter_shift", "finite_difference", "spsa"]
+
+[[axis]]
+name = "differentiation_route"
+meaning = "how a derivative is computed; the axis the public gradient method selects"
+declared_in = "executor result summaries, the P5 bridge summary, the benchmark engine table, the hybrid contract"
+row_count = 7
+
+[[axis]]
+name = "svd_truncation_rule"
+meaning = "the backward rule a tensor-factorization split applies to its rank truncation"
+declared_in = "flagquantum/simulation/mps/factorization.py, flagquantum/simulation/mps/reverse.py"
+row_count = 3
+
+[[axis]]
+name = "field_passthrough"
+meaning = "a field the value of which is another field rather than a declaration"
+declared_in = "flagquantum/benchmarking/differentiable_support.py, flagquantum/simulation/mps/dense_island.py"
+row_count = 2
+
+[[alias]]
+declared_value = "backpropagation through exact statevector"
+public_method = "autograd"
+requestable = true
+note = "the same route again, written as prose instead of an identifier"
+
+[[alias]]
+declared_value = "none"
+public_method = ""
+requestable = false
+note = "the tensor-factorization backward rule when the split carries no graph"
+
+[[alias]]
+declared_value = "parameter_shift"
+public_method = "parameter_shift"
+requestable = true
+note = "the one name that the executors, the benchmark table and the public API all agree on"
+
+[[alias]]
+declared_value = "projected_stop_subspace"
+public_method = ""
+requestable = false
+note = "the tensor-factorization backward rule; a different axis sharing the field name"
+
+[[alias]]
+declared_value = "statevector_adjoint"
+public_method = ""
+requestable = false
+note = "declared by the reverse executor, the benchmark table and the hybrid contract; not a public method name"
+
+[[alias]]
+declared_value = "torch_reverse_mode_autograd"
+public_method = "autograd"
+requestable = true
+note = "the benchmark table's name for the route the public API calls autograd"
+
+[[declaration]]
+site = "flagquantum/benchmarking/differentiable_support.py"
+field = "gradient_method"
+axis = "field_passthrough"
+declared_by = "differentiable_support.build_support_matrix"
+value_source = "gradient_method"
+values = ["dynamic"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/reverse.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "reverse.TorchDistributedStatevectorGradientResult.summary"
+value_source = "'statevector_adjoint'"
+values = ["statevector_adjoint"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag.SplitRealImagParameterShiftResult.summary"
+value_source = "'parameter_shift'"
+values = ["parameter_shift"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag.SplitRealImagStatevectorResult.summary"
+value_source = "'parameter_shift' if training else None"
+values = ["parameter_shift"]
+value_can_be_absent = true
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag_autograd.py"
+field = "backward_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag_autograd.split_real_imag_p5_autograd_bridge_summary"
+value_source = "'parameter_shift'"
+values = ["parameter_shift"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag_device_double_single.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag_device_double_single.SplitRealImagDeviceDoubleSingleGradientResult.summary"
+value_source = "'parameter_shift'"
+values = ["parameter_shift"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag_double_single.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag_double_single.SplitRealImagDoubleSingleGradientResult.summary"
+value_source = "'parameter_shift'"
+values = ["parameter_shift"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/runtime/executors/statevector/split_real_imag_precision.py"
+field = "gradient_method"
+axis = "differentiation_route"
+declared_by = "split_real_imag_precision.SplitRealImagPrecisionGradientResult.summary"
+value_source = "'parameter_shift'"
+values = ["parameter_shift"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/simulation/mps/dense_island.py"
+field = "gradient_method"
+axis = "field_passthrough"
+declared_by = "dense_island.DenseIslandState.summary"
+value_source = "self.gradient_method"
+values = ["dynamic"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/simulation/mps/factorization.py"
+field = "gradient_method"
+axis = "svd_truncation_rule"
+declared_by = "factorization._split_pair_matrix"
+value_source = "'projected_stop_subspace' if matrix.requires_grad else 'none'"
+values = ["projected_stop_subspace", "none"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/simulation/mps/factorization.py"
+field = "gradient_method"
+axis = "svd_truncation_rule"
+declared_by = "factorization._split_pair_matrix_bucket"
+value_source = "'projected_stop_subspace' if matrices.requires_grad else 'none'"
+values = ["projected_stop_subspace", "none"]
+value_can_be_absent = false
+
+[[declaration]]
+site = "flagquantum/simulation/mps/reverse.py"
+field = "gradient_method"
+axis = "svd_truncation_rule"
+declared_by = "reverse.factor_mps_reverse_pair_bucket"
+value_source = "'projected_stop_subspace'"
+values = ["projected_stop_subspace"]
+value_can_be_absent = false
+
+[[engine]]
+engine = "flagquantum_adjoint"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_compact_cx_index_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_cx_rotation_fusion_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_euler_post_reduction_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_euler_triple_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_flat_pair_simd_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_forward_cx_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_forward_rzz_rotation_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_forward_wide_tile_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_gather_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_observable_boundary_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_observable_cache_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_observable_rotation_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_parallel_grain_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_python_fallback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_rotation_tile_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_saved_parameter_revalidation"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_shared_rzz_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_adjoint_terminal_no_restore_rollback"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[engine]]
+engine = "flagquantum_native"
+gradient_method = "backpropagation through exact statevector"
+identifier_shaped = false
+public_method = "autograd"
+
+[[engine]]
+engine = "pennylane_default_qubit"
+gradient_method = "torch_reverse_mode_autograd"
+identifier_shaped = true
+public_method = "autograd"
+
+[[engine]]
+engine = "pennylane_lightning_adjoint"
+gradient_method = "statevector_adjoint"
+identifier_shaped = true
+public_method = ""
+
+[[hybrid_phase]]
+phase = "phase5"
+field = "gradient_method"
+value = "statevector_adjoint"
+gradient_executor = "flagquantum.runtime.executors.statevector.reverse.execute_torch_distributed_statevector_reverse"
+
+[[hybrid_phase]]
+phase = "phase6"
+field = "backward_method"
+value = "statevector_adjoint"
+gradient_executor = ""
+
+[[public_method]]
+method = "auto"
+served = true
+reported_method = "autograd"
+exact = true
+declared_by_any_capability_block = false
+
+[[public_method]]
+method = "autograd"
+served = true
+reported_method = "autograd"
+exact = true
+declared_by_any_capability_block = false
+
+[[public_method]]
+method = "parameter_shift"
+served = true
+reported_method = "parameter_shift"
+exact = true
+declared_by_any_capability_block = true
+
+[[public_method]]
+method = "finite_difference"
+served = true
+reported_method = "finite_difference"
+exact = false
+step = 6.055454452393e-06
+declared_by_any_capability_block = false
+
+[[public_method]]
+method = "spsa"
+served = true
+reported_method = "spsa"
+exact = false
+step = 6.055454452393e-06
+declared_by_any_capability_block = false
+
+[[refusal]]
+requested = "adjoint"
+exception = "CapabilityError"
+message = "FlagQuantum has no standalone adjoint gradient: the reversible adjoint sweep is reachable only as the backward pass behind PyTorch autograd, and no result reports whether backward used adjoint replay. Use method='autograd' and read the execution mode, or method='parameter_shift'."
+trigger = "the capability the executors declare, asked for by the short name"
+
+[[refusal]]
+requested = "statevector_adjoint"
+exception = "ValidationError"
+message = "unknown gradient method 'statevector_adjoint'; expected one of 'auto', 'autograd', 'parameter_shift', 'finite_difference', 'spsa'"
+trigger = "the name the reverse executor, the benchmark table and the hybrid contract declare"
+
+[[refusal]]
+requested = "torch_reverse_mode_autograd"
+exception = "ValidationError"
+message = "unknown gradient method 'torch_reverse_mode_autograd'; expected one of 'auto', 'autograd', 'parameter_shift', 'finite_difference', 'spsa'"
+trigger = "the benchmark table's name for the route the public API calls autograd"
+
+[reference]
+declaration_sites = 12
+declaration_files = 10
+differentiation_route_rows = 7
+svd_truncation_rule_rows = 3
+field_passthrough_rows = 2
+declared_differentiation_route_values = ["parameter_shift", "statevector_adjoint"]
+declared_svd_truncation_values = ["none", "projected_stop_subspace"]
+engine_rows = 22
+engine_rows_using_statevector_adjoint = 20
+engine_rows_with_a_prose_value = 1
+hybrid_declaration_rows = 2
+public_methods = 5
+public_methods_declared_by_a_capability_block = 1
+public_methods_not_declared_by_any_capability_block = ["auto", "autograd", "finite_difference", "spsa"]
+declared_route_values_not_requestable = ["statevector_adjoint"]
+
+[rules]
+one_row_per_declaration_site = true
+every_declaration_is_axis_classified = true
+both_axes_share_one_identifier_and_that_is_recorded = true
+every_differentiation_route_value_has_an_alias = true
+a_new_declaration_fails_the_gate_until_registered = true
+a_new_engine_row_fails_the_gate_until_registered = true
+a_new_public_method_fails_the_gate_until_measured = true
+declared_names_are_driven_not_trusted = true
+no_public_surface_change = true
+no_silent_fallback = true
+
+[verification]
+contract = "tests/unit/test_native_gradients_contract.py"
+gate = "tools/check_native_gradients_contract.py"
+census_is_rederived_from_the_package_source = true
+public_vocabulary_is_rederived_from_the_implementation = true
+engine_table_is_rederived_from_the_benchmarking_module = true
+hybrid_phases_are_rederived_from_the_hybrid_contract = true
+every_refusal_is_driven_by_the_gate = true

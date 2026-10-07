@@ -4,6 +4,9 @@
 no:cacheprovider
 tests/gpu/test_flagtree_kernel_provider.py
 tests/unit/test_statevector_reversible_3q_triton.py
+tests/unit/test_statevector_reversible_3q_catalog_dispatch.py
+tests/unit/test_statevector_swap_triton.py
+tests/unit/test_statevector_swap_sequence_catalog_dispatch.py
 tests/gpu/test_flagtree_tle_statevector.py
 tests/test_statevector_triton_gates.py
 tests/unit/test_hva_forward_tangent_triton.py
@@ -19,11 +22,13 @@ tests/unit/test_mps_observable_adjoint_catalog_dispatch.py
 tests/unit/test_mps_one_site_catalog_dispatch.py
 tests/unit/test_mps_one_site_triton.py
 tests/unit/test_mps_sampling_collapse_triton.py
+tests/unit/test_mps_sampling_collapse_catalog_dispatch.py
 tests/unit/test_real_imag_kernels.py
 tests/unit/test_ry_rz_catalog_dispatch.py
 tests/unit/test_single_qubit_loop_triton.py
 tests/unit/test_statevector_gate_autograd_boundary.py
 tests/unit/test_statevector_diagonal_triton.py
+tests/unit/test_statevector_diagonal_catalog_dispatch.py
 tests/unit/test_statevector_pauli_rotation_2q_triton.py
 tests/unit/test_statevector_marginal_probabilities_triton.py
 tests/unit/test_statevector_marginal_probability_catalog_dispatch.py
@@ -35,5 +40,6 @@ tests/unit/test_statevector_reverse.py
 tests/unit/test_statevector_probabilities_triton.py
 tests/unit/test_statevector_triton.py
 tests/unit/test_triton_complex_bmm.py
+tests/unit/test_two_qubit_matrix_catalog_dispatch.py
 tests/unit/test_two_qubit_pauli_tangent_triton.py
 tests/unit/test_mps_environment_channels_catalog_dispatch.py

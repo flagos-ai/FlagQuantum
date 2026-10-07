@@ -180,6 +180,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         maturity="provisional",
     ),
     _triton(
+        "FQKI-TRITON-SV-014-A",
+        "statevector.apply.swap_sequence.local",
+        "statevector_swap",
+        "apply_complex64_local_swap_sequence",
+        layouts=("flat_statevector",),
+        maturity="provisional",
+    ),
+    _triton(
         "FQKI-TRITON-GR-001-A",
         "gradient.vjp.adjoint_1q.local",
         "statevector_adjoint",
@@ -308,6 +316,7 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         "mps_sampling_collapse",
         "fused_mps_sampling_collapse",
         layouts=("mps_sampling_step",),
+        maturity="provisional",
         internal_fallback=True,
     ),
     _triton(

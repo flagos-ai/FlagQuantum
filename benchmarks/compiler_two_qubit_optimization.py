@@ -755,6 +755,7 @@ def _qiskit_anchor() -> dict[str, Any]:
     """
 
     try:
+        import qiskit  # type: ignore[import-not-found]
         from qiskit import QuantumCircuit
         from qiskit.transpiler.passes import CollectCliffords, OptimizeCliffords
     except Exception as error:  # pragma: no cover - depends on the environment
@@ -786,6 +787,12 @@ def _qiskit_anchor() -> dict[str, Any]:
 
     return {
         "available": True,
+        # The library reading, not the pinned `reference_revision` above. The two
+        # passes this anchor drives are named in that pinned string, but whether
+        # they exist and what they leave behind is read off the installed library:
+        # the string says which revision the reading was first taken on, this field
+        # says which revision is answering now.
+        "qiskit_version": qiskit.__version__,
         "optimize_cliffords": measured(OptimizeCliffords()),
         "collect_cliffords": measured(CollectCliffords()),
         "note": (

@@ -124,11 +124,14 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-009-A",
         "tests/test_statevector_triton_gates.py::test_generic_local_2q_matches_layout_reference_and_exact_alias",
+        "tests/test_statevector_triton_gates.py::test_public_local_2q_runtime_uses_catalog",
         capability_tests=(
             "tests/test_statevector_triton_gates.py::test_generic_local_2q_rejects_unsupported_contracts",
+            "tests/unit/test_two_qubit_matrix_catalog_dispatch.py::test_two_qubit_matrix_shape_policy_matches_evidenced_window",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_local_2q_a800.json",
+            "benchmarks/results/local/statevector_local_2q_dispatch_a800.json",
         ),
     ),
     _evidence(
@@ -137,9 +140,11 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         capability_tests=(
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_non_cuda_state",
             "tests/unit/test_statevector_diagonal_triton.py::test_local_diagonal_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_diagonal_catalog_dispatch.py::test_diagonal_matrix_dispatch_binds_exact_catalog_implementation",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_local_diagonal_a800.json",
+            "benchmarks/results/local/statevector_local_diagonal_dispatch_a800.json",
         ),
     ),
     _evidence(
@@ -158,9 +163,23 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
         capability_tests=(
             "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_reversible_3q_catalog_dispatch.py::test_reversible_3q_public_path_uses_catalog",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_reversible_3q_a800.json",
+            "benchmarks/results/local/statevector_reversible_3q_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
+        "FQKI-TRITON-SV-014-A",
+        "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_matches_layout_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_swap_sequence_catalog_dispatch.py::test_swap_sequence_public_path_uses_catalog",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_swap_sequence_a800.json",
+            "benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json",
         ),
     ),
     _evidence(
@@ -350,13 +369,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-MPS-008-A",
         "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cuda_matches_reference",
+        "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_public_mps_sampling_routes_each_nonterminal_wire",
         capability_tests=(
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_cpu_fallback_matches_reference",
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_unsupported_input_uses_fallback",
             "tests/unit/test_mps_sampling_collapse_triton.py::test_fused_mps_sampling_collapse_validates_input",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_rollout_defaults_on_and_supports_kill_switch",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_reference_path_reports_fallback",
+            "tests/unit/test_mps_sampling_collapse_catalog_dispatch.py::test_mps_sampling_collapse_route_enforces_evidenced_window",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/mps_sampling_collapse_a800.json",
+            "benchmarks/results/local/mps_sampling_collapse_dispatch_a800.json",
         ),
     ),
     _evidence(

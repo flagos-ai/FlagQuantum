@@ -436,27 +436,47 @@ evidence rather than decoration. The expanded model is a model in its own right 
 it prints and re-reads unchanged -- and it is the default reading that states the
 line stim wrote.
 
-What remains refused is a `repeat` block, a `#` comment, a declaration that skips
-an index, and a malformed line. The `repeat` refusal is deliberate rather than
-pending: expanding a block means interpreting a nested instruction stream, and
-`str(model.flattened())` already states the same instructions without the block.
-`flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit. One more line is refused by the suggested reading
-alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
-nothing, and a component with no targets has no mechanism to become, so the reader
-refuses it and names the default reading -- which states that line as `D1` -- as
-the route that states it.
+What remains refused is a declaration that skips an index, an error mechanism that
+flips nothing, a malformed line, a block that never closes, and a closing brace
+with no block open. Every refusal names what it could not read rather than
+dropping the instruction, so a text carrying information the model cannot state
+fails closed instead of being read as a shorter model. One more line is refused by
+the suggested reading alone: a text such as `error(0.1) D0 D0 ^ D1` has a component
+that cancels to nothing, and a component with no targets has no mechanism to
+become, so the reader refuses it and names the default reading -- which states that
+line as `D1` -- as the route that states it.
+
+A `repeat <count> { ... }` block and a `#` comment are read as well, and both are
+read the way stim means them. The block is stated by interpreting its instructions
+as many times as the count says, so the shape, the mechanisms and the accumulated
+`shift_detectors` offsets it produces are the ones its instructions produce in
+sequence. The shift is what makes the loop a loop: `shift_detectors 2` inside
+`repeat 3 { error(0.1) D0; shift_detectors 2 }` is applied three times, so the
+block's mechanism lands at detector zero, two and four, which is why stim reports
+five detectors for that text where a reading that applied the shift once for the
+whole block would report one. The count is a run of ASCII digits and nothing else:
+`repeat 0` is legal and contributes nothing at all, because the block's
+instructions never run, while a signed, non-numeric or missing count is refused by
+name rather than guessed. Blocks nest, and an inner block is drained inside the
+iteration of the one that holds it. Reading a block is therefore an expansion,
+which is the one cost this reader pays that stim's does not: stim keeps the block
+and expands it on demand. A `#` comment is cut at the `#` wherever it sits on the
+line, so a commented line states no instruction. What the expansion costs is
+bounded by the text, since a block is read by walking its instructions and not by
+materialising a second copy of them: the reader streams instruction lines and
+never holds the expansion.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
 three, five and seven, rounds one, two, three, five and nine, noisy and
-noise-free, with and without decomposed errors. This reader parsed all 180 that
-carried no block, agreeing with a re-read of the same text on the detector and
-observable counts, on the error count, and on every `(probability, detectors,
-observables)` mechanism; the 60 refusals were all `repeat` blocks, all from
-`repetition_code:memory` at five rounds or more. Every one of the same 240 models
-parsed when `flattened()` supplied the text, so flattening is a complete route
-around the last refusal.
+noise-free, with and without decomposed errors. This reader parses all 240
+unflattened, sixty of which carry a `repeat` block, agreeing with a re-read of the
+same text on the detector and observable counts, on the error count, and on every
+`(probability, detectors, observables)` mechanism; before the block was read the
+sixty refusals were all `repeat` blocks, all from `repetition_code:memory` at five
+rounds or more. The same suite asserts that a block-carrying text and the same
+text after `stim`'s `flattened()` state one model, so the reader and stim agree on
+what the block means rather than only on the fact that something can be read.
 
 Agreement on the shape and on the mechanism list is agreement with stim's own
 reading of a text stim wrote, so the reader is also checked against the physics.
@@ -855,3 +875,72 @@ flagquantum.qec` does not import `pymatching` — a test starts a fresh interpre
 and measures that rather than asserting it. No name is preferred over another, so
 `get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
 happens to be installed; the cross-check is never reached by accident.
+
+## Cutting a model into rounds
+
+`chunks.py` is the substrate a sliding-window decoder slides over, and it is
+deliberately only the substrate: nothing in it decodes, and a window's matrices
+are not produced, because those are the input shape of the decoder that reads a
+window rather than of the model record.
+
+A *layer* is the set of detectors sharing one round index, so the widths are the
+round sizes in detector order and sum to the model's detector count.
+`ChunkLayout.from_memory_circuit` reads them off a circuit rather than accepting
+them, and the two conventions that matter are decided there. A terminal detector
+— one whose parity references the terminal data readout and no round — is placed
+in the last layer instead of being given a round of its own, which is what makes
+a memory circuit's layers contiguous. And a numbering that reaches a layer after
+skipping one is refused rather than closed up: renumbering the rounds after a
+missing one would silently move every window that follows it, which is the kind
+of error a decomposition must not absorb.
+
+A *window* spans a contiguous run of layers, and its bands are fixed rather than
+configurable: the leading boundary layer it shares with its predecessor, its own
+interior, and the trailing boundary layer it shares with its successor. A stride
+of `window - 1` is what makes the windows share exactly one layer each, and a
+layer count that does not tile at that stride is refused with the count named —
+a caller who wants to advance by less reads overlapping windows and simply does
+not stitch them, rather than asking for a decomposition that does not tile.
+
+The property that makes the windows a partition rather than a cover is a fact
+about the model rather than a rule imposed on it: a mechanism spans exactly two
+adjacent layers, because a fault is placed at one location and flips that round's
+detectors and the round before's, and a mechanism lying inside one layer does not
+arise. So the first window that contains a mechanism whole owns it, every
+mechanism is owned once, and `dem_close_all(dem_chunks_from_spec(spec)) == model`
+is an equality the tests assert. Two mechanisms are refused rather than placed. A
+mechanism no window contains whole is refused and never split, because splitting
+it would state two weaker faults where the model stated one; the caller's remedy
+is a wider window or the fault stated per round. And a mechanism flipping no
+detector is refused, because an observable-only fault has no round to be placed
+in and choosing one would be inventing placement.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so the result spans one layer fewer than the sum
+of its parts; `dem_stitch_merged` follows that with the model's own
+`merge_duplicate_mechanisms` under a stated rule, which is the only place in this
+module where a probability is combined. `dem_close` lays one window out at its
+own place in the model's own numbering without renumbering from zero, so a
+window's detectors are the model's detectors, and a close of a decomposition is
+the model again.
+
+A chunk may name only the two standard boundary seams, at most once each, ordered
+by row, with the leading band starting at local row zero, the trailing band
+ending at the last local row, and the bands not overlapping. A stitch adds four
+refusals: a non-adjacent pair, an observable count that differs between the two
+sides, a boundary either side does not carry, and a contracted band whose
+detectors are not the same rows in the same order on both sides. That last one is
+what makes the operation an identity check rather than arithmetic on widths.
+
+Three differences from the CUDA-Q QEC seam surface are decisions rather than
+gaps, and the alignment checklist records all three. A seam here is identified by
+its name text, where upstream hashes a seam's name into a `uint32` at compile
+time and keeps a registry only so a diagnostic can turn the hash back into text —
+so nothing here hashes, nothing interns, and two seams are the same seam exactly
+when their names are equal. A seam's rows carry the global detector index rather
+than a position within the seam, where upstream's per-seam tags are caller-chosen
+labels numbered positionally. And what upstream calls `expand_dem_chunks` has no
+counterpart, because its spec is a phase graph with a sparse shorthand that must
+be expanded against a round count supplied at expansion time, while the spec here
+is linear: `DemChunksSpec.chunk_specs` is that expansion, and a second name for
+one operation would be a second spelling of it.

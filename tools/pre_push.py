@@ -116,12 +116,36 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_circuit_composition_contract.py"),
         ),
         Check(
+            "density-matrix output contract",
+            (python_executable, "tools/check_density_matrix_output_contract.py"),
+        ),
+        Check(
             "batch parameter-shift coverage contract",
             (python_executable, "tools/check_parameter_shift_coverage_contract.py"),
         ),
         Check(
+            "parameter-shift Hessian contract",
+            (python_executable, "tools/check_parameter_shift_hessian_contract.py"),
+        ),
+        Check(
+            "opcode gradient exactness contract",
+            (python_executable, "tools/check_opcode_gradient_exactness.py"),
+        ),
+        Check(
+            "gradient method and execution mode matrix",
+            (python_executable, "tools/check_gradient_methods_contract.py"),
+        ),
+        Check(
+            "native gradients contract",
+            (python_executable, "tools/check_native_gradients_contract.py"),
+        ),
+        Check(
             "primitives admission contract",
             (python_executable, "tools/check_primitives_admission_contract.py"),
+        ),
+        Check(
+            "construction-layer acceptance contract",
+            (python_executable, "tools/check_construction_acceptance_contract.py"),
         ),
         Check(
             "OpenQASM import contract",

@@ -16,11 +16,11 @@ set of (probability, detectors, observables) mechanisms the model states. And
 this reader parses what Stim writes for an ordinary repeated circuit, agreeing
 with Stim on the shape, on the error count, and on every mechanism.
 
-The three constructs that used to be refused
---------------------------------------------
-An earlier revision of this file pinned three refusals instead, because a
-detector error model produced by Stim for an ordinary repeated circuit was
-refused for three independent reasons:
+The four constructs that used to be refused
+-------------------------------------------
+An earlier revision of this file pinned refusals instead, because a detector error
+model produced by Stim for an ordinary repeated circuit was refused for four
+independent reasons:
 
 1. ``shift_detectors``. Stim addresses detectors relatively between rounds, so
    every multi-round circuit produces this instruction. The reader required
@@ -31,24 +31,45 @@ refused for three independent reasons:
    through the error targets that flip it and need not declare it, so
    ``num_observables`` had to be inferred from the targets as well as from the
    declarations.
+4. ``repeat``. Stim keeps a round's instructions in a block once the circuit is
+   long enough, even in the ``flattened()`` form, so a five-round circuit was
+   refused outright and ``flatten_loops=True`` was not a route around it.
 
-All three are now accepted, and the tests below assert the accepted model. Two
-tests are kept from the refusal era in inverted form, because they are the
-evidence that each construct was measured rather than assumed: the tests that
-establish the premise still exist, and they check that the repeated reference
-circuit still exercises both previously refused constructs and that Stim still
-introduces its observable through the error targets alone. A future change
-therefore cannot quietly stop exercising either one.
+All four are now accepted, and the tests below assert the accepted model. Tests
+are kept from the refusal era in inverted form, because they are the evidence that
+each construct was measured rather than assumed: the tests that establish the
+premise still exist, and they check that the repeated reference circuit still
+exercises the constructs that were refused. A future change therefore cannot
+quietly stop exercising any one of them.
+
+Blocks and flattening are compared rather than described. Reading a block is an
+expansion, so the test for it does not stop at "stim accepts the same text": it
+requires this reader's model of a block-carrying text to equal this reader's model
+of the text after Stim's own ``flattened()``, and it requires both to agree with
+Stim's reading of the block. The two readers agree on the shape, the error count
+and every mechanism across a sweep that includes both code families, so a reading
+that hoisted a block's ``shift_detectors`` out of the loop -- which would place
+every copy of a mechanism at the same detector -- fails there rather than passing.
 
 What this reader still refuses, and why
 ---------------------------------------
-A ``repeat`` block is refused, and this is the remaining asymmetry with stim.
-Expanding a block means interpreting a nested instruction stream, which is a
-second reader for the same format; ``str(model.flattened())`` already states the
-same instructions without the block, so the caller has an exact route that this
-reader does not duplicate. ``flatten_loops=True`` is not enough on its own:
-Stim still emits ``repeat`` for a long enough circuit, which the test below
-measures.
+Two texts stim's own printer can write are refused, for one reason each, and both
+are narrowings this package chose rather than constructs it has not reached.
+
+The first is a text that states no ``detector`` declaration. This reader takes the
+detector count from the declarations, and the model refuses fewer than one
+detector, so ``error(0.1) D0`` -- which is what stim writes for a flat
+one-detector circuit such as ``X_ERROR(0.1) 0; M 0; DETECTOR rec[-1]`` -- and
+``error(0.1) L0``, which is what it writes for an observable-only circuit, are
+both refused. Stim reads either text and infers the count from the error targets,
+and this reader infers the *observable* count that way because stim declares an
+observable exactly when no mechanism references it. Reading the detector count off
+the largest index an error mentions would accept a text that had lost its trailing
+detectors, which is why the declaration is the authority here; and a model with no
+detector is not one this record can hold, which is the model's own rule and not
+the reader's. Every shape stim writes for a memory circuit declares the detectors
+whose index the errors do not imply, so the 240-model sweep below is unaffected by
+either narrowing.
 
 The probability digits are stim's printer to choose. ``str(model)`` writes at
 ``std::setprecision(std::numeric_limits<long double>::digits10 + 1)``, so
@@ -337,8 +358,16 @@ def test_an_undeclared_observable_is_now_inferred_from_the_error_targets() -> No
     assert parsed.num_observables == stim.DetectorErrorModel(text).num_observables
 
 
-def test_a_repeat_block_is_refused_and_flattening_is_the_route_around_it() -> None:
-    """A long enough circuit keeps its block even when the loops are flattened."""
+def test_a_repeat_block_is_read_as_the_model_its_flattened_form_states() -> None:
+    """The last asymmetry with stim, closed and measured against stim itself.
+
+    A long enough circuit keeps its block even when the loops are flattened, and
+    unflattening is an expansion rather than a second statement of the format, so
+    the two readings have to be compared rather than assumed: stim reads the
+    block, and this reader must reach the model stim's own ``flattened()`` form
+    reaches, mechanism for mechanism. The premise is asserted first, so this
+    cannot pass on a text that never carried a block.
+    """
 
     circuit = stim.Circuit.generated(
         "repetition_code:memory",
@@ -346,18 +375,106 @@ def test_a_repeat_block_is_refused_and_flattening_is_the_route_around_it() -> No
         distance=3,
         after_clifford_depolarization=0.01,
     )
-    text = str(circuit.detector_error_model(decompose_errors=False))
+    blocked = str(circuit.detector_error_model(decompose_errors=False))
+    flattened = str(circuit.detector_error_model(decompose_errors=False).flattened())
+
+    assert "repeat" in blocked
+    assert "repeat" not in flattened
+
+    parsed = DetectorErrorModel.from_stim_text(blocked)
+    reread = stim.DetectorErrorModel(blocked)
+
+    assert (parsed.num_detectors, parsed.num_observables, parsed.num_errors) == (
+        reread.num_detectors,
+        reread.num_observables,
+        reread.num_errors,
+    )
+    assert {
+        (e.probability, frozenset(e.detectors), frozenset(e.observables))
+        for e in parsed.errors
+    } == _mechanisms(reread)
+    assert parsed == DetectorErrorModel.from_stim_text(flattened)
+
+
+@pytest.mark.parametrize(
+    ("task", "distance", "rounds"),
+    [
+        ("repetition_code:memory", 3, 5),
+        ("repetition_code:memory", 5, 9),
+        ("surface_code:rotated_memory_z", 3, 9),
+        ("surface_code:rotated_memory_z", 5, 9),
+    ],
+)
+def test_every_block_stim_writes_is_read_as_stim_reads_it(
+    task: str, distance: int, rounds: int
+) -> None:
+    """Blocks appear where the round count is long enough, for two code families.
+
+    The shapes are the ones stim 1.16.0 was measured to write a block in: a
+    repetition code from five rounds and a rotated surface code from nine, while
+    the shorter circuits of the same families write the same instructions out.
+    The block is the format's only construct whose meaning is arithmetic rather
+    than a field, so it is checked on texts stim wrote for several shapes rather
+    than on one hand-picked example. Each case asserts that stim really emitted a
+    block, so a stim release that stopped writing one fails here rather than
+    turning the comparison vacuous, and then requires agreement with stim on the
+    declared shape, on the error count and on every mechanism.
+    """
+
+    text = str(
+        stim.Circuit.generated(
+            task,
+            rounds=rounds,
+            distance=distance,
+            after_clifford_depolarization=0.01,
+            before_measure_flip_probability=0.01,
+            after_reset_flip_probability=0.01,
+        ).detector_error_model(decompose_errors=False)
+    )
 
     assert "repeat" in text
-    with pytest.raises(ValueError, match="repeat blocks are not supported"):
-        DetectorErrorModel.from_stim_text(text)
+    parsed = DetectorErrorModel.from_stim_text(text)
+    reread = stim.DetectorErrorModel(text)
 
-    flattened = str(circuit.detector_error_model(decompose_errors=False).flattened())
-    assert "repeat" not in flattened
-    parsed = DetectorErrorModel.from_stim_text(flattened)
-    assert parsed.num_detectors == (
-        circuit.detector_error_model(decompose_errors=False).num_detectors
+    assert (parsed.num_detectors, parsed.num_observables, parsed.num_errors) == (
+        reread.num_detectors,
+        reread.num_observables,
+        reread.num_errors,
     )
+    assert {
+        (e.probability, frozenset(e.detectors), frozenset(e.observables))
+        for e in parsed.errors
+    } == _mechanisms(reread)
+
+
+def test_the_two_texts_stim_writes_without_a_declaration_are_refused() -> None:
+    """The narrowing that remains, measured on stim's own output.
+
+    Stim infers a detector count from the error targets where this reader takes it
+    from the declarations, so a flat one-detector circuit and an observable-only
+    circuit produce texts stim reads and this reader refuses. Both premises are
+    asserted before the refusals are, so a stim release that started declaring
+    these detectors fails here rather than leaving the claim standing on a text it
+    no longer writes.
+    """
+
+    flat = str(
+        stim.Circuit("X_ERROR(0.1) 0\nM 0\nDETECTOR rec[-1]").detector_error_model()
+    )
+    observable_only = str(
+        stim.Circuit(
+            "X_ERROR(0.1) 0\nM 0\nOBSERVABLE_INCLUDE(0) rec[-1]"
+        ).detector_error_model()
+    )
+
+    assert "detector" not in flat
+    assert "detector" not in observable_only
+    assert stim.DetectorErrorModel(flat).num_detectors == 1
+
+    with pytest.raises(ValueError, match="at least one detector"):
+        DetectorErrorModel.from_stim_text(flat)
+    with pytest.raises(ValueError, match="at least one detector"):
+        DetectorErrorModel.from_stim_text(observable_only)
 
 
 def test_the_parsed_model_predicts_the_circuit_it_came_from() -> None:

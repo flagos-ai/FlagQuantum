@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Sequence
 from typing import Any
 
@@ -179,6 +180,66 @@ def density_matrix_from_ir(
     return rho
 
 
+def reduced_density_matrix(
+    rho: torch.Tensor,
+    qubits: Iterable[int] | int | None = None,
+) -> torch.Tensor:
+    """Trace out every qubit the caller did not name.
+
+    ``rho`` is a batched density matrix over ``n_qubits`` qubits whose axes are
+    big-endian per qubit, the same convention ``density_matrix`` produces and
+    ``expectation_z_density`` reads. The result is the reduced matrix over the
+    named qubits, ordered as the caller named them: asking for ``(1, 0)``
+    returns a matrix in that basis order rather than in ascending qubit order,
+    which is a permutation of the same numbers and would otherwise be returned
+    silently wrong rather than refused.
+
+    The reduction is a trace, not a marginal. Summing a density matrix's row or
+    column index instead of contracting its row index against its column index
+    would return a matrix whose trace is the state's purity rather than one, so
+    the two indices are split by ``n_qubits`` and consumed in pairs, from the
+    highest traced qubit down so that no surviving ``dim1``/``dim2`` pair has
+    already shifted under an earlier removal.
+    """
+
+    if rho.ndim == 2:
+        rho = rho.reshape(1, *rho.shape)
+    if rho.ndim != 3 or rho.shape[-1] != rho.shape[-2]:
+        raise ValueError("a density matrix must be a square matrix per batch item")
+    n_qubits = int(round(math.log2(rho.shape[-1])))
+    if qubits is None:
+        target_qubits = tuple(range(n_qubits))
+    elif isinstance(qubits, int):
+        target_qubits = (qubits,)
+    else:
+        target_qubits = tuple(int(qubit) for qubit in qubits)
+    target_qubits = _validate_qubits(target_qubits, n_qubits)
+    if len(set(target_qubits)) != len(target_qubits):
+        raise ValueError("reduced density-matrix qubits must be unique")
+
+    surviving = sorted(target_qubits)
+    traced = [qubit for qubit in range(n_qubits - 1, -1, -1) if qubit not in surviving]
+    tensor = rho.reshape((rho.shape[0],) + (2,) * (2 * n_qubits))
+    remaining = n_qubits
+    for qubit in traced:
+        # The row axis of qubit ``q`` is ``1 + q`` and its column axis is
+        # ``1 + n_qubits + q``; ``torch.diagonal`` removes both and appends the
+        # shared index, so summing that last axis contracts them.
+        tensor = torch.diagonal(tensor, dim1=1 + qubit, dim2=1 + remaining + qubit).sum(
+            dim=-1
+        )
+        remaining -= 1
+    order = (
+        (0,)
+        + tuple(1 + surviving.index(qubit) for qubit in target_qubits)
+        + tuple(1 + len(surviving) + surviving.index(qubit) for qubit in target_qubits)
+    )
+    tensor = tensor.permute(order)
+    return tensor.reshape(
+        rho.shape[0], 2 ** len(target_qubits), 2 ** len(target_qubits)
+    )
+
+
 def expectation_z_density(
     rho: torch.Tensor,
     qubits: Iterable[int] | int | None = None,
@@ -212,4 +273,5 @@ __all__ = (
     "density_matrix_from_ir",
     "expectation_z_density",
     "expand_operator",
+    "reduced_density_matrix",
 )

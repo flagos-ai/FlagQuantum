@@ -47,9 +47,9 @@ existing test that proves it, function by function.
 
 ## Where to start
 
-- `qft.py`: the quantum Fourier transform and its inverse, emitted as a circuit
-  fragment that callers append to a circuit they already hold, and the primitive
-  phase estimation consumes.
+- `qft.py`: the quantum Fourier transform and its inverse, built once on its own
+  register and placed onto the caller's qubits with `Circuit.compose`; the
+  primitive phase estimation consumes.
 - `phase_estimation.py`: phase estimation over a controlled unitary, with the
   resolution and the success bound the counting register buys.
 - `state_preparation.py`: a uniform superposition, and an arbitrary state built

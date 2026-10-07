@@ -68,6 +68,13 @@ _GRADIENT_METHODS = (
     "finite_difference",
     "spsa",
 )
+# One refusal serves every vector-derivative entry point, because they share one
+# reason: a program whose output ignores the parameters has no derivative, and
+# answering with a zero Jacobian would hide a program that never read them.
+_NO_DEPENDENCE = (
+    "the program's output does not depend on the supplied parameters, so it has "
+    "no derivative with respect to them"
+)
 
 
 @dataclass(frozen=True)
@@ -358,6 +365,271 @@ def _as_parameters(flat: torch.Tensor, base: torch.Tensor) -> torch.Tensor:
     return flat.reshape_as(base).to(device=base.device, dtype=base.dtype)
 
 
+def jacobian(
+    program: CircuitBuilder,
+    parameters: torch.Tensor,
+) -> torch.Tensor:
+    """Differentiate every element of a vector-valued program.
+
+    ``fq.gradient`` answers "how does one scalar move". A program that returns
+    several values -- the probabilities of a register, one expectation per
+    qubit, a batch of losses -- has no single gradient, so this returns the
+    derivative of every output element with respect to every parameter element,
+    shaped ``(*program_output.shape, *parameters.shape)``.
+
+    The derivative is exact. It is taken by reverse-mode PyTorch autograd, which
+    is the one route available here: the per-opcode parameter-shift rule is
+    declared for a scalar loss and has no vector form, and a difference quotient
+    would return an approximation whose displacement the caller could not read
+    off the result. ``jacobian`` therefore takes no ``method`` argument and
+    refuses a program that carries no graph rather than approximating one.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+
+    Returns:
+        A detached tensor of shape ``(*program_output.shape, *parameters.shape)``
+        in the dtype and on the device of ``parameters``.
+
+    Raises:
+        CapabilityError: If the program's output carries no autograd graph, which
+            means it does not depend on ``parameters``. Use ``fq.gradient`` for a
+            scalar loss, including one that needs an approximate method.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if the program returns a non-tensor, an empty tensor, or a complex
+            tensor. A complex output would need a Wirtinger convention that no
+            FlagQuantum entry point defines; take a real observable value, such
+            as an expectation, instead.
+        TypeError: If ``parameters`` is not a tensor.
+    """
+
+    base = _validated_parameter_tensor(parameters)
+    value, tracked = _differentiable_value(program, base)
+    rows = [
+        _pulled_back(
+            value, tracked, _output_seed(value, index), base, retain_graph=True
+        )
+        for index in range(value.numel())
+    ]
+    return torch.stack(rows).reshape((*value.shape, *base.shape))
+
+
+def jvp(
+    program: CircuitBuilder,
+    parameters: torch.Tensor,
+    tangents: torch.Tensor,
+) -> torch.Tensor:
+    """Apply the derivative of a vector-valued program to a parameter direction.
+
+    This is the forward-mode action ``J v``: how the whole output moves when the
+    parameters move along ``tangents``. It costs two reverse sweeps regardless of
+    how many values the program returns, which is what makes it usable where the
+    full Jacobian is not -- a probabilities vector over many qubits has one row
+    per basis state, and :func:`jacobian` needs one sweep per row.
+
+    The two sweeps differentiate the program twice, so the program and the
+    executor behind it must support a graph of a graph. FlagQuantum's statevector,
+    MPS, and tensor-network paths do; an executor that does not fails closed with
+    a ``CapabilityError`` rather than being answered by a difference quotient.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+        tangents: Real floating-point tensor shaped exactly like ``parameters``.
+
+    Returns:
+        A detached tensor shaped like the program's output, in the dtype and on
+        the device of ``parameters``. Unlike ``torch.autograd.functional.jvp``
+        this returns the product alone: the program's own output is
+        ``program(parameters)``, so returning it here would ask every caller to
+        unpack a value half of them discard.
+
+    Raises:
+        CapabilityError: If the program's output carries no graph, or if the
+            program cannot be differentiated twice.
+        ValidationError: If ``parameters`` or ``tangents`` is empty, complex, or
+            non-finite, if ``tangents`` is not shaped like ``parameters``, or if
+            the program returns a non-tensor, an empty tensor, or a complex
+            tensor.
+        TypeError: If ``parameters`` or ``tangents`` is not a tensor.
+    """
+
+    base = _validated_parameter_tensor(parameters)
+    tangent = _validated_direction(tangents, name="tangents")
+    _require_shape(tangent, base.shape, name="tangents", reference="the parameters")
+    value, tracked = _differentiable_value(program, base)
+    # The seed lives in the parameter dtype, not the output dtype. The second
+    # sweep differentiates with respect to the cotangent, and the executor
+    # carries the chain rule in the parameter dtype: a seed of the forward
+    # dtype raises a dtype mismatch against wider parameters. That choice is
+    # also what makes the returned product's dtype match the parameters.
+    seed = torch.zeros(
+        value.shape, dtype=base.dtype, device=base.device, requires_grad=True
+    )
+    pulled = _pulled_back(value, tracked, seed, base, create_graph=True)
+    try:
+        product = torch.autograd.grad(
+            (pulled * tangent).sum(), seed, allow_unused=True
+        )[0]
+    except RuntimeError as error:
+        raise _second_order_refusal(error) from error
+    if product is None:
+        raise CapabilityError(_NO_DEPENDENCE)
+    return product.detach()
+
+
+def vjp(
+    program: CircuitBuilder,
+    parameters: torch.Tensor,
+    cotangents: torch.Tensor,
+) -> torch.Tensor:
+    """Apply the derivative of a vector-valued program to an output direction.
+
+    This is the reverse-mode action ``c^T J``: how one scalar built from the
+    program's output, ``<cotangents, program(parameters)>``, moves with the
+    parameters. It costs one reverse sweep, independent of both the parameter
+    count and the output count, so it is the shape a training step wants: a
+    scalar objective reached by weighting several measured values.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+        cotangents: Real floating-point tensor shaped exactly like the program's
+            output. It has to match that shape rather than merely broadcast to
+            it, which is the same rule ``torch.autograd.grad`` applies; use
+            ``torch.ones_like(output)`` to weight every value equally.
+
+    Returns:
+        A detached tensor shaped like ``parameters``, in the dtype and on the
+        device of ``parameters``.
+
+    Raises:
+        CapabilityError: If the program's output carries no graph.
+        ValidationError: If ``parameters`` or ``cotangents`` is empty, complex,
+            or non-finite, if ``cotangents`` is not shaped like the program's
+            output, or if the program returns a non-tensor, an empty tensor, or
+            a complex tensor.
+        TypeError: If ``parameters`` or ``cotangents`` is not a tensor.
+    """
+
+    base = _validated_parameter_tensor(parameters)
+    cotangent = _validated_direction(cotangents, name="cotangents")
+    value, tracked = _differentiable_value(program, base)
+    _require_shape(
+        cotangent, value.shape, name="cotangents", reference="the program output"
+    )
+    return _pulled_back(value, tracked, cotangent, base)
+
+
+def _differentiable_value(
+    program: CircuitBuilder,
+    base: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Evaluate the program at a tracked copy of the parameters.
+
+    Returning the tracked tensor alongside the value is what lets every caller
+    differentiate against the same forward pass.
+    """
+
+    tracked = base.detach().clone().requires_grad_(True)
+    value = _vector_value(program(tracked), source="program")
+    if not value.requires_grad or value.grad_fn is None:
+        raise CapabilityError(
+            "the program's output does not depend on the supplied parameters "
+            "through PyTorch autograd, so it has no derivative with respect to "
+            "them. Build the output from the parameters, or use fq.gradient for "
+            "a scalar loss that needs an approximate method."
+        )
+    return value, tracked
+
+
+def _vector_value(value: Any, *, source: str) -> torch.Tensor:
+    if not isinstance(value, torch.Tensor):
+        raise ValidationError(f"{source} must return a torch.Tensor")
+    if value.numel() == 0:
+        raise ValidationError(f"{source} must return a non-empty tensor")
+    if value.is_complex():
+        raise ValidationError(
+            f"{source} must return a real tensor. A complex output would need a "
+            "Wirtinger convention that no FlagQuantum entry point defines; take "
+            "a real observable value, such as an expectation."
+        )
+    return value
+
+
+def _validated_direction(direction: Any, *, name: str) -> torch.Tensor:
+    if not isinstance(direction, torch.Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor")
+    if direction.is_complex() or not direction.is_floating_point():
+        raise ValidationError(f"{name} must be real floating-point values")
+    if not bool(torch.isfinite(direction).all()):
+        raise ValidationError(f"{name} must be finite")
+    return direction.detach()
+
+
+def _require_shape(
+    direction: torch.Tensor,
+    expected: torch.Size,
+    *,
+    name: str,
+    reference: str,
+) -> None:
+    if direction.shape != expected:
+        raise ValidationError(
+            f"{name} must be shaped like {reference}: expected {tuple(expected)}, "
+            f"got {tuple(direction.shape)}"
+        )
+
+
+def _output_seed(value: torch.Tensor, index: int) -> torch.Tensor:
+    """Return the one-hot cotangent that selects one output element."""
+
+    seed = torch.zeros_like(value)
+    seed.reshape(-1)[index] = 1.0
+    return seed
+
+
+def _second_order_refusal(error: RuntimeError) -> CapabilityError:
+    """Report a program that cannot be differentiated twice as a boundary."""
+
+    return CapabilityError(
+        "the vector derivative needs the program differentiated twice, and this "
+        f"program or its executor does not support a graph of a graph: {error}. "
+        "Use fq.gradient for a scalar loss, or differentiate once with "
+        "fq.jacobian over a program the executor can replay."
+    )
+
+
+def _pulled_back(
+    value: torch.Tensor,
+    tracked: torch.Tensor,
+    seed: torch.Tensor,
+    base: torch.Tensor,
+    *,
+    retain_graph: bool = False,
+    create_graph: bool = False,
+) -> torch.Tensor:
+    """Differentiate ``value`` against ``tracked``, refusing a program that ignores it."""
+
+    try:
+        pulled = torch.autograd.grad(
+            value,
+            tracked,
+            grad_outputs=seed,
+            retain_graph=retain_graph,
+            create_graph=create_graph,
+            allow_unused=True,
+        )[0]
+    except RuntimeError as error:
+        if create_graph:
+            raise _second_order_refusal(error) from error
+        raise
+    if pulled is None:
+        raise CapabilityError(_NO_DEPENDENCE)
+    return pulled.reshape_as(base).to(device=base.device, dtype=base.dtype)
+
+
 def parameter_shift_gradient(
     circuit_builder: CircuitBuilder,
     parameters: torch.Tensor,
@@ -380,9 +652,11 @@ def parameter_shift_gradient(
         TypeError: If ``circuit_builder`` does not return a circuit or IR.
         ValueError: If a parameter does not control exactly one declared gate
             parameter, or its opcode declares no derivative rule.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if ``loss_fn`` does not return one real scalar tensor.
     """
 
-    base = parameters.detach()
+    base = _validated_parameter_tensor(parameters)
     flat = base.reshape(-1)
     profile = _circuit_profile_of(circuit_builder(base))
     grads = []
@@ -399,7 +673,11 @@ def parameter_shift_gradient(
             shifted = flat.clone()
             shifted[index] += shift
             terms.append(
-                coefficient * loss_fn(circuit_builder(shifted.reshape_as(base)))
+                coefficient
+                * _scalar_loss(
+                    loss_fn(circuit_builder(shifted.reshape_as(base))),
+                    source="loss_fn",
+                )
             )
         # A one-pair rule is summed with a single tensor so no extra zero enters
         # the graph; every evaluated term carries the caller's loss gradient.
@@ -407,6 +685,104 @@ def parameter_shift_gradient(
     return (
         torch.stack(grads)
         .reshape_as(base)
+        .to(device=parameters.device, dtype=parameters.dtype)
+    )
+
+
+def parameter_shift_hessian(
+    circuit_builder: CircuitBuilder,
+    parameters: torch.Tensor,
+    loss_fn: LossFunction,
+) -> torch.Tensor:
+    """Estimate the second derivative of a scalar loss with the parameter-shift rule.
+
+    The rule is the one each gate already declares in ``OPERATOR_SCHEMAS``, read
+    twice. A parameterized gate whose generator has frequencies
+    ``{f_1, ..., f_n}`` has an expectation value that is a trigonometric
+    polynomial in those frequencies, so its first derivative is a fixed linear
+    combination of the evaluations at ``base + shift_i`` and its mixed second
+    derivative is a linear combination of the evaluations at
+    ``base + shift_i + shift_j``. This function therefore evaluates the loss at
+    those sums and reads no coefficient from anywhere but the declaration, so
+    there is no second table of second-order coefficients that could drift away
+    from the first.
+
+    The matrix is symmetric because a twice-differentiable loss has equal mixed
+    partials, and every cell is evaluated independently, so the two halves agree
+    to floating-point summation order rather than bit for bit. Symmetry is a
+    property of the construction and not evidence that the values are right; the
+    values are checked elsewhere against a finite-difference route that shares no
+    code with this one.
+
+    Cost grows as the square of the parameter count, which is why this is a
+    separate entry point rather than a mode of :func:`parameter_shift_gradient`:
+    every cell of the matrix is its own set of displaced circuits. For ``n``
+    parameters whose rules all declare one frequency, each diagonal cell needs
+    three evaluations and each off-diagonal cell four, so ``4 * n**2 - n`` loss
+    evaluations in total -- ``33`` for the three-parameter reference program,
+    against the ``6`` a first-order gradient of the same program costs.
+
+    The result is only as precise as the loss it is assembled from, and the loss
+    precision belongs to the execution rather than to ``parameters``. An
+    unqualified :func:`flagquantum.run` resolves to ``complex64``, so a Hessian
+    assembled from it plateaus near ``1e-07``; the same call on the same program
+    with ``precision="complex128"`` reaches ``1e-16``. Ask for the wider
+    precision on the execution options -- or build the circuit with
+    ``dtype=torch.complex128`` -- when the second derivatives are read past about
+    seven digits.
+
+    Args:
+        circuit_builder: Builds a circuit from a parameter tensor, exactly as
+            :func:`parameter_shift_gradient` receives it.
+        parameters: Real, non-empty parameter tensor.
+        loss_fn: Turns a circuit into one scalar tensor.
+
+    Returns:
+        A detached Hessian with shape ``(*parameters.shape, *parameters.shape)``
+        and the dtype and device of ``parameters``. Cell ``[i, j]`` holds the
+        second derivative with respect to the flattened parameters ``i`` and
+        ``j``, so a one-dimensional ``parameters`` of length ``n`` gives the
+        ``(n, n)`` matrix.
+
+    Raises:
+        TypeError: If ``circuit_builder`` does not return a circuit or IR.
+        ValueError: If a parameter does not control exactly one declared gate
+            parameter, or its opcode declares no derivative rule.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if ``loss_fn`` does not return one real scalar tensor.
+    """
+
+    base = _validated_parameter_tensor(parameters)
+    flat = base.reshape(-1)
+    width = flat.numel()
+    profile = _circuit_profile_of(circuit_builder(base))
+    rules = [
+        _occurrence_shift_rule(profile, circuit_builder, base, flat, index)
+        for index in range(width)
+    ]
+    rows = []
+    for left in range(width):
+        cells = []
+        for right in range(width):
+            terms = [
+                coefficient
+                * _scalar_loss(
+                    loss_fn(circuit_builder((flat + shift).reshape_as(base))),
+                    source="loss_fn",
+                )
+                for coefficient, shift in _composed_shift_terms(
+                    rules[left],
+                    rules[right],
+                    parameters=(left, right),
+                    width=width,
+                    dtype=base.dtype,
+                )
+            ]
+            cells.append(torch.stack(terms).sum())
+        rows.append(torch.stack(cells))
+    return (
+        torch.stack(rows)
+        .reshape(*base.shape, *base.shape)
         .to(device=parameters.device, dtype=parameters.dtype)
     )
 
@@ -440,6 +816,52 @@ def _occurrence_shift_rule(
             f"parameter {index} controls {opcode}.{name}, which cannot be "
             f"differentiated: {error}"
         ) from error
+
+
+def _composed_shift_terms(
+    left: Sequence[tuple[float, float]],
+    right: Sequence[tuple[float, float]],
+    *,
+    parameters: tuple[int, int],
+    width: int,
+    dtype: torch.dtype,
+) -> tuple[tuple[float, torch.Tensor], ...]:
+    """The second-order rule two declared first-order rules compose into.
+
+    Each declared rule is a list of ``(coefficient, shift)`` terms for one gate
+    parameter, so the mixed second derivative of a pair of parameters is the
+    product rule of the two: every pair of terms contributes the product of
+    their coefficients to the evaluation displaced by the first term's shift on
+    the first parameter plus the second term's shift on the second parameter.
+
+    Two term pairs that land on the same displacement are summed instead of
+    being evaluated twice. That merge is what keeps the diagonal of a two-term
+    rule at three evaluations rather than four: the two pairs whose shifts
+    cancel both land on the unshifted point.
+
+    A displacement whose collected coefficients cancel exactly is dropped. It
+    would contribute nothing to the sum, so keeping it would make the cost of
+    this function depend on the coefficients rather than on the rule structure.
+    """
+
+    collected: dict[tuple[float, ...], float] = {}
+    for left_coefficient, left_shift in left:
+        for right_coefficient, right_shift in right:
+            displacement = [0.0] * width
+            displacement[parameters[0]] += left_shift
+            displacement[parameters[1]] += right_shift
+            # Shifts are read from the declaration and re-created by addition, so
+            # two paths to the same displacement can differ in their last bits.
+            # Rounding to a fixed grid merges them; the coefficients stay exact.
+            key = tuple(round(value, 12) for value in displacement)
+            collected[key] = (
+                collected.get(key, 0.0) + left_coefficient * right_coefficient
+            )
+    return tuple(
+        (coefficient, torch.tensor(key, dtype=dtype))
+        for key, coefficient in collected.items()
+        if coefficient != 0.0
+    )
 
 
 def _changed_occurrence(
@@ -752,5 +1174,9 @@ def _batch_losses(
 __all__ = [
     "batched_parameter_shift_gradient",
     "gradient",
+    "jacobian",
+    "jvp",
     "parameter_shift_gradient",
+    "parameter_shift_hessian",
+    "vjp",
 ]

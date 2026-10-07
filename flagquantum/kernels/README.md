@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 31 semantics,
-33 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 32 semantics,
+34 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -79,6 +79,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
 | FQK-SV-011 | `statevector.apply.pauli_rotation_2q.local` | `apply_complex64_local_pauli_rotation_2q` |
 | FQK-SV-013 | `statevector.apply.reversible_permutation_3q.local` | `apply_complex64_local_reversible_3q` |
+| FQK-SV-014 | `statevector.apply.swap_sequence.local` | `apply_complex64_local_swap_sequence` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -365,7 +366,13 @@ contiguous CUDA `complex64` statevectors, a constant 4-by-4 matrix, two
 distinct local bit positions, and an optional matching output buffer. Exact
 input/output aliasing is supported because each Triton program loads its
 complete disjoint four-amplitude group before storing any result. Public
-statevector dispatch remains a separate review step.
+statevector dispatch is catalog-authorized before the Triton provider is
+imported. The default runtime window is a contiguous CUDA `complex64` state,
+a contiguous same-device constant 4-by-4 `complex64` matrix, batch size one or
+four, and `2**16` through `2**24` amplitudes per state. Requests with gradients,
+views, other dtypes, other batch sizes, or inputs outside that bounded window
+keep the general PyTorch layout/BMM path. Set
+`FQ_TRITON_TWO_QUBIT_MATRIX=0` to disable the route explicitly.
 
 The checked-in
 [`statevector_local_2q_a800.json`](../../benchmarks/results/local/statevector_local_2q_a800.json)
@@ -381,6 +388,18 @@ within this measured CUDA `complex64` window. This is bounded single-device
 development evidence, not a framework-wide, distributed, or release claim.
 Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_2q_probe.py`](../../benchmarks/internal/evidence/statevector_local_2q_probe.py).
+
+The public-path
+[`statevector_local_2q_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_2q_dispatch_a800.json)
+artifact repeats that five-shape matrix through `_apply_matrix`, including
+catalog authorization and rollout checks, against the exact public fallback.
+It records 30 counterbalanced, synchronized groups of 10 invocations on both
+A800 hosts and both compiler lanes. All 20 cases win at `1.046x` through
+`6.963x`; maximum absolute and relative L2 errors are `1.94e-6` and `7.22e-8`.
+This authorizes the bounded default route above, while remaining single-device
+development evidence rather than a distributed scalability or release claim.
+Reproduce or validate it with
+[`benchmarks/statevector_local_2q_dispatch.py`](../../benchmarks/statevector_local_2q_dispatch.py).
 
 `FQKI-TRITON-SV-010-A` applies one- or two-qubit diagonal operators directly
 to a flat statevector. It derives the operator-basis index from each
@@ -403,10 +422,22 @@ relative L2 errors are `5.34e-7` and `3.63e-8`. Across all 20
 host/compiler/shape cases the direct wrapper reaches `1.084x` to `7.617x` the
 speed of the current PyTorch product reference. The aggregate decision is
 `eligible_for_dispatch_evaluation`, so SV-010-A is provisional within this
-measured CUDA `complex64` window. Runtime dispatch remains a separate review
-step. This is bounded single-device development evidence, not a distributed or
-release claim. Reproduce or validate it with
+measured CUDA `complex64` window. This is bounded single-device development
+evidence, not a distributed or release claim. Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_diagonal_probe.py`](../../benchmarks/internal/evidence/statevector_local_diagonal_probe.py).
+
+The public statevector path now selects SV-010-A by default for forward-only,
+contiguous CUDA `complex64` states from `2**16` through `2**24` amplitudes,
+batches one and four, and one- or two-qubit diagonal matrices. Shared matrices
+and batch-resolved matrices are supported. Requests outside that measured
+window, including gradient-bearing inputs, retain the established PyTorch path;
+`FQ_TRITON_DIAGONAL_MATRIX=0` is the rollout kill switch. The checked-in
+[`statevector_local_diagonal_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_diagonal_dispatch_a800.json)
+artifact exercises the real catalog-authorized public call across both A800
+hosts and both compiler lanes. All 20 cases meet the `1.0x` performance floor,
+with public speedups from `1.431x` through `7.083x`; maximum absolute and
+relative L2 errors remain `5.34e-7` and `3.63e-8`. Reproduce it with
+[`benchmarks/statevector_local_diagonal_dispatch.py`](../../benchmarks/statevector_local_diagonal_dispatch.py).
 
 The semantic serves diagonal gates including Z, S, T, RZ, phase, CZ,
 controlled phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian
@@ -483,17 +514,69 @@ and FlagTree 0.7.0. It covers CCX and controlled-SWAP, adjacent, reversed, and
 distant qubits, batches one and four, and state sizes from `2**16` through
 `2**24`. Every output is bitwise identical to the exact layout/BMM reference.
 The four `2**16` measurements remain as an explicit excluded boundary because
-one FlagTree lane reaches only `0.770x`; the bounded default candidate window
-therefore begins at 20 qubits. All 16 cases inside that window win by at least
-`1.142x` and as much as `4.918x`. The aggregate decision is
-`eligible_for_bounded_dispatch_evaluation`; runtime dispatch remains a
-separate review step. This is bounded single-device development evidence, not
-a release or distributed scalability claim. Reproduce or validate it with
+one FlagTree lane reaches only `0.770x`; the bounded default window therefore
+begins at 20 qubits. All 16 direct-wrapper cases inside that window win by at
+least `1.142x` and as much as `4.918x`.
+
+The public statevector route is enabled by default only for the evidenced
+`[1, 2**20]`, `[1, 2**24]`, and `[4, 2**20]` CUDA `complex64` shapes, with
+distinct in-range qubits, no gradient-bearing state, and opcode `ccx` or
+`cswap`. `FQ_TRITON_REVERSIBLE_3Q=0` restores the dense reference path. The
+checked-in
+[`statevector_reversible_3q_dispatch_a800.json`](../../benchmarks/results/local/statevector_reversible_3q_dispatch_a800.json)
+artifact applies the same 30-by-10 counterbalanced protocol to four public
+dispatch cases on both hosts and compiler lanes. All 16 comparisons are
+bitwise exact and win by `1.571x` through `5.125x`; its aggregate decision is
+`default_dispatch_enabled`. This is bounded single-device development
+evidence, not a release or distributed scalability claim. Reproduce or
+validate the direct wrapper with
 [`benchmarks/internal/evidence/statevector_reversible_3q_probe.py`](../../benchmarks/internal/evidence/statevector_reversible_3q_probe.py).
+Reproduce the public route with
+[`benchmarks/statevector_reversible_3q_dispatch.py`](../../benchmarks/statevector_reversible_3q_dispatch.py).
 
 This semantic serves reversible arithmetic, Grover and amplitude-amplification
 oracles, multi-controlled logic, Shor-style arithmetic blocks, and circuit
 interoperability involving Toffoli or Fredkin gates.
+
+`FQKI-TRITON-SV-014-A` fuses four through eight ordered local SWAP gates into
+one statevector traversal. It computes the inverse composite bit permutation
+for every output amplitude and therefore avoids the full-state materialization
+performed after every individual PyTorch transpose. The wrapper accepts a
+contiguous CUDA `complex64` statevector and a bounded ordered SWAP sequence.
+It is forward-only, requires a distinct output buffer, and rejects shorter
+sequences because the measured launch overhead does not beat the product path.
+
+The checked-in
+[`statevector_swap_sequence_a800.json`](../../benchmarks/results/local/statevector_swap_sequence_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed cases on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1
+and FlagTree 0.7.0. It covers four, five, six, and eight ordered SWAPs,
+state sizes from `2**16` through `2**24`, and batches one and four. All 20
+host/compiler/shape cases are bitwise identical to repeated PyTorch SWAP
+materialization and reach `1.293x` to `2.514x` its speed. The aggregate
+decision is `eligible_for_dispatch_evaluation`.
+
+The public statevector compiler now forms a fused step only for four through
+eight adjacent SWAPs. Default dispatch additionally requires an evidenced
+`[1, 2**16]`, `[1, 2**20]`, `[1, 2**24]`, or `[4, 2**20]` contiguous CUDA
+`complex64` state with no gradient-bearing input. Shorter and longer sequences
+retain the existing gate-by-gate route, and `FQ_TRITON_SWAP_SEQUENCE=0`
+disables both the compiler fusion and kernel selection. The checked-in
+[`statevector_swap_sequence_dispatch_a800.json`](../../benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json)
+artifact applies the same 30-by-10 counterbalanced protocol to the five public
+dispatch cases on both hosts and compiler lanes. All 20 comparisons are
+bitwise exact and win by `1.234x` through `2.438x`; its aggregate decision is
+`default_dispatch_enabled`.
+
+This is bounded single-device development evidence, not a release or
+distributed scalability claim. Reproduce or validate the direct wrapper with
+[`benchmarks/internal/evidence/statevector_swap_probe.py`](../../benchmarks/internal/evidence/statevector_swap_probe.py).
+Reproduce the public route with
+[`benchmarks/statevector_swap_sequence_dispatch.py`](../../benchmarks/statevector_swap_sequence_dispatch.py).
+
+This semantic serves QFT bit reversal, routing and layout permutations,
+compiled-circuit canonicalization, and repeated SWAP networks emitted by
+hardware-aware circuit transforms.
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -1021,10 +1104,13 @@ Reproduce or validate it with
 MPS-008 is the forward-only sampled-wire update that follows MPS-007 in
 sequential MPS sampling. It selects the measured physical slice, normalizes the
 resulting right boundary, contracts that boundary into the next site, and
-materializes the collapsed basis tensor. The experimental direct Triton wrapper
-supports contiguous CUDA `complex64` inputs with both bond dimensions at most
-64 and retains the exact PyTorch operation elsewhere. It is not connected to
-runtime dispatch in this change.
+materializes the collapsed basis tensor. Runtime dispatch is enabled by default
+for non-terminal sampling steps with contiguous CUDA `complex64` inputs, no
+gradients, and both bond dimensions at most 64. Set
+`FQ_TRITON_MPS_SAMPLING_COLLAPSE=0` to retain the exact PyTorch update. Terminal
+wires and unsupported inputs stay on that reference path. Eligible calls
+authorize the exact MPS-008 catalog entry before importing Triton, and route
+and fallback counts are exposed through `site_kernel_stats()`.
 
 The checked-in
 [`mps_sampling_collapse_a800.json`](../../benchmarks/results/local/mps_sampling_collapse_a800.json)
@@ -1034,10 +1120,26 @@ sampling-step shapes on `jp-a800-171` and `jp-a800-172`, under stock Triton
 direct wrapper is `1.435x` to `1.785x` faster than the exact PyTorch semantic.
 Maximum absolute and relative L2 error are `1.20e-6` and `1.97e-7`. The
 aggregate decision is `eligible_for_dispatch_evaluation`: this authorizes a
-separate public-path benchmark and dispatch PR, not default routing, maturity
-promotion, a release gate, or a scalability claim. Reproduce or validate it
-with
+separate public-path benchmark and dispatch review, not by itself default
+routing, a release gate, or a scalability claim. Reproduce or validate it with
 [`benchmarks/internal/evidence/mps_sampling_collapse_probe.py`](../../benchmarks/internal/evidence/mps_sampling_collapse_probe.py).
+
+The checked-in
+[`mps_sampling_collapse_dispatch_a800.json`](../../benchmarks/results/local/mps_sampling_collapse_dispatch_a800.json)
+artifact measures the direct wrapper and complete `_collapse_sampled_wire`
+route with a balanced Latin-square order across all four measured operations.
+It preserves 32 synchronized groups of 10 invocations for the same five shapes
+on `jp-a800-171` and `jp-a800-172`, under stock Triton 3.7.1 and FlagTree 0.7.0.
+Across all 20 host, compiler, and shape cases, the complete public dispatch path
+is `1.337x` to `1.624x` faster than the identical public path with MPS-008
+disabled; the direct wrapper is `1.419x` to `1.765x` faster than its exact
+PyTorch semantic. Maximum absolute and relative L2 error are `1.20e-6` and
+`1.97e-7`. The canonical aggregate records `eligible_for_default`, so MPS-008
+is now a `provisional` implementation with default dispatch inside the measured
+window and the explicit kill switch above. This remains bounded single-device
+development evidence, not a release gate or scalability claim. Reproduce or
+validate it with
+[`benchmarks/mps_sampling_collapse_dispatch.py`](../../benchmarks/mps_sampling_collapse_dispatch.py).
 
 NUM-002 contracts the explicit non-view layout `azcb,czdb->zad` as a strided
 complex batched matrix multiplication, avoiding canonical input
@@ -1056,26 +1158,27 @@ input shapes `(64, 16, 64, 16)` by `(64, 16, 64, 16)`, and logical BMM shape
 gradient-bearing calls, return directly to native `torch.einsum` before layout
 analysis.
 
-Across the four selected host/compiler cases, public dispatch is `0.866x` to
-`1.059x` relative to native einsum: it does not win on either FlagTree host and
-does not establish a stable stock-Triton win. Across the 12 fallback cases it is
-`0.904x` to `1.013x`, with at most `8.31 us` positive wrapper overhead. The evidence
-contract accepts a fallback only when it retains at least `0.95x` relative
-performance or adds no more than `5 us` absolute overhead. Direct forward plus
-backward ranges from `0.424x` to `0.944x` and does not win across the matrix, so
-training remains on the native path. Direct forward reaches `1.347x` to `1.350x`
-for the selected shape under stock Triton, but only `0.845x` to `0.849x` under
-FlagTree; compiler-specific optimization is required before promotion. Maximum
-forward absolute and relative L2
+The public path caches its immutable catalog authorization and the
+shape/stride-specific materialization decision. Across the four selected
+host/compiler cases, public dispatch is `1.040x` to `1.537x` faster than native
+einsum. Across the 12 fallback cases its independent-median ratio is `0.919x`
+to `1.064x`. Because the v3 design counterbalances the operations within each
+repeat, the absolute-overhead gate uses the median paired per-repeat
+public-minus-native difference; the maximum is `4.55 us`. The evidence contract
+accepts a fallback only when it retains at least `0.95x` relative performance
+or adds no more than `5 us` paired absolute overhead. Direct forward plus
+backward ranges from `0.294x` to `0.935x` and does not win across the matrix, so
+training remains on the native path. Direct forward reaches `1.347x` to `1.348x`
+for the selected shape under stock Triton, but only `0.845x` to `0.850x` under
+FlagTree; the authorized public-path result is therefore bounded to the exact
+measured inference signature. Maximum forward absolute and relative L2
 error are `2.22e-4` and `8.31e-7`; maximum gradient absolute and relative L2
 error are `6.10e-5` and `4.27e-7`.
 
-The canonical aggregate records `revisit_current_policy`: the current narrow
-dispatch signature must not be expanded, and its default selection should be
-removed or re-authorized only after the selected path and fallback overhead
-meet the evidence thresholds on both compiler lanes. NUM-002 remains
-`experimental`; the result does not authorize shape extrapolation, maturity
-promotion, a release gate, or a scalability claim.
+The canonical aggregate records `retain_current_policy` for the exact narrow
+window. It does not authorize shape extrapolation or training dispatch. NUM-002
+remains `experimental`; the result does not authorize maturity promotion, a
+release gate, or a scalability claim.
 Reproduce or validate it with
 [`benchmarks/tn_layout_contraction.py`](../../benchmarks/tn_layout_contraction.py).
 
@@ -1186,15 +1289,15 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 31 semantics and 38 implementations are implemented. The 28 direct
-Triton `-A` implementations from SV-001 through SV-011, SV-013, GR-001 through GR-006,
-MPS-001 through MPS-007, and MEAS-001 through MEAS-003 are provisional after
-evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, SV-010 and SV-013 await separate dispatch reviews, SV-011 has an
-evidenced bounded default route, and the other listed routes have evidenced
-default-dispatch promotions. MPS-008, the two generic-autograd Triton `-B`
-implementations, the two NUM implementations, and the five explicit FlagTree
-implementations remain experimental, for ten
+The current 32 semantics and 39 implementations are implemented. The 30 direct
+Triton `-A` implementations from SV-001 through SV-011, SV-013, SV-014,
+GR-001 through GR-006, MPS-001 through MPS-008, and MEAS-001 through MEAS-003
+are provisional after evidenced support-window validation. Provisional maturity
+does not itself imply public default dispatch: MPS-001 remains opt-in for the
+end-to-end reason above, SV-011 has an evidenced bounded default route, and the
+other listed routes have evidenced default-dispatch promotions. The two
+generic-autograd Triton `-B` implementations, the two NUM implementations, and
+the five explicit FlagTree implementations remain experimental, for nine
 experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
