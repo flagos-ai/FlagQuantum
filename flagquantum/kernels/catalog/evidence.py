@@ -160,6 +160,18 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         ),
     ),
     _evidence(
+        "FQKI-TRITON-SV-014-A",
+        "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_matches_layout_reference",
+        capability_tests=(
+            "tests/unit/test_statevector_swap_triton.py::test_local_swap_sequence_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_swap_sequence_catalog_dispatch.py::test_swap_sequence_public_path_uses_catalog",
+        ),
+        benchmark_artifacts=(
+            "benchmarks/results/local/statevector_swap_sequence_a800.json",
+            "benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json",
+        ),
+    ),
+    _evidence(
         "FQKI-TRITON-GR-001-A",
         "tests/unit/test_statevector_triton.py::test_fused_vjp_and_adjoint_match_pytorch",
         gradient_tests=(
