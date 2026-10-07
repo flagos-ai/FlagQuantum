@@ -1165,13 +1165,40 @@ records each one that moves.
   `tools/parity_matrix.py --check` must still report
   `parity-matrix: contract valid and document current`.
 
-- **`capability-maturity.toml` has no entry for this area.** Measured: the 87
+- **`capability-maturity.toml` has no entry for this area, and one entry's
+  `limitations` sentence has to be corrected.** Measured: the 87
   `[capabilities.*]` tables contain no `custom_operation_registration` block, so
-  no maturity level moves and none is claimed. The nearest entries are
-  `pass_manager_and_pass_plugins` (`maturity_ref = program_compilation`) and
-  `compiler_plugin_ecosystem` (`maturity_ref = extension_sdk`); Decision 2 edits
-  a pass that the first of those describes, so if its `summary` or
-  `documentation` names the fold's totality the entry is corrected with the code.
+  no maturity level moves and none is claimed. Two names that look like they
+  belong to that file do not: `pass_manager_and_pass_plugins` and
+  `compiler_plugin_ecosystem` are **row ids in `contracts/cudaq-parity-matrix.toml`**,
+  and it is their `maturity_ref` fields that point into `capability-maturity.toml`
+  — at `program_compilation` and `extension_sdk` respectively. The entry that
+  actually owns the code Decision 2 and Decision 4 edit is
+  **`program_compilation`** (`level = "production_supported"`, no `maturity_ref`
+  of its own, `public_apis` including `flagquantum.compiler.optimize`), and its
+  `limitations` asserts:
+
+  > optimize() removes identity gates, merges self-inverse runs, and merges
+  > adjacent rotations to a fixed point.
+
+  The first clause is what "Problem" section 4 falsifies for a matrix-bearing
+  instruction: the pass does remove `i`/`id` and zero-angle rotations, and it
+  does so without reading `instruction.matrix`. Decision 4 makes that clause
+  conditional, so the sentence is edited in the same change as the code rather
+  than left as a totality claim the compiler does not honour.
+
+  A separate entry, **`algorithms_gate_folding`** (`level = "development_evidence"`),
+  owns the *probabilistic error cancellation* fold in
+  `flagquantum/algorithms/folding.py` and is not the compiler fold; the two are
+  unrelated code and must not be conflated when this proposal is reviewed. That
+  entry's `limitations` already states the rule this proposal extends to the
+  compiler — "a custom instruction whose matrix is not unitary or not square,
+  because the fold repeats it with its own conjugate transpose and the identity
+  would not hold" — and `flagquantum/algorithms/folding.py:164-194` implements
+  exactly that refusal. So the repository documents and enforces the operand
+  contract in one fold and neither documents nor enforces it in the other, which
+  is the same asymmetry "Problem" section 10 measures, stated a second time in
+  the maturity matrix.
 
 - **A registered operation still cannot be spelled on `Circuit` after import**
   until the install-loop constraint of Decision 8 is addressed. That is not a
