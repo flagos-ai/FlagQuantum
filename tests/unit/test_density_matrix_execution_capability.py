@@ -20,9 +20,10 @@ code, so it is asserted against ``torch.kron`` rather than against the engine's
 own output.
 
 **The claim stops where the measurement stops.**  The entry claims CPU hardware,
-a 13-wire measured ceiling, an unenforced memory limit, and a lower readout
-ceiling than storage ceiling.  The tests below reproduce each boundary, so
-relaxing the prose without relaxing the engine, or the reverse, fails here.
+a 13-wire measured ceiling, an enforced memory limit that refuses a run whose
+dense state cannot fit the declared budget, and a lower readout ceiling than
+storage ceiling.  The tests below reproduce each boundary, so relaxing the prose
+without relaxing the engine, or the reverse, fails here.
 
 None of the numbers below is a performance or scalability claim.  Every assertion
 is either exact or an explicitly stated tolerance.
@@ -31,6 +32,7 @@ is either exact or an explicitly stated tolerance.
 from __future__ import annotations
 
 import importlib
+import json
 import math
 from pathlib import Path
 
@@ -39,6 +41,7 @@ import tomllib
 import torch
 
 import flagquantum as fq
+from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
 
@@ -165,7 +168,8 @@ def test_every_boundary_the_engine_has_is_disclosed() -> None:
         "unverified",
         "not sharded",
         "memory_limit_bytes",
-        "is not enforced",
+        "enforces",
+        "CapabilityError",
         "require_gradients",
         "gradients_not_available",
         "mid-circuit measurement",
@@ -321,22 +325,123 @@ def test_the_readout_ceiling_is_lower_than_the_storage_ceiling() -> None:
     assert "max_marginal_wires" in str(caught.value)
 
 
-def test_the_memory_limit_is_recorded_and_not_enforced() -> None:
-    """The entry discloses an unenforced limit; the run must still show both halves."""
+def test_a_limit_the_dense_state_cannot_meet_is_refused() -> None:
+    """A declared limit is capacity, and the dense state cannot be shrunk to it.
+
+    The boundary is measured against the plan's own figure rather than against a
+    constant: one byte below it is refused, and the figure itself executes. A
+    refused limit is refused by name, carrying the needed bytes and the declared
+    limit, because a caller that declared a budget has to be told which budget the
+    request exceeded and why no smaller run exists.
+    """
 
     program = fq.Circuit(4).h(0).cx(0, 1)
-    limit = 1
-    assert program.state() is not None
-    result = fq.run(
+    needed = fq.plan(
+        program, options=fq.ExecutionOptions(mode="density_matrix")
+    ).state_bytes
+
+    for limit in (1, needed // 64, needed // 2, needed - 1):
+        with pytest.raises(CapabilityError) as caught:
+            fq.run(
+                program,
+                options=fq.ExecutionOptions(
+                    mode="density_matrix", memory_limit_bytes=limit
+                ),
+                outputs=fq.probabilities(),
+            )
+        message = str(caught.value)
+        assert "mode='density_matrix'" in message
+        assert f"{needed} bytes" in message
+        assert f"memory_limit_bytes={limit}" in message
+        assert "exact and dense" in message
+        assert "no smaller equivalent" in message
+
+    at_the_limit = fq.run(
         program,
-        options=fq.ExecutionOptions(mode="density_matrix", memory_limit_bytes=limit),
+        options=fq.ExecutionOptions(mode="density_matrix", memory_limit_bytes=needed),
         outputs=fq.probabilities(),
     )
-    decision = result.plan.to_dict()["decision"]
-    assert decision["memory_limit_bytes"] == limit
-    # The dense state is far larger than the declared limit, and it ran anyway.
-    assert result.plan.state_bytes > limit
+    assert at_the_limit.probabilities.shape == (1, 16)
+
+
+def test_an_undeclared_limit_enforces_nothing() -> None:
+    """The negative control: no capacity was declared, so nothing is refused."""
+
+    program = fq.Circuit(4).h(0).cx(0, 1)
+    result = fq.run(
+        program,
+        options=fq.ExecutionOptions(mode="density_matrix"),
+        outputs=fq.probabilities(),
+    )
+    assert result.plan.to_dict()["decision"]["memory_limit_bytes"] is None
     assert result.probabilities.shape == (1, 16)
+
+
+def test_the_limit_binds_a_plan_that_was_saved_and_restored() -> None:
+    """A plan is a portable artifact, so the limit it recorded has to bind again.
+
+    The limit reaches execution from the plan's own decision rather than from an
+    option the second caller would have had to repeat, which is what makes a
+    restored plan execute under the budget it was admitted against instead of
+    silently running without one.
+    """
+
+    from flagquantum.runtime.execution_plan_contract import (
+        plan_from_dict,
+        plan_to_json,
+    )
+
+    program = _channel_circuit()
+    plan = fq.plan(
+        program,
+        options=fq.ExecutionOptions(mode="density_matrix", memory_limit_bytes=1),
+    )
+    assert plan.state_bytes > 1
+
+    restored = plan_from_dict(json.loads(plan_to_json(plan)))
+    with pytest.raises(CapabilityError, match="memory_limit_bytes=1"):
+        fq.run(restored)
+
+
+def test_the_precision_decides_what_the_limit_has_to_cover() -> None:
+    """The compared figure is the allocation, so a wider element costs twice.
+
+    The planner's figure is asserted to be the dense arithmetic at the resolved
+    precision, which is what keeps the refusal a statement about bytes rather than
+    about a wire count that ignores how wide each amplitude is.
+    """
+
+    program = fq.Circuit(4).h(0).cx(0, 1)
+    narrow = fq.plan(
+        program,
+        options=fq.ExecutionOptions(mode="density_matrix", precision="complex64"),
+    ).state_bytes
+    wide = fq.plan(
+        program,
+        options=fq.ExecutionOptions(mode="density_matrix", precision="complex128"),
+    ).state_bytes
+
+    assert narrow == 4**4 * 8
+    assert wide == 2 * narrow
+
+    fq.run(
+        program,
+        options=fq.ExecutionOptions(
+            mode="density_matrix", precision="complex128", memory_limit_bytes=wide
+        ),
+        outputs=fq.probabilities(),
+    )
+    with pytest.raises(CapabilityError) as caught:
+        fq.run(
+            program,
+            options=fq.ExecutionOptions(
+                mode="density_matrix",
+                precision="complex128",
+                memory_limit_bytes=narrow,
+            ),
+            outputs=fq.probabilities(),
+        )
+    assert f"needs {wide} bytes" in str(caught.value)
 
 
 def test_a_declared_gradient_requirement_is_not_a_post_condition_here() -> None:
@@ -382,6 +487,71 @@ def test_the_run_route_refuses_an_undeclared_device_at_admission() -> None:
                 outputs=fq.probabilities(),
             )
         assert "backend_unavailable" in str(caught.value)
+
+
+def test_the_entry_states_that_the_limit_binds_rather_than_being_recorded() -> None:
+    """The disclosure is an enforcement claim, not a record of a setting.
+
+    An entry that says the limit "is not enforced", or that the route records the
+    capacity rather than enforcing it, describes behaviour this route no longer
+    has. The sentence that names the limit has to carry the whole claim: the
+    exception the refusal raises and the fact that a limit equal to the plan's
+    own figure still executes.
+    """
+
+    limitations = _capability()["limitations"]
+    for stale in (
+        "is not enforced",
+        "not enforced on this route",
+        "records rather than",
+    ):
+        assert stale not in limitations, stale
+
+    sentence = next(
+        part for part in limitations.split(". ") if "memory_limit_bytes" in part
+    )
+    assert "enforces" in sentence
+    assert "CapabilityError" in sentence
+    assert "inclusive" in sentence
+
+
+def test_the_limit_binds_a_scene_level_noise_model_too() -> None:
+    """Both ways into the route are the same route, so both are held to the limit.
+
+    A channel reaches this route as an inline instruction on the program and as a
+    scene-level ``noise_model`` lowered just before planning. Lowering happens
+    before the plan is built, so the figure the limit is compared against already
+    includes the lowered channels, and the refusal cannot be skipped by declaring
+    the noise somewhere other than the program.
+    """
+
+    from flagquantum.noise import NoiseModel, depolarizing_channel
+
+    program = fq.Circuit(4).h(0).cx(0, 1)
+    model = NoiseModel().add("cx", depolarizing_channel(0.2))
+    needed = fq.plan(
+        program, options=fq.ExecutionOptions(mode="density_matrix")
+    ).state_bytes
+
+    with pytest.raises(CapabilityError) as caught:
+        fq.run(
+            program,
+            options=fq.ExecutionOptions(
+                mode="density_matrix", memory_limit_bytes=needed - 1
+            ),
+            noise_model=model,
+            outputs=fq.probabilities(),
+        )
+    assert f"needs {needed} bytes" in str(caught.value)
+
+    admitted = fq.run(
+        program,
+        options=fq.ExecutionOptions(mode="density_matrix", memory_limit_bytes=needed),
+        noise_model=model,
+        outputs=fq.probabilities(),
+    )
+    assert admitted.plan.state_mode == "density_matrix"
+    assert admitted.probabilities.shape == (1, 16)
 
 
 def test_the_parity_row_cites_this_capability() -> None:
