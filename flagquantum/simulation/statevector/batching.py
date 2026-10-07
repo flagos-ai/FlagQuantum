@@ -10,7 +10,12 @@ import torch
 
 from ...core.ir import Instruction
 from ..gate_matrix import _parameter_batch_window
-from .operations import _environment_flag, _gate_parameter_tensor
+from .operations import (
+    _batched_rotation_sequence_matrices,
+    _batched_rx_ry_rz_matrices,
+    _environment_flag,
+    _gate_parameter_tensor,
+)
 from .program import (
     _direct_batch_assembly_beneficial,
     _preallocated_batch_assembly_beneficial,
@@ -18,6 +23,7 @@ from .program import (
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
     _StatevectorCZGraphStep,
+    _StatevectorDisjointDenseStep,
     _StatevectorFusedGateStep,
     _StatevectorProgramStep,
 )
@@ -358,3 +364,72 @@ def _rotation_region_angles(
             angles.append(parameter[:, 0])
         regions.append(torch.stack(angles, dim=-1))
     return torch.stack(regions, dim=0) if regions else None
+
+
+def _prepare_batched_rotation_matrices(
+    circuit: Circuit,
+    program: Sequence[_StatevectorProgramStep],
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
+    """Build the per-step rotation matrices the local program loop reuses."""
+
+    matrix_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
+            )
+            else (step,)
+        )
+    )
+    rx_ry_rz_steps = tuple(
+        step
+        for step in matrix_steps
+        if isinstance(step, _StatevectorFusedGateStep)
+        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
+        and len(step.wires) == 1
+    )
+    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
+    if rx_ry_rz_steps:
+        region_angles = _rotation_region_angles(
+            circuit, rx_ry_rz_steps, state, parameter_bindings
+        )
+        if region_angles is not None:
+            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
+            rx_ry_rz_matrices = {
+                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
+            }
+
+    rotation_matrices: dict[int, torch.Tensor] = {}
+    rotation_patterns = {
+        tuple(item.name for item in step.instructions)
+        for step in matrix_steps
+        if isinstance(step, _StatevectorFusedGateStep)
+        and len(step.instructions) >= 2
+        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+    }
+    for names in rotation_patterns:
+        rotation_steps = tuple(
+            step
+            for step in matrix_steps
+            if isinstance(step, _StatevectorFusedGateStep)
+            and tuple(item.name for item in step.instructions) == names
+        )
+        region_angles = _rotation_region_angles(
+            circuit, rotation_steps, state, parameter_bindings
+        )
+        if region_angles is None:
+            continue
+        matrices = _batched_rotation_sequence_matrices(
+            region_angles,
+            names=names,
+            dtype=state.dtype,
+        )
+        rotation_matrices.update(
+            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
+        )
+    return rx_ry_rz_matrices, rotation_matrices

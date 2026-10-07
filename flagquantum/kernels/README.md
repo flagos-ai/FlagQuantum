@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 31 semantics,
-33 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 32 semantics,
+34 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -77,6 +77,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-008 | `statevector.transport.control_subspace_unpack` | `unpack_complex64_control_one`, `unpack_complex64_control_one_tle` (FlagTree TLE) |
 | FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
 | FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
+| FQK-SV-011 | `statevector.apply.pauli_rotation_2q.local` | `apply_complex64_local_pauli_rotation_2q` |
 | FQK-SV-013 | `statevector.apply.reversible_permutation_3q.local` | `apply_complex64_local_reversible_3q` |
 | FQK-SV-014 | `statevector.apply.swap_sequence.local` | `apply_complex64_local_swap_sequence` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
@@ -441,6 +442,61 @@ relative L2 errors remain `5.34e-7` and `3.63e-8`. Reproduce it with
 The semantic serves diagonal gates including Z, S, T, RZ, phase, CZ,
 controlled phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian
 simulation, and variational workloads.
+
+`FQKI-TRITON-SV-011-A` applies the structured rotations
+`exp(-i theta XX / 2)`, `exp(-i theta YY / 2)`, and
+`exp(-i theta ZZ / 2)` without materializing a dense four-by-four matrix or
+permuting the statevector. XX and YY partition the state into disjoint paired
+amplitudes, so each pair is loaded once and both outputs are written together;
+ZZ uses its diagonal parity directly. The wrapper accepts a shared or
+batch-resolved `cos(theta / 2) + i sin(theta / 2)` coefficient, two distinct
+local qubits, contiguous CUDA `complex64` statevectors, and an optional
+distinct output buffer. It is forward-only and fails closed for gradient
+inputs.
+
+The checked-in
+[`statevector_pauli_rotation_2q_a800.json`](../../benchmarks/results/local/statevector_pauli_rotation_2q_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed cases on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1
+and FlagTree 0.7.0. It covers XX, YY, and ZZ; adjacent, reversed, and distant
+qubits; shared and batch-resolved parameters; and state sizes from `2**16`
+through `2**24`. Maximum absolute and relative L2 errors are below `3.4e-7`
+and `4.1e-8`. The four `2**16` measurements remain in the artifact as an
+explicit excluded boundary: wrapper and launch overhead make that case reach
+only about `0.69x` to `1.00x` the current product reference. The default
+dispatch candidate window therefore begins at 20 qubits, where all 16
+host/compiler/shape cases reach at least `1.62x` and as much as `7.13x` the
+product reference. The aggregate decision is
+`eligible_for_bounded_dispatch_evaluation`; runtime dispatch remains a
+separate review step and must preserve the reference route below the measured
+window. This is bounded single-device development evidence, not a distributed
+or release claim. Reproduce or validate it with
+[`benchmarks/internal/evidence/statevector_pauli_rotation_2q_probe.py`](../../benchmarks/internal/evidence/statevector_pauli_rotation_2q_probe.py).
+
+The public local-statevector executor now selects SV-011-A for isolated RXX,
+RYY, and RZZ gates inside the exact measured CUDA `complex64` window:
+`(batch, amplitudes)` equal to `(1, 2**20)`, `(1, 2**24)`, or
+`(4, 2**20)`, with shared or batch-resolved `float32` angles. Unsupported
+devices, dtypes, shapes, gradient inputs, and fused multi-gate steps preserve
+the existing dense-matrix route. Set `FQ_TRITON_PAULI_ROTATION_2Q=0` to
+disable the route without changing circuit semantics.
+
+The checked-in
+[`statevector_pauli_rotation_2q_dispatch_a800.json`](../../benchmarks/results/local/statevector_pauli_rotation_2q_dispatch_a800.json)
+artifact records the public catalog dispatch against the product path starting
+from the same angle inputs. It contains 30 counterbalanced, synchronized groups
+of 10 invocations for four fixed cases on both A800 hosts under stock Triton
+3.7.1 and FlagTree 0.7.0. All 16 host/compiler/shape cases meet the `1.0x`
+performance floor: observed speedups range from `1.450x` through `6.636x`,
+maximum absolute error is below `3.4e-7`, and maximum relative L2 error is below
+`4.1e-8`. The aggregate decision is `default_dispatch_enabled`. This remains
+bounded single-device development evidence, not a release or distributed
+scalability claim. Reproduce or validate it with
+[`benchmarks/statevector_pauli_rotation_2q_dispatch.py`](../../benchmarks/statevector_pauli_rotation_2q_dispatch.py).
+
+This semantic is used by Ising interactions, Trotter and qDrift Hamiltonian
+simulation, VQE and QAOA ansatz layers, quantum machine-learning circuits, and
+spin-model or many-body dynamics.
 
 `FQKI-TRITON-SV-013-A` applies CCX and controlled-SWAP as fixed
 three-qubit permutations without materializing an eight-by-eight matrix,
@@ -1233,13 +1289,13 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 31 semantics and 38 implementations are implemented. The 29 direct
-Triton `-A` implementations from SV-001 through SV-010, SV-013, SV-014,
+The current 32 semantics and 39 implementations are implemented. The 30 direct
+Triton `-A` implementations from SV-001 through SV-011, SV-013, SV-014,
 GR-001 through GR-006, MPS-001 through MPS-008, and MEAS-001 through MEAS-003
 are provisional after evidenced support-window validation. Provisional maturity
 does not itself imply public default dispatch: MPS-001 remains opt-in for the
-end-to-end reason above, and the other listed routes have evidenced
-default-dispatch promotions. The two
+end-to-end reason above, SV-011 has an evidenced bounded default route, and the
+other listed routes have evidenced default-dispatch promotions. The two
 generic-autograd Triton `-B` implementations, the two NUM implementations, and
 the five explicit FlagTree implementations remain experimental, for nine
 experimental implementations in total.

@@ -29,6 +29,7 @@ tests/unit/test_single_qubit_loop_triton.py
 tests/unit/test_statevector_gate_autograd_boundary.py
 tests/unit/test_statevector_diagonal_triton.py
 tests/unit/test_statevector_diagonal_catalog_dispatch.py
+tests/unit/test_statevector_pauli_rotation_2q_triton.py
 tests/unit/test_statevector_marginal_probabilities_triton.py
 tests/unit/test_statevector_marginal_probability_catalog_dispatch.py
 tests/unit/test_statevector_pauli_expectation_catalog_dispatch.py

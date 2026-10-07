@@ -20,7 +20,7 @@ from .batching import (
     _cpu_statevector_batch_chunk_size_for,
     _execute_statevector_batch_windows,
     _gate_parameters,
-    _rotation_region_angles,
+    _prepare_batched_rotation_matrices,
     _statevector_batch_input,
 )
 from .clifford_matching import (
@@ -76,8 +76,6 @@ from .operations import (
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
     _apply_single_wire_matrix,
-    _batched_rotation_sequence_matrices,
-    _batched_rx_ry_rz_matrices,
     _compile_statevector_program,
     _cpu_cross_wire_diagonal_fusion_enabled,
     _cpu_cx_rzz_swap_fusion_enabled,
@@ -231,73 +229,6 @@ def _controlled_phase_graph_factors(
             )
         circuit._statevector_fused_matrices[key] = cached
     return cached, graph_wires
-
-
-def _prepare_batched_rotation_matrices(
-    circuit: Circuit,
-    program: Sequence[_StatevectorProgramStep],
-    state: torch.Tensor,
-    parameter_bindings: tuple[torch.Tensor, ...] | None,
-) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
-    matrix_steps = tuple(
-        region
-        for step in program
-        for region in (
-            step.regions
-            if isinstance(
-                step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
-            )
-            else (step,)
-        )
-    )
-    rx_ry_rz_steps = tuple(
-        step
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
-        and len(step.wires) == 1
-    )
-    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
-    if rx_ry_rz_steps:
-        region_angles = _rotation_region_angles(
-            circuit, rx_ry_rz_steps, state, parameter_bindings
-        )
-        if region_angles is not None:
-            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
-            rx_ry_rz_matrices = {
-                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
-            }
-
-    rotation_matrices: dict[int, torch.Tensor] = {}
-    rotation_patterns = {
-        tuple(item.name for item in step.instructions)
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and len(step.instructions) >= 2
-        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
-    }
-    for names in rotation_patterns:
-        rotation_steps = tuple(
-            step
-            for step in matrix_steps
-            if isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == names
-        )
-        region_angles = _rotation_region_angles(
-            circuit, rotation_steps, state, parameter_bindings
-        )
-        if region_angles is None:
-            continue
-        matrices = _batched_rotation_sequence_matrices(
-            region_angles,
-            names=names,
-            dtype=state.dtype,
-        )
-        rotation_matrices.update(
-            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
-        )
-    return rx_ry_rz_matrices, rotation_matrices
 
 
 def _use_elementwise_single_wire(
@@ -895,6 +826,28 @@ def _execute_statevector_program(
                 output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            if name in {"rxx", "ryy", "rzz"}:
+                parameters = _gate_parameters(
+                    circuit,
+                    instruction,
+                    output,
+                    parameter_bindings,
+                )
+                if parameters is not None:
+                    from .pauli_rotation_dispatch import (
+                        _try_apply_cataloged_pauli_rotation,
+                    )
+
+                    dispatched = _try_apply_cataloged_pauli_rotation(
+                        output,
+                        parameters[:, 0],
+                        qubits=instruction.wires,
+                        n_qubits=circuit.n_qubits,
+                        opcode=name,
+                    )
+                    if dispatched is not None:
+                        output = dispatched
+                        continue
             matrix = _gate_matrix(
                 instruction,
                 bsz=output.shape[0],
