@@ -2,12 +2,17 @@
 
 ## Decision and authorization
 
-Status: **proposed, pending review. Not implemented on this branch.** This
-document requests one additive field on `CircuitIR`, and it lands as a proposal
-with a measurement rather than as an implementation, because
-`flagquantum/core/ir.py` is a protected integration surface and rule 8 of
-`AGENTS.md` forbids changing a serialized public schema without explicit user
-authorization. The authorization is what this document asks for.
+Status: **approved on 2026-10-07, not yet implemented.** The authorization
+items 1 through 3 below ask for was given by the user, who is the authority this
+repository's process looks to for the integration team's owner role (see
+"Decision" and "Owner and approvals"). `flagquantum/core/ir.py` is a protected
+integration surface and rule 8 of `AGENTS.md` forbids changing a serialized public
+schema without explicit user authorization, which is why this document asked
+rather than implemented.
+
+This document still requests one additive field on `CircuitIR`, and it landed as a
+proposal with a measurement rather than as an implementation for that reason.
+Nothing on this branch implements the field.
 
 What is requested:
 
@@ -35,6 +40,36 @@ integration team), `flagquantum/simulation/statevector/**` (owned by team
 `docs/reference/API.md`, and the tests that pin a serialized IR. The eight
 contract files that record `ir_version` and the tests that pin a literal
 `content_hash` are enumerated in "Compatibility".
+
+## Decision
+
+The authorization this document asks for was given on **2026-10-07** by the user,
+who is the authority this repository's process looks to for the integration team's
+owner role. The approval covers items 1 through 3 above, as written:
+
+1. The field `global_phase: float` on `CircuitIR`, defaulted to `0.0`, in radians,
+   with the program's operator being `exp(1j * global_phase)` times the product of
+   its instructions.
+2. The field in `to_dict` / `from_dict`, with `IR_VERSION` moved from `1.0` to
+   `1.1` and `1.0` payloads accepted as `global_phase = 0.0`.
+3. The statevector executor as its single reader, and nothing else reading it.
+
+The approval does **not** cover:
+
+* **A writer.** The first writer is `Optimize1qGatesDecomposition` (backlog rung
+  W9-06) and it needs its own document, because a writer is what turns the field
+  from a way to *see* a phase into a way to *move* one.
+* **Open question 2 below** -- whether a stored artifact's `content_hash` needs a
+  migration or whether a v1 artifact stays pinned forever. This document calls that
+  question the largest unresolved cost in the change, and it remains unresolved: the
+  approval was given for the field, its serialization and its single reader, not for
+  an answer to how released serialization identities move. It must be answered before
+  the implementation lands, not after.
+* The `metadata` duplicate's removal (open question 5).
+
+Implementation is therefore authorized and not yet done. The status line above is
+the record of that decision; it is not a revision of the problem statement, the
+evidence, the decision candidates or the alternatives below, none of which changed.
 
 ## Problem and affected user journey
 
@@ -379,3 +414,8 @@ it touches a released serialization identity.
 Status of the companion change: the measurement that motivates this proposal is on
 this branch and needs no approval, because it adds no public surface. This document
 does not implement the field, and no code on this branch reads it.
+
+Approval given on 2026-10-07 by the user for items 1 through 3 of "What is
+requested", as recorded under "Decision" above. The writer, the `metadata`
+duplicate's removal, and open question 2 (`content_hash` migration for a stored v1
+artifact) were explicitly not part of that approval.
