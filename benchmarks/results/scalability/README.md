@@ -28,9 +28,14 @@ fixture, not a promoted result, until reproduced on its claimed hardware.
 
 ## Phase 5 MPS Preparation
 
-ISSUE-027 defines the MPS release contract but does not add a promoted MPS
-payload. A future MPS JSON in this directory must include all general release
-fields plus:
+ISSUE-027 defined this contract before any MPS payload existed, and the heading
+keeps that history. Two MPS payloads are promoted here now -- the capacity
+completion and the matched-speed pair -- while the premise's first half, the
+single-device capacity failure, is deliberately kept outside this directory as a
+candidate, because one device has no ranks to shard across and the strict audit
+would refuse it here. Read the list below as the requirements this directory's own
+payloads satisfy rather than as a wish list. An MPS JSON in this directory
+must include all general release fields plus:
 
 - `state_mode` identifying an MPS path;
 - `distribution_semantics="sharded_across_ranks"`;
