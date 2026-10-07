@@ -147,9 +147,11 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
         "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_matches_reference",
         capability_tests=(
             "tests/unit/test_statevector_reversible_3q_triton.py::test_local_reversible_3q_rejects_unsupported_contracts",
+            "tests/unit/test_statevector_reversible_3q_catalog_dispatch.py::test_reversible_3q_public_path_uses_catalog",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_reversible_3q_a800.json",
+            "benchmarks/results/local/statevector_reversible_3q_dispatch_a800.json",
         ),
     ),
     _evidence(
