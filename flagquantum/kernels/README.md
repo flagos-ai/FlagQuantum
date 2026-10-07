@@ -421,10 +421,22 @@ relative L2 errors are `5.34e-7` and `3.63e-8`. Across all 20
 host/compiler/shape cases the direct wrapper reaches `1.084x` to `7.617x` the
 speed of the current PyTorch product reference. The aggregate decision is
 `eligible_for_dispatch_evaluation`, so SV-010-A is provisional within this
-measured CUDA `complex64` window. Runtime dispatch remains a separate review
-step. This is bounded single-device development evidence, not a distributed or
-release claim. Reproduce or validate it with
+measured CUDA `complex64` window. This is bounded single-device development
+evidence, not a distributed or release claim. Reproduce or validate it with
 [`benchmarks/internal/evidence/statevector_local_diagonal_probe.py`](../../benchmarks/internal/evidence/statevector_local_diagonal_probe.py).
+
+The public statevector path now selects SV-010-A by default for forward-only,
+contiguous CUDA `complex64` states from `2**16` through `2**24` amplitudes,
+batches one and four, and one- or two-qubit diagonal matrices. Shared matrices
+and batch-resolved matrices are supported. Requests outside that measured
+window, including gradient-bearing inputs, retain the established PyTorch path;
+`FQ_TRITON_DIAGONAL_MATRIX=0` is the rollout kill switch. The checked-in
+[`statevector_local_diagonal_dispatch_a800.json`](../../benchmarks/results/local/statevector_local_diagonal_dispatch_a800.json)
+artifact exercises the real catalog-authorized public call across both A800
+hosts and both compiler lanes. All 20 cases meet the `1.0x` performance floor,
+with public speedups from `1.431x` through `7.083x`; maximum absolute and
+relative L2 errors remain `5.34e-7` and `3.63e-8`. Reproduce it with
+[`benchmarks/statevector_local_diagonal_dispatch.py`](../../benchmarks/statevector_local_diagonal_dispatch.py).
 
 The semantic serves diagonal gates including Z, S, T, RZ, phase, CZ,
 controlled phase, and RZZ in circuit simulation, QFT/QPE, QAOA, Hamiltonian
@@ -1226,8 +1238,8 @@ Triton `-A` implementations from SV-001 through SV-010, SV-013, SV-014,
 GR-001 through GR-006, MPS-001 through MPS-008, and MEAS-001 through MEAS-003
 are provisional after evidenced support-window validation. Provisional maturity
 does not itself imply public default dispatch: MPS-001 remains opt-in for the
-end-to-end reason above, SV-010 awaits a separate dispatch review, and the other
-listed routes have evidenced default-dispatch promotions. The two
+end-to-end reason above, and the other listed routes have evidenced
+default-dispatch promotions. The two
 generic-autograd Triton `-B` implementations, the two NUM implementations, and
 the five explicit FlagTree implementations remain experimental, for nine
 experimental implementations in total.

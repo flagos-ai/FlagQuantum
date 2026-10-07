@@ -42,6 +42,7 @@ process.
 - [`fq.jacobian`, `fq.jvp`, and `fq.vjp` for a program with several outputs](FQ-VECTOR-DERIVATIVES-20261026.md)
 - [Every differentiable opcode in every execution mode](FQ-GRADIENT-OPCODE-EXACTNESS-20261028.md)
 - [FlagQuantum's native gradient capability has one registration, and it disagrees with itself](FQ-NATIVE-GRADIENTS-CAPABILITY-20261029.md)
+- [The parameter-shift Hessian reads the first-order rule twice](FQ-PARAMETER-SHIFT-HESSIAN-20261030.md)
 - [The metric tensor differentiates the state and reads no rule](FQ-METRIC-TENSOR-20261031.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
