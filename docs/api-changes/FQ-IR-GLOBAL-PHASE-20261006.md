@@ -396,6 +396,51 @@ acceptance criteria because this document does not implement the change.
    Engineering decision principle 1 requires a named owner and removal condition
    either way.
 
+### Open question 2, measured: the cost is the version move, not the field
+
+Open question 2 asked whether a stored artifact's `content_hash` needs a
+migration. It has now been measured by implementing the change twice on a scratch
+copy of `main` (`d356af1fc`) and running the tests that pin a serialized IR. The
+two runs differ in exactly one thing: whether `IR_VERSION` moves.
+
+| Variant | What it does | `tests/unit/test_program_artifact_v2_candidate.py` + `tests/team/core/test_program_artifact_v2.py` |
+| --- | --- | --- |
+| baseline | nothing | **31 passed** |
+| A | `global_phase` added, key written **only when non-zero**, `IR_VERSION` left at `1.0` | **31 passed** |
+| B | the same, with `IR_VERSION` moved to `1.1` and `1.0` accepted | **9 failed, 22 passed** |
+
+The reason is structural and was not obvious from the proposal's text:
+`CircuitIR.to_dict()` includes `"version": self.version`, and
+`content_hash` is `sha256(to_json())` over that dict. So **moving `IR_VERSION`
+re-hashes every program in existence**, including the stored artifact that
+`tests/fixtures/program_artifact_v1_compatibility.json` pins. Three assertions in
+`test_v1_golden_fixture_remains_accepted_with_the_exact_existing_hash` are the
+ones that break, plus a literal hash at `tests/unit/test_program_artifact_v2_candidate.py:189`
+and two more in `tests/fixtures/program_artifact_v2_circuit_candidate.json`.
+
+The field itself costs nothing. Two consequences follow, and they are a decision
+rather than an implementation detail:
+
+1. **Item 2 bundles two changes with very different costs.** Adding the field with
+   the key omitted at `0.0` preserves every existing hash exactly, so no migration
+   and no fixture edit is needed for it. The `IR_VERSION` move is what re-hashes
+   everything.
+2. **The version move's only benefit is that a reader can distinguish a `1.0`
+   payload from a `1.1` one.** But the difference it would encode is
+   "`global_phase` is absent because it did not exist" versus "it is absent because
+   it is zero" -- and both mean `0.0`. If the field is the only difference, the
+   version move buys a distinction that has no consequence while costing the
+   reproducibility of every stored hash.
+
+This document does not resolve that. Item 2 was approved as written, including the
+`IR_VERSION` move, and narrowing an approved item after the fact is the same
+mistake as widening one: it makes the approval refer to something other than what
+was approved. **The measurement is recorded here so the choice can be made
+explicitly** -- keep the version move and migrate the fixtures, or keep
+`IR_VERSION` at `1.0` and get hash compatibility for free. Until it is made, the
+proposal's own note stands: the answer must come before the implementation lands,
+not after.
+
 ## Owner and approvals
 
 Owner: FlagQuantum integration team (`integration` in `team-ownership.toml`,
