@@ -415,7 +415,7 @@ evidence = ["flagquantum/compiler/openqasm_import.py", "flagquantum/compiler/ope
 id = "simulation_backends"
 title = "Simulation backend matrix"
 cudaq_surface = ["qpp-cpu", "nvidia", "nvidia option=mgpu", "tensornet", "tensornet-mps", "fermioniq", "nvidia option=mqpu", "trajectory noisy simulation", "density-matrix-cpu", "stim", "orca-photonics", "dynamics", "multi-GPU fabric"]
-evidence = ["flagquantum/simulation", "flagquantum/runtime/backend_registry.py", "search:no stabilizer simulator, no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport"]
+evidence = ["flagquantum/simulation", "flagquantum/runtime/backend_registry.py", "search:no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport; the stabilizer simulator is no longer part of this search, because flagquantum/simulation/stabilizer/ ships one and the stabilizer executor reaches it"]
 
 [[domains.capabilities]]
 id = "backend_cpu_statevector"
@@ -557,7 +557,7 @@ evidence = ["flagquantum/lindblad", "flagquantum/simulation/lindblad.py", "searc
 id = "noise_and_error_models"
 title = "Noise and error models"
 cudaq_surface = ["Kraus channels", "noise model callbacks", "trajectory simulation", "density matrix", "Pauli tracking", "detector error models", "unitary-mixture degradation"]
-evidence = ["flagquantum/noise/channels.py", "flagquantum/qec/dem.py", "search:no per-operation callback model and no unitary-mixture type"]
+evidence = ["flagquantum/noise/channels.py", "flagquantum/qec/dem.py", "search:no per-operation callback model; a unitary-mixture type is no longer part of this search, because flagquantum.noise.UnitaryMixture ships one"]
 
 [[domains.capabilities]]
 id = "kraus_channel_algebra"
@@ -621,7 +621,7 @@ evidence = ["flagquantum/runtime/executors/mps/noisy.py", "flagquantum/runtime/p
 id = "operator_algebra_and_domain_libraries"
 title = "Operator algebra and domain libraries"
 cudaq_surface = ["SpinOperator", "FermionOperator", "BosonOperator", "SuperOperator", "MatrixOperator", "operator arithmetics", "pauli_word and exp_pauli", "chemistry libraries"]
-evidence = ["flagquantum/observables", "flagquantum/operators", "search:no fermionic, bosonic, or superoperator algebra and no chemistry driver"]
+evidence = ["flagquantum/observables", "flagquantum/operators", "search:no fermionic or bosonic algebra and no chemistry driver; a superoperator algebra is no longer part of this search, because flagquantum.operators.SuperOperator carries from_kraus, choi, dense, adjoint, left_multiply, right_multiply, partial_trace and is_completely_positive"]
 
 [[domains.capabilities]]
 id = "spin_operator_algebra"
@@ -814,7 +814,7 @@ evidence = ["flagquantum/drawer", "search:no SVG string output, no trace view, a
 id = "quantum_error_correction"
 title = "Quantum error correction"
 cudaq_surface = ["cudaq-qec library", "detector, detectors, and logical_observable annotations in a kernel", "dem, dem_from_kernel, and DEMResult", "extract_syndrome", "circuit-to-DEM round trip", "Stim integration", "the logical.* preview namespace", "QEC MLIR dialect", "GPU decoders", "surface, Steane, and qLDPC codes", "lattice surgery and magic state distillation", "transport, rounds, objectives, neutral atoms", "for-stim-users migration"]
-evidence = ["flagquantum/qec", "flagquantum/qec/decoders.py", "search:six code records only, so no ReedMuller15 or tesseract record, and no qLDPC, bivariate-bicycle, Reichardt or Floquet code", "search:no detector or logical_observable annotation on a general circuit and no dem_from_kernel"]
+evidence = ["flagquantum/qec", "flagquantum/qec/decoders.py", "search:seven named code families only -- the repetition, rotated-surface, Steane, triangular-colour, toric, ZXXZ-surface and bivariate-bicycle records -- beside one route that derives a record from any parity-check matrix pair, so no Reichardt record, no Floquet record, no tesseract record, no ReedMuller15 record and no gauge record", "search:no detector or logical_observable annotation on a general circuit and no dem_from_kernel"]
 
 [[domains.capabilities]]
 id = "qec_code_library"

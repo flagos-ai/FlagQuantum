@@ -309,7 +309,7 @@ Evidence:
 
 - domain default: `flagquantum/simulation`
 - domain default: `flagquantum/runtime/backend_registry.py`
-- domain default, negative search: no stabilizer simulator, no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport
+- domain default, negative search: no photonic engine, no asynchronous multi-QPU scheduler, and no FlagQuantum-owned collective transport; the stabilizer simulator is no longer part of this search, because flagquantum/simulation/stabilizer/ ships one and the stabilizer executor reaches it
 
 - `backend_asynchronous_multi_qpu` override: `flagquantum/remote/jobs.py`, `tests/api_contract/test_remote_job_fanout.py`, `flagquantum/remote/README.md`, `search:no partitioning of one workload across targets, no combination of the independent streams into one estimate, and no rank or world size to report`
 - `backend_density_matrix` override: `flagquantum/simulation/density_matrix.py`, `flagquantum/simulation/density_matrix_dispatch.py`, `flagquantum/simulation/README.md`, `examples/density_matrix_execution.py`, `tests/unit/test_density_matrix_execution_capability.py`, `tests/unit/test_density_matrix_catalog_dispatch.py`, `tests/test_noise.py`
@@ -335,7 +335,7 @@ Evidence:
 
 - domain default: `flagquantum/noise/channels.py`
 - domain default: `flagquantum/qec/dem.py`
-- domain default, negative search: no per-operation callback model and no unitary-mixture type
+- domain default, negative search: no per-operation callback model; a unitary-mixture type is no longer part of this search, because flagquantum.noise.UnitaryMixture ships one
 
 - `kraus_channel_algebra` override: `flagquantum/noise/channels.py`, `tests/unit/test_kraus_channel_surface.py`
 - `detector_error_model` override: `flagquantum/qec/dem.py`, `flagquantum/qec/dem_circuit.py`, `tests/qec/test_dem_stim_text.py`, `tests/qec/test_dem_stim_interop.py`, `tests/qec/test_dem_stim_reference_rates.py`, `tests/benchmark_contract/test_qec_memory_logical_error_rate.py`, `tests/qec/test_dem_error_ids.py`, `tests/qec/test_dem_circuit_round_trip.py`, `flagquantum/qec/IMPLEMENTATION.md`, `search:no route from an arbitrary annotated circuit to a detector error model`
@@ -363,7 +363,7 @@ Evidence:
 
 - domain default: `flagquantum/observables`
 - domain default: `flagquantum/operators`
-- domain default, negative search: no fermionic, bosonic, or superoperator algebra and no chemistry driver
+- domain default, negative search: no fermionic or bosonic algebra and no chemistry driver; a superoperator algebra is no longer part of this search, because flagquantum.operators.SuperOperator carries from_kraus, choi, dense, adjoint, left_multiply, right_multiply, partial_trace and is_completely_positive
 
 - `spin_operator_algebra` override: `flagquantum/observables/__init__.py`, `flagquantum/observables/fermion.py`, `flagquantum/observables/boson.py`, `search:no commutator, anticommutator, exponential, exp, or __pow__ on Observable`
 - `fermion_operator_algebra` override: `flagquantum/observables/fermion.py`, `tests/unit/test_observables_fermion.py`, `search:Jordan-Wigner and parity encodings, with no Bravyi-Kitaev or ternary-tree encoding`
@@ -425,7 +425,7 @@ Evidence:
 
 - domain default: `flagquantum/qec`
 - domain default: `flagquantum/qec/decoders.py`
-- domain default, negative search: six code records only, so no ReedMuller15 or tesseract record, and no qLDPC, bivariate-bicycle, Reichardt or Floquet code
+- domain default, negative search: seven named code families only -- the repetition, rotated-surface, Steane, triangular-colour, toric, ZXXZ-surface and bivariate-bicycle records -- beside one route that derives a record from any parity-check matrix pair, so no Reichardt record, no Floquet record, no tesseract record, no ReedMuller15 record and no gauge record
 - domain default, negative search: no detector or logical_observable annotation on a general circuit and no dem_from_kernel
 
 - `qec_code_library` override: `flagquantum/qec/codes.py`, `flagquantum/qec/circuit.py`, `flagquantum/qec/dem_construction.py`, `flagquantum/qec/gf2.py`, `flagquantum/qec/logical.py`, `flagquantum/qec/bicycle.py`, `flagquantum/qec/qldpc.py`, `tests/qec/test_codes.py`, `tests/qec/test_surface_code.py`, `tests/qec/test_dem_code_matrices.py`, `tests/qec/test_css_code.py`, `tests/qec/test_css_code_memory.py`, `tests/qec/test_colour_code.py`, `tests/qec/test_colour_memory_execution.py`, `tests/qec/test_toric_code.py`, `tests/qec/test_toric_memory_execution.py`, `tests/qec/test_bicycle_code.py`, `tests/qec/test_qldpc_code.py`, `examples/qec/css_code_from_matrices.py`
