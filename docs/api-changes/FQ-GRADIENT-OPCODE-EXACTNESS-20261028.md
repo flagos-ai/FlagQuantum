@@ -123,6 +123,36 @@ is the expected shape rather than a defect: the two analytic routes agree to rou
 while the difference scheme carries the round-off of the loss evaluations it is built
 from.
 
+### Recorded figures are compared at the precision they are measured to
+
+The gate does not compare two kinds of number the same way, because they are not measured
+to the same precision.
+
+`shift_norm` and the observability floor are **magnitudes**: a gradient norm whose terms do
+not cancel. They reproduce across platforms to well inside `1e-6` relative, and are
+compared as numbers.
+
+The other three columns and every `cross_mode_spread` are **cancellation residuals**: the
+difference of two floating-point results that are equal in exact arithmetic. Their
+magnitude is `O(eps)` times the scale of the operands, and *which* multiple of `eps` they
+land on is decided by the summation order of the executor, its blocking, and the vector
+width of the BLAS kernel. None of that is fixed by this contract, so a residual is a
+sample of a quantity rather than a value, and the gate compares it as one: two samples of
+one residual have to be within `64x` of the smaller, and a residual the contract records
+as exactly zero -- two routes agreeing to the last bit, which is what nine cells recorded
+-- is corroborated by a re-measurement inside four round-off units.
+
+That comparison is deliberately not where the teeth are. Every re-measured deviation and
+every recorded deviation has to be inside the contracted `reference.tolerance` of `1e-12`,
+so a matrix that stopped being exact still fails; a residual two orders of magnitude below
+the bound cannot drift up to it unnoticed. The tolerance, the floor, the three maxima and
+every cell figure are unchanged by this decision -- what changed is only how far apart two
+*measurements of the same round-off* may be while still being called the same measurement.
+An earlier comparison at `1e-6` relative was measuring a platform, not the derivative:
+re-measured on Linux against a record taken on macOS, 174 of the 210 cell figures and 12
+of the 14 cross-mode spreads moved, none of them by more than `14.1x`, and all of them far
+inside the contracted tolerance.
+
 ### The reference program is non-degenerate on purpose
 
 Writing the probe correctly was most of this slice's work. The reference prepares every

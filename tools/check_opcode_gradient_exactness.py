@@ -30,6 +30,14 @@ file rather than restated, so the two cannot drift apart.
 The contract's four aggregate numbers -- the observability floor and the three maximum
 deviations -- are re-measured rather than reasoned about, because a maximum over cells
 is exactly the kind of figure that survives an edit it should not.
+
+A recorded figure is compared at the precision it is measured to, which is not the same
+precision for all of them. A gradient norm is reproducible across platforms and is
+compared as a number. A deviation between two routes is a cancellation residual, whose
+magnitude is set by round-off and whose sample is decided by summation order, so it is
+compared as a sample -- see `ROUND_OFF_RESIDUAL_FACTOR`. What makes the matrix a test is
+not that comparison but the bound: every re-measured deviation has to be inside the
+contracted `reference.tolerance`, and so does every recorded one.
 """
 
 from __future__ import annotations
@@ -78,13 +86,42 @@ RULE_FLAGS = (
     "no_silent_fallback",
 )
 
-#: The number of significant digits the contract records, used to compare a recorded
-#: figure with a re-measured one. A comparison at the wrong precision reported a false
-#: mismatch once already, when a checker formatted twelve decimals against a figure
-#: stored to three significant digits; the recorded value is the reference here, so the
-#: comparison has to be at least as loose as the recording.
+#: How closely a recorded **magnitude** has to be re-measured. A magnitude here is a
+#: gradient norm -- `shift_norm` in a cell, and the observability floor that is the
+#: smallest of them -- and a norm of terms that do not cancel is reproducible across
+#: platforms to far better than this. A comparison at the wrong precision reported a false
+#: mismatch once already, when a checker formatted twelve decimals against a figure stored
+#: to three significant digits; the recorded value is the reference here, so the comparison
+#: has to be at least as loose as the recording.
 RECORDED_RELATIVE_TOLERANCE = 1e-6
 RECORDED_ABSOLUTE_TOLERANCE = 1e-18
+
+#: The round-off unit of the dtype every cell is measured in. A deviation between routes
+#: that agree analytically is not a measured magnitude but a **cancellation residual**: the
+#: difference of two floating-point results that are equal in exact arithmetic. Its
+#: magnitude is `O(eps) * scale`, and *which* multiple of `eps` it lands on is decided by the
+#: summation order of the executor, its blocking, and the vector width of the BLAS kernel --
+#: none of which this contract fixes. The bound is reproducible; the sample is not.
+ROUND_OFF_UNIT = float(torch.finfo(torch.float64).eps)
+
+#: How far apart two samples of one cancellation residual may be before the record and the
+#: re-measurement are describing different quantities. Re-measured on Linux against a record
+#: taken on macOS, the widest ratio between the recorded and the re-measured sample of one
+#: residual was 14.1x (`rz`/`mps`), and the residual that reversed direction most was `ry`'s
+#: cross-mode spread, 1.221e-15 against 2.220e-16. This factor is two orders of magnitude of
+#: a residual's own scale, chosen as headroom over that spread rather than fitted to it.
+#:
+#: It is not the clause that gives this gate its teeth. Every re-measured deviation is still
+#: required to be inside the contracted `reference.tolerance`, and so is every recorded one,
+#: by `_residual_matches`; a matrix that stopped being exact fails on that bound, not here.
+ROUND_OFF_RESIDUAL_FACTOR = 64.0
+
+#: The band in which a re-measurement still corroborates a residual the contract records as
+#: exactly zero. A residual is zero when the two routes agreed to the last bit -- nine cells
+#: were recorded that way -- and a different summation order can round those same two routes
+#: one or two units apart instead. Four round-off units is far below the contracted tolerance
+#: and far below any deviation a wrong derivative rule produces.
+ROUND_OFF_ZERO_UNITS = 4.0
 
 #: The modes whose derivative is impossible for a reason that belongs to the measurement
 #: kind rather than to the opcode.
@@ -238,12 +275,56 @@ def _measure_cell(
     }
 
 
+def _contracted_tolerance(contract: dict[str, Any]) -> float | None:
+    """The bound the contract declares for every deviation, or `None` if it declares none.
+
+    A missing or non-numeric tolerance is reported by `_aggregate_errors`; until then there
+    is no bound to compare a record against, and comparing against an invented one would
+    hide the defect behind a second error.
+    """
+    tolerance = contract.get("reference", {}).get("tolerance")
+    return float(tolerance) if isinstance(tolerance, (int, float)) else None
+
+
 def _recorded_matches(recorded: Any, measured: float) -> bool:
+    """Is a recorded magnitude the one just re-measured?"""
     return isinstance(recorded, (int, float)) and math.isclose(
         float(recorded),
         measured,
         rel_tol=RECORDED_RELATIVE_TOLERANCE,
         abs_tol=RECORDED_ABSOLUTE_TOLERANCE,
+    )
+
+
+def _residual_matches(recorded: Any, measured: float, tolerance: float | None) -> bool:
+    """Is a recorded cancellation residual the one just re-measured?
+
+    A residual is round-off (`ROUND_OFF_RESIDUAL_FACTOR`), so two samples of one are samples
+    rather than two spellings of one number, and they are compared as samples: within that
+    factor of the smaller one.
+
+    An *exact* zero is the one value that is not a sample. It is the statement that the two
+    routes agreed to the last bit, which is what the recording platform observed in nine
+    cells, and a different summation order can round the same two routes a unit or two apart
+    instead -- so the other side only has to be inside `ROUND_OFF_ZERO_UNITS`, rather than
+    inside a factor of a recorded zero. A record that is merely *nearly* zero is a sample
+    again, and is held to one: `1e-30` is not a measurement of `2.22044604925e-16`.
+
+    A record above the contracted `tolerance` is refused whatever it re-measures. The
+    contract's claim is that every deviation is inside that bound, so a record outside it
+    states something the re-measurement cannot support -- and the factor above would
+    otherwise let a record drift up to it unnoticed, since a residual two orders of
+    magnitude below the bound is still within a factor of sixty-four of it.
+    """
+    if not isinstance(recorded, (int, float)):
+        return False
+    recorded = float(recorded)
+    if tolerance is not None and recorded > tolerance:
+        return False
+    if recorded == 0.0 or measured == 0.0:
+        return max(recorded, measured) <= ROUND_OFF_ZERO_UNITS * ROUND_OFF_UNIT
+    return max(recorded, measured) <= ROUND_OFF_RESIDUAL_FACTOR * min(
+        recorded, measured
     )
 
 
@@ -510,6 +591,7 @@ def _cell_shape_errors(contract: dict[str, Any]) -> list[str]:
 def _cell_measurement_errors(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     scheme = contract.get("difference_scheme", {})
+    tolerance = _contracted_tolerance(contract)
     for cell in contract.get("cell", ()):
         opcode = cell["opcode"]
         mode = cell["mode"]
@@ -525,7 +607,15 @@ def _cell_measurement_errors(contract: dict[str, Any]) -> list[str]:
             )
             continue
         for key, value in measured.items():
-            if not _recorded_matches(cell.get(key), value):
+            # `shift_norm` is a magnitude and the other three are the residuals of the
+            # three routes, so they are compared at the different precisions each is
+            # measured to.
+            matched = (
+                _recorded_matches(cell.get(key), value)
+                if key == "shift_norm"
+                else _residual_matches(cell.get(key), value, tolerance)
+            )
+            if not matched:
                 errors.append(
                     f"opcode exactness {opcode}/{mode} records {key}="
                     f"{cell.get(key)!r} but re-measured {value:.12e}"
@@ -551,20 +641,28 @@ def _aggregate_errors(contract: dict[str, Any]) -> list[str]:
     max_ap = max(cell["parameter_shift_vs_autograd"] for cell in cells)
     max_ar = max(cell["autograd_vs_richardson"] for cell in cells)
     max_pr = max(cell["parameter_shift_vs_richardson"] for cell in cells)
+    tolerance = _contracted_tolerance(contract)
+    if tolerance is None:
+        errors.append("opcode exactness reference.tolerance is not a number")
+    # The floor is a magnitude and the three maxima are residuals, so each is compared at
+    # the precision it is measured to.
+    if not _recorded_matches(reference.get("observability_floor"), floor):
+        errors.append(
+            f"opcode exactness reference.observability_floor is "
+            f"{reference.get('observability_floor')!r} but the cells re-measure "
+            f"{floor:.12e}"
+        )
     for name, measured in (
-        ("observability_floor", floor),
         ("max_parameter_shift_vs_autograd", max_ap),
         ("max_autograd_vs_richardson", max_ar),
         ("max_parameter_shift_vs_richardson", max_pr),
     ):
-        if not _recorded_matches(reference.get(name), measured):
+        if not _residual_matches(reference.get(name), measured, tolerance):
             errors.append(
                 f"opcode exactness reference.{name} is {reference.get(name)!r} but the "
                 f"cells re-measure {measured:.12e}"
             )
-    tolerance = reference.get("tolerance")
-    if not isinstance(tolerance, (int, float)):
-        errors.append("opcode exactness reference.tolerance is not a number")
+    if tolerance is None:
         return errors
     for name, measured in (
         ("max_parameter_shift_vs_autograd", max_ap),
@@ -587,6 +685,7 @@ def _aggregate_errors(contract: dict[str, Any]) -> list[str]:
 
 def _cross_mode_errors(contract: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    tolerance = _contracted_tolerance(contract)
     recorded = {
         row["name"]: row.get("cross_mode_spread")
         for row in contract.get("opcode", ())
@@ -622,20 +721,19 @@ def _cross_mode_errors(contract: dict[str, Any]) -> list[str]:
             for second in distinct[index + 1 :]
         )
         worst = max(worst, spread)
-        if not _recorded_matches(recorded.get(name), spread):
+        if not _residual_matches(recorded.get(name), spread, tolerance):
             errors.append(
                 f"opcode exactness {name}.cross_mode_spread is {recorded.get(name)!r} "
                 f"but the modes re-measure {spread:.12e}"
             )
     reference = contract.get("reference", {})
-    if not _recorded_matches(reference.get("max_cross_mode_spread"), worst):
+    if not _residual_matches(reference.get("max_cross_mode_spread"), worst, tolerance):
         errors.append(
             f"opcode exactness reference.max_cross_mode_spread is "
             f"{reference.get('max_cross_mode_spread')!r} but the opcodes re-measure "
             f"{worst:.12e}"
         )
-    tolerance = reference.get("tolerance")
-    if isinstance(tolerance, (int, float)) and worst > tolerance:
+    if tolerance is not None and worst > tolerance:
         errors.append(
             f"opcode exactness max_cross_mode_spread is {worst:.12e}, above the "
             f"contracted tolerance {tolerance!r}; the modes disagree about the "

@@ -25,6 +25,11 @@ either gradient route, so an agreement measured between ``autograd`` and
 probe that reads as agreement because it measures nothing: a differentiated phase-type
 opcode on a bare basis state has a zero derivative that every route reports identically,
 so the reference's observability floor is asserted to be above the tolerance.
+
+A third thing this contract has to survive is its own record. A deviation between routes
+that agree analytically is round-off, and round-off is a sample rather than a value: the
+gate compares one at the precision it is measured to, and the two tests at the end of the
+mutation section hold that comparison to a bound rather than to a platform.
 """
 
 from __future__ import annotations
@@ -237,6 +242,27 @@ def test_the_gate_refuses_a_misstated_aggregate_maximum() -> None:
     contract = _contract()
     contract["reference"]["max_autograd_vs_richardson"] = 1e-30
     assert any("max_autograd_vs_richardson" in error for error in _errors(contract))
+
+
+def test_the_gate_refuses_a_residual_above_the_contracted_tolerance() -> None:
+    """The comparison is loose about round-off; the bound is what makes it a test."""
+
+    tolerance = _contract()["reference"]["tolerance"]
+    above = tolerance * 10.0
+    assert not _GATE._residual_matches(above, above, tolerance)
+
+
+def test_a_residual_recorded_as_zero_is_still_a_measurement() -> None:
+    """Two routes agreeing to the last bit is an observation, not a licence to skip one."""
+
+    contract = _contract()
+    assert [
+        cell for cell in contract["cell"] if cell["parameter_shift_vs_autograd"] == 0.0
+    ]
+    band = _GATE.ROUND_OFF_ZERO_UNITS * _GATE.ROUND_OFF_UNIT
+    tolerance = contract["reference"]["tolerance"]
+    assert _GATE._residual_matches(0.0, band, tolerance)
+    assert not _GATE._residual_matches(0.0, band * 100.0, tolerance)
 
 
 def test_the_gate_refuses_a_row_for_an_opcode_without_a_declared_rule() -> None:
