@@ -222,6 +222,11 @@ class TorchDistributedMPSGradientResult:
     layer_halo_intra_node_bytes: int = 0
     layer_halo_inter_node_bytes: int = 0
     layer_halo_wait_seconds: float = 0.0
+    adjoint_tensor_bytes: int = 0
+    forward_tensor_bytes: int = 0
+    boundary_gradient_buffer_bytes: int = 0
+    canonicalization_temporary_bytes: int = 0
+    truncation_temporary_bytes: int = 0
     _backward_status: str = "ready"
     _backward_error: str | None = None
     _last_completed_record: int | None = None

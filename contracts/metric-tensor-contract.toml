@@ -1,0 +1,424 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# `metric_tensor` differentiates the *state* a program delivers and not the
+# gates it is built from. The distinction is the whole point of the contract.
+#
+# `parameter_shift_gradient` may read `OperatorSchema.shift_rule` because a
+# shift rule is a statement about an expectation value: the observable
+# `<psi(theta)|H|psi(theta)>` is a trigonometric polynomial in the generator's
+# frequencies, so a fixed linear combination of shifted evaluations reproduces
+# its derivative exactly. A state is not a trigonometric polynomial in that
+# sense, and the same table does not describe it. Measured on a single `ry`, the
+# declared rule applied to the state is wrong by `sqrt(2)` per component and the
+# metric comes out at twice its true value; on `phase` the same rule is right to
+# `5.9e-11`. A rule that is right for one gate and wrong by `sqrt(2)` for another
+# is not a rule with a scale factor missing -- the shape of the rule depends on
+# the generator's spectrum, and `OperatorSchema` records no spectrum. Fixing that
+# would mean a second table of state frequencies maintained beside the first,
+# which is the second source of truth AGENTS.md principle 6 forbids.
+#
+# So this route reads no rule at all. It sends the parameters to `fq.run`,
+# differentiates the state that comes back, and reads no opcode: the gate
+# requires the implementation to name none of the registered opcodes as a string
+# literal and none of the declaration's symbols as an identifier, so a later
+# "optimization" that reintroduces the declaration turns the gate red rather
+# than quietly changing the number.
+#
+# What that buys is not only correctness. A program carrying an explicit matrix
+# still has a state, so this route serves it, while a declared rule has nothing
+# to say about a matrix no opcode declares.
+#
+# The value is the Fubini-Study metric. It is not the quantum Fisher
+# information: the two agree in shape and differ by a factor of four, and the
+# convention here is the quarter, which is what PennyLane's `qml.metric_tensor`
+# returns. A silent factor of four survives every shape assertion, so the gate
+# pins it against a hand-built density matrix evaluated through the symmetric
+# logarithmic derivative -- the definition, which contains no factor of four --
+# and requires `QFIM == 4 * metric_tensor` to hold there.
+#
+# Correctness is argued from two routes that share no method. The implementation
+# is a central difference of the delivered state; the independent route is
+# reverse-mode autodiff through the same `fq.run`, which computes the same
+# derivative analytically and shares no arithmetic with a difference scheme. A
+# third route -- Richardson central differences at a different step and stencil
+# -- is computed as well and deliberately *not* counted as evidence, because it
+# is the implementation's own method with better constants and its agreement
+# would show consistency rather than correctness.
+schema = "flagquantum_metric_tensor_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+# The declaration this route deliberately does not read. Naming it is what lets
+# the gate prove the route does not read it.
+declaration_source = "flagquantum/core/operator_schema.py"
+declaration_is_read = false
+authorization = [
+    "docs/api-changes/FQ-METRIC-TENSOR-20261031.md",
+]
+
+# Symbols a state derivative must not reach for. The gate walks the route's own
+# code for identifiers and string literals and requires the intersection with
+# this list, and with the registered opcode names, to be empty.
+[unread]
+symbols = [
+    "OPERATOR_SCHEMAS",
+    "OperatorSchema",
+    "differentiable",
+    "parameter_frequencies",
+    "shift_rule",
+]
+# The registered opcode names are read from the declaration itself rather than
+# restated here, so registering a new opcode extends this check for free.
+opcodes_are_derived_from_the_declaration = true
+expected_opcode_literals = 0
+
+[scope]
+# The one symbol this contract is about. It is a module-level entry point, not a
+# Stable Core root export, so adding it changes no frozen public surface and
+# needs no rule 8 authorization.
+provided = ["fq.gradients.metric_tensor"]
+# Named absences, so a later reader can tell an unimplemented neighbour from an
+# oversight.
+not_provided = [
+    "the quantum Fisher information (it is four times this value)",
+    "the mixed-state quantum Fisher information",
+    "a metric tensor on the `fq` root surface",
+    "a metric field on `fq.GradientResult`",
+    "the quantum natural gradient",
+    "a metric tensor for a batched program",
+    "a second derivative",
+    "a metric tensor for a program whose qubit count depends on the parameters",
+]
+
+[convention]
+quantity = "fubini_study_metric"
+cell = "Re[<d_i|d_j> - <d_i|psi><psi|d_j>]"
+fisher_definition = "Re Tr[rho L_i L_j] with L the symmetric logarithmic derivative"
+# The factor the gate pins. A route that returned the Fisher information instead
+# would be wrong by this much in every cell, which no shape check would notice.
+fisher_factor = 4.0
+# Recorded for the reader, not measured by the gate: the environment that runs
+# the gates has no PennyLane, so parity with it is evidence in the change record
+# and not a check here.
+penny_lane_counterpart = "qml.metric_tensor"
+penny_lane_returns = "the same quarter, so the two agree with no factor between them"
+
+[protocol]
+implementation_route = "central_difference_of_the_delivered_state"
+step_default = "derived_from_the_precision_of_the_delivered_state"
+state_accessor = "ExecutionResult.to_statevector"
+# The state is read once per displacement, and each parameter's central pair is
+# reused by every matrix cell, so the cost is linear in the parameter count
+# rather than quadratic the way a second derivative's is.
+base_evaluations = 1
+evaluations_per_parameter = 2
+cost_total = "one base state plus a central pair per parameter"
+cost_growth = "linear_in_the_parameter_count"
+result_shape = "parameters_shape_twice"
+result_detached = true
+# The matrix is assembled from one symmetric bilinear form, so it is symmetric
+# to floating-point summation order and not bit for bit.
+symmetry = "up_to_floating_point_summation_order"
+# The modes whose state accessor delivers a ket. `density_matrix` delivers a
+# matrix and `stabilizer` delivers no state at all; each is excluded below with
+# the exception its exclusion produces.
+serving_modes = [
+    "auto",
+    "statevector",
+    "mps",
+    "tensor_network",
+]
+
+[rules]
+implementation_is_reachable_from_the_module_surface = true
+implementation_is_absent_from_the_root_surface = true
+no_opcode_drives_the_route = true
+no_declared_frequency_is_read = true
+every_evaluation_comes_from_the_parameter_count = true
+result_carries_no_autograd_graph = true
+result_shape_is_the_parameter_shape_twice = true
+result_dtype_follows_the_delivered_state = true
+result_device_follows_the_parameters = true
+metric_is_the_fisher_information_divided_by_the_recorded_factor = true
+custom_matrix_programs_are_served = true
+a_mixed_state_is_refused_rather_than_reinterpreted = true
+no_silent_fallback = true
+
+[exactness]
+independent_route = "reverse_mode_autodiff_through_fq_run"
+definitional_route = "symmetric_logarithmic_derivative_on_a_hand_built_density_matrix"
+# Every cell of every witness must land inside this distance of the independent
+# route. It is a bound rather than a measurement, so it is asserted in the
+# direction the error can move: an implementation that gets worse fails and one
+# that gets better also passes.
+agreement_bound = 1e-09
+# The same bound for the definitional route, which pins the factor as well as
+# the values.
+definitional_bound = 1e-09
+# A reference that came out identically zero everywhere would make every
+# comparison vacuous, so the largest cell of each reference has a floor too.
+minimum_reference_magnitude = 1e-03
+# The per-witness readings below are documentation of what the routes measured
+# on the machine that wrote the file; the assertion they support is the bound
+# above, and each reading is re-measured with an absolute floor of `1e-11` so
+# that reference noise at the twelfth digit is not reported as drift.
+#
+# `agreement_bound` is a statement about a pair of routes at a *declared*
+# execution precision. `fq.run` resolves an unset `precision` to `complex64`, so
+# an unqualified circuit delivers a `complex64` state and the metric comes back
+# as `float32`. The witness programs therefore pin the precision, and the
+# executor-default reading is recorded next to the bound so that it cannot be
+# quoted as the bound: it is not inside it, and this file says so rather than
+# relying on the pinned witness to hide it.
+program_dtype = "complex128"
+# Measured on the `repeated` witness with the state delivered at the executor
+# default: `5.69e-06`, roughly five thousand times the bound. This is the
+# central-difference floor of a `float32` state and not a defect in the route,
+# which is why the documented example above asks for `complex128` when the
+# metric is read past six digits.
+default_program_dtype = "complex64"
+default_program_dtype_witness = "repeated"
+default_program_dtype_deviation = 5.692244e-06
+
+# The declaration read as a state derivative, measured so that the reason this
+# route reads no rule is a number and not an opinion. The gate re-derives each
+# reading from `OPERATOR_SCHEMAS`, so moving the declaration moves these rows.
+[falsification]
+route = "declared_shift_rule_applied_to_the_state"
+# A rotation declares frequency 1 and its state derivative is wrong by sqrt(2)
+# per component, so the metric assembled from the declared rule reads exactly
+# twice its true value.
+rotation_opcode = "ry"
+rotation_frequencies = [[1.0]]
+rotation_theta = [0.4, 1.1]
+rotation_component_ratio = [1.414213562, 1.414213562]
+rotation_deviation = [2.029784e-01, 1.765636e-01]
+# `phase` and `u1` declare the same frequency and the same rule and are right to
+# five parts in ten billion, which is what rules out a single scale factor: the
+# declared table is right for one opcode and wrong by `sqrt(2)` for another.
+# The two deviations below are the round-off floor of the central difference they
+# are compared against -- `eps * |psi| / (2 * step)`, `5.6e-11` at the step this
+# gate uses -- and not a residual of the declared rule, which coincides here
+# instead. A floor is not reproducible to three significant digits: the x86 Linux
+# `torch` 2.13.0+cpu wheel reads `5.810119e-11` for `u1` at `theta=1.1` where the
+# machine these were recorded on reads `5.052384e-11`. The gate compares these
+# rows at the order of the floor rather than at the reading, and the ratio rows
+# above are what a rule that stopped coinciding would fail.
+coincident_opcodes = ["phase", "u1"]
+coincident_theta = [0.4, 1.1]
+coincident_ratio = [1.0, 1.0]
+coincident_deviation = [5.860885e-11, 5.052384e-11]
+# The clearest single reading: with the declared rule in place of a state
+# derivative, the reference witness's metric is `0.5` on the diagonal where the
+# truth is `0.25`, so the Fisher information would read `2.0` where it is `1.0`.
+reference_witness = "product"
+declared_rule_metric_diagonal = 0.5
+true_metric_diagonal = 0.25
+declared_rule_deviation = 2.5e-01
+
+# How many state evaluations one call costs, measured by counting the builder
+# calls it makes, so a route that silently re-evaluated once per matrix cell
+# would be caught here rather than only in the timing.
+[[evaluation]]
+parameters = 1
+evaluations = 3
+
+[[evaluation]]
+parameters = 2
+evaluations = 5
+
+[[evaluation]]
+parameters = 3
+evaluations = 7
+
+# One row per witness program. Both the implementation and the two independent
+# routes are driven from `gates`, so the program the contract describes is the
+# program the gate runs and the witness cannot drift away from the numbers
+# recorded beside it. `recorded_metric` is the value the definitional route
+# produced, which is the truth this contract claims.
+[[witness]]
+name = "product"
+qubits = 2
+parameters = [0.4, -0.9]
+gates = [
+    { opcode = "ry", target = 0, parameter = 0 },
+    { opcode = "ry", target = 1, parameter = 1 },
+    { opcode = "cx", control = 0, target = 1 },
+]
+recorded_metric = [[2.5e-01, 0.0], [0.0, 2.5e-01]]
+measured_deviation = 3.153672e-12
+definitional_deviation = 1.261424e-11
+
+[[witness]]
+name = "repeated"
+qubits = 2
+parameters = [0.4, -0.9]
+# The same parameter drives two gates, so this witness is about the coordinate
+# the matrix is indexed by and not only about the values: cell `[0, 1]` is
+# nonzero and equal to `[1, 0]`.
+gates = [
+    { opcode = "ry", target = 0, parameter = 0 },
+    { opcode = "ry", target = 1, parameter = 1 },
+    { opcode = "cx", control = 0, target = 1 },
+    { opcode = "ry", target = 1, parameter = 0 },
+]
+recorded_metric = [
+    [5.0e-01, 2.302652484981258e-01],
+    [2.302652484981258e-01, 2.5e-01],
+]
+measured_deviation = 8.637646e-12
+definitional_deviation = 3.454970e-11
+
+[[witness]]
+name = "three"
+qubits = 2
+parameters = [0.4, -0.9, 1.3]
+gates = [
+    { opcode = "ry", target = 0, parameter = 0 },
+    { opcode = "cx", control = 0, target = 1 },
+    { opcode = "ry", target = 1, parameter = 1 },
+    { opcode = "cx", control = 0, target = 1 },
+    { opcode = "rx", target = 0, parameter = 2 },
+]
+recorded_metric = [
+    [2.5e-01, 0.0, 0.0],
+    [0.0, 2.5e-01, 0.0],
+    [0.0, 0.0, 2.353509737598577e-01],
+]
+measured_deviation = 7.032042e-12
+definitional_deviation = 3.303124e-11
+
+# Every way the route refuses, with the fragment its message must contain. The
+# gate builds each program and requires the refusal, so a refusal that stops
+# firing is a failure rather than a silent acceptance.
+[[refusal]]
+case = "not_callable"
+exception = "TypeError"
+message_phrase = "circuit_builder must be callable"
+trigger = "the builder is not callable"
+
+[[refusal]]
+case = "not_a_tensor"
+exception = "TypeError"
+message_phrase = "parameters must be a torch.Tensor"
+trigger = "the parameters are a plain sequence"
+
+[[refusal]]
+case = "empty_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must not be empty"
+trigger = "the parameter tensor has no elements"
+
+[[refusal]]
+case = "complex_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must be real floating-point values"
+trigger = "the parameter tensor is complex"
+
+[[refusal]]
+case = "integral_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must be real floating-point values"
+trigger = "the parameter tensor is integral"
+
+[[refusal]]
+case = "non_finite_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must be finite"
+trigger = "the parameter tensor contains a non-finite element"
+
+[[refusal]]
+case = "zero_step"
+exception = "ValueError"
+message_phrase = "a central difference step must be a positive finite displacement"
+trigger = "the requested step is zero"
+
+[[refusal]]
+case = "negative_step"
+exception = "ValueError"
+message_phrase = "a central difference step must be a positive finite displacement"
+trigger = "the requested step is negative"
+
+[[refusal]]
+case = "infinite_step"
+exception = "ValueError"
+message_phrase = "a central difference step must be a positive finite displacement"
+trigger = "the requested step is not finite"
+
+[[refusal]]
+case = "nan_step"
+exception = "ValueError"
+message_phrase = "a central difference step must be a positive finite displacement"
+trigger = "the requested step is not a number"
+
+[[refusal]]
+case = "density_matrix_state"
+exception = "CapabilityError"
+message_phrase = "the execution returned the state as a density matrix"
+trigger = "the program carries a channel, so the default mode delivers a density operator rather than a statevector"
+
+[[refusal]]
+case = "batched_state"
+exception = "CapabilityError"
+message_phrase = "a batch must be differentiated one member at a time"
+trigger = "the program declares a batch larger than one"
+
+[[refusal]]
+case = "non_static_program"
+exception = "ValidationError"
+message_phrase = "the program is not static"
+trigger = "the qubit count depends on the parameter, so the state changes shape"
+
+# The two modes outside this route's reach. Each is recorded with the exception
+# its exclusion actually produces, so an exclusion that stops refusing fails the
+# gate in the same way a refusal does.
+[[excluded_mode]]
+mode = "density_matrix"
+refused_by = "metric_tensor"
+exception = "CapabilityError"
+message_phrase = "the execution returned the state as a density matrix"
+reason = "the mode serves the density operator on the state accessor, so the delivered object is a matrix and the pure-state formula does not describe it"
+
+[[excluded_mode]]
+mode = "stabilizer"
+refused_by = "fq.run"
+exception = "ValidationError"
+message_phrase = "mode='stabilizer' requires shots or a sampling measurement in the program"
+reason = "the mode returns measurement outcomes rather than a state, so there is no state to differentiate"
+
+# A mode the caller names is honoured and refused where it cannot serve a state,
+# never quietly replaced by one that can. Each row is a mode a noisy program
+# cannot run in, with the exception the refusal actually produces.
+[[noise_refusal]]
+mode = "statevector"
+refused_by = "fq.run"
+exception = "ValidationError"
+message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+
+[[noise_refusal]]
+mode = "mps"
+refused_by = "fq.run"
+exception = "ValidationError"
+message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+
+[[noise_refusal]]
+mode = "tensor_network"
+refused_by = "fq.run"
+exception = "ValidationError"
+message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+
+[verification]
+contract = "tests/unit/test_metric_tensor_contract.py"
+expansion_tests = [
+    "tests/test_native_circuit.py",
+    "tests/test_gradient_api.py",
+    "tests/integration/test_gradient_modes.py",
+    "tests/unit/test_parameter_shift_coverage_contract.py",
+]
+implementation_symbol = "flagquantum.gradients.metric_tensor"
+# Strings the implementation must still contain. They are a tamper check on the
+# surface this contract names, not a substitute for the measurements above.
+census = [
+    "def metric_tensor(",
+    "def _state_of(",
+    '"metric_tensor",',
+]

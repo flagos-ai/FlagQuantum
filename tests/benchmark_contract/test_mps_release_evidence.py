@@ -27,6 +27,9 @@ import torch
 from benchmarks import mps_release_evidence as producer
 from benchmarks.internal.evidence import mps_release_gate as gate
 from benchmarks.internal.evidence.mps_release_gate import MANIFEST as GATE_MANIFEST
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    shardable_ceiling_speedup,
+)
 from flagquantum.testing import MPSCapacityCertificationError
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
@@ -452,6 +455,61 @@ def test_bond_ownership_names_the_pair_that_measured_each_cut() -> None:
     assert ownership["bond:12"] == "rank:0+rank:1"
 
 
+def test_a_rank_site_run_is_stated_by_its_ends() -> None:
+    """The run is the fact; the enumeration is the same fact written per site."""
+
+    span = producer._site_span(range(8192, 16384))
+
+    assert span == {"first_site": 8192, "last_site": 16383, "site_count": 8192}
+    # A single site is a run of one rather than a special case.
+    assert producer._site_span([7]) == {
+        "first_site": 7,
+        "last_site": 7,
+        "site_count": 1,
+    }
+
+
+def test_a_rank_site_run_does_not_depend_on_the_order_it_was_measured_in() -> None:
+    """The run is the set of sites; the measurement order is not part of it."""
+
+    assert producer._site_span([9, 7, 8]) == {
+        "first_site": 7,
+        "last_site": 9,
+        "site_count": 3,
+    }
+
+
+def test_a_rank_site_set_with_a_gap_is_reported_in_full() -> None:
+    """Ends that rounded over a gap would be a smaller file saying something false."""
+
+    span = producer._site_span([0, 1, 4])
+
+    assert span["first_site"] == 0
+    assert span["last_site"] == 4
+    assert span["sites"] == [0, 1, 4]
+
+
+def test_the_frozen_capacity_payload_states_every_rank_inside_the_hygiene_cap() -> None:
+    """The map is present for every rank, and small enough to be committed.
+
+    The gate requires a non-empty map, so the compact spelling has to keep every
+    rank in it. The size is asserted rather than assumed because the enumeration
+    this replaces is what took the assembled payload past the repository's
+    two-million-byte per-file limit.
+    """
+
+    world = 16
+    ownership = [list(range(rank * 8192, (rank + 1) * 8192)) for rank in range(world)]
+    emitted = {
+        f"rank:{rank}": producer._site_span(sites)
+        for rank, sites in enumerate(ownership)
+    }
+
+    assert len(emitted) == world
+    assert all(emitted.values())
+    assert len(json.dumps(emitted)) < 4096
+
+
 def test_the_capacity_baseline_states_single_device_semantics() -> None:
     """One device has nothing to shard, and the payload says so."""
 
@@ -655,18 +713,18 @@ def test_the_checked_in_completion_artifact_resolves_as_the_capacity_premise() -
     # The checked-in run recorded no device name, so the premise states the
     # measured total memory instead of inventing a model for the hardware.
     assert "not recorded" in baseline["capacity_baseline_device"]
-    # The raw log and the device telemetry are gone and the workload body on disk
-    # has drifted from the digest the premise recorded, so three of the five
-    # sources cannot be checked here and the premise says so rather than implying
-    # that it re-verified them.
+    # The raw log and the device telemetry were recovered from the recording
+    # host's /tmp, where the run's own recorded command line had written them,
+    # and they hash to the digests the premise recorded while they were missing.
+    # The workload body on disk has drifted from the digest the premise recorded,
+    # so that one source cannot be checked here and the premise says so rather
+    # than implying that it re-verified it.
     integrity = premise["source_integrity"]
     assert integrity["finalized"] is True
-    assert sorted(integrity["unverifiable_paths"]) == sorted(
-        [
-            *CAPACITY["premise_provenance"]["absent_sources"],
-            CAPACITY["workload_definition_sources"][1]["path"],
-        ]
-    )
+    assert CAPACITY["premise_provenance"]["absent_sources"] == []
+    assert integrity["unverifiable_paths"] == [
+        CAPACITY["workload_definition_sources"][1]["path"]
+    ]
 
 
 def test_the_completion_role_needs_the_measured_premise() -> None:
@@ -881,6 +939,16 @@ def _summary(rank: int, world: int) -> dict:
         "reverse_peak_memory_bytes": 512,
         "forward_peak_memory_bytes": 512,
         "end_to_end_seconds": 1.0,
+        # The per-rank byte account the executor keeps while it builds the
+        # reverse tape. The frozen workload is left-canonical and asks for no
+        # canonicalization bond, so the sweep term is a measured zero rather than
+        # an omission -- which is the shape the strict audit reads as
+        # ``canonicalization_not_required``.
+        "forward_tensor_bytes": 2048,
+        "adjoint_tensor_bytes": 1024,
+        "boundary_gradient_buffer_bytes": 256,
+        "canonicalization_temporary_bytes": 0,
+        "truncation_temporary_bytes": 0,
     }
     return {
         "executor": "pytorch_native_sharded_mps_training_v1",
@@ -1022,7 +1090,26 @@ def test_the_assembled_speed_summary_states_the_whole_release_contract(
     # 4.0 s against 2.0 s over a world of two, from samples the interval is
     # resampled from, so a payload whose ratio drifted from its timings is caught.
     assert measurements["speedup"] == pytest.approx(2.0)
-    assert measurements["scaling_efficiency"] == pytest.approx(1.0)
+    # The efficiency is a ratio against the speedup the timed workload's own
+    # arithmetic permits rather than against the world size, so at a world of two
+    # the two denominators differ and the payload has to state which it divided
+    # by, what the frozen fraction is, and what ceiling that fraction implies. The
+    # world-size ratio is still reported beside it so the two stay comparable.
+    serial_fraction = float(FROZEN["speed_workload"]["measured_serial_fraction"])
+    ceiling = shardable_ceiling_speedup(serial_fraction, 2)
+    assert measurements["scaling_efficiency"] == pytest.approx(2.0 / ceiling)
+    assert measurements["linear_scaling_efficiency"] == pytest.approx(1.0)
+    assert measurements["measured_serial_fraction"] == pytest.approx(serial_fraction)
+    assert measurements["shardable_ceiling_speedup"] == pytest.approx(ceiling)
+    assert measurements["scaling_efficiency_definition"] == (
+        FROZEN["speed_workload"]["scaling_efficiency_definition"]
+    )
+    # Against this workload the two ratios are not interchangeable, which is the
+    # whole reason the contract names one: 2.0 / 2 is the efficiency of a workload
+    # that partitions perfectly, and this one does not.
+    assert measurements["scaling_efficiency"] != pytest.approx(
+        measurements["linear_scaling_efficiency"]
+    )
     lower, upper = measurements["speedup_confidence_interval"]
     assert lower < measurements["speedup"] < upper
     # Every rung is reported with its own ratio, not only the acceptance one.
@@ -1047,6 +1134,64 @@ def test_the_assembled_speed_summary_states_the_whole_release_contract(
         == 0
     )
     assert json.loads(evidence.read_text(encoding="utf-8")) == measurements
+
+    # The distribution audit is a required release-tier command, so a payload the
+    # release gate accepts while the audit refuses it is not releasable. The strict
+    # audit reads the backward memory and backward communication plans through its
+    # own predicates, and it reads the optimizer step through the ownership
+    # semantics rather than through the ownership maps the gate already checks, so
+    # the three of them are checked here through those predicates. A producer
+    # change that stopped stating one of them then fails this test rather than the
+    # promotion it would otherwise have reached.
+    from flagquantum.runtime.audit.mps_readiness import (
+        _mps_communication_plan_reported,
+        _mps_memory_plan_reported,
+    )
+
+    sharded_leg = _speed_leg(world=2, seconds=2.0)
+    world = int(measurements["world_size"])
+    memory_plan = measurements["mps_backward_memory_plan"]
+    communication_plan = measurements["mps_backward_communication_plan"]
+    assert _mps_memory_plan_reported(memory_plan, world_size=world)
+    assert _mps_communication_plan_reported(communication_plan)
+    assert measurements["optimizer_update_semantics"] == "sharded_across_ranks"
+    assert measurements["optimizer_update_ownership_semantics"] == (
+        "sharded_across_ranks"
+    )
+    # Every vector in the plan is the rank's own recorded counter rather than a
+    # number restated from the workload, so the plan is a reading of the run.
+    steps = [
+        record["acceptance_summary"]["step_metrics"][-1]
+        for record in sharded_leg["ranks"]
+    ]
+    assert memory_plan["forward_tensor_bytes_by_rank"] == [
+        metric["forward_tensor_bytes"] for metric in steps
+    ]
+    assert memory_plan["backward_adjoint_bytes_by_rank"] == [
+        metric["adjoint_tensor_bytes"] for metric in steps
+    ]
+    assert memory_plan["per_rank_peak_bytes"] == [
+        metric["reverse_peak_memory_bytes"] for metric in steps
+    ]
+    # The plan states the sweep term it did not need rather than omitting it, and
+    # says so in the two places the audit reads: the plan-level flag and the
+    # per-rank flag.
+    assert memory_plan["canonicalization_required"] is False
+    assert all(
+        item["canonicalization_not_required"] is True
+        for item in memory_plan["rank_memory"]
+    )
+    # Each measured boundary is described by the ranks and bytes it was measured
+    # with, so the audit can place it on a host rather than trusting a label.
+    assert communication_plan["boundary_edge_count"] == len(
+        communication_plan["boundary_edges"]
+    )
+    assert all(
+        edge["communication_bytes"] == edge["payload_bytes"]
+        and edge["right_rank"] == edge["left_rank"] + 1
+        and edge["topology_tier"] in {"intra_node", "inter_node"}
+        for edge in communication_plan["boundary_edges"]
+    )
 
 
 def test_a_speed_summary_refuses_legs_that_are_not_one_comparison(
@@ -1449,3 +1594,21 @@ def test_the_timed_leg_exchanges_records_before_it_tears_the_group_down(
     ]
     written = json.loads(output.read_text(encoding="utf-8"))
     assert len(written["ranks"]) == 2
+
+
+def test_the_premise_artifact_is_named_the_way_the_checkout_names_it():
+    """A promoted payload must name a checked-in artifact a reader can open.
+
+    The completion role is launched from the scratch checkout the measurement was
+    taken in, and ``--premise`` is passed to it as an absolute path there. The
+    projection records that argument as the payload's capacity baseline artifact,
+    so without this the release payload names a checked-in artifact by a path that
+    exists on the producing host and nowhere else -- and two payloads promoted
+    from the same release would name the same repository file two different ways.
+    A path that genuinely lies outside the repository is left alone, because then
+    there is no repository name for it and a relative one would name nothing.
+    """
+
+    inside = producer.REPO_ROOT / "benchmarks/results/local/example.json"
+    assert producer._repo_relative(inside) == "benchmarks/results/local/example.json"
+    assert producer._repo_relative(Path("/tmp/example.json")) == "/tmp/example.json"

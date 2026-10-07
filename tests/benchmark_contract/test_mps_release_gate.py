@@ -33,6 +33,11 @@ from benchmarks.internal.evidence.mps_release_gate import (
     load_manifest,
 )
 from benchmarks.internal.evidence.mps_release_gate import main as gate_main
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    SERIAL_FRACTION_KEY,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
 from flagquantum.runtime.observability.evidence import (
     ArtifactClass,
     EvidenceScope,
@@ -199,6 +204,14 @@ def _sharded_evidence(
         parameters = int(capacity["parameter_count"])
         workload_sha256 = str(capacity["workload_sha256"])
         premise_workload_sha256 = str(capacity["workload_sha256"])
+    # The scaling threshold is compared against the speedup the timed workload's own
+    # arithmetic permits, so the fixture reports that ceiling and the definition it
+    # divided by rather than a bare ratio. A payload naming the world-size
+    # denominator this contract replaced is refused by the gate, so the fixture is
+    # built the way the producer builds one.
+    serial_fraction = frozen_serial_fraction(manifest["speed_workload"])
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
+    speedup = 1.2
     return {
         "acceptance_case": acceptance_case,
         "state_mode": "mps",
@@ -290,9 +303,15 @@ def _sharded_evidence(
         "single_gpu_expected_oom": True,
         "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
         "capacity_failure_reason": "CUDA out of memory",
-        "speedup": 1.2,
+        "speedup": speedup,
         "speedup_confidence_interval": [1.1, 1.3],
-        "scaling_efficiency": 0.62,
+        "scaling_efficiency": speedup / ceiling,
+        "scaling_efficiency_definition": str(
+            manifest["speed_workload"]["scaling_efficiency_definition"]
+        ),
+        "linear_scaling_efficiency": speedup / world,
+        SERIAL_FRACTION_KEY: serial_fraction,
+        "shardable_ceiling_speedup": ceiling,
         "workload_sha256": workload_sha256,
         "capacity_premise_workload_sha256": premise_workload_sha256,
         "workload_body_sha256": frozen_workload_body_sha256(capacity),
@@ -538,6 +557,43 @@ PAYLOAD_BLOCKERS: tuple[tuple[str, str], ...] = (
     ),
     ("production_gpu_activity_not_well_formed", "gpu_activity", "unknown"),
 )
+# The scaling threshold is a ratio against the speedup the timed workload's own
+# arithmetic permits rather than against the world size, and this table refutes
+# one way a matched-speed payload could clear it without reporting that
+# measurement: by naming the denominator the contract replaced, by disagreeing
+# with the frozen serial fraction, by naming a ceiling that fraction does not
+# imply, by reporting an efficiency that is not the ratio of the two, or by
+# reporting the replaced denominator beside a ceiling-relative one. They are kept
+# apart from ``PAYLOAD_BLOCKERS`` because they belong to the matched-speed
+# payload specifically, while that table's entries are refused on whichever
+# production payload carries them.
+MATCHED_SPEED_EFFICIENCY_BLOCKERS: tuple[tuple[str, str, object], ...] = (
+    (
+        "matched_speed_scaling_efficiency_uses_a_replaced_definition",
+        "scaling_efficiency_definition",
+        "measured_speedup_over_world_size",
+    ),
+    (
+        "matched_speed_payload_serial_fraction_disagrees_with_contract",
+        "measured_serial_fraction",
+        0.5,
+    ),
+    (
+        "matched_speed_ceiling_disagrees_with_frozen_fraction",
+        "shardable_ceiling_speedup",
+        8.0,
+    ),
+    (
+        "matched_speed_scaling_efficiency_disagrees_with_its_ceiling",
+        "scaling_efficiency",
+        0.6,
+    ),
+    (
+        "matched_speed_linear_efficiency_disagrees_with_world",
+        "linear_scaling_efficiency",
+        0.5,
+    ),
+)
 
 
 def test_the_manifest_freezes_the_workload_the_topology_and_the_thresholds() -> None:
@@ -669,6 +725,7 @@ MANIFEST_STATE_BLOCKERS: tuple[str, ...] = (
     "single_device_world_cannot_be_a_release_payload",
     "capacity_premise_evidence_not_verifiable",
     "single_gpu_baseline_disagrees_with_frozen_premise",
+    "speed_scaling_calibration_not_verifiable",
 )
 # These three are refusals of the *envelope's* attestation rather than of a
 # payload field, so they are reached by staging the envelope the sealer would have
@@ -681,32 +738,82 @@ ENVELOPE_BINDING_BLOCKERS: tuple[str, ...] = (
 )
 
 
-def test_the_checked_in_manifest_discloses_every_open_requirement() -> None:
-    """The checked-in state fails the gate for exactly two named reasons.
+def test_the_checked_in_manifest_satisfies_every_requirement() -> None:
+    """The checked-in contract is releasable over a complete payload set.
 
     A full payload set is supplied, so every requirement a run can satisfy is
-    satisfied. What remains are the two things the frozen document itself
-    discloses about its premise: it is not established, and the provenance it
-    cites for it is not re-verifiable. The sixteen-rank release world used to
-    appear here as well, because no evidence scope could carry it; API change
-    proposal 065 added ``MULTI_NODE_SCALE`` and this contract was re-frozen
-    against it, so the world is now sealable. The matched-speed ladder used to
-    appear here too, while the manifest froze no rungs; it now freezes a ladder
-    whose shapes were measured, so a speed payload is a payload this contract can
-    accept. Asserting the exact tuple means a third blocker appearing here would
-    have to be explained rather than absorbed.
+    satisfied, and the frozen document's own disclosures are closed rather than
+    open. The sixteen-rank release world used to be one of them, because no
+    evidence scope could carry it; API change proposal 065 added
+    ``MULTI_NODE_SCALE`` and this contract was re-frozen against it. The
+    matched-speed ladder used to be another, while the manifest froze no rungs; it
+    now freezes a ladder whose shapes were measured, so a speed payload is a
+    payload this contract can accept. Unverifiable premise provenance used to be a
+    third, while the raw log and the device telemetry the premise cites were
+    absent from this repository; both are now recovered at the digests the premise
+    recorded. The premise itself was the last, and it is established by a signed
+    pair at this contract's own digests rather than by restating it: the failure
+    half reproduced ``measured_single_device_peak_memory_bytes`` and the
+    completion half reached that same shape across sixteen ranks.
+
+    This test asserted exactly one blocker -- ``capacity_premise_not_established``
+    -- for as long as the premise was open, so that a second blocker appearing
+    here would have to be explained rather than absorbed. The same exactness now
+    applies in the other direction: the tuple is asserted empty, so a requirement
+    that stopped being met would have to be explained rather than absorbed.
     """
 
     manifest = load_manifest()
     passed, blockers = _read(manifest)
 
-    assert passed is False
-    assert blockers == (
-        "capacity_premise_not_established",
-        "capacity_premise_evidence_not_verifiable",
-    )
-    assert manifest["capacity_workload"]["premise_established"] is False
+    assert passed is True
+    assert blockers == ()
+    assert manifest["capacity_workload"]["premise_established"] is True
     assert manifest["speed_workload"]["configuration_ladder"]
+
+
+def test_the_premise_note_states_the_evidence_the_premise_rests_on() -> None:
+    """The premise's own prose is read against the payload it describes.
+
+    ``capacity_workload.premise_established`` is a boolean no gate can check for
+    itself, so the note beside it is the only place the contract says *which*
+    signed runs establish it. A note that names a file the claim is not published
+    from, or a revision or a peak that its own payloads do not record, is a
+    disclosure that has stopped describing the evidence while continuing to read
+    as though it does.
+
+    This test exists because that happened. The note named the completion half at
+    the candidate directory it was sealed into rather than the release directory it
+    is promoted to, said both halves were sealed at one commit when they record
+    two, and said every one of sixteen ranks reached a peak that fourteen of them
+    reached. Nothing in the repository read the note, so nothing noticed. Each
+    sentence is now read back from the envelope rather than trusted: the payload is
+    opened, and its own revision and peak distribution are the answer the note is
+    held to.
+    """
+
+    manifest = load_manifest()
+    note = manifest["capacity_workload"]["premise_established_note"]
+    payload = json.loads((RESULTS / "mps_capacity_completion.json").read_text("utf-8"))
+    evidence = payload["evidence"]
+    revision = payload["provenance"]["commit"]
+
+    assert "benchmarks/results/scalability/mps_capacity_completion.json" in note
+    assert revision in note
+    # The single-device baseline is deliberately kept outside the release
+    # directory, because one device has no ranks to shard across and the strict
+    # audit would refuse it there. The completion half has no such reason: it is
+    # release-grade sharded evidence, so it must not be named at a candidate path.
+    assert "release_candidates/mps_capacity_completion" not in note
+    assert "mps_single_gpu_capacity" in note
+    assert evidence["world_size"] == 16
+    peaks = [
+        int(item["estimated_peak_backward_bytes"])
+        for item in evidence["mps_backward_memory_plan"]["rank_memory"]
+    ]
+    assert len(peaks) == 16
+    assert str(max(peaks)) in note
+    assert str(min(peaks)) in note
 
 
 def test_a_complete_release_set_satisfies_the_contract() -> None:
@@ -768,7 +875,8 @@ def test_the_frozen_release_world_is_carriable_by_the_evidence_envelope() -> Non
                 signing_key=KEYS,
             )
     passed, blockers = _read(frozen)
-    assert passed is False
+    assert passed is True
+    assert blockers == ()
     assert "release_world_size_not_carriable_by_evidence_envelope" not in blockers
 
 
@@ -874,6 +982,39 @@ def test_every_payload_contract_blocker_is_reachable(
     assert blocker in blockers
 
 
+@pytest.mark.parametrize(
+    ("blocker", "field", "value"),
+    MATCHED_SPEED_EFFICIENCY_BLOCKERS,
+    ids=[item[0] for item in MATCHED_SPEED_EFFICIENCY_BLOCKERS],
+)
+def test_every_matched_speed_efficiency_blocker_is_reachable(
+    blocker: str, field: str, value: object
+) -> None:
+    """A payload cannot clear a measured threshold by choosing its denominator.
+
+    The efficiency the contract compares is a ratio against a ceiling the
+    workload's own fitted serial fraction implies. Each entry below alters the
+    matched-speed payload's own report of that ratio, or of the fraction and
+    ceiling it was computed from, so the refusal is reached by the payload
+    disagreeing with the frozen contract rather than by the contract being
+    unreadable. The refusal has to survive whether the reader recomputes the
+    ceiling or believes the payload, which is why the ceiling and the fraction are
+    both restated in the payload and checked.
+    """
+
+    manifest = _sealable_topology_manifest()
+    payloads = copy.deepcopy(_payloads(manifest))
+    matched = next(
+        payload for payload in payloads if payload["acceptance_case"] == "matched_speed"
+    )
+    matched[field] = value
+
+    passed, blockers = _read(manifest, payloads)
+
+    assert passed is False
+    assert blocker in blockers
+
+
 def test_every_manifest_state_blocker_is_reachable() -> None:
     """The blockers that describe the contract rather than one payload's fields."""
 
@@ -923,6 +1064,25 @@ def test_every_manifest_state_blocker_is_reachable() -> None:
     payloads[2]["speedup_confidence_interval"] = [0.99, 1.4]
     assert "missing_statistically_significant_speedup_artifact" in blockers_for(
         weak, payloads
+    )
+    # The efficiency threshold is a ratio against a ceiling the workload's own
+    # fitted serial fraction implies, so the fraction has to be re-readable from
+    # the artifact the contract is digest-bound to. A contract naming no artifact
+    # cannot be re-derived, and a contract whose calibration states a different
+    # fraction than the one it froze no longer follows from that artifact either;
+    # the gate names both rather than comparing payloads against a number a reader
+    # cannot reproduce.
+    uncalibrated = _sealable_topology_manifest()
+    uncalibrated_payloads = _payloads(uncalibrated)
+    uncalibrated["speed_workload"].pop("shardable_calibration_artifact")
+    assert "speed_scaling_calibration_not_verifiable" in blockers_for(
+        uncalibrated, uncalibrated_payloads
+    )
+    restated = _sealable_topology_manifest()
+    restated_payloads = _payloads(restated)
+    restated["speed_workload"]["measured_serial_fraction"] = 0.5
+    assert "speed_scaling_calibration_not_verifiable" in blockers_for(
+        restated, restated_payloads
     )
     # Every artifact sharded but none spanning hosts: transport scope is missing.
     single_node = _sealable_topology_manifest()
@@ -1089,6 +1249,7 @@ def test_the_blocker_vocabulary_is_fully_accounted_for() -> None:
     emitted = _emitted_blocker_names()
     accounted = (
         {item[0] for item in PAYLOAD_BLOCKERS}
+        | {item[0] for item in MATCHED_SPEED_EFFICIENCY_BLOCKERS}
         | set(MANIFEST_STATE_BLOCKERS)
         | set(ENVELOPE_BINDING_BLOCKERS)
         | {
@@ -1151,6 +1312,19 @@ README_REQUIREMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "missing_no_fallback_semantics",
             "production_payload_declares_fallback_events",
             "production_payload_declares_blockers",
+        ),
+    ),
+    (
+        # The bullet that says the scaling efficiency is a ratio against the
+        # workload's own ceiling, which the gate enforces by recomputing that
+        # ceiling and by reading the two ratios the payload reports against it.
+        "scaling_efficiency_is_measured_against_the_workloads_own_ceiling",
+        (
+            "matched_speed_scaling_efficiency_uses_a_replaced_definition",
+            "matched_speed_payload_serial_fraction_disagrees_with_contract",
+            "matched_speed_ceiling_disagrees_with_frozen_fraction",
+            "matched_speed_scaling_efficiency_disagrees_with_its_ceiling",
+            "matched_speed_linear_efficiency_disagrees_with_world",
         ),
     ),
 )
@@ -1366,7 +1540,24 @@ def test_the_gate_evaluates_a_candidate_set_before_promotion(
 def test_a_candidate_set_is_not_promoted_when_the_gate_refuses_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """An unsatisfied requirement stops the promotion before any file moves.
+
+    The checked-in contract is releasable, so the refusal is staged by withholding
+    one payload the contract requires rather than by mutating the document: the
+    promoter reads the frozen manifest from its own declared path, so a candidate
+    set that is missing its timed comparison is a set the gate refuses, and a
+    promoter that moved files regardless would be promoting candidates the gate
+    had just refused.
+    """
+
     manifest_path, candidates, baseline = _candidate_set(tmp_path, load_manifest())
+    withheld = next(
+        path
+        for path in sorted(candidates.glob("*.json"))
+        if json.loads(path.read_text(encoding="utf-8"))["evidence"]["acceptance_case"]
+        == "matched_speed"
+    )
+    withheld.unlink()
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
     release = tmp_path / "release"
 
@@ -1384,7 +1575,7 @@ def test_a_candidate_set_is_not_promoted_when_the_gate_refuses_it(
             ]
         )
 
-    assert "capacity_premise_not_established" in str(excinfo.value)
+    assert "missing_statistically_significant_speedup_artifact" in str(excinfo.value)
     assert not release.exists()
     assert manifest_path.is_file()
 
@@ -1422,17 +1613,20 @@ def test_promotion_moves_only_the_release_payloads(
 ) -> None:
     """The single-device baseline is read as provenance and left where it is.
 
-    Promote now uses the frozen manifest, so the topology it checks is the
-    checked-in sixteen-rank one and the staged set cannot pass. The promotion path
-    that moves files is therefore exercised through its refusal, and the baseline
-    is asserted to stay in place -- which is the property that matters here.
+    The promoted set is the checked-in contract's own, so this is the promotion
+    the campaign runs: the release payloads move into the release directory and
+    the baseline stays in the provenance directory it declares. One device has no
+    ranks to shard across, so a baseline that moved into the release directory
+    would be a single-device claim sitting where the strict audit reads scalability
+    evidence.
     """
 
-    _, candidates, baseline = _candidate_set(tmp_path, load_manifest())
+    manifest_path, candidates, baseline = _candidate_set(tmp_path, load_manifest())
     staged = sorted(path.name for path in candidates.glob("*.json"))
+    release = tmp_path / "release"
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
 
-    with pytest.raises(SystemExit):
+    assert (
         promote_main(
             [
                 "--gate",
@@ -1442,10 +1636,87 @@ def test_promotion_moves_only_the_release_payloads(
                 "--baseline-directory",
                 str(baseline),
                 "--release-directory",
-                str(tmp_path / "release"),
+                str(release),
+            ]
+        )
+        == 0
+    )
+
+    assert staged
+    assert sorted(path.name for path in release.glob("*.json")) == staged
+    assert sorted(path.name for path in candidates.glob("*.json")) == []
+    assert len(list(baseline.glob("*.json"))) == 1
+    assert manifest_path.is_file()
+    assert MANIFEST.is_file()
+
+
+def test_a_candidate_that_is_not_a_directory_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file-shaped candidate must not evaluate as an empty set.
+
+    ``Path.glob`` on a regular file yields nothing, so a candidate named as a
+    payload path would contribute no artifacts and the gate would report fewer
+    blockers than the set actually has. That is a false pass rather than a
+    refusal, and it is the mistake a reviewer makes when they read the promoted
+    payload's name out of the release directory instead of its directory. The
+    gate therefore rejects the shape before it reads anything, and the error names
+    the path so the caller can see which argument was wrong.
+    """
+
+    manifest_path, candidates, baseline = _candidate_set(
+        tmp_path, _sealable_topology_manifest()
+    )
+    payload = next(iter(sorted(candidates.glob("*.json"))))
+    monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEYS.decode())
+
+    with pytest.raises(SystemExit) as raised:
+        gate_main(
+            [
+                "--manifest",
+                str(manifest_path),
+                "--candidate",
+                str(payload),
+                "--baseline-directory",
+                str(baseline),
             ]
         )
 
-    assert sorted(path.name for path in candidates.glob("*.json")) == staged
-    assert len(list(baseline.glob("*.json"))) == 1
-    assert MANIFEST.is_file()
+    assert str(payload) in str(raised.value)
+
+
+def test_the_documented_invocation_reaches_the_gate_without_a_pythonpath(
+    tmp_path: Path,
+) -> None:
+    """The runbook runs this file by path, so the file must import its sibling.
+
+    ``benchmarks/internal/evidence/mps_release_gate.py`` is the invocation
+    ``docs/guides/MULTINODE_RUNBOOK.md`` publishes and the one
+    ``capability-maturity.toml`` names as the release gate. Running it by path
+    puts ``benchmarks/internal/evidence`` on ``sys.path`` rather than the
+    repository root, and the ceiling module it imports is a sibling package, so
+    without the bootstrap in the module the documented command failed with
+    ``ModuleNotFoundError``. This runs the file the way the runbook does, in a
+    subprocess with no ``PYTHONPATH``, and asserts it reaches its own argument
+    parser rather than a traceback.
+    """
+
+    import os
+    import subprocess
+    import sys
+
+    source = Path("benchmarks/internal/evidence/mps_release_gate.py").resolve()
+    environment = {
+        key: value for key, value in os.environ.items() if key != "PYTHONPATH"
+    }
+    completed = subprocess.run(
+        [sys.executable, str(source), "--help"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--baseline-directory" in completed.stdout

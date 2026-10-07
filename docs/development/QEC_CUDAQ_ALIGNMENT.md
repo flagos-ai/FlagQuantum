@@ -51,15 +51,15 @@ from the matrix's `priority`, the row states why.
 
 | Row | Status | Floor | Matrix row | The gap in one line |
 | --- | --- | --- | --- | --- |
-| `qec_code_record` | partial | now | `qec_code_library` | Three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, all three feeding the matrix route, and a record now also buildable the other way, out of the parity-check and logical matrices a caller holds; what is left is the arbitrary non-CSS stabilizer list and the per-operation kernel map. |
+| `qec_code_record` | aligned | now | `qec_code_library` | Closed: three families declared, each reachable by name, each reporting its X-type and Z-type ancilla bands and the two matching stabilizer counts, all three feeding the matrix route, and a record also buildable the other way, out of the parity-check and logical matrices a caller holds. The baseline's per-operation kernel map and an arbitrary non-CSS stabilizer list stay absent and named. |
 | `qec_detector_annotations` | aligned | now | — | Closed: identity derived from the code, and every recorded bit addressable by a handle that reads as a boolean vector or as an integer. The kernel-annotation spelling stays absent and named. |
 | `qec_syndrome_extraction_owner` | aligned | now | — | Closed: `extract_syndrome` is in the CUDA-Q Logical preview rather than in cudaq-qec, both extraction routes here carry cudaq-qec's own names, and the absence of the preview's name from the cudaq-qec tree is now read at a named revision instead of being marked unverified. |
-| `qec_dem_construction` | partial | now | — | Construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route; no kernel-annotation route, so no X/Y fault family from a kernel body. |
+| `qec_dem_construction` | aligned | now | — | Closed: construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route. The kernel-annotation route stays absent and named, so no X/Y fault family follows from a kernel body. |
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | partial | now | `qec_decoder_family` | The layer algebra, the window identity, the named seams, the two round trips and the three chunk-scoped projections all landed; what is left is the baseline's sparse spec shorthand, its per-seam tags and its straddle flags, which are reshape decisions rather than gaps. |
-| `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
-| `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; a second grammar now places a channel bound to a named gate after the gate it matched, so what remains at the input end is the arbitrary annotated circuit rather than the placement. |
+| `qec_dem_text_interchange` | aligned | now | `qec_stim_integration` | Closed: both directions present and independently checked, the reader takes the whole grammar stim's writer uses, `repeat` blocks and comments included, both separator readings are offered under upstream's flag, and the detector count is read from the declarations. The narrowness is at the input end and the precision width is a stated tolerance; both are declined rather than left open. |
+| `qec_stim_sampling_join` | aligned | now | `qec_stim_integration` | Closed: the join landed, every family the noise record states is placed, and a second grammar places a channel bound to a named gate after the gate it matched. An arbitrary annotated circuit at the input end is declined by the type the sampler states rather than left as a gap. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, a name-keyed registry and a sliding-window decoder over the chunk decomposition all landed; no batch result record and no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
@@ -67,7 +67,7 @@ from the matrix's `priority`, the row states why.
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
 | `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
 
-Everything a `supported` row would need is deliberately *not* claimed here. Four
+Everything a `supported` row would need is deliberately *not* claimed here. Eight
 rows are `aligned` and the rest are not, and an `aligned` row is one whose
 upstream surface has no item left unaccounted for, symbol by symbol. The checker
 enforces the floor of that bar rather than the bar itself: an `aligned` row must
@@ -1006,7 +1006,82 @@ statement about the channel; the test splits the handles by what they measure fo
 exactly that reason, since pooling the two kinds would average the distinction
 away.
 
-## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
+**What converging four rows on their own targets means, and what it does not.**
+`qec_code_record`, `qec_dem_construction`, `qec_dem_text_interchange` and
+`qec_stim_sampling_join` were `partial`, and the prose each carried in
+`next_action` read as work outstanding. Reading that prose against the row's own
+`target`, clause by clause, showed it was not: every clause of all four targets is
+satisfied, and what `next_action` named was a *divergence this repository declines*
+rather than a gap it has not closed. `qec_code_record` declines the baseline's
+per-operation kernel map, so a code here is a record that builds a source rather
+than a map from an operation to the kernel that performs it.
+`qec_dem_construction` declines the same form through a different name: a model
+built from a kernel's own detector annotations, so no X-type or Y-type fault family
+follows from a kernel body. `qec_dem_text_interchange` and
+`qec_stim_sampling_join` decline an arbitrary annotated circuit at the input end —
+the baseline's `stimulus` — so a model comes from a circuit record plus a noise
+record and the join is over a circuit this layer builds.
+
+The distinction is the one `qec_detector_annotations` already draws, and it is the
+only reason those four rows moved. A clause of a `target` is work: it stays
+`partial` until it is done. A *form* the baseline has and this repository answers
+differently is a divergence, and a divergence belongs in `fail_closed` beside the
+name that would make the row stale, not in `next_action` as though someone were
+still going to do it. Each row therefore keeps every `symbols_absent` and
+`negative_search` entry it had — `CssCodes`, `CssNoise`, `stabilizer_round`,
+`operation_encodings` and the colour-code search on the first; `dem_from_kernel`,
+`DEMResult`, the baseline's two entry-point spellings and the two basis-directed
+variants on the second — and the two text-and-sampling rows carry none, which is a
+decision rather than an omission: the name an arbitrary annotated circuit would
+arrive under is not a name this repository would define, so there is nothing for
+the rule to watch. That is the same state `qec_dem_matrices_and_rates` is in, and
+the divergence is held there by the type the sampler states, since anything that is
+not a `MemoryCircuit` is refused as a `TypeError`. The text row's precision
+difference is likewise stated as a tolerance the caller carries — one part in
+`10**15`, measured at a `5.4e-16` worst case — rather than as an open item.
+
+**No matrix row changed status.** `qec_code_library` and `qec_stim_integration`
+are still `partial`, and both still state the kernel-expression divergence in
+their own `reason`. An `aligned` alignment row is a statement about that row's
+own target, and a matrix row covers more than one alignment row: the record half
+of `qec_code_library` is closed while its kernel half is not, and both halves of
+the stim interchange are closed while the input end is not. Reading the two
+documents as one claim is what the checker prevents rather than what it performs —
+`aligned` beside a matrix `partial` is permitted exactly because the two are not
+the same statement, and `aligned` beside a matrix `unsupported` or `out_of_scope`
+is refused because there they would be.
+
+**Why the remaining `now` rows did not move in the same change.** The word
+*stimulus* is what let the drift stand for four rounds. In
+`tests/qec/test_dem_stim_interop.py` it names the stim detector error model
+**text**, which this package reads and writes; in the checklist and the matrix it
+named the **unbuilt input end** — an annotated circuit with no route to a model or
+a sample. One word, two referents: a format that is read, and a form that is
+declined. Prose that reused the first sense to name the second is how a declined
+divergence read as an open gap. The two rows that remain `partial` are held back
+for a different reason and not for this one: `qec_dem_chunking` and
+`qec_decoder_family` are both modified by the open sliding-window pull request, and
+converging a row in a change separate from the change that modifies it would stack
+two pull requests on one line. Each converges with the change that modifies it,
+from the `main` that change lands on.
+
+**What held the checker's own mutation test together.** Two of the 35 mutations in
+`tests/unit/test_qec_cudaq_alignment_check.py` were planted in rows that this
+series of changes converged, and each time a row moved, the mutation stopped
+testing the branch it exists to reach: one could not be applied at all, because the
+row no longer had the `next_action` key, and the other fired the `aligned` message
+where its stated substring is the `partial` one. Re-pointing them at whichever row
+happens to be `partial` today only moves the problem to the next convergence, so
+both now state the precondition they test. The `next_action` mutation sits on
+`qec_decoder_configuration`, an `absent` row, because `next_action` is required of
+every row that is not `aligned` and the checker asks for it in one loop; the
+`symbols_present` mutation writes the `partial` status it is about instead of
+borrowing a row. The test was then run against a checklist in which **all nine
+`now`-floor rows are `aligned`**, with the two remaining rows' `next_action` keys
+removed, and all 35 mutations still pass — which is the evidence that the coupling
+is gone rather than deferred.
+
+## 3. The 23 field rows — the detector error model against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
 The short version, because the full table is in the TOML. Across 23 field rows:
 2 `equivalent`, 2 `renamed`, 1 `extra`, 14 `reshaped`, 4 `absent`.
@@ -1040,10 +1115,14 @@ evidence about either.
 What remains of upstream's two stated losses is the error-id one, and that is a
 property of the record on both sides rather than of this reader. The rest of the
 refusals differ in kind, not in spirit: upstream hands the text to stim and states
-what it loses, this repository refuses constructs its own record cannot hold
-(`repeat`, comments, skipped indices, malformed lines) rather than dropping them —
-and one construct more under the expanded reading alone, a component that cancels
-to nothing, which no mechanism can state.
+what it loses, this repository refuses a construct its own record cannot hold (a
+declaration that skips an index, an error mechanism that flips nothing, a
+malformed line, a block that never closes, a closing brace with no block open)
+rather than dropping it — and one construct more under the expanded reading alone,
+a component that cancels to nothing, which no mechanism can state. `repeat` blocks
+and `#` comments are read rather than refused, and a block is read by expansion,
+which is the one cost this reader pays that stim's does not; the sixty swept models
+that carry a block are read as the model stim's own `flattened()` form states.
 
 The second is `dem_merge_duplicate_columns(dem, mode)`, a free function over a
 dem with a mode enum, which is `DetectorErrorModel.merge_duplicate_mechanisms`

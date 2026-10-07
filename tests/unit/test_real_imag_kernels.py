@@ -394,6 +394,32 @@ def _tall_rank_pair(contracted_axes: int, *, seed: int = 440044):
     return equation, left, right
 
 
+def _enforce_copy_rank_ceiling(monkeypatch, ceiling: int = 25) -> None:
+    """Reproduce the CUDA copy bound that CPU torch does not enforce.
+
+    Reshaping or making contiguous an operand that is not already in the target
+    order materializes a copy through ``TensorIterator``, which refuses more
+    than twenty-five dimensions. CPU torch has no such bound, so a test that
+    must reach it imposes the bound for its own duration.
+    """
+
+    reshape = torch.Tensor.reshape
+    contiguous = torch.Tensor.contiguous
+
+    def guarded_reshape(self, *shape):
+        if self.ndim > ceiling and not self.is_contiguous():
+            raise RuntimeError("tensor has too many (>25) dims")
+        return reshape(self, *shape)
+
+    def guarded_contiguous(self, *args, **kwargs):
+        if self.ndim > ceiling and not self.is_contiguous():
+            raise RuntimeError("tensor has too many (>25) dims")
+        return contiguous(self, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "reshape", guarded_reshape)
+    monkeypatch.setattr(torch.Tensor, "contiguous", guarded_contiguous)
+
+
 def _enforce_native_einsum_rank_ceiling(monkeypatch, ceiling: int = 25) -> None:
     """Reproduce the CUDA einsum ceiling that CPU torch does not enforce."""
 
@@ -472,3 +498,174 @@ def test_a_contraction_the_native_route_can_express_still_uses_it(
     actual = complex_einsum_pair("zab,zbc->zac", left, right, compile_cuda=False)
 
     torch.testing.assert_close(actual, torch.bmm(left, right), atol=2e-5, rtol=2e-5)
+
+
+def _scrambled_pair(rank: int, *, seed: int = 770077):
+    """Return a canonical pair whose right operand is not in the canonical order.
+
+    ``rank`` counts the contracted labels. The right operand keeps every one of
+    them and moves the first to the end, so two extent-two axes swap order and
+    grouping that operand is a transposed copy rather than a view. Only the six
+    leading axes carry extent two, which keeps the flat size small while the
+    rank grows.
+    """
+
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    output = ("a", "b")
+    contracted = tuple(alphabet[2 : 2 + rank])
+    right_labels = (*contracted[1:], contracted[0], output[1])
+    left_labels = (output[0], *contracted)
+    extents = {label: (2 if index < 3 else 1) for index, label in enumerate(contracted)}
+    equation = f"{''.join(left_labels)},{''.join(right_labels)}->{''.join(output)}"
+    generator = torch.Generator().manual_seed(seed)
+    left = torch.randn(
+        [extents.get(label, 1) for label in left_labels],
+        dtype=torch.complex64,
+        generator=generator,
+    )
+    right = torch.randn(
+        [extents.get(label, 1) for label in right_labels],
+        dtype=torch.complex64,
+        generator=generator,
+    )
+    return equation, left, right
+
+
+def _layout_for(equation: str, left: torch.Tensor, right: torch.Tensor):
+    layout = _canonical_bmm_layout(equation, left, right)
+    assert layout is not None
+    return layout
+
+
+def test_grouping_reproduces_the_transposed_copy_when_the_rank_fits(
+    monkeypatch,
+) -> None:
+    """The slab route must equal the single copy it replaces, slab for slab."""
+
+    equation, left, right = _scrambled_pair(16)
+    layout = _layout_for(equation, left, right)
+    right_permutation, (b, _, n) = layout[1], layout[2]
+    k = right.numel() // (b * n)
+    shape = (b, k, n)
+
+    assert not right.permute(right_permutation).is_contiguous()
+    expected = right.permute(right_permutation).reshape(shape)
+
+    calls = 0
+    original = kernels_runtime.torch.cat
+
+    def counted(tensors, *args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(tensors, *args, **kwargs)
+
+    monkeypatch.setattr(kernels_runtime, "_NATIVE_EINSUM_RANK_CEILING", 5)
+    monkeypatch.setattr(kernels_runtime.torch, "cat", counted)
+    _enforce_copy_rank_ceiling(monkeypatch, ceiling=5)
+    actual = kernels_runtime._group_axes(right, right_permutation, shape)
+
+    assert calls == 1, "a copy above the rank bound must be taken in slabs"
+    torch.testing.assert_close(actual, expected)
+
+
+def test_grouping_past_the_rank_bound_is_not_a_contiguous_copy(monkeypatch) -> None:
+    """A tall operand whose grouping is a copy must use the slab route."""
+
+    equation, left, right = _scrambled_pair(28)
+    layout = _layout_for(equation, left, right)
+    right_permutation, (b, _, n) = layout[1], layout[2]
+    k = right.numel() // (b * n)
+    shape = (b, k, n)
+    assert right.ndim > 25
+    assert not right.permute(right_permutation).is_contiguous()
+
+    calls = 0
+    original = kernels_runtime.torch.cat
+
+    def counted(tensors, *args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(tensors, *args, **kwargs)
+
+    monkeypatch.setattr(kernels_runtime.torch, "cat", counted)
+    _enforce_copy_rank_ceiling(monkeypatch)
+    actual = kernels_runtime._group_axes(right, right_permutation, shape)
+
+    assert calls == 1
+    assert actual.shape == shape
+
+    # Check the flat order against the source indices directly: the flattened
+    # position f belongs to whatever source element the permutation sends there.
+    flat = actual.reshape(-1)
+    reordered_shape = tuple(right.shape[axis] for axis in right_permutation)
+    for position in (0, 1, flat.numel() // 3, flat.numel() - 1):
+        target = []
+        remaining = position
+        for extent in reversed(reordered_shape):
+            target.append(remaining % extent)
+            remaining //= extent
+        target.reverse()
+        source = [0] * right.ndim
+        for axis, coordinate in enumerate(target):
+            source[right_permutation[axis]] = coordinate
+        torch.testing.assert_close(flat[position], right[tuple(source)])
+
+
+def test_a_scrambled_operand_above_the_rank_bound_still_contracts(monkeypatch) -> None:
+    """A wide network whose wider operand is out of order must contract exactly.
+
+    The grouped layout is the documented replacement for native einsum above
+    twenty-five dimensions. It reaches the pair only if both operands can be
+    grouped, and the wider operand is the one that must be transposed.
+    """
+
+    equation, left, right = _scrambled_pair(28)
+    assert left.ndim > 25 and right.ndim > 25
+
+    reference_left = left.detach().clone().requires_grad_(True)
+    reference_right = right.detach().clone().requires_grad_(True)
+    reference = torch.einsum(equation, reference_left, reference_right)
+
+    _enforce_native_einsum_rank_ceiling(monkeypatch)
+    _enforce_copy_rank_ceiling(monkeypatch)
+    grouped_left = left.detach().clone().requires_grad_(True)
+    grouped_right = right.detach().clone().requires_grad_(True)
+    actual = complex_einsum_pair(
+        equation, grouped_left, grouped_right, compile_cuda=False
+    )
+    torch.testing.assert_close(actual, reference, atol=2e-5, rtol=2e-5)
+
+    cotangent = torch.ones_like(reference)
+    expected = torch.autograd.grad(
+        reference, (reference_left, reference_right), cotangent
+    )
+    actual_gradients = torch.autograd.grad(
+        actual, (grouped_left, grouped_right), cotangent
+    )
+    torch.testing.assert_close(actual_gradients[0], expected[0], atol=3e-5, rtol=3e-5)
+    torch.testing.assert_close(actual_gradients[1], expected[1], atol=3e-5, rtol=3e-5)
+
+
+def test_the_fused_layout_route_groups_a_tall_scrambled_operand(monkeypatch) -> None:
+    """The layout route that lowers to a fused kernel must group at any rank.
+
+    ``_canonical_bmm_inputs`` is the entry point the dispatch consults before it
+    decides between a fused kernel and the eager pair, so it has to reach the
+    same rank as the eager fallback.
+    """
+
+    equation, left, right = _scrambled_pair(28)
+    layout = _layout_for(equation, left, right)
+    b, _, n = layout[2]
+    assert left.ndim > 25 and right.ndim > 25
+
+    _enforce_copy_rank_ceiling(monkeypatch)
+    canonical = _canonical_bmm_inputs(equation, left, right)
+
+    assert canonical is not None
+    (left_matrix, right_matrix), output_shape, output_permutation = canonical
+    k = right.numel() // (b * n)
+    assert left_matrix.shape == (b, left.numel() // (b * k), k)
+    assert right_matrix.shape == (b, k, n)
+    assert output_shape == (1, 1)
+    assert output_permutation is not None

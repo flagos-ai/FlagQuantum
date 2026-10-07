@@ -18,6 +18,21 @@ def _collapse_sampled_wire(state: MPSState, qubit: int, bits: torch.Tensor) -> N
     tensor = state.tensors[qubit]
     if tensor.shape[1] != 1:
         raise RuntimeError("sequential MPS sampling requires a unit left bond")
+    if qubit + 1 < state.n_qubits:
+        from .sampling_collapse_dispatch import (
+            _try_apply_cataloged_mps_sampling_collapse,
+        )
+
+        collapsed = _try_apply_cataloged_mps_sampling_collapse(
+            tensor,
+            state.tensors[qubit + 1],
+            bits,
+        )
+        if collapsed is not None:
+            state.tensors[qubit], state.tensors[qubit + 1] = collapsed
+            state.orthogonality_center = qubit + 1
+            state._canonical_center_valid = True
+            return
     batches = torch.arange(state.bsz, device=state.device)
     boundary = tensor[batches, 0, bits, :]
     norms = torch.linalg.vector_norm(boundary, dim=-1)

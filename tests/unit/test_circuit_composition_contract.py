@@ -996,13 +996,22 @@ def test_composition_adds_no_ir_field_and_no_root_export() -> None:
 
     assert contract["ir_version_effect"] == "none"
     assert contract["root_export_effect"] == "none"
-    assert not [name for name in fq.__all__ if name in {"compose", "adjoint", "power"}]
-    # `power` is a method, so it adds no root export and the count does not move. The
-    # count itself is pinned by `tools/public_api_snapshot.py`; this is the same claim
-    # read from the other side, that the family is a family of methods. It reads 37
-    # here because `main` added `fq.density_matrix` to that frozen list while this
-    # branch was in review; the composition family contributed none of them.
-    assert len(fq.__all__) == 37
+    family = {"compose", "adjoint", "power"}
+    assert not [name for name in fq.__all__ if name in family]
+    # The count itself is pinned by `tools/public_api_snapshot.py`; this is the same
+    # claim read from the other side, that the family is a family of methods. The
+    # literal count this test used to carry (`37`) was correct when this slice was
+    # measured and stale once `fq.jacobian`, `fq.jvp`, and `fq.vjp` landed, which is
+    # exactly what happened when `fq.density_matrix` moved it to 37 before. So the
+    # claim is made against the recorded Stable Core rather than against a
+    # transcription of its cardinality, following `test_circuit_control.py`.
+    recorded = json.loads(
+        (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
+    )
+    assert not family.intersection(recorded["stable_exports"]), (
+        "`compose`, `adjoint`, and `power` are methods on `Circuit`; the recorded "
+        "Stable Core must not list them as exports"
+    )
 
 
 def test_the_refusal_vocabulary_is_unique_and_complete() -> None:

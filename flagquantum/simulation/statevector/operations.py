@@ -17,7 +17,7 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
-from . import controlled_phase, cz_graph, two_qubit_cpu
+from . import controlled_phase, cz_graph
 from .clifford_matching import (
     _reorder_disjoint_clifford_matchings,
     fuse_native_disjoint_clifford_matchings,
@@ -40,6 +40,12 @@ from .diagonal_cpu import (
 )
 from .diagonal_cpu import (
     _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
+)
+from .diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix as _apply_diagonal_matrix,
+)
+from .diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix_reference as _apply_diagonal_matrix_reference,
 )
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
@@ -70,6 +76,7 @@ from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
+from .two_qubit_matrix_dispatch import _try_apply_preferred_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
@@ -284,7 +291,7 @@ def _compile_statevector_program(
     enable_cpu_native_fused_rotation_layer: bool = False,
     enable_cpu_native_scalar_fused_rotation_layer: bool = False,
     enable_cpu_native_rotation_clifford_fusion: bool = False,
-    enable_cpu_swap_sequence: bool = False,
+    swap_fusion_bounds: tuple[int, int | None] | None = None,
     enable_cpu_hadamard_controlled_phase: bool = False,
     enable_cpu_cx_rzz_swap: bool = False,
     max_two_wire_regions: int = _CPU_DISJOINT_DENSE_MAX_TWO_WIRE_REGIONS,
@@ -332,8 +339,8 @@ def _compile_statevector_program(
     program_with_cx = _fuse_cx_sequences(optimized)
     if enable_cpu_cx_rzz_swap:
         program_with_cx = _fuse_cx_rzz_swap_sequences(program_with_cx)
-    if enable_cpu_swap_sequence:
-        return tuple(_fuse_swap_sequences(program_with_cx))
+    if swap_fusion_bounds is not None:
+        return tuple(_fuse_swap_sequences(program_with_cx, bounds=swap_fusion_bounds))
     return tuple(program_with_cx)
 
 
@@ -713,21 +720,21 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
+    if (
+        len(wires) == 2
+        and (
+            preferred := _try_apply_preferred_two_qubit_matrix(
+                state, matrix, wires, n_wires
+            )
+        )
+        is not None
+    ):
+        return preferred
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
                 state, matrix, qubit=wires[0], n_qubits=n_wires
             )
-        if (
-            len(wires) == 2
-            and (
-                preferred := two_qubit_cpu._apply_preferred_two_qubit_matrix_cpu(
-                    state, matrix, wires, n_wires
-                )
-            )
-            is not None
-        ):
-            return preferred
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
 
 
@@ -805,51 +812,6 @@ def _apply_single_wire_matrix(
         d = entries[:, 1, 1].reshape(bsz, 1, 1)
     combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
     return combined.reshape(bsz, -1)
-
-
-def _apply_diagonal_matrix(
-    state: torch.Tensor,
-    matrix: torch.Tensor,
-    wires: Sequence[int],
-    n_wires: int,
-    layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
-) -> torch.Tensor:
-    """Apply a known diagonal gate without launching a dense batched matmul."""
-
-    wires = tuple(wires)
-    bsz = state.shape[0]
-    dim = 2 ** len(wires)
-    if state.device.type == "cpu" and state.is_contiguous():
-        matrix = matrix.to(device=state.device, dtype=state.dtype)
-        diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
-        if diagonal.ndim == 1:
-            diagonal = diagonal.unsqueeze(0).expand(bsz, -1)
-        elif diagonal.shape[0] == 1 and bsz != 1:
-            diagonal = diagonal.expand(bsz, -1)
-        if diagonal.shape != (bsz, dim):
-            raise ValueError(
-                "diagonal matrix must have shape [dim, dim] or [batch, dim, dim]"
-            )
-        ordered_wires = tuple(sorted(wires))
-        wire_order = tuple(wires.index(wire) for wire in ordered_wires)
-        factors = diagonal.reshape((bsz,) + (2,) * len(wires)).permute(
-            (0,) + tuple(index + 1 for index in wire_order)
-        )
-        factor_shape = [bsz] + [1] * n_wires
-        for wire in ordered_wires:
-            factor_shape[wire + 1] = 2
-        tensor = state.reshape((bsz,) + (2,) * n_wires)
-        return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
-    if layout is None:
-        layout = _statevector_layout(n_wires, wires)
-    perm, inv_perm = layout
-    tensor = state.reshape((bsz,) + (2,) * n_wires).permute(perm)
-    flat = tensor.reshape(bsz, dim, -1)
-    diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
-    if diagonal.ndim == 1:
-        diagonal = diagonal.expand(bsz, -1)
-    out = complex_mul(flat, diagonal.unsqueeze(-1))
-    return out.reshape((bsz,) + (2,) * n_wires).permute(inv_perm).reshape(bsz, -1)
 
 
 def _apply_cx_permutation(

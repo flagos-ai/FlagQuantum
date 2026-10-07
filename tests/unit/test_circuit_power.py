@@ -11,6 +11,9 @@ third group covers the refusals, including the one that only a negative exponent
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -21,6 +24,8 @@ from flagquantum.core.operator_schema import MAX_POWER_REPEATS
 from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
+
+ROOT = Path(__file__).resolve().parents[2]
 
 #: Every registered opcode with one set of legal parameters, grouped by the rule the
 #: declaration answers for it. The keys are the opcodes; the values are the arity and the
@@ -569,7 +574,17 @@ def test_power_is_a_method_and_not_a_root_export() -> None:
 
     assert callable(fq.Circuit.power)
     assert "power" not in fq.__all__
-    # 37, not the 36 this slice measured alone: `main` added `fq.density_matrix` to
-    # the frozen stable exports while this branch was in review, so the merged base
-    # holds 37 names. `power` still moves the count nowhere.
-    assert len(fq.__all__) == 37
+    # The recorded Stable Core is the manifest's business, not this test's, so the
+    # claim is made against the manifest rather than against a transcription of its
+    # cardinality. The literal count this test used to carry (`37`) was correct when
+    # this slice was measured and stale once `fq.jacobian`, `fq.jvp`, and `fq.vjp`
+    # landed: a cardinality this file does not own had to be re-typed by a branch that
+    # added no export here. This is the same repair `test_circuit_control.py` took, for
+    # the same reason, when `fq.density_matrix` moved the count to 37.
+    recorded = json.loads(
+        (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
+    )
+    assert "power" not in recorded["stable_exports"], (
+        "`power` is a method on `Circuit`; the recorded Stable Core must not list it "
+        "as an export"
+    )
