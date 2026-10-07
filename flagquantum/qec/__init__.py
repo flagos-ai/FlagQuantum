@@ -1,6 +1,7 @@
 """Experimental quantum-error-correction domain."""
 
 from .adapters import MatchingDependencyError, PyMatchingDecoder
+from .bicycle import bivariate_bicycle_code
 from .bposd import (
     BeliefPropagationOsdDecoder,
     BeliefPropagationOsdDecodeResult,
@@ -129,6 +130,7 @@ __all__ = (
     "SteaneCode",
     "SyndromeRound",
     "StreamingDecoder",
+    "bivariate_bicycle_code",
     "build_memory_circuit",
     "certify_logical_product",
     "circuit_from_detector_error_model",

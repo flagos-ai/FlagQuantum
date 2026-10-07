@@ -20,7 +20,13 @@ import itertools
 
 import pytest
 
-from flagquantum.qec.gf2 import in_span, rank, reduce_rows, reduce_vector
+from flagquantum.qec.gf2 import (
+    in_span,
+    nullspace,
+    rank,
+    reduce_rows,
+    reduce_vector,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -163,3 +169,85 @@ def test_the_bit_is_the_column() -> None:
     assert in_span(1 << 40, [(1 << 40) | 1, 1])
     assert not in_span(1 << 40, [1 << 41, 1])
     assert reduce_vector(1 << 41, reduce_rows([(1 << 40) | (1 << 41)])) == 1 << 40
+
+
+_SOLVABLE = (
+    ([], 4),
+    ([0b01, 0b10], 2),
+    ([0b011], 3),
+    ([0b011, 0b011, 0b100], 3),
+    ([0b01], 4),
+    ([0b110, 0b011, 0b101], 3),
+    ([0b100, 0b011], 3),
+    (_ROWS, 6),
+)
+
+
+@pytest.mark.parametrize(("rows", "width"), _SOLVABLE)
+def test_the_null_space_dimension_is_the_width_less_the_rank(
+    rows: list[int], width: int
+) -> None:
+    """The width is a parameter here, which is the one place this module needs one.
+
+    A span question is answered by the rows alone: a row of a hundred columns is
+    reduced against a row of two by the same arithmetic. The dimension of the null
+    space is not, because it is a count of columns and no row need carry the last
+    one -- the null space of no rows is the whole space of whatever width the caller
+    had in mind. The rank of the same rows is measured alongside, so the dimension is
+    checked against an independent elimination rather than against the arithmetic of
+    this one.
+    """
+
+    basis = nullspace(rows, width)
+
+    assert len(basis) == width - rank(rows)
+    assert rank(list(basis)) == len(basis)
+
+
+@pytest.mark.parametrize(("rows", "width"), _SOLVABLE)
+def test_every_null_space_basis_vector_is_orthogonal_to_every_row(
+    rows: list[int], width: int
+) -> None:
+    """Being in the null space is the property, and it is checked bit by bit.
+
+    The dimension test above would pass for a basis of the wrong subspace of the
+    right size, so orthogonality is asserted separately and against the rows as they
+    arrived rather than against the reduction's pivots.
+    """
+
+    for vector in nullspace(rows, width):
+        for row in rows:
+            assert bin(vector & row).count("1") % 2 == 0
+
+
+def test_the_null_space_of_no_rows_is_the_whole_space() -> None:
+    """Every column is free when there is nothing to reduce against."""
+
+    assert nullspace([], 4) == (1, 2, 4, 8)
+    assert nullspace([0, 0], 3) == (1, 2, 4)
+
+
+def test_a_row_is_read_within_the_width_and_not_beyond_it() -> None:
+    """A bit above the width is outside the question rather than an extra column.
+
+    This is the case the masking exists for. Without it the row's leading column
+    lies above the width, that column is then counted as free, and the basis vector
+    built for it carries the out-of-range bit back to the caller -- a basis that is
+    neither inside the width nor a basis of the null space over it. Masking the row
+    first makes both halves of the reading true at once: the answer stays inside the
+    width, and the dimension is the width less the rank of the row as it is read.
+    """
+
+    row = (1 << 41) | 1
+
+    assert nullspace([row], 3) == (0b010, 0b100)
+    assert all(vector >> 3 == 0 for vector in nullspace([row, 1 << 40], 3))
+    assert len(nullspace([row, 1 << 40], 3)) == 3 - rank([1])
+
+
+@pytest.mark.parametrize("width", (0, -1))
+def test_a_width_that_names_no_column_is_refused(width: int) -> None:
+    """The masking shift is not defined below one, so the count is refused."""
+
+    with pytest.raises(ValueError, match="at least one"):
+        nullspace([1], width)
