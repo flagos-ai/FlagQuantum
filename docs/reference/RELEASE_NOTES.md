@@ -24,6 +24,25 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added `Circuit.power(k)` to the construction-time composition family. It returns
+  the circuit that applies the receiver's program `k` times, for an integer `k`,
+  and it is exact for every instruction: the whole program is appended in order,
+  so a gate with no angle, a custom `Circuit.unitary(...)` operation, and a noise
+  channel all work. `power(1)` copies the program rather than multiplying its
+  angles by one, so a symbolic parameter or a trainable angle stays the same
+  object, and `power(0)` is the empty program of the same shape. A negative
+  exponent is `adjoint().power(-k)`, which keeps the inverse rule in one place, so
+  a channel under a negative exponent raises the same `CapabilityError` that
+  `adjoint` raises. One rewrite shortens the common case: a receiver that is
+  exactly one instruction declaring exactly one parameter has that parameter
+  multiplied by the exponent instead of the gate being repeated, and the rule is
+  declared per opcode in `flagquantum/core/operator_schema.py` and measured
+  through the dense operator by the composition contract gate, so 12 of the 35
+  registered opcodes take the closed form and the other 23 repeat. A fractional
+  exponent is refused with `TypeError` rather than approximated, because the IR
+  has no instruction form for a matrix root. See
+  [the power API change](../api-changes/FQ-CIRCUIT-POWER-20261021.md).
+
 - Added the stable `fq.density_matrix(qubits=None, *, name=None)` output request and
   the `ExecutionResult.density_matrix` property, so an execution can be asked for the
   state on a named subset of qubits instead of only for outcome statistics.
