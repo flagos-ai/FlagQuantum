@@ -52,6 +52,7 @@ from .noise import (
     run_repetition_memory_noise_sweep,
 )
 from .pauli import Pauli
+from .qldpc import qldpc_code
 from .registry import (
     AUTHORITY_NAME,
     CROSS_CHECK_NAME,
@@ -140,6 +141,7 @@ __all__ = (
     "decoder_names",
     "detector_error_model_from_circuit",
     "get_decoder",
+    "qldpc_code",
     "register_decoder",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",

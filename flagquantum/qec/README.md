@@ -401,6 +401,52 @@ detectors, the model stops being graphlike, and the matcher refuses a model it
 accepted at one round. The belief-propagation decoder answers that model, and
 nothing about the code changed.
 
+## Derive a record from any check matrices
+
+The lattice routes above are one family each. `qldpc_code` is the general case
+behind them: give it the two parity-check blocks and it returns the same `CssCode`
+a caller would otherwise have written out, with the logical operators derived
+rather than asked for.
+
+```python
+from flagquantum.qec import qldpc_code
+
+# The Steane code, stated as its three checks and nothing else.
+checks = [
+    [1, 1, 1, 0, 1, 0, 0],
+    [1, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 1, 0, 0, 1],
+]
+steane = qldpc_code(hz=checks, hx=checks)
+print(steane.num_data_qubits, steane.num_ancilla_qubits, steane.distance)  # 7 6 3
+print([operator.to_text() for operator in steane.logical_observables])
+# ['Z1*Z4*Z5', 'X1*X4*X5']
+```
+
+The width is the number of columns, so the checks state how many data qubits the
+code has and a logical operator is read out of them. `CssCode` admits the same
+pair, but it also requires the logical operators, and the derivation here is what
+supplies them: it takes the null space of one check family modulo the span of the
+other, and then pairs the two families by symplectic elimination so that
+`lz[i]` and `lx[i]` are partners rather than merely both present.
+
+Two consequences are worth knowing before reading the output. The number of
+logical qubits is the **rank** of the matrices and not their row count, so a check
+written twice adds an ancilla and no logical qubit. And the basis is not unique: a
+complement of the stabilizer span has many representatives, and which one comes
+back is an implementation choice. The derived operator is the same *class* as the
+one a declared record states, not necessarily the same bits, which is why
+`bivariate_bicycle_code` is built on this route and still reports the parameters
+the literature states for its polynomials. The distance is searched over the code
+rather than read off the derived operator, so a representative far heavier than the
+code's cheapest logical operator still reports the cheaper number.
+
+A pair that does not commute, a pair whose checks leave no logical qubit, a row
+that acts on no data qubit, and a distance bound the search does not reach are
+each refused with the reason named rather than answered. One of the two blocks may
+be empty — a code with only Z-type checks still states its width — but not both,
+because then nothing states how many data qubits there are.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per

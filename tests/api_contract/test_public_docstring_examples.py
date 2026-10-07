@@ -70,7 +70,12 @@ from flagquantum.observables.fermion import (
     parity_encoding,
 )
 from flagquantum.operators import SuperOperator
-from flagquantum.qec import CssCode, CssCodeMatrices, bivariate_bicycle_code
+from flagquantum.qec import (
+    CssCode,
+    CssCodeMatrices,
+    bivariate_bicycle_code,
+    qldpc_code,
+)
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -122,11 +127,13 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes three: the code record a caller constructs,
-# the matrices that record is read back as, and the bivariate-bicycle family, whose
+# error-correction package contributes four: the code record a caller constructs,
+# the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
-# example is not evidence of a distance.
+# example is not evidence of a distance, and the route that derives the same
+# record from a caller's check matrices, whose example is the Steane code written
+# as its three checks rather than as a record.
 ENTRIES = (
     adder_circuit,
     adder_wires,
@@ -178,6 +185,7 @@ ENTRIES = (
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
+    qldpc_code,
     recommend_simulator,
     run_cirq,
     run_pennylane,

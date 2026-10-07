@@ -101,6 +101,28 @@ addition is `^` over Python integers and no array dependency enters the module;
 `logical.py` previously carried private copies of the same two operations and now
 reads them from here.
 
+`qldpc.py` is the second shared piece, and it is the derivation the declared qLDPC
+family used to hold privately. `_logical_basis` takes one check family's span
+inside the other family's null space: it walks the null-space basis and keeps a
+vector only when it is independent of the stabilizers *and* of the vectors kept
+before it, which is what makes the result a basis of the quotient rather than a
+set of free columns that happen to be independent. `_paired_basis` then puts the
+two families into the symplectic basis whose pairing is the identity, so a
+record's own `lz[i]` and `lx[i]` are partners. `qldpc_code` is the public entry:
+it reads the two blocks, takes the width from whichever block states one, derives
+both families through those two helpers, and hands the result to `CssCode`, which
+still does all the checking. `bivariate_bicycle_code` now calls the same two
+helpers for its own polynomial pair instead of carrying a second copy, so a
+representation the quotient can be taken in has one implementation rather than
+two. The derivation is not a declaration, and the distinction is load-bearing
+rather than cosmetic: a complement of the stabilizer span has many
+representatives, so a derived operator is the same class as a declared one rather
+than the same bits, which is why `tests/qec/test_qldpc_code.py` holds every
+derived operator to differing from its declared partner by a check of its own
+type -- tested against the Steane record, the torus at two sizes and the bicycle
+family -- and why the parameters alone would not have held the route: a wrong
+representative of the right class reports the same `(n, anc, k, d)`.
+
 The distance is computed rather than declared, which is what makes it a property
 of the code instead of a property of the operator the caller happened to write
 down: the same Steane code reports three whether its logical operator is stated at
@@ -121,10 +143,14 @@ it, and saying so is the honest boundary: this route states a code as parity-che
 matrices, so a stabilizer carrying both an X factor and a Z factor has no row here --
 not because the protocol refuses it but because one row of `hz` and one row of `hx`
 would describe two checks that do not commute. `build_memory_circuit` still refuses a
-declared product that is neither pure X nor pure Z. The named qLDPC, Reichardt and
-Floquet families remain absent as *records* -- a matrix has a route in, and three
-families now arrive that way without a caller writing them, but none of these three
-does. What the
+declared product that is neither pure X nor pure Z. The Reichardt and Floquet
+families remain absent as *records* and have no matrix route either. The qLDPC
+case went the other way: `qldpc_code` takes a caller's own parity-check matrix pair
+and derives its logical operators, so the general form of what
+`bivariate_bicycle_code` was already doing for its own pair is now reachable
+directly, and four routes arrive at a record without the caller writing the
+matrices' consequences down -- the colour patch, the torus, the bicycle family and
+a caller's own pair. What the
 colour record changes about the layer above it is the shape of a check: a face on
 the triangular patch's edge spans four qubits and a face in its bulk spans six, so
 `triangular_colour_code` is the record whose checks reach weight six, and its two

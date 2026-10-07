@@ -20,9 +20,9 @@ where the work goes: a triangular colour patch and a square-lattice torus can
 a small torus can be written down by hand. A pair of polynomials names no such
 curve, so the Z-type logical operators are taken to be what the X-type checks leave
 at zero, modulo the Z-type stabilizer span, and the X-type ones are the mirror of
-that. :func:`flagquantum.qec.gf2.nullspace` supplies the first half and
-:func:`flagquantum.qec.gf2.in_span` the second, so the derivation adds no second
-Gaussian elimination to the package.
+that. That reading names no polynomial and needs none, so it is not stated here:
+:mod:`flagquantum.qec.qldpc` owns it as a route a caller can also reach directly,
+and this module calls those two helpers rather than carrying a second copy of them.
 
 **The two bases are then changed into the one the record states.** A code's logical
 operators pair up non-degenerately but the null-space reading above returns an
@@ -33,7 +33,8 @@ holds a one, and the Z-type operator of every other row that pairs with it is
 multiplied by it until it does not. What comes back is a family of ``k`` operators
 each pairing with exactly one operator of the other family, which is the form
 :class:`~flagquantum.qec.codes.CssCode` certifies and the form a memory experiment
-reads out.
+reads out. That elimination is shared for the same reason, because a
+bivariate-bicycle code is one of the codes the direct route states.
 
 This module builds one record and searches for its distance. It does not decode,
 protect a logical qubit, state a threshold, or choose a noise model.
@@ -45,7 +46,7 @@ from collections.abc import Sequence
 from numbers import Integral
 
 from .codes import _DISTANCE_SEARCH_WEIGHT, CssCode
-from .gf2 import in_span, nullspace, reduce_rows
+from .qldpc import _logical_basis, _paired_basis, _rows
 
 __all__ = ("bivariate_bicycle_code",)
 
@@ -115,102 +116,6 @@ def _transpose(masks: list[int], width: int) -> list[int]:
             if mask >> column & 1:
                 transposed[column] |= 1 << row
     return transposed
-
-
-def _rows(vectors: Sequence[int], width: int) -> tuple[tuple[int, ...], ...]:
-    """Return bit masks as the 0-or-1 rows the record is stated in."""
-
-    return tuple(
-        tuple(vector >> column & 1 for column in range(width)) for vector in vectors
-    )
-
-
-def _logical_basis(
-    commuting: Sequence[int], stabilizers: Sequence[int], width: int
-) -> list[int]:
-    """Return one operator per logical qubit of one family, as bit masks.
-
-    The answer is a basis of the quotient ``ker(commuting) / span(stabilizers)``,
-    and it is built by writing that quotient down rather than by reading it off
-    residues. The stabilizer span is a subspace of the null space, because the two
-    check families commute, so the stabilizer basis is extended to a basis of the
-    null space one independent vector at a time; the vectors that were added are a
-    complement of the stabilizer span inside it, and a complement is exactly one
-    operator per logical class. The count that comes back is therefore the null
-    space's dimension minus the stabilizer rank, which is the number of logical
-    qubits the matrices leave.
-
-    Two steps are worth naming because a shorter statement of them is wrong. The
-    extension starts from the stabilizer basis rather than from the null space's,
-    so that the counted-out vectors are the ones that were *added*: starting from
-    the null space's basis instead would return a set that generates the null space
-    and no way to say which of its vectors carried logical information. And the
-    independence test is over the running basis as a whole rather than over the
-    null space's basis alone, because a candidate that the null space's basis
-    already spans may still be the first vector that leaves the stabilizer span.
-    """
-
-    pivots = reduce_rows(list(stabilizers))
-    kept = list(pivots)
-    added: list[int] = []
-    for candidate in nullspace(list(commuting), width):
-        if in_span(candidate, kept):
-            continue
-        kept.append(candidate)
-        added.append(candidate)
-    return added
-
-
-def _paired_basis(
-    z_logicals: list[int], x_logicals: list[int]
-) -> tuple[list[int], list[int]]:
-    """Return the two families in the bases whose pairing is the identity.
-
-    The pairing matrix is read one row per Z-type operator, with bit ``column`` set
-    when that operator anticommutes with the X-type operator at that column. The
-    elimination is then the usual one, stated on the pairing rather than on the
-    operators: a row whose diagonal is zero swaps X-type operators until it is one,
-    and every other row that pairs with the pivot row has the pivot's Z-type
-    operator multiplied into it until it does not. A row with no one on or after its
-    own column would be a row of a singular pairing, which a Calderbank-Shor-Steane
-    code's two families never are; that case is refused rather than returned.
-    """
-
-    size = len(z_logicals)
-    pairing = [
-        sum(
-            0 if bin(z_logical & x_logical).count("1") % 2 == 0 else 1 << column
-            for column, x_logical in enumerate(x_logicals)
-        )
-        for z_logical in z_logicals
-    ]
-    for index in range(size):
-        target = next(
-            (column for column in range(index, size) if pairing[index] >> column & 1),
-            None,
-        )
-        if target is None:
-            raise ValueError(
-                "the derived Z-type and X-type logical operators do not pair up "
-                "non-degenerately, which the two families of a Calderbank-Shor-"
-                "Steane code always do: the check matrices and the polynomials they "
-                "were built from describe no code at the parameters they state"
-            )
-        if target != index:
-            x_logicals[index], x_logicals[target] = (
-                x_logicals[target],
-                x_logicals[index],
-            )
-            for row in range(size):
-                left = pairing[row] >> index & 1
-                right = pairing[row] >> target & 1
-                if left != right:
-                    pairing[row] ^= (1 << index) | (1 << target)
-        for row in range(size):
-            if row != index and pairing[row] >> index & 1:
-                z_logicals[row] ^= z_logicals[index]
-                pairing[row] ^= pairing[index]
-    return z_logicals, x_logicals
 
 
 def bivariate_bicycle_code(
