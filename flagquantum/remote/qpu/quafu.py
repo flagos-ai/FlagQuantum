@@ -16,6 +16,7 @@ from ...deployment.cloud import (
     DeploymentPackage,
     validate_deployment_package,
 )
+from ...errors import ValidationError
 from .contracts import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
     DeploymentResult,
@@ -228,6 +229,37 @@ class QuafuProvider(HttpQuantumProvider):
             headers["token"] = self.credentials.token
         return headers
 
+    def _require_legacy_credential(self, target: str) -> None:
+        """Refuse an unauthenticated POST to the legacy SQC platform.
+
+        The legacy SQC contract authenticates with the ``token`` header that
+        :meth:`_headers` builds from ``QUAFU_API_TOKEN``. Without it the request
+        still leaves the machine, and the platform's transport-level rejection is
+        what reaches the caller -- a report of the platform's verdict, not of the
+        missing prerequisite. Both entry points that post to that endpoint call
+        this before assembling a request, so an unconfigured credential fails at
+        the earliest knowable stage instead of surfacing as a rejected
+        submission.
+        """
+
+        if self.credentials.token:
+            return
+        remedy = (
+            "A Quafu credential is required to submit to the legacy SQC platform: "
+            "pass token=... or set QUAFU_API_TOKEN."
+        )
+        if self.api_key:
+            raise ValidationError(
+                f"{remedy} QUAFU_API_KEY is set, but the task API is not answering "
+                f"for target {target!r}, and that key does not authorize the legacy "
+                "endpoint. No request was sent."
+            )
+        raise ValidationError(
+            f"{remedy} Neither QUAFU_API_KEY nor QUAFU_API_TOKEN is configured, so a "
+            f"request for target {target!r} would carry no authentication header. "
+            "No request was sent."
+        )
+
     def list_devices(
         self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
@@ -418,6 +450,11 @@ class QuafuProvider(HttpQuantumProvider):
         if task_api_required and (
             options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
         ):
+            # The exception class here is unchanged: this refusal is about the
+            # option combination the caller passed, not about a credential, and
+            # `FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md` enumerates only the
+            # hardware and the routing-target classes. Widening an unapproved API
+            # change is not this patch's business.
             raise ValueError(
                 f"Quafu target {package.backend.name!r} requires logical-circuit "
                 "submission through the task API"
@@ -439,9 +476,11 @@ class QuafuProvider(HttpQuantumProvider):
                 else:
                     raise
         if task_api_required:
-            raise RuntimeError(
-                f"Quafu target {package.backend.name!r} requires the task API; "
-                "no equivalent legacy SQC fallback is available"
+            raise ValidationError(
+                f"Quafu target {package.backend.name!r} requires the task API, and "
+                "the task API needs a credential this provider does not have: pass "
+                "api_key=... or set QUAFU_API_KEY. The legacy SQC platform is not an "
+                "equivalent route to this target, so there is no fallback to take."
             )
         return self._submit_legacy(package, options)
 
@@ -470,6 +509,7 @@ class QuafuProvider(HttpQuantumProvider):
     def _submit_legacy(
         self, package: DeploymentPackage, options: Mapping[str, Any]
     ) -> ProviderTaskHandle:
+        self._require_legacy_credential(package.backend.name)
         query = parse.urlencode(
             {"name": package.name, "chip": package.backend.name, "shots": package.shots}
         )
@@ -523,6 +563,7 @@ class QuafuProvider(HttpQuantumProvider):
         if not backend or not task_name:
             raise ValueError("Quafu QASM submission requires chip and name")
         _validate_quafu_shots(backend, shots)
+        self._require_legacy_credential(backend)
         options = _submission_options(
             program,
             n_wires=len(target_qubits),

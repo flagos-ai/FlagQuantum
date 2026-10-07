@@ -2,6 +2,13 @@
 """Validate the construction-time composition contract against the implementation.
 
 `contracts/circuit-composition-contract.toml` is the repository's own statement of what
+`Circuit.compose`, `Circuit.adjoint`, and `Circuit.power` guarantee and of every way
+they refuse. This gate reads that statement back against the code: a contracted refusal
+whose phrase no longer occurs in its source, a refusal the contract does not list, a
+declared adjoint or power rule the operator schema does not define, an operation the
+contract calls absent but that someone added, an opcode census that no longer supports
+the unreachable row, a composition operation without an expand-and-compare test, or a
+closed-form power whose angle does not actually scale all fail here.
 `Circuit.compose`, `Circuit.adjoint`, and `Circuit.control` guarantee and of every way
 they refuse. This gate reads that statement back against the code: a contracted refusal
 whose phrase no longer occurs in its source, a refusal the contract does not list, a
@@ -14,6 +21,12 @@ The instruction-by-instruction requirement is the reason this gate exists next t
 conformance test rather than inside it: the contract names one expansion test per
 provided operation, and this gate refuses a contract that names a test which is not
 there.
+
+The closed-form power measurement is here for the same reason. `OperatorSchema
+.power_rule` predicts from the declaration that a one-parameter gate's angle scales, and
+a prediction is not evidence: `_power_measurement_errors` compares the dense operator of
+the repeated gate with the angle-scaled one, through the same matrix the simulator
+executes, and refuses a gate whose angle turns out not to scale.
 """
 
 from __future__ import annotations
@@ -31,26 +44,34 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
     import tomli as tomllib
 
+
 import flagquantum as fq
 from flagquantum.core import (
     ADJOINT_RULES,
     CONTROL_RULES,
     MAX_LADDER_LEVEL,
     OPERATOR_SCHEMAS,
+    POWER_RULES,
     control_ladder_level,
     get_operator_schema,
 )
 from flagquantum.core.controlled import controlled_instructions
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operator_schema import MAX_POWER_REPEATS
 from flagquantum.errors import CapabilityError, ValidationError
+from flagquantum.simulation.gate_matrix import gate_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "circuit-composition-contract.toml"
 
 #: The exception class each contracted `exception` name denotes. A name absent here is a
 #: contracted class this gate cannot observe, which is a failure rather than a pass.
+#: `ValueError` is listed as the exact class and not as `ValidationError`: the instruction
+#: bound is a size request the framework refuses, not a malformed program, and
+#: `ValidationError` already subclasses `ValueError` where the malformed cases belong.
 EXCEPTIONS: dict[str, type[BaseException]] = {
     "TypeError": TypeError,
+    "ValueError": ValueError,
     "ValidationError": ValidationError,
     "CapabilityError": CapabilityError,
 }
@@ -59,6 +80,22 @@ EXCEPTIONS: dict[str, type[BaseException]] = {
 #: claims none of them appeared, so they are read off the IR rather than trusted.
 FORBIDDEN_IR_FIELDS = frozenset({"adjoint", "compose", "control", "power"})
 
+#: The angles the closed-form measurement scales by. Three distinct exponents are used
+#: so that a gate whose angle happens to scale for one of them is not read as scaling.
+#: `1` is excluded deliberately: it is the identity rewriting and would hold for a gate
+#: whose angle does not scale at all.
+_MEASURED_EXPONENTS = (2, 3, 5)
+
+#: The angles the measurement starts from. They are ordinary rotation angles rather than
+#: multiples of pi, so a gate that is only correct at special angles is not read as
+#: scaling.
+_MEASURED_ANGLES = (0.3, 1.1, -0.7)
+
+#: The tolerance the two dense operators are compared at. The identity measured on the
+#: opcodes that declare the closed form is around 1e-15, so this is a wide margin above
+#: float noise and far below any real disagreement: scaling the wrong parameter of a
+#: two-angle gate misses by about 1e-1.
+_MEASURED_ATOL = 1e-9
 #: The opcodes whose controlled form is the ladder alone, with no basis change and no
 #: correction gate around it. `x` is ``h . C(P(pi)) . h`` and `rz` carries a phase
 #: correction, so neither measures the bound itself; these do.
@@ -100,6 +137,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "implementation",
         "placement_implementation",
         "adjoint_rule_source",
+        "power_rule_source",
         "control_rule_source",
         "control_expansion_implementation",
     ):
@@ -113,9 +151,17 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     scope = contract.get("scope", {})
     provided = list(scope.get("provided", ()))
     not_provided = list(scope.get("not_provided", ()))
-    if provided != ["Circuit.compose", "Circuit.adjoint", "Circuit.control"]:
+    if provided != [
+        "Circuit.compose",
+        "Circuit.adjoint",
+        "Circuit.power",
+        "Circuit.control",
+    ]:
         errors.append("circuit composition provided surface drifted")
-    if not_provided != ["Circuit.power"]:
+    # The family is complete, so the absent list is empty. Asserting emptiness rather
+    # than skipping the check is what keeps a later member honest: it would have to
+    # appear here as absent first, with a reason, the way `power` and `control` did.
+    if not_provided != []:
         errors.append("circuit composition absent surface drifted")
     for dotted in provided:
         owner, _, attribute = dotted.partition(".")
@@ -125,10 +171,11 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         owner, _, attribute = dotted.partition(".")
         if attribute and hasattr(getattr(fq, owner, None), attribute):
             errors.append(f"contracted-absent operation {dotted!r} exists")
-    # The family is construction-time methods on `Circuit`. `power` is absent and
-    # `control` is provided, but neither may become an operation of its own at the root:
-    # a module-level `fq.control` would be a second way to say the same thing.
-    for entry in ("control", "power"):
+    # The family is construction-time methods on `Circuit`. All four are provided, but
+    # none may become an operation of its own at the root: a module-level `fq.control`
+    # or `fq.power` would be a second way to say the same thing, and the root export
+    # list is frozen by `docs/public_api_v1.json`.
+    for entry in ("compose", "adjoint", "control", "power"):
         if entry in fq.__all__:
             errors.append(f"{entry!r} is a root export; the family is Circuit methods")
 
@@ -187,6 +234,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     if adjoint_arguments != ["self"]:
         errors.append(f"Circuit.adjoint grew parameters: {adjoint_arguments}")
 
+    errors.extend(_power_errors(contract))
     refused = _refusal_errors(contract)
     errors.extend(refused)
     errors.extend(_control_errors(contract))
@@ -195,6 +243,149 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     errors.extend(_census_errors(contract))
     errors.extend(_verification_errors(contract))
     return tuple(errors)
+
+
+def _power_errors(contract: dict[str, Any]) -> list[str]:
+    """Read the power table back against the declaration and against the gates."""
+
+    errors: list[str] = []
+    power = contract.get("power", {})
+    # The power surface is authorized by its own dated record, and that record must be one
+    # of the file's authorizations. A table naming a proposal the header does not list is
+    # an unapproved surface written down, which is the failure this check exists for.
+    owned = power.get("authorization")
+    listed = list(contract.get("authorization", ()))
+    if not isinstance(owned, str) or not (ROOT / owned).is_file():
+        errors.append(f"circuit composition power authorization {owned!r} is gone")
+    elif owned not in listed:
+        errors.append(
+            f"circuit composition power authorization {owned!r} is not among the "
+            "file's authorizations"
+        )
+    if list(power.get("declared_opcode_rules", ())) != list(POWER_RULES):
+        errors.append(
+            "circuit composition declared power rules drifted from POWER_RULES: "
+            f"contract={power.get('declared_opcode_rules')}, "
+            f"implementation={list(POWER_RULES)}"
+        )
+    if power.get("matrix_route_precedes_opcode_rule") is not True:
+        errors.append("circuit composition must contract the power matrix route first")
+    if power.get("matrix_route") != "repeat":
+        errors.append("circuit composition power matrix route must be repeat")
+    if power.get("single_instruction_rewrite_only") is not True:
+        errors.append(
+            "circuit composition power rewrite must be single-instruction only"
+        )
+    if power.get("receiver_is_mutated") is not False:
+        errors.append("circuit composition power must not mutate its receiver")
+    if power.get("negative_exponent_route") != "Circuit.adjoint":
+        errors.append("circuit composition power must route a negative exponent")
+
+    arguments = list(inspect.signature(fq.Circuit.power).parameters)
+    if arguments != ["self", power.get("exponent_argument")]:
+        errors.append(f"Circuit.power parameters drifted: {arguments}")
+    signature = inspect.signature(fq.Circuit.power)
+    for name in ("args", "kwargs"):
+        if name in signature.parameters:
+            errors.append(f"Circuit.power accepts a variadic {name} parameter")
+
+    # The bound the message reports is a constant of the rule source, and the contract
+    # states it twice: as the number and as where it is owned. Both are read.
+    raw_source = contract.get("power", {}).get("max_emitted_instructions_source")
+    if not isinstance(raw_source, str) or not (ROOT / raw_source).is_file():
+        errors.append(f"circuit composition power bound source {raw_source!r} is gone")
+    if power.get("max_emitted_instructions") != MAX_POWER_REPEATS:
+        errors.append(
+            "circuit composition power bound drifted from MAX_POWER_REPEATS: "
+            f"contract={power.get('max_emitted_instructions')}, "
+            f"implementation={MAX_POWER_REPEATS}"
+        )
+    errors.extend(_power_measurement_errors(power))
+    return errors
+
+
+def _power_measurement_errors(power: dict[str, Any]) -> list[str]:
+    """Measure every gate the closed-form rewrite is allowed to touch.
+
+    The claim under test is `U(theta)` applied ``k`` times equals ``U(k * theta)``. It is
+    a claim about the gate matrices, so it is settled by comparing the two dense
+    operators rather than by reading the declaration that predicts it. The set of
+    opcodes the rewrite may touch is contracted, so a gate that starts scaling, or one
+    that stops, is a contract change rather than a silent widening.
+    """
+
+    errors: list[str] = []
+    closed = sorted(
+        opcode
+        for opcode, schema in OPERATOR_SCHEMAS.items()
+        if schema.opcode == opcode and schema.power_rule == "scale_single_parameter"
+    )
+    contracted = sorted(power.get("closed_form_opcodes", ()))
+    if closed != contracted:
+        errors.append(
+            "circuit composition closed-form opcodes drifted from the declaration: "
+            f"contract={contracted}, implementation={closed}"
+        )
+
+    for opcode in closed:
+        schema = OPERATOR_SCHEMAS[opcode]
+        if len(schema.parameters) != 1:
+            errors.append(
+                f"closed-form opcode {opcode!r} declares {len(schema.parameters)} "
+                "parameters; the rewrite scales exactly one"
+            )
+            continue
+        name = schema.parameters[0]
+        for angle in _MEASURED_ANGLES:
+            single = _dense_operator(opcode, {name: angle})
+            if single is None:
+                errors.append(f"closed-form opcode {opcode!r} has no dense operator")
+                break
+            for exponent in _MEASURED_EXPONENTS:
+                repeated = single
+                for _ in range(exponent - 1):
+                    repeated = repeated @ single
+                scaled = _dense_operator(opcode, {name: angle * exponent})
+                if scaled is None:
+                    errors.append(
+                        f"closed-form opcode {opcode!r} has no dense operator at "
+                        f"{exponent} times the angle"
+                    )
+                    break
+                deviation = float((repeated - scaled).abs().max())
+                if deviation > _MEASURED_ATOL:
+                    errors.append(
+                        f"opcode {opcode!r} declares {schema.power_rule!r} but "
+                        f"U({angle})^{exponent} differs from U({angle * exponent}) by "
+                        f"{deviation:.3e}"
+                    )
+
+    # Every registered opcode must answer with a rule this gate can act on, so an
+    # opcode added without a power decision fails here instead of falling through to a
+    # default nobody chose.
+    for opcode, schema in OPERATOR_SCHEMAS.items():
+        if schema.opcode != opcode:
+            continue
+        if schema.power_rule not in POWER_RULES:
+            errors.append(f"opcode {opcode!r} answers unknown power rule")
+    return errors
+
+
+def _dense_operator(opcode: str, params: dict[str, Any]) -> torch.Tensor | None:
+    """Return the dense operator of one gate, or ``None`` if it has none.
+
+    The operator is read through ``gate_matrix``, which is the same operator the
+    simulator executes, so the measurement is about the gate rather than about a second
+    copy of the gate's arithmetic written here.
+    """
+
+    schema = OPERATOR_SCHEMAS[opcode]
+    instruction = Instruction(
+        name=opcode, wires=tuple(range(schema.arity)), params=params
+    )
+    matrix = gate_matrix(instruction, bsz=1, device="cpu", dtype=torch.complex128)
+    size = 2**schema.arity
+    return matrix.detach().reshape(size, size).to(torch.complex128)
 
 
 def _control_errors(contract: dict[str, Any]) -> list[str]:
@@ -422,20 +613,23 @@ def _refusal_errors(contract: dict[str, Any]) -> list[str]:
     if duplicates:
         errors.append(f"circuit composition refusal codes repeat: {duplicates}")
     entry_points = {row.get("entry_point") for row in refusals}
-    if not entry_points <= {"compose", "adjoint", "control"}:
+    if not entry_points <= {"compose", "adjoint", "power", "control"}:
         errors.append(
             f"circuit composition refusals name unknown entry points: {entry_points}"
         )
-    if len(refusals) != 30:
+    # 19 rows for `compose`, `adjoint` and `power` plus the 13 that `control` brought
+    # with it. The count is pinned so that dropping a row is a visible contract change
+    # rather than a quiet narrowing of the refusal vocabulary callers may rely on.
+    if len(refusals) != 32:
         errors.append(
-            f"circuit composition must contract 30 refusals, found {len(refusals)}"
+            f"circuit composition must contract 32 refusals, found {len(refusals)}"
         )
     for row in refusals:
         code = row.get("code")
         if not isinstance(code, str) or not code:
             errors.append(f"circuit composition refusal {row!r} has no code")
             continue
-        if row.get("entry_point") not in {"compose", "adjoint", "control"}:
+        if row.get("entry_point") not in {"compose", "adjoint", "power", "control"}:
             errors.append(f"circuit composition refusal {code!r} has no entry point")
         name = row.get("exception")
         if name not in EXCEPTIONS:
@@ -647,6 +841,23 @@ def _census_errors(contract: dict[str, Any]) -> list[str]:
             "circuit composition unreachable row needs a refusing opcode family"
         )
 
+    # The power census is the split the rewrite reads. It is counted from the same
+    # declaration, so a rule that moves an opcode between the two forms is a contract
+    # change.
+    closed = sum(
+        1
+        for opcode, schema in OPERATOR_SCHEMAS.items()
+        if schema.opcode == opcode and schema.power_rule == "scale_single_parameter"
+    )
+    census = contract.get("verification", {}).get("power_census", "")
+    if (
+        f"{closed} of {len(OPERATOR_SCHEMAS)} registered opcodes take the closed form"
+        not in census
+    ):
+        errors.append(
+            "circuit composition power census drifted: "
+            f"{closed} of {len(OPERATOR_SCHEMAS)} registered opcodes take the closed form"
+        )
     # The same census read through the control rules. It is the measurement behind the
     # control row that reports "no controlled form": every opcode that declares no rule is
     # a noise channel, and a program holding one without its `is_channel` metadata is the

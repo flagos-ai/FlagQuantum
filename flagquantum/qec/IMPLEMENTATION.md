@@ -436,27 +436,47 @@ evidence rather than decoration. The expanded model is a model in its own right 
 it prints and re-reads unchanged -- and it is the default reading that states the
 line stim wrote.
 
-What remains refused is a `repeat` block, a `#` comment, a declaration that skips
-an index, and a malformed line. The `repeat` refusal is deliberate rather than
-pending: expanding a block means interpreting a nested instruction stream, and
-`str(model.flattened())` already states the same instructions without the block.
-`flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit. One more line is refused by the suggested reading
-alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
-nothing, and a component with no targets has no mechanism to become, so the reader
-refuses it and names the default reading -- which states that line as `D1` -- as
-the route that states it.
+What remains refused is a declaration that skips an index, an error mechanism that
+flips nothing, a malformed line, a block that never closes, and a closing brace
+with no block open. Every refusal names what it could not read rather than
+dropping the instruction, so a text carrying information the model cannot state
+fails closed instead of being read as a shorter model. One more line is refused by
+the suggested reading alone: a text such as `error(0.1) D0 D0 ^ D1` has a component
+that cancels to nothing, and a component with no targets has no mechanism to
+become, so the reader refuses it and names the default reading -- which states that
+line as `D1` -- as the route that states it.
+
+A `repeat <count> { ... }` block and a `#` comment are read as well, and both are
+read the way stim means them. The block is stated by interpreting its instructions
+as many times as the count says, so the shape, the mechanisms and the accumulated
+`shift_detectors` offsets it produces are the ones its instructions produce in
+sequence. The shift is what makes the loop a loop: `shift_detectors 2` inside
+`repeat 3 { error(0.1) D0; shift_detectors 2 }` is applied three times, so the
+block's mechanism lands at detector zero, two and four, which is why stim reports
+five detectors for that text where a reading that applied the shift once for the
+whole block would report one. The count is a run of ASCII digits and nothing else:
+`repeat 0` is legal and contributes nothing at all, because the block's
+instructions never run, while a signed, non-numeric or missing count is refused by
+name rather than guessed. Blocks nest, and an inner block is drained inside the
+iteration of the one that holds it. Reading a block is therefore an expansion,
+which is the one cost this reader pays that stim's does not: stim keeps the block
+and expands it on demand. A `#` comment is cut at the `#` wherever it sits on the
+line, so a commented line states no instruction. What the expansion costs is
+bounded by the text, since a block is read by walking its instructions and not by
+materialising a second copy of them: the reader streams instruction lines and
+never holds the expansion.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
 three, five and seven, rounds one, two, three, five and nine, noisy and
-noise-free, with and without decomposed errors. This reader parsed all 180 that
-carried no block, agreeing with a re-read of the same text on the detector and
-observable counts, on the error count, and on every `(probability, detectors,
-observables)` mechanism; the 60 refusals were all `repeat` blocks, all from
-`repetition_code:memory` at five rounds or more. Every one of the same 240 models
-parsed when `flattened()` supplied the text, so flattening is a complete route
-around the last refusal.
+noise-free, with and without decomposed errors. This reader parses all 240
+unflattened, sixty of which carry a `repeat` block, agreeing with a re-read of the
+same text on the detector and observable counts, on the error count, and on every
+`(probability, detectors, observables)` mechanism; before the block was read the
+sixty refusals were all `repeat` blocks, all from `repetition_code:memory` at five
+rounds or more. The same suite asserts that a block-carrying text and the same
+text after `stim`'s `flattened()` state one model, so the reader and stim agree on
+what the block means rather than only on the fact that something can be read.
 
 Agreement on the shape and on the mechanism list is agreement with stim's own
 reading of a text stim wrote, so the reader is also checked against the physics.
