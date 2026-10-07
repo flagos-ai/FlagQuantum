@@ -44,6 +44,17 @@ there is no `generator`, `matrix`, or state-frequency field to read. Correcting
 the declaration in the route would mean a hand-maintained second rule table,
 which AGENTS.md principle 6 forbids.
 
+The two `phase` and `u1` rows are the one place in this table where the recorded
+number is not a residual of the declared rule. There the rule coincides, so the
+residual is the round-off floor of the central difference it is measured against
+-- `eps * |psi| / (2 * step)`, around `1e-10` at the step the gate uses -- and a
+floating-point floor is not reproducible to three significant digits: the Linux
+x86 `torch` 2.13.0+cpu wheel reads `5.810119e-11` for `u1` at `theta=1.1` where
+the machine these rows were recorded on reads `5.052384e-11`. The gate therefore
+compares those two rows at the order of the floor rather than at the reading; the
+component-ratio column above them is the column that carries the claim, and it is
+compared at `1e-06`.
+
 ## Decision
 
 Add one module-level entry point:

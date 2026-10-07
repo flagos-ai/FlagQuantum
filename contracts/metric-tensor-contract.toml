@@ -195,6 +195,14 @@ rotation_deviation = [2.029784e-01, 1.765636e-01]
 # `phase` and `u1` declare the same frequency and the same rule and are right to
 # five parts in ten billion, which is what rules out a single scale factor: the
 # declared table is right for one opcode and wrong by `sqrt(2)` for another.
+# The two deviations below are the round-off floor of the central difference they
+# are compared against -- `eps * |psi| / (2 * step)`, `5.6e-11` at the step this
+# gate uses -- and not a residual of the declared rule, which coincides here
+# instead. A floor is not reproducible to three significant digits: the x86 Linux
+# `torch` 2.13.0+cpu wheel reads `5.810119e-11` for `u1` at `theta=1.1` where the
+# machine these were recorded on reads `5.052384e-11`. The gate compares these
+# rows at the order of the floor rather than at the reading, and the ratio rows
+# above are what a rule that stopped coinciding would fail.
 coincident_opcodes = ["phase", "u1"]
 coincident_theta = [0.4, 1.1]
 coincident_ratio = [1.0, 1.0]

@@ -80,6 +80,21 @@ ORACLE_OPCODES = ("ry", "rx", "rz", "cx")
 # relative tolerance that would treat a `1e-12` reading as a claim to six digits.
 _READING_FLOOR = 1e-11
 
+# The scale at which a deviation that *is* the difference scheme's own round-off
+# floor is compared, which is a different question from `_READING_FLOOR`.
+# `_declared_rule_state_deviation` reports `max|declared - central difference|`,
+# so where the declared rule coincides with the state derivative the residual is
+# not the rule's error but the difference's: `eps * |psi| / (2 * step)`, about
+# `1.1e-10` at the step this gate uses. Two builds read `5.860885e-11`/`5.810119e-11`
+# and `5.052384e-11` for the same program -- they differ by `7.6e-12` -- so a
+# recorded floor reading cannot be held to three significant digits. Comparing it
+# at the size of the floor is still a check: `1e-10` is nine orders below the
+# `1.7e-01` to `2.0e-01` a rule that stopped coinciding would report, and the
+# component-ratio column is what fails first in that case. The rotation rows are
+# not floor readings and keep a relative tolerance, because their `2e-01` is the
+# declared rule's own discrepancy.
+_FLOOR_READING_TOLERANCE = 1e-10
+
 
 def _exceptions() -> dict[str, type[BaseException]]:
     from flagquantum.errors import CapabilityError, ValidationError
@@ -707,7 +722,7 @@ def _falsification_errors(contract: Mapping[str, Any]) -> list[str]:
             )
         recorded_deviation = float(row["coincident_deviation"][index])
         if abs(deviation - recorded_deviation) > max(
-            1e-03 * abs(recorded_deviation), 1e-12
+            1e-03 * abs(recorded_deviation), _FLOOR_READING_TOLERANCE
         ):
             errors.append(
                 f"the falsification row records a deviation of {recorded_deviation:.6e} for "
