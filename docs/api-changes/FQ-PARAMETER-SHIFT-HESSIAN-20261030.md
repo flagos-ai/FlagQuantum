@@ -312,9 +312,9 @@ python -m pytest tests/unit/test_parameter_shift_hessian_contract.py -q
 python -m pytest tests/test_gradient_api.py tests/integration/test_gradient_modes.py -q
 ```
 
-The branch now merges `origin/main` at `b6f8890d2`, and that merge is itself the
-measurement that the three failures this slice was carrying were never its own.
-On `0b73885b` the `quality` job stopped at
+The branch now merges `origin/main` at `a9523aebb`, and that merge is itself the
+measurement that the failures this slice was carrying were never its own. On
+`0b73885b` the `quality` job stopped at
 `tests/benchmark_contract/qiskit_lane.py:29: 'tomllib' needs the fallback form`,
 and `cpu-core` failed two tests that have nothing to do with gradients:
 `tests/unit/test_circuit_control.py::test_control_is_a_method_and_not_a_root_export`
@@ -324,25 +324,32 @@ All three are repaired on `main` -- by `4858229c` (#566), #552, and #560
 respectively -- so merging `main` removes them rather than working around them.
 
 The broader `python -m pytest -m "smoke or unit" -q` tier on the merged tree
-reports `11 failed, 8304 passed, 237 skipped`. All eleven failures are
-pre-existing, measured with the same interpreter: the identical eleven ids fail on
-a pristine detached `origin/main` worktree (`11 failed, 8225 passed, 237 skipped`),
-and the two failure lists are equal id for id. Two of them are
+reports `9 failed, 8397 passed, 237 skipped`. All nine failures are pre-existing,
+measured with the same interpreter: the identical nine ids fail on a pristine
+detached `origin/main` worktree (`9 failed, 8318 passed, 237 skipped`), and the
+two failure lists are equal id for id. The nine are the QFT phase-fusion cases
+and the fused-rotation-layer promotion case under
+`tests/team/simulation/test_controlled_phase_graph.py` and
+`tests/unit/test_statevector_ops_numerics.py`, `test_compact_cx_runtime_threshold_and_rollback`
+under `tests/unit/test_native_cpu_adjoint.py`, and four chunking cases in
+`tests/unit/test_statevector_batch_chunking.py`; none of them reads
+`flagquantum/gradients.py`. The pass-count difference between the two trees, 79,
+is exactly the number of tests
+`tests/unit/test_parameter_shift_hessian_contract.py` adds.
+
+An earlier reading of the same tier, taken when this branch had merged `main` at
+`b6f8890d2`, reported `11 failed, 8304 passed, 237 skipped` against pristine
+`origin/main`'s `11 failed, 8225 passed, 237 skipped`. The two extra failures were
 `tests/unit/test_construction_acceptance.py`'s
 `test_the_census_is_a_partition_of_the_declared_family` and
-`test_acceptance_added_no_public_surface`, which fail on `main` too because
-`contracts/construction-acceptance-contract.toml` records
-`measured_root_export_count = 37` while `fq.__all__` has 40 -- a different slice's
-stale census, repaired in
-[#594](https://github.com/flagos-ai/FlagQuantum/pull/594) and picked up here in
-this branch's next `main` merge. The remaining nine were already failing at
-`8495a258d` before this branch merged `main` --
-`test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]`
-and `[dtype1]`, `test_product_state_qft_uses_hadamard_phase_fusion`,
-`test_native_fused_rotation_layer_only_promotes_terminal_regions`,
-`test_compact_cx_runtime_threshold_and_rollback`, and four chunking cases in
-`tests/unit/test_statevector_batch_chunking.py`. None of the eleven reads
-`flagquantum/gradients.py`.
+`test_acceptance_added_no_public_surface`, which failed on that `main` too
+because `contracts/construction-acceptance-contract.toml` recorded
+`measured_root_export_count = 37` while `fq.__all__` had 40 -- a different
+slice's stale census, which `main` repaired itself in `eeec2ffe` before this
+branch's next merge, so both are green here now without an edit from this slice.
+That census had also been the first failing step of `main`'s `quality` job, which
+is why the steps after it were skipped rather than run; the sixteen evidence
+revisions that accumulated behind it are declared separately on `main`.
 
 `python -m mypy --strict --python-version 3.12 --ignore-missing-imports
 flagquantum` reports the same error set on this branch and on pristine
