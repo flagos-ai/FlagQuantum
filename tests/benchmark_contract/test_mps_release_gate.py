@@ -772,6 +772,50 @@ def test_the_checked_in_manifest_satisfies_every_requirement() -> None:
     assert manifest["speed_workload"]["configuration_ladder"]
 
 
+def test_the_premise_note_states_the_evidence_the_premise_rests_on() -> None:
+    """The premise's own prose is read against the payload it describes.
+
+    ``capacity_workload.premise_established`` is a boolean no gate can check for
+    itself, so the note beside it is the only place the contract says *which*
+    signed runs establish it. A note that names a file the claim is not published
+    from, or a revision or a peak that its own payloads do not record, is a
+    disclosure that has stopped describing the evidence while continuing to read
+    as though it does.
+
+    This test exists because that happened. The note named the completion half at
+    the candidate directory it was sealed into rather than the release directory it
+    is promoted to, said both halves were sealed at one commit when they record
+    two, and said every one of sixteen ranks reached a peak that fourteen of them
+    reached. Nothing in the repository read the note, so nothing noticed. Each
+    sentence is now read back from the envelope rather than trusted: the payload is
+    opened, and its own revision and peak distribution are the answer the note is
+    held to.
+    """
+
+    manifest = load_manifest()
+    note = manifest["capacity_workload"]["premise_established_note"]
+    payload = json.loads((RESULTS / "mps_capacity_completion.json").read_text("utf-8"))
+    evidence = payload["evidence"]
+    revision = payload["provenance"]["commit"]
+
+    assert "benchmarks/results/scalability/mps_capacity_completion.json" in note
+    assert revision in note
+    # The single-device baseline is deliberately kept outside the release
+    # directory, because one device has no ranks to shard across and the strict
+    # audit would refuse it there. The completion half has no such reason: it is
+    # release-grade sharded evidence, so it must not be named at a candidate path.
+    assert "release_candidates/mps_capacity_completion" not in note
+    assert "mps_single_gpu_capacity" in note
+    assert evidence["world_size"] == 16
+    peaks = [
+        int(item["estimated_peak_backward_bytes"])
+        for item in evidence["mps_backward_memory_plan"]["rank_memory"]
+    ]
+    assert len(peaks) == 16
+    assert str(max(peaks)) in note
+    assert str(min(peaks)) in note
+
+
 def test_a_complete_release_set_satisfies_the_contract() -> None:
     """The accept path is reachable, so the refusal list is not vacuous.
 
